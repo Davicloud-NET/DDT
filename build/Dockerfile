@@ -30,5 +30,5 @@ RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-r
 FROM ${DOTNET_RUNTIME} AS final
 WORKDIR /app
 COPY --from=build /app ./
-EXPOSE 8080
+EXPOSE 8443
 ENTRYPOINT ["./DDT.Host"]

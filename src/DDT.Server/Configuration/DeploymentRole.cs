@@ -1,6 +1,6 @@
 namespace DDT.Server.Configuration;
 
-public enum DdtRole
+public enum DeploymentRole
 {
     Web,
     Pxe,

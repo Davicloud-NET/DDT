@@ -1,0 +1,25 @@
+name: ddt
+
+services:
+  ddt:
+    image: ddt:${DDT_TAG:-dev}
+    build:
+      context: ..
+      dockerfile: build/Dockerfile
+    # The pxe role binds UDP 67, 4011 and 69 and has to see DHCP broadcasts, so it
+    # cannot live behind a bridge network. Host networking is a Linux host feature:
+    # on Docker Desktop broadcasts are not delivered.
+    network_mode: host
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    read_only: true
+    tmpfs: [/tmp]
+    environment:
+      DDT__Roles: ${DDT_ROLES:-web}
+      ASPNETCORE_HTTP_PORTS: 8080
+    volumes:
+      - ddt-store:/var/lib/ddt
+    restart: unless-stopped
+
+volumes:
+  ddt-store:

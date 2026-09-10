@@ -1,7 +1,7 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
-* text=auto
+* text=auto eol=lf
 
 ###############################################################################
 # Set default behavior for command prompt diff.
@@ -61,3 +61,19 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Batch files are consumed by cmd.exe inside Windows PE, which is not reliably
+# tolerant of LF line endings. Keep them CRLF in the working tree.
+###############################################################################
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+###############################################################################
+# Binary payloads
+###############################################################################
+*.wim binary
+*.esd binary
+*.efi binary
+*.png binary
+*.bin binary

@@ -384,3 +384,6 @@ artifacts/
 # SPA build output copied into the host
 src/DDT.Host/wwwroot/assets/
 src/DDT.Host/wwwroot/index.html
+
+# The Visual Studio *.e2e rule also matches the tests/DDT.E2E project directory
+!tests/DDT.E2E/

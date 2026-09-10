@@ -182,7 +182,20 @@ public sealed class TftpReadSession
             [new TftpSendError(TftpErrorCode.IllegalOperation, message), new TftpStopRetransmit()]);
     }
 
-    private TftpArmRetransmit Retransmit() => new(_timeProvider.GetUtcNow() + Negotiated.Timeout);
+    // Doubling, capped, so a lost datagram recovers quickly but a dead client is abandoned before
+    // the firmware gives up on DDT. EDK2 abandons a transfer somewhere between 15 and 24 seconds,
+    // and the whole budget here is under twelve.
+    private TftpArmRetransmit Retransmit()
+    {
+        TimeSpan delay = Negotiated.Timeout * (1 << Math.Min(_retries, 8));
+
+        if (delay > _limits.MaxRetransmitDelay)
+        {
+            delay = _limits.MaxRetransmitDelay;
+        }
+
+        return new TftpArmRetransmit(_timeProvider.GetUtcNow() + delay);
+    }
 
     private static TftpNegotiation Negotiate(TftpRequestedOptions requested, TftpLimits limits, long fileLength)
     {

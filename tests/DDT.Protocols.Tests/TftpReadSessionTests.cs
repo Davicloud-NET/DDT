@@ -336,4 +336,35 @@ public sealed class TftpReadSessionTests
         Assert.Empty(session.OnDatagram(Ack(1)).Actions);
         Assert.Empty(session.OnRetransmitTimeout().Actions);
     }
+
+    [Fact]
+    public void BacksOffBetweenRetransmitsAndGivesUpBeforeTheFirmwareDoes()
+    {
+        TestTimeProvider clock = new(s_start);
+        TftpReadSession session = Session(Request("rrq-wdsmgfw-blksize1456-window4"), 1_000_000, clock);
+
+        session.Start();
+        session.OnDatagram(Ack(0));
+
+        List<TimeSpan> delays = [];
+
+        for (int attempt = 0; attempt < TftpLimits.Default.MaxRetries; attempt++)
+        {
+            TftpStep step = session.OnRetransmitTimeout();
+            TftpArmRetransmit armed = Assert.Single(step.Actions.OfType<TftpArmRetransmit>());
+            delays.Add(armed.Deadline - clock.GetUtcNow());
+            clock.Advance(armed.Deadline - clock.GetUtcNow());
+        }
+
+        // Doubling from the negotiated timeout, capped, so a lost datagram recovers fast while a
+        // dead client is abandoned before EDK2 gives up on DDT somewhere past fifteen seconds.
+        Assert.Equal(
+            [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4)],
+            delays);
+
+        // The first window was armed for one second before any of these, so the whole budget is
+        // eleven seconds, comfortably inside the window in which EDK2 is still listening.
+        Assert.True(
+            delays.Aggregate(TimeSpan.FromSeconds(1), (total, delay) => total + delay) < TimeSpan.FromSeconds(12));
+    }
 }

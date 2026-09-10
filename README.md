@@ -249,9 +249,24 @@ token. Treat that volume as a secret.
 
 ## Status
 
-M0 (the scaffold) and authentication are complete. Later milestones, in order: the DHCP and TFTP
-protocol layer, the PXE role and boot image builder, agent registration, the image library and
-apply, task sequences, Linux raw disk images, and the task sequence flow builder.
+M0 (the scaffold), authentication, and the DHCP, ProxyDHCP and TFTP protocol layer are complete.
+Later milestones, in order: the PXE role and boot image builder, agent registration, the image
+library and apply, task sequences, Linux raw disk images, and the task sequence flow builder.
+
+`DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
+two state machines, driven by `DDT.Pxe` when that arrives. Packet fixtures live under
+`tests/DDT.Protocols.Tests/Fixtures` with a provenance note beside each one; they are currently all
+hand-constructed from the RFCs, and a real firmware capture always wins over one of them.
+
+Three things about the protocol layer are deliberately not done yet:
+
+- Option 43 sub-options are not parsed, so PXE Boot Server Discovery is not answered. DDT sets
+  `PXE_DISCOVERY_CONTROL` to tell clients to skip discovery and boot the file in the reply, which is
+  the normal arrangement for a single boot server, but a client that insists on discovery is not served.
+- Only read requests are implemented. Netboot never writes, and a TFTP server that accepts writes on
+  a provisioning network is a liability rather than a feature.
+- Relayed requests are refused unless the relay agent is explicitly authorised, and no relayed
+  exchange has been tested against a real relay. Multi-site support should not be promised until it has.
 
 Agent enrollment endpoints arrive with the agent itself. The machine state model, the machine
 token infrastructure and the approval gate they plug into are already in place.

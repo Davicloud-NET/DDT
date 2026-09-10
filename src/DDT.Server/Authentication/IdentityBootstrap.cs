@@ -1,0 +1,76 @@
+using System.Security.Cryptography;
+using DDT.Server.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace DDT.Server.Authentication;
+
+// A fresh deployment has no UI to create the first account from, so DDT creates one and prints
+// the password once. No bootstrap credential is read from configuration, because an environment
+// variable holding an administrator password tends to stay set long after it was needed.
+public sealed partial class IdentityBootstrap(
+    IServiceScopeFactory scopeFactory,
+    ILogger<IdentityBootstrap> logger) : IHostedService
+{
+    private const string AdministratorUserName = "admin";
+    private const string PasswordAlphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private const int PasswordLength = 24;
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using IServiceScope scope = scopeFactory.CreateScope();
+
+        RoleManager<DdtRole> roles = scope.ServiceProvider.GetRequiredService<RoleManager<DdtRole>>();
+        UserManager<DdtUser> users = scope.ServiceProvider.GetRequiredService<UserManager<DdtUser>>();
+        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+
+        foreach (string role in DdtRoleNames.All)
+        {
+            if (!await roles.RoleExistsAsync(role).ConfigureAwait(false))
+            {
+                await roles.CreateAsync(new DdtRole(role)).ConfigureAwait(false);
+            }
+        }
+
+        if (await database.Users.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        string password = RandomNumberGenerator.GetString(PasswordAlphabet, PasswordLength);
+
+        DdtUser administrator = new()
+        {
+            UserName = AdministratorUserName,
+            DisplayName = "Administrator",
+            Source = AccountSource.Local,
+            CreatedUtc = DateTimeOffset.UtcNow,
+        };
+
+        IdentityResult created = await users.CreateAsync(administrator, password).ConfigureAwait(false);
+
+        if (!created.Succeeded)
+        {
+            LogBootstrapFailed(string.Join("; ", created.Errors.Select(error => error.Description)));
+            return;
+        }
+
+        await users.AddToRoleAsync(administrator, DdtRoleNames.Administrator).ConfigureAwait(false);
+
+        LogAdministratorCreated(AdministratorUserName, password);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    [LoggerMessage(
+        EventId = 300,
+        Level = LogLevel.Warning,
+        Message = "Created the first administrator. User name {UserName}, password {Password}. This is printed once: sign in and change it.")]
+    private partial void LogAdministratorCreated(string userName, string password);
+
+    [LoggerMessage(EventId = 301, Level = LogLevel.Error, Message = "Could not create the first administrator: {Errors}")]
+    private partial void LogBootstrapFailed(string errors);
+}

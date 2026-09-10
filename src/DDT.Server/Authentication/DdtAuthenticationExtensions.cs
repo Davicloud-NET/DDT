@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DDT.Server.Authentication;
 
@@ -69,6 +70,8 @@ public static class DdtAuthenticationExtensions
 
         // The default is 30 minutes, which is how long a disabled account keeps working.
         services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
+
+        services.AddHostedService<IdentityBootstrap>();
 
         return services;
     }

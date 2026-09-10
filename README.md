@@ -161,16 +161,100 @@ It is deliberately not a bound array. Indexed environment variables such as `DDT
 with a configured array rather than replacing it, so a shipped default plus an override would leave
 unwanted roles running. Unknown role names fail at startup rather than being ignored.
 
+## Authentication
+
+DDT authenticates people with ASP.NET Core Identity. Nothing about the credential handling is
+hand written: password hashing, lockout, security stamps, TOTP and recovery codes are Microsoft's
+implementations.
+
+Three sources of accounts, all optional except the first:
+
+- **Local accounts.** Passwords are PBKDF2-HMAC-SHA512 at 210,000 iterations, above the framework
+  default of 100,000. Raising it later is safe, because Identity rehashes on the next sign in.
+- **LDAP.** Set `DDT:Ldap:Enabled`. Accounts are keyed on the directory's immutable identifier
+  (`objectGUID` on Active Directory, `entryUUID` on OpenLDAP), never on the user name or the
+  distinguished name, because both change when someone is renamed or moved. Group membership maps
+  onto DDT roles through `DDT:Ldap:GroupRoleMap` and the directory stays authoritative: a role
+  removed there is removed here on the next sign in.
+- **OpenID Connect.** Set `DDT:Oidc:Enabled` to point DDT at Entra ID, Keycloak, Authentik or any
+  other provider. DDT never links an external identity to an existing local account by email
+  address, because a provider that does not verify addresses could then take over any account.
+  Link from an authenticated session, or turn on `DDT:Oidc:AutoProvision` to create new accounts
+  keyed on issuer and subject.
+
+Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
+carries the passkey table from the first migration so turning them on later needs no migration.
+
+Roles are Administrator, Operator and Viewer. Endpoints deny by default: a new endpoint is closed
+until it explicitly opts out.
+
+### The first administrator
+
+A fresh deployment creates an `admin` account and prints its password once, at warning level:
+
+```
+Created the first administrator. User name admin, password <generated>. This is printed once: sign in and change it.
+```
+
+No bootstrap credential is read from configuration, because an environment variable holding an
+administrator password tends to stay set long after it was needed.
+
+### TLS is required
+
+`DDT:RequireHttps` defaults to true and the host refuses to start without an HTTPS endpoint. This
+is deliberate rather than cautious: `Secure` cookies are silently dropped over plain HTTP, so an
+auth stack on an HTTP listener appears to work while every request after sign in is anonymous.
+
+A self signed certificate is generated on first run so a fresh deployment starts at all. Replace
+it, or distribute it as a trusted root. Every name and address DDT is reached by has to be in the
+certificate, because the agent validates the hostname against the chain it pins. List them in
+`DDT:Https:SubjectAlternativeNames`.
+
+Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in front of DDT.
+
+## Security model
+
+State the trust boundary plainly, because a careful design elsewhere invites the wrong assumption
+here.
+
+**The provisioning network is inside the trust boundary.** DDT cannot stop a rogue DHCP or PXE
+server on that segment from serving a different boot image to your machines, exactly as Microsoft
+states for ConfigMgr. Anything inside `boot.wim` is readable by anyone who can boot it, so DDT
+treats the boot path as public and puts nothing there but the server URL, the root certificate and
+a rotatable enrollment token.
+
+What that token can do is deliberately almost nothing: it lets a machine say it exists. A machine
+enters as `Pending` and holds no grants at all. An administrator approves it before it can read a
+task sequence, an image or a secret. That approval gate is the control that the published attacks
+against SCCM operating system deployment walk straight through, and it is the reason the rest of
+this design exists.
+
+Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
+ring is already required, already rotates, and this needs no token library. Each purpose has its
+own protector, so a poll token cannot be replayed as a session token. Every token carries the
+machine's token generation, so bumping one column invalidates all of that machine's outstanding
+tokens at once.
+
+Machine tokens are bound to the reported SMBIOS UUID and MAC address. That detects mistakes and
+casual replay. It is **not** device identity: both values are attacker controllable. The real
+controls are the approval gate, the short token lifetime and the network segment.
+
+Human and machine principals are separated by authentication scheme, and every policy names its
+scheme, so a machine token can never satisfy a human policy or the reverse.
+
+Not defended, and worth saying out loud: an attacker with layer 2 control who spoofs the identity
+of an already approved machine; anyone who can read the store volume or the database; and anyone
+who can read the Data Protection key ring, which can mint an administrator cookie and any machine
+token. Treat that volume as a secret.
+
 ## Status
 
-M0, the scaffold, is complete. Later milestones, in order: the DHCP and TFTP protocol layer, the
-PXE role and boot image builder, agent registration, the image library and apply, task sequences,
-Linux raw disk images, and the task sequence flow builder.
+M0 (the scaffold) and authentication are complete. Later milestones, in order: the DHCP and TFTP
+protocol layer, the PXE role and boot image builder, agent registration, the image library and
+apply, task sequences, Linux raw disk images, and the task sequence flow builder.
 
-Authentication is not implemented yet and arrives with the UI milestone. It will cover local
-accounts and LDAP against a directory such as Active Directory, with third-party logins as a
-possible later addition. Until then the API is unauthenticated and DDT must not be exposed to an
-untrusted network.
+Agent enrollment endpoints arrive with the agent itself. The machine state model, the machine
+token infrastructure and the approval gate they plug into are already in place.
 
 Two open questions are already known and are recorded here so they are not rediscovered:
 

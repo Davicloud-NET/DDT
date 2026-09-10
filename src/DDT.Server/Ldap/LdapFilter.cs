@@ -13,13 +13,27 @@ public static class LdapFilter
         {
             switch (c)
             {
-                case '*': builder.Append("\\2a"); break;
-                case '(': builder.Append("\\28"); break;
-                case ')': builder.Append("\\29"); break;
-                case '\\': builder.Append("\\5c"); break;
-                case '\0': builder.Append("\\00"); break;
-                case '/': builder.Append("\\2f"); break;
-                default: builder.Append(c); break;
+                case '*':
+                    builder.Append("\\2a");
+                    break;
+                case '(':
+                    builder.Append("\\28");
+                    break;
+                case ')':
+                    builder.Append("\\29");
+                    break;
+                case '\\':
+                    builder.Append("\\5c");
+                    break;
+                case '\0':
+                    builder.Append("\\00");
+                    break;
+                case '/':
+                    builder.Append("\\2f");
+                    break;
+                default:
+                    builder.Append(c);
+                    break;
             }
         }
 

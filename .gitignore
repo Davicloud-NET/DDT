@@ -361,3 +361,26 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# DDT
+.idea/
+
+# Deployment payloads: never commit boot images, WIMs or EFI binaries
+*.wim
+*.esd
+*.swm
+*.efi
+*.iso
+*.vhd
+*.vhdx
+artifacts/
+
+# Local secrets and overrides
+*.local.json
+!appsettings.Development.json
+.env
+.env.*
+
+# SPA build output copied into the host
+src/DDT.Host/wwwroot/assets/
+src/DDT.Host/wwwroot/index.html

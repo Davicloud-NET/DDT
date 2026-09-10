@@ -381,9 +381,8 @@ artifacts/
 .env
 .env.*
 
-# SPA build output copied into the host
-src/DDT.Host/wwwroot/assets/
-src/DDT.Host/wwwroot/index.html
+# The SPA build owns DDT.Host/wwwroot entirely (vite outDir with emptyOutDir)
+src/DDT.Host/wwwroot/
 
 # The Visual Studio *.e2e rule also matches the tests/DDT.E2E project directory
 !tests/DDT.E2E/

@@ -1,27 +1,66 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+  createRootRouteWithContext,
+  createRoute,
+  createRouter,
+  redirect,
+} from "@tanstack/react-router";
 
+import { currentUserQuery } from "@/auth/auth";
 import { MachinesPage } from "@/pages/MachinesPage";
+import { SignInPage } from "@/pages/SignInPage";
 
 import { AppShell } from "./AppShell";
+import { RootLayout } from "./RootLayout";
 
-const rootRoute = createRootRoute({ component: AppShell });
+export interface RouterContext {
+  queryClient: QueryClient;
+}
+
+const rootRoute = createRootRouteWithContext<RouterContext>()({ component: RootLayout });
+
+const signInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in",
+  component: SignInPage,
+});
+
+// Everything inside the shell requires a session. The check runs before the route renders, so
+// there is no flash of the application for a signed out visitor.
+const shellRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "shell",
+  component: AppShell,
+  beforeLoad: async ({ context }) => {
+    const user = await context.queryClient.query({ ...currentUserQuery, staleTime: "static" });
+
+    if (user === null) {
+      throw redirect({ to: "/sign-in" });
+    }
+
+    return { user };
+  },
+});
 
 const machinesRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => shellRoute,
   path: "/",
   component: MachinesPage,
 });
 
-const routeTree = rootRoute.addChildren([machinesRoute]);
+const routeTree = rootRoute.addChildren([signInRoute, shellRoute.addChildren([machinesRoute])]);
 
-export const router = createRouter({
-  routeTree,
-  defaultPreload: "intent",
-  scrollRestoration: true,
-});
+export function createAppRouter(queryClient: QueryClient) {
+  return createRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: "intent",
+    scrollRestoration: true,
+  });
+}
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router;
+    router: ReturnType<typeof createAppRouter>;
   }
 }

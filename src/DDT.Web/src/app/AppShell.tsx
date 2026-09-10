@@ -1,5 +1,7 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 
+import { currentUserQuery, logout } from "@/auth/auth";
 import { cx } from "@/lib/cx";
 
 import styles from "./AppShell.module.scss";
@@ -7,6 +9,15 @@ import styles from "./AppShell.module.scss";
 const navigation = [{ to: "/", label: "Machines" }] as const;
 
 export function AppShell() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const user = queryClient.getQueryData(currentUserQuery.queryKey) ?? null;
+
+  async function signOut() {
+    await logout(queryClient);
+    await navigate({ to: "/sign-in" });
+  }
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -27,6 +38,12 @@ export function AppShell() {
             </Link>
           ))}
         </nav>
+        <div className={styles.account}>
+          <span className={styles.accountName}>{user?.displayName ?? user?.userName}</span>
+          <button type="button" className={styles.signOut} onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </div>
       </aside>
       <main className={styles.main}>
         <Outlet />

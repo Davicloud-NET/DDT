@@ -138,6 +138,11 @@ public static class AuthEndpoints
         IAntiforgery antiforgery)
     {
         await signInManager.SignOutAsync().ConfigureAwait(false);
+
+        // SignOutAsync clears the response cookie but leaves HttpContext.User set for the rest of
+        // this request. Minting the replacement token before resetting it would bind the token to
+        // the identity being signed out, and the next request would fail validation.
+        context.User = new ClaimsPrincipal(new ClaimsIdentity());
         RefreshAntiforgeryToken(context, antiforgery);
 
         return TypedResults.Ok();

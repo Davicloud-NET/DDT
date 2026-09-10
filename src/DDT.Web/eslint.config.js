@@ -28,6 +28,17 @@ export default defineConfig([
     },
   },
   {
+    files: ["src/app/router.tsx"],
+    rules: {
+      // TanStack Router's documented control flow is `throw redirect(...)`, and redirect returns
+      // a plain object rather than an Error.
+      "@typescript-eslint/only-throw-error": [
+        "error",
+        { allow: [{ from: "package", package: "@tanstack/router-core", name: "Redirect" }] },
+      ],
+    },
+  },
+  {
     files: ["**/*.config.ts", "eslint.config.js"],
     languageOptions: { globals: globals.node },
   },

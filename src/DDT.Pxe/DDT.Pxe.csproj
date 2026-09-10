@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
+    <ProjectReference Include="..\DDT.Protocols\DDT.Protocols.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using DDT.Contracts.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Ldap;
 using DDT.Server.Security;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
@@ -50,6 +51,7 @@ public static class AuthEndpoints
         LoginRequest request,
         SignInManager<DdtUser> signInManager,
         UserManager<DdtUser> userManager,
+        DirectorySignInService directory,
         HttpContext context,
         IAntiforgery antiforgery,
         ILoggerFactory loggerFactory)
@@ -67,7 +69,8 @@ public static class AuthEndpoints
                 await signInManager
                     .TwoFactorAuthenticatorSignInAsync(request.TwoFactorCode!, isPersistent: false, rememberClient: false)
                     .ConfigureAwait(false),
-            _ => await PasswordSignInAsync(request, signInManager, userManager).ConfigureAwait(false),
+            _ => await CredentialSignInAsync(request, signInManager, userManager, directory, context.RequestAborted)
+                .ConfigureAwait(false),
         };
 
         if (result.RequiresTwoFactor)
@@ -95,12 +98,20 @@ public static class AuthEndpoints
         return TypedResults.Ok(new LoginResponse(LoginStatus.Succeeded));
     }
 
-    private static async Task<SignInResult> PasswordSignInAsync(
+    private static async Task<SignInResult> CredentialSignInAsync(
         LoginRequest request,
         SignInManager<DdtUser> signInManager,
-        UserManager<DdtUser> userManager)
+        UserManager<DdtUser> userManager,
+        DirectorySignInService directory,
+        CancellationToken cancellationToken)
     {
         DdtUser? user = await userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
+
+        if (user?.Source == AccountSource.Directory || (user is null && directory.Enabled))
+        {
+            return await directory.SignInAsync(request.UserName, request.Password, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         // An unknown user and a wrong password must be indistinguishable in both body and timing,
         // so the password is hashed anyway rather than returning early.

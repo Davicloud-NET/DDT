@@ -35,7 +35,7 @@ builder.Services.AddAntiforgery(antiforgery =>
 });
 
 builder.Services.AddDdtData(builder.Configuration, options);
-builder.Services.AddDdtAuthentication(options);
+builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
 

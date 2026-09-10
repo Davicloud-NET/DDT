@@ -1,11 +1,13 @@
 using DDT.Server.Configuration;
 using DDT.Server.Data;
+using DDT.Server.Ldap;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -13,10 +15,18 @@ namespace DDT.Server.Authentication;
 
 public static class DdtAuthenticationExtensions
 {
-    public static IServiceCollection AddDdtAuthentication(this IServiceCollection services, DdtOptions options)
+    public static IServiceCollection AddDdtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        DdtOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
+
+        services.Configure<LdapOptions>(configuration.GetSection(LdapOptions.SectionName));
+        services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
+        services.AddScoped<DirectorySignInService>();
 
         // The key ring can mint an administrator cookie and every machine token, so it has to
         // survive restarts and it has to live on the store volume, not in the read only layer.

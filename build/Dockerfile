@@ -28,6 +28,9 @@ COPY --from=spa /spa-dist/ src/DDT.Host/wwwroot/
 RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-restore -o /app
 
 FROM ${DOTNET_RUNTIME} AS final
+# System.DirectoryServices.Protocols probes libldap.so.2, which the runtime image does not carry.
+# Without it every LDAP call throws TypeInitializationException, including constructing a connection.
+RUN apt-get update && apt-get install -y --no-install-recommends libldap2 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
 EXPOSE 8443

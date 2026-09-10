@@ -1,7 +1,13 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+var database = builder.AddPostgres("postgres")
+    .WithDataVolume()
+    .AddDatabase("ddtdb");
+
 var host = builder.AddProject<Projects.DDT_Host>("ddt-host")
-    .WithEnvironment("DDT__Roles", "web");
+    .WithEnvironment("DDT__Roles", "web")
+    .WithReference(database)
+    .WaitFor(database);
 
 builder.AddViteApp("ddt-web", "../DDT.Web")
     .WithReference(host)

@@ -1,6 +1,8 @@
 using DDT.Host.Logging;
 using DDT.Host.Startup;
+using DDT.Server.Authentication;
 using DDT.Server.Configuration;
+using DDT.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,10 @@ string certificatePath = builder.Configuration["Kestrel:Certificates:Default:Pat
 bool generatedCertificate = CertificateBootstrap.EnsureConfiguredCertificate(builder.Configuration, options);
 
 HttpsConfigurationCheck.Validate(builder.Configuration, options);
+
+builder.Services.AddDdtData(builder.Configuration, options);
+builder.Services.AddDdtAuthentication(options);
+builder.Services.AddDdtAuthorization();
 
 var app = builder.Build();
 
@@ -34,6 +40,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapFallbackToFile("index.html");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapFallbackToFile("index.html").AllowAnonymous();
 
 app.Run();

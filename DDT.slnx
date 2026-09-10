@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DDT.AppHost/DDT.AppHost.csproj" />
+  <Project Path="DDT.Host/DDT.Host.csproj" />
+  <Project Path="DDT.ServiceDefaults/DDT.ServiceDefaults.csproj" />
+</Solution>

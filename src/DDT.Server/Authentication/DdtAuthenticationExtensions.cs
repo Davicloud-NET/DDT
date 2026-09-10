@@ -4,6 +4,8 @@ using DDT.Server.Ldap;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -24,6 +26,8 @@ public static class DdtAuthenticationExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
 
+        OidcOptions oidc = configuration.GetSection(OidcOptions.SectionName).Get<OidcOptions>() ?? new OidcOptions();
+        services.Configure<OidcOptions>(configuration.GetSection(OidcOptions.SectionName));
         services.Configure<LdapOptions>(configuration.GetSection(LdapOptions.SectionName));
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
         services.AddScoped<DirectorySignInService>();
@@ -69,7 +73,9 @@ public static class DdtAuthenticationExtensions
         {
             cookie.Cookie.Name = options.RequireHttps ? "__Host-ddt-auth" : "ddt-auth";
             cookie.Cookie.HttpOnly = true;
-            cookie.Cookie.SameSite = SameSiteMode.Strict;
+            // An OpenID Connect form_post callback is a cross site POST, so Strict would drop the
+            // cookie on the way back from the provider. Strict stays the default until then.
+            cookie.Cookie.SameSite = oidc.Enabled ? SameSiteMode.Lax : SameSiteMode.Strict;
             cookie.Cookie.SecurePolicy = options.RequireHttps
                 ? CookieSecurePolicy.Always
                 : CookieSecurePolicy.SameAsRequest;
@@ -78,11 +84,47 @@ public static class DdtAuthenticationExtensions
             cookie.SlidingExpiration = true;
         });
 
+        if (oidc.Enabled)
+        {
+            AddOpenIdConnect(authentication, oidc);
+            services.AddHostedService<ExternalSignInSchemeGuard>();
+        }
+
         // The default is 30 minutes, which is how long a disabled account keeps working.
         services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
 
         services.AddHostedService<IdentityBootstrap>();
 
         return services;
+    }
+
+    private static void AddOpenIdConnect(AuthenticationBuilder authentication, OidcOptions oidc)
+    {
+        authentication.AddOpenIdConnect(OidcOptions.SchemeName, oidc.DisplayName, openId =>
+        {
+            // Without this the external principal is signed straight into the application cookie:
+            // no local user, no link row, no roles, no lockout and no second factor.
+            openId.SignInScheme = IdentityConstants.ExternalScheme;
+
+            openId.Authority = oidc.Authority;
+            openId.ClientId = oidc.ClientId;
+            openId.ClientSecret = oidc.ClientSecret;
+
+            // The handler defaults to the implicit flow, which leaves PKCE inert.
+            openId.ResponseType = OpenIdConnectResponseType.Code;
+            openId.ResponseMode = OpenIdConnectResponseMode.Query;
+            openId.UsePkce = true;
+
+            openId.GetClaimsFromUserInfoEndpoint = true;
+            openId.SaveTokens = false;
+            openId.CallbackPath = "/api/auth/external/callback";
+
+            openId.Scope.Clear();
+
+            foreach (string scope in oidc.Scopes)
+            {
+                openId.Scope.Add(scope);
+            }
+        });
     }
 }

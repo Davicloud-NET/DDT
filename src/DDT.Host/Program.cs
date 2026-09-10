@@ -71,6 +71,7 @@ RouteGroupBuilder api = app.MapGroup("/api")
 
 api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
+api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 
 app.MapFallbackToFile("index.html").AllowAnonymous();
 

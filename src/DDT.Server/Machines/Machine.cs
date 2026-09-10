@@ -1,0 +1,43 @@
+using DDT.Server.Data;
+
+namespace DDT.Server.Machines;
+
+public sealed class Machine
+{
+    public Guid Id { get; set; }
+
+    // Reported by the agent and therefore attacker controllable. Used to recognise a machine
+    // across reboots, never as proof of identity.
+    public required string SmbiosUuid { get; set; }
+
+    public required string PrimaryMac { get; set; }
+
+    public string? Manufacturer { get; set; }
+
+    public string? Model { get; set; }
+
+    public string? SerialNumber { get; set; }
+
+    // Set by an administrator, not by the agent, because it reaches a domain join command line.
+    public string? AssignedName { get; set; }
+
+    public MachineState State { get; set; } = MachineState.Pending;
+
+    // Every issued machine token carries the generation it was minted under. Bumping this
+    // invalidates all outstanding tokens for the machine without tracking them individually.
+    public int TokenGeneration { get; set; }
+
+    public DateTimeOffset FirstSeenUtc { get; set; }
+
+    public DateTimeOffset LastSeenUtc { get; set; }
+
+    public string? FirstSeenAddress { get; set; }
+
+    public string? EnrollmentTokenId { get; set; }
+
+    public Guid? ApprovedByUserId { get; set; }
+
+    public DdtUser? ApprovedBy { get; set; }
+
+    public DateTimeOffset? ApprovedUtc { get; set; }
+}

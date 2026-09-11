@@ -29,6 +29,7 @@
     <Project Path="tests/DDT.Core.Tests/DDT.Core.Tests.csproj" />
     <Project Path="tests/DDT.E2E/DDT.E2E.csproj" />
     <Project Path="tests/DDT.Protocols.Tests/DDT.Protocols.Tests.csproj" />
+    <Project Path="tests/DDT.Pxe.Tests/DDT.Pxe.Tests.csproj" />
     <Project Path="tests/DDT.Server.Tests/DDT.Server.Tests.csproj" />
   </Folder>
   <Folder Name="/build/">

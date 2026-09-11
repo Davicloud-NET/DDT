@@ -108,4 +108,39 @@ public sealed class ProxyDhcpReplyWriterTests
         Assert.False(ProxyDhcpReplyWriter.TryWrite(reply, new byte[299], out int written));
         Assert.Equal(0, written);
     }
+
+    [Fact]
+    public void LeavesTheFixedFieldEmptyWhenTheBootFileNameDoesNotFit()
+    {
+        ProxyDhcpDecision decision = ProxyDhcpResponder.Respond(
+            ProxyDhcpFixture.Request("discover-uefi-x64-pxeclient"),
+            ProxyDhcpFixture.Configuration(new BootTarget
+            {
+                Architecture = ClientArchitecture.X64Uefi,
+                Method = BootMethod.Tftp,
+                BootFile = new string('a', 200),
+            }));
+
+        Assert.True(decision.TryGetReply(out ProxyDhcpReply? reply));
+
+        byte[] buffer = new byte[1500];
+        Assert.True(ProxyDhcpReplyWriter.TryWrite(reply, buffer, out int written));
+
+        // A truncated unterminated path would send firmware chasing a file that does not exist.
+        // Option 67 has no length limit and carries the real value.
+        Assert.Equal(new byte[128], buffer[108..236]);
+
+        DhcpOptionReader reader = new(buffer.AsSpan(240, written - 240));
+        string? option67 = null;
+
+        while (reader.MoveNext())
+        {
+            if (reader.Code == DhcpOption.BootFileName)
+            {
+                option67 = System.Text.Encoding.ASCII.GetString(reader.Value);
+            }
+        }
+
+        Assert.Equal(new string('a', 200), option67);
+    }
 }

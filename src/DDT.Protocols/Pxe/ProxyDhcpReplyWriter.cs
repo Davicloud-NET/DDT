@@ -67,7 +67,15 @@ public static class ProxyDhcpReplyWriter
 
         // The boot file goes in the fixed field as well as option 67 whenever it fits, because some
         // firmware reads only one of the two and they disagree about which.
-        _ = TryWriteNullTerminated(reply.BootFileName, destination.Slice(BootFileOffset, BootFileLength));
+        // A name too long for the 128 octet field is left out of it entirely rather than truncated.
+        // Option 67 carries the same value and has no such limit, and firmware reading a truncated
+        // unterminated path here would chain to a file that does not exist.
+        Span<byte> bootFileField = destination.Slice(BootFileOffset, BootFileLength);
+
+        if (!TryWriteNullTerminated(reply.BootFileName, bootFileField))
+        {
+            bootFileField.Clear();
+        }
 
         MagicCookie.CopyTo(destination[FixedHeaderLength..]);
 

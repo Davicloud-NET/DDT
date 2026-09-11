@@ -140,7 +140,11 @@ public sealed class TftpReadSession
     {
         long distance = (block - _acknowledged) & 0xFFFF;
 
-        return distance == 0 ? _acknowledged : _acknowledged + distance;
+        // Only a block inside the window in flight can be a genuine advance. Without that bound a
+        // stale acknowledgement for an earlier block reads as a jump of almost 65536 once the
+        // difference is taken modulo 2^16, which walks the counter past the end of the file and
+        // reports a transfer that never happened as complete.
+        return distance == 0 || distance > Negotiated.WindowSize ? _acknowledged : _acknowledged + distance;
     }
 
     // RFC 7440 section 4: the last received acknowledgement sets the beginning of the next window.

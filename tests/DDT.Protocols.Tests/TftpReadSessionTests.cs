@@ -367,4 +367,39 @@ public sealed class TftpReadSessionTests
         Assert.True(
             delays.Aggregate(TimeSpan.FromSeconds(1), (total, delay) => total + delay) < TimeSpan.FromSeconds(12));
     }
+
+    [Fact]
+    public void IgnoresAStaleAcknowledgementForAnEarlierBlock()
+    {
+        TestTimeProvider clock = new(s_start);
+        TftpReadSession session = Session(Request("rrq-wdsmgfw-blksize1456-window4"), 1_000_000, clock);
+
+        session.Start();
+        session.OnDatagram(Ack(0));
+        session.OnDatagram(Ack(4));
+
+        // Taken modulo 2^16 this reads as a jump of 65535 blocks, which would walk the counter past
+        // the end of the file and report a transfer that never happened as complete.
+        TftpStep stale = session.OnDatagram(Ack(3));
+
+        Assert.Empty(stale.Actions);
+        Assert.Equal(4, session.AcknowledgedBlock);
+        Assert.Equal(TftpSessionState.Transferring, session.State);
+    }
+
+    [Fact]
+    public void IgnoresAnAcknowledgementBeyondTheWindowInFlight()
+    {
+        TestTimeProvider clock = new(s_start);
+        TftpReadSession session = Session(Request("rrq-wdsmgfw-blksize1456-window4"), 1_000_000, clock);
+
+        session.Start();
+        session.OnDatagram(Ack(0));
+
+        // Blocks 1 to 4 are in flight. Nothing has acknowledged block 9, so it is a stray.
+        TftpStep beyond = session.OnDatagram(Ack(9));
+
+        Assert.Empty(beyond.Actions);
+        Assert.Equal(0, session.AcknowledgedBlock);
+    }
 }

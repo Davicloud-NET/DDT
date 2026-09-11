@@ -19,7 +19,10 @@
     <Project Path="src/DDT.Pxe/DDT.Pxe.csproj" />
     <Project Path="src/DDT.Server/DDT.Server.csproj" />
     <Project Path="src/DDT.ServiceDefaults/DDT.ServiceDefaults.csproj" />
-    <Project Path="src/DDT.Web/DDT.Web.esproj" />
+    <Project Path="src/DDT.Web/DDT.Web.esproj">
+      <Build />
+      <Deploy />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DDT.Agent.Tests/DDT.Agent.Tests.csproj" />

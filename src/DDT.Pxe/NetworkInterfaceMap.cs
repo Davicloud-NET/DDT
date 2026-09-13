@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -6,40 +8,69 @@ namespace DDT.Pxe;
 
 // Datagrams arrive on a wildcard socket, so the only thing identifying the segment is the interface
 // index from IP_PKTINFO. This resolves that index to a local address for siaddr and option 54, and
-// it is also what enforces the configured allowlist: an index that is not served is never answered.
+// it is what enforces the configured allowlist: an index that is not served is never answered.
+//
+// A snapshot taken at startup. Changing the address of a served interface needs a restart.
 public sealed class NetworkInterfaceMap
 {
-    private readonly Dictionary<int, ServedInterface> _served = [];
+    private readonly FrozenDictionary<int, ServedInterface> _served;
 
-    public NetworkInterfaceMap(string configured)
+    public NetworkInterfaceMap(string configured, IReadOnlyList<ServedInterface> candidates)
     {
         ArgumentNullException.ThrowIfNull(configured);
+        ArgumentNullException.ThrowIfNull(candidates);
 
-        string[] wanted = configured.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Dictionary<int, ServedInterface> served = [];
+        List<string> unmatched = [];
 
-        foreach (ServedInterface candidate in Enumerate())
+        foreach (string wanted in configured.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (wanted.Any(name => Matches(candidate, name)))
+            bool matched = false;
+
+            foreach (ServedInterface candidate in candidates)
             {
-                _served[candidate.Index] = candidate;
+                if (Matches(candidate, wanted))
+                {
+                    served[candidate.Index] = candidate;
+                    matched = true;
+                }
+            }
+
+            if (!matched)
+            {
+                unmatched.Add(wanted);
             }
         }
+
+        _served = served.ToFrozenDictionary();
+        Candidates = candidates;
+        Unmatched = unmatched;
     }
 
-    public IReadOnlyCollection<ServedInterface> Served => _served.Values;
+    public IReadOnlyList<ServedInterface> Candidates { get; }
 
-    public bool IsServed(int interfaceIndex) => _served.ContainsKey(interfaceIndex);
+    public IReadOnlyList<ServedInterface> Served => _served.Values;
 
-    public bool TryGetAddress(int interfaceIndex, out IPAddress address)
+    public IReadOnlyList<string> Unmatched { get; }
+
+    public static NetworkInterfaceMap FromHost(string configured) => new(configured, Enumerate());
+
+    public bool TryGetInterface(int interfaceIndex, [NotNullWhen(true)] out ServedInterface? served) =>
+        _served.TryGetValue(interfaceIndex, out served);
+
+    public bool IsServedAddress(IPAddress address)
     {
-        if (_served.TryGetValue(interfaceIndex, out ServedInterface? served))
+        ArgumentNullException.ThrowIfNull(address);
+
+        IPAddress version4 = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+
+        foreach (ServedInterface served in _served.Values)
         {
-            address = served.Address;
-
-            return true;
+            if (served.Owns(version4))
+            {
+                return true;
+            }
         }
-
-        address = IPAddress.None;
 
         return false;
     }
@@ -73,13 +104,16 @@ public sealed class NetworkInterfaceMap
                 continue;
             }
 
-            foreach (UnicastIPAddressInformation unicast in properties.UnicastAddresses)
+            IPAddress[] addresses =
+            [
+                .. properties.UnicastAddresses
+                    .Select(unicast => unicast.Address)
+                    .Where(address => address.AddressFamily == AddressFamily.InterNetwork),
+            ];
+
+            if (addresses.Length > 0)
             {
-                if (unicast.Address.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    candidates.Add(new ServedInterface(version4.Index, adapter.Name, unicast.Address));
-                    break;
-                }
+                candidates.Add(new ServedInterface(version4.Index, adapter.Name, addresses));
             }
         }
 
@@ -88,5 +122,5 @@ public sealed class NetworkInterfaceMap
 
     private static bool Matches(ServedInterface candidate, string wanted) =>
         string.Equals(candidate.Name, wanted, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(candidate.Address.ToString(), wanted, StringComparison.Ordinal);
+        || candidate.Addresses.Any(address => string.Equals(address.ToString(), wanted, StringComparison.Ordinal));
 }

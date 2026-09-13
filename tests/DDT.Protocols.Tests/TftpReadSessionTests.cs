@@ -40,7 +40,7 @@ public sealed class TftpReadSessionTests
         TftpReadSession session = Session(Request("rrq-wdsmgfw-blksize1456-window4"), 1_000_000, clock);
 
         // RFC 2348 allows a server to negotiate only downwards. The client asked for 1456.
-        Assert.Equal(1400, session.Negotiated.BlockSize);
+        Assert.Equal(1380, session.Negotiated.BlockSize);
         Assert.True(session.Negotiated.AcknowledgeBlockSize);
     }
 
@@ -124,7 +124,7 @@ public sealed class TftpReadSessionTests
         List<TftpSendData> data = DataOf(step);
 
         Assert.Equal([1, 2, 3, 4], data.Select(d => (int)d.Block));
-        Assert.Equal([0, 1400, 2800, 4200], data.Select(d => d.FileOffset));
+        Assert.Equal([0, 1380, 2760, 4140], data.Select(d => d.FileOffset));
         Assert.Single(step.Actions.OfType<TftpArmRetransmit>());
     }
 

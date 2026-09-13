@@ -64,7 +64,7 @@ public sealed class TftpPacketTests
     {
         TftpNegotiation negotiation = new()
         {
-            BlockSize = 1400,
+            BlockSize = 1380,
             WindowSize = 4,
             Timeout = TimeSpan.FromSeconds(1),
             TransferSize = 123456,
@@ -79,7 +79,7 @@ public sealed class TftpPacketTests
 
         string text = System.Text.Encoding.ASCII.GetString(buffer[2..written]);
 
-        Assert.Contains("blksize\u00001400\u0000", text, StringComparison.Ordinal);
+        Assert.Contains("blksize\u00001380\u0000", text, StringComparison.Ordinal);
         Assert.Contains("tsize\u0000123456\u0000", text, StringComparison.Ordinal);
         Assert.Contains("windowsize\u00004\u0000", text, StringComparison.Ordinal);
         Assert.DoesNotContain("timeout", text, StringComparison.Ordinal);

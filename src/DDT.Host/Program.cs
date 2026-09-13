@@ -1,6 +1,7 @@
 using DDT.Contracts;
 using DDT.Host.Logging;
 using DDT.Host.Startup;
+using DDT.Pxe;
 using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
@@ -18,8 +19,6 @@ IReadOnlySet<DeploymentRole> roles = DeploymentRoles.Parse(options.Roles);
 string activeRoles = string.Join(", ", roles.Order());
 string certificatePath = builder.Configuration["Kestrel:Certificates:Default:Path"] ?? string.Empty;
 bool generatedCertificate = CertificateBootstrap.EnsureConfiguredCertificate(builder.Configuration, options);
-
-HttpsConfigurationCheck.Validate(builder.Configuration, options);
 
 builder.Services.ConfigureHttpJsonOptions(json =>
     json.SerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default));
@@ -39,6 +38,12 @@ builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
 
+// After the data services, so hosted services start in dependency order, and before the endpoint
+// check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
+PxeSetup? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe() : null;
+
+HttpsConfigurationCheck.Validate(builder.Configuration, options);
+
 var app = builder.Build();
 
 HostLog.ActiveRoles(app.Logger, activeRoles);
@@ -49,6 +54,13 @@ if (generatedCertificate)
 }
 
 app.MapDefaultEndpoints();
+
+app.UseRouting();
+
+if (pxe is not null)
+{
+    app.UseDdtBootListener(pxe);
+}
 
 if (!app.Environment.IsDevelopment())
 {

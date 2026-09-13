@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DDT.Pxe\DDT.Pxe.csproj" />
     <ProjectReference Include="..\DDT.Server\DDT.Server.csproj" />
     <ProjectReference Include="..\DDT.ServiceDefaults\DDT.ServiceDefaults.csproj" />
   </ItemGroup>

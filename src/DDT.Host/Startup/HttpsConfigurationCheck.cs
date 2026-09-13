@@ -1,3 +1,4 @@
+using DDT.Pxe;
 using DDT.Server.Configuration;
 
 namespace DDT.Host.Startup;
@@ -13,24 +14,33 @@ public static class HttpsConfigurationCheck
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
 
-        if (!options.RequireHttps || HasHttpsEndpoint(configuration))
+        IConfigurationSection[] endpoints = [.. configuration.GetSection("Kestrel:Endpoints").GetChildren()];
+
+        // Kestrel ignores every URL and port setting once any endpoint is declared. The pxe role declares
+        // one, so without another the UI and API would silently stop listening, behind a proxy too.
+        if (endpoints.Length > 0 && endpoints.All(endpoint => endpoint.Key == PxeHostingExtensions.BootEndpointName))
+        {
+            throw new InvalidOperationException(
+                "The pxe role adds Kestrel:Endpoints:Boot, so Kestrel ignores ASPNETCORE_URLS, ASPNETCORE_HTTP_PORTS and " +
+                "launch profile URLs. Declare the application endpoint as Kestrel:Endpoints:Https:Url, or as an http " +
+                "Kestrel endpoint when DDT:RequireHttps is false.");
+        }
+
+        if (!options.RequireHttps || HasHttpsEndpoint(configuration, endpoints))
         {
             return;
         }
 
         throw new InvalidOperationException(
-            "DDT:RequireHttps is set but no HTTPS endpoint is configured. Set Kestrel:Endpoints:<name>:Url to an " +
+            "DDT:RequireHttps is set but no HTTPS endpoint is configured. Set Kestrel:Endpoints:Https:Url to an " +
             "https URL, or set DDT:RequireHttps to false when a reverse proxy terminates TLS.");
     }
 
-    private static bool HasHttpsEndpoint(IConfiguration configuration)
+    private static bool HasHttpsEndpoint(IConfiguration configuration, IConfigurationSection[] endpoints)
     {
-        foreach (IConfigurationSection endpoint in configuration.GetSection("Kestrel:Endpoints").GetChildren())
+        if (endpoints.Length > 0)
         {
-            if (IsHttps(endpoint["Url"]))
-            {
-                return true;
-            }
+            return endpoints.Any(endpoint => IsHttps(endpoint["Url"]));
         }
 
         if (!string.IsNullOrWhiteSpace(configuration["ASPNETCORE_HTTPS_PORTS"]))

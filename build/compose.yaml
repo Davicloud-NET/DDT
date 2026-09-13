@@ -6,9 +6,9 @@ services:
     build:
       context: ..
       dockerfile: build/Dockerfile
-    # The pxe role binds UDP 67, 4011 and 69 and has to see DHCP broadcasts, so it cannot live
-    # behind a bridge network. Host networking is a Linux host feature: on Docker Desktop
-    # broadcasts are not delivered.
+    # The pxe role binds UDP 67, 4011 and 69 and TCP 8080, and has to see DHCP broadcasts, so it
+    # cannot live behind a bridge network. Host networking is a Linux host feature: on Docker
+    # Desktop broadcasts are not delivered.
     network_mode: host
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
@@ -20,6 +20,11 @@ services:
       # Every name and address DDT is reached by has to be in the certificate, because the agent
       # validates the hostname against the chain it pins.
       DDT__Https__SubjectAlternativeNames: ${DDT_HOSTNAMES:-}
+      # The interfaces the pxe role answers on. Nothing is served until this is set. Remote sites
+      # reach DDT through their gateway's tunnel, so name the LAN interface here, not a tunnel.
+      DDT__Pxe__Interfaces: ${DDT_PXE_INTERFACES:-}
+      # Off when every site's own DHCP server points option 66 and 67 at DDT.
+      DDT__Pxe__EnableProxyDhcp: ${DDT_PXE_PROXYDHCP:-true}
       Kestrel__Endpoints__Https__Url: https://0.0.0.0:8443
       Kestrel__Certificates__Default__Path: /var/lib/ddt/certs/ddt.pem
       Kestrel__Certificates__Default__KeyPath: /var/lib/ddt/certs/ddt-key.pem

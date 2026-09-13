@@ -1,4 +1,3 @@
-using DDT.Pxe;
 using Xunit;
 
 namespace DDT.Pxe.Tests;
@@ -12,9 +11,11 @@ public sealed class BootFileResolverTests : IDisposable
     public BootFileResolverTests()
     {
         Directory.CreateDirectory(Path.Combine(_root, "x64"));
+        Directory.CreateDirectory(Path.Combine(_root, "Boot"));
         Directory.CreateDirectory(_outside);
 
         File.WriteAllText(Path.Combine(_root, "x64", "bootmgfw.efi"), "boot");
+        File.WriteAllText(Path.Combine(_root, "Boot", "BCD"), "bcd");
         File.WriteAllText(Path.Combine(_root, "boot.sdi"), "sdi");
         File.WriteAllText(Path.Combine(_outside, "secret.txt"), "not yours");
 
@@ -47,18 +48,31 @@ public sealed class BootFileResolverTests : IDisposable
         Assert.StartsWith(_resolver.Root, file.FullName, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void AcceptsBackslashesBecauseWindowsFirmwareSendsThem()
+    [Theory]
+    [InlineData(@"x64\bootmgfw.efi")]
+    [InlineData(@"\Boot\BCD")]
+    [InlineData("/Boot/BCD")]
+    public void AcceptsTheSeparatorsWindowsBootComponentsSend(string requested)
     {
-        Assert.True(_resolver.TryResolve(@"x64\bootmgfw.efi", out FileInfo? file));
-        Assert.Equal("bootmgfw.efi", file.Name);
+        // The boot manager asks for "\Boot\BCD". The leading separator means the TFTP root.
+        Assert.True(_resolver.TryResolve(requested, out FileInfo? file));
+        Assert.StartsWith(_resolver.Root, file.FullName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("X64/BOOTMGFW.EFI")]
+    [InlineData("boot/bcd")]
+    public void MatchesNamesCaseInsensitivelyAndReturnsTheNameOnDisk(string requested)
+    {
+        Assert.True(_resolver.TryResolve(requested, out FileInfo? file));
+        Assert.Contains(file.Name, new[] { "bootmgfw.efi", "BCD" });
     }
 
     [Theory]
     [InlineData("../secret.txt")]
     [InlineData("..\\secret.txt")]
     [InlineData("x64/../../secret.txt")]
-    [InlineData("x64/..%5C..%5Csecret.txt")]
+    [InlineData("x64/..\\..\\secret.txt")]
     [InlineData("./../../secret.txt")]
     [InlineData("x64/./../../secret.txt")]
     public void RefusesToEscapeTheBootDirectory(string requested)
@@ -69,10 +83,13 @@ public sealed class BootFileResolverTests : IDisposable
     [Theory]
     [InlineData("/etc/passwd")]
     [InlineData("C:\\Windows\\System32\\config\\SAM")]
+    [InlineData("C:boot.sdi")]
     [InlineData("\\\\server\\share\\file")]
     [InlineData("//server/share/file")]
-    public void RefusesAbsoluteAndUncPaths(string requested)
+    public void NeverLeavesTheRootForAbsoluteDriveOrUncPaths(string requested)
     {
+        // A leading separator is stripped, so these name paths under the root, which do not exist.
+        // What matters is that none of them reaches the filesystem outside it.
         Assert.False(_resolver.TryResolve(requested, out _));
     }
 
@@ -80,10 +97,10 @@ public sealed class BootFileResolverTests : IDisposable
     [InlineData("boot.sdi.")]
     [InlineData("boot.sdi ")]
     [InlineData(" boot.sdi")]
-    public void RefusesTrailingDotAndWhitespaceAliases(string requested)
+    [InlineData("boot.sdi::$DATA")]
+    [InlineData("boot.sdi:hidden")]
+    public void RefusesNamesWindowsWouldAliasToAnotherFile(string requested)
     {
-        // Windows strips these silently, so they name the same file while defeating any allowlist
-        // built on the requested string.
         Assert.False(_resolver.TryResolve(requested, out _));
     }
 
@@ -100,12 +117,31 @@ public sealed class BootFileResolverTests : IDisposable
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("/")]
     [InlineData("x64//bootmgfw.efi")]
     [InlineData("x64")]
+    [InlineData("x64/")]
     [InlineData("does-not-exist.efi")]
     public void RefusesEmptyDirectoryAndMissingNames(string requested)
     {
         Assert.False(_resolver.TryResolve(requested, out _));
+    }
+
+    [Fact]
+    public void RefusesAnEightDotThreeShortNameForALongName()
+    {
+        string longDirectory = Path.Combine(_root, "averylongdirectoryname");
+        Directory.CreateDirectory(longDirectory);
+        File.WriteAllText(Path.Combine(longDirectory, "file.efi"), "long");
+
+        string alias = Path.Combine(_root, "AVERYL~1", "file.efi");
+
+        Assert.SkipUnless(File.Exists(alias), "8.3 short names are not generated on this volume.");
+
+        // The short name opens the same file, but it is not a name the directory lists, so it would
+        // otherwise defeat any allowlist or audit built on requested names.
+        Assert.False(_resolver.TryResolve("AVERYL~1/file.efi", out _));
+        Assert.True(_resolver.TryResolve("averylongdirectoryname/file.efi", out _));
     }
 
     [Fact]
@@ -118,8 +154,7 @@ public sealed class BootFileResolverTests : IDisposable
             Assert.Fail("Could not create a directory link, so the reparse point defence was not exercised.");
         }
 
-        // The containment check passes here: the link itself lives inside the root, and only the
-        // reparse point walk notices that following it leaves.
+        Assert.True(File.Exists(Path.Combine(link, "secret.txt")));
         Assert.False(_resolver.TryResolve("linked/secret.txt", out _));
     }
 
@@ -130,6 +165,14 @@ public sealed class BootFileResolverTests : IDisposable
         _ = TryCreateDirectoryLink(link, _outside);
 
         Assert.True(_resolver.TryResolve("boot.sdi", out _));
+    }
+
+    [Fact]
+    public void RefusesEverythingWhenTheBootDirectoryDoesNotExist()
+    {
+        BootFileResolver missing = new(Path.Combine(_root, "missing"));
+
+        Assert.False(missing.TryResolve("boot.sdi", out _));
     }
 
     // A directory junction is the realistic attack on Windows: an unprivileged account can create

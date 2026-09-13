@@ -2,18 +2,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace DDT.Pxe;
 
-// Resolves a client supplied name to a file inside the boot directory, or refuses. This is the most
-// exposed surface DDT has: it is served over TFTP and over the plain HTTP boot listener, both
-// anonymous, to anyone who can reach the segment. Both transports share this one resolver, because
+// Resolves a client supplied name to a file inside the boot directory, or refuses. Served over TFTP
+// and over the plain HTTP boot listener, both anonymous, so both transports share this one resolver:
 // two resolvers means the path one of them rejects is served by the other.
+//
+// Every segment is matched against the names the directory actually holds rather than handed to the
+// filesystem. That is what makes the string checks nearly redundant: "..", a rooted path, an 8.3
+// short name, a trailing dot, an alternate data stream or a device name never equals a directory
+// entry, so none of them can alias a file or leave the root.
 public sealed class BootFileResolver
 {
-    private static readonly string[] s_reservedNames =
-    [
-        "CON", "PRN", "AUX", "NUL",
-        "COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-        "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-    ];
+    private const int MaxRequestLength = 512;
 
     private readonly string _root;
 
@@ -30,128 +29,90 @@ public sealed class BootFileResolver
     {
         file = null;
 
-        if (string.IsNullOrWhiteSpace(requested) || !IsAcceptable(requested))
+        if (string.IsNullOrEmpty(requested) || requested.Length > MaxRequestLength)
         {
             return false;
         }
 
-        string candidate;
+        // Windows boot components send backslashes and a leading separator: the boot manager asks for
+        // "\Boot\BCD". The leading separator means the TFTP root, never the filesystem root.
+        string[] segments = requested.Replace('\\', '/').TrimStart('/').Split('/');
 
         try
         {
-            candidate = Path.GetFullPath(Path.Combine(_root, requested.Replace('\\', '/')));
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-        catch (PathTooLongException)
-        {
-            return false;
-        }
+            DirectoryInfo directory = new(_root);
 
-        if (!IsInsideRoot(candidate))
-        {
-            return false;
-        }
-
-        FileInfo resolved = new(candidate);
-
-        if (!resolved.Exists || resolved.Attributes.HasFlag(FileAttributes.Directory))
-        {
-            return false;
-        }
-
-        // A junction or symlink placed inside the boot directory resolves to a path that passes the
-        // containment check while pointing anywhere on the volume.
-        if (HasReparsePointInChain(resolved))
-        {
-            return false;
-        }
-
-        file = resolved;
-
-        return true;
-    }
-
-    private static bool IsAcceptable(string requested)
-    {
-        if (Path.IsPathRooted(requested) || requested.StartsWith("//", StringComparison.Ordinal)
-            || requested.StartsWith(@"\\", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        foreach (string segment in requested.Split(['/', '\\']))
-        {
-            if (!IsAcceptableSegment(segment))
+            if (!directory.Exists)
             {
                 return false;
             }
-        }
 
-        return true;
-    }
-
-    private static bool IsAcceptableSegment(string segment)
-    {
-        if (segment.Length == 0 || segment is "." or "..")
-        {
-            return false;
-        }
-
-        // Windows silently strips trailing dots and spaces, so "boot.efi." and "boot.efi " name the
-        // same file as "boot.efi" and would slip past an allowlist built on the requested string.
-        if (segment != segment.Trim() || segment.EndsWith('.'))
-        {
-            return false;
-        }
-
-        if (segment.Contains(':', StringComparison.Ordinal)
-            || segment.AsSpan().ContainsAny(Path.GetInvalidFileNameChars()))
-        {
-            return false;
-        }
-
-        string stem = Path.GetFileNameWithoutExtension(segment);
-
-        return !s_reservedNames.Contains(stem, StringComparer.OrdinalIgnoreCase);
-    }
-
-    private bool IsInsideRoot(string candidate)
-    {
-        StringComparison comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
-
-        return candidate.Length > _root.Length
-            && candidate.StartsWith(_root, comparison)
-            && candidate[_root.Length] == Path.DirectorySeparatorChar;
-    }
-
-    private bool HasReparsePointInChain(FileInfo file)
-    {
-        if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
-        {
-            return true;
-        }
-
-        for (DirectoryInfo? directory = file.Directory;
-             directory is not null && !PathEqualsRoot(directory.FullName);
-             directory = directory.Parent)
-        {
-            if (directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            for (int index = 0; index < segments.Length; index++)
             {
-                return true;
+                FileSystemInfo? entry = FindEntry(directory, segments[index]);
+
+                // A junction or symlink inside the boot directory can point anywhere on the volume.
+                if (entry is null || entry.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    return false;
+                }
+
+                bool last = index == segments.Length - 1;
+
+                if (last && entry is FileInfo found)
+                {
+                    file = found;
+
+                    return true;
+                }
+
+                if (last || entry is not DirectoryInfo child)
+                {
+                    return false;
+                }
+
+                directory = child;
             }
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
         }
 
         return false;
     }
 
-    private bool PathEqualsRoot(string path) =>
-        string.Equals(
-            Path.TrimEndingDirectorySeparator(path),
-            _root,
-            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    // An exact match wins. Otherwise a single case insensitive match is accepted, because firmware
+    // written against case insensitive Windows servers asks for "\Boot\BCD" whatever the file on a
+    // Linux host is called. Two names differing only in case are ambiguous and refused.
+    private static FileSystemInfo? FindEntry(DirectoryInfo directory, string name)
+    {
+        if (name.Length == 0 || name is "." or "..")
+        {
+            return null;
+        }
+
+        FileSystemInfo? match = null;
+        bool ambiguous = false;
+
+        foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos())
+        {
+            if (string.Equals(entry.Name, name, StringComparison.Ordinal))
+            {
+                return entry;
+            }
+
+            if (string.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                ambiguous = match is not null;
+                match = entry;
+            }
+        }
+
+        return ambiguous ? null : match;
+    }
 }

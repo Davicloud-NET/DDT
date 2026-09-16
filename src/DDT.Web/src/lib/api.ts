@@ -38,6 +38,16 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return response;
 }
 
+export async function apiGet<TResponse>(path: string): Promise<TResponse> {
+  const response = await apiFetch(path);
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response));
+  }
+
+  return (await response.json()) as TResponse;
+}
+
 export async function apiPost<TResponse>(path: string, body?: unknown): Promise<TResponse> {
   const response = await apiFetch(path, {
     method: "POST",

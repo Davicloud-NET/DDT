@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  max-width: 900px;
 }
 
 .empty {
@@ -18,4 +17,68 @@
 
 .emptyTitle {
   color: var(--text-primary);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-width) solid var(--border-subtle);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+.secondary {
+  color: var(--text-muted);
+  font-size: var(--font-size-100);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.state {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+
+  &[data-state="Pending"] {
+    color: var(--warning);
+  }
+
+  &[data-state="Approved"],
+  &[data-state="Deploying"],
+  &[data-state="Done"] {
+    color: var(--success);
+  }
+
+  &[data-state="Rejected"],
+  &[data-state="Failed"] {
+    color: var(--danger);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.approve,
+.reject {
+  font: inherit;
+  cursor: pointer;
 }

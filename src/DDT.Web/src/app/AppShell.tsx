@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 
 import { currentUserQuery, logout } from "@/auth/auth";
+import { useLiveUpdates } from "@/live/useLiveUpdates";
 import { cx } from "@/lib/cx";
 
 import styles from "./AppShell.module.scss";
@@ -12,6 +13,8 @@ export function AppShell() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const user = queryClient.getQueryData(currentUserQuery.queryKey) ?? null;
+
+  useLiveUpdates();
 
   async function signOut() {
     await logout(queryClient);

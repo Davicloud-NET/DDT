@@ -24,7 +24,8 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": { target: backend, changeOrigin: true, secure: false },
-      "/hubs": { target: backend, changeOrigin: true, secure: false, ws: true },
+      // The hub checks Origin against Host, and changeOrigin rewrites only Host.
+      "/hubs": { target: backend, changeOrigin: false, secure: false, ws: true },
     },
   },
 });

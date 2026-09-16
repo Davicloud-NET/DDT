@@ -377,9 +377,13 @@ token. Treat that volume as a secret.
 ## Status
 
 M0 (the scaffold), authentication, the DHCP, ProxyDHCP and TFTP protocol layer, and the `pxe` role
-are complete. Not yet proven on a real boot: `Build-BootImage.ps1` has not been run end to end, and
-no machine has netbooted from DDT. Later milestones, in order: agent registration, the image
-library and apply, task sequences, Linux raw disk images, and the task sequence flow builder.
+are complete. A Hyper-V Generation 2 machine with Secure Boot on has netbooted from DDT into
+Windows PE with the 2011 signed boot manager, fetching the 344 MB `boot.wim` in under nine seconds
+at a window of 4 on the local virtual switch. The HTTP boot listener has not yet served real
+firmware, because Hyper-V has no HTTP boot device.
+
+Later milestones, in order: agent registration, the image library and apply, task sequences, Linux
+raw disk images, and the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

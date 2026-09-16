@@ -358,20 +358,36 @@ the boot image needs no WMI component, and it reports every MAC address it finds
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
 5.5 MB.
 
-### Registration and approval
+### Registration and authorization
 
 1. An administrator creates an enrollment token on the Machines page. It is shown once.
 2. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl`, `-EnrollmentToken` and
    `-RootCertificatePath` puts the agent and an `agent.json` holding the last three values into
-   `boot.wim`. `startnet.cmd` starts the agent.
+   `boot.wim`, together with the name of the keyboard layout. The image is set to the layout given
+   with `-KeyboardLayout`, by default the build computer's own. `startnet.cmd` starts the agent.
 3. The agent registers at `POST /api/agents/register`. A machine DDT has not seen before appears on
    the Machines page as `Pending`, live. The agent then polls `GET /api/agents/{id}/next` every ten
    seconds, and every answer carries fresh tokens.
-4. An operator or administrator approves it. On its next poll the agent receives a session token,
-   the credential later milestones require for task sequences and images.
-5. Only then does the agent send what it has printed, including the lines from before approval, to
-   `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because its token comes
-   from the public enrollment token.
+4. The technician at the machine signs in with their DDT account, local or directory, and for a
+   local account with the authenticator code if it has one. An operator or administrator account
+   authorizes the machine there and then. An operator or administrator can also approve it on the
+   Machines page instead, which is how an account that only signs in through OpenID Connect
+   authorizes a machine: it has no password to type.
+5. On its next poll the agent receives a session token, the credential later milestones require for
+   task sequences and images. Only then does it send what it has printed, including the lines from
+   before, to `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because its
+   token comes from the public enrollment token.
+
+After a wrong password the agent asks for the password again and keeps the user name; an empty
+password goes back to the user name. The prompt names the keyboard layout, because a password typed
+with the wrong one looks exactly like a wrong password, and five of those lock the account for 15
+minutes, on the web as well.
+
+Where one person at a machine is not enough, set `DDT:Machines:RequireWebApproval` to `true`. Signing
+in at the machine then only records who is there, the Machines page shows that name, and an operator
+or administrator also has to approve the machine on the page. Approving is refused until someone has
+signed in at the machine, so in this mode a machine cannot be authorized from the page alone, and
+accounts that only use OpenID Connect cannot authorize machines.
 
 A registration is the same machine when the SMBIOS UUID matches exactly and at least one of its MAC
 addresses is still present. Cloned virtual machines and boards that share a UUID stay apart, and a
@@ -419,7 +435,8 @@ artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152 --enroll
 
 `--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several
 runs with different ids look like several machines on the Machines page. It changes nothing on the
-computer it runs on. Every setting in `agent.json` can also be given as an argument.
+computer it runs on. Every setting in `agent.json` except the keyboard layout name can also be given
+as an argument.
 
 ## Security model
 
@@ -429,27 +446,43 @@ here.
 **The provisioning network is inside the trust boundary.** DDT cannot stop a rogue DHCP or PXE
 server on that segment from serving a different boot image to your machines, exactly as Microsoft
 states for ConfigMgr. Anything inside `boot.wim` is readable by anyone who can boot it, so DDT
-treats the boot path as public and puts nothing there but the server URL, the root certificate and
-a rotatable enrollment token.
+treats the boot path as public and puts nothing there but the server URL, the root certificate, a
+rotatable enrollment token and the name of the keyboard layout.
 
 What that token can do is deliberately almost nothing: it lets a machine say it exists. A machine
-enters as `Pending`, and its token reaches nothing but its own poll. An operator or administrator
-approves it before it can write a log line or read a task sequence, an image or a secret. That approval gate is the control that the published attacks
-against SCCM operating system deployment walk straight through, and it is the reason the rest of
-this design exists.
+enters as `Pending`, and its token reaches nothing but its own poll and the sign in. Only an operator
+or administrator authorizes it, by signing in at the machine or approving it on the Machines page,
+before it can write a log line or read a task sequence, an image or a secret. That gate is the control
+that the published attacks against SCCM operating system deployment walk straight through, and it is
+the reason the rest of this design exists.
 
-Every registration, re-registration, approval, rejection and enrollment token change is written to
-the audit table with the actor and source address.
+Because the public enrollment token reaches the sign in at the machine, it is exposed exactly like the
+web sign in page, and treated the same: the same accounts and lockout, and the same limit of 10
+attempts every 5 minutes per address, shared between the two. An approval by signing in is bound to
+the registration that asked for it, so an agent that registers the machine again while the password
+is being checked does not receive it.
+
+Every registration, re-registration, sign in at a machine, approval, rejection and enrollment token
+change is written to the audit table with the actor and source address.
 
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
 ring is already required, already rotates, and this needs no token library. Each purpose, poll,
-session and resume, has its own protector, so a poll token cannot be replayed as a session token. Every token carries the
-machine's token generation, so bumping one column invalidates all of that machine's outstanding
-tokens at once.
+session and resume, has its own protector, so a poll token cannot be replayed as a session token.
+Every token carries the machine's token generation, so bumping one column invalidates all of that
+machine's outstanding tokens at once.
 
 Machine tokens are bound to the reported SMBIOS UUID and MAC address. That detects mistakes and
 casual replay. It is **not** device identity: both values are attacker controllable. The real
-controls are the approval gate, the short token lifetime and the network segment.
+controls are the authorization gate, the short token lifetime and the network segment.
+
+**Signing in at a machine puts a credential on the boot path.** A rogue DHCP or PXE server can boot a
+look-alike prompt, capture what a technician types, and use a current authenticator code on the web
+sign in straight away. For a directory account the captured value is the domain password, and DDT
+asks for no second factor on those. `DDT:Machines:RequireWebApproval` does not help, because it still
+asks for the sign in. Where the provisioning segment cannot be trusted, leave that setting off and
+approve machines on the Machines page instead of signing in at them. Everywhere else, sign in at
+machines with accounts that hold the operator role and nothing more, never with a domain
+administrator.
 
 Human and machine principals are separated by authentication scheme, and every policy names its
 scheme, so a machine token can never satisfy a human policy or the reverse.
@@ -467,8 +500,9 @@ Windows PE with the 2011 signed boot manager, fetching the 344 MB `boot.wim` in 
 at a window of 4 on the local virtual switch. The HTTP boot listener has not yet served real
 firmware, because Hyper-V has no HTTP boot device.
 
-Agent registration (M3) is complete: the NativeAOT agent registers, waits for approval, polls and
-streams its log, and the Machines page updates live over SignalR. Later milestones, in order: the
+Agent registration (M3) is complete: the NativeAOT agent registers, is authorized by a technician
+signing in at the machine or by an approval on the Machines page, polls and streams its log, and the
+Machines page updates live over SignalR. Later milestones, in order: the
 image library and apply, task sequences, Linux raw disk images, and the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus

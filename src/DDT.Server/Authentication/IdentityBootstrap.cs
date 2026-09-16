@@ -40,7 +40,7 @@ public sealed partial class IdentityBootstrap(
             return;
         }
 
-        string password = RandomNumberGenerator.GetString(PasswordAlphabet, PasswordLength);
+        string password = GeneratePassword();
 
         DdtUser administrator = new()
         {
@@ -64,6 +64,22 @@ public sealed partial class IdentityBootstrap(
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    // Identity requires a digit, an upper case and a lower case letter. About one draw in forty from
+    // this alphabet has no digit, and the first administrator would silently never exist, so a draw
+    // that misses a class is thrown away rather than patched, which keeps the result uniform.
+    public static string GeneratePassword()
+    {
+        string password;
+
+        do
+        {
+            password = RandomNumberGenerator.GetString(PasswordAlphabet, PasswordLength);
+        }
+        while (!password.Any(char.IsAsciiDigit) || !password.Any(char.IsAsciiLetterUpper) || !password.Any(char.IsAsciiLetterLower));
+
+        return password;
+    }
 
     [LoggerMessage(
         EventId = 300,

@@ -35,12 +35,17 @@ The https URL the agent registers with. Every name in it must be in DDT's TLS ce
 
 .PARAMETER EnrollmentToken
 An enrollment token created in the web UI. It is readable by anyone who downloads the boot image,
-and only lets a machine register and wait for approval.
+and only lets a machine register and someone at it try to sign in, like the web sign in page.
 
 .PARAMETER RootCertificatePath
 The PEM root the agent trusts for the server, for example DDT's generated certificate. Pass it even for a
 certificate from a public CA: Windows PE carries only a handful of Microsoft roots, not the public web
 ones. The server must send its full chain, because the agent does not download intermediates.
+
+.PARAMETER KeyboardLayout
+The keyboard layout set in boot.wim, as input locale and layout identifiers, for example
+0407:00000407 for German. Technicians type their password with it, and Windows PE otherwise assumes
+US English. The default is this computer's first keyboard layout.
 
 .PARAMETER TftpBlockSize
 Written to the BCD as ramdisktftpblocksize, the block size bootmgr requests for boot.wim. DDT
@@ -62,6 +67,8 @@ param(
     [string] $EnrollmentToken,
 
     [string] $RootCertificatePath,
+
+    [string] $KeyboardLayout,
 
     [string] $Destination,
 
@@ -231,6 +238,25 @@ if ($AgentPath) {
         throw 'An agent needs -ServerUrl and -EnrollmentToken to register.'
     }
 
+    if (-not $KeyboardLayout) {
+        $KeyboardLayout = Get-WinUserLanguageList |
+            ForEach-Object { $_.InputMethodTips } |
+            Where-Object { $_ -match '^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{8}$' } |
+            Select-Object -First 1
+    }
+
+    $keyboardLayoutName = $null
+
+    if ($KeyboardLayout) {
+        if ($KeyboardLayout -notmatch '^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{8}$') {
+            throw "-KeyboardLayout takes an identifier such as 0407:00000407, not $KeyboardLayout."
+        }
+
+        # The agent shows this name at the sign in prompt, where a wrong layout otherwise looks like a wrong password.
+        $layoutKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\$($KeyboardLayout.Split(':')[1])"
+        $keyboardLayoutName = if (Test-Path -LiteralPath $layoutKey) { (Get-ItemProperty -LiteralPath $layoutKey).'Layout Text' } else { $KeyboardLayout }
+    }
+
     $rootCertificate = $null
 
     if ($RootCertificatePath) {
@@ -291,6 +317,7 @@ try {
             serverUrl       = $ServerUrl
             enrollmentToken = $EnrollmentToken
             rootCertificate = $rootCertificate
+            keyboardLayout  = $keyboardLayoutName
         }
 
         # Written without a byte order mark, which Windows PowerShell's Set-Content -Encoding UTF8 adds.
@@ -313,6 +340,12 @@ try {
     # The NativeAOT agent imports the universal C runtime. Stock WinPE carries it; fail if that changes.
     if (-not (Test-Path -LiteralPath (Join-Path $Mount 'Windows\System32\ucrtbase.dll'))) {
         throw 'boot.wim has no ucrtbase.dll, which DDT.Agent needs.'
+    }
+
+    # Set in the image rather than with wpeutil SetKeyboardLayout in startnet.cmd, which by field reports only
+    # reaches consoles opened after it, and the agent runs in the first one.
+    if ($AgentPath -and $KeyboardLayout) {
+        Invoke-Native $dism "/Image:$Mount" "/Set-InputLocale:$KeyboardLayout" | Out-Null
     }
 
     Invoke-Native $dism "/Image:$Mount" /Set-ScratchSpace:512 | Out-Null

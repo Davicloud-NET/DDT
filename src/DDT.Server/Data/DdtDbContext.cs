@@ -13,6 +13,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
+    public DbSet<EnrollmentToken> EnrollmentTokens => Set<EnrollmentToken>();
+
+    public DbSet<MachineLogLine> MachineLogLines => Set<MachineLogLine>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -32,6 +36,9 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
         {
             machine.Property(m => m.SmbiosUuid).HasMaxLength(64);
             machine.Property(m => m.PrimaryMac).HasMaxLength(32);
+            machine.Property(m => m.MacAddresses).HasMaxLength(256);
+            machine.Property(m => m.AgentVersion).HasMaxLength(32);
+            machine.Property(m => m.LastSeenAddress).HasMaxLength(64);
             machine.Property(m => m.Manufacturer).HasMaxLength(128);
             machine.Property(m => m.Model).HasMaxLength(128);
             machine.Property(m => m.SerialNumber).HasMaxLength(128);
@@ -39,9 +46,28 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.Property(m => m.FirstSeenAddress).HasMaxLength(64);
             machine.Property(m => m.EnrollmentTokenId).HasMaxLength(64);
             machine.Property(m => m.State).HasConversion<string>().HasMaxLength(16);
+
+            // State and generation are checked on save, so an approval, a rejection and a registration that
+            // starts over cannot silently overwrite one another: the loser retries or reports a conflict.
+            machine.Property(m => m.State).IsConcurrencyToken();
+            machine.Property(m => m.TokenGeneration).IsConcurrencyToken();
             machine.HasIndex(m => m.SmbiosUuid);
             machine.HasIndex(m => m.PrimaryMac);
             machine.HasOne(m => m.ApprovedBy).WithMany().HasForeignKey(m => m.ApprovedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<EnrollmentToken>(token =>
+        {
+            token.Property(t => t.Name).HasMaxLength(64);
+            token.Property(t => t.SecretHash).HasMaxLength(32);
+        });
+
+        builder.Entity<MachineLogLine>(line =>
+        {
+            line.Property(l => l.Level).HasConversion<string>().HasMaxLength(16);
+            line.Property(l => l.Message).HasMaxLength(MachineLogLimits.MaxMessageLength);
+            line.HasIndex(l => new { l.MachineId, l.Id });
+            line.HasOne<Machine>().WithMany().HasForeignKey(l => l.MachineId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<AuditEvent>(audit =>

@@ -1,3 +1,4 @@
+using DDT.Contracts.Machines;
 using DDT.Server.Data;
 
 namespace DDT.Server.Machines;
@@ -12,6 +13,9 @@ public sealed class Machine
 
     public required string PrimaryMac { get; set; }
 
+    // Comma separated, normalised to twelve upper case hex digits each.
+    public string MacAddresses { get; set; } = string.Empty;
+
     public string? Manufacturer { get; set; }
 
     public string? Model { get; set; }
@@ -20,6 +24,8 @@ public sealed class Machine
 
     // Set by an administrator, not by the agent, because it reaches a domain join command line.
     public string? AssignedName { get; set; }
+
+    public string? AgentVersion { get; set; }
 
     public MachineState State { get; set; } = MachineState.Pending;
 
@@ -32,6 +38,8 @@ public sealed class Machine
     public DateTimeOffset LastSeenUtc { get; set; }
 
     public string? FirstSeenAddress { get; set; }
+
+    public string? LastSeenAddress { get; set; }
 
     public string? EnrollmentTokenId { get; set; }
 

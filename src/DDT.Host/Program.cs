@@ -1,4 +1,5 @@
 using DDT.Contracts;
+using DDT.Contracts.Agents;
 using DDT.Host.Logging;
 using DDT.Host.Startup;
 using DDT.Pxe;
@@ -6,6 +7,8 @@ using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
+using DDT.Server.Live;
+using DDT.Server.Machines;
 using DDT.Server.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +24,10 @@ string certificatePath = builder.Configuration["Kestrel:Certificates:Default:Pat
 bool generatedCertificate = CertificateBootstrap.EnsureConfiguredCertificate(builder.Configuration, options);
 
 builder.Services.ConfigureHttpJsonOptions(json =>
-    json.SerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default));
+{
+    json.SerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default);
+    json.SerializerOptions.TypeInfoResolverChain.Insert(0, AgentJsonContext.Default);
+});
 
 builder.Services.AddAntiforgery(antiforgery =>
 {
@@ -37,6 +43,7 @@ builder.Services.AddDdtData(builder.Configuration, options);
 builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
+builder.Services.AddDdtMachines();
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
@@ -84,6 +91,15 @@ RouteGroupBuilder api = app.MapGroup("/api")
 api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
+api.MapGroup("/machines").MapMachineEndpoints();
+api.MapGroup("/enrollment-tokens").MapEnrollmentTokenEndpoints();
+
+app.MapGroup("/api/agents").MapAgentEndpoints();
+
+app.MapHub<LiveHub>("/hubs/live")
+    .DisableCookieRedirect()
+    .RequireAuthorization(DdtPolicies.Viewer)
+    .AddEndpointFilter(new SameOriginHubFilter());
 
 app.MapFallbackToFile("index.html").AllowAnonymous();
 

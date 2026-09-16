@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authentication;
@@ -27,9 +29,15 @@ public sealed class MachineAuthenticationHandler(
             return AuthenticateResult.NoResult();
         }
 
-        MachineTokenPayload? payload = tokens.Validate(
-            header[BearerPrefix.Length..],
-            MachineTokenPurpose.Session);
+        string token = header[BearerPrefix.Length..];
+        MachineTokenPurpose purpose = MachineTokenPurpose.Session;
+        MachineTokenPayload? payload = tokens.Validate(token, purpose);
+
+        if (payload is null)
+        {
+            purpose = MachineTokenPurpose.Poll;
+            payload = tokens.Validate(token, purpose);
+        }
 
         if (payload is null)
         {
@@ -38,7 +46,7 @@ public sealed class MachineAuthenticationHandler(
 
         Machine? machine = await database.Machines
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == payload.MachineId)
+            .FirstOrDefaultAsync(m => m.Id == payload.MachineId, Context.RequestAborted)
             .ConfigureAwait(false);
 
         if (machine is null || machine.TokenGeneration != payload.TokenGeneration)
@@ -46,9 +54,15 @@ public sealed class MachineAuthenticationHandler(
             return AuthenticateResult.Fail("The machine token has been superseded.");
         }
 
-        if (machine.State is not (MachineState.Approved or MachineState.Deploying))
+        // A poll token only lets a waiting machine learn that it was approved. Content needs a session
+        // token, which exists only while an approval stands.
+        bool allowed = purpose == MachineTokenPurpose.Session
+            ? machine.State is MachineState.Approved or MachineState.Deploying
+            : machine.State is MachineState.Pending or MachineState.Approved;
+
+        if (!allowed)
         {
-            return AuthenticateResult.Fail($"Machine {machine.Id} is {machine.State} and holds no grants.");
+            return AuthenticateResult.Fail($"Machine {machine.Id} is {machine.State} and holds no grants for a {purpose} token.");
         }
 
         // Binding detects mistakes and casual replay. It is not device identity: an attacker can
@@ -61,9 +75,10 @@ public sealed class MachineAuthenticationHandler(
 
         ClaimsIdentity identity = new(
             [
-                new Claim(ClaimTypes.NameIdentifier, machine.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, machine.Id.ToString("D")),
                 new Claim(DdtClaimTypes.Actor, DdtClaimTypes.MachineActor),
-                new Claim(DdtClaimTypes.TokenGeneration, payload.TokenGeneration.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                new Claim(DdtClaimTypes.TokenPurpose, purpose.ToString()),
+                new Claim(DdtClaimTypes.TokenGeneration, payload.TokenGeneration.ToString(CultureInfo.InvariantCulture)),
             ],
             DdtAuthenticationSchemes.Machine);
 

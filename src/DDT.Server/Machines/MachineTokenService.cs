@@ -54,6 +54,7 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
     {
         MachineTokenPurpose.Poll => MachineTokenLifetimes.Poll,
         MachineTokenPurpose.Session => MachineTokenLifetimes.Session,
+        MachineTokenPurpose.Resume => MachineTokenLifetimes.Resume,
         MachineTokenPurpose.ImageGrant => MachineTokenLifetimes.ImageGrant,
         MachineTokenPurpose.SecretGrant => MachineTokenLifetimes.SecretGrant,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose)),

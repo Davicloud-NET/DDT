@@ -6,6 +6,7 @@ public enum MachineTokenPurpose
 {
     Poll,
     Session,
+    Resume,
     ImageGrant,
     SecretGrant,
 }

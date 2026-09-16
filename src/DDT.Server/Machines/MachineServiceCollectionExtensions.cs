@@ -1,0 +1,24 @@
+using DDT.Contracts;
+using DDT.Server.Live;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+namespace DDT.Server.Machines;
+
+public static class MachineServiceCollectionExtensions
+{
+    public static IServiceCollection AddDdtMachines(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<EnrollmentTokenService>();
+        services.AddScoped<MachineRegistrar>();
+        services.AddSingleton<LiveNotifier>();
+
+        services.AddSignalR()
+            .AddJsonProtocol(json => json.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default));
+
+        return services;
+    }
+}

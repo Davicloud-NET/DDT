@@ -1,4 +1,4 @@
-namespace DDT.Server.Machines;
+namespace DDT.Contracts.Machines;
 
 public enum MachineState
 {

@@ -1,3 +1,4 @@
+using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,10 @@ public static class DdtAuthorizationExtensions
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator, DdtRoleNames.Viewer))
             .AddPolicy(DdtPolicies.Machine, policy => policy
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.Machine)
+                .RequireAuthenticatedUser()
+                .RequireClaim(DdtClaimTypes.TokenPurpose, nameof(MachineTokenPurpose.Session)))
+            .AddPolicy(DdtPolicies.MachineAgent, policy => policy
                 .AddAuthenticationSchemes(DdtAuthenticationSchemes.Machine)
                 .RequireAuthenticatedUser());
 

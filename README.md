@@ -215,10 +215,11 @@ administrator password tends to stay set long after it was needed.
 is deliberate rather than cautious: `Secure` cookies are silently dropped over plain HTTP, so an
 auth stack on an HTTP listener appears to work while every request after sign in is anonymous.
 
-A self signed certificate is generated on first run so a fresh deployment starts at all. Replace
-it, or distribute it as a trusted root. Every name and address DDT is reached by has to be in the
-certificate, because the agent validates the hostname against the chain it pins. List them in
-`DDT:Https:SubjectAlternativeNames`.
+When `Kestrel:Certificates:Default:Path` and `KeyPath` name files that do not exist yet, as
+`build/compose.yaml` does, a self signed certificate is generated there so a fresh deployment starts
+at all. Replace it, or distribute it as a trusted root. Every name and address DDT is reached by has
+to be in the certificate, because the agent validates the hostname against the chain it pins. List
+them in `DDT:Https:SubjectAlternativeNames`.
 
 Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in front of DDT.
 
@@ -360,9 +361,9 @@ Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-
 ### Registration and approval
 
 1. An administrator creates an enrollment token on the Machines page. It is shown once.
-2. `Build-BootImage.ps1 -AgentPath artifacts\agent\ddt-agent.exe -ServerUrl <https url>
-   -EnrollmentToken <token> -RootCertificatePath <pem>` puts the agent and an `agent.json` holding
-   those three values into `boot.wim`. `startnet.cmd` starts the agent.
+2. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl`, `-EnrollmentToken` and
+   `-RootCertificatePath` puts the agent and an `agent.json` holding the last three values into
+   `boot.wim`. `startnet.cmd` starts the agent.
 3. The agent registers at `POST /api/agents/register`. A machine DDT has not seen before appears on
    the Machines page as `Pending`, live. The agent then polls `GET /api/agents/{id}/next` every ten
    seconds, and every answer carries fresh tokens.
@@ -391,10 +392,29 @@ intermediates are not downloaded, because a provisioning network has no route to
 has to send its full certificate chain. Always pass the root, even for a public CA: Windows PE carries
 only a handful of Microsoft roots, and none of the ones public web certificates chain to.
 
+### Reaching a development host from a test machine
+
+`dotnet run` serves `localhost` with the ASP.NET Core development certificate, and a netbooted
+machine can use neither. Listen on every interface and let DDT generate its own certificate, which
+names every address the host has at that moment, the Default Switch's included:
+
+```powershell
+dotnet run --project src/DDT.Host --launch-profile https -- `
+  "--Kestrel:Endpoints:Https:Url=https://0.0.0.0:7152" `
+  "--Kestrel:Certificates:Default:Path=D:\var\lib\ddt\certs\ddt.pem" `
+  "--Kestrel:Certificates:Default:KeyPath=D:\var\lib\ddt\certs\ddt-key.pem"
+```
+
+Build the boot image with `-ServerUrl https://172.25.128.1:7152`, using the host's address on the
+switch, and `-RootCertificatePath D:\var\lib\ddt\certs\ddt.pem`. The browser warns about this
+certificate on `localhost`. The Default Switch can change its address when Windows restarts; then
+delete both certificate files, start DDT again and rebuild the boot image.
+
 ### Trying the agent without a spare machine
 
-```bash
-artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152 --enrollment-token <token>
+```powershell
+$token = 'the enrollment token from the Machines page'
+artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152 --enrollment-token $token
 ```
 
 `--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several

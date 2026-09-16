@@ -87,6 +87,7 @@ build/
   Dockerfile
   compose.yaml
   Build-BootImage.ps1      WinPE boot files, BCD and both boot managers, laid out for the pxe role
+  Publish-Agent.ps1        DDT.Agent as one NativeAOT executable for Windows PE
   New-TestVm.ps1           Hyper-V Generation 2 test machine with Secure Boot on
 ```
 
@@ -130,6 +131,10 @@ proxies. Run the host on its own instead with:
 ```bash
 dotnet run --project src/DDT.Host
 ```
+
+The development database is SQLite, created directly from the model. It is not migrated: when the
+schema changes, the host refuses to start and names what is missing. Delete
+`ddt-dev.db` in `DDT:StorePath` and start again; a new administrator password is printed.
 
 The SPA on its own:
 
@@ -339,6 +344,63 @@ such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on 
 - Hyper-V has no HTTP boot device, so the HTTP boot listener is covered by tests that replay the
   firmware's request sequence rather than by the test machine.
 
+## The agent
+
+`DDT.Agent` is a single NativeAOT executable, because Windows PE has no .NET runtime. It reads the
+machine's SMBIOS UUID, manufacturer, model and serial number straight from the firmware table, so
+the boot image needs no WMI component, and it reports every MAC address it finds.
+
+```bash
+.\build\Publish-Agent.ps1
+```
+
+Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
+5.5 MB.
+
+### Registration and approval
+
+1. An administrator creates an enrollment token on the Machines page. It is shown once.
+2. `Build-BootImage.ps1 -AgentPath artifacts\agent\ddt-agent.exe -ServerUrl <https url>
+   -EnrollmentToken <token> -RootCertificatePath <pem>` puts the agent and an `agent.json` holding
+   those three values into `boot.wim`. `startnet.cmd` starts the agent.
+3. The agent registers at `POST /api/agents/register`. A machine DDT has not seen before appears on
+   the Machines page as `Pending`, live. The agent then polls `GET /api/agents/{id}/next` every ten
+   seconds, and every answer carries fresh tokens.
+4. An operator or administrator approves it. On its next poll the agent receives a session token,
+   the credential later milestones require for task sequences and images.
+5. Only then does the agent send what it has printed, including the lines from before approval, to
+   `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because its token comes
+   from the public enrollment token.
+
+A registration is the same machine when the SMBIOS UUID matches exactly and at least one of its MAC
+addresses is still present. Cloned virtual machines and boards that share a UUID stay apart, and a
+machine whose firmware reports no usable UUID, all zeros or all ones, is only ever matched with
+another reporting the same value.
+
+Registering a known machine again starts it over at `Pending` and invalidates every token it held,
+because anyone with the enrollment token can present its UUID and MAC. The exception is the agent
+already holding the machine: every answer includes a resume token, valid for 24 hours, and an agent
+that has to register again after an outage presents it and keeps its approval. A machine that
+rebooted has lost that token and starts over. A rejected machine stays rejected, and its agent stops.
+
+Registration is limited to 120 requests a minute per address, polling and logging to 60 a minute per
+machine, and the server keeps the newest 10,000 log lines of each machine.
+
+The agent trusts only the root certificate in `agent.json`. Revocation is not checked and missing
+intermediates are not downloaded, because a provisioning network has no route to either, so the server
+has to send its full certificate chain. Always pass the root, even for a public CA: Windows PE carries
+only a handful of Microsoft roots, and none of the ones public web certificates chain to.
+
+### Trying the agent without a spare machine
+
+```bash
+artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152 --enrollment-token <token>
+```
+
+`--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several
+runs with different ids look like several machines on the Machines page. It changes nothing on the
+computer it runs on. Every setting in `agent.json` can also be given as an argument.
+
 ## Security model
 
 State the trust boundary plainly, because a careful design elsewhere invites the wrong assumption
@@ -351,14 +413,17 @@ treats the boot path as public and puts nothing there but the server URL, the ro
 a rotatable enrollment token.
 
 What that token can do is deliberately almost nothing: it lets a machine say it exists. A machine
-enters as `Pending` and holds no grants at all. An administrator approves it before it can read a
-task sequence, an image or a secret. That approval gate is the control that the published attacks
+enters as `Pending`, and its token reaches nothing but its own poll. An operator or administrator
+approves it before it can write a log line or read a task sequence, an image or a secret. That approval gate is the control that the published attacks
 against SCCM operating system deployment walk straight through, and it is the reason the rest of
 this design exists.
 
+Every registration, re-registration, approval, rejection and enrollment token change is written to
+the audit table with the actor and source address.
+
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
-ring is already required, already rotates, and this needs no token library. Each purpose has its
-own protector, so a poll token cannot be replayed as a session token. Every token carries the
+ring is already required, already rotates, and this needs no token library. Each purpose, poll,
+session and resume, has its own protector, so a poll token cannot be replayed as a session token. Every token carries the
 machine's token generation, so bumping one column invalidates all of that machine's outstanding
 tokens at once.
 
@@ -382,8 +447,9 @@ Windows PE with the 2011 signed boot manager, fetching the 344 MB `boot.wim` in 
 at a window of 4 on the local virtual switch. The HTTP boot listener has not yet served real
 firmware, because Hyper-V has no HTTP boot device.
 
-Later milestones, in order: agent registration, the image library and apply, task sequences, Linux
-raw disk images, and the task sequence flow builder.
+Agent registration (M3) is complete: the NativeAOT agent registers, waits for approval, polls and
+streams its log, and the Machines page updates live over SignalR. Later milestones, in order: the
+image library and apply, task sequences, Linux raw disk images, and the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under
@@ -397,9 +463,6 @@ Two things about the protocol layer are deliberately not done yet:
   the normal arrangement for a single boot server, but a client that insists on discovery is not served.
 - Only read requests are implemented. Netboot never writes, and a TFTP server that accepts writes on
   a provisioning network is a liability rather than a feature.
-
-Agent enrollment endpoints arrive with the agent itself. The machine state model, the machine
-token infrastructure and the approval gate they plug into are already in place.
 
 One open question is already known and is recorded here so it is not rediscovered:
 

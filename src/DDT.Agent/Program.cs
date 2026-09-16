@@ -30,6 +30,7 @@ if (options.DryRun)
     log.Information($"Dry run {options.DryRunId}: this computer stands in for a fake machine and nothing on it is changed.");
 }
 
-AgentLoop loop = new(server, identity, log, TimeProvider.System, version);
+ConsoleSignInPrompt prompt = new(log, TimeProvider.System, options.KeyboardLayout);
+AgentLoop loop = new(server, identity, prompt, log, TimeProvider.System, version);
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);

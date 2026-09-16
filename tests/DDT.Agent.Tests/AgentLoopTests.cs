@@ -17,12 +17,14 @@ public sealed class AgentLoopTests
     private static AgentNextResult Next(MachineState state, string token, string resumeToken = "resume") =>
         new(state, token, resumeToken, 10, null);
 
+    // Without a keyboard, as these tests are about registering and polling.
     private static (AgentLoop Loop, ImmediateTimeProvider Time) Create(ScriptedAgentServer server, IMachineIdentityReader? identity = null)
     {
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null);
+        ScriptedSignInPrompt nobody = new() { IsAvailable = false };
 
-        return (new AgentLoop(server, identity ?? new DryRunMachineIdentityReader(1), log, time, "1.0.0-test"), time);
+        return (new AgentLoop(server, identity ?? new DryRunMachineIdentityReader(1), nobody, log, time, "1.0.0-test"), time);
     }
 
     [Fact]

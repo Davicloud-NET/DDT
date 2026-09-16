@@ -11,14 +11,42 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
 
     private readonly Lock _lock = new();
     private readonly List<(long Sequence, AgentLogLine Line)> _pending = [];
+    private readonly List<string> _heldConsoleLines = [];
     private long _nextSequence;
     private int _dropped;
+    private bool _consoleHeld;
 
     public void Information(string message) => Write(AgentLogLevel.Information, message);
 
     public void Warning(string message) => Write(AgentLogLevel.Warning, message);
 
     public void Error(string message) => Write(AgentLogLevel.Error, message);
+
+    // While someone types at a prompt, lines are kept off the console so they do not split the typed line, and
+    // they appear once the prompt is done.
+    public void HoldConsole(string prompt)
+    {
+        lock (_lock)
+        {
+            _consoleHeld = true;
+            console.Write(prompt);
+        }
+    }
+
+    public void ReleaseConsole()
+    {
+        lock (_lock)
+        {
+            _consoleHeld = false;
+
+            foreach (string line in _heldConsoleLines)
+            {
+                console.WriteLine(line);
+            }
+
+            _heldConsoleLines.Clear();
+        }
+    }
 
     public int QueuedLines
     {
@@ -77,11 +105,19 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
     private void Write(AgentLogLevel level, string message)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
-
-        console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{now:HH:mm:ss} {LevelLabel(level)} {message}"));
+        string text = string.Create(CultureInfo.InvariantCulture, $"{now:HH:mm:ss} {LevelLabel(level)} {message}");
 
         lock (_lock)
         {
+            if (_consoleHeld)
+            {
+                _heldConsoleLines.Add(text);
+            }
+            else
+            {
+                console.WriteLine(text);
+            }
+
             if (_pending.Count >= MaxQueuedLines)
             {
                 _pending.RemoveAt(0);

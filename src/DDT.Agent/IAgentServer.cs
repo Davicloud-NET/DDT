@@ -9,4 +9,6 @@ public interface IAgentServer
     Task<AgentNextResult> NextAsync(Guid machineId, string token, CancellationToken cancellationToken);
 
     Task SendLogAsync(Guid machineId, string token, AgentLogBatch batch, CancellationToken cancellationToken);
+
+    Task<AgentSignInResult> SignInAsync(Guid machineId, string token, AgentSignInRequest request, CancellationToken cancellationToken);
 }

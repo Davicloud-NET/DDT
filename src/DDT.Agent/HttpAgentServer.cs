@@ -82,6 +82,20 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<AgentSignInResult> SignInAsync(Guid machineId, string token, AgentSignInRequest request, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage message = new(HttpMethod.Post, AgentRoutes.SignIn(machineId))
+        {
+            Content = JsonContent.Create(request, AgentJsonContext.Default.AgentSignInRequest),
+        };
+
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentSignInResult, cancellationToken).ConfigureAwait(false);
+    }
+
     public void Dispose() => _client.Dispose();
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

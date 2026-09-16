@@ -70,6 +70,22 @@ public sealed class AgentLogTests
     }
 
     [Fact]
+    public void KeepsLinesOffTheConsoleWhileSomeoneTypes()
+    {
+        using StringWriter console = new();
+        AgentLog log = new(new ImmediateTimeProvider(), console);
+
+        log.HoldConsole("User name: ");
+        log.Warning("Cannot reach the server.");
+
+        Assert.Equal("User name: ", console.ToString());
+
+        log.ReleaseConsole();
+
+        Assert.Equal($"User name: 00:00:00 WARN  Cannot reach the server.{Environment.NewLine}", console.ToString());
+    }
+
+    [Fact]
     public async Task SendsNothingWhenNothingIsQueued()
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);

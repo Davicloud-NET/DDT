@@ -11,7 +11,8 @@ public sealed record AgentOptions(
     string EnrollmentToken,
     X509Certificate2? RootCertificate,
     bool DryRun,
-    int DryRunId)
+    int DryRunId,
+    string? KeyboardLayout)
 {
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--enrollment-token <token>] " +
@@ -27,6 +28,7 @@ public sealed record AgentOptions(
         string? server = null;
         string? token = null;
         string? rootPem = null;
+        string? keyboardLayout = null;
         bool dryRun = false;
         int dryRunId = 1;
 
@@ -98,6 +100,7 @@ public sealed record AgentOptions(
                 server ??= file?.ServerUrl;
                 token ??= file?.EnrollmentToken;
                 rootPem ??= file?.RootCertificate;
+                keyboardLayout = file?.KeyboardLayout;
             }
             catch (JsonException exception)
             {
@@ -146,7 +149,7 @@ public sealed record AgentOptions(
             }
         }
 
-        options = new AgentOptions(serverUrl, token, root, dryRun, dryRunId);
+        options = new AgentOptions(serverUrl, token, root, dryRun, dryRunId, keyboardLayout);
         error = string.Empty;
 
         return true;

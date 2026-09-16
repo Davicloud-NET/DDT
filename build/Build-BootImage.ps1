@@ -27,8 +27,20 @@ holds only the 2011 certificate needs the first, one that has revoked it needs t
 DISM and bcdedit both require elevation, even to read.
 
 .PARAMETER AgentPath
-DDT.Agent.exe to inject. Without it the image boots to a command prompt, which is enough to test
-the netboot chain.
+The published agent, ddt-agent.exe from Publish-Agent.ps1. Without it the image boots to a command
+prompt, which is enough to test the netboot chain.
+
+.PARAMETER ServerUrl
+The https URL the agent registers with. Every name in it must be in DDT's TLS certificate.
+
+.PARAMETER EnrollmentToken
+An enrollment token created in the web UI. It is readable by anyone who downloads the boot image,
+and only lets a machine register and wait for approval.
+
+.PARAMETER RootCertificatePath
+The PEM root the agent trusts for the server, for example DDT's generated certificate. Pass it even for a
+certificate from a public CA: Windows PE carries only a handful of Microsoft roots, not the public web
+ones. The server must send its full chain, because the agent does not download intermediates.
 
 .PARAMETER TftpBlockSize
 Written to the BCD as ramdisktftpblocksize, the block size bootmgr requests for boot.wim. DDT
@@ -39,15 +51,21 @@ Written to the BCD as ramdisktftpwindowsize. Only 4 has Microsoft backing. DDT c
 DDT:Pxe:TftpMaxWindowSize, so raise both together when measuring 8 or 16.
 
 .EXAMPLE
-.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\DDT.Agent.exe
+.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -EnrollmentToken ddt1.xxx -RootCertificatePath .\ddt.pem
 #>
 [CmdletBinding()]
 param(
     [string] $AgentPath,
 
-    [string] $Destination = (Join-Path $PSScriptRoot '..\artifacts\boot'),
+    [string] $ServerUrl,
 
-    [string] $WorkDirectory = (Join-Path $PSScriptRoot '..\artifacts\winpe'),
+    [string] $EnrollmentToken,
+
+    [string] $RootCertificatePath,
+
+    [string] $Destination,
+
+    [string] $WorkDirectory,
 
     [ValidateRange(512, 1380)]
     [int] $TftpBlockSize = 1380,
@@ -58,6 +76,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Defaults are resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty
+# there when the script is started with powershell -File.
+if (-not $Destination) { $Destination = Join-Path $PSScriptRoot '..\artifacts\boot' }
+if (-not $WorkDirectory) { $WorkDirectory = Join-Path $PSScriptRoot '..\artifacts\winpe' }
 
 # Resolved against the PowerShell location. [IO.Path]::GetFullPath uses the process directory, which
 # Set-Location does not change, and the work directory is deleted recursively further down.
@@ -199,8 +222,34 @@ function New-Bcd {
 
 $adk = Get-AdkPaths
 
-if ($AgentPath -and -not (Test-Path -LiteralPath $AgentPath)) {
-    throw "Agent not found at $AgentPath."
+if ($AgentPath) {
+    if (-not (Test-Path -LiteralPath $AgentPath)) {
+        throw "Agent not found at $AgentPath."
+    }
+
+    if (-not $ServerUrl -or -not $EnrollmentToken) {
+        throw 'An agent needs -ServerUrl and -EnrollmentToken to register.'
+    }
+
+    $rootCertificate = $null
+
+    if ($RootCertificatePath) {
+        if (-not (Test-Path -LiteralPath $RootCertificatePath)) {
+            throw "Root certificate not found at $RootCertificatePath."
+        }
+
+        # Read as a plain string: Get-Content attaches properties that ConvertTo-Json writes out as an object.
+        $rootCertificate = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $RootCertificatePath).ProviderPath)
+
+        if ($rootCertificate -notmatch '-----BEGIN CERTIFICATE-----') {
+            throw "$RootCertificatePath is not a PEM certificate."
+        }
+
+        # Anyone who can netboot can read boot.wim.
+        if ($rootCertificate -match 'PRIVATE KEY') {
+            throw "$RootCertificatePath contains a private key. Export the certificate alone."
+        }
+    }
 }
 
 Clear-StaleMount
@@ -236,7 +285,19 @@ $committed = $false
 try {
     if ($AgentPath) {
         New-Item -ItemType Directory -Force -Path (Join-Path $Mount 'DDT') | Out-Null
-        Copy-Item -LiteralPath $AgentPath -Destination (Join-Path $Mount 'DDT\DDT.Agent.exe')
+        Copy-Item -LiteralPath $AgentPath -Destination (Join-Path $Mount 'DDT\ddt-agent.exe')
+
+        $configuration = [ordered]@{
+            serverUrl       = $ServerUrl
+            enrollmentToken = $EnrollmentToken
+            rootCertificate = $rootCertificate
+        }
+
+        # Written without a byte order mark, which Windows PowerShell's Set-Content -Encoding UTF8 adds.
+        [IO.File]::WriteAllText(
+            (Join-Path $Mount 'DDT\agent.json'),
+            ($configuration | ConvertTo-Json),
+            (New-Object Text.UTF8Encoding $false))
     }
 
     # wpeinit brings up the network. WaitForNetwork is unverified on this WinPE build; if it is not
@@ -245,7 +306,7 @@ try {
         '@echo off'
         'wpeinit'
         'wpeutil WaitForNetwork'
-        'if exist X:\DDT\DDT.Agent.exe X:\DDT\DDT.Agent.exe'
+        'if exist X:\DDT\ddt-agent.exe X:\DDT\ddt-agent.exe'
     )
     Set-Content -LiteralPath (Join-Path $Mount 'Windows\System32\startnet.cmd') -Value $startnet -Encoding Ascii
 

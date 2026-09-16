@@ -8,6 +8,8 @@ public static class MachineLogLimits
     public const int MaxLinesPerRead = 1000;
     public const int MaxStoredLinesPerMachine = 10_000;
     public const int MaxRegistrationBytes = 64 * 1024;
+    public const int MaxSignInBytes = 4 * 1024;
+    public const int MaxSignInFieldLength = 512;
 
     // A machine polls every ten seconds, so this leaves room for its log flushes and retries while
     // bounding what one stolen token can make the server write.

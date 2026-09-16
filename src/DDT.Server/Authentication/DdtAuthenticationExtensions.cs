@@ -31,6 +31,7 @@ public static class DdtAuthenticationExtensions
         services.Configure<LdapOptions>(configuration.GetSection(LdapOptions.SectionName));
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
         services.AddScoped<DirectorySignInService>();
+        services.AddScoped<CredentialVerifier>();
 
         // The key ring can mint an administrator cookie and every machine token, so it has to
         // survive restarts and it has to live on the store volume, not in the read only layer.

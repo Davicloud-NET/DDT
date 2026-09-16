@@ -18,4 +18,16 @@ internal static partial class AuthLog
 
     [LoggerMessage(EventId = 204, Level = LogLevel.Warning, Message = "Two factor disabled for {UserName}")]
     public static partial void TwoFactorDisabled(ILogger logger, string userName);
+
+    [LoggerMessage(EventId = 205, Level = LogLevel.Information, Message = "{UserName} signed in at machine {MachineId}")]
+    public static partial void SignedInAtMachine(ILogger logger, string userName, Guid machineId);
+
+    [LoggerMessage(EventId = 206, Level = LogLevel.Warning, Message = "Sign in at machine {MachineId} failed for {UserName} from {Address}")]
+    public static partial void MachineSignInFailed(ILogger logger, Guid machineId, string userName, string address);
+
+    [LoggerMessage(EventId = 207, Level = LogLevel.Warning, Message = "Sign in at machine {MachineId} blocked for locked out account {UserName} from {Address}")]
+    public static partial void MachineSignInLockedOut(ILogger logger, Guid machineId, string userName, string address);
+
+    [LoggerMessage(EventId = 208, Level = LogLevel.Warning, Message = "{UserName} may not authorize machines and tried at machine {MachineId} from {Address}")]
+    public static partial void MachineSignInNotPermitted(ILogger logger, string userName, Guid machineId, string address);
 }

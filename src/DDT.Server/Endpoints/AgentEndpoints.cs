@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Live;
@@ -9,9 +10,13 @@ using DDT.Server.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using IdentitySignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace DDT.Server.Endpoints;
 
@@ -41,6 +46,13 @@ public static class AgentEndpoints
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxRequestBytes));
+
+        // Anyone holding the public enrollment token can reach this to guess passwords, exactly like the web
+        // sign in page, so it shares that page's limit per address as well as the account lockout.
+        group.MapPost("/{id:guid}/sign-in", SignInAsync)
+            .RequireAuthorization(DdtPolicies.MachineAgent)
+            .RequireRateLimiting(RateLimitPolicies.SignIn)
+            .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxSignInBytes));
 
         return group;
     }
@@ -138,8 +150,150 @@ public static class AgentEndpoints
             machine.State,
             registrar.CurrentToken(machine),
             tokens.Issue(machine, MachineTokenPurpose.Resume),
-            MachineRegistrar.PollAfterSeconds));
+            MachineRegistrar.PollAfterSeconds,
+            machine.SignedInUserName));
     }
+
+    private static async Task<Results<Ok<AgentSignInResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ValidationProblem>> SignInAsync(
+        Guid id,
+        AgentSignInRequest request,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        CredentialVerifier credentials,
+        UserManager<DdtUser> users,
+        IOptions<MachineOptions> options,
+        LiveNotifier live,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        if (!Principals.IsMachine(user, id))
+        {
+            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.UserName)
+            || string.IsNullOrEmpty(request.Password)
+            || request.UserName.Length > MachineLogLimits.MaxSignInFieldLength
+            || request.Password.Length > MachineLogLimits.MaxSignInFieldLength
+            || request.TwoFactorCode?.Length > MachineLogLimits.MaxSignInFieldLength)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["signIn"] = ["A user name and a password are required."],
+            });
+        }
+
+        // Loaded before the credentials are checked, which takes a noticeable moment, so that the concurrency
+        // tokens cover it: a registration that starts the machine over meanwhile must not receive this approval.
+        Machine? machine = await database.Machines
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!HoldsCurrentGeneration(user, machine))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        if (machine.State != MachineState.Pending || machine.SignedInByUserId is not null)
+        {
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.AlreadyDecided));
+        }
+
+        ILogger logger = loggerFactory.CreateLogger(typeof(AgentEndpoints));
+        string address = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        (IdentitySignInResult result, DdtUser? account) = await credentials
+            .VerifyAsync(request.UserName, request.Password, request.TwoFactorCode, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (result.RequiresTwoFactor)
+        {
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.RequiresTwoFactor));
+        }
+
+        if (result.IsLockedOut)
+        {
+            AuthLog.MachineSignInLockedOut(logger, id, request.UserName, address);
+
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.LockedOut));
+        }
+
+        if (!result.Succeeded || account is null)
+        {
+            AuthLog.MachineSignInFailed(logger, id, request.UserName, address);
+
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.Failed));
+        }
+
+        string userName = account.UserName ?? request.UserName;
+
+        if (!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
+            && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
+        {
+            AuthLog.MachineSignInNotPermitted(logger, userName, id, address);
+
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.NotPermitted));
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+
+        machine.SignedInByUserId = account.Id;
+        machine.SignedInUserName = userName;
+        machine.SignedInUtc = now;
+        database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineSignedIn, account, userName, machine, address, "Signed in at the machine."));
+
+        if (!options.Value.RequireWebApproval)
+        {
+            machine.State = MachineState.Approved;
+            machine.ApprovedByUserId = account.Id;
+            machine.ApprovedUtc = now;
+            database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineApproved, account, userName, machine, address, "Was Pending. Signed in at the machine."));
+        }
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException exception) when (exception.Entries.Any(entry => entry.Entity is Machine))
+        {
+            await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
+
+            return HoldsCurrentGeneration(user, machine)
+                ? TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.AlreadyDecided))
+                : TypedResults.Unauthorized();
+        }
+
+        AuthLog.SignedInAtMachine(logger, userName, id);
+        live.MachineChanged(machine);
+
+        return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.Succeeded));
+    }
+
+    private static AuditEvent SignInAudit(
+        DateTimeOffset now,
+        string action,
+        DdtUser account,
+        string userName,
+        Machine machine,
+        string address,
+        string detail) => new()
+        {
+            OccurredUtc = now,
+            Action = action,
+            ActorUserId = account.Id,
+            ActorMachineId = machine.Id,
+            ActorName = userName,
+            SubjectId = machine.Id.ToString("D"),
+            SourceAddress = address,
+            Detail = detail,
+        };
 
     private static bool HoldsCurrentGeneration(ClaimsPrincipal user, Machine machine) =>
         machine.TokenGeneration.ToString(CultureInfo.InvariantCulture) == user.FindFirstValue(DdtClaimTypes.TokenGeneration);

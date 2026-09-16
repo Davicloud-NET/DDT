@@ -11,6 +11,7 @@ public static class MachineServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddOptions<MachineOptions>().BindConfiguration(MachineOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<EnrollmentTokenService>();
         services.AddScoped<MachineRegistrar>();

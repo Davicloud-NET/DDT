@@ -12,10 +12,10 @@ public sealed class AgentLoopTests
         MachineState state = MachineState.Pending,
         string? token = "poll",
         string? resumeToken = "resume") =>
-        new(s_machineId, state, token, resumeToken, 10);
+        new(s_machineId, state, token, resumeToken, 10, null);
 
     private static AgentNextResult Next(MachineState state, string token, string resumeToken = "resume") =>
-        new(state, token, resumeToken, 10);
+        new(state, token, resumeToken, 10, null);
 
     private static (AgentLoop Loop, ImmediateTimeProvider Time) Create(ScriptedAgentServer server, IMachineIdentityReader? identity = null)
     {

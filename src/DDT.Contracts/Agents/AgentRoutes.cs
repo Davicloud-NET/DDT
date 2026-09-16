@@ -7,4 +7,6 @@ public static class AgentRoutes
     public static string Next(Guid machineId) => $"api/agents/{machineId:D}/next";
 
     public static string Log(Guid machineId) => $"api/agents/{machineId:D}/log";
+
+    public static string SignIn(Guid machineId) => $"api/agents/{machineId:D}/sign-in";
 }

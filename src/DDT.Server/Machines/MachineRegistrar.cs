@@ -89,6 +89,9 @@ public sealed class MachineRegistrar(
             machine.TokenGeneration++;
             machine.ApprovedByUserId = null;
             machine.ApprovedUtc = null;
+            machine.SignedInByUserId = null;
+            machine.SignedInUserName = null;
+            machine.SignedInUtc = null;
         }
 
         machine.PrimaryMac = registration.PrimaryMac;
@@ -105,13 +108,14 @@ public sealed class MachineRegistrar(
         live.MachineChanged(machine);
 
         return machine.State == MachineState.Rejected
-            ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds)
+            ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null)
             : new AgentRegistrationResult(
                 machine.Id,
                 machine.State,
                 CurrentToken(machine),
                 tokens.Issue(machine, MachineTokenPurpose.Resume),
-                PollAfterSeconds);
+                PollAfterSeconds,
+                machine.SignedInUserName);
     }
 
     private bool Resumes(NormalisedRegistration registration, Machine machine) =>

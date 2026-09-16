@@ -21,6 +21,7 @@ public static class MachineSummaries
             machine.AgentVersion,
             machine.FirstSeenUtc,
             machine.LastSeenUtc,
-            machine.LastSeenAddress);
+            machine.LastSeenAddress,
+            machine.SignedInUserName);
     }
 }

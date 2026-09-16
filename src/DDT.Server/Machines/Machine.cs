@@ -48,4 +48,11 @@ public sealed class Machine
     public DdtUser? ApprovedBy { get; set; }
 
     public DateTimeOffset? ApprovedUtc { get; set; }
+
+    public Guid? SignedInByUserId { get; set; }
+
+    // A copy of the user name at the time, so the machines list and the live push need no join.
+    public string? SignedInUserName { get; set; }
+
+    public DateTimeOffset? SignedInUtc { get; set; }
 }

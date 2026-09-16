@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Hosting;
@@ -15,7 +17,7 @@ namespace DDT.Server.Tests;
 
 // The real host on an in-memory server, with its own store directory and SQLite database, so tests
 // exercise the actual pipeline: authentication schemes, the fallback policy and the CSRF filters.
-public sealed class DdtApplication : WebApplicationFactory<Program>
+public class DdtApplication : WebApplicationFactory<Program>
 {
     private readonly string _store = Path.Combine(Path.GetTempPath(), "ddt-server-tests-" + Guid.NewGuid().ToString("N"));
     private readonly SemaphoreSlim _administratorLock = new(1, 1);
@@ -33,6 +35,13 @@ public sealed class DdtApplication : WebApplicationFactory<Program>
         builder.UseSetting("DDT:StorePath", _store);
         builder.UseSetting("DDT:RequireHttps", "false");
         builder.UseSetting("ConnectionStrings:ddtdb", string.Empty);
+        builder.ConfigureServices(services => services.AddTransient<IStartupFilter, TestRemoteAddress>());
+
+        ConfigureTestHost(builder);
+    }
+
+    protected virtual void ConfigureTestHost(IWebHostBuilder builder)
+    {
     }
 
     // Scope validation is on only in Development by default, and tests run as Testing.
@@ -65,22 +74,52 @@ public sealed class DdtApplication : WebApplicationFactory<Program>
         }
     }
 
-    public async Task<SignedInClient> SignInAsync(string role)
+    public async Task<string> CreateUserAsync(string role)
     {
         string userName = $"{role.ToLowerInvariant()}-{Guid.NewGuid():N}";
 
-        using (IServiceScope scope = Services.CreateScope())
+        using IServiceScope scope = Services.CreateScope();
+        UserManager<DdtUser> users = scope.ServiceProvider.GetRequiredService<UserManager<DdtUser>>();
+        DdtUser user = new() { UserName = userName, CreatedUtc = DateTimeOffset.UtcNow };
+
+        IdentityResult created = await users.CreateAsync(user, Password);
+
+        if (!created.Succeeded || !(await users.AddToRoleAsync(user, role)).Succeeded)
         {
-            UserManager<DdtUser> users = scope.ServiceProvider.GetRequiredService<UserManager<DdtUser>>();
-            DdtUser user = new() { UserName = userName, CreatedUtc = DateTimeOffset.UtcNow };
-
-            IdentityResult created = await users.CreateAsync(user, Password);
-
-            if (!created.Succeeded || !(await users.AddToRoleAsync(user, role)).Succeeded)
-            {
-                throw new InvalidOperationException(string.Join(", ", created.Errors.Select(e => e.Description)));
-            }
+            throw new InvalidOperationException(string.Join(", ", created.Errors.Select(e => e.Description)));
         }
+
+        return userName;
+    }
+
+    public async Task<string> CreateEnrollmentTokenAsync()
+    {
+        SignedInClient admin = await AdministratorAsync();
+        HttpResponseMessage response = await admin.PostAsync("/api/enrollment-tokens", new CreateEnrollmentTokenRequest("test", 30));
+        response.EnsureSuccessStatusCode();
+
+        CreatedEnrollmentToken? created = await response.Content.ReadFromJsonAsync<CreatedEnrollmentToken>(TestJson.Options);
+
+        return created!.Token;
+    }
+
+    public async Task<RegisteredMachine> RegisterMachineAsync()
+    {
+        string enrollmentToken = await CreateEnrollmentTokenAsync();
+        AgentClient agent = new(CreateDefaultClient(), TestRemoteAddress.Unique());
+        AgentRegistration registration = AgentClient.Registration(
+            Guid.NewGuid().ToString("D"),
+            "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5));
+
+        AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await agent.RegisterAsync(enrollmentToken, registration));
+
+        return new RegisteredMachine(agent, enrollmentToken, registration, registered);
+    }
+
+    public async Task<SignedInClient> SignInAsync(string role)
+    {
+        string userName = await CreateUserAsync(role);
 
         CookieContainer cookies = new();
         HttpClient client = CreateDefaultClient(new CookieContainerHandler(cookies));

@@ -7,4 +7,5 @@ public sealed record AgentNextResult(
     MachineState State,
     string Token,
     string ResumeToken,
-    int PollAfterSeconds);
+    int PollAfterSeconds,
+    string? SignedInBy);

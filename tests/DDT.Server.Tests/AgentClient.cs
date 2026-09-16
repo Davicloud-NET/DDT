@@ -4,8 +4,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Tests;
 
-// Speaks to the agent endpoints the way DDT.Agent does: bearer tokens, no cookies.
-public sealed class AgentClient(HttpClient client) : IDisposable
+// Speaks to the agent endpoints the way DDT.Agent does: bearer tokens, no cookies. A remote address gives the
+// client its own rate limit partitions.
+public sealed class AgentClient(HttpClient client, string? remoteAddress = null) : IDisposable
 {
     public static AgentRegistration Registration(string uuid, string mac, params string[] otherMacs) =>
         new(uuid, mac, [mac, .. otherMacs], "Microsoft Corporation", "Virtual Machine", "0000-0000", "1.0.0");
@@ -19,6 +20,9 @@ public sealed class AgentClient(HttpClient client) : IDisposable
     public Task<HttpResponseMessage> LogAsync(Guid machineId, string token, AgentLogBatch batch) =>
         SendAsync(HttpMethod.Post, AgentRoutes.Log(machineId), token, JsonContent.Create(batch, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> SignInAsync(Guid machineId, string token, AgentSignInRequest request) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.SignIn(machineId), token, JsonContent.Create(request, options: TestJson.Options));
+
     public void Dispose() => client.Dispose();
 
     private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string? token, HttpContent? content)
@@ -28,6 +32,11 @@ public sealed class AgentClient(HttpClient client) : IDisposable
         if (token is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        if (remoteAddress is not null)
+        {
+            request.Headers.Add(TestRemoteAddress.Header, remoteAddress);
         }
 
         return await client.SendAsync(request);

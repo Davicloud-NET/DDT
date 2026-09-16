@@ -13,4 +13,5 @@ public sealed record MachineSummary(
     string? AgentVersion,
     DateTimeOffset FirstSeenUtc,
     DateTimeOffset LastSeenUtc,
-    string? LastSeenAddress);
+    string? LastSeenAddress,
+    string? SignedInBy);

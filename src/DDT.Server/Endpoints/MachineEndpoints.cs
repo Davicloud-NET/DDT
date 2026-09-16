@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
 
@@ -74,6 +75,7 @@ public static class MachineEndpoints
         DdtDbContext database,
         LiveNotifier live,
         TimeProvider timeProvider,
+        IOptions<MachineOptions> options,
         CancellationToken cancellationToken) =>
         TransitionAsync(
             id,
@@ -83,7 +85,11 @@ public static class MachineEndpoints
             live,
             timeProvider,
             AuditActions.MachineApproved,
-            machine => machine.State == MachineState.Pending,
+            machine => machine.State != MachineState.Pending
+                ? $"The machine is {machine.State}."
+                : options.Value.RequireWebApproval && machine.SignedInByUserId is null
+                    ? "Nobody has signed in at this machine yet."
+                    : null,
             (machine, now, userId) =>
             {
                 machine.State = MachineState.Approved;
@@ -108,7 +114,7 @@ public static class MachineEndpoints
             live,
             timeProvider,
             AuditActions.MachineRejected,
-            machine => machine.State is MachineState.Pending or MachineState.Approved,
+            machine => machine.State is MachineState.Pending or MachineState.Approved ? null : $"The machine is {machine.State}.",
             (machine, _, _) =>
             {
                 // The generation bump kills every token already issued, so a rejected machine stops
@@ -128,7 +134,7 @@ public static class MachineEndpoints
         LiveNotifier live,
         TimeProvider timeProvider,
         string action,
-        Func<Machine, bool> allowed,
+        Func<Machine, string?> refusal,
         Action<Machine, DateTimeOffset, Guid?> apply,
         CancellationToken cancellationToken)
     {
@@ -139,9 +145,9 @@ public static class MachineEndpoints
             return TypedResults.NotFound();
         }
 
-        if (!allowed(machine))
+        if (refusal(machine) is { } reason)
         {
-            return TypedResults.Problem(title: $"The machine is {machine.State}.", statusCode: StatusCodes.Status409Conflict);
+            return TypedResults.Problem(title: reason, statusCode: StatusCodes.Status409Conflict);
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
@@ -158,7 +164,9 @@ public static class MachineEndpoints
             ActorName = user.Identity?.Name,
             SubjectId = machine.Id.ToString("D"),
             SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-            Detail = $"Was {previous}.",
+            Detail = machine.SignedInUserName is { } signer
+                ? $"Was {previous}. Signed in at the machine by {signer}."
+                : $"Was {previous}.",
         });
 
         try

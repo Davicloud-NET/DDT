@@ -19,9 +19,26 @@ public sealed partial class DirectorySignInService(
 
     public async Task<SignInResult> SignInAsync(string userName, string password, CancellationToken cancellationToken)
     {
+        (SignInResult result, DdtUser? user) = await AuthenticateAsync(userName, password, cancellationToken).ConfigureAwait(false);
+
+        if (result.Succeeded && user is not null)
+        {
+            await signInManager.SignInAsync(user, isPersistent: false).ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    // Everything a directory sign in checks and updates, without issuing a cookie. The user is returned only
+    // on success.
+    public async Task<(SignInResult Result, DdtUser? User)> AuthenticateAsync(
+        string userName,
+        string password,
+        CancellationToken cancellationToken)
+    {
         if (!_options.Enabled)
         {
-            return SignInResult.Failed;
+            return (SignInResult.Failed, null);
         }
 
         DdtUser? existing = await userManager.FindByNameAsync(userName).ConfigureAwait(false);
@@ -30,19 +47,19 @@ public sealed partial class DirectorySignInService(
         {
             if (existing.Source != AccountSource.Directory)
             {
-                return SignInResult.Failed;
+                return (SignInResult.Failed, null);
             }
 
             if (existing.IsDisabled)
             {
-                return SignInResult.NotAllowed;
+                return (SignInResult.NotAllowed, null);
             }
 
             // DDT applies its own lockout before forwarding anything to the directory. Without
             // this brake, DDT is a convenient way to lock out arbitrary domain accounts.
             if (await userManager.IsLockedOutAsync(existing).ConfigureAwait(false))
             {
-                return SignInResult.LockedOut;
+                return (SignInResult.LockedOut, null);
             }
         }
 
@@ -57,28 +74,37 @@ public sealed partial class DirectorySignInService(
                 await userManager.AccessFailedAsync(existing).ConfigureAwait(false);
             }
 
-            return SignInResult.Failed;
+            return (SignInResult.Failed, null);
         }
 
-        DdtUser user = await ReconcileAsync(identity, existing).ConfigureAwait(false);
+        DdtUser? user = await ReconcileAsync(identity, existing).ConfigureAwait(false);
+
+        if (user is null)
+        {
+            return (SignInResult.Failed, null);
+        }
 
         if (user.IsDisabled)
         {
-            return SignInResult.NotAllowed;
+            return (SignInResult.NotAllowed, null);
         }
 
-        await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false);
-        await ApplyRolesAsync(user, identity).ConfigureAwait(false);
-        await signInManager.SignInAsync(user, isPersistent: false).ConfigureAwait(false);
+        // A user Identity refused to save has no row, so handing it back would sign in an account that does not
+        // exist, with roles that were never stored.
+        if (!Saved(user, await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false))
+            || !await ApplyRolesAsync(user, identity).ConfigureAwait(false))
+        {
+            return (SignInResult.Failed, null);
+        }
 
         LogDirectorySignIn(user.UserName ?? string.Empty, identity.ImmutableId);
 
-        return SignInResult.Success;
+        return (SignInResult.Success, user);
     }
 
     // Keyed on the directory's immutable identifier, never on the user name or the distinguished
     // name: both of those change when someone is renamed or moved between organisational units.
-    private async Task<DdtUser> ReconcileAsync(LdapIdentity identity, DdtUser? matchedByName)
+    private async Task<DdtUser?> ReconcileAsync(LdapIdentity identity, DdtUser? matchedByName)
     {
         DdtUser? user = await userManager.Users
             .FirstOrDefaultAsync(u => u.DirectoryObjectId == identity.ImmutableId)
@@ -97,7 +123,11 @@ public sealed partial class DirectorySignInService(
                 CreatedUtc = DateTimeOffset.UtcNow,
             };
 
-            await userManager.CreateAsync(user).ConfigureAwait(false);
+            if (!Saved(user, await userManager.CreateAsync(user).ConfigureAwait(false)))
+            {
+                return null;
+            }
+
             LogDirectoryUserCreated(user.UserName ?? string.Empty, identity.ImmutableId);
 
             return user;
@@ -109,16 +139,14 @@ public sealed partial class DirectorySignInService(
         user.DirectoryObjectId = identity.ImmutableId;
         user.LastSignInUtc = DateTimeOffset.UtcNow;
 
-        await userManager.UpdateAsync(user).ConfigureAwait(false);
-
-        return user;
+        return Saved(user, await userManager.UpdateAsync(user).ConfigureAwait(false)) ? user : null;
     }
 
-    private async Task ApplyRolesAsync(DdtUser user, LdapIdentity identity)
+    private async Task<bool> ApplyRolesAsync(DdtUser user, LdapIdentity identity)
     {
         if (_options.GroupRoleMap.Count == 0)
         {
-            return;
+            return true;
         }
 
         HashSet<string> mapped = new(StringComparer.OrdinalIgnoreCase);
@@ -137,15 +165,22 @@ public sealed partial class DirectorySignInService(
         string[] toRemove = [.. current.Where(role => !mapped.Contains(role))];
         string[] toAdd = [.. mapped.Where(role => !current.Contains(role, StringComparer.OrdinalIgnoreCase))];
 
-        if (toRemove.Length > 0)
+        if (toRemove.Length > 0 && !Saved(user, await userManager.RemoveFromRolesAsync(user, toRemove).ConfigureAwait(false)))
         {
-            await userManager.RemoveFromRolesAsync(user, toRemove).ConfigureAwait(false);
+            return false;
         }
 
-        if (toAdd.Length > 0)
+        return toAdd.Length == 0 || Saved(user, await userManager.AddToRolesAsync(user, toAdd).ConfigureAwait(false));
+    }
+
+    private bool Saved(DdtUser user, IdentityResult result)
+    {
+        if (!result.Succeeded)
         {
-            await userManager.AddToRolesAsync(user, toAdd).ConfigureAwait(false);
+            LogDirectoryUserNotSaved(user.UserName ?? string.Empty, string.Join(" ", result.Errors.Select(error => error.Description)));
         }
+
+        return result.Succeeded;
     }
 
     [LoggerMessage(EventId = 400, Level = LogLevel.Information, Message = "Directory sign in for {UserName} ({ImmutableId})")]
@@ -153,4 +188,7 @@ public sealed partial class DirectorySignInService(
 
     [LoggerMessage(EventId = 401, Level = LogLevel.Information, Message = "Created directory backed account {UserName} ({ImmutableId})")]
     private partial void LogDirectoryUserCreated(string userName, string immutableId);
+
+    [LoggerMessage(EventId = 402, Level = LogLevel.Warning, Message = "Could not save directory backed account {UserName}: {Errors}")]
+    private partial void LogDirectoryUserNotSaved(string userName, string errors);
 }

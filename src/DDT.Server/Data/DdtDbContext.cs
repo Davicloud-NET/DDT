@@ -54,6 +54,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.HasIndex(m => m.SmbiosUuid);
             machine.HasIndex(m => m.PrimaryMac);
             machine.HasOne(m => m.ApprovedBy).WithMany().HasForeignKey(m => m.ApprovedByUserId).OnDelete(DeleteBehavior.SetNull);
+            machine.Property(m => m.SignedInUserName).HasMaxLength(256);
+            machine.HasOne<DdtUser>().WithMany().HasForeignKey(m => m.SignedInByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<EnrollmentToken>(token =>

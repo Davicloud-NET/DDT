@@ -27,16 +27,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
     private static string NewMac() => "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5);
 
-    private async Task<(SignedInClient Admin, string Token)> EnrollmentTokenAsync()
-    {
-        SignedInClient admin = await _application.AdministratorAsync();
-        HttpResponseMessage response = await admin.PostAsync("/api/enrollment-tokens", new CreateEnrollmentTokenRequest("test", 30));
-        response.EnsureSuccessStatusCode();
-
-        CreatedEnrollmentToken? created = await response.Content.ReadFromJsonAsync<CreatedEnrollmentToken>(TestJson.Options);
-
-        return (admin, created!.Token);
-    }
+    private async Task<(SignedInClient Admin, string Token)> EnrollmentTokenAsync() =>
+        (await _application.AdministratorAsync(), await _application.CreateEnrollmentTokenAsync());
 
     private AgentClient Agent() => new(_application.CreateDefaultClient());
 

@@ -58,11 +58,13 @@ describe("MachinesPage", () => {
         firstSeenUtc: "2026-09-16T10:00:00Z",
         lastSeenUtc: "2026-09-16T10:00:00Z",
         lastSeenAddress: "172.25.132.98",
+        signedInBy: "bob",
       },
     ]);
 
     expect(await screen.findByText("Virtual Machine")).toBeInTheDocument();
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByText("00:15:5D:01:02:03")).toBeInTheDocument();
+    expect(screen.getByText("Signed in by bob")).toBeInTheDocument();
   });
 });

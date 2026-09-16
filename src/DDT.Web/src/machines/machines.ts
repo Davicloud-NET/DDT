@@ -19,6 +19,7 @@ export interface MachineSummary {
   firstSeenUtc: string;
   lastSeenUtc: string;
   lastSeenAddress: string | null;
+  signedInBy: string | null;
 }
 
 export const machinesQuery = queryOptions({

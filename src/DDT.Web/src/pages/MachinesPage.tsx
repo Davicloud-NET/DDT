@@ -73,6 +73,9 @@ export function MachinesPage() {
                   <span className={styles.state} data-state={machine.state}>
                     {machine.state}
                   </span>
+                  {machine.signedInBy !== null && (
+                    <div className={styles.secondary}>Signed in by {machine.signedInBy}</div>
+                  )}
                 </td>
                 <td>
                   <div>{machine.assignedName ?? machine.model ?? "Unknown model"}</div>

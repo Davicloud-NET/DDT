@@ -18,6 +18,7 @@ function machine(id: string, state: MachineSummary["state"], firstSeenUtc: strin
     firstSeenUtc,
     lastSeenUtc: firstSeenUtc,
     lastSeenAddress: null,
+    signedInBy: null,
   };
 }
 

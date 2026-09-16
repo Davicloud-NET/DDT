@@ -41,7 +41,7 @@ export function EnrollmentTokensPanel() {
       <h2 id="enrollment-tokens">Enrollment tokens</h2>
       <p className={styles.hint}>
         The boot image carries one of these so a machine can register. Anyone who downloads the boot
-        image can read it, so it only lets a machine wait for approval.
+        image can read it, so it only lets a machine register and someone at it try to sign in.
       </p>
 
       <form

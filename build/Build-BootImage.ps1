@@ -17,12 +17,14 @@ Output layout, relative to -Destination, which is what DDT:Pxe:BootDirectory sho
   Boot/BCD
   Boot/boot.sdi
   Boot/boot.wim
+  EFI/Microsoft/Boot/boot.stl     Secure Boot revocation list the boot manager checks
+  EFI/Microsoft/Boot/Fonts/       fonts the boot manager draws its screens with
 
 The two boot manager paths are stable. A site DHCP server that points option 67 at DDT chooses the
 Secure Boot variant by naming one of them. Neither file is dual signed: a machine whose firmware db
 holds only the 2011 certificate needs the first, one that has revoked it needs the second.
 
-DISM and bcdedit both require elevation, even to read. This script has not yet been run end to end.
+DISM and bcdedit both require elevation, even to read.
 
 .PARAMETER AgentPath
 DDT.Agent.exe to inject. Without it the image boots to a command prompt, which is enough to test
@@ -264,12 +266,18 @@ finally {
 
 New-Bcd -Path (Join-Path $WorkDirectory 'BCD')
 
-New-Item -ItemType Directory -Force -Path (Join-Path $Destination 'x64'), (Join-Path $Destination 'Boot') | Out-Null
+$efiBoot = Join-Path $Destination 'EFI\Microsoft\Boot'
+New-Item -ItemType Directory -Force -Path (Join-Path $Destination 'x64'), (Join-Path $Destination 'Boot'), $efiBoot | Out-Null
 Copy-Item -LiteralPath $bootManager2011 -Destination (Join-Path $Destination 'x64\bootmgfw.efi') -Force
 Copy-Item -LiteralPath $bootManager2023 -Destination (Join-Path $Destination 'x64\bootmgfw_ex.efi') -Force
 Copy-Item -LiteralPath (Join-Path $WorkDirectory 'BCD') -Destination (Join-Path $Destination 'Boot\BCD') -Force
 Copy-Item -LiteralPath (Join-Path $WorkDirectory 'media\Boot\boot.sdi') -Destination (Join-Path $Destination 'Boot\boot.sdi') -Force
 Copy-Item -LiteralPath $wim -Destination (Join-Path $Destination 'Boot\boot.wim') -Force
+
+# The boot manager asks for these under EFI\Microsoft\Boot on every boot.
+Copy-Item -LiteralPath (Join-Path $WorkDirectory 'media\EFI\Microsoft\Boot\boot.stl') -Destination $efiBoot -Force
+$fonts = New-Item -ItemType Directory -Force -Path (Join-Path $efiBoot 'Fonts')
+Copy-Item -Path (Join-Path $WorkDirectory 'media\EFI\Microsoft\Boot\Fonts\*') -Destination $fonts.FullName -Force
 
 Get-ChildItem -LiteralPath $Destination -Recurse -File |
     Select-Object @{ Name = 'File'; Expression = { $_.FullName.Substring($Destination.Length + 1) } },

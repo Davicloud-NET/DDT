@@ -294,6 +294,8 @@ DDT__Pxe__BootTargets__X64Uefi__BootFile=x64/bootmgfw.efi
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
 | `Boot/boot.wim` | Windows PE with `DDT.Agent` |
+| `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
+| `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
 
 Both boot manager paths are stable, because a site DHCP server picks one by name. Neither file is
 dual signed. The 2011 one is the default: firmware ignores certificate expiry, and most machines
@@ -303,6 +305,10 @@ has taken it and revoked the 2011 certificate needs `x64/bootmgfw_ex.efi`.
 Names are matched without regard to case, and a leading separator means the boot directory, because
 the boot manager asks for `\Boot\BCD` whatever the host's filesystem calls it. Every TFTP read is
 logged with the name the client asked for.
+
+A normal boot also logs a dozen refused reads, and none of them is a fault. The boot manager tries
+`\BCD` before `\Boot\BCD`, and it and the Windows loader look for optional Secure Boot policy files
+such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on without them.
 
 ### TFTP tuning
 

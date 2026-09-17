@@ -7,7 +7,10 @@ import { cx } from "@/lib/cx";
 
 import styles from "./AppShell.module.scss";
 
-const navigation = [{ to: "/", label: "Machines" }] as const;
+const navigation = [
+  { to: "/", label: "Machines" },
+  { to: "/account", label: "Account" },
+] as const;
 
 export function AppShell() {
   const queryClient = useQueryClient();

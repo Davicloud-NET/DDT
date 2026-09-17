@@ -209,6 +209,9 @@ Created the first administrator. User name admin, password <generated>. This is 
 No bootstrap credential is read from configuration, because an environment variable holding an
 administrator password tends to stay set long after it was needed.
 
+The Account page is where that password is changed, and where an account adds an authenticator and
+keeps its recovery codes. A directory account changes its password in the directory instead.
+
 ### TLS is required
 
 `DDT:RequireHttps` defaults to true and the host refuses to start without an HTTPS endpoint. This

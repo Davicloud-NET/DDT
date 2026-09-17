@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
+import { AccountPage } from "@/pages/AccountPage";
 import { MachinesPage } from "@/pages/MachinesPage";
 import { SignInPage } from "@/pages/SignInPage";
 
@@ -48,7 +49,16 @@ const machinesRoute = createRoute({
   component: MachinesPage,
 });
 
-const routeTree = rootRoute.addChildren([signInRoute, shellRoute.addChildren([machinesRoute])]);
+const accountRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/account",
+  component: AccountPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  signInRoute,
+  shellRoute.addChildren([machinesRoute, accountRoute]),
+]);
 
 export function createAppRouter(queryClient: QueryClient) {
   return createRouter({

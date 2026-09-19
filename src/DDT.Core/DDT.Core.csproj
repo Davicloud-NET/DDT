@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

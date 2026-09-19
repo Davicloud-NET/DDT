@@ -3,10 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
+    <!-- Only libwim-15.dll, never the managed wrapper: WimLibrary loads it from runtimes/win-x64/native. -->
+    <PackageReference Include="ManagedWimLib" IncludeAssets="native" />
   </ItemGroup>
 
   <ItemGroup>

@@ -89,6 +89,7 @@ build/
   Build-BootImage.ps1      WinPE boot files, BCD and both boot managers, laid out for the pxe role
   Publish-Agent.ps1        DDT.Agent as one NativeAOT executable for Windows PE
   New-TestVm.ps1           Hyper-V Generation 2 test machine with Secure Boot on
+  Start-DevHost.ps1        DDT from source with the pxe role, reachable from the test machine
 ```
 
 `DDT.Pxe` is a class library of hosted services, not a separate executable. There is one image with
@@ -414,20 +415,17 @@ only a handful of Microsoft roots, and none of the ones public web certificates 
 ### Reaching a development host from a test machine
 
 `dotnet run` serves `localhost` with the ASP.NET Core development certificate, and a netbooted
-machine can use neither. Listen on every interface and let DDT generate its own certificate, which
-names every address the host has at that moment, the Default Switch's included:
+machine can use neither. With the `pxe` and `web` roles together, DDT refuses to start on an HTTPS
+endpoint that only this computer can reach. For the Hyper-V test machine, start it with:
 
 ```powershell
-dotnet run --project src/DDT.Host --launch-profile https -- `
-  "--Kestrel:Endpoints:Https:Url=https://0.0.0.0:7152" `
-  "--Kestrel:Certificates:Default:Path=D:\var\lib\ddt\certs\ddt.pem" `
-  "--Kestrel:Certificates:Default:KeyPath=D:\var\lib\ddt\certs\ddt-key.pem"
+.\build\Start-DevHost.ps1
 ```
 
-Build the boot image with `-ServerUrl https://172.25.128.1:7152`, using the host's address on the
-switch, and `-RootCertificatePath D:\var\lib\ddt\certs\ddt.pem`. The browser warns about this
-certificate on `localhost`. The Default Switch can change its address when Windows restarts; then
-delete both certificate files, start DDT again and rebuild the boot image.
+It listens on every interface and has DDT generate a certificate that names the Default Switch's DNS
+name, `<computer>.mshome.net`, and prints the `-ServerUrl` and `-RootCertificatePath` to build the
+boot image with. The switch changes its address when Windows restarts, but the name follows it, so
+the boot image keeps working. The browser warns about this certificate on `localhost`.
 
 ### Trying the agent without a spare machine
 

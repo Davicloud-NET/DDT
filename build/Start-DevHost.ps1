@@ -1,0 +1,69 @@
+#Requires -Version 5.1
+
+<#
+.SYNOPSIS
+Starts DDT from source with the web and pxe roles, reachable from the Hyper-V test machine.
+
+.DESCRIPTION
+Listens on every interface and uses a certificate DDT generates in the store once, which names this
+computer's Default Switch DNS name, <computer>.mshome.net. That name moves with the switch when Windows
+gives it a new address after a restart, so a boot image built with it keeps working. Delete the two
+files under certs in the store to generate a new certificate.
+
+Prints the -ServerUrl and -RootCertificatePath to build the boot image with.
+
+.PARAMETER Interface
+The interface DDT answers PXE on.
+
+.PARAMETER Port
+The HTTPS port for the web UI and the agents.
+
+.PARAMETER StorePath
+DDT:StorePath. The default is the host's own default, /var/lib/ddt on the repository's drive.
+
+.EXAMPLE
+.\build\Start-DevHost.ps1
+#>
+[CmdletBinding(SupportsShouldProcess)]
+param(
+    [string] $Interface = 'vEthernet (Default Switch)',
+
+    [ValidateRange(1, 65535)]
+    [int] $Port = 7152,
+
+    [string] $StorePath
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# Resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty there when the
+# script is started with powershell -File.
+$repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+if (-not $StorePath) { $StorePath = Join-Path (Split-Path -Qualifier $repository) 'var\lib\ddt' }
+
+$certificate = Join-Path $StorePath 'certs\ddt.pem'
+$name = "$([Net.Dns]::GetHostName()).mshome.net"
+
+$arguments = @(
+    'run'
+    '--project', (Join-Path $repository 'src\DDT.Host')
+    '--launch-profile', 'https'
+    '--'
+    "--DDT:StorePath=$StorePath"
+    '--DDT:Roles=web,pxe'
+    "--DDT:Pxe:Interfaces=$Interface"
+    "--DDT:Pxe:BootDirectory=$(Join-Path $repository 'artifacts\boot')"
+    '--DDT:Pxe:BootTargets:X64Uefi:Method=Tftp'
+    '--DDT:Pxe:BootTargets:X64Uefi:BootFile=x64/bootmgfw.efi'
+    "--Kestrel:Endpoints:Https:Url=https://0.0.0.0:$Port"
+    "--Kestrel:Certificates:Default:Path=$certificate"
+    "--Kestrel:Certificates:Default:KeyPath=$(Join-Path $StorePath 'certs\ddt-key.pem')"
+    "--DDT:Https:SubjectAlternativeNames=$name"
+)
+
+Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $certificate"
+
+if ($PSCmdlet.ShouldProcess('DDT.Host', "dotnet $($arguments -join ' ')")) {
+    & dotnet @arguments
+}

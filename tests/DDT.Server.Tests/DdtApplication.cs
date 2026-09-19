@@ -1,9 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Images;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Images;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -11,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Xunit;
 
 namespace DDT.Server.Tests;
 
@@ -18,11 +22,12 @@ namespace DDT.Server.Tests;
 // exercise the actual pipeline: authentication schemes, the fallback policy and the CSRF filters.
 public class DdtApplication : WebApplicationFactory<Program>
 {
-    private readonly string _store = Path.Combine(Path.GetTempPath(), "ddt-server-tests-" + Guid.NewGuid().ToString("N"));
     private readonly SemaphoreSlim _administratorLock = new(1, 1);
     private SignedInClient? _administrator;
 
     public const string Password = "Correct horse battery staple 42";
+
+    public string StorePath { get; } = Path.Combine(Path.GetTempPath(), "ddt-server-tests-" + Guid.NewGuid().ToString("N"));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -31,7 +36,7 @@ public class DdtApplication : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         // UseSetting rather than ConfigureAppConfiguration: Program reads these before it builds the host.
         builder.UseSetting("DDT:Roles", "web");
-        builder.UseSetting("DDT:StorePath", _store);
+        builder.UseSetting("DDT:StorePath", StorePath);
         builder.UseSetting("DDT:RequireHttps", "false");
         builder.UseSetting("ConnectionStrings:ddtdb", string.Empty);
         builder.ConfigureServices(services => services.AddTransient<IStartupFilter, TestRemoteAddress>());
@@ -104,6 +109,40 @@ public class DdtApplication : WebApplicationFactory<Program>
         return new RegisteredMachine(agent, registration, registered);
     }
 
+    // Puts a file straight into the library, for tests that need an image but not the upload protocol.
+    public async Task<Image> SeedImageAsync(byte[] content, string? architecture = "x64", int wimIndex = 1)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        string sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
+        ImageStore store = Services.GetRequiredService<ImageStore>();
+        Directory.CreateDirectory(store.ObjectsDirectory);
+        await File.WriteAllBytesAsync(store.ObjectPath(sha256), content, TestContext.Current.CancellationToken);
+
+        Image image = new()
+        {
+            Id = Guid.CreateVersion7(),
+            Name = $"Test image {sha256[..8]}",
+            Kind = ImageKind.Wim,
+            Sha256 = sha256,
+            SizeBytes = content.Length,
+            WimIndex = wimIndex,
+            Edition = "Professional",
+            Architecture = architecture,
+            Version = "10.0.26200.1",
+            Language = "en-US",
+            InstalledBytes = content.Length * 4L,
+            UploadedUtc = DateTimeOffset.UtcNow,
+        };
+
+        using IServiceScope scope = Services.CreateScope();
+        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+        database.Images.Add(image);
+        await database.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        return image;
+    }
+
     public async Task<SignedInClient> SignInAsync(string role)
     {
         string userName = await CreateUserAsync(role);
@@ -133,11 +172,11 @@ public class DdtApplication : WebApplicationFactory<Program>
             _administratorLock.Dispose();
         }
 
-        if (disposing && Directory.Exists(_store))
+        if (disposing && Directory.Exists(StorePath))
         {
             // Pooled SQLite connections keep the database file open after the host stops.
             SqliteConnection.ClearAllPools();
-            Directory.Delete(_store, recursive: true);
+            Directory.Delete(StorePath, recursive: true);
         }
     }
 }

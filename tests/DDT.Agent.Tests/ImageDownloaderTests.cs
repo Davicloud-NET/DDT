@@ -188,6 +188,90 @@ public sealed class ImageDownloaderTests : IDisposable
     }
 
     [Fact]
+    public async Task ASlowTransferIsNotAStall()
+    {
+        // Every wait is shorter than the stall watchdog's minute, but together they are longer.
+        TimeSpan wait = ImageDownloader.StallTimeout - TimeSpan.FromSeconds(20);
+        using PacedStream paced = new(_image.Content[..1000], _image.Content[1000..2000], _image.Content[2000..]);
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_ => new AgentImageStream(paced, 0, _image.Content.Length));
+        ManualTimeProvider time = new();
+
+        Task download = DownloadAsync(server, time);
+
+        for (int part = 0; part < 2; part++)
+        {
+            await paced.WaitingAsync(TestContext.Current.CancellationToken);
+            time.Advance(wait);
+            paced.Release();
+        }
+
+        // Bounded, so a watchdog that is not reset fails the test instead of leaving the download waiting for time.
+        await download.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal(["open 0 session"], server.Calls);
+        Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GivesUpAfterFifteenMinutesWithoutProgress()
+    {
+        ScriptedAgentServer server = new();
+
+        for (int attempt = 0; attempt < 100; attempt++)
+        {
+            server.OnOpenImage(_ => throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable));
+        }
+
+        ManualTimeProvider time = new();
+        DateTimeOffset start = time.GetUtcNow();
+
+        Task download = DownloadAsync(server, time);
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(30), () => download.IsCompleted);
+
+        DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => download);
+        Assert.Equal("The image download made no progress for 15 minutes (last: 503).", exception.Message);
+        Assert.True(time.GetUtcNow() - start >= ImageDownloader.GiveUpAfter);
+    }
+
+    [Fact]
+    public async Task KeepsTryingAsLongAsTheImageGrows()
+    {
+        ManualTimeProvider time = new();
+        DateTimeOffset start = time.GetUtcNow();
+
+        // Ten minutes of failures, some bytes, and ten more minutes of failures: never 15 minutes without progress.
+        AgentImageStream Answer(long offset)
+        {
+            TimeSpan elapsed = time.GetUtcNow() - start;
+
+            if (offset == 0 && elapsed >= TimeSpan.FromMinutes(10))
+            {
+                return new AgentImageStream(new MemoryStream(_image.Content[..1000]), 0, _image.Content.Length);
+            }
+
+            if (offset == 1000 && elapsed >= TimeSpan.FromMinutes(20))
+            {
+                return _image.From(offset);
+            }
+
+            throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        ScriptedAgentServer server = new();
+
+        for (int attempt = 0; attempt < 100; attempt++)
+        {
+            server.OnOpenImage(Answer);
+        }
+
+        Task download = DownloadAsync(server, time);
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(30), () => download.IsCompleted);
+        await download;
+
+        Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task WaitsForTheHeartbeatsNextTokenAfterA401()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()

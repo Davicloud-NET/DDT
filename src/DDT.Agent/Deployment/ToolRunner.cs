@@ -6,9 +6,8 @@ namespace DDT.Agent.Deployment;
 
 // Runs a Windows tool and puts everything it prints into the machine log, because on a real PC that log is the
 // only record of why diskpart, bcdboot or reagentc refused.
-public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider)
+public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolRunner
 {
-    // Returns the lines the tool wrote to its standard output, for a caller that reads its answer.
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);

@@ -1,3 +1,4 @@
+using System.Text;
 using DDT.Agent.Deployment;
 using Xunit;
 
@@ -19,6 +20,22 @@ public sealed class UnattendFileTests : IDisposable
         Assert.Equal(
             "del /q /f \"%WINDIR%\\Panther\\unattend.xml\"\r\n",
             await File.ReadAllTextAsync(Path.Combine(_windows, "Windows", "Setup", "Scripts", "SetupComplete.cmd"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task PutsTheCleanupBeforeTheImagesOwnSetupCompleteAndKeepsItsBytes()
+    {
+        string scripts = Path.Combine(_windows, "Windows", "Setup", "Scripts");
+        Directory.CreateDirectory(scripts);
+
+        // Code page 850 text and an exit that would skip every line after it.
+        byte[] own = [.. "echo "u8, 0x84, .. "\r\nexit /b 0\r\n"u8];
+        await File.WriteAllBytesAsync(Path.Combine(scripts, "SetupComplete.cmd"), own, TestContext.Current.CancellationToken);
+
+        await UnattendFile.WriteAsync(_windows, TestImage.Unattend, TestContext.Current.CancellationToken);
+
+        byte[] expected = [.. Encoding.ASCII.GetBytes($"{UnattendFile.CleanupLine}\r\n"), .. own];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(Path.Combine(scripts, "SetupComplete.cmd"), TestContext.Current.CancellationToken));
     }
 
     [Fact]

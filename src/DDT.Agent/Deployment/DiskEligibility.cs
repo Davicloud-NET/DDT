@@ -2,8 +2,9 @@ namespace DDT.Agent.Deployment;
 
 public static class DiskEligibility
 {
-    // As sold: a "32 GB" eMMC holds 32 billion bytes. Whether the image fits is checked before each deployment.
-    public const long MinimumSizeBytes = 32_000_000_000;
+    // Below what a "32 GB" eMMC exposes, about 31.2 billion bytes. Whether an image fits is checked before each
+    // deployment.
+    public const long MinimumSizeBytes = 30_000_000_000;
 
     // Why a disk is left out, or null when DDT may install on it. SD and eMMC stay in when not removable, because
     // cheap laptops have nothing else.

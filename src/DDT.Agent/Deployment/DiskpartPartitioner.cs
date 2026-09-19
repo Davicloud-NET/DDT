@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 namespace DDT.Agent.Deployment;
 
 // Finds disks with IOCTLs and partitions one with diskpart. workDirectory holds the script (X:\DDT in Windows PE).
-public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProvider timeProvider, string workDirectory) : IDiskPartitioner
+public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimeProvider timeProvider, string workDirectory) : IDiskPartitioner
 {
     // Disk numbers can have gaps, so a missing number does not end the search.
     private const int MaxDisks = 32;
@@ -47,6 +47,8 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
         Directory.CreateDirectory(workDirectory);
         await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
 
+        IReadOnlyList<Guid> erased = ReadSystemPartitionIds(disk.Number);
+
         log.Information($"Partitioning disk {disk.Number} with this diskpart script:");
 
         foreach (string line in script.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
@@ -56,7 +58,7 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
 
         await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
 
-        TargetVolumes volumes = new($"{system}:\\", $"{windows}:\\", $"{recovery}:\\");
+        TargetVolumes volumes = new($"{system}:\\", $"{windows}:\\", $"{recovery}:\\", erased);
 
         foreach (string root in new[] { volumes.System, volumes.Windows, volumes.Recovery })
         {
@@ -99,18 +101,48 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
             : null;
     }
 
+    // Only a cleanup depends on it: a firmware boot entry for an erased EFI system partition is reused instead of
+    // staying behind, dead.
+    private IReadOnlyList<Guid> ReadSystemPartitionIds(int number)
+    {
+        using SafeFileHandle handle = OpenDisk(number);
+
+        if (handle.IsInvalid)
+        {
+            log.Warning($"Disk {number} cannot be opened to read its partitions before it is erased (Windows error {Marshal.GetLastPInvokeError()}).");
+
+            return [];
+        }
+
+        if (ReadLayout(handle, number) is not { } layout)
+        {
+            return [];
+        }
+
+        try
+        {
+            return DriveLayoutReader.EfiSystemPartitionIds(layout);
+        }
+        catch (ArgumentException exception)
+        {
+            log.Warning($"The partitions of disk {number} cannot be read ({exception.Message}).");
+
+            return [];
+        }
+    }
+
+    private static SafeFileHandle OpenDisk(int number) => DiskNativeMethods.CreateFile(
+        string.Create(CultureInfo.InvariantCulture, $@"\\.\PhysicalDrive{number}"),
+        DiskNativeMethods.GenericRead,
+        DiskNativeMethods.FileShareRead | DiskNativeMethods.FileShareWrite,
+        0,
+        DiskNativeMethods.OpenExisting,
+        0,
+        0);
+
     private LocalDisk? Probe(int number)
     {
-        string path = string.Create(CultureInfo.InvariantCulture, $@"\\.\PhysicalDrive{number}");
-
-        using SafeFileHandle handle = DiskNativeMethods.CreateFile(
-            path,
-            DiskNativeMethods.GenericRead,
-            DiskNativeMethods.FileShareRead | DiskNativeMethods.FileShareWrite,
-            0,
-            DiskNativeMethods.OpenExisting,
-            0,
-            0);
+        using SafeFileHandle handle = OpenDisk(number);
 
         if (handle.IsInvalid)
         {
@@ -213,7 +245,27 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
     }
 
     // Only shown to the technician, so a layout that cannot be read counts as none rather than hiding the disk.
-    private unsafe int ReadPartitionCount(SafeFileHandle handle, int number)
+    private int ReadPartitionCount(SafeFileHandle handle, int number)
+    {
+        if (ReadLayout(handle, number) is not { } layout)
+        {
+            return 0;
+        }
+
+        try
+        {
+            return DriveLayoutReader.CountUsedPartitions(layout);
+        }
+        catch (ArgumentException exception)
+        {
+            log.Warning($"The partitions of disk {number} cannot be read ({exception.Message}).");
+
+            return 0;
+        }
+    }
+
+    // Null, after a warning, when the layout cannot be read.
+    private unsafe byte[]? ReadLayout(SafeFileHandle handle, int number)
     {
         int size = DriveLayoutReader.HeaderLength + (16 * DriveLayoutReader.EntryLength);
 
@@ -233,16 +285,7 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
                     out uint returned,
                     0))
                 {
-                    try
-                    {
-                        return DriveLayoutReader.CountUsedPartitions(layout.AsSpan(0, (int)returned));
-                    }
-                    catch (ArgumentException exception)
-                    {
-                        log.Warning($"The partitions of disk {number} cannot be read ({exception.Message})");
-
-                        return 0;
-                    }
+                    return layout[..(int)returned];
                 }
             }
 
@@ -252,12 +295,14 @@ public sealed class DiskpartPartitioner(ToolRunner tools, AgentLog log, TimeProv
             {
                 log.Warning($"The partitions of disk {number} cannot be read (Windows error {error}).");
 
-                return 0;
+                return null;
             }
 
             size *= 2;
         }
 
-        return 0;
+        log.Warning($"The partitions of disk {number} cannot be read: its layout is larger than {MaxLayoutLength} bytes.");
+
+        return null;
     }
 }

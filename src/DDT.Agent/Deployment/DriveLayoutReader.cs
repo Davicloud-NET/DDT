@@ -2,8 +2,8 @@ using System.Buffers.Binary;
 
 namespace DDT.Agent.Deployment;
 
-// Counts the partitions in use in DRIVE_LAYOUT_INFORMATION_EX as IOCTL_DISK_GET_DRIVE_LAYOUT_EX returns it
-// (winioctl.h, 64-bit layout).
+// Reads DRIVE_LAYOUT_INFORMATION_EX as IOCTL_DISK_GET_DRIVE_LAYOUT_EX returns it (winioctl.h, 64-bit layout). Each
+// entry is a PARTITION_INFORMATION_EX.
 public static class DriveLayoutReader
 {
     public const int HeaderLength = 48;
@@ -13,37 +13,31 @@ public static class DriveLayoutReader
     public const int StyleGpt = 1;
     public const int StyleRaw = 2;
 
+    public static readonly Guid EfiSystemPartitionType = Guid.Parse("c12a7328-f81f-11d2-ba4b-00a0c93ec93b");
+
     private const int PartitionCountOffset = 4;
     private const int EntryPartitionNumberOffset = 24;
     private const int EntryMbrTypeOffset = 32;
+    private const int EntryGptTypeOffset = 32;
+    private const int EntryGptIdOffset = 48;
+    private const int GuidLength = 16;
 
     // An MBR layout always lists four slots per table, and the extended container holding logical drives is no
     // partition anyone would recognise, so both are left out.
     public static int CountUsedPartitions(ReadOnlySpan<byte> layout)
     {
-        if (layout.Length < HeaderLength)
-        {
-            throw new ArgumentException("The drive layout is too short.", nameof(layout));
-        }
+        int count = EntryCount(layout, out int style);
 
-        int style = BinaryPrimitives.ReadInt32LittleEndian(layout);
-        uint count = BinaryPrimitives.ReadUInt32LittleEndian(layout[PartitionCountOffset..]);
-
-        if (style is not (StyleMbr or StyleGpt) || count == 0)
+        if (style is not (StyleMbr or StyleGpt))
         {
             return 0;
-        }
-
-        if (count > (layout.Length - HeaderLength) / EntryLength)
-        {
-            throw new ArgumentException("The drive layout lists more partitions than it holds.", nameof(layout));
         }
 
         int used = 0;
 
         for (int index = 0; index < count; index++)
         {
-            ReadOnlySpan<byte> entry = layout.Slice(HeaderLength + (index * EntryLength), EntryLength);
+            ReadOnlySpan<byte> entry = Entry(layout, index);
 
             if (style == StyleGpt)
             {
@@ -63,4 +57,54 @@ public static class DriveLayoutReader
 
         return used;
     }
+
+    // The unique partition GUIDs of the disk's EFI system partitions, which firmware boot entries name.
+    public static IReadOnlyList<Guid> EfiSystemPartitionIds(ReadOnlySpan<byte> layout)
+    {
+        int count = EntryCount(layout, out int style);
+        List<Guid> ids = [];
+
+        if (style != StyleGpt)
+        {
+            return ids;
+        }
+
+        for (int index = 0; index < count; index++)
+        {
+            ReadOnlySpan<byte> entry = Entry(layout, index);
+            Guid id = new(entry.Slice(EntryGptIdOffset, GuidLength));
+
+            if (new Guid(entry.Slice(EntryGptTypeOffset, GuidLength)) == EfiSystemPartitionType && !ids.Contains(id))
+            {
+                ids.Add(id);
+            }
+        }
+
+        return ids;
+    }
+
+    private static int EntryCount(ReadOnlySpan<byte> layout, out int style)
+    {
+        if (layout.Length < HeaderLength)
+        {
+            throw new ArgumentException("The drive layout is too short.", nameof(layout));
+        }
+
+        style = BinaryPrimitives.ReadInt32LittleEndian(layout);
+        uint count = BinaryPrimitives.ReadUInt32LittleEndian(layout[PartitionCountOffset..]);
+
+        if (style is not (StyleMbr or StyleGpt))
+        {
+            return 0;
+        }
+
+        if (count > (layout.Length - HeaderLength) / EntryLength)
+        {
+            throw new ArgumentException("The drive layout lists more partitions than it holds.", nameof(layout));
+        }
+
+        return (int)count;
+    }
+
+    private static ReadOnlySpan<byte> Entry(ReadOnlySpan<byte> layout, int index) => layout.Slice(HeaderLength + (index * EntryLength), EntryLength);
 }

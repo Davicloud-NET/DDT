@@ -4,8 +4,9 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.Deployment;
 
 // Runs one deployment: checks that it can succeed before touching the disk, then partitions, downloads, applies,
-// makes Windows bootable, writes the answer file and restarts. Nothing it does may end the agent: every failure is
-// reported, because an agent that crashes is replaced by the boot image's, which starts the machine over.
+// makes Windows bootable, writes the answer file, puts Windows first in the firmware boot order and restarts.
+// Nothing it does may end the agent: every failure is reported, because an agent that crashes is replaced by the
+// boot image's, which starts the machine over.
 public sealed class DeploymentRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
@@ -34,6 +35,9 @@ public sealed class DeploymentRunner(
     private const int MaxFinalFlushFailures = 3;
     private const int MaxErrorLength = 1024;
 
+    // The current run's answer file, from the moment it is written.
+    private string? _answerFile;
+
     // confirmedDisk is the disk the technician confirmed with ERASE in this process, if any. Disk numbers can change
     // when the machine starts again, so a deployment chosen at the machine only runs on that same disk.
     public async Task<DeploymentRunResult> RunAsync(
@@ -46,6 +50,7 @@ public sealed class DeploymentRunner(
     {
         ArgumentNullException.ThrowIfNull(deployment);
 
+        _answerFile = null;
         DeploymentTokens tokens = new(token, resumeToken);
         DeploymentHeartbeat heartbeat = new(server, log, tokens, machineId, deployment.Id, heartbeatInterval, timeProvider);
 
@@ -129,12 +134,15 @@ public sealed class DeploymentRunner(
         {
             await RunStepsAsync(machineId, deployment, disk, tokens, heartbeat, steps.Token).ConfigureAwait(false);
 
-            // A beat refused just as the last step ended still ends the run.
+            // A beat still on its way can be refused, for example because an operator stopped the deployment. That
+            // still ends the run, before the Done report.
+            await heartbeat.StopAsync().ConfigureAwait(false);
             steps.Token.ThrowIfCancellationRequested();
         }
         catch (Exception exception)
         {
             await heartbeat.StopAsync().ConfigureAwait(false);
+            await UndoUnattendAsync().ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -290,19 +298,14 @@ public sealed class DeploymentRunner(
             // Never logged as it is: it holds passwords.
             string summary = UnattendFile.Summarize(unattend);
 
-            try
-            {
-                await UnattendFile.WriteAsync(volumes.Windows, unattend, cancellationToken).ConfigureAwait(false);
-            }
-            catch
-            {
-                // A failed machine keeps its disk until it is deployed again, and the answer file holds passwords.
-                TryDelete(UnattendFile.PathIn(volumes.Windows));
-
-                throw;
-            }
-
+            // From here on, a failure or a stop deletes the answer file again and puts the boot order back.
+            _answerFile = UnattendFile.PathIn(volumes.Windows);
+            await UnattendFile.WriteAsync(volumes.Windows, unattend, cancellationToken).ConfigureAwait(false);
             log.Information($"Wrote the unattend file: {summary}.");
+
+            // Last: a failure or a restart before this point still starts the machine from the network, not into a
+            // Windows without its answer file.
+            await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
     }
 
@@ -328,18 +331,25 @@ public sealed class DeploymentRunner(
         return result;
     }
 
-    // The order matters: the heartbeat stops first so nothing overlaps the last calls, the log goes while the
+    // The order matters: the heartbeat has stopped so nothing overlaps the last calls, the log goes while the
     // machine may still send it, and the Done report is the last call the server gets. The restart follows
-    // whatever those calls answer: Windows is on the disk either way.
+    // whatever the Done report answers: Windows is on the disk either way.
     private async Task<DeploymentOutcome> FinishAsync(DeploymentHeartbeat heartbeat, CancellationToken cancellationToken)
     {
-        await heartbeat.StopAsync().ConfigureAwait(false);
         heartbeat.Progress(DeploymentStep.Reboot, 100);
         log.Information("Windows is installed. Sending the last log lines, then restarting into Windows.");
 
         try
         {
-            await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false);
+            // Refused before the Done report was sent: the deployment was stopped meanwhile, so Windows must not
+            // start with the answer file.
+            if (!await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false))
+            {
+                await UndoUnattendAsync().ConfigureAwait(false);
+                log.Warning("The server no longer accepts this machine's token, so the deployment was stopped before it ended. Registering again.");
+
+                return DeploymentOutcome.TokenRejected;
+            }
 
             await ServerCallRules.CallAsync(
                 call => heartbeat.ReportAsync(new AgentDeploymentReport(DeploymentState.Done, DeploymentStep.Reboot, 100, null), call),
@@ -415,8 +425,9 @@ public sealed class DeploymentRunner(
         }
     }
 
-    // Until the queue is empty, but never for long: the lines are worth less than the restart that follows.
-    private async Task FlushAllAsync(DeploymentHeartbeat heartbeat, CancellationToken cancellationToken)
+    // Until the queue is empty, but never for long: the lines are worth less than the restart that follows. False
+    // when the server refused the token.
+    private async Task<bool> FlushAllAsync(DeploymentHeartbeat heartbeat, CancellationToken cancellationToken)
     {
         int failures = 0;
 
@@ -426,24 +437,30 @@ public sealed class DeploymentRunner(
             {
                 await heartbeat.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is AgentTokenRejectedException || ServerCallRules.IsRefusal(exception))
+            catch (AgentTokenRejectedException)
             {
-                return;
+                return false;
+            }
+            catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
+            {
+                return true;
             }
             catch (Exception exception) when (ServerCallRules.IsTransient(exception, cancellationToken))
             {
                 if (++failures > MaxFinalFlushFailures)
                 {
-                    return;
+                    return true;
                 }
 
                 await Task.Delay(AgentLimits.RetryDelay(failures), timeProvider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                return;
+                return true;
             }
         }
+
+        return true;
     }
 
     private void DeleteScratchDirectory()
@@ -463,8 +480,16 @@ public sealed class DeploymentRunner(
         }
     }
 
-    private void TryDelete(string path)
+    // The answer file holds passwords, and a machine that did not finish keeps its disk until it is deployed again:
+    // it must start from the network, not into a Windows without its answer file. The boot order goes back even after
+    // a stop.
+    private async Task UndoUnattendAsync()
     {
+        if (_answerFile is not { } path)
+        {
+            return;
+        }
+
         try
         {
             if (File.Exists(path))
@@ -476,6 +501,8 @@ public sealed class DeploymentRunner(
         {
             log.Warning($"{path} could not be deleted ({exception.Message}).");
         }
+
+        await bcdWriter.RestoreBootOrderAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private static string Duration(TimeSpan elapsed) =>

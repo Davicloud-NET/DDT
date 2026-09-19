@@ -78,7 +78,7 @@ else
         server,
         disks,
         new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
-        new BcdbootWriter(tools, log),
+        new BcdbootWriter(tools, new UefiVariables(), log),
         new WpeutilRebooter(tools),
         log,
         TimeProvider.System,

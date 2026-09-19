@@ -184,14 +184,20 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
+    // reason. Only the headers are read, in case a server ignores the range and sends the whole image.
     public async Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = new(HttpMethod.Head, AgentRoutes.ImageContent(machineId, sha256));
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ImageContent(machineId, sha256));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Range = new RangeHeaderValue(0, 0);
 
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendAsync(_client, request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
 
-        return response.Content.Headers.ContentLength;
+        return response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length
+            : response.Content.Headers.ContentLength;
     }
 
     // Through the download client: an image takes far longer than a request may, and a stalled read is caught by

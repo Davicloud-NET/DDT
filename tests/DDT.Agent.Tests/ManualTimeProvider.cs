@@ -21,18 +21,6 @@ internal sealed class ManualTimeProvider : TimeProvider
 
     public override long GetTimestamp() => GetUtcNow().UtcTicks;
 
-    // Timers waiting to fire, such as a pending delay or an armed stall watchdog.
-    public int ActiveTimers
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _timers.Count(timer => timer.DueAt is not null);
-            }
-        }
-    }
-
     public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
     {
         ManualTimer timer = new(this, callback, state);

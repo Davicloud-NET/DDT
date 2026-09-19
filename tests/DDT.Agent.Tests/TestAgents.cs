@@ -13,8 +13,10 @@ internal static class TestAgents
         FakeDeploymentTools tools,
         AgentLog log,
         TimeProvider timeProvider,
-        TimeSpan? heartbeatInterval = null) =>
-        new(server, tools, tools, tools, tools, log, timeProvider, heartbeatInterval ?? Timeout.InfiniteTimeSpan);
+        TimeSpan? heartbeatInterval = null,
+        string? scratchDirectory = null,
+        IBcdWriter? bcdWriter = null) =>
+        new(server, tools, tools, bcdWriter ?? tools, tools, log, timeProvider, heartbeatInterval ?? Timeout.InfiniteTimeSpan, scratchDirectory);
 
     public static AgentLoop Loop(
         IAgentServer server,

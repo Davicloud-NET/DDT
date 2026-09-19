@@ -62,6 +62,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
     // Answers every report when set, ahead of the scripts: a test can switch it while a deployment runs.
     public Func<AgentDeploymentReport, string, AgentDeploymentReportResult>? AnswerReports { get; set; }
 
+    // Runs for every log request when set, ahead of the scripts, and may throw to refuse it.
+    public Action<AgentLogBatch>? AnswerLogs { get; set; }
+
     public ScriptedAgentServer OnRegister(Func<AgentRegistration, AgentRegistrationResult> response) => Enqueue(_registrations, response);
 
     public ScriptedAgentServer OnNext(Func<string, AgentNextResult> response) => Enqueue(_nexts, response);
@@ -126,7 +129,12 @@ internal sealed class ScriptedAgentServer : IAgentServer
         lock (_lock)
         {
             _calls.Add($"log {token}");
-            _logs.TryDequeue(out action);
+            action = AnswerLogs;
+
+            if (action is null)
+            {
+                _logs.TryDequeue(out action);
+            }
         }
 
         action?.Invoke(batch);

@@ -28,10 +28,11 @@ public static class UnattendFile
         string setupComplete = Path.Combine(scripts, "SetupComplete.cmd");
         Directory.CreateDirectory(scripts);
 
-        // An image may bring its own SetupComplete.cmd, which keeps its lines.
-        string existing = File.Exists(setupComplete) ? await File.ReadAllTextAsync(setupComplete, cancellationToken).ConfigureAwait(false) : "";
-        string separator = existing.Length == 0 || existing.EndsWith('\n') ? "" : "\r\n";
-        await File.AppendAllTextAsync(setupComplete, $"{separator}{CleanupLine}\r\n", Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+        // An image may bring its own SetupComplete.cmd, which keeps its bytes. The cleanup goes first, so an exit in
+        // the image's lines cannot skip it.
+        byte[] existing = File.Exists(setupComplete) ? await File.ReadAllBytesAsync(setupComplete, cancellationToken).ConfigureAwait(false) : [];
+        await File.WriteAllBytesAsync(setupComplete, [.. Encoding.ASCII.GetBytes($"{CleanupLine}\r\n"), .. existing], cancellationToken)
+            .ConfigureAwait(false);
     }
 
     // What the answer file sets, without any secret, for the log.

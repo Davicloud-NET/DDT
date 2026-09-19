@@ -35,11 +35,15 @@ public sealed class DiskEligibilityTests
         Assert.Equal("its media is removable", DiskEligibility.ExclusionReason(removableMedia: true, StorageBusType.Sd, Large));
 
     [Fact]
-    public void ADiskBelow32GbIsLeftOutAndOneOfExactly32GbIsNot()
+    public void ADiskBelow30GbIsLeftOutAndOneOfExactly30GbIsNot()
     {
-        Assert.Equal("it is smaller than 32 GB", DiskEligibility.ExclusionReason(false, StorageBusType.Mmc, DiskEligibility.MinimumSizeBytes - 1));
+        Assert.Equal("it is smaller than 30 GB", DiskEligibility.ExclusionReason(false, StorageBusType.Mmc, DiskEligibility.MinimumSizeBytes - 1));
         Assert.Null(DiskEligibility.ExclusionReason(false, StorageBusType.Mmc, DiskEligibility.MinimumSizeBytes));
     }
+
+    [Fact]
+    public void AThirtyTwoGigabyteEmmcIsEligible() =>
+        Assert.Null(DiskEligibility.ExclusionReason(removableMedia: false, StorageBusType.Mmc, 61_071_360L * 512));
 
     [Fact]
     public void CountsOnlyTheMbrPartitionsInUse()
@@ -77,6 +81,23 @@ public sealed class DiskEligibilityTests
 
         Assert.Throws<ArgumentException>(() => DriveLayoutReader.CountUsedPartitions(layout));
     }
+
+    [Fact]
+    public void FindsTheUniqueGuidsOfTheEfiSystemPartitions()
+    {
+        Guid first = Guid.Parse("7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d");
+        Guid second = Guid.Parse("0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0");
+        byte[] layout = GptLayout(
+            (DriveLayoutReader.EfiSystemPartitionType, first),
+            (Guid.Parse("ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"), Guid.Parse("5e2b1a3c-4d6f-4a8b-9c0d-1e2f3a4b5c6d")),
+            (DriveLayoutReader.EfiSystemPartitionType, second));
+
+        Assert.Equal([first, second], DriveLayoutReader.EfiSystemPartitionIds(layout));
+    }
+
+    [Fact]
+    public void AnMbrDiskHasNoEfiSystemPartitionGuids() =>
+        Assert.Empty(DriveLayoutReader.EfiSystemPartitionIds(Layout(DriveLayoutReader.StyleMbr, (1, 0xEF))));
 
     [Fact]
     public void ReadsTheBusTypeRemovableFlagAndModel()
@@ -122,6 +143,21 @@ public sealed class DiskEligibilityTests
             BinaryPrimitives.WriteInt32LittleEndian(entry, style);
             BinaryPrimitives.WriteUInt32LittleEndian(entry[24..], (uint)entries[index].Number);
             entry[32] = entries[index].MbrType;
+        }
+
+        return layout;
+    }
+
+    // Each entry numbered from 1, with its type GUID at 32 and its unique GUID at 48.
+    private static byte[] GptLayout(params (Guid Type, Guid Id)[] entries)
+    {
+        byte[] layout = Layout(DriveLayoutReader.StyleGpt, [.. entries.Select((_, index) => (index + 1, (byte)0))]);
+
+        for (int index = 0; index < entries.Length; index++)
+        {
+            Span<byte> entry = layout.AsSpan(DriveLayoutReader.HeaderLength + (index * DriveLayoutReader.EntryLength));
+            Assert.True(entries[index].Type.TryWriteBytes(entry[32..]));
+            Assert.True(entries[index].Id.TryWriteBytes(entry[48..]));
         }
 
         return layout;

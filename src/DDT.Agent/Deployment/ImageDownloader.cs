@@ -11,6 +11,10 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
     // A connection that drops without a reset, as a VPN can, would otherwise wait for ever.
     public static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
+    // As long as a server outage may last. While the progress reports get through, the tokens stay valid, so a
+    // failure of the image transfer alone would otherwise be retried for ever.
+    public static readonly TimeSpan GiveUpAfter = TimeSpan.FromMinutes(15);
+
     private const int BufferSize = 1024 * 1024;
 
     public async Task DownloadAsync(
@@ -50,6 +54,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
             int failures = 0;
             bool waitedForToken = false;
+            long progressed = timeProvider.GetTimestamp();
 
             while (file.Length < sizeBytes)
             {
@@ -64,8 +69,6 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
                     if (file.Length < sizeBytes)
                     {
-                        // Only a run of early ends without progress backs off further.
-                        failures = file.Length > before ? 0 : failures;
                         interruption = "the connection ended early";
                     }
                 }
@@ -97,9 +100,21 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
                         : exception.Message;
                 }
 
-                // Without a limit: an outage that lasts ends through the token's expiry and the 401 rule.
+                // Only a run of interruptions without progress backs off further and counts towards giving up.
+                if (file.Length > before)
+                {
+                    failures = 0;
+                    progressed = timeProvider.GetTimestamp();
+                }
+
                 if (interruption is not null)
                 {
+                    if (timeProvider.GetElapsedTime(progressed) >= GiveUpAfter)
+                    {
+                        throw new DeploymentStepException(
+                            $"The image download made no progress for {GiveUpAfter.TotalMinutes:0} minutes (last: {interruption}).");
+                    }
+
                     failures++;
                     TimeSpan delay = AgentLimits.RetryDelay(failures);
                     log.Warning($"The download was interrupted at {ByteSize.Format(file.Length)} ({interruption}). Resuming in {delay.TotalSeconds:0} s.");

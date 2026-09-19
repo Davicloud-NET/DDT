@@ -79,19 +79,66 @@ public sealed class HttpAgentServerTests
     }
 
     [Fact]
-    public async Task AskingForAnImagesLengthSendsHead()
+    public async Task AsksForAnImagesLengthWithItsFirstByte()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
 
-        Task<string> serving = AnswerAsync(listener, "HTTP/1.1 200 OK\r\nContent-Length: 5368709120\r\n", [], cancellationToken);
+        Task<string> serving = AnswerAsync(
+            listener,
+            "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-0/5368709120\r\nContent-Length: 1\r\n",
+            [0x4D],
+            cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
         long? length = await server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken);
 
         Assert.Equal(5368709120, length);
-        Assert.StartsWith($"HEAD /api/agents/{Guid.Empty:D}/images/ab12 HTTP/1.1", await serving, StringComparison.Ordinal);
+        string request = await serving;
+        Assert.StartsWith($"GET /api/agents/{Guid.Empty:D}/images/ab12 HTTP/1.1", request, StringComparison.Ordinal);
+        Assert.Contains("Range: bytes=0-0", request, StringComparison.Ordinal);
+        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
+    }
+
+    // Only the headers are read: the body of a whole image would not even fit HttpClient's buffer.
+    [Fact]
+    public async Task TakesTheLengthOfAWholeImageFromAServerThatIgnoresTheRange()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, "HTTP/1.1 200 OK\r\nContent-Length: 5368709120\r\n", new byte[4096], cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        long? length = await server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken);
+        await serving;
+
+        Assert.Equal(5368709120, length);
+    }
+
+    [Fact]
+    public async Task ARefusedImageCheckCarriesTheServersProblemTitle()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] problem = """{"title":"The image file is missing from the server's library.","status":404}"""u8.ToArray();
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(
+            listener,
+            $"HTTP/1.1 404 Not Found\r\nContent-Type: application/problem+json\r\nContent-Length: {problem.Length}\r\n",
+            problem,
+            cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
+            () => server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken));
+        await serving;
+
+        Assert.Equal(HttpStatusCode.NotFound, exception.StatusCode);
+        Assert.Equal("The image file is missing from the server's library.", exception.ProblemTitle);
     }
 
     [Fact]
@@ -165,8 +212,8 @@ public sealed class HttpAgentServerTests
             read += received;
         }
 
-        await stream.WriteAsync(Encoding.ASCII.GetBytes($"{head}Connection: close\r\n\r\n"), cancellationToken);
-        await stream.WriteAsync(body, cancellationToken);
+        // In one write, so a client that stops after the headers cannot close the connection before the body is sent.
+        await stream.WriteAsync((byte[])[.. Encoding.ASCII.GetBytes($"{head}Connection: close\r\n\r\n"), .. body], cancellationToken);
 
         return Encoding.ASCII.GetString(buffer, 0, read);
     }

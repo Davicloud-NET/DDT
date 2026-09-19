@@ -2,9 +2,10 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for the disk, wimlib, bcdboot and the restart, and records each call in one journal so a test can
-// check their order. FailAt names the call that throws Failure: list, prepare, partition, apply, bcd or reboot.
-// The volumes are directories in a temporary folder, created by the partitioning, that Dispose removes.
+// Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and records each call in one
+// journal so a test can check their order. FailAt names the call that throws Failure: list, prepare, partition,
+// apply, bcd, firmware or reboot. The volumes are directories in a temporary folder, created by the partitioning,
+// that Dispose removes.
 internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IDisposable
 {
     private readonly Lock _lock = new();
@@ -30,6 +31,14 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
 
     // Runs on the applied Windows volume once the apply is done.
     public Action<string>? Applied { get; set; }
+
+    // Runs when Windows is put first in the boot order, before FailAt is checked.
+    public Action? PuttingWindowsFirst { get; set; }
+
+    // When set, putting Windows first completes FirmwareStarted once it is recorded and then waits for it.
+    public TaskCompletionSource? FirmwareGate { get; set; }
+
+    public TaskCompletionSource FirmwareStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public bool ImageWasThereToApply { get; private set; }
 
@@ -58,7 +67,7 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
     {
         Record("partition", $" {disk.Number}");
 
-        TargetVolumes volumes = new(Path.Combine(Root, "S"), Path.Combine(Root, "W"), Path.Combine(Root, "R"));
+        TargetVolumes volumes = new(Path.Combine(Root, "S"), Path.Combine(Root, "W"), Path.Combine(Root, "R"), []);
         Directory.CreateDirectory(volumes.System);
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);
@@ -87,6 +96,26 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
     public Task WriteAsync(TargetVolumes volumes, CancellationToken cancellationToken)
     {
         Record("bcd");
+
+        return Task.CompletedTask;
+    }
+
+    // The journal says whether the answer file was there at that moment.
+    public async Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken)
+    {
+        PuttingWindowsFirst?.Invoke();
+        Record("firmware", File.Exists(UnattendFile.PathIn(volumes.Windows)) ? " after the answer file" : " without the answer file");
+        FirmwareStarted.TrySetResult();
+
+        if (FirmwareGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    public Task RestoreBootOrderAsync(CancellationToken cancellationToken)
+    {
+        Record("restore");
 
         return Task.CompletedTask;
     }

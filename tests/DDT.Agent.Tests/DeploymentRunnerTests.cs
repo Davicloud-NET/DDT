@@ -25,7 +25,7 @@ public sealed class DeploymentRunnerTests : IDisposable
         DeploymentRunResult result = await RunAsync(server);
 
         Assert.Equal(DeploymentOutcome.Deployed, result.Outcome);
-        Assert.Equal(["list", "prepare", "partition 0", "apply 1", "bcd", "reboot"], _tools.Calls);
+        Assert.Equal(["list", "prepare", "partition 0", "apply 1", "bcd", "firmware after the answer file", "reboot"], _tools.Calls);
         Assert.True(_tools.ImageWasThereToApply);
         Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
         Assert.Equal(["head session-0", "report Running session-0"], server.Calls.Take(2));
@@ -37,23 +37,27 @@ public sealed class DeploymentRunnerTests : IDisposable
 
         // A step never goes backwards.
         Assert.Equal(reports.Select(report => report.Step).Order(), reports.Select(report => report.Step));
+
+        // The machine log is readable by every viewer, so the answer file's password never reaches it.
+        Assert.Contains(server.SentLines, line => line.Message.StartsWith("Wrote the unattend file: ", StringComparison.Ordinal));
+        Assert.DoesNotContain(server.SentLines, line => line.Message.Contains("c2VjcmV0UGFzc3dvcmQ=", StringComparison.Ordinal));
     }
 
     [Fact]
-    public async Task WritesTheAnswerFileAndHasSetupDeleteIt()
+    public async Task WritesTheAnswerFileAndHasSetupDeleteItFirst()
     {
         string scripts = Path.Combine(Windows, "Windows", "Setup", "Scripts");
         _tools.Applied = _ =>
         {
             Directory.CreateDirectory(scripts);
-            File.WriteAllText(Path.Combine(scripts, "SetupComplete.cmd"), "echo from the image");
+            File.WriteAllText(Path.Combine(scripts, "SetupComplete.cmd"), "echo from the image\r\nexit /b 0\r\n");
         };
 
         await RunAsync(_image.Serve(new ScriptedAgentServer()));
 
         Assert.Equal(TestImage.Unattend, await File.ReadAllTextAsync(UnattendFile.PathIn(Windows), TestContext.Current.CancellationToken));
         Assert.Equal(
-            $"echo from the image\r\n{UnattendFile.CleanupLine}\r\n",
+            $"{UnattendFile.CleanupLine}\r\necho from the image\r\nexit /b 0\r\n",
             await File.ReadAllTextAsync(Path.Combine(scripts, "SetupComplete.cmd"), TestContext.Current.CancellationToken));
     }
 
@@ -172,8 +176,11 @@ public sealed class DeploymentRunnerTests : IDisposable
                 expected = "Disk 0 is no longer the disk chosen at this machine (USB stick, 256 GB)";
                 break;
             case "disk too small":
-                _tools.Disks[0] = FakeDeploymentTools.Disk(0, sizeBytes: 3L * 1024 * 1024 * 1024);
-                expected = "Disk 0 holds 3 GB, but Windows 11 Pro needs 3.5 GB";
+                // Exactly 28 GB, so leaving out any of the four parts would let the image through.
+                deployment = _image.Deployment() with { SizeBytes = 4608L * 1024 * 1024, InstalledBytes = 20L * 1024 * 1024 * 1024 };
+                _tools.Disks[0] = FakeDeploymentTools.Disk(0, sizeBytes: 25L * 1024 * 1024 * 1024);
+                expected = "Disk 0 holds 25 GB, but Windows 11 Pro needs 28 GB: 1.5 GB for the boot and recovery partitions, 4.5 GB for the " +
+                    "download, 20 GB for the installed files and 2 GB to spare.";
                 break;
             case "wimlib":
                 _tools.FailAt = "prepare";
@@ -209,6 +216,7 @@ public sealed class DeploymentRunnerTests : IDisposable
         { "apply", DeploymentStep.Apply },
         { "bcd", DeploymentStep.Boot },
         { "unattend", DeploymentStep.Unattend },
+        { "firmware", DeploymentStep.Unattend },
     };
 
     [Theory]
@@ -283,7 +291,7 @@ public sealed class DeploymentRunnerTests : IDisposable
     [Fact]
     public async Task AFailedAnswerFileLeavesNoPasswordsOnTheDisk()
     {
-        // A directory where SetupComplete.cmd belongs makes appending the cleanup line fail.
+        // A directory where SetupComplete.cmd belongs makes writing the cleanup line fail.
         _tools.Applied = root => Directory.CreateDirectory(Path.Combine(root, "Windows", "Setup", "Scripts", "SetupComplete.cmd"));
 
         DeploymentRunResult result = await RunAsync(_image.Serve(new ScriptedAgentServer()));
@@ -291,6 +299,131 @@ public sealed class DeploymentRunnerTests : IDisposable
         Assert.Equal(DeploymentOutcome.Failed, result.Outcome);
         Assert.Equal(DeploymentStep.Unattend, result.Step);
         Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
+    }
+
+    [Fact]
+    public async Task AFailureAfterTheAnswerFileWasWrittenDeletesItAndPutsTheBootOrderBack()
+    {
+        _tools.FailAt = "firmware";
+
+        DeploymentRunResult result = await RunAsync(_image.Serve(new ScriptedAgentServer()));
+
+        Assert.Equal(DeploymentOutcome.Failed, result.Outcome);
+        Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
+    }
+
+    [Fact]
+    public async Task AFailureBeforeTheAnswerFileLeavesTheBootOrderAlone()
+    {
+        _tools.FailAt = "bcd";
+
+        DeploymentRunResult result = await RunAsync(_image.Serve(new ScriptedAgentServer()));
+
+        Assert.Equal(DeploymentOutcome.Failed, result.Outcome);
+        Assert.DoesNotContain("restore", _tools.Calls);
+    }
+
+    [Fact]
+    public async Task PutsWindowsFirstAfterTheAnswerFileAndGoesOnWhenThatFails()
+    {
+        ImmediateTimeProvider time = new();
+        AgentLog log = new(time, TextWriter.Null);
+        FakeUefiVariables variables = new();
+        RecordingToolRunner tools = new();
+        bool answerFileWhenListed = false;
+        tools.Answer = (fileName, _) =>
+        {
+            if (Path.GetFileName(fileName) == "bcdedit.exe")
+            {
+                answerFileWhenListed = File.Exists(UnattendFile.PathIn(Windows));
+
+                throw new DeploymentStepException("bcdedit.exe failed with exit code 0x00000001. Its output is in the machine log.");
+            }
+
+            return [];
+        };
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+
+        // The system volume is a directory here, so the partition behind it cannot be read and nothing is written.
+        DeploymentRunResult result = await RunAsync(server, time: time, log: log, bcdWriter: new BcdbootWriter(tools, variables, log));
+
+        Assert.Equal(DeploymentOutcome.Deployed, result.Outcome);
+        Assert.True(answerFileWhenListed);
+        Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
+        Assert.Empty(variables.Writes);
+        Assert.Contains(
+            server.SentLines,
+            line => line.Level == AgentLogLevel.Warning && line.Message.Contains("so this machine may start from the network again.", StringComparison.Ordinal));
+        Assert.Equal("reboot", _tools.Calls[^1]);
+    }
+
+    [Fact]
+    public async Task AStopJustBeforeTheDoneReportDeletesTheAnswerFileAndDoesNotRestart()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+
+        // The operator's Stop lands once the answer file is written: from then on every call is refused.
+        _tools.PuttingWindowsFirst = () =>
+        {
+            server.AnswerReports = (_, _) => throw new AgentTokenRejectedException();
+            server.AnswerLogs = _ => throw new AgentTokenRejectedException();
+        };
+
+        DeploymentRunResult result = await RunAsync(server);
+
+        Assert.Equal(DeploymentOutcome.TokenRejected, result.Outcome);
+        Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
+        Assert.DoesNotContain(server.Reports, report => report.State != DeploymentState.Running);
+    }
+
+    [Fact]
+    public async Task AStopRightAfterTheAnswerFileDeletesItAndPutsTheBootOrderBack()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        _tools.PuttingWindowsFirst = server.Stop.Cancel;
+
+        DeploymentRunResult result = await RunAsync(server);
+
+        Assert.Equal(DeploymentOutcome.Stopped, result.Outcome);
+        Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
+        Assert.DoesNotContain(server.Reports, report => report.State != DeploymentState.Running);
+    }
+
+    [Fact]
+    public async Task ARefusedTokenOnABeatAfterTheAnswerFileDeletesItAndPutsTheBootOrderBack()
+    {
+        ManualTimeProvider time = new();
+        _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+
+        Task<DeploymentRunResult> run = RunAsync(server, time: time, heartbeatInterval: TimeSpan.FromSeconds(10));
+        await _tools.FirmwareStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
+        server.AnswerReports = (_, _) => throw new AgentTokenRejectedException();
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(10), () => run.IsCompleted);
+
+        DeploymentRunResult result = await run;
+
+        Assert.Equal(DeploymentOutcome.TokenRejected, result.Outcome);
+        Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
+        Assert.DoesNotContain(server.Reports, report => report.State != DeploymentState.Running);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeletesTheScratchDirectoryWhenTheRunEnds(bool fails)
+    {
+        _tools.FailAt = fails ? "apply" : null;
+
+        DeploymentRunResult result = await RunAsync(_image.Serve(new ScriptedAgentServer()), scratchDirectory: _tools.Root);
+
+        Assert.Equal(fails ? DeploymentOutcome.Failed : DeploymentOutcome.Deployed, result.Outcome);
+        Assert.False(Directory.Exists(_tools.Root));
     }
 
     [Fact]
@@ -357,6 +490,36 @@ public sealed class DeploymentRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task ATransientFailureOfABeatLeavesTheRunGoing()
+    {
+        ManualTimeProvider time = new();
+        _tools.ApplyGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+
+        Task<DeploymentRunResult> run = RunAsync(server, time: time, heartbeatInterval: TimeSpan.FromSeconds(10));
+        await _tools.ApplyStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        // A proxy restarting, then a server that took too long: both pass on their own.
+        int beats = 0;
+        server.AnswerReports = (report, token) => report.State != DeploymentState.Running
+            ? new AgentDeploymentReportResult(token, "resume")
+            : Interlocked.Increment(ref beats) switch
+            {
+                1 => throw new HttpRequestException("502", null, HttpStatusCode.BadGateway),
+                2 => throw new AgentRequestException("408", null, HttpStatusCode.RequestTimeout),
+                _ => new AgentDeploymentReportResult(token, "resume"),
+            };
+
+        // The step changes send Running reports too, so only the beats at the apply count.
+        int before = ApplyBeats(server);
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(10), () => ApplyBeats(server) >= before + 3);
+
+        _tools.ApplyGate.SetResult();
+
+        Assert.Equal(DeploymentOutcome.Deployed, (await run.WaitAsync(TestContext.Current.CancellationToken)).Outcome);
+    }
+
+    [Fact]
     public async Task ARefusedTokenOnABeatEndsTheRun()
     {
         ManualTimeProvider time = new();
@@ -396,16 +559,28 @@ public sealed class DeploymentRunnerTests : IDisposable
         Assert.Equal(new AgentDeploymentReport(DeploymentState.Failed, DeploymentStep.Apply, 50, "This deployment is no longer running."), server.Reports[^1]);
     }
 
+    private static int ApplyBeats(ScriptedAgentServer server) =>
+        server.Reports.Count(report => report is { State: DeploymentState.Running, Step: DeploymentStep.Apply });
+
     private Task<DeploymentRunResult> RunAsync(
         ScriptedAgentServer server,
         AgentDeployment? deployment = null,
         LocalDisk? confirmedDisk = null,
         TimeProvider? time = null,
         TimeSpan? heartbeatInterval = null,
-        AgentLog? log = null)
+        AgentLog? log = null,
+        string? scratchDirectory = null,
+        IBcdWriter? bcdWriter = null)
     {
         time ??= new ImmediateTimeProvider();
-        DeploymentRunner runner = TestAgents.Runner(server, _tools, log ?? new AgentLog(time, TextWriter.Null), time, heartbeatInterval);
+        DeploymentRunner runner = TestAgents.Runner(
+            server,
+            _tools,
+            log ?? new AgentLog(time, TextWriter.Null),
+            time,
+            heartbeatInterval,
+            scratchDirectory,
+            bcdWriter);
 
         return runner.RunAsync(s_machineId, deployment ?? _image.Deployment(), confirmedDisk, "session-0", "resume-0", server.Stop.Token);
     }

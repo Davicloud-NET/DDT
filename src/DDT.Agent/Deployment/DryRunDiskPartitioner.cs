@@ -23,7 +23,7 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
             Directory.Delete(root, recursive: true);
         }
 
-        TargetVolumes volumes = new(Path.Combine(root, "S"), Path.Combine(root, "W"), Path.Combine(root, "R"));
+        TargetVolumes volumes = new(Path.Combine(root, "S"), Path.Combine(root, "W"), Path.Combine(root, "R"), []);
         Directory.CreateDirectory(volumes.System);
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);

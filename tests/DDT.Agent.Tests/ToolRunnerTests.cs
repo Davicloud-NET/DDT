@@ -13,7 +13,9 @@ public sealed class ToolRunnerTests
     {
         (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
 
-        await tools.RunAsync(s_cmd, ["/c", "echo out& echo err 1>&2"], TestContext.Current.CancellationToken);
+        IReadOnlyList<string> output = await tools.RunAsync(s_cmd, ["/c", "echo out& echo err 1>&2"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(["out"], output);
 
         List<AgentLogLine> lines = await SentAsync(server, log);
         Assert.Equal($"Running {s_cmd} /c \"echo out& echo err 1>&2\"", lines[0].Message);

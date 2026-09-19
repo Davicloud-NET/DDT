@@ -8,7 +8,8 @@ namespace DDT.Agent.Deployment;
 // only record of why diskpart, bcdboot or reagentc refused.
 public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider)
 {
-    public async Task RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    // Returns the lines the tool wrote to its standard output, for a caller that reads its answer.
+    public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
         ArgumentNullException.ThrowIfNull(arguments);
@@ -36,7 +37,12 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider)
         // No tool DDT runs reads its input; closing it keeps one that asks a question from waiting for ever.
         process.StandardInput.Close();
 
-        Task output = ForwardAsync(process.StandardOutput, log.Information);
+        List<string> lines = [];
+        Task output = ForwardAsync(process.StandardOutput, line =>
+        {
+            lines.Add(line);
+            log.Information(line);
+        });
         Task errors = ForwardAsync(process.StandardError, log.Warning);
 
         try
@@ -64,6 +70,8 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider)
                 CultureInfo.InvariantCulture,
                 $"{tool} failed with exit code 0x{exitCode:X8}. Its output is in the machine log."));
         }
+
+        return lines;
     }
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)

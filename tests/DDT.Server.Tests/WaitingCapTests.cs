@@ -36,4 +36,23 @@ public sealed class WaitingCapTests(WaitingCapApplication application) : IClassF
 
         Assert.Equal(HttpStatusCode.OK, (await fromOffice.RegisterAsync(NewRegistration())).StatusCode);
     }
+
+    [Fact]
+    public async Task MachinesBehindAListedProxyAreCountedAtTheAddressItReports()
+    {
+        using SettingsApplication proxied = new(
+            ("DDT:ForwardedHeaders:KnownProxies", ProxiedApplication.Proxy),
+            ("DDT:Machines:MaxWaitingPerAddress", "2"));
+        string lab = TestRemoteAddress.Unique();
+
+        using RegisteredMachine first = await proxied.RegisterMachineAsync(ProxiedApplication.Agent(proxied, lab));
+        using RegisteredMachine second = await proxied.RegisterMachineAsync(ProxiedApplication.Agent(proxied, lab));
+        using AgentClient fromLab = ProxiedApplication.Agent(proxied, lab);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await fromLab.RegisterAsync(NewRegistration())).StatusCode);
+
+        using AgentClient fromOffice = ProxiedApplication.Agent(proxied, TestRemoteAddress.Unique());
+
+        Assert.Equal(HttpStatusCode.OK, (await fromOffice.RegisterAsync(NewRegistration())).StatusCode);
+    }
 }

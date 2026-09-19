@@ -16,7 +16,7 @@ namespace DDT.Server.Tests;
 public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFixture<ZeroTouchApplication>
 {
     // Assigned on the web while the machine was not at its prompt, so the assignment waits for its next netboot.
-    private static async Task<Guid> AssignWhileAwayAsync(DdtApplication application, DeployingMachine machine)
+    internal static async Task<Guid> AssignWhileAwayAsync(DdtApplication application, DeployingMachine machine)
     {
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));

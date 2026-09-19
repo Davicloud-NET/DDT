@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace DDT.Server.Tests;
 
@@ -9,6 +10,17 @@ public sealed class ProxiedApplication : DdtApplication
     public const string Ipv6Proxy = "2001:db8::10";
 
     public const string ProxyNetwork = "198.51.100.0/24";
+
+    // An agent whose requests arrive from connection, the proxy unless another is named, carrying X-Forwarded-For.
+    public static AgentClient Agent(DdtApplication host, string forwardedFor, string connection = Proxy)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+
+        HttpClient http = host.CreateDefaultClient();
+        http.DefaultRequestHeaders.Add(ForwardedHeadersDefaults.XForwardedForHeaderName, forwardedFor);
+
+        return new AgentClient(http, connection);
+    }
 
     protected override void ConfigureTestHost(IWebHostBuilder builder)
     {

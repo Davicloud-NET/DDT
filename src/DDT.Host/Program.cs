@@ -7,6 +7,7 @@ using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
+using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
@@ -44,6 +45,7 @@ builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
 builder.Services.AddDdtMachines();
+builder.Services.AddDdtImages();
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.

@@ -8,5 +8,6 @@ public static class AgentExitCodes
     public const int Stopped = 0;
     public const int Rejected = 2;
     public const int ConfigurationError = 3;
+    public const int Deployed = 4;
     public const int HighestAgentCode = 63;
 }

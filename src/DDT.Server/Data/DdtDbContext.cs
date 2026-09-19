@@ -1,3 +1,5 @@
+using DDT.Server.Deployments;
+using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,12 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     public DbSet<MachineLogLine> MachineLogLines => Set<MachineLogLine>();
+
+    public DbSet<Image> Images => Set<Image>();
+
+    public DbSet<ImageUpload> ImageUploads => Set<ImageUpload>();
+
+    public DbSet<Deployment> Deployments => Set<Deployment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -48,6 +56,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             // starts over cannot silently overwrite one another: the loser retries or reports a conflict.
             machine.Property(m => m.State).IsConcurrencyToken();
             machine.Property(m => m.TokenGeneration).IsConcurrencyToken();
+            machine.Property(m => m.ActiveDeploymentId).IsConcurrencyToken();
+            machine.Property(m => m.Disks).HasMaxLength(512);
             machine.HasIndex(m => m.SmbiosUuid);
             machine.HasIndex(m => m.PrimaryMac);
             machine.HasIndex(m => m.FirstSeenAddress);
@@ -62,6 +72,45 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             line.Property(l => l.Message).HasMaxLength(MachineLogLimits.MaxMessageLength);
             line.HasIndex(l => new { l.MachineId, l.Id });
             line.HasOne<Machine>().WithMany().HasForeignKey(l => l.MachineId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Image>(image =>
+        {
+            image.Property(i => i.Name).HasMaxLength(256);
+            image.Property(i => i.Kind).HasConversion<string>().HasMaxLength(16);
+            image.Property(i => i.Sha256).HasMaxLength(64);
+            image.Property(i => i.Edition).HasMaxLength(64);
+            image.Property(i => i.Architecture).HasMaxLength(16);
+            image.Property(i => i.Version).HasMaxLength(32);
+            image.Property(i => i.Language).HasMaxLength(16);
+            image.Property(i => i.OriginalFileName).HasMaxLength(256);
+            image.Property(i => i.UploadedByName).HasMaxLength(256);
+            image.HasIndex(i => i.Sha256);
+            image.HasOne<DdtUser>().WithMany().HasForeignKey(i => i.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<ImageUpload>(upload =>
+        {
+            upload.Property(u => u.FileName).HasMaxLength(256);
+            upload.Property(u => u.CompletedSha256).HasMaxLength(64);
+            upload.HasIndex(u => new { u.FileName, u.Length, u.LastModified });
+            upload.HasOne<DdtUser>().WithMany().HasForeignKey(u => u.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<Deployment>(deployment =>
+        {
+            deployment.Property(d => d.ImageName).HasMaxLength(256);
+            deployment.Property(d => d.Sha256).HasMaxLength(64);
+            deployment.Property(d => d.State).HasConversion<string>().HasMaxLength(16);
+            deployment.Property(d => d.State).IsConcurrencyToken();
+            deployment.Property(d => d.Step).HasConversion<string>().HasMaxLength(16);
+            deployment.Property(d => d.Source).HasConversion<string>().HasMaxLength(16);
+            deployment.Property(d => d.RequestedByName).HasMaxLength(256);
+            deployment.Property(d => d.Error).HasMaxLength(1024);
+            deployment.HasIndex(d => d.MachineId);
+            deployment.HasOne<Machine>().WithMany().HasForeignKey(d => d.MachineId).OnDelete(DeleteBehavior.Cascade);
+            deployment.HasOne<Image>().WithMany().HasForeignKey(d => d.ImageId).OnDelete(DeleteBehavior.SetNull);
+            deployment.HasOne<DdtUser>().WithMany().HasForeignKey(d => d.RequestedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<AuditEvent>(audit =>

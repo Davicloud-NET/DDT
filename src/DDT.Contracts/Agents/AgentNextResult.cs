@@ -8,4 +8,8 @@ public sealed record AgentNextResult(
     string Token,
     string ResumeToken,
     int PollAfterSeconds,
-    string? SignedInBy);
+    string? SignedInBy,
+    AgentDeployment? Deployment = null,
+    bool CanPickImage = false,
+    bool DomainConfigured = false,
+    string? AssignedName = null);

@@ -10,6 +10,18 @@ public static class AgentRoutes
 
     public static string SignIn(Guid machineId) => $"api/agents/{machineId:D}/sign-in";
 
+    public static string Images(Guid machineId) => $"api/agents/{machineId:D}/images";
+
+    public static string ImageContent(Guid machineId, string sha256) => $"api/agents/{machineId:D}/images/{sha256}";
+
+    public static string Deployments(Guid machineId) => $"api/agents/{machineId:D}/deployments";
+
+    public static string DeploymentReport(Guid machineId, Guid deploymentId) =>
+        $"api/agents/{machineId:D}/deployments/{deploymentId:D}/report";
+
+    public static string DeploymentUnattend(Guid machineId, Guid deploymentId) =>
+        $"api/agents/{machineId:D}/deployments/{deploymentId:D}/unattend";
+
     // Frozen: agents inside boot images built long ago ask these, so the paths never change.
     public const string Release = "api/agents/release";
 

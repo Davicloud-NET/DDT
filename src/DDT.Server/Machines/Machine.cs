@@ -22,7 +22,8 @@ public sealed class Machine
 
     public string? SerialNumber { get; set; }
 
-    // Set by an administrator, not by the agent, because it reaches a domain join command line.
+    // Set by an operator, or by the technician signed in at the machine, and checked by ComputerNames, because it
+    // reaches the unattend file and a domain join. Never taken from what the agent reports about itself.
     public string? AssignedName { get; set; }
 
     public string? AgentVersion { get; set; }
@@ -57,4 +58,13 @@ public sealed class Machine
     public string? SignedInUserName { get; set; }
 
     public DateTimeOffset? SignedInUtc { get; set; }
+
+    // One display line per disk the agent could install on, as reported at registration.
+    public string? Disks { get; set; }
+
+    public int? EligibleDiskCount { get; set; }
+
+    // The deployment that is assigned or running. It is checked on save, so an assignment on the web, a pick at the
+    // machine and a registration cannot each start one.
+    public Guid? ActiveDeploymentId { get; set; }
 }

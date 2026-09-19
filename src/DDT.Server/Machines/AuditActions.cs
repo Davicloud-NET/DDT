@@ -8,4 +8,11 @@ public static class AuditActions
     public const string MachineApproved = "machine.approved";
     public const string MachineRejected = "machine.rejected";
     public const string MachineRemoved = "machine.removed";
+    public const string ImageUploaded = "image.uploaded";
+    public const string ImageDeleted = "image.deleted";
+    public const string DeploymentAssigned = "deployment.assigned";
+    public const string DeploymentCancelled = "deployment.cancelled";
+    public const string DeploymentStarted = "deployment.started";
+    public const string DeploymentDone = "deployment.done";
+    public const string DeploymentFailed = "deployment.failed";
 }

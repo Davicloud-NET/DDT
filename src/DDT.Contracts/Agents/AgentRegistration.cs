@@ -1,7 +1,8 @@
 namespace DDT.Contracts.Agents;
 
 // ResumeToken is the one the agent was last given, if any. It proves the registration comes from the
-// agent that already holds this machine, so its approval survives an expired token or an outage.
+// agent that already holds this machine, so its approval survives an expired token or an outage. Disks lists
+// only the disks the agent could install on.
 public sealed record AgentRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -10,4 +11,5 @@ public sealed record AgentRegistration(
     string? Model,
     string? SerialNumber,
     string AgentVersion,
-    string? ResumeToken = null);
+    string? ResumeToken = null,
+    IReadOnlyList<AgentDisk>? Disks = null);

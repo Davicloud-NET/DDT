@@ -16,17 +16,19 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
         _ = PushAsync(MachineSummaries.From(machine));
     }
 
-    public void MachinesRemoved() => _ = PushRemovedAsync();
+    public void MachinesRemoved() => _ = PushEventAsync(LiveEvents.MachinesRemoved);
 
-    private async Task PushRemovedAsync()
+    public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);
+
+    private async Task PushEventAsync(string liveEvent)
     {
         try
         {
-            await hub.Clients.All.SendAsync(LiveEvents.MachinesRemoved, CancellationToken.None).ConfigureAwait(false);
+            await hub.Clients.All.SendAsync(liveEvent, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
-            LogRemovedPushFailed(exception);
+            LogEventPushFailed(liveEvent, exception);
         }
     }
 
@@ -45,6 +47,6 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
     [LoggerMessage(EventId = 400, Level = LogLevel.Warning, Message = "Could not push the change to machine {MachineId}")]
     private partial void LogPushFailed(Guid machineId, Exception exception);
 
-    [LoggerMessage(EventId = 401, Level = LogLevel.Warning, Message = "Could not push that machines were removed")]
-    private partial void LogRemovedPushFailed(Exception exception);
+    [LoggerMessage(EventId = 401, Level = LogLevel.Warning, Message = "Could not push the event {LiveEvent}")]
+    private partial void LogEventPushFailed(string liveEvent, Exception exception);
 }

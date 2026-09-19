@@ -13,4 +13,9 @@ namespace DDT.Contracts.Agents;
 [JsonSerializable(typeof(AgentSignInRequest))]
 [JsonSerializable(typeof(AgentSignInResult))]
 [JsonSerializable(typeof(AgentRelease))]
+[JsonSerializable(typeof(IReadOnlyList<AgentImageChoice>))]
+[JsonSerializable(typeof(AgentPickRequest))]
+[JsonSerializable(typeof(AgentDeployment))]
+[JsonSerializable(typeof(AgentDeploymentReport))]
+[JsonSerializable(typeof(AgentDeploymentReportResult))]
 public sealed partial class AgentJsonContext : JsonSerializerContext;

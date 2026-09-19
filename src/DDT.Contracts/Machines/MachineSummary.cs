@@ -1,3 +1,5 @@
+using DDT.Contracts.Deployments;
+
 namespace DDT.Contracts.Machines;
 
 public sealed record MachineSummary(
@@ -16,4 +18,7 @@ public sealed record MachineSummary(
     string? LastSeenAddress,
     string? SignedInBy,
     string? FirstSeenAddress,
-    bool EverApproved);
+    bool EverApproved,
+    string? Disks = null,
+    int? EligibleDiskCount = null,
+    DeploymentSummary? Deployment = null);

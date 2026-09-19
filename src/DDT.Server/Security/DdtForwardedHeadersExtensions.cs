@@ -10,6 +10,10 @@ namespace DDT.Server.Security;
 
 public static class DdtForwardedHeadersExtensions
 {
+    // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
+    // middleware in front of everything with them.
+    private const string OptionsName = "DDT";
+
     public static IServiceCollection AddDdtForwardedHeaders(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -17,10 +21,12 @@ public static class DdtForwardedHeadersExtensions
         services.AddOptions<DdtForwardedHeadersOptions>()
             .BindConfiguration(DdtForwardedHeadersOptions.SectionName, binder => binder.ErrorOnUnknownConfiguration = true);
 
-        // PostConfigure, so it runs after the framework's handling of ASPNETCORE_FORWARDEDHEADERS_ENABLED. That switch
-        // clears both lists, and with both empty the middleware trusts every address.
-        services.AddOptions<ForwardedHeadersOptions>()
+        services.AddOptions<ForwardedHeadersOptions>(OptionsName)
             .PostConfigure<IOptions<DdtForwardedHeadersOptions>>((options, configured) => TrustOnly(options, configured.Value));
+
+        // The switch's own setup clears both lists, so the host's copy would trust every address and take the entry of
+        // X-Forwarded-For the proxy added, leaving the client's to DDT's copy. PostConfigure runs after that setup.
+        services.PostConfigure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.None);
 
         return services;
     }
@@ -29,9 +35,11 @@ public static class DdtForwardedHeadersExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        ForwardedHeadersOptions options = app.ApplicationServices.GetRequiredService<IOptions<ForwardedHeadersOptions>>().Value;
+        ForwardedHeadersOptions options = app.ApplicationServices
+            .GetRequiredService<IOptionsMonitor<ForwardedHeadersOptions>>()
+            .Get(OptionsName);
 
-        return options.ForwardedHeaders == ForwardedHeaders.None ? app : app.UseForwardedHeaders();
+        return options.ForwardedHeaders == ForwardedHeaders.None ? app : app.UseForwardedHeaders(options);
     }
 
     // Replaces the framework defaults rather than adding to them, because those trust loopback: a proxy on the same

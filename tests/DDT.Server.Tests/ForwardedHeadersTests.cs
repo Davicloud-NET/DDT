@@ -41,6 +41,18 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
         Assert.Equal("203.0.113.7", await RecordedAddressAsync(unconfigured, "203.0.113.7", "192.0.2.95"));
     }
 
+    // The switch adds the middleware too, and two of them would take the client's entry left of a listed address.
+    [Fact]
+    public async Task TheFrameworkSwitchNextToAListedProxyStillReadsOneEntry()
+    {
+        using SettingsApplication both = new(
+            ("ForwardedHeaders_Enabled", "true"),
+            ("DDT:ForwardedHeaders:KnownProxies", ProxiedApplication.Proxy),
+            ("DDT:ForwardedHeaders:KnownNetworks", ProxiedApplication.ProxyNetwork));
+
+        Assert.Equal("198.51.100.8", await RecordedAddressAsync(both, ProxiedApplication.Proxy, "192.0.2.99, 198.51.100.8"));
+    }
+
     [Fact]
     public async Task EachClientBehindTheProxyHasItsOwnSignInLimit()
     {

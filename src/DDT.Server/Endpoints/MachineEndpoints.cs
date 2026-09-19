@@ -4,6 +4,7 @@ using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
+using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Builder;
@@ -164,6 +165,7 @@ public static class MachineEndpoints
         HttpContext context,
         DdtDbContext database,
         DeploymentService deployments,
+        ImageStore store,
         LiveNotifier live,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -175,19 +177,29 @@ public static class MachineEndpoints
             return TypedResults.NotFound();
         }
 
-        DeploymentDecision decision = await deployments
-            .AssignAsync(machine, request, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
-            .ConfigureAwait(false);
+        // Under the library lock, so the image cannot be deleted between its lookup and the saved deployment.
+        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-        return await CompleteAsync(
-            decision,
-            machine,
-            null,
-            database,
-            live,
-            loggerFactory,
-            "The machine changed while the image was assigned. Look at it again before assigning.",
-            cancellationToken).ConfigureAwait(false);
+        try
+        {
+            DeploymentDecision decision = await deployments
+                .AssignAsync(machine, request, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+                .ConfigureAwait(false);
+
+            return await CompleteAsync(
+                decision,
+                machine,
+                null,
+                database,
+                live,
+                loggerFactory,
+                "The machine changed while the image was assigned. Look at it again before assigning.",
+                cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            store.LibraryLock.Release();
+        }
     }
 
     private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> EndCurrentAsync(
@@ -280,7 +292,7 @@ public static class MachineEndpoints
         if (!IsStray(machine))
         {
             return TypedResults.Problem(
-                title: "Only a machine that is waiting and was never approved can be removed.",
+                title: "Only a machine that is waiting, was never approved and has no assigned image can be removed.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
@@ -297,15 +309,19 @@ public static class MachineEndpoints
         CancellationToken cancellationToken)
     {
         List<Machine> machines = await database.Machines
-            .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null && m.FirstSeenAddress == waitingFrom)
+            .Where(m => m.State == MachineState.Pending
+                && m.FirstApprovedUtc == null
+                && m.ActiveDeploymentId == null
+                && m.FirstSeenAddress == waitingFrom)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return await RemoveStraysAsync(machines, user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
     }
 
+    // A waiting machine with an assigned image waits on purpose, for a sign-in or a zero touch netboot.
     private static bool IsStray(Machine machine) =>
-        machine.State == MachineState.Pending && machine.FirstApprovedUtc is null;
+        machine.State == MachineState.Pending && machine.FirstApprovedUtc is null && machine.ActiveDeploymentId is null;
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveStraysAsync(
         List<Machine> machines,

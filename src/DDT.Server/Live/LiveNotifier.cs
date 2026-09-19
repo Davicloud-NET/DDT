@@ -46,9 +46,9 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
         }
     }
 
-    [LoggerMessage(EventId = 400, Level = LogLevel.Warning, Message = "Could not push the change to machine {MachineId}")]
+    [LoggerMessage(EventId = 430, Level = LogLevel.Warning, Message = "Could not push the change to machine {MachineId}")]
     private partial void LogPushFailed(Guid machineId, Exception exception);
 
-    [LoggerMessage(EventId = 401, Level = LogLevel.Warning, Message = "Could not push the event {LiveEvent}")]
+    [LoggerMessage(EventId = 431, Level = LogLevel.Warning, Message = "Could not push the event {LiveEvent}")]
     private partial void LogEventPushFailed(string liveEvent, Exception exception);
 }

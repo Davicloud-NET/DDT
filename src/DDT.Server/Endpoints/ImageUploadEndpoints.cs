@@ -70,7 +70,7 @@ public static class ImageUploadEndpoints
         if (creation.Session is not { } session)
         {
             return TypedResults.Problem(
-                title: $"The image store needs {Gibibytes(creation.RequiredBytes)} free for this upload but has {Gibibytes(creation.AvailableBytes)}. "
+                title: $"The image store needs {Gigabytes(creation.RequiredBytes)} free for this upload but has {Gigabytes(creation.AvailableBytes)}. "
                     + "Free space on the server's store volume or discard unfinished uploads, then try again.",
                 statusCode: StatusCodes.Status507InsufficientStorage);
         }
@@ -223,6 +223,7 @@ public static class ImageUploadEndpoints
         return TypedResults.Problem(title: title, statusCode: StatusCodes.Status409Conflict);
     }
 
-    private static string Gibibytes(long bytes) =>
-        string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024.0 * 1024 * 1024):0.0} GiB");
+    // Binary gigabytes, labelled GB like every other size the operator sees.
+    private static string Gigabytes(long bytes) =>
+        string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024.0 * 1024 * 1024):0.0} GB");
 }

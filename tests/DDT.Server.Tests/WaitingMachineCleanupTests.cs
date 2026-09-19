@@ -1,7 +1,10 @@
 using System.Net;
+using System.Security.Cryptography;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,6 +89,37 @@ public sealed class WaitingMachineCleanupTests(DdtApplication application) : ICl
 
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"/api/machines/{machine.Id}")).StatusCode);
         Assert.True(await ExistsAsync(machine.Id));
+    }
+
+    // It waits on purpose, for a sign-in or a zero touch netboot, and removing it would silently drop the assignment.
+    [Fact]
+    public async Task AWaitingMachineWithAnAssignedImageIsNotRemoved()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        string flood = TestRemoteAddress.Unique();
+
+        using RegisteredMachine assigned = await application.RegisterMachineAsync(flood);
+        using RegisteredMachine stray = await application.RegisterMachineAsync(flood);
+        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+
+        await LastSeenAsync(assigned.Id, TimeSpan.FromMinutes(10));
+
+        MachineSummary summary = await RegisteredMachine.ReadAsync<MachineSummary>(
+            await administrator.PostAsync($"/api/machines/{assigned.Id}/deployments", new AssignImageRequest(image.Id, null)));
+
+        Assert.Equal(MachineState.Pending, summary.State);
+
+        HttpResponseMessage single = await administrator.DeleteAsync($"/api/machines/{assigned.Id}");
+
+        Assert.Equal(HttpStatusCode.Conflict, single.StatusCode);
+        Assert.Equal(
+            "Only a machine that is waiting, was never approved and has no assigned image can be removed.",
+            await TestDatabase.TitleAsync(single));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines?waitingFrom={flood}")).StatusCode);
+        Assert.False(await ExistsAsync(stray.Id));
+        Assert.True(await ExistsAsync(assigned.Id));
+        Assert.Equal(summary.Deployment!.Id, (await application.MachineAsync(assigned.Id)).ActiveDeploymentId);
     }
 
     [Fact]

@@ -36,6 +36,37 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.True((await RegisteredMachine.ReadAsync<DeploymentOptionsView>(await administrator.GetAsync("/api/deployments/options"))).DomainConfigured);
     }
 
+    // Anyone who presents a waiting machine's UUID and MAC polls as it, so it learns neither its name nor the domain.
+    [Fact]
+    public async Task AWaitingMachineLearnsItsNameAndTheDomainOnlyOnceAuthorized()
+    {
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
+        Image image = await ImageAsync();
+
+        await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
+        Assert.Equal(MachineState.Pending, (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id, "PC-0006"))).State);
+
+        AgentNextResult waiting = await machine.NextAsync();
+
+        Assert.Equal(MachineState.Pending, waiting.State);
+        Assert.False(waiting.DomainConfigured);
+        Assert.Null(waiting.AssignedName);
+        Assert.Null(waiting.Deployment);
+
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
+            await machine.Agent.SignInAsync(machine.Id, machine.Token, new AgentSignInRequest(operatorName, DdtApplication.Password, null)));
+
+        Assert.Equal(AgentSignInStatus.Succeeded, signedIn.Status);
+
+        AgentNextResult approved = await machine.NextAsync();
+
+        Assert.Equal(MachineState.Approved, approved.State);
+        Assert.True(approved.DomainConfigured);
+        Assert.Equal("PC-0006", approved.AssignedName);
+        Assert.NotNull(approved.Deployment);
+    }
+
     [Fact]
     public async Task AMachineJoiningTheDomainNeedsAName()
     {

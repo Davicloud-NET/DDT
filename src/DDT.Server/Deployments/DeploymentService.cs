@@ -487,8 +487,21 @@ public sealed class DeploymentService(
                     actorMachineId: machine.Id));
                 break;
 
-            // From Assigned, a check before the disk was touched failed.
-            case (DeploymentState.Assigned or DeploymentState.Running, DeploymentState.Failed):
+            // A check before the disk was touched failed. The contract makes the agent name a step, but none ran.
+            case (DeploymentState.Assigned, DeploymentState.Failed):
+                string refused = ErrorText(report.Error);
+                End(machine, deployment, DeploymentState.Failed, refused, now);
+                machine.State = MachineState.Failed;
+                database.AuditEvents.Add(Audit(
+                    AuditActions.DeploymentFailed,
+                    deployment,
+                    now,
+                    address,
+                    $"{deployment.ImageName} on machine {machine.Id:D}: {refused}",
+                    actorMachineId: machine.Id));
+                break;
+
+            case (DeploymentState.Running, DeploymentState.Failed):
                 string error = ErrorText(report.Error);
                 Progress(deployment, report.Step, percent, now);
                 End(machine, deployment, DeploymentState.Failed, error, now);

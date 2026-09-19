@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
@@ -46,10 +47,14 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
         Guid deployment = await AssignWhileAwayAsync(application, machine);
         using AgentClient lab = new(application.CreateDefaultClient(), "10.200.3.4");
+        string before = machine.Token;
 
         AgentRegistrationResult registered = await machine.RegisterAgainAsync(lab);
 
         Assert.Equal(MachineState.Approved, registered.State);
+
+        // A poll token from before the netboot, whoever registered for it, is dead although Approved accepts poll tokens.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.NextAsync(machine.Id, before)).StatusCode);
 
         AgentNextResult next = await machine.NextAsync();
 

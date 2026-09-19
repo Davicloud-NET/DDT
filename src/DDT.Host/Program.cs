@@ -81,9 +81,11 @@ if (!app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseRateLimiter();
+// After authorization, so a request without a valid token never spends the window of the machine its route
+// names. Anonymous endpoints pass authorization and stay limited per address.
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // DisableCookieRedirect makes an unauthenticated API call answer 401 instead of redirecting to a
 // login page: the redirect is inferred per endpoint from metadata, so it cannot be relied on.

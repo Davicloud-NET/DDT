@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using DDT.Contracts.Images;
 using DDT.Core.Wim;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
@@ -186,7 +187,7 @@ public sealed partial class ImageUploadCompleter(
             return ("", [], exception.Message);
         }
 
-        List<WimImageInfo> deployable = [.. images.Where(i => i.Architecture == "x64")];
+        List<WimImageInfo> deployable = [.. images.Where(i => i.Architecture == DeploymentService.DeployableArchitecture)];
 
         if (deployable.Count == 0)
         {

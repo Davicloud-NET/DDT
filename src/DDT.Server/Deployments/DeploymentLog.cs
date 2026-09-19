@@ -20,6 +20,9 @@ internal static partial class DeploymentLog
     [LoggerMessage(EventId = 954, Level = LogLevel.Information, Message = "Deployment {DeploymentId} of {ImageName} on machine {MachineId} cancelled")]
     public static partial void Cancelled(ILogger logger, Guid deploymentId, string imageName, Guid machineId);
 
+    [LoggerMessage(EventId = 955, Level = LogLevel.Warning, Message = "Deployment {DeploymentId} of {ImageName} failed on machine {MachineId} before it started: {Error}")]
+    public static partial void FailedBeforeStart(ILogger logger, Guid deploymentId, string imageName, Guid machineId, string? error);
+
     // Called after a successful save, so the log never claims a change that lost a race. Before is null for a new
     // deployment.
     public static void Changed(ILogger logger, Deployment deployment, DeploymentState? before)
@@ -41,6 +44,9 @@ internal static partial class DeploymentLog
                 break;
             case DeploymentState.Done:
                 Done(logger, deployment.Id, deployment.ImageName, deployment.MachineId);
+                break;
+            case DeploymentState.Failed when deployment.Step is null:
+                FailedBeforeStart(logger, deployment.Id, deployment.ImageName, deployment.MachineId, deployment.Error);
                 break;
             case DeploymentState.Failed:
                 Failed(logger, deployment.Id, deployment.ImageName, deployment.MachineId, deployment.Step, deployment.Error);

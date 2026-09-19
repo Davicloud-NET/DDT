@@ -15,7 +15,8 @@ public static class RegistrationValidator
     private const int MaxBusTypeLength = 16;
 
     // The column's length. PostgreSQL refuses a longer value, and the agent would resend it forever.
-    private const int MaxDisksLength = 512;
+    internal const int MaxDisksLength = 512;
+
     private const double BytesPerGigabyte = 1024d * 1024 * 1024;
 
     public static bool TryNormalise(

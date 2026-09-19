@@ -1,9 +1,9 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Security;
@@ -58,9 +58,10 @@ public static class RateLimitingExtensions
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 }));
 
-            // Partitioned by the machine in the route, so one machine's token cannot starve another machine.
+            // Partitioned by the machine that holds the token. Anyone can get a poll token by registering, so keying on
+            // the machine in the route would let a stranger use up another machine's window.
             limiter.AddPolicy<string>(RateLimitPolicies.AgentMachine, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.GetRouteValue("id")?.ToString() ?? "unknown",
+                context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = MachineLogLimits.MaxAgentRequestsPerMinute,
@@ -71,7 +72,7 @@ public static class RateLimitingExtensions
             // Image downloads get their own window, so resuming one never eats into the reports of the same run. A
             // machine asks once before it erases the disk and again for each resumed range.
             limiter.AddPolicy<string>(RateLimitPolicies.AgentImage, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.GetRouteValue("id")?.ToString() ?? "unknown",
+                context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 30,

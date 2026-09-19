@@ -159,7 +159,8 @@ public static class AgentEndpoints
         }
 
         // A waiting machine learns nothing about what it will be given: anyone can register as it.
-        Deployment? active = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+        bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
+        Deployment? active = authorized
             ? await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false)
             : null;
 
@@ -171,8 +172,8 @@ public static class AgentEndpoints
             machine.SignedInUserName,
             active is null ? null : DeploymentSummaries.ForAgent(active),
             await deployments.CanPickImageAsync(machine, cancellationToken).ConfigureAwait(false),
-            deployments.DomainConfigured,
-            machine.AssignedName));
+            authorized && deployments.DomainConfigured,
+            authorized ? machine.AssignedName : null));
     }
 
     private static async Task<Results<Ok<AgentSignInResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ValidationProblem>> SignInAsync(

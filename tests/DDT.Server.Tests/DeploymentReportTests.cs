@@ -44,6 +44,16 @@ public sealed class DeploymentReportTests(DdtApplication application) : IClassFi
             .ToListAsync(TestContext.Current.CancellationToken));
     }
 
+    private Task<string?> AuditDetailAsync(Guid deploymentId, string action)
+    {
+        string subject = deploymentId.ToString("D");
+
+        return application.QueryAsync(database => database.AuditEvents
+            .Where(e => e.SubjectId == subject && e.Action == action)
+            .Select(e => e.Detail)
+            .SingleAsync(TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task ADeploymentRunsThroughItsStepsToDone()
     {
@@ -112,6 +122,31 @@ public sealed class DeploymentReportTests(DdtApplication application) : IClassFi
         Assert.Equal("No internal disk was found.", failed.Error);
         Assert.Equal(MachineState.Failed, (await machine.NextAsync()).State);
         Assert.Equal([AuditActions.DeploymentAssigned, AuditActions.DeploymentFailed], await AuditActionsAsync(deploymentId));
+
+        // The agent has to name a step, but none ran: the disk was never touched.
+        Assert.Null(failed.Step);
+        Assert.Equal(0, failed.Percent);
+        Assert.Equal(
+            $"{failed.ImageName} on machine {machine.Id:D}: No internal disk was found.",
+            await AuditDetailAsync(deploymentId, AuditActions.DeploymentFailed));
+    }
+
+    [Fact]
+    public async Task AFailureAfterTheStartNamesItsStep()
+    {
+        using DeployingMachine machine = await ApprovedAsync();
+        Guid deploymentId = await AssignAsync(machine.Id);
+
+        await machine.ReportOkAsync(deploymentId, DeploymentState.Running, DeploymentStep.Partition);
+        await machine.ReportOkAsync(deploymentId, DeploymentState.Failed, DeploymentStep.Download, 40, "The image download stopped.");
+
+        Deployment failed = await StoredAsync(deploymentId);
+
+        Assert.Equal(DeploymentStep.Download, failed.Step);
+        Assert.Equal(40, failed.Percent);
+        Assert.Equal(
+            $"{failed.ImageName} on machine {machine.Id:D} at Download: The image download stopped.",
+            await AuditDetailAsync(deploymentId, AuditActions.DeploymentFailed));
     }
 
     [Fact]

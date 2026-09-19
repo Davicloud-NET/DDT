@@ -104,6 +104,7 @@ public static class AgentDeploymentEndpoints
         HttpContext context,
         DdtDbContext database,
         DeploymentService deployments,
+        ImageStore store,
         LiveNotifier live,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -125,31 +126,43 @@ public static class AgentDeploymentEndpoints
             return TypedResults.Unauthorized();
         }
 
-        DeploymentDecision decision = await deployments
-            .PickAsync(machine, request, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
-            .ConfigureAwait(false);
+        Deployment deployment;
 
-        switch (decision.Outcome)
-        {
-            case DeploymentOutcome.NotFound:
-                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
-            case DeploymentOutcome.Conflict:
-                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
-            case DeploymentOutcome.Invalid:
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
-        }
-
-        Deployment deployment = decision.Deployment!;
+        // Under the library lock, so the image cannot be deleted between its lookup and the saved deployment.
+        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            DeploymentDecision decision = await deployments
+                .PickAsync(machine, request, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+                .ConfigureAwait(false);
+
+            switch (decision.Outcome)
+            {
+                case DeploymentOutcome.NotFound:
+                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
+                case DeploymentOutcome.Conflict:
+                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
+                case DeploymentOutcome.Invalid:
+                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+            }
+
+            deployment = decision.Deployment!;
+
+            try
+            {
+                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return TypedResults.Problem(
+                    title: "The machine changed while the image was chosen. Choose the image again.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
         }
-        catch (DbUpdateConcurrencyException)
+        finally
         {
-            return TypedResults.Problem(
-                title: "The machine changed while the image was chosen. Choose the image again.",
-                statusCode: StatusCodes.Status409Conflict);
+            store.LibraryLock.Release();
         }
 
         DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(AgentDeploymentEndpoints)), deployment, null);

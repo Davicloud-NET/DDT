@@ -15,7 +15,8 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
     public string UploadsDirectory => Path.GetFullPath(Path.Combine(options.Value.StorePath, "images", "uploads"));
 
     // Held while stored files and the rows that refer to them change together: the commit of a completed upload,
-    // the removal of an image, and the creation of an upload session, whose free space check counts the others.
+    // the removal of an image, an assignment or a pick that refers to an image, and the creation of an upload
+    // session, whose free space check counts the others.
     public SemaphoreSlim LibraryLock { get; } = new(1, 1);
 
     public string ObjectPath(string sha256) => Path.Combine(ObjectsDirectory, sha256);

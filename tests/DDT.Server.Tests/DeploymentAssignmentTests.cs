@@ -4,6 +4,8 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
+using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
@@ -293,6 +295,90 @@ public sealed class DeploymentAssignmentTests(DdtApplication application) : ICla
 
         // Rejected stays final: a second rejection is refused.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync($"/api/machines/{running.Id}/reject")).StatusCode);
+    }
+
+    [Fact]
+    public async Task AMachineWhoseDeploymentFailedCanBeRejected()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        Image image = await ImageAsync();
+
+        Guid deployment = (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id))).Deployment!.Id;
+        await machine.ReportOkAsync(deployment, DeploymentState.Running, DeploymentStep.Partition);
+        await machine.ReportOkAsync(deployment, DeploymentState.Failed, DeploymentStep.Apply, 30, "Apply failed.");
+
+        MachineSummary rejected = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.PostAsync($"/api/machines/{machine.Id}/reject"));
+
+        Assert.Equal(MachineState.Rejected, rejected.State);
+        Assert.Equal(deployment, rejected.Deployment?.Id);
+        Assert.Equal(DeploymentState.Failed, rejected.Deployment?.State);
+        Assert.Equal("Apply failed.", rejected.Deployment?.Error);
+    }
+
+    // Both leave the machine Approved, so only the concurrency token on ActiveDeploymentId stops the second one.
+    [Fact]
+    public async Task TwoAssignmentsRacingForOneMachineLeaveOneDeployment()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        Image image = await ImageAsync();
+
+        using IServiceScope first = application.Services.CreateScope();
+        using IServiceScope second = application.Services.CreateScope();
+        DdtDbContext firstDatabase = first.ServiceProvider.GetRequiredService<DdtDbContext>();
+        DdtDbContext secondDatabase = second.ServiceProvider.GetRequiredService<DdtDbContext>();
+        Machine firstMachine = await firstDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
+        Machine secondMachine = await secondDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
+
+        DeploymentDecision firstDecision = await first.ServiceProvider.GetRequiredService<DeploymentService>()
+            .AssignAsync(firstMachine, new AssignImageRequest(image.Id, null), null, "first", null, cancellationToken);
+        DeploymentDecision secondDecision = await second.ServiceProvider.GetRequiredService<DeploymentService>()
+            .AssignAsync(secondMachine, new AssignImageRequest(image.Id, null), null, "second", null, cancellationToken);
+
+        Assert.Equal(DeploymentOutcome.Accepted, firstDecision.Outcome);
+        Assert.Equal(DeploymentOutcome.Accepted, secondDecision.Outcome);
+
+        await firstDatabase.SaveChangesAsync(cancellationToken);
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => secondDatabase.SaveChangesAsync(cancellationToken));
+
+        Assert.Equal(firstDecision.Deployment!.Id, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+        Assert.Equal(
+            1,
+            await application.QueryAsync(database => database.Deployments.CountAsync(d => d.MachineId == machine.Id, cancellationToken)));
+    }
+
+    // Holding the library lock stands in for an image deletion that runs between the lookup and the save.
+    [Fact]
+    public async Task AnAssignmentWaitsForTheImageLibrary()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, await application.AdministratorAsync());
+        Image image = await ImageAsync();
+        ImageStore store = application.Services.GetRequiredService<ImageStore>();
+        Task<HttpResponseMessage> assigning;
+
+        await store.LibraryLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            assigning = AssignAsync(machine.Id, image.Id);
+            await Task.WhenAny(assigning, Task.Delay(TimeSpan.FromSeconds(1), cancellationToken));
+            Assert.False(assigning.IsCompleted);
+
+            await application.QueryAsync(database => database.Images.Where(i => i.Id == image.Id).ExecuteDeleteAsync(cancellationToken));
+        }
+        finally
+        {
+            store.LibraryLock.Release();
+        }
+
+        HttpResponseMessage response = await assigning;
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("The image no longer exists. Load the page again and choose another image.", await TestDatabase.TitleAsync(response));
+        Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
     [Fact]

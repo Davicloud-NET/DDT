@@ -59,6 +59,23 @@ public sealed class DeploymentPickTests(DdtApplication application) : IClassFixt
         Assert.Equal(HttpStatusCode.Forbidden, (await PickAsync(waiting, image.Id)).StatusCode);
     }
 
+    // Token generations are small numbers that machines share, so only the machine id keeps one machine's session
+    // token away from another machine's images and deployments.
+    [Fact]
+    public async Task AMachineCannotListOrChooseForAnotherMachine()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine first = await DeployingMachine.SignedInAsync(application, operatorName);
+        using DeployingMachine second = await DeployingMachine.SignedInAsync(application, operatorName);
+        Image image = await ImageAsync();
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await second.Agent.ImagesAsync(first.Id, second.Token)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await second.Agent.PickAsync(first.Id, second.Token, new AgentPickRequest(image.Id, 0, null))).StatusCode);
+        Assert.Null((await first.NextAsync()).Deployment);
+    }
+
     [Fact]
     public async Task ListsOnlyImagesThisAgentCanDeploy()
     {
@@ -150,6 +167,39 @@ public sealed class DeploymentPickTests(DdtApplication application) : IClassFixt
 
         // Without a domain, Windows makes a name up.
         Assert.Equal(HttpStatusCode.OK, (await PickAsync(machine, image.Id, computerName: null)).StatusCode);
+    }
+
+    // Holding the library lock stands in for an image deletion that runs between the lookup and the save.
+    [Fact]
+    public async Task AChoiceWaitsForTheImageLibrary()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName);
+        Image image = await ImageAsync();
+        ImageStore store = application.Services.GetRequiredService<ImageStore>();
+        Task<HttpResponseMessage> picking;
+
+        await store.LibraryLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            picking = PickAsync(machine, image.Id);
+            await Task.WhenAny(picking, Task.Delay(TimeSpan.FromSeconds(1), cancellationToken));
+            Assert.False(picking.IsCompleted);
+
+            await application.QueryAsync(database => database.Images.Where(i => i.Id == image.Id).ExecuteDeleteAsync(cancellationToken));
+        }
+        finally
+        {
+            store.LibraryLock.Release();
+        }
+
+        HttpResponseMessage response = await picking;
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("The image no longer exists. Choose another image.", await TestDatabase.TitleAsync(response));
+        Assert.Null((await machine.NextAsync()).Deployment);
     }
 
     [Fact]

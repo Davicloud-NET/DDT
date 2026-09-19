@@ -24,9 +24,13 @@ public static class DeploymentEndpoints
         return group;
     }
 
-    private static Ok<DeploymentOptionsView> ReadOptions(DeploymentService deployments, IOptions<MachineOptions> machineOptions) =>
+    private static Ok<DeploymentOptionsView> ReadOptions(
+        DeploymentService deployments,
+        IOptions<MachineOptions> machineOptions,
+        TimeProvider timeProvider) =>
         TypedResults.Ok(new DeploymentOptionsView(
             deployments.DomainConfigured,
             machineOptions.Value.RequireWebApproval,
-            deployments.ZeroTouchEnabled));
+            deployments.ZeroTouchEnabled,
+            timeProvider.GetUtcNow()));
 }

@@ -1,6 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import type { DeploymentSummary } from "@/deployments/deployments";
+import { isActive, type DeploymentSummary } from "@/deployments/deployments";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type MachineState =
@@ -66,9 +66,9 @@ export function rejectMachine(id: string): Promise<MachineSummary> {
 }
 
 // Anyone who reaches the server can register a machine, so a waiting machine nobody ever approved may be a
-// stray, and an operator can throw it away.
+// stray, and an operator can throw it away. One with an assigned image waits for it on purpose.
 export function isStray(machine: MachineSummary): boolean {
-  return machine.state === "Pending" && !machine.everApproved;
+  return machine.state === "Pending" && !machine.everApproved && !isActive(machine.deployment);
 }
 
 export function removeMachine(id: string): Promise<void> {
@@ -94,5 +94,7 @@ export function machineLabel(machine: MachineSummary): string {
   return machine.model === null ? `the machine with MAC ${mac}` : `${machine.model} (${mac})`;
 }
 
-// A machine waiting at the prompt checks in every few seconds and is recorded at most every 30 s.
+// The server's DeploymentLimits.WaitingAtPrompt, which decides whether an assignment authorizes a waiting
+// machine; change both together. A machine waiting at the prompt checks in every few seconds and is
+// recorded at most every 30 s.
 export const WAITING_WINDOW_MS = 90_000;

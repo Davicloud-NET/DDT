@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { DeploymentOptionsView, DeploymentSummary } from "@/deployments/deployments";
 import type { ImageSummary } from "@/images/images";
-import type { MachineSummary } from "@/machines/machines";
+import { upsertMachine, type MachineSummary } from "@/machines/machines";
 
 import { MachinesPage } from "./MachinesPage";
 
@@ -83,6 +83,7 @@ function options(overrides: Partial<DeploymentOptionsView>): DeploymentOptionsVi
     domainConfigured: false,
     requireWebApproval: false,
     zeroTouchEnabled: false,
+    serverUtc: now.toISOString(),
     ...overrides,
   };
 }
@@ -159,7 +160,7 @@ function renderWith(
     </QueryClientProvider>,
   );
 
-  return calls;
+  return { calls, queryClient };
 }
 
 function row(text: string): HTMLElement {
@@ -171,6 +172,16 @@ function row(text: string): HTMLElement {
   }
 
   return tableRow;
+}
+
+function cell(text: string): HTMLElement {
+  const tableCell = screen.getByText(text).closest("td");
+
+  if (tableCell === null) {
+    throw new Error(`${text} is not in a table cell.`);
+  }
+
+  return tableCell;
 }
 
 describe("MachinesPage", () => {
@@ -212,6 +223,30 @@ describe("MachinesPage", () => {
     expect(screen.getAllByRole("button", { name: "Remove all 2 from 10.0.0.9" })).toHaveLength(1);
   });
 
+  it("does not offer to remove a waiting machine with an assigned image, nor count it with the strays", async () => {
+    renderWith(
+      [
+        machine({ id: "1", firstSeenAddress: "10.0.0.5" }),
+        machine({ id: "2", firstSeenAddress: "10.0.0.5" }),
+        machine({
+          id: "3",
+          assignedName: "PC-ASSIGNED",
+          firstSeenAddress: "10.0.0.5",
+          deployment: deployment({ state: "Assigned" }),
+        }),
+      ],
+      operator,
+    );
+
+    await screen.findByText("PC-ASSIGNED");
+
+    expect(
+      within(row("PC-ASSIGNED")).queryByRole("button", { name: /^Remove/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Remove all 2 from 10.0.0.5" })).toBeInTheDocument();
+  });
+
   it("shows each machine's deployment: step, percent and time for a running one, the error for a failed one", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now });
 
@@ -227,16 +262,28 @@ describe("MachinesPage", () => {
           startedUtc: secondsBefore(125),
         }),
       }),
+      // The check before the start failed, so the disk was never touched and no step is recorded.
       machine({
         id: "2",
         assignedName: "PC-FAILED",
         state: "Failed",
         deployment: deployment({
           state: "Failed",
-          step: "Partition",
           error: "The disk is smaller than the image needs.",
-          startedUtc: secondsBefore(600),
           finishedUtc: secondsBefore(500),
+        }),
+      }),
+      machine({
+        id: "6",
+        assignedName: "PC-STOPPED",
+        state: "Failed",
+        deployment: deployment({
+          state: "Failed",
+          step: "Apply",
+          percent: 40,
+          error: "Stopped by operator.",
+          startedUtc: secondsBefore(900),
+          finishedUtc: secondsBefore(800),
         }),
       }),
       machine({
@@ -270,9 +317,14 @@ describe("MachinesPage", () => {
     );
     expect(running.getByText("Running for 2 min 5 s")).toBeInTheDocument();
 
-    const failed = within(row("PC-FAILED"));
-    expect(failed.getByText("Failed at Partition")).toBeInTheDocument();
-    expect(failed.getByText("The disk is smaller than the image needs.")).toBeInTheDocument();
+    const failed = cell("The disk is smaller than the image needs.");
+    expect(row("PC-FAILED")).toContainElement(failed);
+    expect(within(failed).getByText("Failed")).toBeInTheDocument();
+    expect(within(failed).queryByText(/Failed at/)).not.toBeInTheDocument();
+
+    const stopped = within(row("PC-STOPPED"));
+    expect(stopped.getByText("Failed at Apply")).toBeInTheDocument();
+    expect(stopped.getByText("Stopped by operator.")).toBeInTheDocument();
 
     expect(within(row("PC-DONE")).getByText(/^Done, /)).toBeInTheDocument();
     expect(within(row("PC-CANCELLED")).getByText("Cancelled")).toBeInTheDocument();
@@ -283,7 +335,7 @@ describe("MachinesPage", () => {
     vi.useFakeTimers({ toFake: ["Date"], now });
 
     const waiting = machine({ lastSeenUtc: secondsBefore(30) });
-    const calls = renderWith([waiting], operator, {
+    const { calls } = renderWith([waiting], operator, {
       "GET /api/images": {
         body: [
           image({}),
@@ -377,14 +429,6 @@ describe("MachinesPage", () => {
       lastSeen: "Last seen from 172.25.132.98 30 seconds ago; nobody has signed in at it.",
       consequence: "It stays waiting until someone signs in at it.",
     },
-    {
-      waiting: "someone signed in at, when the server requires web approval",
-      seconds: 30,
-      signedInBy: "tech",
-      settings: options({ requireWebApproval: true }),
-      lastSeen: "Last seen from 172.25.132.98 30 seconds ago; signed in by tech.",
-      consequence: "It stays waiting until someone approves it on this page.",
-    },
   ])(
     "says that a machine $waiting stays waiting after the assignment",
     async ({ seconds, signedInBy, settings, lastSeen, consequence }) => {
@@ -404,6 +448,76 @@ describe("MachinesPage", () => {
       expect(within(dialog).getAllByText(/stays waiting/)).toHaveLength(1);
     },
   );
+
+  it("says that under web approval the assignment authorizes a machine someone signed in at", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now });
+
+    // The server does not look at the last contact in this case.
+    renderWith([machine({ lastSeenUtc: secondsBefore(600), signedInBy: "tech" })], operator, {
+      "GET /api/images": { body: [image({})] },
+      "GET /api/deployments/options": { body: options({ requireWebApproval: true }) },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      within(dialog).getByText("Last seen from 172.25.132.98 10 minutes ago; signed in by tech."),
+    ).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText(
+        "This also authorizes the machine, because tech signed in at it. It then receives the image and the deployment passwords.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/stays waiting/)).not.toBeInTheDocument();
+  });
+
+  it("judges a machine waiting at the prompt by the server's clock when the browser's is ahead", async () => {
+    // The browser's clock is two minutes ahead of the server's.
+    vi.useFakeTimers({ toFake: ["Date"], now: now.getTime() + 120_000 });
+
+    renderWith([machine({ lastSeenUtc: secondsBefore(30) })], operator, {
+      "GET /api/images": { body: [image({})] },
+      "GET /api/deployments/options": { body: options({ serverUtc: now.toISOString() }) },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      await within(dialog).findByText(
+        "This also authorizes the machine, which then receives the image and the deployment passwords.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        "Last seen from 172.25.132.98 30 seconds ago; nobody has signed in at it.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/stays waiting/)).not.toBeInTheDocument();
+  });
+
+  it("says only once that a machine reported no disk to install on", async () => {
+    renderWith(
+      [machine({ state: "Approved", everApproved: true, disks: null, eligibleDiskCount: 0 })],
+      operator,
+      {
+        "GET /api/images": { body: [image({})] },
+        "GET /api/deployments/options": { body: options({}) },
+      },
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(within(dialog).getByText("Model: Virtual Machine.")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        "The machine reported no disk DDT can install on, so the deployment will fail.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/has not reported its disks/)).not.toBeInTheDocument();
+  });
 
   it("does not offer the assignment when the deployment settings cannot be loaded", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now });
@@ -430,7 +544,7 @@ describe("MachinesPage", () => {
 
   it("requires a computer name when a domain is configured", async () => {
     const approved = machine({ state: "Approved", everApproved: true });
-    const calls = renderWith([approved], operator, {
+    const { calls } = renderWith([approved], operator, {
       "GET /api/images": { body: [image({})] },
       "GET /api/deployments/options": { body: options({ domainConfigured: true }) },
     });
@@ -501,7 +615,7 @@ describe("MachinesPage", () => {
       everApproved: true,
       deployment: deployment({ state: "Running", step: "Apply", percent: 10 }),
     });
-    const calls = renderWith([deploying], operator, {
+    const { calls } = renderWith([deploying], operator, {
       [`DELETE /api/machines/${deploying.id}/deployments/current`]: {
         body: {
           ...deploying,
@@ -535,13 +649,80 @@ describe("MachinesPage", () => {
     });
   });
 
+  it("closes the stop confirmation when the deployment it was opened for ends", async () => {
+    const deploying = machine({
+      state: "Deploying",
+      everApproved: true,
+      deployment: deployment({ state: "Running", step: "Apply", percent: 10 }),
+    });
+    const { calls, queryClient } = renderWith([deploying], operator);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Stop" }));
+    await screen.findByRole("dialog", { name: "Stop the deployment?" });
+
+    // Meanwhile the agent reported that the same run failed.
+    act(() => {
+      upsertMachine(queryClient, {
+        ...deploying,
+        state: "Failed",
+        deployment: deployment({
+          state: "Failed",
+          step: "Apply",
+          error: "The image could not be applied.",
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("The image could not be applied.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Stop" })).not.toBeInTheDocument();
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+  });
+
+  it("closes the stop confirmation when another deployment replaced the one it was opened for", async () => {
+    const deploying = machine({
+      state: "Deploying",
+      everApproved: true,
+      deployment: deployment({ state: "Running", step: "Apply", percent: 10 }),
+    });
+    const { calls, queryClient } = renderWith([deploying], operator);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Stop" }));
+    await screen.findByRole("dialog", { name: "Stop the deployment?" });
+
+    // Meanwhile the run failed, and a technician picked another image at the machine.
+    act(() => {
+      upsertMachine(queryClient, {
+        ...deploying,
+        deployment: deployment({
+          id: "0193a4b2-0000-7000-8000-0000000000d2",
+          state: "Running",
+          step: "Partition",
+          source: "Console",
+          requestedBy: "tech",
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+
+    // The new deployment can be stopped after its own confirmation.
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    expect(await screen.findByRole("dialog", { name: "Stop the deployment?" })).toBeInTheDocument();
+  });
+
   it("cancels an assigned deployment", async () => {
     const approved = machine({
       state: "Approved",
       everApproved: true,
       deployment: deployment({ state: "Assigned" }),
     });
-    const calls = renderWith([approved], operator, {
+    const { calls } = renderWith([approved], operator, {
       [`DELETE /api/machines/${approved.id}/deployments/current`]: {
         body: { ...approved, deployment: deployment({ state: "Cancelled" }) },
       },

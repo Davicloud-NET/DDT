@@ -32,7 +32,8 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   const queryClient = useQueryClient();
   const images = useQuery(imagesQuery);
   const options = useQuery(deploymentOptionsQuery);
-  const now = useNow(5_000);
+  // The server decides with its clock whether the machine waits at the prompt, so the dialog does too.
+  const now = useNow(5_000) + (options.data?.serverClockOffsetMs ?? 0);
   const imageFieldId = useId();
   const nameFieldId = useId();
   const nameHintId = useId();
@@ -58,6 +59,13 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   const image = deployable.find((candidate) => candidate.id === imageId) ?? deployable[0] ?? null;
   const domainConfigured = options.data?.domainConfigured === true;
   const severalDisks = machine.eligibleDiskCount !== null && machine.eligibleDiskCount > 1;
+  // A machine that reported no eligible disk has no disks line; the error below says so.
+  const disksLine =
+    machine.disks !== null
+      ? `Reported disks: ${machine.disks}.`
+      : machine.eligibleDiskCount === 0
+        ? null
+        : "The machine has not reported its disks.";
   const error = problem ?? (assign.isError ? assign.error.message : null);
   // Without the settings the dialog cannot say what the assignment does, so it does not offer it.
   const canSubmit =
@@ -165,10 +173,7 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
             </p>
           )}
           <p>
-            Model: {machine.model ?? "not reported"}.{" "}
-            {machine.disks === null
-              ? "The machine has not reported its disks."
-              : `Reported disks: ${machine.disks}.`}
+            Model: {machine.model ?? "not reported"}.{disksLine !== null && ` ${disksLine}`}
           </p>
           {severalDisks && (
             <p className={styles.error}>
@@ -221,11 +226,12 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   );
 }
 
-// What the assignment does to a machine that is not authorized yet (design 1.2 and 1.3). Without web
-// approval, the assignment authorizes a machine waiting at the prompt; one not seen for a while is
-// authorized by the next sign-in at it, or by its next netboot from a zero touch network. With web
-// approval, zero touch is off and a sign-in authorizes the machine once it has an assigned image. The agent
-// offers the sign-in only until somebody signed in, and approving on this page needs that sign-in.
+// What the assignment does to a machine that is not authorized yet, with now on the server's clock.
+// Without web approval, the assignment authorizes a machine waiting at the prompt; one not seen for a
+// while is authorized by the next sign-in at it, or by its next netboot from a zero touch network. With
+// web approval, zero touch is off, and a sign-in and an assignment together authorize the machine in
+// either order: the assignment authorizes a machine someone already signed in at, however long ago it
+// was seen, and otherwise the next sign-in at it does.
 function pendingConsequence(
   machine: MachineSummary,
   options: DeploymentOptionsView,
@@ -234,7 +240,7 @@ function pendingConsequence(
   if (options.requireWebApproval) {
     return machine.signedInBy === null
       ? "It stays waiting until someone signs in at it."
-      : "It stays waiting until someone approves it on this page.";
+      : `This also authorizes the machine, because ${machine.signedInBy} signed in at it. It then receives the image and the deployment passwords.`;
   }
 
   if (now - Date.parse(machine.lastSeenUtc) <= WAITING_WINDOW_MS) {

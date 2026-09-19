@@ -37,7 +37,7 @@ export function MachinesPage() {
   const now = useNow(5_000);
 
   const [assignTo, setAssignTo] = useState<string | null>(null);
-  const [stopOn, setStopOn] = useState<string | null>(null);
+  const [stopOn, setStopOn] = useState<{ machineId: string; deploymentId: string } | null>(null);
 
   const roles = user?.roles ?? [];
   const canDecide = roles.includes("Administrator") || roles.includes("Operator");
@@ -82,7 +82,17 @@ export function MachinesPage() {
   const list = machines.data ?? [];
   const busy = decide.isPending || remove.isPending || cancel.isPending || stop.isPending;
   const assignTarget = list.find((machine) => machine.id === assignTo) ?? null;
-  const stopTarget = list.find((machine) => machine.id === stopOn) ?? null;
+  // The confirmation is for the deployment that was running when Stop was clicked. Once that one ended,
+  // the dialog closes, so a late confirm cannot stop another deployment on the same machine.
+  const stopTarget =
+    stopOn === null
+      ? null
+      : (list.find(
+          (machine) =>
+            machine.id === stopOn.machineId &&
+            machine.deployment?.id === stopOn.deploymentId &&
+            machine.deployment.state === "Running",
+        ) ?? null);
 
   // Offered once per address, on its first row, when more than one stray came from it.
   const straysByAddress = new Map<string, number>();
@@ -132,6 +142,7 @@ export function MachinesPage() {
                 isStray(machine) && address !== null ? (straysByAddress.get(address) ?? 0) : 0;
               const offerBulk = strays > 1 && address !== null && !bulkOffered.has(address);
               const deploymentState = machine.deployment?.state;
+              const running = deploymentState === "Running" ? machine.deployment : null;
 
               if (offerBulk) {
                 bulkOffered.add(address);
@@ -202,14 +213,14 @@ export function MachinesPage() {
                             Cancel
                           </button>
                         )}
-                        {deploymentState === "Running" && (
+                        {running !== null && (
                           <button
                             type="button"
                             className={styles.reject}
                             disabled={busy}
                             onClick={() => {
                               stop.reset();
-                              setStopOn(machine.id);
+                              setStopOn({ machineId: machine.id, deploymentId: running.id });
                             }}
                           >
                             Stop

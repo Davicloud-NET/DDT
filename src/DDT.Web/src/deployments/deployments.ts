@@ -35,6 +35,14 @@ export interface DeploymentOptionsView {
   requireWebApproval: boolean;
   // True when DDT:Machines:ZeroTouchNetworks lists a network and web approval is off.
   zeroTouchEnabled: boolean;
+  // The server's clock when it answered.
+  serverUtc: string;
+}
+
+export interface DeploymentOptions extends DeploymentOptionsView {
+  // Milliseconds to add to this browser's clock to get the server's, measured when the answer arrived.
+  // The server decides with its own clock whether a machine is waiting at the prompt.
+  serverClockOffsetMs: number;
 }
 
 // Assigned and Running deployments hold the machine: it cannot get another one until they end.
@@ -42,10 +50,19 @@ export function isActive(deployment: DeploymentSummary | null): boolean {
   return deployment?.state === "Assigned" || deployment?.state === "Running";
 }
 
-// The settings come from the server's configuration and change only with a restart.
+// The settings come from the server's configuration and change only with a restart. The clock offset is
+// measured again with every answer.
 export const deploymentOptionsQuery = queryOptions({
   queryKey: ["deployment-options"],
-  queryFn: () => apiGet<DeploymentOptionsView>("/api/deployments/options"),
+  queryFn: async (): Promise<DeploymentOptions> => {
+    const view = await apiGet<DeploymentOptionsView>("/api/deployments/options");
+    const serverNow = Date.parse(view.serverUtc);
+
+    return {
+      ...view,
+      serverClockOffsetMs: Number.isNaN(serverNow) ? 0 : serverNow - Date.now(),
+    };
+  },
   staleTime: 5 * 60_000,
 });
 

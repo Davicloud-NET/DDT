@@ -58,6 +58,14 @@ function accepted(offset: number): Response {
   return new Response(null, { status: 204, headers: { "Upload-Offset": String(offset) } });
 }
 
+// The server's answer while another request holds the session: it names the offset it has stored.
+function busy(offset: number): Response {
+  return new Response(null, {
+    status: 409,
+    headers: { "Retry-After": "5", "Upload-Offset": String(offset) },
+  });
+}
+
 function file(): File {
   return new File(["012345"], "boot.wim", { lastModified: 1_000 });
 }
@@ -125,7 +133,7 @@ describe("uploadImage", () => {
       [`PATCH ${slicePath}`]: [
         new Response(null, { status: 429, headers: { "Retry-After": "7" } }),
         accepted(4),
-        new Response(null, { status: 409, headers: { "Retry-After": "5" } }),
+        busy(4),
         accepted(6),
       ],
       [`POST ${slicePath}/complete`]: [new Response("[]", { status: 200 })],
@@ -137,6 +145,32 @@ describe("uploadImage", () => {
     // The first complete request got the 200, so every image in the file was there before.
     expect(result.outcome).toBe("duplicate");
     expect(waits).toEqual([7_000, 5_000]);
+  });
+
+  it("waits when the server is busy with the upload, then sends the same slice again", async () => {
+    const sent = serve({
+      "POST /api/images/uploads": [created()],
+      // A resend reaches the server while the lost request still holds the session.
+      [`PATCH ${slicePath}`]: [busy(0), accepted(4), accepted(6)],
+      [`POST ${slicePath}/complete`]: [new Response("[]", { status: 201 })],
+    });
+    const { waits, wait } = recordingWait();
+    const progress: UploadProgress[] = [];
+
+    const result = await uploadImage(file(), {
+      signal: new AbortController().signal,
+      wait,
+      onProgress: (update) => progress.push(update),
+    });
+
+    expect(result.outcome).toBe("added");
+    expect(waits).toEqual([5_000]);
+    expect(sent.filter((request) => request.method === "PATCH").map((r) => r.offset)).toEqual([
+      "0",
+      "0",
+      "4",
+    ]);
+    expect(progress.at(-1)).toMatchObject({ phase: "verifying", offset: 6, sentBytes: 6 });
   });
 
   it("does not call the images duplicates when an earlier complete may have added them", async () => {

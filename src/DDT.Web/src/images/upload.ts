@@ -40,9 +40,9 @@ export const MAX_FAILURES = 10;
 const DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024;
 const MAX_WAIT = 60_000;
 
-// The protocol of design 4.4. The server keeps the offset it has stored, so every request says where its
-// bytes start, and a refusal says where the server stands. That covers a lost answer, a second tab and a
-// reload, which the server recognises by the file's name, length and modification time.
+// The server keeps the offset it has stored, so every request says where its bytes start, and a refusal
+// says where the server stands. That covers a lost answer, a second tab and a reload, which the server
+// recognises by the file's name, length and modification time.
 export async function uploadImage(file: File, options: UploadOptions): Promise<UploadResult> {
   const { signal } = options;
   const wait = options.wait ?? waitFor;
@@ -180,8 +180,8 @@ export async function uploadImage(file: File, options: UploadOptions): Promise<U
   }
 }
 
-// A 409 either names the offset the server has stored, or asks to try again later because another
-// request holds the session.
+// A 409 either names another offset the server has stored, or asks to try again later because another
+// request holds the session. A busy answer to a chunk names the offset too, and it is the one just sent.
 async function followConflict(
   response: Response,
   sent: number,
@@ -199,7 +199,8 @@ async function followConflict(
 
   const delay = retryAfter(response);
 
-  if (moved === null && delay !== null) {
+  // The offset did not move, so a Retry-After means the server is busy with this upload.
+  if (delay !== null) {
     await wait(delay, signal);
     return;
   }

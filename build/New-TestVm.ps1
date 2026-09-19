@@ -7,8 +7,13 @@
 Creates or removes the Hyper-V Generation 2 machine used to test DDT netboot with Secure Boot on.
 
 .DESCRIPTION
-Builds a diskless Generation 2 virtual machine with Secure Boot enabled and the network adapter
-first in the boot order. Safe to run repeatedly: existing state is reconciled, not recreated.
+Builds a Generation 2 virtual machine with Secure Boot enabled, a virtual TPM, a 64 GB disk to deploy
+Windows onto, and the network adapter first in the boot order. Safe to run repeatedly: existing state
+is reconciled, not recreated, and a Windows Boot Manager entry a deployment added stays in the boot
+order.
+
+The disk is created in the host's virtual hard disk folder as <name>.vhdx and is reused when it already
+exists. -Remove leaves it in place and prints where it is.
 
 By default the machine joins the Hyper-V Default Switch, which already runs a DHCP server. That is
 the shape DDT is built for: someone else hands out addresses and DDT answers only as ProxyDHCP.
@@ -42,9 +47,14 @@ param(
     [ValidateRange(8, 30)]
     [int] $PrefixLength = 24,
 
-    # WinPE boots the whole boot.wim into a RAM disk, about 340 MB before the agent is added.
+    # WinPE boots the whole boot.wim into a RAM disk, about 340 MB before the agent is added, and the
+    # Windows 11 it deploys wants 4 GB.
     [ValidateRange(1GB, 32GB)]
-    [long] $MemoryBytes = 2GB,
+    [long] $MemoryBytes = 4GB,
+
+    # Windows 11 wants 64 GB. A deployment briefly holds the downloaded image and the applied one.
+    [ValidateRange(32GB, 2TB)]
+    [long] $DiskSizeBytes = 64GB,
 
     # Fixed and locally administered, so the DDT machine record survives a teardown and recreate.
     [ValidatePattern('^[0-9A-Fa-f]{12}$')]
@@ -136,7 +146,6 @@ function Initialize-Vm {
     }
 
     # Static memory: the RAM disk needs the whole image resident before any balloon driver runs.
-    # Automatic checkpoints would add a disk file to every boot of a machine that has no disk.
     Set-VM -VM $vm -StaticMemory -MemoryStartupBytes $MemoryBytes `
         -AutomaticCheckpointsEnabled $false -CheckpointType Disabled `
         -AutomaticStartAction Nothing -AutomaticStopAction TurnOff
@@ -158,13 +167,34 @@ function Initialize-Vm {
 
     Set-VMNetworkAdapter -VMNetworkAdapter $adapter -StaticMacAddress $MacAddress.ToUpperInvariant()
 
+    if (-not (Get-VMHardDiskDrive -VM $vm)) {
+        $disk = Join-Path (Get-VMHost).VirtualHardDiskPath "$Name.vhdx"
+
+        if (-not (Test-Path -LiteralPath $disk)) {
+            $null = New-VHD -Path $disk -SizeBytes $DiskSizeBytes -Dynamic
+            Write-Host "Created virtual disk $disk."
+        }
+
+        Add-VMHardDiskDrive -VM $vm -Path $disk
+    }
+
+    # A local key protector is enough for a test machine; Windows 11 setup is not run, but Windows expects
+    # a TPM once deployed.
+    if (-not (Get-VMSecurity -VM $vm).TpmEnabled) {
+        Set-VMKeyProtector -VM $vm -NewLocalKeyProtector
+        Enable-VMTPM -VM $vm
+    }
+
     # PauseAfterBootFailure keeps the firmware error on screen instead of scrolling past it.
     Set-VMFirmware -VM $vm -EnableSecureBoot On -SecureBootTemplateId $template.Id `
         -PreferredNetworkBootProtocol IPv4 -PauseAfterBootFailure On
 
-    # BootOrder replaces the whole list, so the adapter goes first and nothing else is dropped.
+    # BootOrder replaces the whole list, so the adapter goes first and nothing else is dropped. File
+    # entries are the Windows Boot Manager a deployment added; the list would lose them if rebuilt from
+    # devices alone.
+    $files = @((Get-VMFirmware -VM $vm).BootOrder | Where-Object { $_.BootType -eq 'File' })
     $drives = @(@(Get-VMHardDiskDrive -VM $vm) + @(Get-VMDvdDrive -VM $vm) | Where-Object { $_ })
-    Set-VMFirmware -VM $vm -BootOrder (@($adapter) + $drives)
+    Set-VMFirmware -VM $vm -BootOrder (@($adapter) + $files + $drives)
 
     $first = (Get-VMFirmware -VM $vm).BootOrder | Select-Object -First 1
     if ($first.BootType -ne 'Network') {
@@ -181,6 +211,7 @@ function Remove-Vm {
     }
 
     $folder = $vm.Path
+    $disks = @(Get-VMHardDiskDrive -VM $vm | ForEach-Object { $_.Path })
 
     if ($vm.State -ne 'Off') {
         Stop-VM -VM $vm -TurnOff -Force
@@ -189,11 +220,15 @@ function Remove-Vm {
     Remove-VM -VM $vm -Force
     Write-Host "Removed virtual machine '$Name'."
 
+    foreach ($disk in $disks) {
+        Write-Host "The virtual disk $disk was left in place. Delete it to start the next machine with an empty disk."
+    }
+
     # Remove-VM leaves configuration files behind. Only a folder named after this machine and holding
     # no virtual disks is deleted, never a shared parent such as the Hyper-V default store.
     if ($folder -and (Split-Path -Path $folder -Leaf) -eq $Name -and (Test-Path -LiteralPath $folder)) {
-        $disks = @(Get-ChildItem -LiteralPath $folder -Recurse -File -Include *.vhd, *.vhdx, *.avhdx -ErrorAction SilentlyContinue)
-        if ($disks.Count -eq 0) {
+        $inside = @(Get-ChildItem -LiteralPath $folder -Recurse -File -Include *.vhd, *.vhdx, *.avhdx -ErrorAction SilentlyContinue)
+        if ($inside.Count -eq 0) {
             Remove-Item -LiteralPath $folder -Recurse -Force
         }
     }

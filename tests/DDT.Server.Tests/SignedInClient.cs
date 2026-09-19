@@ -19,25 +19,33 @@ public sealed class SignedInClient(HttpClient client, CookieContainer cookies) :
 
     public Task<HttpResponseMessage> DeleteAsync(string path) => SendAsync(HttpMethod.Delete, path, null);
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body)
+    // Any request with its own content and headers, such as an upload chunk; the antiforgery token is added here.
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         if (_csrfToken is null)
         {
-            using HttpResponseMessage session = await client.GetAsync(new Uri("/api/auth/session", UriKind.Relative));
+            using HttpResponseMessage session = await client.GetAsync(new Uri("/api/auth/session", UriKind.Relative), cancellationToken);
             Remember(session);
         }
 
+        request.Headers.Add(CsrfHeader, _csrfToken);
+
+        HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
+        Remember(response);
+
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body)
+    {
         using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative))
         {
             Content = body is null ? null : JsonContent.Create(body, options: TestJson.Options),
         };
 
-        request.Headers.Add(CsrfHeader, _csrfToken);
-
-        HttpResponseMessage response = await client.SendAsync(request);
-        Remember(response);
-
-        return response;
+        return await SendAsync(request);
     }
 
     public Task<HttpResponseMessage> GetAsync(string path) => client.GetAsync(new Uri(path, UriKind.Relative));

@@ -94,6 +94,7 @@ api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
+api.MapGroup("/images").MapImageEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints();
 

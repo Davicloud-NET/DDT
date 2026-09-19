@@ -110,7 +110,7 @@ public class DdtApplication : WebApplicationFactory<Program>
     }
 
     // Puts a file straight into the library, for tests that need an image but not the upload protocol.
-    public async Task<Image> SeedImageAsync(byte[] content, string? architecture = "x64", int wimIndex = 1)
+    public async Task<Image> SeedImageAsync(byte[] content, string? architecture = "x64", int wimIndex = 1, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(content);
 
@@ -122,7 +122,7 @@ public class DdtApplication : WebApplicationFactory<Program>
         Image image = new()
         {
             Id = Guid.CreateVersion7(),
-            Name = $"Test image {sha256[..8]}",
+            Name = name ?? $"Test image {sha256[..8]}",
             Kind = ImageKind.Wim,
             Sha256 = sha256,
             SizeBytes = content.Length,

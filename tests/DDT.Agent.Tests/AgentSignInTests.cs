@@ -20,7 +20,7 @@ public sealed class AgentSignInTests
     {
         ImmediateTimeProvider time = new();
 
-        return new AgentLoop(server, new DryRunMachineIdentityReader(1), prompt, new AgentLog(time, TextWriter.Null), time, "1.0.0-test");
+        return TestAgents.Loop(server, prompt, new FakeDeploymentTools(), new AgentLog(time, TextWriter.Null), time);
     }
 
     [Fact]

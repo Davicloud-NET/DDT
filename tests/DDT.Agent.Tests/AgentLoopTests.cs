@@ -24,7 +24,7 @@ public sealed class AgentLoopTests
         AgentLog log = new(time, TextWriter.Null);
         ScriptedSignInPrompt nobody = new() { IsAvailable = false };
 
-        return (new AgentLoop(server, identity ?? new DryRunMachineIdentityReader(1), nobody, log, time, "1.0.0-test"), time);
+        return (TestAgents.Loop(server, nobody, new FakeDeploymentTools(), log, time, identity), time);
     }
 
     [Fact]

@@ -1,5 +1,7 @@
 using System.Text.Json;
+using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
@@ -8,12 +10,27 @@ public sealed class AgentLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
     ISignInPrompt prompt,
+    IDiskPartitioner disks,
+    DeploymentRunner runner,
     AgentLog log,
     TimeProvider timeProvider,
     string agentVersion)
 {
+    private const string LostContactMessage = "The agent lost contact with the server during the deployment.";
+
     private MachineIdentity? _lastIdentity;
     private string? _resumeToken;
+
+    // Where a run ended that the server still has as running, and why, for the report that it failed.
+    private (Guid DeploymentId, DeploymentStep Step, int Percent, string Error)? _abandonedRun;
+
+    // The disk last confirmed with ERASE in this process. Kept past the pick's answer: a pick the server stored but
+    // did not confirm still arrives as an Assigned deployment.
+    private LocalDisk? _confirmedDisk;
+
+    // The disks the picker offers, read once each time the machine may pick; null until then.
+    private IReadOnlyList<LocalDisk>? _pickableDisks;
+    private bool _toldNoImages;
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -65,10 +82,11 @@ public sealed class AgentLoop(
         return AgentExitCodes.Stopped;
     }
 
-    // Returns null to register again, or an exit code. While the machine waits for someone to sign in at it,
-    // only reading the keyboard runs alongside polling; every request stays on this loop, in order.
+    // Returns null to register again, or an exit code. Requests stay on this loop, in order: only reading the
+    // keyboard runs alongside polling, and a deployment is awaited here, with its own heartbeat instead of polls.
     private async Task<int?> PollAsync(AgentRegistrationResult registration, CancellationToken cancellationToken)
     {
+        Guid machineId = registration.MachineId;
         string token = registration.Token!;
         MachineState state = registration.State;
         string? signedInBy = registration.SignedInBy;
@@ -76,8 +94,11 @@ public sealed class AgentLoop(
         int failures = 0;
 
         SignInConversation conversation = new(prompt, log);
+        ImagePicker picker = new(prompt, log);
         CancellationTokenSource? stopTyping = null;
         Task<string?>? typing = null;
+        bool typingForPicker = false;
+        _pickableDisks = null;
 
         try
         {
@@ -85,7 +106,7 @@ public sealed class AgentLoop(
             {
                 try
                 {
-                    AgentNextResult next = await server.NextAsync(registration.MachineId, token, cancellationToken).ConfigureAwait(false);
+                    AgentNextResult next = await server.NextAsync(machineId, token, cancellationToken).ConfigureAwait(false);
 
                     failures = 0;
                     interval = TimeSpan.FromSeconds(next.PollAfterSeconds);
@@ -108,24 +129,97 @@ public sealed class AgentLoop(
                         }
                     }
 
-                    if (state == MachineState.Pending && signedInBy is null && conversation.IsAvailable)
-                    {
-                        if (typing is null)
-                        {
-                            stopTyping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                            typing = conversation.ReadAsync(stopTyping.Token);
-                        }
-                    }
-                    else if (typing is not null)
+                    AgentDeployment? deployment = state is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+                        ? next.Deployment
+                        : null;
+
+                    if (deployment is { State: DeploymentState.Assigned or DeploymentState.Running } && typing is not null)
                     {
                         await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
                         typing = null;
                     }
 
-                    // Only an approved machine may write to the server's log. Until then lines wait here.
-                    if (state is MachineState.Approved or MachineState.Deploying)
+                    if (deployment is { State: DeploymentState.Assigned })
                     {
-                        await FlushAsync(registration.MachineId, token, cancellationToken).ConfigureAwait(false);
+                        DeploymentRunResult result = await runner.RunAsync(machineId, deployment, _confirmedDisk, token, _resumeToken, cancellationToken)
+                            .ConfigureAwait(false);
+
+                        _abandonedRun = result.UnsentError is not null || result.Outcome == DeploymentOutcome.TokenRejected
+                            ? (deployment.Id, result.Step, result.Percent, result.UnsentError ?? LostContactMessage)
+                            : null;
+
+                        switch (result.Outcome)
+                        {
+                            case DeploymentOutcome.Deployed:
+                                return AgentExitCodes.Deployed;
+                            case DeploymentOutcome.Stopped:
+                                return AgentExitCodes.Stopped;
+                            case DeploymentOutcome.TokenRejected:
+                                _resumeToken = result.ResumeToken;
+
+                                return null;
+                            default:
+                                // The runner kept the session alive; the tokens this loop last saw may have expired.
+                                token = result.Token;
+                                _resumeToken = result.ResumeToken;
+                                picker.Reset();
+                                _pickableDisks = null;
+
+                                continue;
+                        }
+                    }
+
+                    // Nothing in this process runs it: the agent restarted, a refused token ended the run, or the run's
+                    // own failure report did not get through.
+                    if (deployment is { State: DeploymentState.Running })
+                    {
+                        (DeploymentStep step, int percent, string error) = _abandonedRun is { } run && run.DeploymentId == deployment.Id
+                            ? (run.Step, run.Percent, run.Error)
+                            : (DeploymentStep.Partition, 0, LostContactMessage);
+
+                        log.Error(error);
+                        AgentDeploymentReportResult reported = await server.ReportDeploymentAsync(
+                            machineId,
+                            token,
+                            deployment.Id,
+                            new AgentDeploymentReport(DeploymentState.Failed, step, percent, error),
+                            cancellationToken).ConfigureAwait(false);
+
+                        token = reported.Token;
+                        _resumeToken = reported.ResumeToken;
+                        _abandonedRun = null;
+                    }
+
+                    bool signInWanted = state == MachineState.Pending && signedInBy is null && conversation.IsAvailable;
+                    bool pickWanted = next.CanPickImage && deployment is null && picker.IsAvailable;
+
+                    if (!pickWanted)
+                    {
+                        picker.Reset();
+                        _pickableDisks = null;
+                    }
+                    else if (!picker.IsOffered)
+                    {
+                        await OfferImagesAsync(picker, machineId, token, next, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (typing is not null && (typingForPicker ? !picker.IsOffered : !signInWanted))
+                    {
+                        await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
+                        typing = null;
+                    }
+
+                    if (typing is null && (signInWanted || picker.IsOffered))
+                    {
+                        typingForPicker = !signInWanted;
+                        stopTyping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        typing = typingForPicker ? picker.ReadAsync(stopTyping.Token) : conversation.ReadAsync(stopTyping.Token);
+                    }
+
+                    // Only an authorized machine may write to the server's log. Until then lines wait here.
+                    if (state is MachineState.Approved or MachineState.Deploying or MachineState.Failed)
+                    {
+                        await FlushAsync(machineId, token, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (AgentTokenRejectedException)
@@ -177,16 +271,23 @@ public sealed class AgentLoop(
                 stopTyping = null;
                 typing = null;
 
-                if (typed is null || conversation.Accept(typed) is not { } request)
+                // Poll before asking for the next field, so an approval or an assignment on the web is noticed
+                // right away.
+                if (typed is null)
                 {
-                    // Poll before asking for the next field, so an approval on the web is noticed right away.
                     continue;
                 }
 
                 try
                 {
-                    AgentSignInResult result = await server.SignInAsync(registration.MachineId, token, request, cancellationToken).ConfigureAwait(false);
-                    conversation.Handle(result.Status);
+                    if (typingForPicker)
+                    {
+                        await SendPickAsync(picker, machineId, token, typed, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await SendSignInAsync(conversation, machineId, token, typed, cancellationToken).ConfigureAwait(false);
+                    }
                 }
                 catch (AgentTokenRejectedException)
                 {
@@ -197,10 +298,6 @@ public sealed class AgentLoop(
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     return AgentExitCodes.Stopped;
-                }
-                catch (Exception exception) when (IsTransient(exception))
-                {
-                    conversation.NotSent(exception);
                 }
             }
 
@@ -213,6 +310,101 @@ public sealed class AgentLoop(
                 await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
             }
         }
+    }
+
+    // A refused token and a stop reach the caller.
+    private async Task SendSignInAsync(
+        SignInConversation conversation,
+        Guid machineId,
+        string token,
+        string typed,
+        CancellationToken cancellationToken)
+    {
+        if (conversation.Accept(typed) is not { } request)
+        {
+            return;
+        }
+
+        try
+        {
+            AgentSignInResult result = await server.SignInAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
+            conversation.Handle(result.Status);
+        }
+        catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
+        {
+            conversation.NotSent(exception);
+        }
+    }
+
+    // A refused token and a stop reach the caller.
+    private async Task SendPickAsync(ImagePicker picker, Guid machineId, string token, string typed, CancellationToken cancellationToken)
+    {
+        if (picker.Accept(typed) is not { } request)
+        {
+            return;
+        }
+
+        _confirmedDisk = picker.ChosenDisk;
+
+        try
+        {
+            AgentDeployment deployment = await server.PickImageAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
+            picker.Picked(deployment);
+        }
+        catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
+        {
+            picker.Refused(ServerCallRules.Reason(exception, "the choice"));
+        }
+        catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
+        {
+            picker.NotSent(exception);
+        }
+    }
+
+    // Reads the disks once per stretch in which the machine may pick, and asks for the images until there are
+    // some. With no disk there is nothing to offer: a restart is the only way a disk appears.
+    private async Task OfferImagesAsync(ImagePicker picker, Guid machineId, string token, AgentNextResult next, CancellationToken cancellationToken)
+    {
+        if (_pickableDisks is null)
+        {
+            _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_pickableDisks.Count == 0)
+            {
+                log.Error(DeploymentRunner.NoDiskMessage);
+            }
+        }
+
+        if (_pickableDisks.Count == 0)
+        {
+            return;
+        }
+
+        IReadOnlyList<AgentImageChoice> images;
+
+        try
+        {
+            images = await server.GetImagesAsync(machineId, token, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception) when (ServerCallRules.IsRefusal(exception))
+        {
+            // The machine may no longer pick; the next poll says so.
+            return;
+        }
+
+        if (images.Count == 0)
+        {
+            if (!_toldNoImages)
+            {
+                _toldNoImages = true;
+                log.Warning("The server has no image this machine can install. Upload an x64 Windows image on the Images page.");
+            }
+
+            return;
+        }
+
+        _toldNoImages = false;
+        picker.Offer(images, _pickableDisks, next.DomainConfigured && string.IsNullOrEmpty(next.AssignedName));
     }
 
     // Waits for the prompt to let go of the console before anything else can ask for input.
@@ -240,6 +432,7 @@ public sealed class AgentLoop(
     private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
     {
         int failures = 0;
+        IReadOnlyList<AgentDisk>? eligibleDisks = await ReadDisksAsync(cancellationToken).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -259,7 +452,8 @@ public sealed class AgentLoop(
                         identity.Model,
                         identity.SerialNumber,
                         agentVersion,
-                        _resumeToken),
+                        _resumeToken,
+                        eligibleDisks),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException)
@@ -284,6 +478,24 @@ public sealed class AgentLoop(
         }
 
         return null;
+    }
+
+    // The server refuses a web assignment to a machine with several disks, so it has to know them. A machine whose
+    // disks cannot be read registers without them rather than not at all.
+    private async Task<IReadOnlyList<AgentDisk>?> ReadDisksAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            IReadOnlyList<LocalDisk> eligible = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+
+            return [.. eligible.Select(disk => disk.ToAgentDisk())];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            log.Warning($"The disks cannot be read ({exception.Message}). Registering without them.");
+
+            return null;
+        }
     }
 
     private void ReportIdentity(MachineIdentity identity)
@@ -322,7 +534,7 @@ public sealed class AgentLoop(
     private static string Describe(MachineState state) => state switch
     {
         MachineState.Pending => "waiting to be authorized",
-        MachineState.Approved => "approved, with nothing assigned yet",
+        MachineState.Approved => "approved, waiting for an image",
         _ => state.ToString(),
     };
 }

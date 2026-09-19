@@ -16,4 +16,23 @@ public interface IAgentServer
     Task<AgentRelease?> GetReleaseAsync(CancellationToken cancellationToken);
 
     Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<AgentImageChoice>> GetImagesAsync(Guid machineId, string token, CancellationToken cancellationToken);
+
+    Task<AgentDeployment> PickImageAsync(Guid machineId, string token, AgentPickRequest request, CancellationToken cancellationToken);
+
+    Task<AgentDeploymentReportResult> ReportDeploymentAsync(
+        Guid machineId,
+        string token,
+        Guid deploymentId,
+        AgentDeploymentReport report,
+        CancellationToken cancellationToken);
+
+    Task<string> GetUnattendAsync(Guid machineId, string token, Guid deploymentId, CancellationToken cancellationToken);
+
+    // The image's length, or null when the server did not say.
+    Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken);
+
+    // From offset to the end. A server that ignores the range answers from 0, which the result's Offset shows.
+    Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken);
 }

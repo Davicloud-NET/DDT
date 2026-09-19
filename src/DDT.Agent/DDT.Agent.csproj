@@ -18,4 +18,11 @@
     <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Only libwim-15.dll, never the managed wrapper. The agent carries it inside the executable, so the boot image
+         and the self-update stay one file; WimLibraryFile writes it out before the first wimlib call. -->
+    <PackageReference Include="ManagedWimLib" IncludeAssets="native" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgManagedWimLib)\runtimes\win-x64\native\libwim-15.dll" LogicalName="libwim-15.dll" />
+  </ItemGroup>
+
 </Project>

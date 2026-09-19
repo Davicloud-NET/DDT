@@ -1,4 +1,5 @@
 using DDT.Agent;
+using DDT.Agent.Deployment;
 
 if (!AgentOptions.TryParse(args, out AgentOptions? options, out string error))
 {
@@ -48,6 +49,42 @@ else if (!options.NoUpdate)
 }
 
 ConsoleSignInPrompt prompt = new(log, TimeProvider.System, options.KeyboardLayout);
-AgentLoop loop = new(server, identity, prompt, log, TimeProvider.System, version);
+DeploymentRunner runner;
+IDiskPartitioner disks;
+
+// A dry run works in a normal Windows session: its disk is a directory the run deletes when it ends, and it
+// never loads wimlib, whose strict mode needs Windows PE's privileges.
+if (options.DryRun)
+{
+    string root = Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}");
+    disks = new DryRunDiskPartitioner(root, log);
+    runner = new DeploymentRunner(
+        server,
+        disks,
+        new DryRunImageApplier(log),
+        new DryRunBcdWriter(log),
+        new DryRunRebooter(log),
+        log,
+        TimeProvider.System,
+        DeploymentHeartbeat.DefaultInterval,
+        root);
+}
+else
+{
+    // The agent's directory is X:\DDT in Windows PE.
+    ToolRunner tools = new(log, TimeProvider.System);
+    disks = new DiskpartPartitioner(tools, log, TimeProvider.System, AppContext.BaseDirectory);
+    runner = new DeploymentRunner(
+        server,
+        disks,
+        new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
+        new BcdbootWriter(tools, log),
+        new WpeutilRebooter(tools),
+        log,
+        TimeProvider.System,
+        DeploymentHeartbeat.DefaultInterval);
+}
+
+AgentLoop loop = new(server, identity, prompt, disks, runner, log, TimeProvider.System, version);
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);

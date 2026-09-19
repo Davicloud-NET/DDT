@@ -35,7 +35,8 @@ public class DdtApplication : WebApplicationFactory<Program>
         builder.UseSetting("DDT:StorePath", _store);
         builder.UseSetting("DDT:RequireHttps", "false");
         builder.UseSetting("ConnectionStrings:ddtdb", string.Empty);
-        builder.ConfigureServices(services => services.AddTransient<IStartupFilter, TestRemoteAddress>());
+        // First, so the address is in place before any other startup filter's middleware runs, as a connection's is.
+        builder.ConfigureServices(services => services.Insert(0, ServiceDescriptor.Transient<IStartupFilter, TestRemoteAddress>()));
 
         ConfigureTestHost(builder);
     }
@@ -103,10 +104,10 @@ public class DdtApplication : WebApplicationFactory<Program>
         return created!.Token;
     }
 
-    public async Task<RegisteredMachine> RegisterMachineAsync()
+    public async Task<RegisteredMachine> RegisterMachineAsync(AgentClient? agent = null)
     {
         string enrollmentToken = await CreateEnrollmentTokenAsync();
-        AgentClient agent = new(CreateDefaultClient(), TestRemoteAddress.Unique());
+        agent ??= new AgentClient(CreateDefaultClient(), TestRemoteAddress.Unique());
         AgentRegistration registration = AgentClient.Registration(
             Guid.NewGuid().ToString("D"),
             "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5));

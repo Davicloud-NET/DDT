@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@microsoft/signalr": "10.0.11",
+    "@radix-ui/react-dialog": "1.1.23",
     "@tanstack/react-query": "5.102.8",
     "@tanstack/react-router": "1.170.34",
     "react": "19.3.0",

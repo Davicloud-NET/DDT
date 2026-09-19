@@ -21,6 +21,9 @@ function machine(id: string, state: MachineSummary["state"], firstSeenUtc: strin
     signedInBy: null,
     firstSeenAddress: null,
     everApproved: false,
+    disks: null,
+    eligibleDiskCount: null,
+    deployment: null,
   };
 }
 

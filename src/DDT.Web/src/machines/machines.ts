@@ -1,5 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
+import type { DeploymentSummary } from "@/deployments/deployments";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type MachineState =
@@ -22,6 +23,12 @@ export interface MachineSummary {
   signedInBy: string | null;
   firstSeenAddress: string | null;
   everApproved: boolean;
+  // The eligible disks as the agent reported them, for example "Disk 0: Msft Virtual Disk, 64 GB, SCSI".
+  disks: string | null;
+  // Null for an agent that does not report disks.
+  eligibleDiskCount: number | null;
+  // The active deployment, else the latest finished one.
+  deployment: DeploymentSummary | null;
 }
 
 export const machinesQuery = queryOptions({
@@ -75,3 +82,17 @@ export function removeWaitingFrom(address: string): Promise<void> {
 export function formatMac(mac: string): string {
   return mac.match(/.{2}/g)?.join(":") ?? mac;
 }
+
+// How a sentence names the machine. Many machines share a model, so the MAC tells them apart.
+export function machineLabel(machine: MachineSummary): string {
+  if (machine.assignedName !== null) {
+    return machine.assignedName;
+  }
+
+  const mac = formatMac(machine.primaryMac);
+
+  return machine.model === null ? `the machine with MAC ${mac}` : `${machine.model} (${mac})`;
+}
+
+// A machine waiting at the prompt checks in every few seconds and is recorded at most every 30 s.
+export const WAITING_WINDOW_MS = 90_000;

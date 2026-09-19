@@ -2,6 +2,7 @@ import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
+import { imagesQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
 
 function backoff(attempt: number): number {
@@ -26,8 +27,17 @@ export function useLiveUpdates(): void {
     let disposed = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const resync = () => {
+    const refetchMachines = () => {
       void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
+    };
+
+    const refetchImages = () => {
+      void queryClient.invalidateQueries({ queryKey: imagesQuery.queryKey });
+    };
+
+    const resync = () => {
+      refetchMachines();
+      refetchImages();
     };
 
     const start = async (attempt: number): Promise<void> => {
@@ -45,7 +55,9 @@ export function useLiveUpdates(): void {
       upsertMachine(queryClient, machine);
     });
 
-    connection.on("machinesRemoved", resync);
+    connection.on("machinesRemoved", refetchMachines);
+
+    connection.on("imagesChanged", refetchImages);
 
     connection.onreconnected(resync);
 

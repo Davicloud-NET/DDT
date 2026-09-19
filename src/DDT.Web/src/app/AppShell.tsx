@@ -9,6 +9,7 @@ import styles from "./AppShell.module.scss";
 
 const navigation = [
   { to: "/", label: "Machines" },
+  { to: "/images", label: "Images" },
   { to: "/account", label: "Account" },
 ] as const;
 

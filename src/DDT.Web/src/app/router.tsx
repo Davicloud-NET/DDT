@@ -8,6 +8,7 @@ import {
 
 import { currentUserQuery } from "@/auth/auth";
 import { AccountPage } from "@/pages/AccountPage";
+import { ImagesPage } from "@/pages/ImagesPage";
 import { MachinesPage } from "@/pages/MachinesPage";
 import { SignInPage } from "@/pages/SignInPage";
 
@@ -49,6 +50,12 @@ const machinesRoute = createRoute({
   component: MachinesPage,
 });
 
+const imagesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/images",
+  component: ImagesPage,
+});
+
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/account",
@@ -57,7 +64,7 @@ const accountRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   signInRoute,
-  shellRoute.addChildren([machinesRoute, accountRoute]),
+  shellRoute.addChildren([machinesRoute, imagesRoute, accountRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

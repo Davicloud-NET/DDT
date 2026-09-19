@@ -1,20 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { endDeployment, isActive } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
+import { AssignDialog } from "@/machines/AssignDialog";
+import { DeploymentCell } from "@/machines/DeploymentCell";
 import {
   approveMachine,
   formatMac,
   isStray,
+  machineLabel,
   machinesQuery,
   rejectMachine,
   removeMachine,
   removeWaitingFrom,
   upsertMachine,
+  type MachineState,
 } from "@/machines/machines";
 
 import styles from "./MachinesPage.module.scss";
+
+// The server refuses an assignment while the machine deploys, and for good in these states.
+const assignableStates: readonly MachineState[] = ["Pending", "Approved", "Done", "Failed"];
+
+// Reject is terminal. It is offered where a machine may be one to throw out; a running deployment is
+// stopped with Stop instead.
+const rejectableStates: readonly MachineState[] = ["Pending", "Approved", "Failed"];
 
 export function MachinesPage() {
   const queryClient = useQueryClient();
@@ -22,8 +36,15 @@ export function MachinesPage() {
   const user = useQuery(currentUserQuery).data ?? null;
   const now = useNow(5_000);
 
+  const [assignTo, setAssignTo] = useState<string | null>(null);
+  const [stopOn, setStopOn] = useState<string | null>(null);
+
   const roles = user?.roles ?? [];
   const canDecide = roles.includes("Administrator") || roles.includes("Operator");
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
+  };
 
   const decide = useMutation({
     mutationFn: ({ id, approve }: { id: string; approve: boolean }) =>
@@ -32,21 +53,36 @@ export function MachinesPage() {
       upsertMachine(queryClient, machine);
     },
     // Usually someone else decided first, or the machine registered again. Show what is stored now.
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
-    },
+    onError: refresh,
   });
 
   const remove = useMutation({
     mutationFn: (target: { id: string } | { address: string }) =>
       "id" in target ? removeMachine(target.id) : removeWaitingFrom(target.address),
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
+    onSettled: refresh,
+  });
+
+  const cancel = useMutation({
+    mutationFn: (id: string) => endDeployment(id),
+    onSuccess: (machine) => {
+      upsertMachine(queryClient, machine);
     },
+    onError: refresh,
+  });
+
+  const stop = useMutation({
+    mutationFn: (id: string) => endDeployment(id),
+    onSuccess: (machine) => {
+      upsertMachine(queryClient, machine);
+      setStopOn(null);
+    },
+    onError: refresh,
   });
 
   const list = machines.data ?? [];
-  const busy = decide.isPending || remove.isPending;
+  const busy = decide.isPending || remove.isPending || cancel.isPending || stop.isPending;
+  const assignTarget = list.find((machine) => machine.id === assignTo) ?? null;
+  const stopTarget = list.find((machine) => machine.id === stopOn) ?? null;
 
   // Offered once per address, on its first row, when more than one stray came from it.
   const straysByAddress = new Map<string, number>();
@@ -85,7 +121,8 @@ export function MachinesPage() {
               <th scope="col">MAC</th>
               <th scope="col">SMBIOS UUID</th>
               <th scope="col">Last seen</th>
-              {canDecide && <th scope="col">Decision</th>}
+              <th scope="col">Deployment</th>
+              {canDecide && <th scope="col">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -94,6 +131,7 @@ export function MachinesPage() {
               const strays =
                 isStray(machine) && address !== null ? (straysByAddress.get(address) ?? 0) : 0;
               const offerBulk = strays > 1 && address !== null && !bulkOffered.has(address);
+              const deploymentState = machine.deployment?.state;
 
               if (offerBulk) {
                 bulkOffered.add(address);
@@ -121,22 +159,63 @@ export function MachinesPage() {
                     <div>{relativeTime(machine.lastSeenUtc, now)}</div>
                     <div className={styles.secondary}>{machine.lastSeenAddress}</div>
                   </td>
+                  <td>
+                    <DeploymentCell deployment={machine.deployment} now={now} />
+                  </td>
                   {canDecide && (
                     <td>
-                      {(machine.state === "Pending" || machine.state === "Approved") && (
-                        <div className={styles.actions}>
-                          {machine.state === "Pending" && (
+                      <div className={styles.actions}>
+                        {machine.state === "Pending" && (
+                          <button
+                            type="button"
+                            className={styles.approve}
+                            disabled={busy}
+                            onClick={() => {
+                              decide.mutate({ id: machine.id, approve: true });
+                            }}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {assignableStates.includes(machine.state) &&
+                          !isActive(machine.deployment) && (
                             <button
                               type="button"
                               className={styles.approve}
                               disabled={busy}
                               onClick={() => {
-                                decide.mutate({ id: machine.id, approve: true });
+                                setAssignTo(machine.id);
                               }}
                             >
-                              Approve
+                              Assign
                             </button>
                           )}
+                        {deploymentState === "Assigned" && (
+                          <button
+                            type="button"
+                            className={styles.reject}
+                            disabled={busy}
+                            onClick={() => {
+                              cancel.mutate(machine.id);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {deploymentState === "Running" && (
+                          <button
+                            type="button"
+                            className={styles.reject}
+                            disabled={busy}
+                            onClick={() => {
+                              stop.reset();
+                              setStopOn(machine.id);
+                            }}
+                          >
+                            Stop
+                          </button>
+                        )}
+                        {rejectableStates.includes(machine.state) && (
                           <button
                             type="button"
                             className={styles.reject}
@@ -147,32 +226,32 @@ export function MachinesPage() {
                           >
                             Reject
                           </button>
-                          {isStray(machine) && (
-                            <button
-                              type="button"
-                              className={styles.reject}
-                              disabled={busy}
-                              onClick={() => {
-                                remove.mutate({ id: machine.id });
-                              }}
-                            >
-                              Remove
-                            </button>
-                          )}
-                          {offerBulk && (
-                            <button
-                              type="button"
-                              className={styles.reject}
-                              disabled={busy}
-                              onClick={() => {
-                                remove.mutate({ address });
-                              }}
-                            >
-                              Remove all {strays} from {address}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {isStray(machine) && (
+                          <button
+                            type="button"
+                            className={styles.reject}
+                            disabled={busy}
+                            onClick={() => {
+                              remove.mutate({ id: machine.id });
+                            }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                        {offerBulk && (
+                          <button
+                            type="button"
+                            className={styles.reject}
+                            disabled={busy}
+                            onClick={() => {
+                              remove.mutate({ address });
+                            }}
+                          >
+                            Remove all {strays} from {address}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -184,6 +263,39 @@ export function MachinesPage() {
 
       {decide.isError && <p className={styles.error}>{decide.error.message}</p>}
       {remove.isError && <p className={styles.error}>{remove.error.message}</p>}
+      {cancel.isError && (
+        <p className={styles.error} role="alert">
+          {cancel.error.message}
+        </p>
+      )}
+
+      {assignTarget !== null && (
+        <AssignDialog
+          machine={assignTarget}
+          onClose={() => {
+            setAssignTo(null);
+          }}
+        />
+      )}
+
+      {stopTarget !== null && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setStopOn(null);
+            }
+          }}
+          title="Stop the deployment?"
+          consequence={`This stops the deployment on ${machineLabel(stopTarget)}. Its disk is left half written; assign an image again to deploy it.`}
+          confirmLabel="Stop deployment"
+          busy={stop.isPending}
+          error={stop.isError ? stop.error.message : null}
+          onConfirm={() => {
+            stop.mutate(stopTarget.id);
+          }}
+        />
+      )}
     </div>
   );
 }

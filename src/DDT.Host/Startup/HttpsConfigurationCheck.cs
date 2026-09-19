@@ -1,3 +1,4 @@
+using System.Net;
 using DDT.Pxe;
 using DDT.Server.Configuration;
 
@@ -9,10 +10,11 @@ namespace DDT.Host.Startup;
 // IServerAddressesFeature and the check has to run before anything starts.
 public static class HttpsConfigurationCheck
 {
-    public static void Validate(IConfiguration configuration, DdtOptions options)
+    public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(roles);
 
         IConfigurationSection[] endpoints = [.. configuration.GetSection("Kestrel:Endpoints").GetChildren()];
 
@@ -24,6 +26,17 @@ public static class HttpsConfigurationCheck
                 "The pxe role adds Kestrel:Endpoints:Boot, so Kestrel ignores ASPNETCORE_URLS, ASPNETCORE_HTTP_PORTS and " +
                 "launch profile URLs. Declare the application endpoint as Kestrel:Endpoints:Https:Url, or as an http " +
                 "Kestrel endpoint when DDT:RequireHttps is false.");
+        }
+
+        // Netbooted machines reach the web role over this same endpoint. Bound to loopback it answers this
+        // computer alone, and every agent times out with nothing on either side saying why.
+        string[] httpsUrls = [.. endpoints.Select(endpoint => endpoint["Url"]).Where(IsHttps).OfType<string>()];
+
+        if (roles.Contains(DeploymentRole.Pxe) && roles.Contains(DeploymentRole.Web) && httpsUrls.Length > 0 && httpsUrls.All(IsLoopback))
+        {
+            throw new InvalidOperationException(
+                $"The pxe role serves machines that register over HTTPS, but {string.Join(", ", httpsUrls)} only answers " +
+                "this computer. Listen on the provisioning network instead, for example Kestrel:Endpoints:Https:Url=https://0.0.0.0:7152.");
         }
 
         if (!options.RequireHttps || HasHttpsEndpoint(configuration, endpoints))
@@ -56,4 +69,9 @@ public static class HttpsConfigurationCheck
 
     private static bool IsHttps(string? url) =>
         url is not null && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+    // Wildcards such as https://*:7152 are not valid URIs and listen everywhere, so they are not loopback.
+    private static bool IsLoopback(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)
+        && (uri.IsLoopback || (IPAddress.TryParse(uri.Host.Trim('[', ']'), out IPAddress? address) && IPAddress.IsLoopback(address)));
 }

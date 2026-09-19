@@ -49,7 +49,7 @@ builder.Services.AddDdtMachines();
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
 PxeSetup? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe() : null;
 
-HttpsConfigurationCheck.Validate(builder.Configuration, options);
+HttpsConfigurationCheck.Validate(builder.Configuration, options, roles);
 
 var app = builder.Build();
 

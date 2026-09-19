@@ -65,6 +65,7 @@ Directory.Build.props      build policy: net10.0, nullable, warnings as errors
 Directory.Packages.props   central package management
 global.json                SDK pin, Aspire MSBuild SDK version, test runner
 .editorconfig              C# formatting, naming and var usage
+THIRD-PARTY-NOTICES.md     software DDT ships that is not its own, with licences/
 src/
   DDT.Core/                domain model, image library, hashing, task sequences. No ASP.NET, no EF
   DDT.Protocols/           DHCP/PXE codec and TFTP state machine. Pure, no sockets
@@ -117,7 +118,10 @@ dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-ex
 
 The solution uses the Microsoft Testing Platform, so `dotnet test` needs `--solution` rather than a
 positional solution path. `--ignore-exit-code 8` is required because filtering every test out of
-`DDT.E2E` makes that assembly report "zero tests ran", which is otherwise a failure.
+`DDT.E2E` makes that assembly report "zero tests ran", which is otherwise a failure. Tests that need
+an elevated prompt or real hardware carry the same trait. Server tests run the real host on SQLite
+and a temporary store directory, not an in-memory store, because images are served as files. The
+PostgreSQL migration test runs only while Docker is running, and is skipped otherwise.
 
 Run the whole development stack, host plus SPA dev server, through Aspire:
 
@@ -171,6 +175,9 @@ DDT__Roles=web,pxe
 It is deliberately not a bound array. Indexed environment variables such as `DDT__Roles__0` merge
 with a configured array rather than replacing it, so a shipped default plus an override would leave
 unwanted roles running. Unknown role names fail at startup rather than being ignored.
+
+What a deployed Windows is set up with comes from `DDT:Deployment`, described under
+[Deploying a machine](#deploying-a-machine).
 
 ## Authentication
 
@@ -344,8 +351,10 @@ such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on 
 - Set `Logging:LogLevel:DDT.Pxe` to `Debug` to see every DHCP datagram DDT declined to answer and
   why, or to `Trace` to also see datagrams that arrived on interfaces it does not serve.
 - `build/New-TestVm.ps1` creates a Generation 2 Hyper-V machine with Secure Boot on, on the Default
-  Switch, whose own DHCP server makes it the same shape as a real site. It prints a `pktmon` recipe
-  for capturing the boot.
+  Switch, whose own DHCP server makes it the same shape as a real site. It gives the machine a 64 GB
+  disk, a virtual TPM and 4 GB of memory, enough to deploy Windows 11, and keeps the network first in
+  its boot order. `-Remove` leaves the disk in place and says where. It prints a `pktmon` recipe for
+  capturing the boot.
 - Hyper-V has no HTTP boot device, so the HTTP boot listener is covered by tests that replay the
   firmware's request sequence rather than by the test machine.
 
@@ -360,7 +369,9 @@ the boot image needs no WMI component, and it reports every MAC address it finds
 ```
 
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
-5.5 MB.
+9 MB. It carries wimlib's `libwim-15.dll` inside itself and writes it next to itself before it
+applies an image, so the update below also updates wimlib. The loose DLL in the publish folder is not
+needed. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ### Updating the agent without a new boot image
 
@@ -390,9 +401,9 @@ root certificate or the server's name.
    authorizes the machine there and then. An operator or administrator can also approve it on the
    Machines page instead, which is how an account that only signs in through OpenID Connect
    authorizes a machine: it has no password to type.
-4. On its next poll the agent receives a session token, the credential later milestones require for
-   task sequences and images. Only then does it send what it has printed, including the lines from
-   before, to `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because anyone
+4. On its next poll the agent receives a session token, the credential it needs to deploy an image.
+   Only then does it send what it has printed, including the lines from before, to
+   `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because anyone
    can get its kind of token by registering.
 
 After a wrong password the agent asks for the password again and keeps the user name; an empty
@@ -415,15 +426,19 @@ Registering a known machine again starts it over at `Pending` and invalidates ev
 because anyone who reaches the server can present its UUID and MAC. The exception is the agent
 already holding the machine: every answer includes a resume token, valid for 24 hours, and an agent
 that has to register again after an outage presents it and keeps its approval. A machine that
-rebooted has lost that token and starts over. A rejected machine stays rejected, and its agent stops.
+rebooted has lost that token and starts over, unless zero touch applies (see
+[Deploying a machine](#deploying-a-machine)). A rejected machine stays rejected, and its agent stops.
 
-Registration is limited to 120 requests a minute per address, polling and logging to 60 a minute per
-machine, and the server keeps the newest 10,000 log lines of each machine. At most 100 machines
+Registration is limited to 120 requests a minute per address, polling, logging and deployment
+reports to 60 a minute per machine, and image requests to 30 a minute per machine. The machine limits
+count the machine whose token a request carries, so one machine cannot use up another's. The server
+keeps the newest 10,000 log lines of each machine. At most 100 machines
 nobody has approved may wait per address, `DDT:Machines:MaxWaitingPerAddress`, and 10,000 in all,
 `DDT:Machines:MaxWaiting`; a new machine beyond that is refused until some are approved or removed.
 An operator can remove a waiting machine nobody ever approved, or every such machine from one
 address, on the Machines page. Such machines also disappear once they have not been seen for a day.
-A machine that was approved once is never removed this way, so its log survives it booting again.
+A machine that was approved once, or that has an image assigned, is never removed this way, so its
+log survives it booting again.
 
 The agent trusts only the root certificate in `agent.json`. Revocation is not checked and missing
 intermediates are not downloaded, because a provisioning network has no route to either, so the server
@@ -452,9 +467,155 @@ artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152
 ```
 
 `--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several
-runs with different ids look like several machines on the Machines page. It changes nothing on the
-computer it runs on. Every setting in `agent.json` except the keyboard layout name can also be given
-as an argument.
+runs with different ids look like several machines on the Machines page. It reports one fake disk and
+runs a deployment without partitioning, applying or restarting anything: it logs the commands it
+would run, but it really downloads the image and fetches the answer file, into
+`%TEMP%\ddt-dry-run-{id}`, which it deletes when the run ends. Leave room there for the image. Every
+setting in `agent.json` except the keyboard layout name can also be given as an argument.
+
+## Images
+
+The Images page lists the library. An administrator uploads a WIM there, for example
+`sources\install.wim` from a Windows ISO, or an unencrypted ESD. The browser sends the file in 8 MiB
+chunks. If the page is reloaded or the connection drops, selecting the same file again continues where
+the server left off: it recognises the file by name, size and last change.
+
+After the last chunk the server reads the image list from the file and computes its SHA-256. It
+refuses a file that is not a WIM, a split WIM (`.swm`), a pipable WIM, a WIM whose image list is
+compressed, an encrypted ESD from Windows Update, and a WIM that holds no x64 Windows image. Every x64
+image in the file becomes its own entry in the library, named, versioned and sized from the file.
+
+The file is stored once, named by its SHA-256, under `images/objects` in `DDT:StorePath`; uploads in
+progress sit under `images/uploads` on the same volume. Uploading a file that is already there adds
+nothing. A new upload needs free space for its size, plus what other unfinished uploads still have to
+send, plus 1 GB. Unfinished uploads that nobody touched for 24 hours are removed. Deleting an entry is
+refused while an assigned or running deployment uses it, and the stored file goes when no entry uses
+it any more.
+
+Behind a reverse proxy the chunk size matters. nginx refuses bodies over 1 MB by default, and
+Traefik gives a whole request 60 seconds, so an 8 MiB chunk needs at least 140 KB/s. Machines download
+images with range requests, which the proxy must pass through without buffering the whole file. For
+nginx, with DDT listening on port 8443 behind it:
+
+```
+location /api/images/uploads {
+    client_max_body_size 16m;
+    proxy_request_buffering off;
+    proxy_read_timeout 300s;
+    proxy_pass https://127.0.0.1:8443;
+}
+
+location ~ ^/api/agents/[^/]+/images/ {
+    proxy_buffering off;
+    proxy_pass https://127.0.0.1:8443;
+}
+```
+
+Checking a large file after its last chunk can take longer than a proxy waits. The server carries on
+and the page asks again.
+
+## Deploying a machine
+
+A deployment installs one image from the library on one machine. It starts in one of three ways.
+
+- **At the machine.** Once someone signed in at it (see
+  [Registration and authorization](#registration-and-authorization)), the agent lists the x64 images.
+  The technician types the image number, the disk number when there is more than one disk, a computer
+  name when a domain is configured and the machine has none, and then `ERASE`. Anything else goes back
+  to the list.
+- **On the Machines page.** An operator or administrator assigns an image, optionally with a computer
+  name, which is required when a domain is configured. The dialog names the disks the machine reported
+  and says what the assignment does. A machine waiting at its prompt, seen in the last 90 seconds, is
+  authorized by the assignment, unless `DDT:Machines:RequireWebApproval` is on, in which case only a
+  machine someone already signed in at is. Any other machine stays `Pending` with the image assigned,
+  and deploys as soon as someone signs in at it. Assigning is refused for a machine that reported more
+  than one disk DDT could install on: sign in at it and choose the disk there.
+- **Zero touch.** `DDT:Machines:ZeroTouchNetworks` lists networks, for example `10.20.0.0/16`, and is
+  empty by default. A machine with an image assigned on the page that netboots from one of them is
+  authorized by that assignment and deploys with nobody at it. Zero touch is off while
+  `DDT:Machines:RequireWebApproval` is on. It matches the address the connection comes from: behind a
+  reverse proxy every agent has the proxy's address, and DDT does not read forwarded headers, so never
+  list a proxy's address.
+
+A deployment that has not started can be cancelled, and a running one stopped. Stopping marks it
+failed and makes the machine start over as `Pending`; its disk is left half written. Rejecting a
+machine also ends its deployment. An image chosen at a machine is dropped if the machine netboots again
+before it started.
+
+What the agent does, with progress and each step's duration shown live on the Machines page:
+
+1. It checks, before it touches the disk, that the disk is there, that it holds 1.5 GB of partitions
+   plus the download plus the installed size plus 2 GB, that it can load wimlib and that the server
+   has the image. A failure here leaves the disk as it was.
+2. It erases the disk and partitions it with one `diskpart` script: EFI 300 MB, MSR 16 MB, Windows,
+   and a 1 GB recovery partition at the end.
+3. It downloads the image to `W:\DDT`, resuming after a dropped connection, and checks its size and
+   SHA-256. It gives up when the download has not grown for 15 minutes.
+4. It applies the image with wimlib.
+5. It makes the disk bootable with the applied image's own `bcdboot` and sets up the recovery
+   environment with its `reagentc`.
+6. It writes `W:\Windows\Panther\unattend.xml`, adds a line to `SetupComplete.cmd` that deletes it
+   once setup finished, and writes the UEFI boot variables so that Windows Boot Manager on the new
+   disk comes first. A machine that starts from the network first then starts Windows next. The
+   entry the previous deployment of this disk left is reused, so re-imaging does not pile up entries.
+   If the firmware refuses, the deployment still finishes with a warning, and the machine's boot
+   order has to be set by hand. A deployment that fails or is stopped after this step deletes the
+   answer file and puts the boot order back as it was.
+7. It sends its last log lines, reports the deployment done and restarts.
+
+A deployment interrupted by a restart is not resumed: it fails, and the image is assigned or picked
+again. A machine whose deployment is done and that netboots again becomes `Pending`, and nothing is
+installed on it without a sign in or a new assignment.
+
+DDT installs only on internal disks: not on removable media, USB, FireWire, iSCSI, file-backed virtual
+disks or Storage Spaces, and not on disks under 30 GB. When a PC shows no disk at all, its storage is
+most likely set to RAID or Intel VMD/RST in the firmware setup, for which Windows PE has no driver;
+switch it to AHCI.
+
+### What Windows shows at its first start
+
+The answer file comes from `DDT:Deployment`, which the server checks at startup. It lists every
+problem at once, and a misspelled key stops it:
+
+| Setting | Meaning |
+|---|---|
+| `TimeZone` | A Windows time zone id such as `W. Europe Standard Time`. Empty: Windows picks one from the locale. |
+| `Locale` | Formats and system locale, such as `de-DE`. Empty: the image's language. |
+| `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. |
+| `LocalAdministrator:Name`, `LocalAdministrator:Password` | A local administrator created on every machine. The name defaults to `Admin`. |
+| `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | An Active Directory domain to join, the OU as a distinguished name, and the join account as `DOMAIN\user` or `user@domain`. |
+
+Without a local administrator password, Windows setup skips the Microsoft account screens and asks the
+person at the PC to create a local account. With one, setup creates the administrator, lifts the
+maximum password age for local accounts so the password does not expire after 42 days, and skips
+the account pages. A domain requires the local
+administrator, because without any account setup would stop at the account page on every domain PC.
+The computer name is the one assigned to the machine, or one Windows makes up.
+
+The domain join happens at the first start of Windows, after DDT has shown the deployment as done, and
+DDT does not see whether it worked. When a PC ends up in a workgroup, look at
+`C:\Windows\debug\NetSetup.log` and `C:\Windows\Panther\UnattendGC\setupact.log`. Use a dedicated join
+account that may only create, and to re-image also reset, computer objects in that OU, deny it
+interactive sign in, and never use a domain administrator: every machine DDT deploys can read its
+password. Re-imaging a PC under its old name only works if that account created the computer object,
+or if its owner is allowed by the policy "Domain controller: Allow computer account re-use during
+domain join" (KB5020276). A plain domain user without that delegation stops after its quota of joins,
+10 by default. Home editions cannot join a domain.
+
+The answer file holds these passwords. Setup masks them in it after each pass and `SetupComplete.cmd`
+deletes it, but Windows does not run `SetupComplete.cmd` when the machine uses an OEM product key,
+except on Enterprise editions.
+
+### When a deployment goes wrong
+
+- Everything the agent runs and everything it prints goes to the machine's log on the server.
+  In Windows PE, `X:\DDT\partition.txt` is the `diskpart` script and `X:\DDT\wimlib.log` wimlib's own
+  messages.
+- During Windows setup, Shift+F10 opens a command prompt. Setup writes `C:\Windows\Panther\setupact.log`
+  and `setuperr.log`, and `C:\Windows\Panther\UnattendGC\setupact.log` for the answer file.
+- A PC that netboots again straight after its deployment did not take the new boot entry. The machine
+  log shows the firmware boot entries as `bcdedit /enum firmware` listed them after the agent wrote
+  them, and any warning from writing them.
 
 ## Security model
 
@@ -473,6 +634,21 @@ own poll and the sign in. Only an operator or administrator authorizes it, by si
 machine or approving it on the Machines page, before it can write a log line or read a task sequence,
 an image or a secret. That gate is the control that the published attacks against SCCM operating
 system deployment walk straight through, and it is the reason the rest of this design exists.
+
+A deployment hands an authorized machine its image and an answer file with the `DDT:Deployment`
+passwords. Assigning an image on the Machines page is an operator's decision like an approval, with
+two consequences to keep in mind. A machine counts as waiting at its prompt for 90 seconds after it
+was last seen, and anyone presenting its UUID and a MAC address can register as it in that time, so
+the assign dialog shows where it was last seen from: check it, as for an approval. And with
+`DDT:Machines:ZeroTouchNetworks` set, a registration from a listed network that presents an assigned
+machine's UUID and a MAC receives the image and the passwords. Every viewer can see both values, and
+every PXE request carries them, so list only provisioning segments and cancel assignments that are
+not about to be used.
+
+Every operator can obtain the local administrator and domain join passwords by deploying a machine
+they control, and they sit in DDT's configuration. Treat the local administrator password as known to
+all operators, for example by letting Windows LAPS take the account over after the join, and give the
+join account nothing but the right to create computer objects in its OU.
 
 Because anyone who registers a machine reaches the sign in at it, it is exposed exactly like the web
 sign in page, and treated the same: the same accounts and lockout, and the same limit of 10
@@ -525,8 +701,15 @@ firmware, because Hyper-V has no HTTP boot device.
 
 Agent registration (M3) is complete: the NativeAOT agent registers, is authorized by a technician
 signing in at the machine or by an approval on the Machines page, polls and streams its log, and the
-Machines page updates live over SignalR. Later milestones, in order: the
-image library and apply, task sequences, Linux raw disk images, and the task sequence flow builder.
+Machines page updates live over SignalR.
+
+The image library and deployment (M4) are built: resumable uploads, range downloads, the Images page,
+assignment on the page and at the machine, zero touch, and an agent that partitions, downloads,
+applies with wimlib, makes the disk bootable, writes the answer file and restarts into Windows. They
+have run end to end on one PC with the published agent in dry-run mode against a real host. Not yet
+run: a real deployment in Windows PE, PostgreSQL (its test needs Docker), a reverse proxy, and the web
+UI in a browser against the server. Later milestones, in order: task sequences, Linux raw disk images,
+and the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under
@@ -540,8 +723,3 @@ Two things about the protocol layer are deliberately not done yet:
   the normal arrangement for a single boot server, but a client that insists on discovery is not served.
 - Only read requests are implemented. Netboot never writes, and a TFTP server that accepts writes on
   a provisioning network is a liability rather than a feature.
-
-One open question is already known and is recorded here so it is not rediscovered:
-
-- Whether `wimgapi.dll`, which would let the agent apply images without shipping wimlib, is present
-  in the WinPE base image and can apply a solid-compressed ESD.

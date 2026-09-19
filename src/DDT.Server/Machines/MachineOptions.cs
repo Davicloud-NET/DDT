@@ -15,7 +15,8 @@ public sealed class MachineOptions
     public int MaxWaiting { get; init; } = 10_000;
 
     // Comma separated networks in CIDR notation. A machine assigned an image on the web that netboots from one of
-    // them later stays authorized. Matched against the address the connection comes from, so a reverse proxy's
-    // address must never be listed. Empty turns zero touch off.
+    // them later stays authorized. Matched against the client address, which behind a proxy listed in
+    // DDT:ForwardedHeaders is the one the proxy reports, so no network may contain a reverse proxy's own address.
+    // Empty turns zero touch off.
     public string ZeroTouchNetworks { get; init; } = string.Empty;
 }

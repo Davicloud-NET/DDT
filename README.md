@@ -236,16 +236,17 @@ Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in fron
 tell DDT which addresses the proxy connects from. Both settings are comma separated:
 
 ```bash
-DDT__ForwardedHeaders__KnownProxies=10.20.0.5,10.20.0.6
-DDT__ForwardedHeaders__KnownNetworks=10.20.8.0/24
+DDT__ForwardedHeaders__KnownProxies=10.10.0.5,10.10.0.6
+DDT__ForwardedHeaders__KnownNetworks=10.10.8.0/24
 ```
 
 Until one of them is set, DDT ignores `X-Forwarded-For` and `X-Forwarded-Proto`, so every request
-appears to come from the proxy over plain HTTP: all clients share one sign in limit, the audit table
-and the Machines page show the proxy's address, and cookies are not marked `Secure`. Once set, the
-headers are read only on connections from a listed address, and only the last entry of
-`X-Forwarded-For`, the one the proxy added, counts. A client cannot choose its own address by
-sending the header through the proxy.
+appears to come from the proxy over plain HTTP: all clients share one sign in limit, all machines
+share the registration limit and the cap on waiting machines per address, zero touch sees only the
+proxy's address, the audit table and the Machines page show it too, and cookies are not marked
+`Secure`. Once set, the headers are read only on connections from a listed address, and only the
+last entry of `X-Forwarded-For`, the one the proxy added, counts. A client cannot choose its own
+address by sending the header through the proxy.
 
 The proxy has to append the client's address to `X-Forwarded-For`, set `X-Forwarded-Proto`, and pass
 `Host` through unchanged, because `X-Forwarded-Host` is not read. List the proxies and nothing else:
@@ -518,6 +519,10 @@ images with range requests, which the proxy must pass through without buffering 
 nginx, with DDT listening on port 8443 behind it:
 
 ```
+proxy_set_header Host $http_host;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
 location /api/images/uploads {
     client_max_body_size 16m;
     proxy_request_buffering off;
@@ -530,6 +535,11 @@ location ~ ^/api/agents/[^/]+/images/ {
     proxy_pass https://127.0.0.1:8443;
 }
 ```
+
+The three headers are the ones [TLS is required](#tls-is-required) asks for. Set them in the `server`
+block, so that every location inherits them: nginx drops the inherited ones in a location that sets
+any header of its own. DDT reads the forwarded ones only from a listed proxy, and nginx connects from
+loopback here, so list it with `DDT__ForwardedHeaders__KnownProxies=127.0.0.1`.
 
 Checking a large file after its last chunk can take longer than a proxy waits. The server carries on
 and the page asks again.
@@ -553,9 +563,11 @@ A deployment installs one image from the library on one machine. It starts in on
 - **Zero touch.** `DDT:Machines:ZeroTouchNetworks` lists networks, for example `10.20.0.0/16`, and is
   empty by default. A machine with an image assigned on the page that netboots from one of them is
   authorized by that assignment and deploys with nobody at it. Zero touch is off while
-  `DDT:Machines:RequireWebApproval` is on. It matches the address the connection comes from: behind a
-  reverse proxy every agent has the proxy's address, and DDT does not read forwarded headers, so never
-  list a proxy's address.
+  `DDT:Machines:RequireWebApproval` is on. It matches the address the registration comes from. Behind
+  a reverse proxy that is the proxy's address, unless the proxy is listed in `DDT:ForwardedHeaders`
+  (see [TLS is required](#tls-is-required)); then it is the address the proxy reports. List only
+  proxies there. No network in `DDT:Machines:ZeroTouchNetworks` may contain a proxy's address or
+  overlap a listed proxy network, see [Security model](#security-model).
 
 A deployment that has not started can be cancelled, and a running one stopped. Stopping marks it
 failed and makes the machine start over as `Pending`; its disk is left half written. Rejecting a
@@ -663,7 +675,12 @@ the assign dialog shows where it was last seen from: check it, as for an approva
 `DDT:Machines:ZeroTouchNetworks` set, a registration from a listed network that presents an assigned
 machine's UUID and a MAC receives the image and the passwords. Every viewer can see both values, and
 every PXE request carries them, so list only provisioning segments and cancel assignments that are
-not about to be used.
+not about to be used. Behind a reverse proxy listed in `DDT:ForwardedHeaders`, the network is judged
+by the address the proxy reports, and a listed proxy network that also holds clients lets them claim
+a zero touch address by sending `X-Forwarded-For` to DDT themselves. A request a proxy forwards
+without a client address, before `DDT:ForwardedHeaders` is set or from an nginx location that dropped
+the headers, comes from the proxy's own address, so a zero touch network must not contain a proxy or
+overlap a listed proxy network.
 
 Every operator can obtain the local administrator and domain join passwords by deploying a machine
 they control, and they sit in DDT's configuration. Treat the local administrator password as known to

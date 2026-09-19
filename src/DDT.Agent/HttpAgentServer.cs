@@ -11,11 +11,17 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private const int MaxErrorDetailLength = 300;
 
     private static readonly TimeSpan s_connectTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(30);
 
+    private readonly SocketsHttpHandler _handler;
     private readonly HttpClient _client;
+    private readonly HttpClient _downloadClient;
 
     public HttpAgentServer(Uri serverUrl, X509Certificate2? rootCertificate)
+        : this(serverUrl, rootCertificate, TimeSpan.FromSeconds(30))
+    {
+    }
+
+    public HttpAgentServer(Uri serverUrl, X509Certificate2? rootCertificate, TimeSpan requestTimeout)
     {
         ArgumentNullException.ThrowIfNull(serverUrl);
 
@@ -41,7 +47,12 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             };
         }
 
-        _client = new HttpClient(handler) { BaseAddress = serverUrl, Timeout = s_requestTimeout };
+        _handler = handler;
+        _client = new HttpClient(handler, disposeHandler: false) { BaseAddress = serverUrl, Timeout = requestTimeout };
+
+        // A download can wait in the server's queue behind a whole lab for longer than a request may take,
+        // so only its own deadline bounds it.
+        _downloadClient = new HttpClient(handler, disposeHandler: false) { BaseAddress = serverUrl, Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public async Task<AgentRegistrationResult> RegisterAsync(AgentRegistration registration, CancellationToken cancellationToken)
@@ -92,11 +103,50 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await ReadAsync(response, AgentJsonContext.Default.AgentSignInResult, cancellationToken).ConfigureAwait(false);
     }
 
-    public void Dispose() => _client.Dispose();
-
-    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    public async Task<AgentRelease?> GetReleaseAsync(CancellationToken cancellationToken)
     {
-        HttpResponseMessage response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.Release);
+
+        try
+        {
+            using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            return await ReadAsync(response, AgentJsonContext.Default.AgentRelease, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public async Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken)
+    {
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(AgentLimits.DownloadTimeout);
+
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ReleaseBinary);
+        using HttpResponseMessage response = await SendAsync(_downloadClient, request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
+
+        await response.Content.CopyToAsync(destination, deadline.Token).ConfigureAwait(false);
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _downloadClient.Dispose();
+        _handler.Dispose();
+    }
+
+    private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        SendAsync(_client, request, HttpCompletionOption.ResponseContentRead, cancellationToken);
+
+    private static async Task<HttpResponseMessage> SendAsync(
+        HttpClient client,
+        HttpRequestMessage request,
+        HttpCompletionOption completion,
+        CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await client.SendAsync(request, completion, cancellationToken).ConfigureAwait(false);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {

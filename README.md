@@ -249,7 +249,7 @@ Because the tunnel ends on the gateway, remote traffic reaches DDT on its ordina
 | Transport | Carries |
 |---|---|
 | TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all |
-| HTTPS | Everything the agent does: registration, task sequences, images, logs |
+| HTTPS | Everything the agent does: registration, its own updates, task sequences, images, logs |
 | Plain HTTP, port 8080 | The same boot files, for UEFI HTTP Boot clients, which cannot validate a private CA |
 
 The boot manager downloads `boot.wim` over TFTP itself, so TFTP speed decides how long a netboot
@@ -361,6 +361,20 @@ the boot image needs no WMI component, and it reports every MAC address it finds
 
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
 5.5 MB.
+
+### Updating the agent without a new boot image
+
+The boot image carries an agent, but that agent first asks the server for the current one. When the
+server offers a different file, the agent downloads it over the same verified connection, checks its
+SHA-256 against what the server announced and runs it in its place. Put the published agent at
+`DDT:Agent:BinaryPath`, by default `agent/ddt-agent.exe` in the store, and every machine runs it from
+its next boot. A download that fails, or an agent that cannot start, leaves the machine on the agent
+from the boot image. The check happens once, before the machine registers, and only in an agent
+built with `dotnet publish`, never in a dry run; `--no-update` turns it off. What the agent from the
+boot image printed before it switched stays on the console and does not reach the machine's log.
+
+So a boot image only has to be built again for Windows PE itself, drivers, the keyboard layout, the
+root certificate or the server's name.
 
 ### Registration and authorization
 
@@ -496,7 +510,10 @@ scheme, so a machine token can never satisfy a human policy or the reverse.
 Not defended, and worth saying out loud: an attacker with layer 2 control who spoofs the identity
 of an already approved machine; anyone who can read the store volume or the database; and anyone
 who can read the Data Protection key ring, which can mint an administrator cookie and any machine
-token. Treat that volume as a secret.
+token. Treat that volume as a secret. Anyone who can write to it can also replace the boot files and
+the agent at `DDT:Agent:BinaryPath`, which every machine that netboots runs as SYSTEM before anyone
+has authorized it: the SHA-256 the agent checks proves only that it received what the server
+announced.
 
 ## Status
 

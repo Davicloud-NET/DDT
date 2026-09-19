@@ -10,4 +10,15 @@ public static class AgentLimits
 
     public static readonly TimeSpan MinRetryDelay = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
+
+    // Covers the wait in the server's queue too: a whole lab downloads the agent at once over a site link, well
+    // beyond the 30 seconds a request gets.
+    public static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(5);
+
+    public static TimeSpan RetryDelay(int failures)
+    {
+        TimeSpan delay = MinRetryDelay * (1 << Math.Clamp(failures - 1, 0, 4));
+
+        return delay < MaxRetryDelay ? delay : MaxRetryDelay;
+    }
 }

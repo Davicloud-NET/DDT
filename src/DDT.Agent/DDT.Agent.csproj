@@ -10,6 +10,7 @@
     <AssemblyName>ddt-agent</AssemblyName>
     <!-- Required by the LibraryImport source generator. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(_IsPublishing)' == 'true'">$(DefineConstants);DDT_PUBLISHED</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

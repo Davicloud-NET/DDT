@@ -11,11 +11,15 @@ public sealed record AgentOptions(
     X509Certificate2? RootCertificate,
     bool DryRun,
     int DryRunId,
+    bool NoUpdate,
     string? KeyboardLayout)
 {
+    // Frozen: an agent from an older boot image passes this, last, to the newer agent it starts.
+    public const string NoUpdateArgument = "--no-update";
+
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--dry-run [--dry-run-id <number>]]";
+        "[--no-update] [--dry-run [--dry-run-id <number>]]";
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)
@@ -28,6 +32,7 @@ public sealed record AgentOptions(
         string? rootPem = null;
         string? keyboardLayout = null;
         bool dryRun = false;
+        bool noUpdate = false;
         int dryRunId = 1;
 
         for (int index = 0; index < args.Count; index++)
@@ -37,6 +42,12 @@ public sealed record AgentOptions(
             if (argument == "--dry-run")
             {
                 dryRun = true;
+                continue;
+            }
+
+            if (argument == NoUpdateArgument)
+            {
+                noUpdate = true;
                 continue;
             }
 
@@ -127,7 +138,7 @@ public sealed record AgentOptions(
             }
         }
 
-        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, keyboardLayout);
+        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout);
         error = string.Empty;
 
         return true;

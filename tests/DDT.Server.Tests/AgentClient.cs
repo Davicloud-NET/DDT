@@ -14,6 +14,8 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RegisterAsync(AgentRegistration registration, string? bearer = null) =>
         SendAsync(HttpMethod.Post, AgentRoutes.Register, bearer, JsonContent.Create(registration, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> GetAsync(string path) => SendAsync(HttpMethod.Get, path, null, null);
+
     public Task<HttpResponseMessage> NextAsync(Guid machineId, string token) =>
         SendAsync(HttpMethod.Get, AgentRoutes.Next(machineId), token, null);
 

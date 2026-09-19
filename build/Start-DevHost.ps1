@@ -10,6 +10,10 @@ computer's Default Switch DNS name, <computer>.mshome.net. That name moves with 
 gives it a new address after a restart, so a boot image built with it keeps working. Delete the two
 files under certs in the store to generate a new certificate.
 
+Serves artifacts\agent\ddt-agent.exe, which Publish-Agent.ps1 writes, as the agent every netbooting
+machine switches to, so a published change reaches the test machine at its next boot without a new
+boot image.
+
 Prints the -ServerUrl and -RootCertificatePath to build the boot image with.
 
 .PARAMETER Interface
@@ -60,6 +64,7 @@ $arguments = @(
     "--Kestrel:Certificates:Default:Path=$certificate"
     "--Kestrel:Certificates:Default:KeyPath=$(Join-Path $StorePath 'certs\ddt-key.pem')"
     "--DDT:Https:SubjectAlternativeNames=$name"
+    "--DDT:Agent:BinaryPath=$(Join-Path $repository 'artifacts\agent\ddt-agent.exe')"
 )
 
 Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $certificate"

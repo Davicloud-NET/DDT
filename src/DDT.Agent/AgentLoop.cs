@@ -141,7 +141,7 @@ public sealed class AgentLoop(
                 catch (Exception exception) when (IsTransient(exception))
                 {
                     failures++;
-                    interval = RetryDelay(failures);
+                    interval = AgentLimits.RetryDelay(failures);
                     log.Warning($"Cannot reach the server ({exception.Message}). Retrying in {interval.TotalSeconds:0} s.");
                 }
 
@@ -277,7 +277,7 @@ public sealed class AgentLoop(
                 log.Warning($"Cannot register with the server ({exception.Message}).");
             }
 
-            if (!await DelayAsync(RetryDelay(failures), cancellationToken).ConfigureAwait(false))
+            if (!await DelayAsync(AgentLimits.RetryDelay(failures), cancellationToken).ConfigureAwait(false))
             {
                 return null;
             }
@@ -317,13 +317,6 @@ public sealed class AgentLoop(
         {
             return false;
         }
-    }
-
-    private static TimeSpan RetryDelay(int failures)
-    {
-        TimeSpan delay = AgentLimits.MinRetryDelay * (1 << Math.Min(failures - 1, 4));
-
-        return delay < AgentLimits.MaxRetryDelay ? delay : AgentLimits.MaxRetryDelay;
     }
 
     private static string Describe(MachineState state) => state switch

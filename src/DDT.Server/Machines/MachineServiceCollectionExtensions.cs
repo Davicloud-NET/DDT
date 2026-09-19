@@ -12,7 +12,9 @@ public static class MachineServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddOptions<MachineOptions>().BindConfiguration(MachineOptions.SectionName);
+        services.AddOptions<AgentReleaseOptions>().BindConfiguration(AgentReleaseOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<AgentReleaseStore>();
         services.AddSingleton<WaitingMachineSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
         services.AddScoped<MachineRegistrar>();

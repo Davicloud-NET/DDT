@@ -53,6 +53,16 @@ public static class AgentEndpoints
             .RequireRateLimiting(RateLimitPolicies.SignIn)
             .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxSignInBytes));
 
+        // The agent every netbooting machine switches to. Anonymous, because the same binary is in every boot
+        // image anyway.
+        group.MapGet("/release", GetReleaseAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
+
+        group.MapGet("/release/binary", GetReleaseBinary)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentDownload);
+
         return group;
     }
 
@@ -77,6 +87,24 @@ public static class AgentEndpoints
                 title: "Too many machines are waiting to be authorized. Approve or remove some on the Machines page.",
                 statusCode: StatusCodes.Status429TooManyRequests)
             : TypedResults.Ok(result);
+    }
+
+    private static async Task<Results<Ok<AgentRelease>, NotFound>> GetReleaseAsync(
+        AgentReleaseStore releases,
+        CancellationToken cancellationToken)
+    {
+        AgentRelease? release = await releases.CurrentAsync(cancellationToken).ConfigureAwait(false);
+
+        return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
+    }
+
+    private static Results<PhysicalFileHttpResult, NotFound> GetReleaseBinary(AgentReleaseStore releases)
+    {
+        string path = releases.BinaryPath;
+
+        return File.Exists(path)
+            ? TypedResults.PhysicalFile(path, "application/octet-stream")
+            : TypedResults.NotFound();
     }
 
     private static async Task<Results<Ok<AgentNextResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound>> NextAsync(

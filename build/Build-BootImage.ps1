@@ -36,8 +36,8 @@ The https URL the agent registers with. Every name in it must be in DDT's TLS ce
 .PARAMETER RootCertificatePath
 The PEM root the agent trusts for the server, for example DDT's generated certificate. Required with
 -AgentPath, even for a certificate from a public CA: Windows PE carries only a handful of Microsoft
-roots, not the public web ones. The server must send its full chain, because the agent does not
-download intermediates.
+roots, not the public web ones, and the agent also fetches its own updates over this connection. The
+server must send its full chain, because the agent does not download intermediates.
 
 .PARAMETER KeyboardLayout
 The keyboard layout set in boot.wim, as input locale and layout identifiers, for example

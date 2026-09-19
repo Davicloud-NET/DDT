@@ -11,4 +11,9 @@ public interface IAgentServer
     Task SendLogAsync(Guid machineId, string token, AgentLogBatch batch, CancellationToken cancellationToken);
 
     Task<AgentSignInResult> SignInAsync(Guid machineId, string token, AgentSignInRequest request, CancellationToken cancellationToken);
+
+    // Null when the server offers no agent.
+    Task<AgentRelease?> GetReleaseAsync(CancellationToken cancellationToken);
+
+    Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken);
 }

@@ -27,7 +27,7 @@ public static class RateLimitingExtensions
                     QueueLimit = 0,
                 }));
 
-            // A site behind one address can boot a whole lab at once, so this is generous. Registration is open
+            // A site behind one address can boot a whole lab at once, so these are generous. Registration is open
             // to anyone who reaches the server; this and the cap on waiting machines keep that from flooding it.
             limiter.AddPolicy<string>(RateLimitPolicies.AgentRegistration, context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -36,6 +36,26 @@ public static class RateLimitingExtensions
                     PermitLimit = 120,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
+                }));
+
+            limiter.AddPolicy<string>(RateLimitPolicies.AgentRelease, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 120,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            // Every machine of a lab downloads the agent as it boots. They are served a few at a time per address
+            // and the rest wait their turn, rather than being refused and staying on an older agent.
+            limiter.AddPolicy<string>(RateLimitPolicies.AgentDownload, context => RateLimitPartition.GetConcurrencyLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 4,
+                    QueueLimit = 64,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 }));
 
             // Partitioned by the machine in the route, so one machine's token cannot starve another machine.

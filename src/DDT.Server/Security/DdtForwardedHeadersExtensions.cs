@@ -39,7 +39,11 @@ public static class DdtForwardedHeadersExtensions
             .GetRequiredService<IOptionsMonitor<ForwardedHeadersOptions>>()
             .Get(OptionsName);
 
-        return options.ForwardedHeaders == ForwardedHeaders.None ? app : app.UseForwardedHeaders(options);
+        // The middleware takes the first entry from a connection with no address, such as a Unix socket or a named
+        // pipe, as if a listed proxy had sent it.
+        return options.ForwardedHeaders == ForwardedHeaders.None
+            ? app
+            : app.UseWhen(context => context.Connection.RemoteIpAddress is not null, proxied => proxied.UseForwardedHeaders(options));
     }
 
     // Replaces the framework defaults rather than adding to them, because those trust loopback: a proxy on the same

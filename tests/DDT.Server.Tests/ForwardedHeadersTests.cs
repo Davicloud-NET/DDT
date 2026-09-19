@@ -30,7 +30,8 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
     [InlineData("203.0.113.6", "192.0.2.98", "203.0.113.6")]
     [InlineData("127.0.0.1", "192.0.2.97", "127.0.0.1")]
     [InlineData("::1", "192.0.2.96", "::1")]
-    public async Task MachinesAreRecordedAtTheAddressTheProxyReports(string connection, string forwardedFor, string expected)
+    [InlineData(null, "192.0.2.94", null)]
+    public async Task MachinesAreRecordedAtTheAddressTheProxyReports(string? connection, string forwardedFor, string? expected)
     {
         Assert.Equal(expected, await RecordedAddressAsync(application, connection, forwardedFor));
     }
@@ -51,6 +52,17 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
             ("DDT:ForwardedHeaders:KnownNetworks", ProxiedApplication.ProxyNetwork));
 
         Assert.Equal("198.51.100.8", await RecordedAddressAsync(both, ProxiedApplication.Proxy, "192.0.2.99, 198.51.100.8"));
+    }
+
+    // A connection with no address, as over a Unix socket or a named pipe, cannot be a listed one.
+    [Fact]
+    public async Task TheFrameworkSwitchNextToAListedProxyIgnoresAConnectionWithoutAnAddress()
+    {
+        using SettingsApplication both = new(
+            ("ForwardedHeaders_Enabled", "true"),
+            ("DDT:ForwardedHeaders:KnownProxies", ProxiedApplication.Proxy));
+
+        Assert.Null(await RecordedAddressAsync(both, null, "192.0.2.93"));
     }
 
     [Fact]
@@ -83,10 +95,16 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
     [Theory]
     [InlineData(ProxiedApplication.Proxy, true)]
     [InlineData("203.0.113.8", false)]
-    public async Task ForwardedHttpsCountsOnlyFromAProxy(string connection, bool fromProxy)
+    [InlineData(null, false)]
+    public async Task ForwardedHttpsCountsOnlyFromAProxy(string? connection, bool fromProxy)
     {
         using HttpClient http = application.CreateDefaultClient();
-        http.DefaultRequestHeaders.Add(TestRemoteAddress.Header, connection);
+
+        if (connection is not null)
+        {
+            http.DefaultRequestHeaders.Add(TestRemoteAddress.Header, connection);
+        }
+
         http.DefaultRequestHeaders.Add(ForwardedFor, TestRemoteAddress.Unique());
         http.DefaultRequestHeaders.Add(ForwardedProto, "https");
 
@@ -113,7 +131,7 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
     }
 
     // Registration records the address twice, on the machine and in the audit table.
-    private static async Task<string?> RecordedAddressAsync(DdtApplication host, string connection, string forwardedFor)
+    private static async Task<string?> RecordedAddressAsync(DdtApplication host, string? connection, string forwardedFor)
     {
         HttpClient http = host.CreateDefaultClient();
         http.DefaultRequestHeaders.Add(ForwardedFor, forwardedFor);

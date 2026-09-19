@@ -252,7 +252,8 @@ The proxy has to append the client's address to `X-Forwarded-For`, set `X-Forwar
 `Host` through unchanged, because `X-Forwarded-Host` is not read. List the proxies and nothing else:
 DDT believes whatever client address a listed address reports, so a listed network that also holds
 clients lets them pick their own address by connecting to DDT directly. Loopback is not trusted
-unless it is listed, so a proxy on the same host is listed as `127.0.0.1` or `::1`.
+unless it is listed, so a proxy on the same host is listed as `127.0.0.1` or `::1`. A Unix socket or
+named pipe endpoint has no address to list, so a proxy connects over TCP.
 `ASPNETCORE_FORWARDEDHEADERS_ENABLED` is ignored, because it trusts every address.
 
 With the `pxe` role active, DDT adds a plain HTTP Kestrel endpoint named `Boot` for boot files.

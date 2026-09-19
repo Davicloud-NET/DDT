@@ -7,6 +7,7 @@ using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using DDT.Server.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,7 @@ public sealed class DeploymentService(
     IOptions<MachineOptions> machineOptions,
     IOptions<DeploymentOptions> deploymentOptions,
     ZeroTouchNetworks zeroTouchNetworks,
+    ListedProxies listedProxies,
     TimeProvider timeProvider)
 {
     // The agent runs in x64 WinPE and starts bcdboot from the applied image, which fails for any other image.
@@ -370,9 +372,13 @@ public sealed class DeploymentService(
     public static bool CountsAsWebApproval(Deployment? active) =>
         active is { State: DeploymentState.Assigned, Source: DeploymentSource.Web };
 
-    // Zero touch: the web assignment authorizes the machine's next netboot, but only from a listed network.
+    // Zero touch: the web assignment authorizes the machine's next netboot, but only from a listed network. A request
+    // still at a listed proxy's address carried no client address, so it proves nothing about the network.
     public bool KeepsApprovalOnNetboot(Deployment? active, IPAddress? remoteAddress) =>
-        CountsAsWebApproval(active) && ZeroTouchEnabled && zeroTouchNetworks.Contains(remoteAddress);
+        CountsAsWebApproval(active)
+        && ZeroTouchEnabled
+        && zeroTouchNetworks.Contains(remoteAddress)
+        && !listedProxies.Contains(remoteAddress);
 
     // A registration without the resume token means the agent that had the deployment is gone. A running
     // deployment fails. An image chosen at the machine is cancelled: the disk and the ERASE typed there belonged

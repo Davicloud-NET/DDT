@@ -681,7 +681,8 @@ by the address the proxy reports, and a listed proxy network that also holds cli
 a zero touch address by sending `X-Forwarded-For` to DDT themselves. A request a proxy forwards
 without a client address, before `DDT:ForwardedHeaders` is set or from an nginx location that dropped
 the headers, comes from the proxy's own address, so a zero touch network must not contain a proxy or
-overlap a listed proxy network.
+overlap a listed proxy network. DDT refuses zero touch to a request that still comes from a listed
+proxy, but it cannot tell a proxy it does not list from a machine.
 
 Every operator can obtain the local administrator and domain join passwords by deploying a machine
 they control, and they sit in DDT's configuration. Treat the local administrator password as known to

@@ -12,7 +12,7 @@ public static class DdtForwardedHeadersExtensions
 {
     // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
     // middleware in front of everything with them.
-    private const string OptionsName = "DDT";
+    internal const string OptionsName = "DDT";
 
     public static IServiceCollection AddDdtForwardedHeaders(this IServiceCollection services)
     {
@@ -27,6 +27,8 @@ public static class DdtForwardedHeadersExtensions
         // The switch's own setup clears both lists, so the host's copy would trust every address and take the entry of
         // X-Forwarded-For the proxy added, leaving the client's to DDT's copy. PostConfigure runs after that setup.
         services.PostConfigure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.None);
+
+        services.AddSingleton<ListedProxies>();
 
         return services;
     }

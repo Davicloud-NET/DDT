@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Authentication;
-using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Hosting;
@@ -92,29 +91,17 @@ public class DdtApplication : WebApplicationFactory<Program>
         return userName;
     }
 
-    public async Task<string> CreateEnrollmentTokenAsync()
+    public async Task<RegisteredMachine> RegisterMachineAsync(string? remoteAddress = null)
     {
-        SignedInClient admin = await AdministratorAsync();
-        HttpResponseMessage response = await admin.PostAsync("/api/enrollment-tokens", new CreateEnrollmentTokenRequest("test", 30));
-        response.EnsureSuccessStatusCode();
-
-        CreatedEnrollmentToken? created = await response.Content.ReadFromJsonAsync<CreatedEnrollmentToken>(TestJson.Options);
-
-        return created!.Token;
-    }
-
-    public async Task<RegisteredMachine> RegisterMachineAsync()
-    {
-        string enrollmentToken = await CreateEnrollmentTokenAsync();
-        AgentClient agent = new(CreateDefaultClient(), TestRemoteAddress.Unique());
+        AgentClient agent = new(CreateDefaultClient(), remoteAddress ?? TestRemoteAddress.Unique());
         AgentRegistration registration = AgentClient.Registration(
             Guid.NewGuid().ToString("D"),
             "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5));
 
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(enrollmentToken, registration));
+            await agent.RegisterAsync(registration));
 
-        return new RegisteredMachine(agent, enrollmentToken, registration, registered);
+        return new RegisteredMachine(agent, registration, registered);
     }
 
     public async Task<SignedInClient> SignInAsync(string role)

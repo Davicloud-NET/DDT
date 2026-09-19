@@ -14,9 +14,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(30);
 
     private readonly HttpClient _client;
-    private readonly string _enrollmentToken;
 
-    public HttpAgentServer(Uri serverUrl, string enrollmentToken, X509Certificate2? rootCertificate)
+    public HttpAgentServer(Uri serverUrl, X509Certificate2? rootCertificate)
     {
         ArgumentNullException.ThrowIfNull(serverUrl);
 
@@ -43,7 +42,6 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
 
         _client = new HttpClient(handler) { BaseAddress = serverUrl, Timeout = s_requestTimeout };
-        _enrollmentToken = enrollmentToken;
     }
 
     public async Task<AgentRegistrationResult> RegisterAsync(AgentRegistration registration, CancellationToken cancellationToken)
@@ -52,8 +50,6 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         {
             Content = JsonContent.Create(registration, AgentJsonContext.Default.AgentRegistration),
         };
-
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _enrollmentToken);
 
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 

@@ -26,6 +26,12 @@ public sealed class WebApprovalSignInTests(WebApprovalApplication application) :
             HttpStatusCode.Forbidden,
             (await machine.Agent.LogAsync(machine.Id, next.Token, new AgentLogBatch([new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, "waiting")]))).StatusCode);
         Assert.Equal(AgentSignInStatus.AlreadyDecided, (await machine.SignInAsync(operatorName)).Status);
+
+        SignedInClient administrator = await application.AdministratorAsync();
+        IReadOnlyList<MachineSummary> machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(
+            await administrator.GetAsync("/api/machines"));
+
+        Assert.False(Assert.Single(machines, m => m.Id == machine.Id).EverApproved);
     }
 
     [Fact]

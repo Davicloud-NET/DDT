@@ -41,13 +41,15 @@ public sealed class Machine
 
     public string? LastSeenAddress { get; set; }
 
-    public string? EnrollmentTokenId { get; set; }
-
     public Guid? ApprovedByUserId { get; set; }
 
     public DdtUser? ApprovedBy { get; set; }
 
     public DateTimeOffset? ApprovedUtc { get; set; }
+
+    // Set by the first approval and never cleared, unlike ApprovedUtc, so a machine that someone vouched for
+    // once is never taken for a stray registration and removed.
+    public DateTimeOffset? FirstApprovedUtc { get; set; }
 
     public Guid? SignedInByUserId { get; set; }
 

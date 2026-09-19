@@ -13,7 +13,8 @@ public static class MachineServiceCollectionExtensions
 
         services.AddOptions<MachineOptions>().BindConfiguration(MachineOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
-        services.AddScoped<EnrollmentTokenService>();
+        services.AddSingleton<WaitingMachineSweeper>();
+        services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
         services.AddScoped<MachineRegistrar>();
         services.AddSingleton<LiveNotifier>();
 

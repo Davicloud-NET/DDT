@@ -33,14 +33,11 @@ prompt, which is enough to test the netboot chain.
 .PARAMETER ServerUrl
 The https URL the agent registers with. Every name in it must be in DDT's TLS certificate.
 
-.PARAMETER EnrollmentToken
-An enrollment token created in the web UI. It is readable by anyone who downloads the boot image,
-and only lets a machine register and someone at it try to sign in, like the web sign in page.
-
 .PARAMETER RootCertificatePath
-The PEM root the agent trusts for the server, for example DDT's generated certificate. Pass it even for a
-certificate from a public CA: Windows PE carries only a handful of Microsoft roots, not the public web
-ones. The server must send its full chain, because the agent does not download intermediates.
+The PEM root the agent trusts for the server, for example DDT's generated certificate. Required with
+-AgentPath, even for a certificate from a public CA: Windows PE carries only a handful of Microsoft
+roots, not the public web ones. The server must send its full chain, because the agent does not
+download intermediates.
 
 .PARAMETER KeyboardLayout
 The keyboard layout set in boot.wim, as input locale and layout identifiers, for example
@@ -56,15 +53,13 @@ Written to the BCD as ramdisktftpwindowsize. Only 4 has Microsoft backing. DDT c
 DDT:Pxe:TftpMaxWindowSize, so raise both together when measuring 8 or 16.
 
 .EXAMPLE
-.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -EnrollmentToken ddt1.xxx -RootCertificatePath .\ddt.pem
+.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt.pem
 #>
 [CmdletBinding()]
 param(
     [string] $AgentPath,
 
     [string] $ServerUrl,
-
-    [string] $EnrollmentToken,
 
     [string] $RootCertificatePath,
 
@@ -234,8 +229,8 @@ if ($AgentPath) {
         throw "Agent not found at $AgentPath."
     }
 
-    if (-not $ServerUrl -or -not $EnrollmentToken) {
-        throw 'An agent needs -ServerUrl and -EnrollmentToken to register.'
+    if (-not $ServerUrl -or -not $RootCertificatePath) {
+        throw 'An agent needs -ServerUrl and -RootCertificatePath to reach the server.'
     }
 
     if (-not $KeyboardLayout) {
@@ -315,7 +310,6 @@ try {
 
         $configuration = [ordered]@{
             serverUrl       = $ServerUrl
-            enrollmentToken = $EnrollmentToken
             rootCertificate = $rootCertificate
             keyboardLayout  = $keyboardLayoutName
         }

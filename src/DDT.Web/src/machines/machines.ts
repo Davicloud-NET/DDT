@@ -1,6 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type MachineState =
   "Pending" | "Approved" | "Deploying" | "Done" | "Failed" | "Rejected" | "Retired";
@@ -20,6 +20,8 @@ export interface MachineSummary {
   lastSeenUtc: string;
   lastSeenAddress: string | null;
   signedInBy: string | null;
+  firstSeenAddress: string | null;
+  everApproved: boolean;
 }
 
 export const machinesQuery = queryOptions({
@@ -54,6 +56,20 @@ export function approveMachine(id: string): Promise<MachineSummary> {
 
 export function rejectMachine(id: string): Promise<MachineSummary> {
   return apiPost<MachineSummary>(`/api/machines/${id}/reject`);
+}
+
+// Anyone who reaches the server can register a machine, so a waiting machine nobody ever approved may be a
+// stray, and an operator can throw it away.
+export function isStray(machine: MachineSummary): boolean {
+  return machine.state === "Pending" && !machine.everApproved;
+}
+
+export function removeMachine(id: string): Promise<void> {
+  return apiDelete(`/api/machines/${id}`);
+}
+
+export function removeWaitingFrom(address: string): Promise<void> {
+  return apiDelete(`/api/machines?waitingFrom=${encodeURIComponent(address)}`);
 }
 
 export function formatMac(mac: string): string {

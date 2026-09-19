@@ -22,6 +22,8 @@ public static class MachineSummaries
             machine.FirstSeenUtc,
             machine.LastSeenUtc,
             machine.LastSeenAddress,
-            machine.SignedInUserName);
+            machine.SignedInUserName,
+            machine.FirstSeenAddress,
+            machine.FirstApprovedUtc is not null);
     }
 }

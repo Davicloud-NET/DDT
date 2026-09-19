@@ -17,7 +17,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
 
 string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
-using HttpAgentServer server = new(options!.ServerUrl, options.EnrollmentToken, options.RootCertificate);
+using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
 
 IMachineIdentityReader identity = options.DryRun
     ? new DryRunMachineIdentityReader(options.DryRunId)

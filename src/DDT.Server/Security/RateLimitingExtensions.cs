@@ -27,8 +27,8 @@ public static class RateLimitingExtensions
                     QueueLimit = 0,
                 }));
 
-            // A site behind one address can boot a whole lab at once, so this is generous. It exists to
-            // stop anyone holding the public enrollment token from flooding the approval queue.
+            // A site behind one address can boot a whole lab at once, so this is generous. Registration is open
+            // to anyone who reaches the server; this and the cap on waiting machines keep that from flooding it.
             limiter.AddPolicy<string>(RateLimitPolicies.AgentRegistration, context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions

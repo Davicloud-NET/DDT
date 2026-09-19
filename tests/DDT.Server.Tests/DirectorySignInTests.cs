@@ -57,7 +57,7 @@ public sealed class DirectorySignInTests(DirectoryApplication application) : ICl
         // Someone else presents this machine's UUID and MAC while the directory is still checking the password.
         application.Ldap.DuringBind = async () =>
             intruder = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
-                await machine.Agent.RegisterAsync(machine.EnrollmentToken, machine.Registration));
+                await machine.Agent.RegisterAsync(machine.Registration));
 
         HttpResponseMessage response = await machine.Agent.SignInAsync(
             machine.Id,

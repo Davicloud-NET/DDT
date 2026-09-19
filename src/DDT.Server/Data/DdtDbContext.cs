@@ -13,8 +13,6 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
-    public DbSet<EnrollmentToken> EnrollmentTokens => Set<EnrollmentToken>();
-
     public DbSet<MachineLogLine> MachineLogLines => Set<MachineLogLine>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -44,7 +42,6 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.Property(m => m.SerialNumber).HasMaxLength(128);
             machine.Property(m => m.AssignedName).HasMaxLength(15);
             machine.Property(m => m.FirstSeenAddress).HasMaxLength(64);
-            machine.Property(m => m.EnrollmentTokenId).HasMaxLength(64);
             machine.Property(m => m.State).HasConversion<string>().HasMaxLength(16);
 
             // State and generation are checked on save, so an approval, a rejection and a registration that
@@ -53,15 +50,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.Property(m => m.TokenGeneration).IsConcurrencyToken();
             machine.HasIndex(m => m.SmbiosUuid);
             machine.HasIndex(m => m.PrimaryMac);
+            machine.HasIndex(m => m.FirstSeenAddress);
             machine.HasOne(m => m.ApprovedBy).WithMany().HasForeignKey(m => m.ApprovedByUserId).OnDelete(DeleteBehavior.SetNull);
             machine.Property(m => m.SignedInUserName).HasMaxLength(256);
             machine.HasOne<DdtUser>().WithMany().HasForeignKey(m => m.SignedInByUserId).OnDelete(DeleteBehavior.SetNull);
-        });
-
-        builder.Entity<EnrollmentToken>(token =>
-        {
-            token.Property(t => t.Name).HasMaxLength(64);
-            token.Property(t => t.SecretHash).HasMaxLength(32);
         });
 
         builder.Entity<MachineLogLine>(line =>

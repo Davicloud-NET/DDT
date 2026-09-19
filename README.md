@@ -364,23 +364,22 @@ Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-
 
 ### Registration and authorization
 
-1. An administrator creates an enrollment token on the Machines page. It is shown once.
-2. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl`, `-EnrollmentToken` and
-   `-RootCertificatePath` puts the agent and an `agent.json` holding the last three values into
-   `boot.wim`, together with the name of the keyboard layout. The image is set to the layout given
-   with `-KeyboardLayout`, by default the build computer's own. `startnet.cmd` starts the agent.
-3. The agent registers at `POST /api/agents/register`. A machine DDT has not seen before appears on
-   the Machines page as `Pending`, live. The agent then polls `GET /api/agents/{id}/next` every ten
-   seconds, and every answer carries fresh tokens.
-4. The technician at the machine signs in with their DDT account, local or directory, and for a
+1. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl` and `-RootCertificatePath` puts the agent
+   and an `agent.json` holding the last two values into `boot.wim`, together with the name of the
+   keyboard layout. The image is set to the layout given with `-KeyboardLayout`, by default the build
+   computer's own. `startnet.cmd` starts the agent.
+2. The agent registers at `POST /api/agents/register`, with no credential. A machine DDT has not seen
+   before appears on the Machines page as `Pending`, live. The agent then polls
+   `GET /api/agents/{id}/next` every ten seconds, and every answer carries fresh tokens.
+3. The technician at the machine signs in with their DDT account, local or directory, and for a
    local account with the authenticator code if it has one. An operator or administrator account
    authorizes the machine there and then. An operator or administrator can also approve it on the
    Machines page instead, which is how an account that only signs in through OpenID Connect
    authorizes a machine: it has no password to type.
-5. On its next poll the agent receives a session token, the credential later milestones require for
+4. On its next poll the agent receives a session token, the credential later milestones require for
    task sequences and images. Only then does it send what it has printed, including the lines from
-   before, to `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because its
-   token comes from the public enrollment token.
+   before, to `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because anyone
+   can get its kind of token by registering.
 
 After a wrong password the agent asks for the password again and keeps the user name; an empty
 password goes back to the user name. The prompt names the keyboard layout, because a password typed
@@ -399,13 +398,18 @@ machine whose firmware reports no usable UUID, all zeros or all ones, is only ev
 another reporting the same value.
 
 Registering a known machine again starts it over at `Pending` and invalidates every token it held,
-because anyone with the enrollment token can present its UUID and MAC. The exception is the agent
+because anyone who reaches the server can present its UUID and MAC. The exception is the agent
 already holding the machine: every answer includes a resume token, valid for 24 hours, and an agent
 that has to register again after an outage presents it and keeps its approval. A machine that
 rebooted has lost that token and starts over. A rejected machine stays rejected, and its agent stops.
 
 Registration is limited to 120 requests a minute per address, polling and logging to 60 a minute per
-machine, and the server keeps the newest 10,000 log lines of each machine.
+machine, and the server keeps the newest 10,000 log lines of each machine. At most 100 machines
+nobody has approved may wait per address, `DDT:Machines:MaxWaitingPerAddress`, and 10,000 in all,
+`DDT:Machines:MaxWaiting`; a new machine beyond that is refused until some are approved or removed.
+An operator can remove a waiting machine nobody ever approved, or every such machine from one
+address, on the Machines page. Such machines also disappear once they have not been seen for a day.
+A machine that was approved once is never removed this way, so its log survives it booting again.
 
 The agent trusts only the root certificate in `agent.json`. Revocation is not checked and missing
 intermediates are not downloaded, because a provisioning network has no route to either, so the server
@@ -430,8 +434,7 @@ the boot image keeps working. The browser warns about this certificate on `local
 ### Trying the agent without a spare machine
 
 ```powershell
-$token = 'the enrollment token from the Machines page'
-artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152 --enrollment-token $token
+artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152
 ```
 
 `--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several
@@ -447,24 +450,26 @@ here.
 **The provisioning network is inside the trust boundary.** DDT cannot stop a rogue DHCP or PXE
 server on that segment from serving a different boot image to your machines, exactly as Microsoft
 states for ConfigMgr. Anything inside `boot.wim` is readable by anyone who can boot it, so DDT
-treats the boot path as public and puts nothing there but the server URL, the root certificate, a
-rotatable enrollment token and the name of the keyboard layout.
+treats the boot path as public and puts nothing there but the server URL, the root certificate and
+the name of the keyboard layout.
 
-What that token can do is deliberately almost nothing: it lets a machine say it exists. A machine
-enters as `Pending`, and its token reaches nothing but its own poll and the sign in. Only an operator
-or administrator authorizes it, by signing in at the machine or approving it on the Machines page,
-before it can write a log line or read a task sequence, an image or a secret. That gate is the control
-that the published attacks against SCCM operating system deployment walk straight through, and it is
-the reason the rest of this design exists.
+Registration is open to anyone who reaches the HTTPS endpoint, and deliberately worth almost nothing:
+it lets a machine say it exists. A machine enters as `Pending`, and its token reaches nothing but its
+own poll and the sign in. Only an operator or administrator authorizes it, by signing in at the
+machine or approving it on the Machines page, before it can write a log line or read a task sequence,
+an image or a secret. That gate is the control that the published attacks against SCCM operating
+system deployment walk straight through, and it is the reason the rest of this design exists.
 
-Because the public enrollment token reaches the sign in at the machine, it is exposed exactly like the
-web sign in page, and treated the same: the same accounts and lockout, and the same limit of 10
+Because anyone who registers a machine reaches the sign in at it, it is exposed exactly like the web
+sign in page, and treated the same: the same accounts and lockout, and the same limit of 10
 attempts every 5 minutes per address, shared between the two. An approval by signing in is bound to
 the registration that asked for it, so an agent that registers the machine again while the password
 is being checked does not receive it.
 
-Every registration, re-registration, sign in at a machine, approval, rejection and enrollment token
-change is written to the audit table with the actor and source address.
+Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
+operator is written to the audit table with the actor and source address. Waiting machines removed
+after a day unseen are only counted in the server log. Since anyone can register, approve on the page
+only a machine you can tie to a real PC, by its address or by someone signing in at it.
 
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
 ring is already required, already rotates, and this needs no token library. Each purpose, poll,

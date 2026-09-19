@@ -24,6 +24,11 @@ public static class MachineEndpoints
         group.MapPost("/{id:guid}/approve", ApproveAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/reject", RejectAsync).RequireAuthorization(DdtPolicies.Operator);
 
+        // Anyone who reaches the server can register machines, so an operator can throw away the ones nobody
+        // vouched for, one at a time or everything waiting from one address.
+        group.MapDelete("/{id:guid}", RemoveAsync).RequireAuthorization(DdtPolicies.Operator);
+        group.MapDelete("/", RemoveWaitingFromAsync).RequireAuthorization(DdtPolicies.Operator);
+
         return group;
     }
 
@@ -95,6 +100,7 @@ public static class MachineEndpoints
                 machine.State = MachineState.Approved;
                 machine.ApprovedByUserId = userId;
                 machine.ApprovedUtc = now;
+                machine.FirstApprovedUtc ??= now;
             },
             cancellationToken);
 
@@ -125,6 +131,98 @@ public static class MachineEndpoints
                 machine.ApprovedUtc = null;
             },
             cancellationToken);
+
+    private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveAsync(
+        Guid id,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        LiveNotifier live,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!IsStray(machine))
+        {
+            return TypedResults.Problem(
+                title: "Only a machine that is waiting and was never approved can be removed.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        return await RemoveStraysAsync([machine], user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveWaitingFromAsync(
+        string waitingFrom,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        LiveNotifier live,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        List<Machine> machines = await database.Machines
+            .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null && m.FirstSeenAddress == waitingFrom)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return await RemoveStraysAsync(machines, user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsStray(Machine machine) =>
+        machine.State == MachineState.Pending && machine.FirstApprovedUtc is null;
+
+    private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveStraysAsync(
+        List<Machine> machines,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        LiveNotifier live,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = timeProvider.GetUtcNow();
+
+        foreach (Machine machine in machines)
+        {
+            database.AuditEvents.Add(new AuditEvent
+            {
+                OccurredUtc = now,
+                Action = AuditActions.MachineRemoved,
+                ActorUserId = Principals.UserId(user),
+                ActorName = user.Identity?.Name,
+                SubjectId = machine.Id.ToString("D"),
+                SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
+                Detail = $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}.",
+            });
+        }
+
+        database.Machines.RemoveRange(machines);
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TypedResults.Problem(
+                title: "A machine changed while it was being removed. Look at it again before removing it.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (machines.Count > 0)
+        {
+            live.MachinesRemoved();
+        }
+
+        return TypedResults.NoContent();
+    }
 
     private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> TransitionAsync(
         Guid id,

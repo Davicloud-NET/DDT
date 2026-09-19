@@ -92,7 +92,6 @@ api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
-api.MapGroup("/enrollment-tokens").MapEnrollmentTokenEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints();
 

@@ -265,7 +265,7 @@ public sealed class AgentLoop(
             catch (AgentTokenRejectedException)
             {
                 failures++;
-                log.Error("The server refused the enrollment token. It may have expired or been revoked; rebuild the boot image with a current one.");
+                log.Warning("The server refused the registration. Trying again.");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

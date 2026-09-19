@@ -6,12 +6,14 @@ import { useNow } from "@/lib/useNow";
 import {
   approveMachine,
   formatMac,
+  isStray,
   machinesQuery,
   rejectMachine,
+  removeMachine,
+  removeWaitingFrom,
   upsertMachine,
 } from "@/machines/machines";
 
-import { EnrollmentTokensPanel } from "./EnrollmentTokensPanel";
 import styles from "./MachinesPage.module.scss";
 
 export function MachinesPage() {
@@ -22,7 +24,6 @@ export function MachinesPage() {
 
   const roles = user?.roles ?? [];
   const canDecide = roles.includes("Administrator") || roles.includes("Operator");
-  const isAdministrator = roles.includes("Administrator");
 
   const decide = useMutation({
     mutationFn: ({ id, approve }: { id: string; approve: boolean }) =>
@@ -36,7 +37,28 @@ export function MachinesPage() {
     },
   });
 
+  const remove = useMutation({
+    mutationFn: (target: { id: string } | { address: string }) =>
+      "id" in target ? removeMachine(target.id) : removeWaitingFrom(target.address),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
+    },
+  });
+
   const list = machines.data ?? [];
+  const busy = decide.isPending || remove.isPending;
+
+  // Offered once per address, on its first row, when more than one stray came from it.
+  const straysByAddress = new Map<string, number>();
+  for (const machine of list) {
+    if (isStray(machine) && machine.firstSeenAddress !== null) {
+      straysByAddress.set(
+        machine.firstSeenAddress,
+        (straysByAddress.get(machine.firstSeenAddress) ?? 0) + 1,
+      );
+    }
+  }
+  const bulkOffered = new Set<string>();
 
   return (
     <div className={styles.page}>
@@ -67,67 +89,101 @@ export function MachinesPage() {
             </tr>
           </thead>
           <tbody>
-            {list.map((machine) => (
-              <tr key={machine.id}>
-                <td>
-                  <span className={styles.state} data-state={machine.state}>
-                    {machine.state}
-                  </span>
-                  {machine.signedInBy !== null && (
-                    <div className={styles.secondary}>Signed in by {machine.signedInBy}</div>
-                  )}
-                </td>
-                <td>
-                  <div>{machine.assignedName ?? machine.model ?? "Unknown model"}</div>
-                  <div className={styles.secondary}>
-                    {[machine.manufacturer, machine.serialNumber].filter(Boolean).join(", ")}
-                  </div>
-                </td>
-                <td className={styles.mono}>{formatMac(machine.primaryMac)}</td>
-                <td className={styles.mono}>{machine.smbiosUuid}</td>
-                <td title={new Date(machine.lastSeenUtc).toLocaleString()}>
-                  <div>{relativeTime(machine.lastSeenUtc, now)}</div>
-                  <div className={styles.secondary}>{machine.lastSeenAddress}</div>
-                </td>
-                {canDecide && (
+            {list.map((machine) => {
+              const address = machine.firstSeenAddress;
+              const strays =
+                isStray(machine) && address !== null ? (straysByAddress.get(address) ?? 0) : 0;
+              const offerBulk = strays > 1 && address !== null && !bulkOffered.has(address);
+
+              if (offerBulk) {
+                bulkOffered.add(address);
+              }
+
+              return (
+                <tr key={machine.id}>
                   <td>
-                    {(machine.state === "Pending" || machine.state === "Approved") && (
-                      <div className={styles.actions}>
-                        {machine.state === "Pending" && (
-                          <button
-                            type="button"
-                            className={styles.approve}
-                            disabled={decide.isPending}
-                            onClick={() => {
-                              decide.mutate({ id: machine.id, approve: true });
-                            }}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className={styles.reject}
-                          disabled={decide.isPending}
-                          onClick={() => {
-                            decide.mutate({ id: machine.id, approve: false });
-                          }}
-                        >
-                          Reject
-                        </button>
-                      </div>
+                    <span className={styles.state} data-state={machine.state}>
+                      {machine.state}
+                    </span>
+                    {machine.signedInBy !== null && (
+                      <div className={styles.secondary}>Signed in by {machine.signedInBy}</div>
                     )}
                   </td>
-                )}
-              </tr>
-            ))}
+                  <td>
+                    <div>{machine.assignedName ?? machine.model ?? "Unknown model"}</div>
+                    <div className={styles.secondary}>
+                      {[machine.manufacturer, machine.serialNumber].filter(Boolean).join(", ")}
+                    </div>
+                  </td>
+                  <td className={styles.mono}>{formatMac(machine.primaryMac)}</td>
+                  <td className={styles.mono}>{machine.smbiosUuid}</td>
+                  <td title={new Date(machine.lastSeenUtc).toLocaleString()}>
+                    <div>{relativeTime(machine.lastSeenUtc, now)}</div>
+                    <div className={styles.secondary}>{machine.lastSeenAddress}</div>
+                  </td>
+                  {canDecide && (
+                    <td>
+                      {(machine.state === "Pending" || machine.state === "Approved") && (
+                        <div className={styles.actions}>
+                          {machine.state === "Pending" && (
+                            <button
+                              type="button"
+                              className={styles.approve}
+                              disabled={busy}
+                              onClick={() => {
+                                decide.mutate({ id: machine.id, approve: true });
+                              }}
+                            >
+                              Approve
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.reject}
+                            disabled={busy}
+                            onClick={() => {
+                              decide.mutate({ id: machine.id, approve: false });
+                            }}
+                          >
+                            Reject
+                          </button>
+                          {isStray(machine) && (
+                            <button
+                              type="button"
+                              className={styles.reject}
+                              disabled={busy}
+                              onClick={() => {
+                                remove.mutate({ id: machine.id });
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                          {offerBulk && (
+                            <button
+                              type="button"
+                              className={styles.reject}
+                              disabled={busy}
+                              onClick={() => {
+                                remove.mutate({ address });
+                              }}
+                            >
+                              Remove all {strays} from {address}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
 
       {decide.isError && <p className={styles.error}>{decide.error.message}</p>}
-
-      {isAdministrator && <EnrollmentTokensPanel />}
+      {remove.isError && <p className={styles.error}>{remove.error.message}</p>}
     </div>
   );
 }

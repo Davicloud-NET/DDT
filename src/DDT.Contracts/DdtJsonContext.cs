@@ -17,8 +17,4 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(MachineSummary))]
 [JsonSerializable(typeof(IReadOnlyList<MachineSummary>))]
 [JsonSerializable(typeof(IReadOnlyList<MachineLogEntry>))]
-[JsonSerializable(typeof(EnrollmentTokenSummary))]
-[JsonSerializable(typeof(IReadOnlyList<EnrollmentTokenSummary>))]
-[JsonSerializable(typeof(CreateEnrollmentTokenRequest))]
-[JsonSerializable(typeof(CreatedEnrollmentToken))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

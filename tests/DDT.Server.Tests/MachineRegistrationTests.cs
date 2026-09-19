@@ -27,18 +27,16 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
     private static string NewMac() => "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5);
 
-    private async Task<(SignedInClient Admin, string Token)> EnrollmentTokenAsync() =>
-        (await _application.AdministratorAsync(), await _application.CreateEnrollmentTokenAsync());
 
     private AgentClient Agent() => new(_application.CreateDefaultClient());
 
     private static AgentLogBatch OneLine(string message) =>
         new([new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, message)]);
 
-    private static async Task<(Guid MachineId, string SessionToken)> ApprovedMachineAsync(SignedInClient admin, AgentClient agent, string token)
+    private static async Task<(Guid MachineId, string SessionToken)> ApprovedMachineAsync(SignedInClient admin, AgentClient agent)
     {
         AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
         (await admin.PostAsync($"/api/machines/{registered.MachineId}/approve")).EnsureSuccessStatusCode();
         AgentNextResult next = await ReadAsync<AgentNextResult>(await agent.NextAsync(registered.MachineId, registered.Token!));
 
@@ -53,39 +51,27 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     }
 
     [Fact]
-    public async Task RefusesRegistrationWithoutAValidEnrollmentToken()
+    public async Task RegistersWithoutAnyCredentialAndIgnoresAnOldEnrollmentToken()
     {
         using AgentClient agent = Agent();
-        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac());
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await agent.RegisterAsync(null, registration)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await agent.RegisterAsync("ddt1.00000000000000000000000000000000.AAAA", registration)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await agent.RegisterAsync("not a token", registration)).StatusCode);
-    }
+        Assert.Equal(HttpStatusCode.OK, (await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac()))).StatusCode);
 
-    [Fact]
-    public async Task RefusesARevokedEnrollmentToken()
-    {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
-        Guid id = Guid.ParseExact(token.Split('.')[1], "N");
-
-        (await admin.PostAsync($"/api/enrollment-tokens/{id}/revoke")).EnsureSuccessStatusCode();
-
-        using AgentClient agent = Agent();
-        HttpResponseMessage response = await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac()));
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Boot images built while enrollment tokens existed still send one.
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac()), "ddt1.00000000000000000000000000000000.AAAA")).StatusCode);
     }
 
     [Fact]
     public async Task RegistersAPendingMachineThatCanOnlyPoll()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         string uuid = NewUuid();
 
         AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(uuid, NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac())));
 
         Assert.Equal(MachineState.Pending, registered.State);
         Assert.NotNull(registered.Token);
@@ -95,7 +81,7 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         Assert.Equal(MachineState.Pending, next.State);
 
-        // The enrollment token is public, so what it leads to must not write anything but last seen.
+        // Anyone can register, so what that leads to must not write anything but last seen.
         Assert.Equal(HttpStatusCode.Forbidden, (await agent.LogAsync(registered.MachineId, next.Token, OneLine("hello"))).StatusCode);
 
         IReadOnlyList<MachineSummary> machines = await ReadAsync<IReadOnlyList<MachineSummary>>(await admin.GetAsync("/api/machines"));
@@ -107,11 +93,11 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task IssuesASessionTokenOnceApproved()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
 
         AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
 
         MachineSummary approved = await ReadAsync<MachineSummary>(await admin.PostAsync($"/api/machines/{registered.MachineId}/approve"));
         Assert.Equal(MachineState.Approved, approved.State);
@@ -128,18 +114,18 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task RejectionKillsEveryTokenAndRegistrationStaysRejected()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac());
 
-        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
 
         (await admin.PostAsync($"/api/machines/{registered.MachineId}/reject")).EnsureSuccessStatusCode();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await agent.NextAsync(registered.MachineId, registered.Token!)).StatusCode);
 
         AgentRegistrationResult again = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, registration with { ResumeToken = registered.ResumeToken }));
+            await agent.RegisterAsync(registration with { ResumeToken = registered.ResumeToken }));
         Assert.Equal(MachineState.Rejected, again.State);
         Assert.Null(again.Token);
         Assert.Null(again.ResumeToken);
@@ -148,16 +134,16 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task RegisteringAnApprovedMachineAgainStartsOverAtPending()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac());
 
-        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
+        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
         (await admin.PostAsync($"/api/machines/{first.MachineId}/approve")).EnsureSuccessStatusCode();
         AgentNextResult approved = await ReadAsync<AgentNextResult>(await agent.NextAsync(first.MachineId, first.Token!));
 
-        // Anyone holding the enrollment token can present this UUID and MAC, so the approval must not carry over.
-        AgentRegistrationResult second = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
+        // Anyone who reaches the server can present this UUID and MAC, so the approval must not carry over.
+        AgentRegistrationResult second = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
 
         Assert.Equal(first.MachineId, second.MachineId);
         Assert.Equal(MachineState.Pending, second.State);
@@ -168,12 +154,11 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task RegisteringAPendingMachineAgainInvalidatesItsTokensAndIsAudited()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
         AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac());
 
-        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
-        AgentRegistrationResult second = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
+        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        AgentRegistrationResult second = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
 
         Assert.Equal(first.MachineId, second.MachineId);
         Assert.Equal(HttpStatusCode.Unauthorized, (await agent.NextAsync(first.MachineId, first.Token!)).StatusCode);
@@ -195,16 +180,16 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task ResumingWithTheResumeTokenKeepsTheApproval()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac());
 
-        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, registration));
+        AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
         (await admin.PostAsync($"/api/machines/{first.MachineId}/approve")).EnsureSuccessStatusCode();
         AgentNextResult approved = await ReadAsync<AgentNextResult>(await agent.NextAsync(first.MachineId, first.Token!));
 
         AgentRegistrationResult resumed = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, registration with { ResumeToken = approved.ResumeToken }));
+            await agent.RegisterAsync(registration with { ResumeToken = approved.ResumeToken }));
 
         Assert.Equal(first.MachineId, resumed.MachineId);
         Assert.Equal(MachineState.Approved, resumed.State);
@@ -215,18 +200,18 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task IgnoresAResumeTokenOfAnotherMachine()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         AgentRegistration victim = AgentClient.Registration(NewUuid(), NewMac());
 
-        AgentRegistrationResult approvedMachine = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, victim));
+        AgentRegistrationResult approvedMachine = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(victim));
         (await admin.PostAsync($"/api/machines/{approvedMachine.MachineId}/approve")).EnsureSuccessStatusCode();
 
         AgentRegistrationResult other = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
 
         AgentRegistrationResult hijack = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, victim with { ResumeToken = other.ResumeToken }));
+            await agent.RegisterAsync(victim with { ResumeToken = other.ResumeToken }));
 
         Assert.Equal(approvedMachine.MachineId, hijack.MachineId);
         Assert.Equal(MachineState.Pending, hijack.State);
@@ -235,16 +220,15 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task NeverMatchesAMachineByMacAloneAcrossUuids()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
         string mac = NewMac();
 
         AgentRegistrationResult real = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), mac)));
+            await agent.RegisterAsync(AgentClient.Registration(NewUuid(), mac)));
         AgentRegistrationResult zeros = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration("00000000-0000-0000-0000-000000000000", mac)));
+            await agent.RegisterAsync(AgentClient.Registration("00000000-0000-0000-0000-000000000000", mac)));
         AgentRegistrationResult ones = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration("ffffffff-ffff-ffff-ffff-ffffffffffff", mac)));
+            await agent.RegisterAsync(AgentClient.Registration("ffffffff-ffff-ffff-ffff-ffffffffffff", mac)));
 
         Assert.Equal(3, new HashSet<Guid> { real.MachineId, zeros.MachineId, ones.MachineId }.Count);
     }
@@ -252,18 +236,17 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task TellsMachinesWithTheSameUuidApartByTheirAdapters()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
         string uuid = NewUuid();
         string onboard = NewMac();
         string dock = NewMac();
 
         AgentRegistrationResult first = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(uuid, onboard, dock)));
+            await agent.RegisterAsync(AgentClient.Registration(uuid, onboard, dock)));
         AgentRegistrationResult clone = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(uuid, NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac())));
         AgentRegistrationResult throughTheDock = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(uuid, dock)));
+            await agent.RegisterAsync(AgentClient.Registration(uuid, dock)));
 
         Assert.NotEqual(first.MachineId, clone.MachineId);
         Assert.Equal(first.MachineId, throughTheDock.MachineId);
@@ -272,11 +255,10 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task RefusesATokenPresentedForAnotherMachine()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
 
-        AgentRegistrationResult one = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
-        AgentRegistrationResult two = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
+        AgentRegistrationResult one = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
+        AgentRegistrationResult two = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await agent.NextAsync(two.MachineId, one.Token!)).StatusCode);
     }
@@ -287,10 +269,9 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [InlineData("44454c4c-5700-1038-8036-b7c04f5a344a", "02-AA-BB-CC-DD-ZZ")]
     public async Task RefusesMalformedRegistrations(string uuid, string mac)
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
 
-        HttpResponseMessage response = await agent.RegisterAsync(token, AgentClient.Registration(uuid, mac));
+        HttpResponseMessage response = await agent.RegisterAsync(AgentClient.Registration(uuid, mac));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -298,9 +279,9 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task StoresLogLinesAndCapsTheBatch()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
-        (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent, token);
+        (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent);
 
         AgentLogBatch batch = new(
         [
@@ -323,9 +304,9 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task KeepsOnlyTheNewestLogLinesOfAMachine()
     {
-        (SignedInClient admin, string token) = await EnrollmentTokenAsync();
+        SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
-        (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent, token);
+        (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent);
         const int batches = (MachineLogLimits.MaxStoredLinesPerMachine / MachineLogLimits.MaxLinesPerBatch) + 1;
 
         for (int batch = 0; batch < batches; batch++)
@@ -354,16 +335,14 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task OnlyOperatorsAndAdministratorsDecide()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using AgentClient agent = Agent();
         using SignedInClient viewer = await _application.SignInAsync(DdtRoleNames.Viewer);
         using SignedInClient operatorClient = await _application.SignInAsync(DdtRoleNames.Operator);
 
         AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(
-            await agent.RegisterAsync(token, AgentClient.Registration(NewUuid(), NewMac())));
+            await agent.RegisterAsync(AgentClient.Registration(NewUuid(), NewMac())));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PostAsync($"/api/machines/{registered.MachineId}/approve")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await operatorClient.PostAsync("/api/enrollment-tokens", new CreateEnrollmentTokenRequest("x", 1))).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await operatorClient.PostAsync($"/api/machines/{registered.MachineId}/approve")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await operatorClient.PostAsync($"/api/machines/{registered.MachineId}/reject")).StatusCode);
 
@@ -417,7 +396,6 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
     [Fact]
     public async Task PushesARegistrationToSignedInViewers()
     {
-        (_, string token) = await EnrollmentTokenAsync();
         using SignedInClient viewer = await _application.SignInAsync(DdtRoleNames.Viewer);
         Uri hub = new(_application.Server.BaseAddress, "hubs/live");
 
@@ -438,7 +416,7 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         using AgentClient agent = Agent();
         string uuid = NewUuid();
-        (await agent.RegisterAsync(token, AgentClient.Registration(uuid, NewMac()))).EnsureSuccessStatusCode();
+        (await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac()))).EnsureSuccessStatusCode();
 
         MachineSummary pushed = await received.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 

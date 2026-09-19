@@ -8,13 +8,10 @@ namespace DDT.Server.Tests;
 // technician to sign in.
 public sealed class RegisteredMachine(
     AgentClient agent,
-    string enrollmentToken,
     AgentRegistration registration,
     AgentRegistrationResult registered) : IDisposable
 {
     public AgentClient Agent => agent;
-
-    public string EnrollmentToken => enrollmentToken;
 
     public AgentRegistration Registration => registration;
 

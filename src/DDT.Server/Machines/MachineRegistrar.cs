@@ -3,33 +3,36 @@ using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Live;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
-public sealed class MachineRegistrar(
+public sealed partial class MachineRegistrar(
     DdtDbContext database,
     MachineTokenService tokens,
     LiveNotifier live,
-    TimeProvider timeProvider)
+    IOptions<MachineOptions> options,
+    TimeProvider timeProvider,
+    ILogger<MachineRegistrar> logger)
 {
     public const int PollAfterSeconds = 10;
 
     private const int MaxAttempts = 3;
 
-    public async Task<AgentRegistrationResult> RegisterAsync(
+    // Null when a machine the server has not seen before is refused, because too many are already waiting.
+    public async Task<AgentRegistrationResult?> RegisterAsync(
         NormalisedRegistration registration,
-        EnrollmentToken enrollment,
         string? address,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(registration);
-        ArgumentNullException.ThrowIfNull(enrollment);
 
         for (int attempt = 1; ; attempt++)
         {
             try
             {
-                return await TryRegisterAsync(registration, enrollment, address, cancellationToken).ConfigureAwait(false);
+                return await TryRegisterAsync(registration, address, cancellationToken).ConfigureAwait(false);
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxAttempts)
             {
@@ -50,9 +53,8 @@ public sealed class MachineRegistrar(
             machine.State is MachineState.Approved or MachineState.Deploying ? MachineTokenPurpose.Session : MachineTokenPurpose.Poll);
     }
 
-    private async Task<AgentRegistrationResult> TryRegisterAsync(
+    private async Task<AgentRegistrationResult?> TryRegisterAsync(
         NormalisedRegistration registration,
-        EnrollmentToken enrollment,
         string? address,
         CancellationToken cancellationToken)
     {
@@ -61,6 +63,13 @@ public sealed class MachineRegistrar(
 
         if (machine is null)
         {
+            if (await TooManyWaitingAsync(address, cancellationToken).ConfigureAwait(false))
+            {
+                LogTooManyWaiting(address ?? "unknown");
+
+                return null;
+            }
+
             machine = new Machine
             {
                 Id = Guid.CreateVersion7(now),
@@ -71,19 +80,19 @@ public sealed class MachineRegistrar(
             };
 
             database.Machines.Add(machine);
-            database.AuditEvents.Add(Audit(now, AuditActions.MachineRegistered, machine, address, enrollment));
+            database.AuditEvents.Add(Audit(now, AuditActions.MachineRegistered, machine, address));
         }
         else if (machine.State == MachineState.Rejected)
         {
-            database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, enrollment, "Still rejected."));
+            database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, "Still rejected."));
         }
         else if (!Resumes(registration, machine))
         {
-            // Anyone holding the enrollment token can present a machine's UUID and MAC. Unless the
-            // registration proves it comes from the agent already holding this machine, it starts over:
-            // any approval is dropped and every token issued so far dies with the generation bump, so two
-            // agents can never share one machine's tokens.
-            database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, enrollment, $"Was {machine.State}."));
+            // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration
+            // proves it comes from the agent already holding this machine, it starts over: any approval is
+            // dropped and every token issued so far dies with the generation bump, so two agents can never
+            // share one machine's tokens.
+            database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, $"Was {machine.State}."));
 
             machine.State = MachineState.Pending;
             machine.TokenGeneration++;
@@ -100,7 +109,6 @@ public sealed class MachineRegistrar(
         machine.Model = registration.Model;
         machine.SerialNumber = registration.SerialNumber;
         machine.AgentVersion = registration.AgentVersion;
-        machine.EnrollmentTokenId = enrollment.Id.ToString("N");
         machine.LastSeenUtc = now;
         machine.LastSeenAddress = address;
 
@@ -116,6 +124,17 @@ public sealed class MachineRegistrar(
                 tokens.Issue(machine, MachineTokenPurpose.Resume),
                 PollAfterSeconds,
                 machine.SignedInUserName);
+    }
+
+    // Only machines nobody has approved count, so a fleet that was deployed and booted again never blocks a
+    // new machine.
+    private async Task<bool> TooManyWaitingAsync(string? address, CancellationToken cancellationToken)
+    {
+        IQueryable<Machine> waiting = database.Machines
+            .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null);
+
+        return await waiting.CountAsync(m => m.FirstSeenAddress == address, cancellationToken).ConfigureAwait(false) >= options.Value.MaxWaitingPerAddress
+            || await waiting.CountAsync(cancellationToken).ConfigureAwait(false) >= options.Value.MaxWaiting;
     }
 
     private bool Resumes(NormalisedRegistration registration, Machine machine) =>
@@ -146,7 +165,6 @@ public sealed class MachineRegistrar(
         string action,
         Machine machine,
         string? address,
-        EnrollmentToken enrollment,
         string? detail = null) => new()
         {
             OccurredUtc = now,
@@ -154,6 +172,9 @@ public sealed class MachineRegistrar(
             ActorMachineId = machine.Id,
             SubjectId = machine.Id.ToString("D"),
             SourceAddress = address,
-            Detail = $"Enrollment token {enrollment.Name} ({enrollment.Id:N}). {detail}".TrimEnd(),
+            Detail = detail,
         };
+
+    [LoggerMessage(EventId = 410, Level = LogLevel.Warning, Message = "Refused a new machine from {Address}: too many machines nobody approved are waiting")]
+    private partial void LogTooManyWaiting(string address);
 }

@@ -14,4 +14,6 @@ public sealed record MachineSummary(
     DateTimeOffset FirstSeenUtc,
     DateTimeOffset LastSeenUtc,
     string? LastSeenAddress,
-    string? SignedInBy);
+    string? SignedInBy,
+    string? FirstSeenAddress,
+    bool EverApproved);

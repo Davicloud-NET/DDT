@@ -7,6 +7,5 @@ public static class AuditActions
     public const string MachineSignedIn = "machine.signed-in";
     public const string MachineApproved = "machine.approved";
     public const string MachineRejected = "machine.rejected";
-    public const string EnrollmentTokenCreated = "enrollment-token.created";
-    public const string EnrollmentTokenRevoked = "enrollment-token.revoked";
+    public const string MachineRemoved = "machine.removed";
 }

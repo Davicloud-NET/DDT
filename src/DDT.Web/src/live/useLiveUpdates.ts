@@ -45,6 +45,8 @@ export function useLiveUpdates(): void {
       upsertMachine(queryClient, machine);
     });
 
+    connection.on("machinesRemoved", resync);
+
     connection.onreconnected(resync);
 
     connection.onclose(() => {

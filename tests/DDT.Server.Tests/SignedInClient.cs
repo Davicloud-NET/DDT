@@ -15,7 +15,11 @@ public sealed class SignedInClient(HttpClient client, CookieContainer cookies) :
 
     public CookieContainer Cookies => cookies;
 
-    public async Task<HttpResponseMessage> PostAsync(string path, object? body = null)
+    public Task<HttpResponseMessage> PostAsync(string path, object? body = null) => SendAsync(HttpMethod.Post, path, body);
+
+    public Task<HttpResponseMessage> DeleteAsync(string path) => SendAsync(HttpMethod.Delete, path, null);
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body)
     {
         if (_csrfToken is null)
         {
@@ -23,7 +27,7 @@ public sealed class SignedInClient(HttpClient client, CookieContainer cookies) :
             Remember(session);
         }
 
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(path, UriKind.Relative))
+        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative))
         {
             Content = body is null ? null : JsonContent.Create(body, options: TestJson.Options),
         };

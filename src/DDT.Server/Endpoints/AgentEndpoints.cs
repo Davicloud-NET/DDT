@@ -24,13 +24,12 @@ namespace DDT.Server.Endpoints;
 // No cookie is involved: every request carries a bearer token.
 public static class AgentEndpoints
 {
-    private const string BearerPrefix = "Bearer ";
-
     public static RouteGroupBuilder MapAgentEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        // The enrollment token is public, so the body is bounded before anything reads it.
+        // Open to anyone who reaches the server, so the body is bounded before anything reads it. Nothing is
+        // released to a registered machine until someone authorizes it.
         group.MapPost("/register", RegisterAsync)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRegistration)
@@ -40,15 +39,15 @@ public static class AgentEndpoints
             .RequireAuthorization(DdtPolicies.MachineAgent)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
-        // A session token, so only an approved machine writes to the log. A poll token comes with the public
-        // enrollment token and would otherwise let anyone fill the database.
+        // A session token, so only an approved machine writes to the log. Anyone can get a poll token by
+        // registering, and would otherwise be able to fill the database.
         group.MapPost("/{id:guid}/log", AppendLogAsync)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxRequestBytes));
 
-        // Anyone holding the public enrollment token can reach this to guess passwords, exactly like the web
-        // sign in page, so it shares that page's limit per address as well as the account lockout.
+        // Anyone who registers a machine can reach this to guess passwords, exactly like the web sign in page,
+        // so it shares that page's limit per address as well as the account lockout.
         group.MapPost("/{id:guid}/sign-in", SignInAsync)
             .RequireAuthorization(DdtPolicies.MachineAgent)
             .RequireRateLimiting(RateLimitPolicies.SignIn)
@@ -57,35 +56,27 @@ public static class AgentEndpoints
         return group;
     }
 
-    private static async Task<Results<Ok<AgentRegistrationResult>, UnauthorizedHttpResult, ValidationProblem>> RegisterAsync(
+    // Boot images built before registration was opened still send their enrollment token; it is ignored.
+    private static async Task<Results<Ok<AgentRegistrationResult>, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         AgentRegistration registration,
         HttpContext context,
-        EnrollmentTokenService enrollmentTokens,
         MachineRegistrar registrar,
         CancellationToken cancellationToken)
     {
-        string? header = context.Request.Headers.Authorization;
-        string? presented = header is not null && header.StartsWith(BearerPrefix, StringComparison.Ordinal)
-            ? header[BearerPrefix.Length..]
-            : null;
-
-        EnrollmentToken? enrollment = await enrollmentTokens.ValidateAsync(presented, cancellationToken).ConfigureAwait(false);
-
-        if (enrollment is null)
-        {
-            return TypedResults.Unauthorized();
-        }
-
         if (!RegistrationValidator.TryNormalise(registration, out NormalisedRegistration? normalised, out string error))
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["registration"] = [error] });
         }
 
-        AgentRegistrationResult result = await registrar
-            .RegisterAsync(normalised!, enrollment, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+        AgentRegistrationResult? result = await registrar
+            .RegisterAsync(normalised!, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
-        return TypedResults.Ok(result);
+        return result is null
+            ? TypedResults.Problem(
+                title: "Too many machines are waiting to be authorized. Approve or remove some on the Machines page.",
+                statusCode: StatusCodes.Status429TooManyRequests)
+            : TypedResults.Ok(result);
     }
 
     private static async Task<Results<Ok<AgentNextResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound>> NextAsync(
@@ -254,6 +245,7 @@ public static class AgentEndpoints
             machine.State = MachineState.Approved;
             machine.ApprovedByUserId = account.Id;
             machine.ApprovedUtc = now;
+            machine.FirstApprovedUtc ??= now;
             database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineApproved, account, userName, machine, address, "Was Pending. Signed in at the machine."));
         }
 

@@ -8,15 +8,14 @@ namespace DDT.Agent;
 
 public sealed record AgentOptions(
     Uri ServerUrl,
-    string EnrollmentToken,
     X509Certificate2? RootCertificate,
     bool DryRun,
     int DryRunId,
     string? KeyboardLayout)
 {
     public const string Usage =
-        "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--enrollment-token <token>] " +
-        "[--root-certificate <pem file>] [--dry-run [--dry-run-id <number>]]";
+        "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
+        "[--dry-run [--dry-run-id <number>]]";
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)
@@ -26,7 +25,6 @@ public sealed record AgentOptions(
         options = null;
         string? configPath = null;
         string? server = null;
-        string? token = null;
         string? rootPem = null;
         string? keyboardLayout = null;
         bool dryRun = false;
@@ -58,9 +56,6 @@ public sealed record AgentOptions(
                     break;
                 case "--server":
                     server = value;
-                    break;
-                case "--enrollment-token":
-                    token = value;
                     break;
                 case "--root-certificate":
                     if (!TryReadText(value, out rootPem, out error))
@@ -98,7 +93,6 @@ public sealed record AgentOptions(
                     AgentConfigurationJsonContext.Default.AgentConfiguration);
 
                 server ??= file?.ServerUrl;
-                token ??= file?.EnrollmentToken;
                 rootPem ??= file?.RootCertificate;
                 keyboardLayout = file?.KeyboardLayout;
             }
@@ -113,22 +107,6 @@ public sealed record AgentOptions(
         if (!Uri.TryCreate(server, UriKind.Absolute, out Uri? serverUrl) || serverUrl.Scheme != Uri.UriSchemeHttps)
         {
             error = $"An https server URL is required. {Usage}";
-
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            error = $"An enrollment token is required. {Usage}";
-
-            return false;
-        }
-
-        // The token goes into an Authorization header, which throws on a stray line break from a
-        // hand-edited agent.json.
-        if (!token.All(character => character is > ' ' and <= '~'))
-        {
-            error = "The enrollment token contains whitespace or characters that are not printable ASCII.";
 
             return false;
         }
@@ -149,7 +127,7 @@ public sealed record AgentOptions(
             }
         }
 
-        options = new AgentOptions(serverUrl, token, root, dryRun, dryRunId, keyboardLayout);
+        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, keyboardLayout);
         error = string.Empty;
 
         return true;

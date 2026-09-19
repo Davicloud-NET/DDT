@@ -66,6 +66,14 @@ export async function apiPost<TResponse>(path: string, body?: unknown): Promise<
   return (await response.json()) as TResponse;
 }
 
+export async function apiDelete(path: string): Promise<void> {
+  const response = await apiFetch(path, { method: "DELETE" });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response));
+  }
+}
+
 export class ApiError extends Error {
   public readonly status: number;
 

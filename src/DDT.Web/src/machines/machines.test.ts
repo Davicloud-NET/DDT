@@ -19,6 +19,8 @@ function machine(id: string, state: MachineSummary["state"], firstSeenUtc: strin
     lastSeenUtc: firstSeenUtc,
     lastSeenAddress: null,
     signedInBy: null,
+    firstSeenAddress: null,
+    everApproved: false,
   };
 }
 

@@ -178,16 +178,31 @@ function Initialize-Vm {
         Add-VMHardDiskDrive -VM $vm -Path $disk
     }
 
-    # A local key protector is enough for a test machine; Windows 11 setup is not run, but Windows expects
-    # a TPM once deployed.
-    if (-not (Get-VMSecurity -VM $vm).TpmEnabled) {
-        Set-VMKeyProtector -VM $vm -NewLocalKeyProtector
-        Enable-VMTPM -VM $vm
+    $firmware = Get-VMFirmware -VM $vm
+    $tpmEnabled = (Get-VMSecurity -VM $vm).TpmEnabled
+
+    # Hyper-V refuses to change the template, even to the same value, once the virtual TPM is initialized.
+    if ($firmware.SecureBootTemplateId -ne $template.Id) {
+        if ($tpmEnabled) {
+            throw "Virtual machine '$Name' has a virtual TPM, so its Secure Boot template cannot change. Remove it with -Remove first."
+        }
+
+        Set-VMFirmware -VM $vm -SecureBootTemplateId $template.Id
+    }
+
+    if ($firmware.SecureBoot -ne 'On') {
+        Set-VMFirmware -VM $vm -EnableSecureBoot On
     }
 
     # PauseAfterBootFailure keeps the firmware error on screen instead of scrolling past it.
-    Set-VMFirmware -VM $vm -EnableSecureBoot On -SecureBootTemplateId $template.Id `
-        -PreferredNetworkBootProtocol IPv4 -PauseAfterBootFailure On
+    Set-VMFirmware -VM $vm -PreferredNetworkBootProtocol IPv4 -PauseAfterBootFailure On
+
+    # A local key protector is enough for a test machine. Windows 11 setup is not run, but Windows expects a
+    # TPM once deployed. It comes after the template, which the TPM freezes.
+    if (-not $tpmEnabled) {
+        Set-VMKeyProtector -VM $vm -NewLocalKeyProtector
+        Enable-VMTPM -VM $vm
+    }
 
     # BootOrder replaces the whole list, so the adapter goes first and nothing else is dropped. File
     # entries are the Windows Boot Manager a deployment added; the list would lose them if rebuilt from

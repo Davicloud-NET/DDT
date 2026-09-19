@@ -45,6 +45,7 @@ builder.Services.AddDdtData(builder.Configuration, options);
 builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
+builder.Services.AddDdtForwardedHeaders();
 builder.Services.AddDdtMachines();
 builder.Services.AddDdtImages();
 builder.Services.AddDdtDeployments(builder.Configuration);
@@ -65,6 +66,10 @@ if (generatedCertificate)
 }
 
 app.MapDefaultEndpoints();
+
+// First, so everything after it sees the client's address and scheme rather than the proxy's: the boot file log,
+// HSTS, the rate limiter, Secure cookies and the same origin filters.
+app.UseDdtForwardedHeaders();
 
 app.UseRouting();
 

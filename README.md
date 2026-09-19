@@ -232,7 +232,27 @@ at all. Replace it, or distribute it as a trusted root. Every name and address D
 to be in the certificate, because the agent validates the hostname against the chain it pins. List
 them in `DDT:Https:SubjectAlternativeNames`.
 
-Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in front of DDT.
+Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in front of DDT, and then
+tell DDT which addresses the proxy connects from. Both settings are comma separated:
+
+```bash
+DDT__ForwardedHeaders__KnownProxies=10.20.0.5,10.20.0.6
+DDT__ForwardedHeaders__KnownNetworks=10.20.8.0/24
+```
+
+Until one of them is set, DDT ignores `X-Forwarded-For` and `X-Forwarded-Proto`, so every request
+appears to come from the proxy over plain HTTP: all clients share one sign in limit, the audit table
+and the Machines page show the proxy's address, and cookies are not marked `Secure`. Once set, the
+headers are read only on connections from a listed address, and only the last entry of
+`X-Forwarded-For`, the one the proxy added, counts. A client cannot choose its own address by
+sending the header through the proxy.
+
+The proxy has to append the client's address to `X-Forwarded-For`, set `X-Forwarded-Proto`, and pass
+`Host` through unchanged, because `X-Forwarded-Host` is not read. List the proxies and nothing else:
+DDT believes whatever client address a listed address reports, so a listed network that also holds
+clients lets them pick their own address by connecting to DDT directly. Loopback is not trusted
+unless it is listed, so a proxy on the same host is listed as `127.0.0.1` or `::1`.
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED` is ignored, because it trusts every address.
 
 With the `pxe` role active, DDT adds a plain HTTP Kestrel endpoint named `Boot` for boot files.
 Kestrel then ignores `ASPNETCORE_URLS`, `ASPNETCORE_HTTP_PORTS` and launch profile URLs, so the

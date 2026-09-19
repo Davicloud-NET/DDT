@@ -46,7 +46,8 @@ public static class HttpsConfigurationCheck
 
         throw new InvalidOperationException(
             "DDT:RequireHttps is set but no HTTPS endpoint is configured. Set Kestrel:Endpoints:Https:Url to an " +
-            "https URL, or set DDT:RequireHttps to false when a reverse proxy terminates TLS.");
+            "https URL, or set DDT:RequireHttps to false when a reverse proxy terminates TLS and list the proxy in " +
+            "DDT:ForwardedHeaders:KnownProxies.");
     }
 
     private static bool HasHttpsEndpoint(IConfiguration configuration, IConfigurationSection[] endpoints)

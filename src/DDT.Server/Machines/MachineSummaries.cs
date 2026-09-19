@@ -1,10 +1,13 @@
 using DDT.Contracts.Machines;
+using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
 
 public static class MachineSummaries
 {
-    public static MachineSummary From(Machine machine)
+    // The deployment is the machine's active one, else the one that ended last. Every caller passes it, because
+    // the web UI replaces the whole row with what it receives.
+    public static MachineSummary From(Machine machine, Deployment? deployment)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
@@ -24,6 +27,9 @@ public static class MachineSummaries
             machine.LastSeenAddress,
             machine.SignedInUserName,
             machine.FirstSeenAddress,
-            machine.FirstApprovedUtc is not null);
+            machine.FirstApprovedUtc is not null,
+            machine.Disks,
+            machine.EligibleDiskCount,
+            deployment is null ? null : DeploymentSummaries.From(deployment));
     }
 }

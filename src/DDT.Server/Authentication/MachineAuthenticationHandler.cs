@@ -55,9 +55,10 @@ public sealed class MachineAuthenticationHandler(
         }
 
         // A poll token only lets a waiting machine learn that it was approved. Content needs a session
-        // token, which exists only while an approval stands.
+        // token, which exists only while an approval stands: a failed deployment keeps it, so the machine
+        // can report and be given another image. Done takes no token at all.
         bool allowed = purpose == MachineTokenPurpose.Session
-            ? machine.State is MachineState.Approved or MachineState.Deploying
+            ? machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
             : machine.State is MachineState.Pending or MachineState.Approved;
 
         if (!allowed)

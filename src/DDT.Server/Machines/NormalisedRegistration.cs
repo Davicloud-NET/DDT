@@ -1,5 +1,6 @@
 namespace DDT.Server.Machines;
 
+// Disks and EligibleDiskCount are null when the agent is too old to report its disks.
 public sealed record NormalisedRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -8,4 +9,6 @@ public sealed record NormalisedRegistration(
     string? Model,
     string? SerialNumber,
     string AgentVersion,
-    string? ResumeToken);
+    string? ResumeToken,
+    string? Disks,
+    int? EligibleDiskCount);

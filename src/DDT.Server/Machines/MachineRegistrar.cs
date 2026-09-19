@@ -1,6 +1,9 @@
+using System.Net;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Live;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -11,6 +14,7 @@ namespace DDT.Server.Machines;
 public sealed partial class MachineRegistrar(
     DdtDbContext database,
     MachineTokenService tokens,
+    DeploymentService deployments,
     LiveNotifier live,
     IOptions<MachineOptions> options,
     TimeProvider timeProvider,
@@ -23,7 +27,7 @@ public sealed partial class MachineRegistrar(
     // Null when a machine the server has not seen before is refused, because too many are already waiting.
     public async Task<AgentRegistrationResult?> RegisterAsync(
         NormalisedRegistration registration,
-        string? address,
+        IPAddress? remoteAddress,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(registration);
@@ -32,34 +36,40 @@ public sealed partial class MachineRegistrar(
         {
             try
             {
-                return await TryRegisterAsync(registration, address, cancellationToken).ConfigureAwait(false);
+                return await TryRegisterAsync(registration, remoteAddress, cancellationToken).ConfigureAwait(false);
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxAttempts)
             {
-                // An approval, rejection or other registration changed the machine in between. Decide again
-                // from what is stored now rather than overwrite it.
+                // An approval, rejection, assignment, report or other registration changed the machine in between.
+                // Decide again from what is stored now rather than overwrite it.
                 database.ChangeTracker.Clear();
             }
         }
     }
 
-    // The issued tokens are the machine's own tokens for its current state, as NextAsync hands out.
+    // The issued tokens are the machine's own tokens for its current state, as NextAsync hands out. Done takes no
+    // token at all: the agent reboots after reporting it, and anything still holding a token is not that agent.
     public string CurrentToken(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
         return tokens.Issue(
             machine,
-            machine.State is MachineState.Approved or MachineState.Deploying ? MachineTokenPurpose.Session : MachineTokenPurpose.Poll);
+            machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+                ? MachineTokenPurpose.Session
+                : MachineTokenPurpose.Poll);
     }
 
     private async Task<AgentRegistrationResult?> TryRegisterAsync(
         NormalisedRegistration registration,
-        string? address,
+        IPAddress? remoteAddress,
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
+        string? address = remoteAddress?.ToString();
         Machine? machine = await FindAsync(registration, cancellationToken).ConfigureAwait(false);
+        Deployment? active = null;
+        DeploymentState? before = null;
 
         if (machine is null)
         {
@@ -88,19 +98,9 @@ public sealed partial class MachineRegistrar(
         }
         else if (!Resumes(registration, machine))
         {
-            // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration
-            // proves it comes from the agent already holding this machine, it starts over: any approval is
-            // dropped and every token issued so far dies with the generation bump, so two agents can never
-            // share one machine's tokens.
-            database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, $"Was {machine.State}."));
-
-            machine.State = MachineState.Pending;
-            machine.TokenGeneration++;
-            machine.ApprovedByUserId = null;
-            machine.ApprovedUtc = null;
-            machine.SignedInByUserId = null;
-            machine.SignedInUserName = null;
-            machine.SignedInUtc = null;
+            active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+            before = active?.State;
+            StartOver(machine, active, remoteAddress, address, now);
         }
 
         machine.PrimaryMac = registration.PrimaryMac;
@@ -112,8 +112,21 @@ public sealed partial class MachineRegistrar(
         machine.LastSeenUtc = now;
         machine.LastSeenAddress = address;
 
+        // An older agent reports no disks. What a newer one reported before stays, rather than turn unknown.
+        if (registration.EligibleDiskCount is not null)
+        {
+            machine.Disks = registration.Disks;
+            machine.EligibleDiskCount = registration.EligibleDiskCount;
+        }
+
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        live.MachineChanged(machine);
+
+        if (active is not null)
+        {
+            DeploymentLog.Changed(logger, active, before);
+        }
+
+        live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
 
         return machine.State == MachineState.Rejected
             ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null)
@@ -124,6 +137,51 @@ public sealed partial class MachineRegistrar(
                 tokens.Issue(machine, MachineTokenPurpose.Resume),
                 PollAfterSeconds,
                 machine.SignedInUserName);
+    }
+
+    // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration proves it comes
+    // from the agent already holding this machine, it starts over: any approval is dropped and every token issued
+    // so far dies with the generation bump, so two agents can never share one machine's tokens. The one exception
+    // is zero touch: an operator assigned an image on the web, and the machine netboots from a network listed for
+    // that. What the agent that is gone had started or chosen ends, see DeploymentService.EndForRestart.
+    private void StartOver(
+        Machine machine,
+        Deployment? active,
+        IPAddress? remoteAddress,
+        string? address,
+        DateTimeOffset now)
+    {
+        bool zeroTouch = deployments.KeepsApprovalOnNetboot(active, remoteAddress);
+
+        database.AuditEvents.Add(Audit(
+            now,
+            AuditActions.MachineReregistered,
+            machine,
+            address,
+            zeroTouch
+                ? $"Kept approved for {active!.ImageName} assigned by {active.RequestedByName}: netbooted from {address} in a zero touch network."
+                : $"Was {machine.State}."));
+
+        deployments.EndForRestart(machine, active, address);
+
+        machine.TokenGeneration++;
+        machine.SignedInByUserId = null;
+        machine.SignedInUserName = null;
+        machine.SignedInUtc = null;
+
+        if (zeroTouch)
+        {
+            machine.State = MachineState.Approved;
+            machine.ApprovedByUserId ??= active!.RequestedByUserId;
+            machine.ApprovedUtc ??= now;
+            machine.FirstApprovedUtc ??= now;
+        }
+        else
+        {
+            machine.State = MachineState.Pending;
+            machine.ApprovedByUserId = null;
+            machine.ApprovedUtc = null;
+        }
     }
 
     // Only machines nobody has approved count, so a fleet that was deployed and booted again never blocks a

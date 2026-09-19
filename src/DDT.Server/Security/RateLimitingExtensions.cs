@@ -68,6 +68,17 @@ public static class RateLimitingExtensions
                     QueueLimit = 0,
                 }));
 
+            // Image downloads get their own window, so resuming one never eats into the reports of the same run. A
+            // machine asks once before it erases the disk and again for each resumed range.
+            limiter.AddPolicy<string>(RateLimitPolicies.AgentImage, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.GetRouteValue("id")?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 30,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
             limiter.OnRejected = async (context, cancellationToken) =>
             {
                 if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))

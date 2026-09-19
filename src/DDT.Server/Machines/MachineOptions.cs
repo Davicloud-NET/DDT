@@ -13,4 +13,9 @@ public sealed class MachineOptions
     public int MaxWaitingPerAddress { get; init; } = 100;
 
     public int MaxWaiting { get; init; } = 10_000;
+
+    // Comma separated networks in CIDR notation. A machine assigned an image on the web that netboots from one of
+    // them later stays authorized. Matched against the address the connection comes from, so a reverse proxy's
+    // address must never be listed. Empty turns zero touch off.
+    public string ZeroTouchNetworks { get; init; } = string.Empty;
 }

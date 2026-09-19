@@ -45,4 +45,64 @@ public sealed class RegistrationValidatorTests
         Assert.Equal(128, normalised!.Manufacturer!.Length);
         Assert.Equal(32, normalised.AgentVersion.Length);
     }
+
+    [Fact]
+    public void DescribesOneDiskPerLine()
+    {
+        NormalisedRegistration normalised = WithDisks(
+            new AgentDisk(0, "Msft Virtual Disk", 64L * 1024 * 1024 * 1024, "SCSI", 0),
+            new AgentDisk(1, null, 2L * 1024 * 1024 * 1024 * 1024, "NVMe", 3));
+
+        Assert.Equal("Disk 0: Msft Virtual Disk, 64 GB, SCSI\nDisk 1: unknown model, 2 TB, NVMe", normalised.Disks);
+        Assert.Equal(2, normalised.EligibleDiskCount);
+    }
+
+    [Fact]
+    public void BoundsAndCleansWhatTheAgentSaysAboutItsDisks()
+    {
+        NormalisedRegistration normalised = WithDisks(
+            new AgentDisk(0, "Samsung\0 SSD\n" + new string('x', 100), 500_107_862_016, "NVMe\0" + new string('b', 40), 1));
+
+        string line = Assert.Single(normalised.Disks!.Split('\n'));
+
+        Assert.DoesNotContain('\0', line);
+        Assert.StartsWith("Disk 0: Samsung SSD" + new string('x', 53) + ", 466 GB, NVMe", line, StringComparison.Ordinal);
+        Assert.EndsWith(", NVMe" + new string('b', 12), line, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void KeepsWholeLinesWithinTheColumnButCountsEveryDisk()
+    {
+        AgentDisk[] disks = [.. Enumerable.Range(0, 24).Select(n => new AgentDisk(n, new string('m', 64), 1L << 40, "SAS", 0))];
+
+        NormalisedRegistration normalised = WithDisks(disks);
+
+        Assert.True(normalised.Disks!.Length <= 512);
+        Assert.All(normalised.Disks.Split('\n'), line => Assert.EndsWith(", 1 TB, SAS", line, StringComparison.Ordinal));
+        Assert.Equal(24, normalised.EligibleDiskCount);
+    }
+
+    [Fact]
+    public void AnOldAgentReportsNoDisksAndANewOneMayReportNone()
+    {
+        AgentRegistration old = new(Guid.NewGuid().ToString(), "00155D010203", ["00155D010203"], null, null, null, "1");
+
+        Assert.True(RegistrationValidator.TryNormalise(old, out NormalisedRegistration? unknown, out _));
+        Assert.Null(unknown!.Disks);
+        Assert.Null(unknown.EligibleDiskCount);
+
+        NormalisedRegistration none = WithDisks();
+
+        Assert.Null(none.Disks);
+        Assert.Equal(0, none.EligibleDiskCount);
+    }
+
+    private static NormalisedRegistration WithDisks(params AgentDisk[] disks)
+    {
+        AgentRegistration registration = new(Guid.NewGuid().ToString(), "00155D010203", ["00155D010203"], null, null, null, "1", null, disks);
+
+        Assert.True(RegistrationValidator.TryNormalise(registration, out NormalisedRegistration? normalised, out _));
+
+        return normalised!;
+    }
 }

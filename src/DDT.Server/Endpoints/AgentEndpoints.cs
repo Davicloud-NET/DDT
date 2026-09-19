@@ -1,9 +1,9 @@
-using System.Globalization;
 using System.Security.Claims;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
@@ -79,7 +79,7 @@ public static class AgentEndpoints
         }
 
         AgentRegistrationResult? result = await registrar
-            .RegisterAsync(normalised!, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .RegisterAsync(normalised!, context.Connection.RemoteIpAddress, cancellationToken)
             .ConfigureAwait(false);
 
         return result is null
@@ -114,6 +114,7 @@ public static class AgentEndpoints
         DdtDbContext database,
         MachineTokenService tokens,
         MachineRegistrar registrar,
+        DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -132,45 +133,46 @@ public static class AgentEndpoints
             return TypedResults.NotFound();
         }
 
-        // The token was checked against an earlier read. Registered again or rejected since then, the machine
-        // belongs to a newer generation whose tokens this caller must not receive.
-        if (!HoldsCurrentGeneration(user, machine))
+        if (!Principals.HoldsCurrentGeneration(user, machine))
         {
             return TypedResults.Unauthorized();
         }
 
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        string? address = context.Connection.RemoteIpAddress?.ToString();
-
-        if (now - machine.LastSeenUtc >= MachineLogLimits.LastSeenResolution || address != machine.LastSeenAddress)
+        if (LastSeen.Record(machine, timeProvider.GetUtcNow(), context.Connection.RemoteIpAddress?.ToString()))
         {
-            machine.LastSeenUtc = now;
-            machine.LastSeenAddress = address;
-
             try
             {
                 await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                live.MachineChanged(machine);
+                live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Approved, rejected or registered again since this token was checked. Last seen can wait for
-                // the next poll; the answer has to reflect what is stored now.
+                // Approved, rejected, assigned an image or registered again since this token was checked. Last
+                // seen can wait for the next poll; the answer has to reflect what is stored now.
                 await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
 
-                if (!HoldsCurrentGeneration(user, machine))
+                if (!Principals.HoldsCurrentGeneration(user, machine))
                 {
                     return TypedResults.Unauthorized();
                 }
             }
         }
 
+        // A waiting machine learns nothing about what it will be given: anyone can register as it.
+        Deployment? active = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+            ? await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false)
+            : null;
+
         return TypedResults.Ok(new AgentNextResult(
             machine.State,
             registrar.CurrentToken(machine),
             tokens.Issue(machine, MachineTokenPurpose.Resume),
             MachineRegistrar.PollAfterSeconds,
-            machine.SignedInUserName));
+            machine.SignedInUserName,
+            active is null ? null : DeploymentSummaries.ForAgent(active),
+            await deployments.CanPickImageAsync(machine, cancellationToken).ConfigureAwait(false),
+            deployments.DomainConfigured,
+            machine.AssignedName));
     }
 
     private static async Task<Results<Ok<AgentSignInResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ValidationProblem>> SignInAsync(
@@ -182,6 +184,7 @@ public static class AgentEndpoints
         CredentialVerifier credentials,
         UserManager<DdtUser> users,
         IOptions<MachineOptions> options,
+        DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory,
@@ -215,7 +218,7 @@ public static class AgentEndpoints
             return TypedResults.NotFound();
         }
 
-        if (!HoldsCurrentGeneration(user, machine))
+        if (!Principals.HoldsCurrentGeneration(user, machine))
         {
             return TypedResults.Unauthorized();
         }
@@ -262,19 +265,29 @@ public static class AgentEndpoints
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
+        Deployment? active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
 
         machine.SignedInByUserId = account.Id;
         machine.SignedInUserName = userName;
         machine.SignedInUtc = now;
         database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineSignedIn, account, userName, machine, address, "Signed in at the machine."));
 
-        if (!options.Value.RequireWebApproval)
+        if (!options.Value.RequireWebApproval || DeploymentService.CountsAsWebApproval(active))
         {
             machine.State = MachineState.Approved;
             machine.ApprovedByUserId = account.Id;
             machine.ApprovedUtc = now;
             machine.FirstApprovedUtc ??= now;
-            database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineApproved, account, userName, machine, address, "Was Pending. Signed in at the machine."));
+            database.AuditEvents.Add(SignInAudit(
+                now,
+                AuditActions.MachineApproved,
+                account,
+                userName,
+                machine,
+                address,
+                options.Value.RequireWebApproval
+                    ? $"Was Pending. Signed in at the machine, which {active!.RequestedByName} had assigned {active.ImageName} on the web."
+                    : "Was Pending. Signed in at the machine."));
         }
 
         try
@@ -285,13 +298,13 @@ public static class AgentEndpoints
         {
             await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
 
-            return HoldsCurrentGeneration(user, machine)
+            return Principals.HoldsCurrentGeneration(user, machine)
                 ? TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.AlreadyDecided))
                 : TypedResults.Unauthorized();
         }
 
         AuthLog.SignedInAtMachine(logger, userName, id);
-        live.MachineChanged(machine);
+        live.MachineChanged(machine, active ?? await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
 
         return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.Succeeded));
     }
@@ -314,9 +327,6 @@ public static class AgentEndpoints
             SourceAddress = address,
             Detail = detail,
         };
-
-    private static bool HoldsCurrentGeneration(ClaimsPrincipal user, Machine machine) =>
-        machine.TokenGeneration.ToString(CultureInfo.InvariantCulture) == user.FindFirstValue(DdtClaimTypes.TokenGeneration);
 
     private static async Task<Results<NoContent, ForbidHttpResult, ValidationProblem>> AppendLogAsync(
         Guid id,

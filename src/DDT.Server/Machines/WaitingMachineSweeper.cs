@@ -26,9 +26,10 @@ public sealed partial class WaitingMachineSweeper(
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
         // SQLite cannot compare DateTimeOffset, so the age is judged here. The delete repeats the rest of the
-        // condition, because a machine may have been approved in between.
+        // condition, because a machine may have been approved in between. A machine an operator assigned an image
+        // is kept: it waits for its next netboot or a sign-in at it.
         var waiting = await database.Machines
-            .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null)
+            .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null && m.ActiveDeploymentId == null)
             .Select(m => new { m.Id, m.LastSeenUtc })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -41,7 +42,10 @@ public sealed partial class WaitingMachineSweeper(
         }
 
         int removed = await database.Machines
-            .Where(m => stale.Contains(m.Id) && m.State == MachineState.Pending && m.FirstApprovedUtc == null)
+            .Where(m => stale.Contains(m.Id)
+                && m.State == MachineState.Pending
+                && m.FirstApprovedUtc == null
+                && m.ActiveDeploymentId == null)
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
 

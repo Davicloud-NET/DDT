@@ -4,5 +4,4 @@ public sealed record MachineTokenPayload(
     Guid MachineId,
     string SmbiosUuid,
     string PrimaryMac,
-    int TokenGeneration,
-    string? Resource);
+    int TokenGeneration);

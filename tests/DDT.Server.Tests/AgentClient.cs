@@ -25,9 +25,38 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> SignInAsync(Guid machineId, string token, AgentSignInRequest request) =>
         SendAsync(HttpMethod.Post, AgentRoutes.SignIn(machineId), token, JsonContent.Create(request, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> ImagesAsync(Guid machineId, string token) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.Images(machineId), token, null);
+
+    public Task<HttpResponseMessage> PickAsync(Guid machineId, string token, AgentPickRequest request) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.Deployments(machineId), token, JsonContent.Create(request, options: TestJson.Options));
+
+    public Task<HttpResponseMessage> ReportAsync(Guid machineId, string token, Guid deploymentId, AgentDeploymentReport report) =>
+        SendAsync(
+            HttpMethod.Post,
+            AgentRoutes.DeploymentReport(machineId, deploymentId),
+            token,
+            JsonContent.Create(report, options: TestJson.Options));
+
+    public Task<HttpResponseMessage> UnattendAsync(Guid machineId, string token, Guid deploymentId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.DeploymentUnattend(machineId, deploymentId), token, null);
+
+    public Task<HttpResponseMessage> ImageAsync(
+        Guid machineId,
+        string token,
+        string sha256,
+        HttpMethod? method = null,
+        RangeHeaderValue? range = null) =>
+        SendAsync(method ?? HttpMethod.Get, AgentRoutes.ImageContent(machineId, sha256), token, null, request => request.Headers.Range = range);
+
     public void Dispose() => client.Dispose();
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string? token, HttpContent? content)
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpMethod method,
+        string path,
+        string? token,
+        HttpContent? content,
+        Action<HttpRequestMessage>? configure = null)
     {
         using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = content };
 
@@ -40,6 +69,8 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
         {
             request.Headers.Add(TestRemoteAddress.Header, remoteAddress);
         }
+
+        configure?.Invoke(request);
 
         return await client.SendAsync(request);
     }

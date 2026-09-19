@@ -34,8 +34,8 @@ public sealed class MachineTokenServiceTests
 
     [Theory]
     [InlineData(MachineTokenPurpose.Poll, MachineTokenPurpose.Session)]
-    [InlineData(MachineTokenPurpose.Session, MachineTokenPurpose.SecretGrant)]
-    [InlineData(MachineTokenPurpose.ImageGrant, MachineTokenPurpose.SecretGrant)]
+    [InlineData(MachineTokenPurpose.Session, MachineTokenPurpose.Resume)]
+    [InlineData(MachineTokenPurpose.Resume, MachineTokenPurpose.Session)]
     public void ATokenIsNotValidForADifferentPurpose(MachineTokenPurpose issued, MachineTokenPurpose presented)
     {
         string token = s_tokens.Issue(NewMachine(), issued);
@@ -67,14 +67,13 @@ public sealed class MachineTokenServiceTests
     }
 
     [Fact]
-    public void AGrantCarriesTheResourceItWasIssuedFor()
+    public void OnlyThePollSessionAndResumePurposesExist()
     {
-        MachineTokenPayload? payload = s_tokens.Validate(
-            s_tokens.Issue(NewMachine(), MachineTokenPurpose.ImageGrant, "windows-11-24h2"),
-            MachineTokenPurpose.ImageGrant);
-
-        Assert.NotNull(payload);
-        Assert.Equal("windows-11-24h2", payload.Resource);
+        // Image and secret grants were never used: the machine's own session token and its running deployment
+        // decide what it may download and read.
+        Assert.Equal(
+            [MachineTokenPurpose.Poll, MachineTokenPurpose.Session, MachineTokenPurpose.Resume],
+            Enum.GetValues<MachineTokenPurpose>());
     }
 
     [Theory]

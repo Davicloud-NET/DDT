@@ -9,6 +9,4 @@ public static class MachineTokenLifetimes
 
     // How long the server may be unreachable before an approved machine has to be approved again.
     public static readonly TimeSpan Resume = TimeSpan.FromHours(24);
-    public static readonly TimeSpan ImageGrant = TimeSpan.FromMinutes(60);
-    public static readonly TimeSpan SecretGrant = TimeSpan.FromMinutes(5);
 }

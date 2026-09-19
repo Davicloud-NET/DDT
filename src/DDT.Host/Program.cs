@@ -6,6 +6,7 @@ using DDT.Pxe;
 using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Endpoints;
 using DDT.Server.Images;
 using DDT.Server.Live;
@@ -46,6 +47,7 @@ builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
 builder.Services.AddDdtMachines();
 builder.Services.AddDdtImages();
+builder.Services.AddDdtDeployments(builder.Configuration);
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
@@ -95,8 +97,9 @@ api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
+api.MapGroup("/deployments").MapDeploymentEndpoints();
 
-app.MapGroup("/api/agents").MapAgentEndpoints();
+app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 
 app.MapHub<LiveHub>("/hubs/live")
     .DisableCookieRedirect()

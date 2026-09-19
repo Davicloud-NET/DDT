@@ -1,4 +1,5 @@
 using DDT.Contracts.Machines;
+using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -9,11 +10,12 @@ namespace DDT.Server.Live;
 // hold up an agent's poll or an operator's approval.
 public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveNotifier> logger)
 {
-    public void MachineChanged(Machine machine)
+    // The deployment the Machines page shows for this machine, see MachineSummaries.From.
+    public void MachineChanged(Machine machine, Deployment? deployment)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        _ = PushAsync(MachineSummaries.From(machine));
+        _ = PushAsync(MachineSummaries.From(machine, deployment));
     }
 
     public void MachinesRemoved() => _ = PushEventAsync(LiveEvents.MachinesRemoved);

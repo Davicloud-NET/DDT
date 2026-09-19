@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
@@ -23,6 +26,8 @@ public static class MachineEndpoints
         group.MapGet("/{id:guid}/log", ReadLogAsync).RequireAuthorization(DdtPolicies.Viewer);
         group.MapPost("/{id:guid}/approve", ApproveAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/reject", RejectAsync).RequireAuthorization(DdtPolicies.Operator);
+        group.MapPost("/{id:guid}/deployments", AssignAsync).RequireAuthorization(DdtPolicies.Operator);
+        group.MapDelete("/{id:guid}/deployments/current", EndCurrentAsync).RequireAuthorization(DdtPolicies.Operator);
 
         // Anyone who reaches the server can register machines, so an operator can throw away the ones nobody
         // vouched for, one at a time or everything waiting from one address.
@@ -34,9 +39,13 @@ public static class MachineEndpoints
 
     // SQLite cannot order by DateTimeOffset, and a fleet this size sorts in memory for nothing. The order
     // must not depend on anything a poll changes, or rows move under an operator's pointer.
-    private static async Task<Ok<IReadOnlyList<MachineSummary>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
+    private static async Task<Ok<IReadOnlyList<MachineSummary>>> ListAsync(
+        DdtDbContext database,
+        DeploymentService deployments,
+        CancellationToken cancellationToken)
     {
         List<Machine> machines = await database.Machines.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, Deployment> shown = await deployments.ShownForAsync(machines, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok<IReadOnlyList<MachineSummary>>(
         [
@@ -44,7 +53,7 @@ public static class MachineEndpoints
                 .OrderBy(m => m.State == MachineState.Pending ? 0 : 1)
                 .ThenByDescending(m => m.FirstSeenUtc)
                 .ThenBy(m => m.Id)
-                .Select(MachineSummaries.From),
+                .Select(m => MachineSummaries.From(m, shown.GetValueOrDefault(m.Id))),
         ]);
     }
 
@@ -78,8 +87,10 @@ public static class MachineEndpoints
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
+        DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
         IOptions<MachineOptions> options,
         CancellationToken cancellationToken) =>
         TransitionAsync(
@@ -87,18 +98,20 @@ public static class MachineEndpoints
             user,
             context,
             database,
+            deployments,
             live,
             timeProvider,
+            loggerFactory,
             AuditActions.MachineApproved,
             machine => machine.State != MachineState.Pending
                 ? $"The machine is {machine.State}."
                 : options.Value.RequireWebApproval && machine.SignedInByUserId is null
                     ? "Nobody has signed in at this machine yet."
                     : null,
-            (machine, now, userId) =>
+            (machine, _, now) =>
             {
                 machine.State = MachineState.Approved;
-                machine.ApprovedByUserId = userId;
+                machine.ApprovedByUserId = Principals.UserId(user);
                 machine.ApprovedUtc = now;
                 machine.FirstApprovedUtc ??= now;
             },
@@ -109,28 +122,144 @@ public static class MachineEndpoints
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
+        DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken) =>
         TransitionAsync(
             id,
             user,
             context,
             database,
+            deployments,
             live,
             timeProvider,
+            loggerFactory,
             AuditActions.MachineRejected,
-            machine => machine.State is MachineState.Pending or MachineState.Approved ? null : $"The machine is {machine.State}.",
-            (machine, _, _) =>
+            machine => machine.State is MachineState.Pending or MachineState.Approved or MachineState.Deploying or MachineState.Failed
+                ? null
+                : $"The machine is {machine.State}.",
+            (machine, active, _) =>
             {
                 // The generation bump kills every token already issued, so a rejected machine stops
-                // mid request rather than at its next token refresh.
+                // mid request rather than at its next token refresh, a running deployment included.
                 machine.State = MachineState.Rejected;
                 machine.TokenGeneration++;
                 machine.ApprovedByUserId = null;
                 machine.ApprovedUtc = null;
+                deployments.EndForRejection(
+                    machine,
+                    active,
+                    Principals.UserId(user),
+                    user.Identity?.Name,
+                    context.Connection.RemoteIpAddress?.ToString());
             },
             cancellationToken);
+
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> AssignAsync(
+        Guid id,
+        AssignImageRequest request,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        DeploymentService deployments,
+        LiveNotifier live,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        DeploymentDecision decision = await deployments
+            .AssignAsync(machine, request, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return await CompleteAsync(
+            decision,
+            machine,
+            null,
+            database,
+            live,
+            loggerFactory,
+            "The machine changed while the image was assigned. Look at it again before assigning.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> EndCurrentAsync(
+        Guid id,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        DeploymentService deployments,
+        LiveNotifier live,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        DeploymentState? before = (await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false))?.State;
+
+        DeploymentDecision decision = await deployments
+            .EndCurrentAsync(machine, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return await CompleteAsync(
+            decision,
+            machine,
+            before,
+            database,
+            live,
+            loggerFactory,
+            "The deployment changed while it was being stopped. Look at the machine again.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> CompleteAsync(
+        DeploymentDecision decision,
+        Machine machine,
+        DeploymentState? before,
+        DdtDbContext database,
+        LiveNotifier live,
+        ILoggerFactory loggerFactory,
+        string conflict,
+        CancellationToken cancellationToken)
+    {
+        switch (decision.Outcome)
+        {
+            case DeploymentOutcome.NotFound:
+                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
+            case DeploymentOutcome.Conflict:
+                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
+            case DeploymentOutcome.Invalid:
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+        }
+
+        Deployment deployment = decision.Deployment!;
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TypedResults.Problem(title: conflict, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), deployment, before);
+        live.MachineChanged(machine, deployment);
+
+        return TypedResults.Ok(MachineSummaries.From(machine, deployment));
+    }
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveAsync(
         Guid id,
@@ -229,11 +358,13 @@ public static class MachineEndpoints
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
+        DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
         string action,
         Func<Machine, string?> refusal,
-        Action<Machine, DateTimeOffset, Guid?> apply,
+        Action<Machine, Deployment?, DateTimeOffset> apply,
         CancellationToken cancellationToken)
     {
         Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
@@ -249,16 +380,17 @@ public static class MachineEndpoints
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
-        Guid? userId = Principals.UserId(user);
         MachineState previous = machine.State;
+        Deployment? active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+        DeploymentState? activeState = active?.State;
 
-        apply(machine, now, userId);
+        apply(machine, active, now);
 
         database.AuditEvents.Add(new AuditEvent
         {
             OccurredUtc = now,
             Action = action,
-            ActorUserId = userId,
+            ActorUserId = Principals.UserId(user),
             ActorName = user.Identity?.Name,
             SubjectId = machine.Id.ToString("D"),
             SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
@@ -278,8 +410,14 @@ public static class MachineEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
-        live.MachineChanged(machine);
+        if (active is not null)
+        {
+            DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), active, activeState);
+        }
 
-        return TypedResults.Ok(MachineSummaries.From(machine));
+        Deployment? shown = await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false);
+        live.MachineChanged(machine, shown);
+
+        return TypedResults.Ok(MachineSummaries.From(machine, shown));
     }
 }

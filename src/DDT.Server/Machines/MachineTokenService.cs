@@ -8,7 +8,7 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
 {
     private const string PurposeRoot = "DDT.MachineToken";
 
-    public string Issue(Machine machine, MachineTokenPurpose purpose, string? resource = null)
+    public string Issue(Machine machine, MachineTokenPurpose purpose)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
@@ -16,8 +16,7 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
             machine.Id,
             machine.SmbiosUuid,
             machine.PrimaryMac,
-            machine.TokenGeneration,
-            resource);
+            machine.TokenGeneration);
 
         string json = JsonSerializer.Serialize(payload, MachineTokenJsonContext.Default.MachineTokenPayload);
 
@@ -55,8 +54,6 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
         MachineTokenPurpose.Poll => MachineTokenLifetimes.Poll,
         MachineTokenPurpose.Session => MachineTokenLifetimes.Session,
         MachineTokenPurpose.Resume => MachineTokenLifetimes.Resume,
-        MachineTokenPurpose.ImageGrant => MachineTokenLifetimes.ImageGrant,
-        MachineTokenPurpose.SecretGrant => MachineTokenLifetimes.SecretGrant,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose)),
     };
 }

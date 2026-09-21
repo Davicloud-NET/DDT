@@ -57,4 +57,16 @@ public static class ServerNames
             ? []
             : [.. names.EnumerateDnsNames(), .. names.EnumerateIPAddresses().Select(address => address.ToString())];
     }
+
+    // Every name, and every name that is an address, appears among the certificate's subject alternative names.
+    public static bool Covers(X509Certificate2 certificate, IEnumerable<string> names)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+
+        IReadOnlyList<string> present = Of(certificate);
+
+        return names.All(name => IPAddress.TryParse(name, out IPAddress? address)
+            ? present.Any(p => IPAddress.TryParse(p, out IPAddress? other) && other.Equals(address))
+            : present.Contains(name, StringComparer.OrdinalIgnoreCase));
+    }
 }

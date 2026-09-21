@@ -7,24 +7,44 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Tests;
 
-// Keeps the event id and level of every entry the host logs.
-public sealed class RecordingLoggerProvider : ILoggerProvider, ILogger
+// Keeps every message a host logs, with its event id and level, for tests that can only see behaviour in the log.
+public sealed class RecordingLoggerProvider : ILoggerProvider
 {
-    private readonly ConcurrentQueue<(int EventId, LogLevel Level)> _entries = new();
+    private readonly ConcurrentQueue<(int EventId, LogLevel Level, string Message)> _entries = new();
 
-    public bool Logged(int eventId, LogLevel level) => _entries.Contains((eventId, level));
+    public IEnumerable<string> Messages => _entries.Select(entry => entry.Message);
 
-    public ILogger CreateLogger(string categoryName) => this;
+    public bool Logged(int eventId, LogLevel level) => _entries.Any(entry => entry.EventId == eventId && entry.Level == level);
 
-    public IDisposable? BeginScope<TState>(TState state)
-        where TState : notnull => null;
+    public ILogger CreateLogger(string categoryName) => new RecordingLogger(_entries);
 
-    public bool IsEnabled(LogLevel logLevel) => true;
+    public async Task WaitForAsync(string text, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(timeout);
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-        _entries.Enqueue((eventId.Id, logLevel));
+        while (!Messages.Any(message => message.Contains(text, StringComparison.Ordinal)))
+        {
+            await Task.Delay(50, deadline.Token);
+        }
+    }
 
     public void Dispose()
     {
+    }
+
+    private sealed class RecordingLogger(ConcurrentQueue<(int EventId, LogLevel Level, string Message)> entries) : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            ArgumentNullException.ThrowIfNull(formatter);
+
+            entries.Enqueue((eventId.Id, logLevel, formatter(state, exception)));
+        }
     }
 }

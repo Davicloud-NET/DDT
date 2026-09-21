@@ -32,8 +32,15 @@ builder.Services.Configure<DdtOptions>(builder.Configuration.GetSection(DdtOptio
 
 string activeRoles = string.Join(", ", roles.Order());
 
+// Before Kestrel reads Kestrel:Certificates:Default at startup, so the files exist and are current by then.
 ServerCertificates? certificates = CertificateBootstrap.Create(builder.Configuration, options);
-CertificateAction? certificateAction = certificates?.EnsureExists(TimeProvider.System.GetUtcNow());
+CertificateCheck? certificateCheck = null;
+
+if (certificates is not null)
+{
+    certificateCheck = await certificates.CheckAsync(CancellationToken.None);
+    builder.AddDdtServerCertificates(certificates);
+}
 
 builder.Services.ConfigureHttpJsonOptions(json =>
 {
@@ -73,9 +80,9 @@ var app = builder.Build();
 
 HostLog.ActiveRoles(app.Logger, activeRoles);
 
-if (certificates is not null && certificateAction is { } action)
+if (certificates is not null && certificateCheck is not null)
 {
-    CertificateLog.Checked(app.Logger, certificates, action);
+    CertificateLog.Checked(app.Logger, certificates, certificateCheck);
 }
 
 app.MapDefaultEndpoints();

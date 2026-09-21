@@ -15,6 +15,14 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
 
     public string RootKeyPath => Path.Combine(Folder, "ddt-root-key.pem");
 
+    // ddt.pem becomes ddt.previous.pem: the pair a renewal replaced, kept to go back to by hand.
+    public string PreviousCertificatePath => Previous(CertificatePath);
+
+    public string PreviousKeyPath => Previous(KeyPath);
+
+    // Taken by every DDT process that reads or writes these files, so two of them never renew at once.
+    public string LockPath => Path.Combine(Folder, ".lock");
+
     // A PFX, or a key under a password, is managed by hand as before, so DDT only takes over two plain PEM files.
     public static CertificateFiles? FromConfiguration(IConfiguration configuration)
     {
@@ -32,4 +40,9 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
 
         return new CertificateFiles(certificatePath, keyPath);
     }
+
+    private static string Previous(string path) =>
+        Path.Combine(
+            Path.GetDirectoryName(Path.GetFullPath(path))!,
+            Path.GetFileNameWithoutExtension(path) + ".previous" + Path.GetExtension(path));
 }

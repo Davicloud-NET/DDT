@@ -9,17 +9,18 @@ namespace DDT.Host.Startup;
 
 public static class CertificateBootstrap
 {
-    // Null when DDT does not look after the certificate: generation is off, or the paths are not two plain PEM files.
+    // Null when the certificate is not two plain PEM files, which Kestrel then loads on its own as before.
     public static ServerCertificates? Create(IConfiguration configuration, DdtOptions options)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
 
-        if (!options.Https.GenerateSelfSignedCertificate || CertificateFiles.FromConfiguration(configuration) is not { } files)
-        {
-            return null;
-        }
-
-        return new ServerCertificates(files, ServerNames.Required(options.Https.SubjectAlternativeNames));
+        return CertificateFiles.FromConfiguration(configuration) is { } files
+            ? new ServerCertificates(
+                files,
+                ServerNames.Required(options.Https.SubjectAlternativeNames),
+                options.Https.GenerateSelfSignedCertificate,
+                TimeProvider.System)
+            : null;
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using DDT.Contracts.About;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
@@ -26,4 +27,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<ImageUploadSession>))]
 [JsonSerializable(typeof(AssignImageRequest))]
 [JsonSerializable(typeof(DeploymentOptionsView))]
+[JsonSerializable(typeof(AboutInfo))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

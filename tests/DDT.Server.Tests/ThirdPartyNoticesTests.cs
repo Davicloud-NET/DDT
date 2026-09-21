@@ -17,7 +17,7 @@ public sealed class ThirdPartyNoticesTests
     public async Task NamesEveryShippedPackage()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        string root = RepositoryRoot();
+        string root = Repository.Root();
         string notices = await File.ReadAllTextAsync(Path.Combine(root, "THIRD-PARTY-NOTICES.md"), cancellationToken);
 
         List<string> shipped = [];
@@ -65,17 +65,5 @@ public sealed class ThirdPartyNoticesTests
         await using FileStream file = File.OpenRead(path);
 
         return await JsonDocument.ParseAsync(file, cancellationToken: cancellationToken);
-    }
-
-    private static string RepositoryRoot()
-    {
-        DirectoryInfo? directory = new(AppContext.BaseDirectory);
-
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "DDT.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException($"No DDT.slnx above {AppContext.BaseDirectory}.");
     }
 }

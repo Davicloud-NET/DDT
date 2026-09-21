@@ -1,8 +1,10 @@
+using System.Reflection;
 using DDT.Contracts;
 using DDT.Contracts.Agents;
 using DDT.Host.Logging;
 using DDT.Host.Startup;
 using DDT.Pxe;
+using DDT.Server.About;
 using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
@@ -49,6 +51,9 @@ builder.Services.AddDdtForwardedHeaders();
 builder.Services.AddDdtMachines();
 builder.Services.AddDdtImages();
 builder.Services.AddDdtDeployments(builder.Configuration);
+
+string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext.BaseDirectory, "legal")));
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
@@ -105,6 +110,7 @@ api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
+api.MapGroup("/about").MapAboutEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 

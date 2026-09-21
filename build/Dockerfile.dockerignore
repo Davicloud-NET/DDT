@@ -17,6 +17,7 @@ artifacts/
 **/appsettings.Development.json
 **/*.log
 **/*.md
+!THIRD-PARTY-NOTICES.md
 **/Dockerfile*
 **/.dockerignore
 build/compose*.yaml

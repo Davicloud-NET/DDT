@@ -24,6 +24,9 @@ COPY src/DDT.ServiceDefaults/DDT.ServiceDefaults.csproj src/DDT.ServiceDefaults/
 COPY src/DDT.Host/DDT.Host.csproj src/DDT.Host/
 RUN dotnet restore src/DDT.Host/DDT.Host.csproj -a $TARGETARCH
 COPY src/ src/
+# DDT.Host publishes these into /app/legal.
+COPY LICENSE NOTICE THIRD-PARTY-NOTICES.md ./
+COPY licenses/ licenses/
 COPY --from=spa /spa-dist/ src/DDT.Host/wwwroot/
 RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-restore -o /app
 

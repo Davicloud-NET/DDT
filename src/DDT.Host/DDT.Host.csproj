@@ -10,4 +10,16 @@
     <ProjectReference Include="..\DDT.ServiceDefaults\DDT.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <!-- The licence texts travel with every copy of the server, and the About page serves them from this folder. -->
+  <ItemGroup>
+    <Content Include="..\..\LICENSE;..\..\NOTICE;..\..\THIRD-PARTY-NOTICES.md"
+             Link="legal\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\licenses\**"
+             Link="legal\licenses\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

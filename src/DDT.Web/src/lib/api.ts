@@ -66,6 +66,27 @@ export async function apiPost<TResponse>(path: string, body?: unknown): Promise<
   return readBody<TResponse>(response);
 }
 
+// keepalive lets a save outlive the page, for the flush when it is hidden. Browsers cap such bodies at
+// about 64 KB.
+export async function apiPut<TResponse>(
+  path: string,
+  body: unknown,
+  init: { keepalive?: boolean } = {},
+): Promise<TResponse> {
+  const response = await apiFetch(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    keepalive: init.keepalive ?? false,
+  });
+
+  if (!response.ok) {
+    throw await apiErrorFrom(response);
+  }
+
+  return readBody<TResponse>(response);
+}
+
 // Some deletions answer 204, others the changed resource, for example the machine whose deployment ended.
 export async function apiDelete<TResponse = void>(path: string): Promise<TResponse> {
   const response = await apiFetch(path, { method: "DELETE" });
@@ -90,18 +111,29 @@ export function apiPatch(
   return apiFetch(path, { method: "PATCH", headers, body, signal: init.signal ?? null });
 }
 
+// The problem details the server answers a refusal with. A validation failure keys its messages by the
+// field, for example "mac", so a form can show each one next to its field.
+export interface ApiProblem {
+  title?: string;
+  errors?: Record<string, string[]>;
+}
+
 export class ApiError extends Error {
   public readonly status: number;
+  public readonly problem: ApiProblem | null;
 
-  public constructor(status: number, message: string) {
+  public constructor(status: number, message: string, problem: ApiProblem | null = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.problem = problem;
   }
 }
 
 export async function apiErrorFrom(response: Response): Promise<ApiError> {
-  return new ApiError(response.status, await readErrorMessage(response));
+  const problem = await readProblem(response);
+
+  return new ApiError(response.status, errorMessage(response, problem), problem);
 }
 
 async function readBody<TResponse>(response: Response): Promise<TResponse> {
@@ -112,28 +144,21 @@ async function readBody<TResponse>(response: Response): Promise<TResponse> {
   return (await response.json()) as TResponse;
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readProblem(response: Response): Promise<ApiProblem | null> {
+  try {
+    const body: unknown = await response.json();
+
+    return typeof body === "object" && body !== null ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+function errorMessage(response: Response, problem: ApiProblem | null): string {
   const fallback =
     response.statusText === ""
       ? `The server answered with status ${String(response.status)}.`
       : response.statusText;
 
-  try {
-    const problem = (await response.json()) as {
-      title?: string;
-      errors?: Record<string, string[]>;
-    } | null;
-
-    if (problem?.errors) {
-      const first = Object.values(problem.errors)[0];
-
-      if (first && first.length > 0) {
-        return first[0] ?? fallback;
-      }
-    }
-
-    return problem?.title ?? fallback;
-  } catch {
-    return fallback;
-  }
+  return Object.values(problem?.errors ?? {})[0]?.[0] ?? problem?.title ?? fallback;
 }

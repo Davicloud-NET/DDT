@@ -10,11 +10,13 @@ namespace DDT.Server.Tests;
 // Keeps every message a host logs, with its event id and level, for tests that can only see behaviour in the log.
 public sealed class RecordingLoggerProvider : ILoggerProvider
 {
-    private readonly ConcurrentQueue<(int EventId, LogLevel Level, string Message)> _entries = new();
+    private readonly ConcurrentQueue<LogEntry> _entries = new();
+
+    public IReadOnlyCollection<LogEntry> Entries => _entries;
 
     public IEnumerable<string> Messages => _entries.Select(entry => entry.Message);
 
-    public bool Logged(int eventId, LogLevel level) => _entries.Any(entry => entry.EventId == eventId && entry.Level == level);
+    public bool Logged(int eventId, LogLevel level) => _entries.Any(entry => entry.EventId.Id == eventId && entry.Level == level);
 
     public ILogger CreateLogger(string categoryName) => new RecordingLogger(_entries);
 
@@ -33,7 +35,7 @@ public sealed class RecordingLoggerProvider : ILoggerProvider
     {
     }
 
-    private sealed class RecordingLogger(ConcurrentQueue<(int EventId, LogLevel Level, string Message)> entries) : ILogger
+    private sealed class RecordingLogger(ConcurrentQueue<LogEntry> entries) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull => null;
@@ -44,7 +46,7 @@ public sealed class RecordingLoggerProvider : ILoggerProvider
         {
             ArgumentNullException.ThrowIfNull(formatter);
 
-            entries.Enqueue((eventId.Id, logLevel, formatter(state, exception)));
+            entries.Enqueue(new LogEntry(eventId, logLevel, formatter(state, exception)));
         }
     }
 }

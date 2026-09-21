@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using DDT.Contracts.Server;
 using DDT.Server.Certificates;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -532,7 +532,9 @@ public sealed class ServerCertificateTests : IDisposable
         await CheckAsync(certificates);
         X509Certificate2 first = certificates.Current!;
 
-        using ServerCertificateRenewer renewer = new(certificates, _clock, NullLogger<ServerCertificateRenewer>.Instance);
+        using RecordingLoggerProvider log = new();
+        using ILoggerFactory loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(log));
+        using ServerCertificateRenewer renewer = new(certificates, _clock, loggerFactory.CreateLogger<ServerCertificateRenewer>());
         await renewer.StartAsync(cancellationToken);
         await UntilAsync(() => _clock.HasTimerDueIn(TimeSpan.FromMinutes(5)), "The renewer set no five minute timer.", cancellationToken);
 
@@ -549,6 +551,43 @@ public sealed class ServerCertificateTests : IDisposable
         using X509Certificate2 renewed = _folder.Certificate();
         Assert.Equal(renewed.Thumbprint, certificates.Current?.Thumbprint);
         Assert.Equal(_clock.GetUtcNow().AddDays(90), new DateTimeOffset(renewed.NotAfter), s_second);
+        Assert.Equal([854, 851], log.Entries.Select(entry => entry.EventId.Id));
+    }
+
+    // Before anyone trusts the root, they compare it with what DDT logged when it made it.
+    [Fact]
+    public async Task MakingTheRootLogsWhereItIsAndItsSha256()
+    {
+        using RecordingLoggerProvider log = new();
+        ServerCertificates certificates = Certificates("ddt.example");
+
+        CertificateLog.Checked(log.CreateLogger("DDT"), certificates, await CheckAsync(certificates));
+
+        LogEntry created = Assert.Single(log.Entries);
+        Assert.Equal(850, created.EventId.Id);
+        Assert.Equal(LogLevel.Warning, created.Level);
+        Assert.Contains(_folder.Files.RootPath, created.Message, StringComparison.Ordinal);
+        Assert.Contains(certificates.Describe()!.RootSha256!, created.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnAdministratorsCertificateThatExpiresSoonIsLoggedOnce()
+    {
+        DateTimeOffset now = _clock.GetUtcNow();
+        CertificateFolder.Write(_folder.Files, AdministratorCertificate.Create("CN=ddt.example", "ddt.example", now.AddDays(-1), now.AddDays(40)));
+        using RecordingLoggerProvider log = new();
+        ILogger logger = log.CreateLogger("DDT");
+        ServerCertificates certificates = Certificates("ddt.example");
+        CertificateLog.Checked(logger, certificates, await CheckAsync(certificates));
+
+        _clock.Advance(TimeSpan.FromDays(11));
+        CertificateLog.Checked(logger, certificates, await CheckAsync(certificates));
+        CertificateLog.Checked(logger, certificates, await CheckAsync(certificates));
+
+        LogEntry warning = Assert.Single(log.Entries);
+        Assert.Equal(855, warning.EventId.Id);
+        Assert.Equal(LogLevel.Warning, warning.Level);
+        Assert.Contains(_folder.Files.CertificatePath, warning.Message, StringComparison.Ordinal);
     }
 
     public void Dispose() => _folder.Dispose();

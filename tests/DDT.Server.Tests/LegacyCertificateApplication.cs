@@ -4,6 +4,7 @@
 
 using DDT.Server.Certificates;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Tests;
 
@@ -22,11 +23,25 @@ public sealed class LegacyCertificateApplication : DdtApplication
 
     public PemPair Legacy { get; }
 
+    // What the host logged, from its start on.
+    public RecordingLoggerProvider Log { get; } = new();
+
     protected override void ConfigureTestHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.UseSetting("Kestrel:Certificates:Default:Path", Files.CertificatePath);
         builder.UseSetting("Kestrel:Certificates:Default:KeyPath", Files.KeyPath);
+        builder.ConfigureLogging(logging => logging.AddProvider(Log));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            Log.Dispose();
+        }
     }
 }

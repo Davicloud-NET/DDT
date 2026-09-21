@@ -12,6 +12,7 @@ using DDT.Server.Data;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -61,6 +62,19 @@ public sealed class ServerCertificateEndpointTests(LegacyCertificateApplication 
             .SingleAsync(e => e.Action == AuditActions.CertificateAnchorAcknowledged, cancellationToken));
         Assert.Equal(legacy, audit.SubjectId);
         Assert.NotNull(audit.ActorUserId);
+    }
+
+    // The warning is where an administrator finds the root to build boot images with, and its SHA-256 to check it by.
+    [Fact]
+    public async Task TheUpgradeLogsTheNewRootAndItsSha256()
+    {
+        using SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer);
+        ServerCertificateView view = await ViewAsync(viewer, TestContext.Current.CancellationToken);
+
+        LogEntry migrated = Assert.Single(application.Log.Entries, entry => entry.EventId.Id == 852);
+        Assert.Equal(LogLevel.Warning, migrated.Level);
+        Assert.Contains(application.Files.RootPath, migrated.Message, StringComparison.Ordinal);
+        Assert.Contains(view.RootSha256!, migrated.Message, StringComparison.Ordinal);
     }
 
     // Before anyone can sign in over a connection their browser trusts.

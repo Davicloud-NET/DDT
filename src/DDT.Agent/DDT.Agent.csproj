@@ -26,4 +26,11 @@
     <EmbeddedResource Include="$(PkgManagedWimLib)\runtimes\win-x64\native\libwim-15.dll" LogicalName="libwim-15.dll" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The legal texts the agent prints, under the names AgentLegalNotices.Files lists. -->
+    <EmbeddedResource Include="..\..\NOTICE;..\..\LICENSE;..\..\THIRD-PARTY-NOTICES.md" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\dotnet\*" LogicalName="licenses/dotnet/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\wimlib\*" LogicalName="licenses/wimlib/%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

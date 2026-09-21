@@ -1,6 +1,15 @@
 using DDT.Agent;
 using DDT.Agent.Deployment;
 
+if (args.Contains(AgentLegalNotices.LicensesArgument))
+{
+    AgentLegalNotices.WriteLicenses(Console.Out);
+
+    return AgentExitCodes.Stopped;
+}
+
+AgentLegalNotices.WriteStartupNotices(Console.Out);
+
 if (!AgentOptions.TryParse(args, out AgentOptions? options, out string error))
 {
     Console.Error.WriteLine(error);

@@ -19,7 +19,7 @@ public sealed record AgentOptions(
 
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--dry-run [--dry-run-id <number>]]";
+        "[--no-update] [--dry-run [--dry-run-id <number>]], or ddt-agent --licenses";
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)

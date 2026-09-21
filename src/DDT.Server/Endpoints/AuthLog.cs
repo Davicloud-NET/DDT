@@ -34,4 +34,7 @@ internal static partial class AuthLog
 
     [LoggerMessage(EventId = 208, Level = LogLevel.Warning, Message = "{UserName} may not authorize machines and tried at machine {MachineId} from {Address}")]
     public static partial void MachineSignInNotPermitted(ILogger logger, string userName, Guid machineId, string address);
+
+    [LoggerMessage(EventId = 209, Level = LogLevel.Warning, Message = "No account was created for {UserName} signing in through {Provider}: {Errors}")]
+    public static partial void ProvisionFailed(ILogger logger, string provider, string? userName, string errors);
 }

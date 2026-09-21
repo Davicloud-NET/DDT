@@ -1,0 +1,39 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace DDT.Server.Tests;
+
+// Stands in for the OpenID Connect handler and its provider: a challenge signs the subject named in the query into the
+// external cookie and redirects to the address the challenge names, as the real handler does at its callback.
+public sealed class FakeOidcHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory loggerFactory,
+    UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, loggerFactory, encoder)
+{
+    public const string SubjectParameter = "subject";
+
+    public static string UserNameOf(string subject) => "sso-" + subject;
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync() => Task.FromResult(AuthenticateResult.NoResult());
+
+    protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        string subject = Request.Query[SubjectParameter].ToString();
+        ClaimsPrincipal principal = new(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, subject), new Claim(ClaimTypes.Name, UserNameOf(subject))],
+            Scheme.Name));
+
+        await Context.SignInAsync(IdentityConstants.ExternalScheme, principal, properties);
+        Response.Redirect(properties.RedirectUri!);
+    }
+}

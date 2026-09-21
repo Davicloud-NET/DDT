@@ -54,9 +54,10 @@ public static class DdtConfigurationCheck
 
         _ = Read(configuration, HttpsOptions.SectionName, problems, section => section.Get<HttpsOptions>(Strict));
         _ = Read(configuration, LdapOptions.SectionName, problems, section => section.Get<LdapOptions>(Strict));
-        _ = Read(configuration, OidcOptions.SectionName, problems, section => section.Get<OidcOptions>(Strict));
         _ = Read(configuration, AgentReleaseOptions.SectionName, problems, section => section.Get<AgentReleaseOptions>(Strict));
 
+        OidcOptions? oidc = Read(
+            configuration, OidcOptions.SectionName, problems, section => section.Get<OidcOptions>(Strict) ?? new());
         DeploymentOptions? deployment = Read(
             configuration, DeploymentOptions.SectionName, problems, section => section.Get<DeploymentOptions>(Strict) ?? new());
         MachineOptions? machines = Read(
@@ -65,6 +66,11 @@ public static class DdtConfigurationCheck
             configuration, DdtForwardedHeadersOptions.SectionName, problems, section => section.Get<DdtForwardedHeadersOptions>(Strict) ?? new());
         PxeOptions? pxe = Read(
             configuration, PxeOptions.SectionName, problems, section => section.Get<PxeOptions>(Strict) ?? new());
+
+        if (oidc is not null)
+        {
+            Add(problems, OidcOptions.SectionName, OidcOptionsValidation.FindProblems(oidc));
+        }
 
         if (deployment is not null)
         {

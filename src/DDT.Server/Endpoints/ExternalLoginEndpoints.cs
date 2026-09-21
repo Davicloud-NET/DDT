@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
@@ -40,7 +41,9 @@ public static class ExternalLoginEndpoints
     private static async Task<RedirectHttpResult> CompleteAsync(
         SignInManager<DdtUser> signInManager,
         UserManager<DdtUser> userManager,
-        IOptions<OidcOptions> options)
+        IOptions<OidcOptions> options,
+        TimeProvider time,
+        ILoggerFactory loggerFactory)
     {
         ExternalLoginInfo? info = await signInManager.GetExternalLoginInfoAsync().ConfigureAwait(false);
 
@@ -77,18 +80,24 @@ public static class ExternalLoginEndpoints
             Email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value,
             DisplayName = info.Principal.Identity?.Name,
             Source = AccountSource.Directory,
-            CreatedUtc = DateTimeOffset.UtcNow,
+            CreatedUtc = time.GetUtcNow(),
         };
 
-        IdentityResult created = await userManager.CreateAsync(user).ConfigureAwait(false);
+        IdentityResult provisioned = await ExternalAccounts
+            .ProvisionAsync(userManager, user, info, options.Value.AutoProvisionRole)
+            .ConfigureAwait(false);
 
-        if (!created.Succeeded)
+        if (!provisioned.Succeeded)
         {
+            AuthLog.ProvisionFailed(
+                loggerFactory.CreateLogger(typeof(ExternalLoginEndpoints)),
+                info.LoginProvider,
+                user.UserName,
+                string.Join("; ", provisioned.Errors.Select(error => error.Description)));
+
             return TypedResults.Redirect("/sign-in?error=provision");
         }
 
-        await userManager.AddLoginAsync(user, info).ConfigureAwait(false);
-        await userManager.AddToRoleAsync(user, options.Value.AutoProvisionRole).ConfigureAwait(false);
         await signInManager.SignInAsync(user, isPersistent: false).ConfigureAwait(false);
 
         return TypedResults.Redirect("/");

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Core.Configuration;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
@@ -31,6 +32,7 @@ public static class DdtAuthenticationExtensions
         ArgumentNullException.ThrowIfNull(options);
 
         OidcOptions oidc = configuration.GetSection(OidcOptions.SectionName).Get<OidcOptions>() ?? new OidcOptions();
+        SettingProblem.ThrowIfAny(OidcOptions.SectionName, OidcOptionsValidation.FindProblems(oidc));
         services.Configure<OidcOptions>(configuration.GetSection(OidcOptions.SectionName));
         services.Configure<LdapOptions>(configuration.GetSection(LdapOptions.SectionName));
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();

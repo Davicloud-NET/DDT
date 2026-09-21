@@ -402,7 +402,9 @@ needed. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 At start-up the agent prints its legal notices: DDT's attribution notice, that it comes with
 absolutely no warranty, that it is free software under the GNU GPL version 3 or later with
 additional terms, and that it uses wimlib, which is under the GNU LGPL version 3 or later.
-`ddt-agent --licenses` prints the licence texts the agent carries and exits.
+`ddt-agent --licenses` prints the licence texts the agent carries and exits. A console shows them in
+its code page, which usually lacks a few of their characters, such as the copyright sign.
+`ddt-agent --licenses > licences.txt` writes them in UTF-8, exactly as the agent carries them.
 
 ### Updating the agent without a new boot image
 

@@ -2,12 +2,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text;
 using DDT.Agent;
 using DDT.Agent.Deployment;
 
 if (args.Contains(AgentLegalNotices.LicensesArgument))
 {
-    AgentLegalNotices.WriteLicenses(Console.Out);
+    // Console.Out encodes for the console's code page, 437 in an English Windows PE, and replaces what it lacks,
+    // such as the copyright sign. Redirected, the texts go out in UTF-8, so a file gets them unchanged.
+    if (Console.IsOutputRedirected)
+    {
+        using StreamWriter output = new(Console.OpenStandardOutput(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        AgentLegalNotices.WriteLicenses(output);
+    }
+    else
+    {
+        AgentLegalNotices.WriteLicenses(Console.Out);
+    }
 
     return AgentExitCodes.Stopped;
 }

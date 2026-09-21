@@ -83,13 +83,18 @@ public sealed class AgentLegalNoticesTests
             StringComparison.Ordinal);
     }
 
+    // Redirected output must keep characters the console's code page lacks, such as the copyright signs in the .NET
+    // notices, so it has to match what WriteLicenses writes, character for character.
     [Fact]
     public async Task LicensesPrintsTheTextsAndExitsWithoutAServer()
     {
         (int exitCode, string output, string error) = await RunAgentAsync(AgentLegalNotices.LicensesArgument);
+        StringWriter expected = new();
+        AgentLegalNotices.WriteLicenses(expected);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.Empty(error);
+        Assert.Equal(expected.ToString(), output);
         Assert.All(AgentLegalNotices.Files, file => Assert.Contains($"======== {file} ========", output, StringComparison.Ordinal));
         Assert.Contains("GNU GENERAL PUBLIC LICENSE", output, StringComparison.Ordinal);
         Assert.Contains("GNU LESSER GENERAL PUBLIC LICENSE", output, StringComparison.Ordinal);
@@ -106,13 +111,15 @@ public sealed class AgentLegalNoticesTests
         Assert.StartsWith("An https server URL is required.", error, StringComparison.Ordinal);
     }
 
-    // The build puts the agent next to the tests. Without agent.json there, it has no server to contact.
+    // The build puts the agent next to the tests. Without agent.json there, it has no server to contact. A console
+    // of its own has the system's OEM code page, as in Windows PE, whatever console runs the tests.
     private static async Task<(int ExitCode, string Output, string Error)> RunAgentAsync(params string[] arguments)
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         ProcessStartInfo start = new(Path.Combine(AppContext.BaseDirectory, "ddt-agent.exe"))
         {
             UseShellExecute = false,
+            CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8,

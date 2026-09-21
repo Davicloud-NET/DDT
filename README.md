@@ -405,6 +405,9 @@ additional terms, and that it uses wimlib, which is under the GNU LGPL version 3
 `ddt-agent --licenses` prints the licence texts the agent carries and exits. A console shows them in
 its code page, which usually lacks a few of their characters, such as the copyright sign.
 `ddt-agent --licenses > licences.txt` writes them in UTF-8, exactly as the agent carries them.
+In Windows PE the agent is `X:\DDT\ddt-agent.exe`, and the boot image puts `X:\DDT` on the path,
+so at the command prompt that stays open when the agent stops, `ddt-agent --licenses | more` pages
+through the texts.
 
 ### Updating the agent without a new boot image
 

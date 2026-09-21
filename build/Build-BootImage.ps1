@@ -348,11 +348,13 @@ try {
     }
 
     # wpeinit brings up the network. WaitForNetwork is unverified on this WinPE build; if it is not
-    # recognised, the agent's own retry has to cover the time DHCP takes.
+    # recognised, the agent's own retry has to cover the time DHCP takes. The path lets the prompt
+    # left after the agent stops run ddt-agent --licenses, as the agent's legal notices say.
     $startnet = @(
         '@echo off'
         'wpeinit'
         'wpeutil WaitForNetwork'
+        'set PATH=%PATH%;X:\DDT'
         'if exist X:\DDT\ddt-agent.exe X:\DDT\ddt-agent.exe'
     )
     Set-Content -LiteralPath (Join-Path $Mount 'Windows\System32\startnet.cmd') -Value $startnet -Encoding Ascii

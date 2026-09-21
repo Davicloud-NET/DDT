@@ -245,6 +245,25 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Equal(oldKey, File.ReadAllText(_folder.Files.PreviousKeyPath));
     }
 
+    // A store whose server was off for months: the certificate expired by the machine's clock, yet it came from the
+    // root, so it is renewed rather than served as someone else's.
+    [Fact]
+    public async Task AnExpiredCertificateFromTheRootIsRenewed()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        PemPair root = ServerCertificateAuthority.CreateRoot(now.AddDays(-200));
+        Directory.CreateDirectory(_folder.Path);
+        File.WriteAllText(_folder.Files.RootKeyPath, root.KeyPem);
+        File.WriteAllText(_folder.Files.RootPath, root.CertificatePem);
+        CertificateFolder.Write(_folder.Files, ServerCertificateAuthority.Issue(root, ServerNames.Required("ddt.example"), [], now.AddDays(-120)));
+
+        CertificateCheck check = await CheckAsync(Certificates("ddt.example"));
+
+        Assert.Equal(CertificateAction.Renewed, check.Action);
+        Assert.True(check.ManagedByDdt);
+        Assert.Equal(root.CertificatePem, File.ReadAllText(_folder.Files.RootPath));
+    }
+
     [Fact]
     public async Task AConfiguredNameMissingFromTheCertificateHasItIssuedAgain()
     {

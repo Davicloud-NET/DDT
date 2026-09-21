@@ -7,40 +7,30 @@ using DDT.Server.Machines;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
 public static class DeploymentServiceCollectionExtensions
 {
     // Reads both settings here rather than on first use: a mistake stops the server at startup, not the first
-    // deployment hours later. That includes a misspelled key, which would otherwise leave a setting such as the
-    // domain name unset without a word.
+    // deployment hours later. The instance checked here is the one every deployment uses, so no second binding can
+    // differ from what was checked.
     public static IServiceCollection AddDdtDeployments(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        DeploymentOptions deployment;
-
-        try
-        {
-            deployment = configuration
-                .GetSection(DeploymentOptions.SectionName)
-                .Get<DeploymentOptions>(binder => binder.ErrorOnUnknownConfiguration = true) ?? new DeploymentOptions();
-        }
-        catch (InvalidOperationException exception)
-        {
-            throw new InvalidOperationException(
-                $"{DeploymentOptions.SectionName} could not be read. Correct or remove the setting this names: {exception.Message}",
-                exception);
-        }
+        DeploymentOptions deployment = configuration
+            .GetSection(DeploymentOptions.SectionName)
+            .Get<DeploymentOptions>(binder => binder.ErrorOnUnknownConfiguration = true) ?? new DeploymentOptions();
 
         SettingProblem.ThrowIfAny(DeploymentOptions.SectionName, DeploymentOptionsValidation.FindProblems(deployment));
 
         ZeroTouchNetworks zeroTouchNetworks = ZeroTouchNetworks.Parse(
             configuration.GetSection(MachineOptions.SectionName).Get<MachineOptions>()?.ZeroTouchNetworks);
 
-        services.AddOptions<DeploymentOptions>().BindConfiguration(DeploymentOptions.SectionName);
+        services.AddSingleton(Options.Create(deployment));
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(zeroTouchNetworks);
         services.AddSingleton<UnattendRenderer>();

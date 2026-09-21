@@ -10,7 +10,10 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
+using DDT.Server.Deployments;
 using DDT.Server.Images;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -25,6 +28,17 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         await (await application.AdministratorAsync()).PostAsync(
             $"/api/machines/{machineId}/deployments",
             new AssignImageRequest(imageId, computerName));
+
+    // A second binding of the section would be read on first use, from whatever the configuration then holds.
+    [Fact]
+    public void DeploymentsUseTheSettingsCheckedAtStartup()
+    {
+        IOptions<DeploymentOptions> options = application.Services.GetRequiredService<IOptions<DeploymentOptions>>();
+
+        Assert.IsType<OptionsWrapper<DeploymentOptions>>(options);
+        Assert.Equal("corp.example", options.Value.Domain.Name);
+        Assert.Equal(DomainDeploymentApplication.JoinPassword, options.Value.Domain.Password);
+    }
 
     [Fact]
     public async Task TheAgentAndTheWebUiLearnThatADomainIsConfigured()

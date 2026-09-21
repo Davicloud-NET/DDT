@@ -5,6 +5,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using DDT.Contracts.Server;
 using DDT.Server.Certificates;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -230,7 +231,7 @@ public sealed class ServerCertificateTests : IDisposable
     public async Task AnAdministratorsCertificateIsServedAsItIs()
     {
         PemPair own = AdministratorCertificate.Create("CN=ddt.example", "ddt.example", _clock.GetUtcNow().AddDays(-1), _clock.GetUtcNow().AddDays(365));
-        AdministratorCertificate.Write(_folder.Files, own);
+        CertificateFolder.Write(_folder.Files, own);
         ServerCertificates certificates = Certificates("ddt.example");
 
         CertificateCheck check = await CheckAsync(certificates);
@@ -247,7 +248,7 @@ public sealed class ServerCertificateTests : IDisposable
     public async Task AnAdministratorsCertificateIsNeverRenewedButWarnsOnceBeforeItExpires()
     {
         PemPair own = AdministratorCertificate.Create("CN=ddt.example", "ddt.example", _clock.GetUtcNow().AddDays(-1), _clock.GetUtcNow().AddDays(40));
-        AdministratorCertificate.Write(_folder.Files, own);
+        CertificateFolder.Write(_folder.Files, own);
         ServerCertificates certificates = Certificates("ddt.example");
         Assert.False((await CheckAsync(certificates)).ExpiresSoon);
 
@@ -265,11 +266,11 @@ public sealed class ServerCertificateTests : IDisposable
     public async Task AnAdministratorsReplacedCertificateIsLoadedAgain()
     {
         DateTimeOffset now = _clock.GetUtcNow();
-        AdministratorCertificate.Write(_folder.Files, AdministratorCertificate.Create("CN=first.example", "first.example", now.AddDays(-1), now.AddDays(365)));
+        CertificateFolder.Write(_folder.Files, AdministratorCertificate.Create("CN=first.example", "first.example", now.AddDays(-1), now.AddDays(365)));
         ServerCertificates certificates = Certificates(string.Empty);
         await CheckAsync(certificates);
 
-        AdministratorCertificate.Write(_folder.Files, AdministratorCertificate.Create("CN=second.example", "second.example", now.AddDays(-1), now.AddDays(365)));
+        CertificateFolder.Write(_folder.Files, AdministratorCertificate.Create("CN=second.example", "second.example", now.AddDays(-1), now.AddDays(365)));
         CertificateCheck check = await CheckAsync(certificates);
 
         Assert.Equal(CertificateAction.Reloaded, check.Action);
@@ -282,7 +283,7 @@ public sealed class ServerCertificateTests : IDisposable
         DateTimeOffset now = _clock.GetUtcNow();
         PemPair first = AdministratorCertificate.Create("CN=first.example", "first.example", now.AddDays(-1), now.AddDays(365));
         PemPair second = AdministratorCertificate.Create("CN=second.example", "second.example", now.AddDays(-1), now.AddDays(365));
-        AdministratorCertificate.Write(_folder.Files, first);
+        CertificateFolder.Write(_folder.Files, first);
         ServerCertificates certificates = Certificates(string.Empty);
         await CheckAsync(certificates);
 
@@ -340,6 +341,104 @@ public sealed class ServerCertificateTests : IDisposable
 
         Assert.Contains(_folder.Files.RootKeyPath, refusal.Message, StringComparison.Ordinal);
         Assert.Equal(root, File.ReadAllText(_folder.Files.RootPath));
+    }
+
+    // Boot images built before pin the old certificate, which is no CA, so they need one rebuild; everything else carries on.
+    [Fact]
+    public async Task TheSelfSignedCertificateFromBeforeTheRootIsReplacedByOneFromANewRoot()
+    {
+        PemPair legacy = LegacyCertificate.Create("localhost", "ddt.lab.example");
+        CertificateFolder.Write(_folder.Files, legacy);
+        ServerCertificates certificates = Certificates("ddt.example");
+
+        CertificateCheck check = await CheckAsync(certificates);
+
+        Assert.Equal(CertificateAction.Migrated, check.Action);
+        Assert.True(check.ManagedByDdt);
+        using X509Certificate2 root = _folder.Root();
+        using X509Certificate2 certificate = _folder.Certificate();
+        Assert.True(CertificateFolder.ChainsUnderTheAgentsPolicy(certificate, root, _clock.GetUtcNow()));
+        Assert.Contains("ddt.lab.example", ServerNames.Of(certificate));
+        Assert.Contains("ddt.example", ServerNames.Of(certificate));
+
+        Assert.Equal(legacy.CertificatePem, File.ReadAllText(_folder.Files.ReplacedAnchorPath));
+        Assert.Equal(legacy.CertificatePem, File.ReadAllText(_folder.Files.PreviousCertificatePath));
+        Assert.Equal(legacy.KeyPem, File.ReadAllText(_folder.Files.PreviousKeyPath));
+
+        using X509Certificate2 anchor = X509Certificate2.CreateFromPem(legacy.CertificatePem);
+        Assert.Equal(anchor.GetCertHashString(HashAlgorithmName.SHA256), certificates.ReplacedAnchorSha256());
+        Assert.NotNull(certificates.Describe()?.AnchorReplacedUtc);
+        Assert.Equal(CertificateAction.Loaded, (await CheckAsync(Certificates("ddt.example"))).Action);
+    }
+
+    [Fact]
+    public async Task WithoutGenerationTheSelfSignedCertificateFromBeforeTheRootStays()
+    {
+        PemPair legacy = LegacyCertificate.Create("localhost");
+        CertificateFolder.Write(_folder.Files, legacy);
+
+        CertificateCheck check = await CheckAsync(new ServerCertificates(_folder.Files, ServerNames.Required(string.Empty), false, _clock));
+
+        Assert.Equal(CertificateAction.Loaded, check.Action);
+        Assert.False(File.Exists(_folder.Files.RootPath));
+        Assert.False(File.Exists(_folder.Files.ReplacedAnchorPath));
+        Assert.Equal(legacy.CertificatePem, File.ReadAllText(_folder.Files.CertificatePath));
+    }
+
+    // Only what DDT generated itself is replaced: a certificate from an administrator's CA stays, whatever its name.
+    [Fact]
+    public async Task ACertificateNamedLikeDdtsButIssuedByAnotherCaIsNotReplaced()
+    {
+        DateTimeOffset now = _clock.GetUtcNow();
+        PemPair authority = AdministratorCertificate.CreateAuthority("CN=Example CA", null, now.AddDays(-2), now.AddYears(5));
+        PemPair own = AdministratorCertificate.Issue(authority, "CN=DDT", ["ddt.example"], now.AddDays(-1), now.AddDays(365));
+        CertificateFolder.Write(_folder.Files, own);
+
+        CertificateCheck check = await CheckAsync(Certificates("ddt.example"));
+
+        Assert.Equal(CertificateAction.Loaded, check.Action);
+        Assert.False(check.ManagedByDdt);
+        Assert.False(File.Exists(_folder.Files.RootPath));
+        Assert.False(File.Exists(_folder.Files.ReplacedAnchorPath));
+        Assert.Equal(own.CertificatePem, File.ReadAllText(_folder.Files.CertificatePath));
+        Assert.Equal(own.KeyPem, File.ReadAllText(_folder.Files.KeyPath));
+    }
+
+    [Fact]
+    public async Task TheViewDescribesTheCertificateAndTheRootItComesFrom()
+    {
+        ServerCertificates certificates = Certificates("ddt.example");
+        await CheckAsync(certificates);
+
+        ServerCertificateView view = Assert.IsType<ServerCertificateView>(certificates.Describe());
+
+        using X509Certificate2 root = _folder.Root();
+        using X509Certificate2 certificate = _folder.Certificate();
+        Assert.True(view.ManagedByDdt);
+        Assert.Equal(certificate.GetCertHashString(HashAlgorithmName.SHA256), view.Sha256);
+        Assert.Equal(new DateTimeOffset(certificate.NotAfter.ToUniversalTime()), view.NotAfter);
+        Assert.Equal(view.NotAfter.AddDays(-30), view.RenewsUtc);
+        Assert.Contains("ddt.example", view.Names);
+        Assert.Equal(root.Subject, view.RootSubject);
+        Assert.Equal(root.GetCertHashString(HashAlgorithmName.SHA256), view.RootSha256);
+        Assert.Null(view.AnchorReplacedUtc);
+        Assert.Equal(File.ReadAllText(_folder.Files.RootPath), certificates.RootCertificatePem);
+    }
+
+    [Fact]
+    public async Task AnAdministratorsCertificateHasNoRootToOffer()
+    {
+        DateTimeOffset now = _clock.GetUtcNow();
+        CertificateFolder.Write(_folder.Files, AdministratorCertificate.Create("CN=ddt.example", "ddt.example", now.AddDays(-1), now.AddDays(365)));
+        ServerCertificates certificates = Certificates("ddt.example");
+        await CheckAsync(certificates);
+
+        ServerCertificateView view = Assert.IsType<ServerCertificateView>(certificates.Describe());
+
+        Assert.False(view.ManagedByDdt);
+        Assert.Null(view.RenewsUtc);
+        Assert.Null(view.RootSha256);
+        Assert.Null(certificates.RootCertificatePem);
     }
 
     [Fact]

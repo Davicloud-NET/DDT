@@ -126,6 +126,7 @@ api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
 api.MapGroup("/about").MapAboutEndpoints();
+api.MapGroup("/server").MapServerEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 

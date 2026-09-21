@@ -18,6 +18,17 @@ public sealed class CertificateFolder : IDisposable
 
     public X509Certificate2 Certificate() => X509Certificate2.CreateFromPemFile(Files.CertificatePath, Files.KeyPath);
 
+    // Puts a pair where the configuration points, as an administrator or an older DDT left it.
+    public static void Write(CertificateFiles files, PemPair pair)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(pair);
+
+        Directory.CreateDirectory(files.Folder);
+        File.WriteAllText(files.CertificatePath, pair.CertificatePem);
+        File.WriteAllText(files.KeyPath, pair.KeyPem);
+    }
+
     // The chain the agent builds: DDT's root and nothing from the machine store, no revocation, no downloads.
     public static bool ChainsUnderTheAgentsPolicy(X509Certificate2 certificate, X509Certificate2 root, DateTimeOffset at)
     {

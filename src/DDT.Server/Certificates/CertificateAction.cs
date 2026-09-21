@@ -29,4 +29,8 @@ public enum CertificateAction
 
     // A server certificate from the existing root, because a configured name was missing from the served one.
     Reissued,
+
+    // A new root and a server certificate from it, in place of the self-signed certificate DDT generated before it had a
+    // root. Boot images built before pin that certificate and have to be built again once.
+    Migrated,
 }

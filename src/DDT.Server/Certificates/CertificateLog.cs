@@ -18,12 +18,15 @@ public static partial class CertificateLog
 
         string path = certificates.Files.CertificatePath;
         string names = string.Join(", ", ServerNames.Of(check.Certificate));
-        DateTimeOffset notAfter = new(check.Certificate.NotAfter);
+        DateTimeOffset notAfter = new(check.Certificate.NotAfter.ToUniversalTime());
 
         switch (check.Action)
         {
             case CertificateAction.Created:
                 Created(logger, path, names, certificates.Files.RootPath, Fingerprint(certificates.Files.RootPath));
+                break;
+            case CertificateAction.Migrated:
+                Migrated(logger, path, names, certificates.Files.RootPath, Fingerprint(certificates.Files.RootPath));
                 break;
             case CertificateAction.Renewed:
                 Renewed(logger, path, names, notAfter);
@@ -57,6 +60,15 @@ public static partial class CertificateLog
 
     [LoggerMessage(EventId = 851, Level = LogLevel.Information, Message = "Renewed the server certificate {Path} for {Names}, valid until {NotAfter}")]
     private static partial void Renewed(ILogger logger, string path, string names, DateTimeOffset notAfter);
+
+    [LoggerMessage(
+        EventId = 852,
+        Level = LogLevel.Warning,
+        Message = "Replaced the self-signed server certificate with {Path} for {Names}, issued from DDT's new root certificate. " +
+            "Boot images built before pin the old certificate and cannot reach DDT until they are built again, once, with " +
+            "-RootCertificatePath {RootPath}, SHA-256 {RootSha256}. Browsers that trusted the old certificate have to trust " +
+            "that root instead.")]
+    private static partial void Migrated(ILogger logger, string path, string names, string rootPath, string rootSha256);
 
     [LoggerMessage(EventId = 853, Level = LogLevel.Information, Message = "Issued the server certificate {Path} for {Names} from DDT's root, because {Reason}")]
     private static partial void Issued(ILogger logger, string path, string names, string reason);

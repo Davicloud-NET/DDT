@@ -9,10 +9,11 @@
 Starts DDT from source with the web and pxe roles, reachable from the Hyper-V test machine.
 
 .DESCRIPTION
-Listens on every interface and uses a certificate DDT generates in the store once, which names this
-computer's Default Switch DNS name, <computer>.mshome.net. That name moves with the switch when Windows
-gives it a new address after a restart, so a boot image built with it keeps working. Delete the two
-files under certs in the store to generate a new certificate.
+Listens on every interface with a certificate DDT issues from its own root under certs in the store,
+naming this computer's Default Switch DNS name, <computer>.mshome.net. That name moves with the switch
+when Windows gives it a new address after a restart, so a boot image built with it keeps working. The
+boot image pins the root, so it also keeps working when DDT renews the certificate or adds a name.
+Deleting the certs folder makes a new root, and every boot image then has to be built again.
 
 Serves artifacts\agent\ddt-agent.exe, which Publish-Agent.ps1 writes, as the agent every netbooting
 machine switches to, so a published change reaches the test machine at its next boot without a new
@@ -51,6 +52,7 @@ $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Provide
 if (-not $StorePath) { $StorePath = Join-Path (Split-Path -Qualifier $repository) 'var\lib\ddt' }
 
 $certificate = Join-Path $StorePath 'certs\ddt.pem'
+$root = Join-Path $StorePath 'certs\ddt-root.pem'
 $name = "$([Net.Dns]::GetHostName()).mshome.net"
 
 $arguments = @(
@@ -71,7 +73,7 @@ $arguments = @(
     "--DDT:Agent:BinaryPath=$(Join-Path $repository 'artifacts\agent\ddt-agent.exe')"
 )
 
-Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $certificate"
+Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $root"
 
 if ($PSCmdlet.ShouldProcess('DDT.Host', "dotnet $($arguments -join ' ')")) {
     & dotnet @arguments

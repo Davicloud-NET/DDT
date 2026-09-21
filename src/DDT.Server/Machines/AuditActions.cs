@@ -19,4 +19,5 @@ public static class AuditActions
     public const string DeploymentStarted = "deployment.started";
     public const string DeploymentDone = "deployment.done";
     public const string DeploymentFailed = "deployment.failed";
+    public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
 }

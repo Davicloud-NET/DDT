@@ -8,6 +8,7 @@ using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Server;
 
 namespace DDT.Contracts;
 
@@ -32,4 +33,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(AssignImageRequest))]
 [JsonSerializable(typeof(DeploymentOptionsView))]
 [JsonSerializable(typeof(AboutInfo))]
+[JsonSerializable(typeof(ServerCertificateView))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

@@ -20,6 +20,10 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
 
     public string PreviousKeyPath => Previous(KeyPath);
 
+    // The self-signed certificate boot images pinned before DDT had a root, kept until an administrator confirms that
+    // every boot image was built again with the root.
+    public string ReplacedAnchorPath => Path.Combine(Folder, "ddt-anchor.replaced.pem");
+
     // Taken by every DDT process that reads or writes these files, so two of them never renew at once.
     public string LockPath => Path.Combine(Folder, ".lock");
 

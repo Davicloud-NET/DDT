@@ -5,6 +5,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using DDT.Contracts.Server;
 
 namespace DDT.Server.Certificates;
 
@@ -17,12 +18,16 @@ public sealed class ServerCertificates
 
     private const int MaxLockAttempts = 300;
 
+    // What DDT generated before it had a root: self-signed, not a CA, and named like this.
+    private const string LegacySubject = "CN=DDT";
+
     private static readonly TimeSpan s_lockRetry = TimeSpan.FromMilliseconds(100);
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly bool _generate;
     private readonly TimeProvider _timeProvider;
     private X509Certificate2? _current;
+    private string? _rootPem;
     private FileStamp? _stamp;
     private string? _warnedThumbprint;
 
@@ -47,6 +52,9 @@ public sealed class ServerCertificates
     // because a handshake that already picked it may still be using it.
     public X509Certificate2? Current => Volatile.Read(ref _current);
 
+    // DDT's root while the served certificate comes from it, and null for an administrator's certificate.
+    public string? RootCertificatePem => Volatile.Read(ref _rootPem);
+
     // Throws when there is nothing to serve at all, which at startup stops the host with the reason.
     public async Task<CertificateCheck> CheckAsync(CancellationToken cancellationToken)
     {
@@ -66,6 +74,46 @@ public sealed class ServerCertificates
         }
     }
 
+    public ServerCertificateView? Describe()
+    {
+        if (Current is not { } current)
+        {
+            return null;
+        }
+
+        string? rootPem = RootCertificatePem;
+        using X509Certificate2? root = rootPem is null ? null : X509Certificate2.CreateFromPem(rootPem);
+        DateTimeOffset notAfter = Utc(current.NotAfter);
+        FileInfo anchor = new(Files.ReplacedAnchorPath);
+
+        return new ServerCertificateView(
+            root is not null,
+            current.Subject,
+            current.GetCertHashString(HashAlgorithmName.SHA256),
+            notAfter,
+            root is null ? null : notAfter - RenewBefore,
+            ServerNames.Of(current),
+            root?.Subject,
+            root?.GetCertHashString(HashAlgorithmName.SHA256),
+            root is null ? null : Utc(root.NotAfter),
+            anchor.Exists ? new DateTimeOffset(anchor.LastWriteTimeUtc) : null);
+    }
+
+    // The SHA-256 of the certificate older boot images pin, or null once no boot image is waiting for a rebuild.
+    public string? ReplacedAnchorSha256()
+    {
+        if (!File.Exists(Files.ReplacedAnchorPath))
+        {
+            return null;
+        }
+
+        using X509Certificate2 anchor = X509Certificate2.CreateFromPem(File.ReadAllText(Files.ReplacedAnchorPath));
+
+        return anchor.GetCertHashString(HashAlgorithmName.SHA256);
+    }
+
+    public void ForgetReplacedAnchor() => File.Delete(Files.ReplacedAnchorPath);
+
     private CertificateCheck Check(DateTimeOffset now)
     {
         PemPair? root = _generate ? ReadRoot() : null;
@@ -76,13 +124,17 @@ public sealed class ServerCertificates
 
         if (_generate && root is null && pair is null && !stamp.AnyExists)
         {
-            root = ServerCertificateAuthority.CreateRoot(now);
+            return Replace(CreateRoot(now), null, CertificateAction.Created, now);
+        }
 
-            // The key first: a root certificate without its key could never issue again.
-            PemFiles.Write(Files.RootKeyPath, root.KeyPem, isKey: true);
-            PemFiles.Write(Files.RootPath, root.CertificatePem, isKey: false);
+        // Its only names are its subject alternative names, which the new certificate keeps. The break for boot images
+        // that pin it cannot be avoided: it is no CA, so nothing new can chain to it.
+        if (_generate && root is null && pair is not null && IsLegacy(pair))
+        {
+            root = CreateRoot(now);
+            PemFiles.Write(Files.ReplacedAnchorPath, pair.ExportCertificatePem(), isKey: false);
 
-            return Replace(root, null, CertificateAction.Created, now);
+            return Replace(root, pair, CertificateAction.Migrated, now);
         }
 
         if (root is not null)
@@ -97,7 +149,7 @@ public sealed class ServerCertificates
             if (ChainsTo(pair, rootCertificate))
             {
                 // Unless the root itself ends first, when renewing would only issue the same end date again.
-                if (now >= new DateTimeOffset(pair.NotAfter) - RenewBefore && rootCertificate.NotAfter > pair.NotAfter)
+                if (now >= Utc(pair.NotAfter) - RenewBefore && rootCertificate.NotAfter > pair.NotAfter)
                 {
                     return Replace(root, pair, CertificateAction.Renewed, now);
                 }
@@ -107,7 +159,7 @@ public sealed class ServerCertificates
                     return Replace(root, pair, CertificateAction.Reissued, now);
                 }
 
-                return Serve(pair, stamp, managed: true, LoadAction(changed), now);
+                return Serve(pair, stamp, root.CertificatePem, LoadAction(changed), now);
             }
         }
 
@@ -126,14 +178,25 @@ public sealed class ServerCertificates
             // Not tried again until the files change once more.
             _stamp = stamp;
 
-            return new CertificateCheck(CertificateAction.LoadFailed, _current, false, false, problem);
+            return new CertificateCheck(CertificateAction.LoadFailed, _current, RootCertificatePem is not null, false, problem);
         }
 
-        return Serve(pair, stamp, managed: false, LoadAction(changed), now);
+        return Serve(pair, stamp, null, LoadAction(changed), now);
     }
 
     private CertificateAction LoadAction(bool changed) =>
         !changed ? CertificateAction.Unchanged : _current is null ? CertificateAction.Loaded : CertificateAction.Reloaded;
+
+    private PemPair CreateRoot(DateTimeOffset now)
+    {
+        PemPair root = ServerCertificateAuthority.CreateRoot(now);
+
+        // The key first: a root certificate without its key could never issue again.
+        PemFiles.Write(Files.RootKeyPath, root.KeyPem, isKey: true);
+        PemFiles.Write(Files.RootPath, root.CertificatePem, isKey: false);
+
+        return root;
+    }
 
     // Names in the replaced certificate stay, so a renewal never takes away a name something still uses. Addresses are
     // the host's current ones.
@@ -159,16 +222,18 @@ public sealed class ServerCertificates
         X509Certificate2 certificate = TryLoad(out string? problem)
             ?? throw new InvalidOperationException($"The certificate DDT just wrote to {Files.CertificatePath} does not load: {problem}");
 
-        return Serve(certificate, FileStamp.Of(Files), managed: true, action, now);
+        return Serve(certificate, FileStamp.Of(Files), root.CertificatePem, action, now);
     }
 
-    private CertificateCheck Serve(X509Certificate2 certificate, FileStamp stamp, bool managed, CertificateAction action, DateTimeOffset now)
+    // RootPem: the root the certificate comes from, or null for an administrator's certificate.
+    private CertificateCheck Serve(X509Certificate2 certificate, FileStamp stamp, string? rootPem, CertificateAction action, DateTimeOffset now)
     {
         Volatile.Write(ref _current, certificate);
+        Volatile.Write(ref _rootPem, rootPem);
         _stamp = stamp;
 
-        bool expiresSoon = !managed
-            && now >= new DateTimeOffset(certificate.NotAfter) - RenewBefore
+        bool expiresSoon = rootPem is null
+            && now >= Utc(certificate.NotAfter) - RenewBefore
             && certificate.Thumbprint != _warnedThumbprint;
 
         if (expiresSoon)
@@ -176,7 +241,7 @@ public sealed class ServerCertificates
             _warnedThumbprint = certificate.Thumbprint;
         }
 
-        return new CertificateCheck(action, certificate, managed, expiresSoon, null);
+        return new CertificateCheck(action, certificate, rootPem is not null, expiresSoon, null);
     }
 
     private PemPair? ReadRoot()
@@ -233,6 +298,11 @@ public sealed class ServerCertificates
         }
     }
 
+    private static bool IsLegacy(X509Certificate2 certificate) =>
+        certificate.SubjectName.Name == LegacySubject
+        && certificate.SubjectName.RawData.AsSpan().SequenceEqual(certificate.IssuerName.RawData)
+        && certificate.Extensions.OfType<X509BasicConstraintsExtension>().All(constraints => !constraints.CertificateAuthority);
+
     // An expired certificate still came from the root, and is renewed rather than taken for someone else's.
     private static bool ChainsTo(X509Certificate2 certificate, X509Certificate2 root)
     {
@@ -248,6 +318,8 @@ public sealed class ServerCertificates
 
         return chain.Build(certificate);
     }
+
+    private static DateTimeOffset Utc(DateTime local) => new(local.ToUniversalTime());
 
     // Other DDT processes on the same store hold it only for a check, which takes well under a second.
     private async Task<FileStream> LockAsync(CancellationToken cancellationToken)

@@ -38,10 +38,14 @@ prompt, which is enough to test the netboot chain.
 The https URL the agent registers with. Every name in it must be in DDT's TLS certificate.
 
 .PARAMETER RootCertificatePath
-The PEM root the agent trusts for the server, for example DDT's generated certificate. Required with
--AgentPath, even for a certificate from a public CA: Windows PE carries only a handful of Microsoft
-roots, not the public web ones, and the agent also fetches its own updates over this connection. The
-server must send its full chain, because the agent does not download intermediates.
+The PEM root the agent trusts for the server. For DDT's own certificate this is ddt-root.pem, next to
+the server certificate: /var/lib/ddt/certs/ddt-root.pem in the container. The boot image pins the
+root, so it keeps working when DDT renews its certificate or adds a name. A boot image built with the
+self-signed ddt.pem of a DDT from before it had a root needs this rebuild once. For a certificate of
+your own, pass the root of its CA. Required with -AgentPath, even for a certificate from a public CA:
+Windows PE carries only a handful of Microsoft roots, not the public web ones, and the agent also
+fetches its own updates over this connection. The server must send its full chain, because the agent
+does not download intermediates.
 
 .PARAMETER KeyboardLayout
 The keyboard layout set in boot.wim, as input locale and layout identifiers, for example
@@ -62,7 +66,7 @@ the GNU LGPL, provides for. It is copied to X:\DDT\libwim-15.dll, next to the ag
 it instead of the copy it carries and logs both SHA-256 values. Needs -AgentPath.
 
 .EXAMPLE
-.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt.pem
+.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
 #>
 [CmdletBinding()]
 param(
@@ -280,6 +284,16 @@ if ($AgentPath) {
         # Anyone who can netboot can read boot.wim.
         if ($rootCertificate -match 'PRIVATE KEY') {
             throw "$RootCertificatePath contains a private key. Export the certificate alone."
+        }
+
+        # A server certificate pinned in place of its root stops working at its next renewal, weeks later.
+        $base64 = ($rootCertificate -split '-----BEGIN CERTIFICATE-----')[1]
+        $base64 = ($base64 -split '-----END CERTIFICATE-----')[0] -replace '\s', ''
+        $pinned = [Security.Cryptography.X509Certificates.X509Certificate2]::new([Convert]::FromBase64String($base64))
+        $constraints = $pinned.Extensions | Where-Object { $_ -is [Security.Cryptography.X509Certificates.X509BasicConstraintsExtension] }
+        if (-not $constraints -or -not $constraints.CertificateAuthority) {
+            Write-Warning ("$RootCertificatePath is not a CA certificate: $($pinned.Subject). The boot image stops reaching " +
+                'DDT when that certificate is replaced. For DDT''s own certificate pass ddt-root.pem instead.')
         }
     }
 }

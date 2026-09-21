@@ -65,7 +65,10 @@ Directory.Build.props      build policy: net10.0, nullable, warnings as errors
 Directory.Packages.props   central package management
 global.json                SDK pin, Aspire MSBuild SDK version, test runner
 .editorconfig              C# formatting, naming and var usage
-THIRD-PARTY-NOTICES.md     software DDT ships that is not its own, with licences/
+LICENSE                    GNU General Public License, version 3
+NOTICE                     attribution notice and the additional terms under GPL section 7
+THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
+licenses/                  licence texts of that software, one folder per component
 src/
   DDT.Core/                domain model, image library, hashing, task sequences. No ASP.NET, no EF
   DDT.Protocols/           DHCP/PXE codec and TFTP state machine. Pure, no sockets
@@ -392,8 +395,14 @@ the boot image needs no WMI component, and it reports every MAC address it finds
 
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
 9 MB. It carries wimlib's `libwim-15.dll` inside itself and writes it next to itself before it
-applies an image, so the update below also updates wimlib. The loose DLL in the publish folder is not
+applies an image, so the update below also updates wimlib, unless you supply your own as described
+under [Using your own libwim](#using-your-own-libwim). The loose DLL in the publish folder is not
 needed. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+At start-up the agent prints its legal notices: DDT's attribution notice, that it comes with
+absolutely no warranty, that it is free software under the GNU GPL version 3 or later with
+additional terms, and that it uses wimlib, which is under the GNU LGPL version 3 or later.
+`ddt-agent --licenses` prints the licence texts the agent carries and exits.
 
 ### Updating the agent without a new boot image
 
@@ -408,6 +417,19 @@ boot image printed before it switched stays on the console and does not reach th
 
 So a boot image only has to be built again for Windows PE itself, drivers, the keyboard layout, the
 root certificate or the server's name.
+
+### Using your own libwim
+
+The agent can run with a libwim you built yourself, as wimlib's licence, the GNU LGPL, provides
+for. It uses a `libwim-15.dll` that is already next to it instead of overwriting it. When there is
+none, it writes its own copy. One identical to its own copy it simply uses. A different one it keeps
+and uses, and logs a line with both SHA-256 values; delete the file to make the agent use its own
+copy again. Put your DLL next to `ddt-agent.exe`, or build the boot image with
+`Build-BootImage.ps1 -WimLibraryPath`, which copies it to `X:\DDT\libwim-15.dll`. An agent that
+updated itself runs from the same folder, so it uses the same DLL. Alternatively, point the
+`EmbeddedResource` in `src/DDT.Agent/DDT.Agent.csproj` at your DLL and publish the agent again.
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) names the source and the build script the
+embedded DLL comes from.
 
 ### Registration and authorization
 
@@ -764,3 +786,34 @@ Two things about the protocol layer are deliberately not done yet:
   the normal arrangement for a single boot server, but a client that insists on discovery is not served.
 - Only read requests are implemented. Netboot never writes, and a TFTP server that accepts writes on
   a provisioning network is a liability rather than a feature.
+
+## Licence
+
+DDT is free software under the GNU General Public License, version 3 or later, with additional
+terms under section 7 of that licence. [LICENSE](LICENSE) holds the licence, and [NOTICE](NOTICE)
+the attribution notice and the additional terms. In plain words, the additional terms ask everyone
+who passes on DDT or a work based on it to:
+
+- keep the attribution notice "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026
+  Davicloud." and the copyright notices intact, including in the legal notices the program shows;
+- not present DDT, or a work based on it, as their own work;
+- mark a modified version as modified, for example by saying in its legal notices who changed it
+  and when.
+
+For users this means: running DDT inside your organisation, changed or not, brings no duties.
+Distributing DDT or a fork of it to others, as source, as a container image, as an agent or in a
+boot image, means passing on its source code and its notices: LICENSE, NOTICE,
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and `licenses/`. DDT's source code is at
+https://github.com/Davide244/DDT.
+
+The web UI has an About page with DDT's legal notices. The sign-in page links to it, and so does
+the navigation once signed in, so it can be read without signing in. The agent prints its notices
+at start-up and its licence texts with `--licenses`.
+
+DDT's built artefacts contain software by others under their own licences, among them wimlib in the
+agent, under the GNU LGPL version 3 or later. [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+lists it for each artefact, and `licenses/` holds the licence texts.
+
+The Windows PE and Windows ADK files a boot image consists of are Microsoft's. Whoever builds a boot
+image supplies them from their own ADK installation. DDT does not distribute them, and DDT's licence
+does not cover them.

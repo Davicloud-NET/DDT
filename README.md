@@ -305,11 +305,11 @@ keeps its recovery codes. A directory account changes its password in the direct
 is deliberate rather than cautious: `Secure` cookies are silently dropped over plain HTTP, so an
 auth stack on an HTTP listener appears to work while every request after sign in is anonymous.
 
-When `Kestrel:Certificates:Default:Path` and `KeyPath` name files that do not exist yet, as the
-container image does, a self signed certificate is generated there so a fresh deployment starts
-at all. Replace it, or distribute it as a trusted root. Every name and address DDT is reached by has
-to be in the certificate, because the agent validates the hostname against the chain it pins. List
-them in `DDT:Https:SubjectAlternativeNames`.
+When `Kestrel:Certificates:Default:Path` and `KeyPath` are set, as the container image does, DDT
+looks after the certificate in those two files itself, as
+[The server certificate](#the-server-certificate) describes. Every name and address DDT is reached
+by has to be in the certificate, because the agent validates the hostname against the chain it pins.
+List them in `DDT:Https:SubjectAlternativeNames`.
 
 Set `DDT:RequireHttps` to false only when a reverse proxy terminates TLS in front of DDT, and then
 tell DDT which addresses the proxy connects from. Both settings are comma separated:
@@ -341,6 +341,70 @@ application endpoint has to be declared under `Kestrel:Endpoints` as well: `Http
 container image does, or a plain HTTP one behind a reverse proxy. The host refuses to start
 without it, whatever `DDT:RequireHttps` says.
 
+### The server certificate
+
+DDT runs its own small certificate authority, so that a new server certificate needs neither a new
+boot image nor a change in any browser. Its files sit next to `Kestrel:Certificates:Default:Path`,
+`/var/lib/ddt/certs` in the container:
+
+| File | Contents |
+|---|---|
+| `ddt-root.pem` | DDT's root certificate, valid for 20 years. Boot images pin it, browsers trust it |
+| `ddt-root-key.pem` | The root's private key. On Linux only its owner can read it, as with `ddt-key.pem`; on Windows the folder's permissions apply |
+| `ddt.pem`, `ddt-key.pem` | The server certificate and its key, as the two configured paths name them |
+| `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal replaced, to go back to by hand |
+| `ddt-anchor.replaced.pem` | Only after the upgrade described below: the old self-signed certificate |
+
+The server certificate is valid for 90 days. At startup and every five minutes DDT checks it, and
+issues a new one from the root when 30 days or less are left, or when `localhost`, the computer's
+name or a name from `DDT:Https:SubjectAlternativeNames` is missing from it. A new certificate keeps
+every name the old one had and names the computer's current addresses; a changed address alone is
+never a reason to issue one. Kestrel serves the new certificate from the next connection on, with no
+restart, and open connections carry on. The configured names are read at startup, so a new name
+takes a restart. To drop a name, delete `ddt.pem` and `ddt-key.pem`: DDT issues a new certificate
+from the same root and boot images keep working. Deleting the root as well makes a new root, and
+every boot image and every browser that trusted the old one then has to be updated.
+
+Trust `ddt-root.pem` in the browsers of the computers that manage DDT, and nowhere else (see the
+security model). Anyone can download it without signing in from `/api/about/root-certificate`.
+Before trusting a downloaded copy, compare its SHA-256 with the one DDT logged when it made the root,
+or with that of `ddt-root.pem` in the store. `rootSha256` from `GET /api/server/certificate` is no
+such check: it comes over the very connection whose certificate is in question, so it only helps
+over a connection that is trusted already.
+
+**A certificate of your own.** Put it and its key at the two configured paths. DDT serves them as
+they are, loads them again within five minutes when they change, never renews or replaces them, and
+logs a warning once when 30 days or less are left. Changed files that do not load, such as a new
+certificate next to the old key, leave the certificate loaded before in service. Build boot images
+with the root of your CA. `DDT:Https:GenerateSelfSignedCertificate`, true by default, lets DDT make
+its root and issue from it; set to false, DDT never writes a certificate file, not even to renew its
+own. A PFX, a key under `Kestrel:Certificates:Default:Password`, and any setup without both paths
+are left to Kestrel entirely, as before.
+
+### Upgrading from the self-signed certificate
+
+Versions before the root generated a self-signed certificate valid for two years and never renewed
+it, and boot images pin that certificate itself. On its first start after the upgrade, DDT makes the
+root, issues a new certificate with the old one's names from it, keeps the old pair as the previous
+pair and a copy of the old certificate as `ddt-anchor.replaced.pem`, and logs a warning with the
+root's path and SHA-256. The old certificate is no certificate authority, so nothing new can chain
+to it, and this break cannot be avoided:
+
+1. Every boot image built before cannot reach DDT any more. Build each one once again with
+   `Build-BootImage.ps1 -RootCertificatePath` set to `ddt-root.pem`. After that, renewals and new
+   names need no rebuild. An agent from this version says so on the console when the server's
+   certificate does not come from the root it pins; the agent in an older boot image only reports
+   that the TLS connection failed.
+2. A browser that trusted the old certificate refuses the new one with no way to click through,
+   because DDT sends HSTS. Trust the root in it first. Take `ddt-root.pem` from the store, or fetch
+   it with a client that has not been to DDT before, such as
+   `curl -k https://ddt.example:8443/api/about/root-certificate`, and compare its SHA-256 with the
+   one in the warning.
+3. Until an administrator confirms that every boot image was built again,
+   `GET /api/server/certificate` reports when the old certificate was replaced, in
+   `anchorReplacedUtc`. `DELETE /api/server/certificate/replaced-anchor` confirms it, deletes the
+   copy and is written to the audit table.
+
 ## Netboot
 
 ### Where DDT runs
@@ -356,12 +420,17 @@ Because the tunnel ends on the gateway, remote traffic reaches DDT on its ordina
 
 | Transport | Carries |
 |---|---|
-| TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all |
+| TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all, about 460 MB with PowerShell in Windows PE |
 | HTTPS | Everything the agent does: registration, its own updates, task sequences, images, logs |
 | Plain HTTP, port 8080 | The same boot files, for UEFI HTTP Boot clients, which cannot validate a private CA |
 
 The boot manager downloads `boot.wim` over TFTP itself, so TFTP speed decides how long a netboot
-takes. At a window of 4 and a round trip time of 5 to 10 ms, expect roughly 5 to 10 minutes.
+takes. At a window of 4 and a round trip time of 5 to 10 ms, expect roughly 5 to 10 minutes for the
+image without PowerShell, and about a third longer with it. The plain HTTP listener serves the same
+files to firmware that offers UEFI HTTP Boot, which fetches the boot manager over HTTP. Whether the
+Windows boot manager started that way then reads `BCD`, `boot.sdi` and `boot.wim` over HTTP rather
+than TFTP has not been verified: no firmware with an HTTP Boot device has booted from DDT yet, and
+the `BCD` that `Build-BootImage.ps1` writes carries only TFTP settings for `boot.wim`.
 
 ### Which interfaces are served
 
@@ -417,9 +486,19 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 | `x64/bootmgfw_ex.efi` | Boot manager signed by Windows UEFI CA 2023 |
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
-| `Boot/boot.wim` | Windows PE with `DDT.Agent` |
+| `Boot/boot.wim` | Windows PE with `DDT.Agent`, and PowerShell unless left out |
 | `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
 | `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
+
+The script adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
+WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
+with their en-us language packages, so task sequence steps can run PowerShell scripts in Windows PE.
+Components cannot be added to a running Windows PE, so they have to be in `boot.wim`: by the size of
+their packages they take it from about 330 MB to about 450 MB, and the script prints the real size
+at the end. `-SkipPowerShell` builds the lean image for sites where netboot time matters more; a
+step that runs PowerShell in Windows PE cannot run on it. Either way the script exports `boot.wim`
+at the end, which drops what servicing left behind in the file. A build needs an elevated prompt,
+the Windows ADK and its Windows PE add-on.
 
 Both boot manager paths are stable, because a site DHCP server picks one by name. Neither file is
 dual signed. The 2011 one is the default: firmware ignores certificate expiry, and most machines
@@ -468,8 +547,9 @@ such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on 
 ## The agent
 
 `DDT.Agent` is a single NativeAOT executable, because Windows PE has no .NET runtime. It reads the
-machine's SMBIOS UUID, manufacturer, model and serial number straight from the firmware table, so
-the boot image needs no WMI component, and it reports every MAC address it finds.
+machine's SMBIOS UUID, manufacturer, model and serial number straight from the firmware table, so it
+does not depend on WMI, which an image built with `-SkipPowerShell` lacks, and it reports every MAC
+address it finds.
 
 ```bash
 .\build\Publish-Agent.ps1
@@ -502,8 +582,11 @@ from the boot image. The check happens once, before the machine registers, and o
 built with `dotnet publish`, never in a dry run; `--no-update` turns it off. What the agent from the
 boot image printed before it switched stays on the console and does not reach the machine's log.
 
-So a boot image only has to be built again for Windows PE itself, drivers, the keyboard layout, the
-root certificate or the server's name.
+So a boot image only has to be built again for Windows PE itself, including its PowerShell
+components, drivers, the keyboard layout, the server's URL or a new root. A renewed server
+certificate, or one with more names, needs no rebuild, because the boot image pins DDT's root. The
+upgrade to the root needs one rebuild, as
+[Upgrading from the self-signed certificate](#upgrading-from-the-self-signed-certificate) describes.
 
 ### Using your own libwim
 
@@ -574,10 +657,12 @@ address, on the Machines page. Such machines also disappear once they have not b
 A machine that was approved once, or that has an image assigned, is never removed this way, so its
 log survives it booting again.
 
-The agent trusts only the root certificate in `agent.json`. Revocation is not checked and missing
-intermediates are not downloaded, because a provisioning network has no route to either, so the server
-has to send its full certificate chain. Always pass the root, even for a public CA: Windows PE carries
-only a handful of Microsoft roots, and none of the ones public web certificates chain to.
+The agent trusts only the root certificate in `agent.json`, which for DDT's own certificate is
+`ddt-root.pem`. Revocation is not checked and missing intermediates are not downloaded, because a
+provisioning network has no route to either, so the server has to send its full certificate chain.
+Always pass the root, even for a public CA: Windows PE carries only a handful of Microsoft roots,
+and none of the ones public web certificates chain to. When the server's certificate does not come
+from the pinned root, or does not name the server, the agent says on the console what to change.
 
 ### Reaching a development host from a test machine
 
@@ -589,10 +674,11 @@ endpoint that only this computer can reach. For the Hyper-V test machine, start 
 .\build\Start-DevHost.ps1
 ```
 
-It listens on every interface and has DDT generate a certificate that names the Default Switch's DNS
-name, `<computer>.mshome.net`, and prints the `-ServerUrl` and `-RootCertificatePath` to build the
-boot image with. The switch changes its address when Windows restarts, but the name follows it, so
-the boot image keeps working. The browser warns about this certificate on `localhost`.
+It listens on every interface and has DDT issue a certificate from its root in the store that names
+the Default Switch's DNS name, `<computer>.mshome.net`, and prints the `-ServerUrl` and the
+`-RootCertificatePath`, the root's path, to build the boot image with. The switch changes its
+address when Windows restarts, but the name follows it, so the boot image keeps working. The browser
+warns about the certificate until it trusts the root.
 
 ### Trying the agent without a spare machine
 
@@ -835,13 +921,21 @@ administrator.
 Human and machine principals are separated by authentication scheme, and every policy names its
 scheme, so a machine token can never satisfy a human policy or the reverse.
 
+DDT's root key, `ddt-root-key.pem`, can issue a certificate for any name, and every boot image and
+browser that trusts the root accepts it: whoever holds the key can stand in for DDT towards machines
+and administrators, and for any other site towards those browsers. Protect it like the Data
+Protection key ring, which the container keeps in the same store volume, and back both up together:
+without the key, a new root means building every boot image again. Trust the root only in the
+browsers of the computers that manage DDT. The root carries no name constraints, because the names
+the server is reached by change.
+
 Not defended, and worth saying out loud: an attacker with layer 2 control who spoofs the identity
 of an already approved machine; anyone who can read the store volume or the database; and anyone
 who can read the Data Protection key ring, which can mint an administrator cookie and any machine
-token. Treat that volume as a secret. Anyone who can write to it can also replace the boot files and
-the agent at `DDT:Agent:BinaryPath`, which every machine that netboots runs as SYSTEM before anyone
-has authorized it: the SHA-256 the agent checks proves only that it received what the server
-announced.
+token, or DDT's root key. Treat that volume as a secret. Anyone who can write to it can also replace
+the boot files and the agent at `DDT:Agent:BinaryPath`, which every machine that netboots runs as
+SYSTEM before anyone has authorized it: the SHA-256 the agent checks proves only that it received
+what the server announced.
 
 ## Status
 

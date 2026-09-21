@@ -36,8 +36,8 @@ The page shows these settings read-only in a Server panel (section 6).
 | DDT:StorePath | Holds the key ring that decrypts stored secrets, and the SQLite file (DataServiceCollectionExtensions.cs:25-30, DdtAuthenticationExtensions.cs:42-44). |
 | DDT:Roles | Set per process, and decides what is registered before Build (Program.cs:28-29,64). One database value cannot describe two processes with different roles. |
 | DDT:RequireHttps | Sets the cookie names and Secure policy at composition (Program.cs:43-47, DdtAuthenticationExtensions.cs:79,84-86), and refuses to start without HTTPS (HttpsConfigurationCheck.cs:46-55). A change renames both cookies and signs everyone out. |
-| DDT:Https:GenerateSelfSignedCertificate | Runs before Build, so that a fresh install can serve the page at all (Program.cs:32, CertificateBootstrap.cs:17). |
-| DDT:Https:SubjectAlternativeNames | The names in the certificate generated at first start. After that it only seeds the page's server names (section 3), and it never locks them. |
+| DDT:Https:GenerateSelfSignedCertificate | Runs before Build, so that a fresh install can serve the page at all (Program.cs:32, CertificateBootstrap.cs:17). Since M5 it means that DDT may make its own root and issue, renew and reissue the server certificate from it. |
+| DDT:Https:SubjectAlternativeNames | The names the server certificate must carry, read before Build. Since M5 DDT issues the certificate from its root again whenever one of them is missing, not only at first start. It also seeds the page's server names (section 3), and it never locks them. |
 | Kestrel:Endpoints:* | The listener that serves the page. |
 | Kestrel:Certificates:Default:Path, KeyPath, Password | Where the certificate is stored. A wrong path stops startup. The page manages the content (5.2). |
 | DDT:Pxe:HttpBootPort | A Kestrel endpoint injected before Build (PxeHostingExtensions.cs:30-34). A port that is already in use stops the whole host. |
@@ -502,9 +502,10 @@ audit row. What "safe" means is defined per subsystem below.
   - the key matches the certificate
   - the certificate is valid now
   - its names cover the Host of the saving request and every server name
-- Generate always creates a new self-signed root (ServerCertificateFile.cs:31-41), so it always needs
-  the confirmation `certificate.newRoot`. So does an upload with a new root. The page says that two
-  things must then be updated:
+- Generate used to create a new self-signed root every time (ServerCertificateFile.cs:31-41). Since
+  M5 DDT keeps one root and issues from it, so Generate needs no confirmation: whatever trusts the
+  root accepts the new certificate. A new root, and an upload with a new root, need the confirmation
+  `certificate.newRoot`. The page says that two things must then be updated:
   - every boot image, because boot images pin the root (HttpAgentServer.cs:41-53)
   - every browser that trusted the old certificate, as README.md:232-235 advises
 - A new pair is provisional. The selector records on each connection which pair it served. Unless an
@@ -516,8 +517,8 @@ audit row. What "safe" means is defined per subsystem below.
   - The new files are written next to the old ones and renamed into place.
   - The previous pair stays as ddt.previous.pem and ddt-key.previous.pem.
   - At startup, a certificate and key that do not match fall back to the previous pair.
-  - Key files are created owner-only (`FileStreamOptions.UnixCreateMode`). Today
-    ServerCertificateFile.cs:43-45 changes the mode after writing.
+  - Key files are created owner-only from the start, as M5 does. Before M5,
+    ServerCertificateFile.cs:43-45 changed the mode after writing.
 
 **Several processes.**
 
@@ -964,12 +965,12 @@ Each item here is useful on its own. Items marked done are in the M5 groundwork 
 4. **Cookie SameSite.** It is Strict or Lax depending on Oidc:Enabled at startup
    (DdtAuthenticationExtensions.cs:81-83). Either fix it at Lax (the response mode is already Query,
    line 120), or feed the cookie options from the snapshot.
-5. **Certificate expiry.** The generated certificate is valid for 2 years and never renewed
-   (ServerCertificateFile.cs:41), so every boot image breaks when it expires. Proposal: DDT generates a
-   long-lived private root that boot images pin, and issues a server certificate from it that renews
-   automatically. Renewing or changing names would then need no new boot image and no browser update.
-   Answered: yes, in M5. The server certificate lasts 90 days and renews at 30 days left, issued by
-   a private root of 20 years that boot images pin.
+5. **Certificate expiry.** Answered in M5, as proposed. The generated certificate was valid for 2
+   years and never renewed (ServerCertificateFile.cs:41), so every boot image would have broken when
+   it expired. DDT now makes a private root valid for 20 years, which boot images pin, and issues a
+   90-day server certificate from it that it renews when 30 days are left, without a restart.
+   Renewals and new names need no new boot image and no browser update.
+   `DDT:Https:GenerateSelfSignedCertificate` now means that DDT may make that root and issue from it.
 6. **Re-auth scope.** Confirm the list of re-auth fields, and that accounts without a password cannot
    change them. OIDC step-up with max_age=0 could follow later.
 7. **Auto-provisioned roles.** AutoProvisionRole refuses Administrator and needs a confirmation for

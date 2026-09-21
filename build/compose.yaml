@@ -16,7 +16,6 @@ services:
     tmpfs: [/tmp]
     environment:
       DDT__Roles: ${DDT_ROLES:-web}
-      DDT__StorePath: /var/lib/ddt
       # Host networking puts the database on this host's loopback, at the port db publishes there.
       ConnectionStrings__ddtdb: Host=127.0.0.1;Port=${DDT_DB_PORT:-5433};Database=ddt;Username=ddt;Password=${DDT_DB_PASSWORD:?Set DDT_DB_PASSWORD in build/.env}
       # Every name and address DDT is reached by has to be in the certificate, because the agent
@@ -27,9 +26,6 @@ services:
       DDT__Pxe__Interfaces: ${DDT_PXE_INTERFACES:-}
       # Off when every site's own DHCP server points option 66 and 67 at DDT.
       DDT__Pxe__EnableProxyDhcp: ${DDT_PXE_PROXYDHCP:-true}
-      Kestrel__Endpoints__Https__Url: https://0.0.0.0:8443
-      Kestrel__Certificates__Default__Path: /var/lib/ddt/certs/ddt.pem
-      Kestrel__Certificates__Default__KeyPath: /var/lib/ddt/certs/ddt-key.pem
     volumes:
       - ddt-store:/var/lib/ddt
     depends_on:

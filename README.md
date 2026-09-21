@@ -179,6 +179,13 @@ The compose file uses host networking, because the `pxe` role has to see DHCP br
 UDP 67, 4011 and 69. Host networking is a Linux host feature. On Docker Desktop the container
 starts but broadcast traffic is not delivered to it, so PXE cannot be tested there.
 
+The image itself sets what every container needs: `DDT__StorePath=/var/lib/ddt`, the HTTPS endpoint
+`Kestrel__Endpoints__Https__Url=https://0.0.0.0:8443`, and the certificate at
+`/var/lib/ddt/certs/ddt.pem` with its key `ddt-key.pem` next to it. An environment variable of the
+same name overrides each of them. The store path is DDT's own default as well, repeated in the
+image. The endpoint and the certificate paths are not defaults of DDT itself, because a declared
+Kestrel endpoint makes Kestrel ignore the URLs that Aspire and launch profiles assign.
+
 ## Configuration
 
 `DDT:Roles` is a single comma separated string, not a list:
@@ -253,8 +260,8 @@ keeps its recovery codes. A directory account changes its password in the direct
 is deliberate rather than cautious: `Secure` cookies are silently dropped over plain HTTP, so an
 auth stack on an HTTP listener appears to work while every request after sign in is anonymous.
 
-When `Kestrel:Certificates:Default:Path` and `KeyPath` name files that do not exist yet, as
-`build/compose.yaml` does, a self signed certificate is generated there so a fresh deployment starts
+When `Kestrel:Certificates:Default:Path` and `KeyPath` name files that do not exist yet, as the
+container image does, a self signed certificate is generated there so a fresh deployment starts
 at all. Replace it, or distribute it as a trusted root. Every name and address DDT is reached by has
 to be in the certificate, because the agent validates the hostname against the chain it pins. List
 them in `DDT:Https:SubjectAlternativeNames`.
@@ -285,8 +292,8 @@ named pipe endpoint has no address to list, so a proxy connects over TCP.
 
 With the `pxe` role active, DDT adds a plain HTTP Kestrel endpoint named `Boot` for boot files.
 Kestrel then ignores `ASPNETCORE_URLS`, `ASPNETCORE_HTTP_PORTS` and launch profile URLs, so the
-application endpoint has to be declared under `Kestrel:Endpoints` as well: `Https` as
-`build/compose.yaml` does, or a plain HTTP one behind a reverse proxy. The host refuses to start
+application endpoint has to be declared under `Kestrel:Endpoints` as well: `Https` as the
+container image does, or a plain HTTP one behind a reverse proxy. The host refuses to start
 without it, whatever `DDT:RequireHttps` says.
 
 ## Netboot

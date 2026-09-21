@@ -36,5 +36,11 @@ FROM ${DOTNET_RUNTIME} AS final
 RUN apt-get update && apt-get install -y --no-install-recommends libldap2 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
+# Defaults of the image rather than of the code: a declared Kestrel endpoint makes Kestrel ignore the URLs Aspire
+# and launch profiles assign, and both certificate paths make DDT write a certificate at startup.
+ENV DDT__StorePath=/var/lib/ddt \
+    Kestrel__Endpoints__Https__Url=https://0.0.0.0:8443 \
+    Kestrel__Certificates__Default__Path=/var/lib/ddt/certs/ddt.pem \
+    Kestrel__Certificates__Default__KeyPath=/var/lib/ddt/certs/ddt-key.pem
 EXPOSE 8443
 ENTRYPOINT ["./DDT.Host"]

@@ -21,6 +21,11 @@ indent_size = 2
 indent_size = 4
 max_line_length = 140
 
+# Licence header
+
+file_header_template = Copyright (C) 2026 Davicloud\nSPDX-License-Identifier: GPL-3.0-or-later\nPart of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+dotnet_diagnostic.IDE0073.severity = error
+
 # Language conventions
 
 dotnet_sort_system_directives_first = true

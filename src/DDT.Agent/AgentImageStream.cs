@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
 namespace DDT.Agent;
 
 // The body of an image download starting at Offset, of a file TotalLength bytes long. Disposing it ends the

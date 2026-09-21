@@ -1,3 +1,11 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+// This file is based on the .NET Aspire ServiceDefaults project template.
+// Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License, see
+// licenses/dotnet/LICENSE.TXT and THIRD-PARTY-NOTICES.md.
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;

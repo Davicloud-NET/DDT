@@ -3,6 +3,13 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -158,9 +165,20 @@ function renderWith(
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
+  // The page sits in a router, as in the application, so it can link to other pages. The router scrolls to
+  // the top after a navigation, which jsdom does not implement.
+  vi.stubGlobal("scrollTo", vi.fn());
+  const rootRoute = createRootRoute();
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([
+      createRoute({ getParentRoute: () => rootRoute, path: "/", component: MachinesPage }),
+    ]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+
   render(
     <QueryClientProvider client={queryClient}>
-      <MachinesPage />
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
 
@@ -197,7 +215,7 @@ describe("MachinesPage", () => {
   it("explains that no machine has registered yet", async () => {
     renderWith([]);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Machines" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Machines" })).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { level: 2, name: "No machines yet" }),
     ).toBeInTheDocument();

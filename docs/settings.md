@@ -131,8 +131,9 @@ section 6.
 ### Deployment (section `deployment`, keys under DDT:Deployment)
 
 A change applies to deployments that start after the save. Once groundwork (d) from section 7 is
-done, a deployment keeps the values it started with. Until then, the answer file is rendered when the
-agent fetches it (AgentDeploymentEndpoints.cs:300).
+done, a deployment keeps the non-secret values it started with, and the passwords are read when the
+agent fetches them. Until then, the answer file is rendered when the agent fetches it
+(AgentDeploymentEndpoints.cs:300).
 
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
@@ -912,33 +913,44 @@ M6.5 then proceeds in three steps:
 
 ### Groundwork during M5
 
-Each item here is useful on its own.
+Each item here is useful on its own. Items marked done are in the M5 groundwork commits.
 
 - **(a) PostgreSQL in compose,** with ConnectionStrings__ddtdb. Compose sets no connection string today
   (compose.yaml:17-30), so it runs on SQLite. SQLite refuses to start after any schema change
-  (DatabaseInitializer.cs:55-63), and M5 changes the schema.
-- **(b) Known-key checks for every DDT section,** with an explicit list for the root (5.6).
+  (DatabaseInitializer.cs:55-63), and M5 changes the schema. Done: a `db` service, with the
+  password required in build/.env.
+- **(b) Known-key checks for every DDT section,** with an explicit list for the root (5.6). Done:
+  DdtConfigurationCheck in DDT.Host, with the binding generator on. The generator skips a property
+  with an init accessor without a warning, so the option classes use set.
 - **(c) SettingProblem,** used by the first M5 validator, and the three throwing validators converted
-  (5.3).
+  (5.3). Done: SettingProblem is in DDT.Core, and the startup check lists the problems of every
+  section in one message, each after its configuration key.
 - **(d) Deployment settings:**
   - Decide for each DDT:Deployment field whether it is a global default or task sequence data.
-  - Capture the inputs on the Deployment row when the deployment starts, with secrets still
-    encrypted, and render the answer file from them.
+  - Capture the non-secret inputs on the Deployment row when the deployment starts, and render the
+    answer file from them. The secrets are read from configuration when the agent fetches them, so
+    none is copied into a row.
   - Refuse at start when the values are invalid.
   - Register the validated DeploymentOptions instance instead of binding a second one
-    (DeploymentServiceCollectionExtensions.cs:26-42).
+    (DeploymentServiceCollectionExtensions.cs:26-42). Done.
 
   This also closes a gap: a domain switched on between the name check (DeploymentService.cs:559-569)
   and the answer file fetch.
-- **(e) The BootDirectory default and the refused roots** (section 2).
+- **(e) The BootDirectory default and the refused roots** (section 2). Done. A relative
+  BootDirectory is inside the store as well.
 - **(f) OIDC provisioning fixes:**
   - Check the results of AddLoginAsync and AddToRoleAsync, and delete the new account when either
     fails (ExternalLoginEndpoints.cs:83-91).
   - Validate AutoProvisionRole at startup.
-- **(g) Container defaults** in build/Dockerfile (section 2).
+
+  Done. A role that does not exist stops startup. Administrator is logged as warning 880 until
+  question 7 is answered.
+- **(g) Container defaults** in build/Dockerfile (section 2). Done.
 - **(h) Wording:**
   - The comment at DeploymentOptions.cs:7-8 becomes "configuration until the M6.5 settings page".
   - README records the class A list and these rules.
+
+  Done.
 
 ## 8. Open questions for the maintainer
 
@@ -956,6 +968,8 @@ Each item here is useful on its own.
    (ServerCertificateFile.cs:41), so every boot image breaks when it expires. Proposal: DDT generates a
    long-lived private root that boot images pin, and issues a server certificate from it that renews
    automatically. Renewing or changing names would then need no new boot image and no browser update.
+   Answered: yes, in M5. The server certificate lasts 90 days and renews at 30 days left, issued by
+   a private root of 20 years that boot images pin.
 6. **Re-auth scope.** Confirm the list of re-auth fields, and that accounts without a password cannot
    change them. OIDC step-up with max_age=0 could follow later.
 7. **Auto-provisioned roles.** AutoProvisionRole refuses Administrator and needs a confirmation for

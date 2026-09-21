@@ -210,6 +210,51 @@ unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checke
 What a deployed Windows is set up with comes from `DDT:Deployment`, described under
 [Deploying a machine](#deploying-a-machine).
 
+### What stays in configuration
+
+Every admin setting is configuration today. With M6.5 the settings an admin changes in normal
+operation move to a settings page in the web UI, where a change is checked when it is saved, applies
+without a restart and leaves an audit row; [docs/settings.md](docs/settings.md) is the plan.
+Configuration then keeps only what the server needs before it can serve that page, and stays
+available as an override for recovery and for installs managed as code:
+
+| Setting | Why it stays in configuration |
+|---|---|
+| `ConnectionStrings:ddtdb` | The settings are stored in this database. |
+| `DDT:StorePath` | It holds the key ring that decrypts stored secrets, and the SQLite file. |
+| `DDT:Roles` | It decides what a process runs, and two processes on one database can differ. |
+| `DDT:RequireHttps` | It names the cookies and refuses to start without HTTPS. |
+| `DDT:Https:GenerateSelfSignedCertificate`, `DDT:Https:SubjectAlternativeNames` | They give a fresh install a certificate to serve the page with. |
+| `Kestrel:Endpoints:*`, `Kestrel:Certificates:Default:Path`, `KeyPath`, `Password` | The listener and the certificate that serve the page. |
+| `DDT:Pxe:HttpBootPort` | A Kestrel endpoint: a port in use stops the whole host. |
+| `DDT:Pxe:BootDirectory` | Everything below it is served to anyone, so one edit on a page could publish the store. |
+| `ASPNETCORE_URLS`, `Urls`, `ASPNETCORE_HTTP_PORTS`, `ASPNETCORE_HTTPS_PORTS` | Listener settings of the framework. |
+| `AllowedHosts` | A wrong value locks every browser out, the page included. |
+| `OTEL_*` | The exporters are built once at startup, and the headers may carry credentials. |
+| `ASPNETCORE_ENVIRONMENT` | Development switches such as HSTS. Production leaves it unset. |
+
+A standard container install then sets only the connection string, `DDT__Roles` and the names for
+the certificate.
+
+### Rules for new settings
+
+From M5 on, a new setting follows these rules, so that moving it to the page changes only where it
+is read from:
+
+1. It is designed for a section of the settings page and lives in configuration until M6.5. Only a
+   setting that passes the test above stays in configuration after that, and joins the table.
+2. Task sequences, drivers per model and assignment by MAC address or model are database entities
+   with an API and a page, never configuration.
+3. It has its own section class with defaults, a known-key check and a pure validator that returns
+   `SettingProblem` values. It is read where it is used, never while the services are registered
+   and never through an `IOptions<T>` a singleton keeps. Secret fields say so in a comment, and the
+   setting is documented here as a future page field.
+4. Values the agent needs travel in server responses, as new members. They never go into
+   `agent.json`, which the server cannot rewrite.
+5. Anything built into the boot image says why it cannot come from the server.
+6. A secret whose destination is configurable is bound to that destination. A setting that grants
+   roles or trust needs the administrator to prove who they are again before it changes.
+
 ## Authentication
 
 DDT authenticates people with ASP.NET Core Identity. Nothing about the credential handling is

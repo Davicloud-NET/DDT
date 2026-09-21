@@ -137,6 +137,30 @@ public sealed class ServerCertificateTests : IDisposable
 
         Assert.Equal(CertificateAction.Issued, (await CheckAsync(Certificates("ddt.example"))).Action);
         using X509Certificate2 certificate = _folder.Certificate();
+        Assert.Equal("not a key", File.ReadAllText(_folder.Files.PreviousKeyPath));
+    }
+
+    // Half way through moving a store DDT looked after to a certificate of one's own: the new certificate next to DDT's
+    // old key. Nothing is issued over it, neither while DDT runs nor at the next start.
+    [Fact]
+    public async Task AnAdministratorsCertificateNextToDdtsOldKeyIsLeftAlone()
+    {
+        ServerCertificates certificates = Certificates("ddt.example");
+        await CheckAsync(certificates);
+        string served = certificates.Current!.Thumbprint;
+        string key = File.ReadAllText(_folder.Files.KeyPath);
+        DateTimeOffset now = _clock.GetUtcNow();
+        PemPair own = AdministratorCertificate.Create("CN=ddt.example", "ddt.example", now.AddDays(-1), now.AddDays(365));
+        File.WriteAllText(_folder.Files.CertificatePath, own.CertificatePem);
+
+        CertificateCheck check = await CheckAsync(certificates);
+
+        Assert.Equal(CertificateAction.LoadFailed, check.Action);
+        Assert.Equal(served, certificates.Current?.Thumbprint);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CheckAsync(Certificates("ddt.example")));
+        Assert.Equal(own.CertificatePem, File.ReadAllText(_folder.Files.CertificatePath));
+        Assert.Equal(key, File.ReadAllText(_folder.Files.KeyPath));
+        Assert.False(File.Exists(_folder.Files.PreviousCertificatePath));
     }
 
     [Fact]

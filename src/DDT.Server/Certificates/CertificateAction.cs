@@ -21,7 +21,7 @@ public enum CertificateAction
     // A new root and a server certificate from it.
     Created,
 
-    // A server certificate from the existing root, because the pair was missing or did not load.
+    // A server certificate from the existing root, because the pair was missing or DDT's own did not load.
     Issued,
 
     // A server certificate from the existing root, because the served one had 30 days or less left.

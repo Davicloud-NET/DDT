@@ -157,14 +157,16 @@ public sealed class ServerCertificates
 
         if (root is not null)
         {
-            if (pair is null)
+            using X509Certificate2 rootCertificate = X509Certificate2.CreateFromPem(root.CertificatePem);
+
+            // Only DDT's own pair is issued again when it does not load. An administrator's half copied pair, or one
+            // whose key needs a password, stays as it is.
+            if (pair is null && (!stamp.AnyExists || CertificateFileChainsTo(rootCertificate)))
             {
                 return locked ? Replace(root, null, CertificateAction.Issued, now) : null;
             }
 
-            using X509Certificate2 rootCertificate = X509Certificate2.CreateFromPem(root.CertificatePem);
-
-            if (ChainsTo(pair, rootCertificate))
+            if (pair is not null && ChainsTo(pair, rootCertificate))
             {
                 // Unless the root itself ends first, when renewing would only issue the same end date again.
                 if (now >= Utc(pair.NotAfter) - RenewBefore && rootCertificate.NotAfter > pair.NotAfter)
@@ -227,11 +229,8 @@ public sealed class ServerCertificates
 
         PemPair issued = ServerCertificateAuthority.Issue(root, names, ServerNames.LocalAddresses(), now);
 
-        if (replaced is not null)
-        {
-            File.Move(Files.CertificatePath, Files.PreviousCertificatePath, overwrite: true);
-            File.Move(Files.KeyPath, Files.PreviousKeyPath, overwrite: true);
-        }
+        KeepAsPrevious(Files.CertificatePath, Files.PreviousCertificatePath);
+        KeepAsPrevious(Files.KeyPath, Files.PreviousKeyPath);
 
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(Files.KeyPath))!);
         PemFiles.Write(Files.KeyPath, issued.KeyPem, isKey: true);
@@ -324,6 +323,30 @@ public sealed class ServerCertificates
         using (certificate)
         {
             return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pkcs12), null);
+        }
+    }
+
+    // Whatever is there is kept next to it, to go back to by hand.
+    private static void KeepAsPrevious(string path, string previousPath)
+    {
+        if (File.Exists(path))
+        {
+            File.Move(path, previousPath, overwrite: true);
+        }
+    }
+
+    // The certificate file on its own, without the key it does not load with.
+    private bool CertificateFileChainsTo(X509Certificate2 root)
+    {
+        try
+        {
+            using X509Certificate2 certificate = X509Certificate2.CreateFromPem(File.ReadAllText(Files.CertificatePath));
+
+            return ChainsTo(certificate, root);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException)
+        {
+            return false;
         }
     }
 

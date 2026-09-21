@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using System.Net.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using DDT.Contracts.Server;
@@ -26,7 +27,7 @@ public sealed class ServerCertificates
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly bool _generate;
     private readonly TimeProvider _timeProvider;
-    private X509Certificate2? _current;
+    private SslStreamCertificateContext? _context;
     private string? _rootPem;
     private FileStamp? _stamp;
     private string? _warnedThumbprint;
@@ -48,9 +49,12 @@ public sealed class ServerCertificates
 
     public IReadOnlyList<string> Names { get; }
 
-    // Read on every TLS handshake. The certificate it replaces is left to the garbage collector rather than disposed,
-    // because a handshake that already picked it may still be using it.
-    public X509Certificate2? Current => Volatile.Read(ref _current);
+    public X509Certificate2? Current => Context?.TargetCertificate;
+
+    // Read on every TLS handshake: the certificate with the intermediates its file holds, which clients such as the
+    // agent do not download. The context it replaces is left to the garbage collector rather than disposed, because a
+    // handshake that already picked it may still be using it.
+    public SslStreamCertificateContext? Context => Volatile.Read(ref _context);
 
     // DDT's root while the served certificate comes from it, and null for an administrator's certificate.
     public string? RootCertificatePem => Volatile.Read(ref _rootPem);
@@ -118,9 +122,10 @@ public sealed class ServerCertificates
     {
         PemPair? root = _generate ? ReadRoot() : null;
         FileStamp stamp = FileStamp.Of(Files);
-        bool changed = _current is null || stamp != _stamp;
+        bool changed = _context is null || stamp != _stamp;
         string? problem = null;
-        X509Certificate2? pair = changed ? TryLoad(out problem) : _current;
+        SslStreamCertificateContext? loaded = changed ? TryLoad(out problem) : _context;
+        X509Certificate2? pair = loaded?.TargetCertificate;
 
         if (_generate && root is null && pair is null && !stamp.AnyExists)
         {
@@ -159,13 +164,13 @@ public sealed class ServerCertificates
                     return Replace(root, pair, CertificateAction.Reissued, now);
                 }
 
-                return Serve(pair, stamp, root.CertificatePem, LoadAction(changed), now);
+                return Serve(loaded!, stamp, root.CertificatePem, LoadAction(changed), now);
             }
         }
 
         if (pair is null)
         {
-            if (_current is null)
+            if (_context is null)
             {
                 throw new InvalidOperationException(
                     $"Cannot load the server certificate {Files.CertificatePath} with its key {Files.KeyPath}: {problem} " +
@@ -178,14 +183,14 @@ public sealed class ServerCertificates
             // Not tried again until the files change once more.
             _stamp = stamp;
 
-            return new CertificateCheck(CertificateAction.LoadFailed, _current, RootCertificatePem is not null, false, problem);
+            return new CertificateCheck(CertificateAction.LoadFailed, _context.TargetCertificate, RootCertificatePem is not null, false, problem);
         }
 
-        return Serve(pair, stamp, null, LoadAction(changed), now);
+        return Serve(loaded!, stamp, null, LoadAction(changed), now);
     }
 
     private CertificateAction LoadAction(bool changed) =>
-        !changed ? CertificateAction.Unchanged : _current is null ? CertificateAction.Loaded : CertificateAction.Reloaded;
+        !changed ? CertificateAction.Unchanged : _context is null ? CertificateAction.Loaded : CertificateAction.Reloaded;
 
     private PemPair CreateRoot(DateTimeOffset now)
     {
@@ -219,16 +224,17 @@ public sealed class ServerCertificates
         PemFiles.Write(Files.KeyPath, issued.KeyPem, isKey: true);
         PemFiles.Write(Files.CertificatePath, issued.CertificatePem, isKey: false);
 
-        X509Certificate2 certificate = TryLoad(out string? problem)
+        SslStreamCertificateContext context = TryLoad(out string? problem)
             ?? throw new InvalidOperationException($"The certificate DDT just wrote to {Files.CertificatePath} does not load: {problem}");
 
-        return Serve(certificate, FileStamp.Of(Files), root.CertificatePem, action, now);
+        return Serve(context, FileStamp.Of(Files), root.CertificatePem, action, now);
     }
 
     // RootPem: the root the certificate comes from, or null for an administrator's certificate.
-    private CertificateCheck Serve(X509Certificate2 certificate, FileStamp stamp, string? rootPem, CertificateAction action, DateTimeOffset now)
+    private CertificateCheck Serve(SslStreamCertificateContext context, FileStamp stamp, string? rootPem, CertificateAction action, DateTimeOffset now)
     {
-        Volatile.Write(ref _current, certificate);
+        X509Certificate2 certificate = context.TargetCertificate;
+        Volatile.Write(ref _context, context);
         Volatile.Write(ref _rootPem, rootPem);
         _stamp = stamp;
 
@@ -271,30 +277,40 @@ public sealed class ServerCertificates
         }
     }
 
-    private X509Certificate2? TryLoad(out string? problem)
+    // The certificate with its key, and the intermediates that follow it in its file, as Kestrel sends them from its
+    // own PEM files.
+    private SslStreamCertificateContext? TryLoad(out string? problem)
     {
         try
         {
-            X509Certificate2 certificate = X509Certificate2.CreateFromPemFile(Files.CertificatePath, Files.KeyPath);
+            string certificatePem = File.ReadAllText(Files.CertificatePath);
+            X509Certificate2 certificate = Servable(X509Certificate2.CreateFromPem(certificatePem, File.ReadAllText(Files.KeyPath)));
+            X509Certificate2Collection chain = [];
+            chain.ImportFromPem(certificatePem);
             problem = null;
 
-            if (!OperatingSystem.IsWindows())
-            {
-                return certificate;
-            }
-
-            // SChannel cannot serve a key that exists only in memory, as one read from PEM does, so on Windows it goes
-            // through PKCS#12, as Kestrel does with its own PEM files.
-            using (certificate)
-            {
-                return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pkcs12), null);
-            }
+            return SslStreamCertificateContext.Create(certificate, chain);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException or ArgumentException)
         {
             problem = exception.Message;
 
             return null;
+        }
+    }
+
+    // SChannel cannot serve a key that exists only in memory, as one read from PEM does, so on Windows it goes through
+    // PKCS#12, as Kestrel does with its own PEM files.
+    private static X509Certificate2 Servable(X509Certificate2 certificate)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return certificate;
+        }
+
+        using (certificate)
+        {
+            return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pkcs12), null);
         }
     }
 

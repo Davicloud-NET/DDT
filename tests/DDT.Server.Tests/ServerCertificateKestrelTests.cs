@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using DDT.Server.Certificates;
 using Microsoft.AspNetCore.Builder;
@@ -113,7 +114,50 @@ public sealed class ServerCertificateKestrelTests : IDisposable
         Assert.Equal(1, probe.Handshakes);
     }
 
+    // The agent downloads no intermediates, so a certificate from an administrator's intermediate CA reaches it only
+    // when the server sends the intermediate from the certificate file.
+    [Fact]
+    public async Task AnAdministratorsIntermediateGoesOutWithTheCertificate()
+    {
+        Assert.SkipWhen(
+            OperatingSystem.IsWindows(),
+            "On Windows .NET adds intermediates the machine cannot chain to the user's or the machine's certificate store, " +
+            "which a test must not change. Run it on Linux, for example in the .NET SDK container.");
+
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        PemPair root = AdministratorCertificate.CreateAuthority("CN=Example Root CA", null, now.AddDays(-2), now.AddYears(5));
+        PemPair intermediate = AdministratorCertificate.CreateAuthority("CN=Example Issuing CA", root, now.AddDays(-2), now.AddYears(2));
+        PemPair own = AdministratorCertificate.Issue(intermediate, "CN=localhost", s_names, now.AddDays(-1), now.AddDays(90));
+        CertificateFolder.Write(_folder.Files, own with { CertificatePem = own.CertificatePem + "\n" + intermediate.CertificatePem });
+
+        ServerCertificates certificates = new(_folder.Files, s_names, generate: false, _clock);
+        await certificates.CheckAsync(cancellationToken);
+        await using WebApplication app = await StartAsync(builder => builder.AddDdtServerCertificates(certificates), cancellationToken);
+
+        using X509Certificate2 pin = X509Certificate2.CreateFromPem(root.CertificatePem);
+        using HttpClient agent = AgentClient(Address(app), pin);
+
+        Assert.Equal("ok", await agent.GetStringAsync(new Uri("/", UriKind.Relative), cancellationToken));
+    }
+
     public void Dispose() => _folder.Dispose();
+
+    // Trusts the pinned root and nothing else, downloads nothing and checks no revocation, as the agent does.
+    private static HttpClient AgentClient(Uri address, X509Certificate2 pin)
+    {
+        SocketsHttpHandler handler = new();
+        handler.SslOptions.CertificateChainPolicy = new X509ChainPolicy
+        {
+            TrustMode = X509ChainTrustMode.CustomRootTrust,
+            RevocationMode = X509RevocationMode.NoCheck,
+            DisableCertificateDownloads = true,
+            CustomTrustStore = { pin },
+        };
+        handler.SslOptions.RemoteCertificateValidationCallback = (_, _, _, errors) => errors == SslPolicyErrors.None;
+
+        return new HttpClient(handler) { BaseAddress = address };
+    }
 
     private async Task<ServerCertificates> CertificatesAsync(CancellationToken cancellationToken)
     {

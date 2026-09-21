@@ -24,9 +24,20 @@ public static class ServerCertificateExtensions
         builder.WebHost.ConfigureKestrel((context, kestrel) =>
         {
             // Kestrel would otherwise watch the certificate files and load its whole configuration again whenever a renewal
-            // renames one into place, while the selector already serves the new pair.
+            // renames one into place, while DDT already serves the new pair from memory.
             kestrel.Configure(context.Configuration.GetSection("Kestrel"), reloadOnChange: false);
-            kestrel.ConfigureHttpsDefaults(https => https.ServerCertificateSelector = (_, _) => certificates.Current);
+            kestrel.ConfigureHttpsDefaults(https =>
+            {
+                // The selector keeps Kestrel from loading Kestrel:Certificates:Default itself, but a selected
+                // certificate goes out without the intermediates of an administrator's certificate. So each
+                // connection is handed the context instead, which carries them.
+                https.ServerCertificateSelector = (_, _) => certificates.Current;
+                https.OnAuthenticate = (_, tls) =>
+                {
+                    tls.ServerCertificateSelectionCallback = null;
+                    tls.ServerCertificateContext = certificates.Context;
+                };
+            });
         });
 
         return builder;

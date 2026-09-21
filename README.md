@@ -376,10 +376,12 @@ over a connection that is trusted already.
 they are, loads them again within five minutes when they change, never renews or replaces them, and
 logs a warning once when 30 days or less are left. Changed files that do not load, such as a new
 certificate next to the old key, leave the certificate loaded before in service. Build boot images
-with the root of your CA. `DDT:Https:GenerateSelfSignedCertificate`, true by default, lets DDT make
-its root and issue from it; set to false, DDT never writes a certificate file, not even to renew its
-own. A PFX, a key under `Kestrel:Certificates:Default:Password`, and any setup without both paths
-are left to Kestrel entirely, as before.
+with the root of your CA, and put its intermediate certificates after yours in the certificate file:
+DDT sends them along, because the agent downloads none. `DDT:Https:GenerateSelfSignedCertificate`,
+true by default, lets DDT make its root and issue from it; set to false, DDT never writes a
+certificate file, not even to renew its own. A PFX, a key under
+`Kestrel:Certificates:Default:Password`, and any setup without both paths are left to Kestrel
+entirely, as before.
 
 ### Upgrading from the self-signed certificate
 

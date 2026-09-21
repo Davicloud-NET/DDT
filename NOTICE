@@ -1,0 +1,29 @@
+DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version, together with the additional terms below.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details. You should have received a copy of the GNU General Public
+License along with this program in the file LICENSE. If not, see <https://www.gnu.org/licenses/>.
+
+DDT includes software by others under their own licences. See THIRD-PARTY-NOTICES.md.
+
+
+Additional terms under section 7 of the GNU General Public License, version 3
+
+These terms apply to DDT and to every work based on it, as section 7 of the licence permits. They
+are part of the licence of this material, and anyone who conveys it must pass them on with it.
+
+1. Attribution, section 7(b). You must keep intact the copyright notices in the source files, this
+   file, and the attribution notice "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026
+   Davicloud." Every interactive user interface of a work based on DDT that displays Appropriate
+   Legal Notices, as DDT's About page and the agent's start-up lines do, must include the
+   attribution notice in them.
+
+2. Origin, section 7(c). You must not misrepresent the origin of this material, and you must not
+   present DDT or a work based on it as your own original work. A modified version must be marked
+   in reasonable ways as different from the original version, for example by stating in its
+   Appropriate Legal Notices that it is modified, by whom and when.

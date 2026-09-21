@@ -450,6 +450,8 @@ already holding the machine: every answer includes a resume token, valid for 24 
 that has to register again after an outage presents it and keeps its approval. A machine that
 rebooted has lost that token and starts over, unless zero touch applies (see
 [Deploying a machine](#deploying-a-machine)). A rejected machine stays rejected, and its agent stops.
+To take a rejection back, an operator removes the machine on the Machines page, and it registers as
+a new machine at its next netboot.
 
 Registration is limited to 120 requests a minute per address, polling, logging and deployment
 reports to 60 a minute per machine, and image requests to 30 a minute per machine. The machine limits

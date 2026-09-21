@@ -223,6 +223,34 @@ describe("MachinesPage", () => {
     expect(screen.getAllByRole("button", { name: "Remove all 2 from 10.0.0.9" })).toHaveLength(1);
   });
 
+  it("offers to remove a rejected machine, but does not count it with the strays", async () => {
+    const { calls } = renderWith(
+      [
+        machine({ id: "1", firstSeenAddress: "10.0.0.7" }),
+        machine({
+          id: "2",
+          assignedName: "PC-REJECTED",
+          state: "Rejected",
+          everApproved: true,
+          firstSeenAddress: "10.0.0.7",
+        }),
+      ],
+      operator,
+      { "DELETE /api/machines/2": { status: 204 } },
+    );
+
+    await screen.findByText("PC-REJECTED");
+
+    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^Remove all/ })).not.toBeInTheDocument();
+
+    fireEvent.click(within(row("PC-REJECTED")).getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => {
+      expect(calls).toContainEqual({ method: "DELETE", path: "/api/machines/2", body: null });
+    });
+  });
+
   it("does not offer to remove a waiting machine with an assigned image, nor count it with the strays", async () => {
     renderWith(
       [

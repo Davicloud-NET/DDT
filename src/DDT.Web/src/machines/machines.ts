@@ -71,6 +71,12 @@ export function isStray(machine: MachineSummary): boolean {
   return machine.state === "Pending" && !machine.everApproved && !isActive(machine.deployment);
 }
 
+// A rejected machine stays rejected however often it registers. Removing it is the way back: it registers as a
+// new machine at its next netboot.
+export function isRemovable(machine: MachineSummary): boolean {
+  return isStray(machine) || machine.state === "Rejected";
+}
+
 export function removeMachine(id: string): Promise<void> {
   return apiDelete(`/api/machines/${id}`);
 }

@@ -289,10 +289,12 @@ public static class MachineEndpoints
             return TypedResults.NotFound();
         }
 
-        if (!IsStray(machine))
+        // A rejected machine stays rejected however often it registers, so removing it is the only way back: it then
+        // registers as a new machine at its next netboot.
+        if (!IsStray(machine) && machine.State != MachineState.Rejected)
         {
             return TypedResults.Problem(
-                title: "Only a machine that is waiting, was never approved and has no assigned image can be removed.",
+                title: "Only a rejected machine, or a waiting machine that was never approved and has no assigned image, can be removed.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
@@ -344,7 +346,9 @@ public static class MachineEndpoints
                 ActorName = user.Identity?.Name,
                 SubjectId = machine.Id.ToString("D"),
                 SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-                Detail = $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}.",
+                Detail = machine.State == MachineState.Rejected
+                    ? $"Rejected, first seen {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}."
+                    : $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}.",
             });
         }
 

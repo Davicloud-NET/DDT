@@ -11,6 +11,7 @@ import { DeploymentCell } from "@/machines/DeploymentCell";
 import {
   approveMachine,
   formatMac,
+  isRemovable,
   isStray,
   machineLabel,
   machinesQuery,
@@ -238,7 +239,7 @@ export function MachinesPage() {
                             Reject
                           </button>
                         )}
-                        {isStray(machine) && (
+                        {isRemovable(machine) && (
                           <button
                             type="button"
                             className={styles.reject}

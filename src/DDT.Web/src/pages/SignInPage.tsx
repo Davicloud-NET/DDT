@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { currentUserQuery, login, type LoginStatus } from "@/auth/auth";
@@ -143,6 +143,10 @@ export function SignInPage() {
         <button type="submit" className={styles.submit} disabled={busy}>
           {busy ? "Signing in" : "Sign in"}
         </button>
+
+        <Link to="/about" className={styles.about}>
+          About DDT
+        </Link>
       </form>
     </div>
   );

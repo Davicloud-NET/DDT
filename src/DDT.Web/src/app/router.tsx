@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
+import { AboutPage } from "@/pages/AboutPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { ImagesPage } from "@/pages/ImagesPage";
 import { MachinesPage } from "@/pages/MachinesPage";
@@ -25,6 +26,13 @@ const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
   component: SignInPage,
+});
+
+// Outside the shell, so the licence notices can be read without signing in.
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/about",
+  component: AboutPage,
 });
 
 // Everything inside the shell requires a session. The check runs before the route renders, so
@@ -64,6 +72,7 @@ const accountRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   signInRoute,
+  aboutRoute,
   shellRoute.addChildren([machinesRoute, imagesRoute, accountRoute]),
 ]);
 

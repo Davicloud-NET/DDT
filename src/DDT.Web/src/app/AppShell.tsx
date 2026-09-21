@@ -50,6 +50,9 @@ export function AppShell() {
           <button type="button" className={styles.signOut} onClick={() => void signOut()}>
             Sign out
           </button>
+          <Link to="/about" className={styles.about}>
+            About DDT
+          </Link>
         </div>
       </aside>
       <main className={styles.main}>

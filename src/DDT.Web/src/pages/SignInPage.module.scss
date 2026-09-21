@@ -59,6 +59,17 @@
   cursor: pointer;
 }
 
+.about {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-100);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
 .submit {
   padding: var(--space-2) var(--space-4);
   border: 0;

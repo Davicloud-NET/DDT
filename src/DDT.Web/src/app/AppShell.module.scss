@@ -86,3 +86,14 @@
     color: var(--text-primary);
   }
 }
+
+.about {
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: var(--font-size-100);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}

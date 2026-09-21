@@ -1,0 +1,73 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: var(--space-5);
+  background: var(--surface-sunken);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+
+  p {
+    margin: 0;
+  }
+}
+
+.attribution {
+  font-weight: var(--font-weight-medium);
+}
+
+.hint {
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-subtle);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+
+.link {
+  color: var(--text-primary);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.back {
+  align-self: flex-start;
+  color: var(--text-secondary);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}

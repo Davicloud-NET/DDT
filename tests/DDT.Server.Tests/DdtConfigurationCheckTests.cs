@@ -64,7 +64,32 @@ public sealed class DdtConfigurationCheckTests
         Assert.Equal(3, problems.Count);
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Rolse is not a setting DDT reads.", StringComparison.Ordinal));
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Machines could not be read.", StringComparison.Ordinal));
-        Assert.Contains(problems, problem => problem.StartsWith("DDT:Deployment could not be read.", StringComparison.Ordinal));
+        Assert.Contains(problems, problem => problem.StartsWith("DDT:Deployment:LocalAdministrator could not be read.", StringComparison.Ordinal));
+    }
+
+    // The binder stops at the first object with an unknown key, and reading a section stopped that way reads no value.
+    [Fact]
+    public void ReportsUnknownKeysAtEveryDepthOfASectionAndItsValues()
+    {
+        IConfiguration configuration = Configuration(
+            ("DDT:Deployment:TimeZon", "W. Europe Standard Time"),
+            ("DDT:Deployment:TimeZone", "Europe/Berlin"),
+            ("DDT:Deployment:Domain:Nmae", "corp.example"),
+            ("DDT:Deployment:LocalAdministrator:Pasword", "local password"),
+            ("DDT:Pxe:TftpMaxWindowSize", "65"),
+            ("DDT:Pxe:BootTargets:X64Uefi:Method", "Tftp"),
+            ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"),
+            ("DDT:Pxe:BootTargets:X64Uefi:BootServer", "10.10.0.5"));
+
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe);
+
+        Assert.Equal(6, problems.Count);
+        Assert.Contains(problems, problem => IsUnreadable(problem, "DDT:Deployment", "'TimeZon'"));
+        Assert.Contains(problems, problem => IsUnreadable(problem, "DDT:Deployment:Domain", "'Nmae'"));
+        Assert.Contains(problems, problem => IsUnreadable(problem, "DDT:Deployment:LocalAdministrator", "'Pasword'"));
+        Assert.Contains(problems, problem => IsUnreadable(problem, "DDT:Pxe:BootTargets:X64Uefi", "'BootServer'"));
+        Assert.Contains(problems, problem => problem.StartsWith("DDT:Deployment:TimeZone: 'Europe/Berlin'", StringComparison.Ordinal));
+        Assert.Contains(problems, problem => problem.StartsWith("DDT:Pxe:TftpMaxWindowSize: ", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -141,6 +166,9 @@ public sealed class DdtConfigurationCheckTests
         new ConfigurationBuilder()
             .AddInMemoryCollection(settings.Select(setting => new KeyValuePair<string, string?>(setting.Key, setting.Value)))
             .Build();
+
+    private static bool IsUnreadable(string problem, string section, string key) =>
+        problem.StartsWith(section + " could not be read.", StringComparison.Ordinal) && problem.Contains(key, StringComparison.Ordinal);
 
     private static string MessagesOf(Exception exception) =>
         exception.InnerException is null ? exception.Message : exception.Message + Environment.NewLine + MessagesOf(exception.InnerException);

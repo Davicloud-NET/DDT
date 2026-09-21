@@ -52,20 +52,41 @@ public static class DdtConfigurationCheck
             }
         }
 
-        _ = Read(configuration, HttpsOptions.SectionName, problems, section => section.Get<HttpsOptions>(Strict));
-        _ = Read(configuration, LdapOptions.SectionName, problems, section => section.Get<LdapOptions>(Strict));
-        _ = Read(configuration, AgentReleaseOptions.SectionName, problems, section => section.Get<AgentReleaseOptions>(Strict));
+        // The binder stops at the first object with an unknown key, so the nested objects are read on their own, and
+        // first: a section then reports the failure of its nested object again, which Report leaves out.
+        _ = Read(
+            configuration,
+            $"{DeploymentOptions.SectionName}:{nameof(DeploymentOptions.LocalAdministrator)}",
+            problems,
+            (section, binder) => section.Get<LocalAdministratorOptions>(binder));
+        _ = Read(
+            configuration,
+            $"{DeploymentOptions.SectionName}:{nameof(DeploymentOptions.Domain)}",
+            problems,
+            (section, binder) => section.Get<DomainOptions>(binder));
+
+        foreach (IConfigurationSection target in configuration.GetSection($"{PxeOptions.SectionName}:{nameof(PxeOptions.BootTargets)}").GetChildren())
+        {
+            _ = Read(configuration, target.Path, problems, (section, binder) => section.Get<BootTargetOptions>(binder));
+        }
+
+        _ = Read(configuration, HttpsOptions.SectionName, problems, (section, binder) => section.Get<HttpsOptions>(binder));
+        _ = Read(configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder));
+        _ = Read(configuration, AgentReleaseOptions.SectionName, problems, (section, binder) => section.Get<AgentReleaseOptions>(binder));
 
         OidcOptions? oidc = Read(
-            configuration, OidcOptions.SectionName, problems, section => section.Get<OidcOptions>(Strict) ?? new());
+            configuration, OidcOptions.SectionName, problems, (section, binder) => section.Get<OidcOptions>(binder) ?? new());
         DeploymentOptions? deployment = Read(
-            configuration, DeploymentOptions.SectionName, problems, section => section.Get<DeploymentOptions>(Strict) ?? new());
+            configuration, DeploymentOptions.SectionName, problems, (section, binder) => section.Get<DeploymentOptions>(binder) ?? new());
         MachineOptions? machines = Read(
-            configuration, MachineOptions.SectionName, problems, section => section.Get<MachineOptions>(Strict) ?? new());
+            configuration, MachineOptions.SectionName, problems, (section, binder) => section.Get<MachineOptions>(binder) ?? new());
         DdtForwardedHeadersOptions? forwardedHeaders = Read(
-            configuration, DdtForwardedHeadersOptions.SectionName, problems, section => section.Get<DdtForwardedHeadersOptions>(Strict) ?? new());
+            configuration,
+            DdtForwardedHeadersOptions.SectionName,
+            problems,
+            (section, binder) => section.Get<DdtForwardedHeadersOptions>(binder) ?? new());
         PxeOptions? pxe = Read(
-            configuration, PxeOptions.SectionName, problems, section => section.Get<PxeOptions>(Strict) ?? new());
+            configuration, PxeOptions.SectionName, problems, (section, binder) => section.Get<PxeOptions>(binder) ?? new());
 
         if (oidc is not null)
         {
@@ -99,20 +120,45 @@ public static class DdtConfigurationCheck
 
     private static void Strict(BinderOptions binder) => binder.ErrorOnUnknownConfiguration = true;
 
-    // Bound with the concrete type at each call, because the binding generator cannot bind a type parameter. A
-    // section that cannot be read has no values to check.
-    private static T? Read<T>(IConfiguration configuration, string sectionName, List<string> problems, Func<IConfigurationSection, T?> bind)
+    // Bound with the concrete type at each call, because the binding generator cannot bind a type parameter. A section
+    // with an unknown key is read again without the key check, so that the key does not hide its values. A section that
+    // cannot be read at all has no values to check.
+    private static T? Read<T>(
+        IConfiguration configuration,
+        string sectionName,
+        List<string> problems,
+        Func<IConfigurationSection, Action<BinderOptions>?, T?> bind)
         where T : class
     {
+        IConfigurationSection section = configuration.GetSection(sectionName);
+
         try
         {
-            return bind(configuration.GetSection(sectionName));
+            return bind(section, Strict);
         }
         catch (InvalidOperationException exception)
         {
-            problems.Add($"{sectionName} could not be read. Correct or remove the setting this names: {exception.Message}");
+            Report(problems, section, exception);
+        }
+
+        try
+        {
+            return bind(section, null);
+        }
+        catch (InvalidOperationException exception)
+        {
+            Report(problems, section, exception);
 
             return null;
+        }
+    }
+
+    // A value that cannot be converted fails both reads, and the failure of a nested object fails its section's read.
+    private static void Report(List<string> problems, IConfigurationSection section, InvalidOperationException exception)
+    {
+        if (!problems.Exists(problem => problem.EndsWith(exception.Message, StringComparison.Ordinal)))
+        {
+            problems.Add($"{section.Path} could not be read. Correct or remove the setting this names: {exception.Message}");
         }
     }
 

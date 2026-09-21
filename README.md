@@ -161,8 +161,19 @@ docker build -f build/Dockerfile -t ddt:dev .
 ```
 
 ```bash
+echo "DDT_DB_PASSWORD=$(openssl rand -hex 24)" > build/.env
 docker compose -f build/compose.yaml up
 ```
+
+The compose file runs PostgreSQL next to DDT, as the `db` service with its own volume, and starts
+DDT once the database answers. Compose refuses to start until `DDT_DB_PASSWORD` is set, in
+`build/.env` next to the compose file or in the environment; git ignores that file. Use letters and
+digits only, because the password is written into a connection string. The database listens only on
+this host's loopback, at port 5433 unless `DDT_DB_PORT` says otherwise.
+
+An install that ran on SQLite before, as the compose file of earlier versions did, starts empty on
+PostgreSQL and prints a new first administrator password. The image files stay in the store volume,
+and uploading one again stores no second copy. `ddt-dev.db` in the store volume can then be deleted.
 
 The compose file uses host networking, because the `pxe` role has to see DHCP broadcasts and bind
 UDP 67, 4011 and 69. Host networking is a Linux host feature. On Docker Desktop the container

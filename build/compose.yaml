@@ -17,6 +17,8 @@ services:
     environment:
       DDT__Roles: ${DDT_ROLES:-web}
       DDT__StorePath: /var/lib/ddt
+      # Host networking puts the database on this host's loopback, at the port db publishes there.
+      ConnectionStrings__ddtdb: Host=127.0.0.1;Port=${DDT_DB_PORT:-5433};Database=ddt;Username=ddt;Password=${DDT_DB_PASSWORD:?Set DDT_DB_PASSWORD in build/.env}
       # Every name and address DDT is reached by has to be in the certificate, because the agent
       # validates the hostname against the chain it pins.
       DDT__Https__SubjectAlternativeNames: ${DDT_HOSTNAMES:-}
@@ -30,7 +32,30 @@ services:
       Kestrel__Certificates__Default__KeyPath: /var/lib/ddt/certs/ddt-key.pem
     volumes:
       - ddt-store:/var/lib/ddt
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    security_opt: [no-new-privileges:true]
+    environment:
+      POSTGRES_DB: ddt
+      POSTGRES_USER: ddt
+      POSTGRES_PASSWORD: ${DDT_DB_PASSWORD:?Set DDT_DB_PASSWORD in build/.env}
+    ports: ["127.0.0.1:${DDT_DB_PORT:-5433}:5432"]
+    # Over TCP, because the server the image runs while it creates the database answers only on its
+    # socket: a check there would report ready before the database exists.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ddt -d ddt"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - ddt-db:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
   ddt-store:
+  ddt-db:

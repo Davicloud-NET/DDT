@@ -3,13 +3,16 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Serialization;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Contracts.Agents;
 
-// Separate from DdtJsonContext so the NativeAOT agent carries metadata only for what it sends.
+// Separate from DdtJsonContext so the NativeAOT agent carries metadata only for what it sends. Out of order metadata:
+// a sequence the server kept in PostgreSQL jsonb has each step's "kind" after its "id".
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    UseStringEnumConverter = true)]
+    UseStringEnumConverter = true,
+    AllowOutOfOrderMetadataProperties = true)]
 [JsonSerializable(typeof(AgentRegistration))]
 [JsonSerializable(typeof(AgentRegistrationResult))]
 [JsonSerializable(typeof(AgentNextResult))]
@@ -22,4 +25,6 @@ namespace DDT.Contracts.Agents;
 [JsonSerializable(typeof(AgentDeployment))]
 [JsonSerializable(typeof(AgentDeploymentReport))]
 [JsonSerializable(typeof(AgentDeploymentReportResult))]
+[JsonSerializable(typeof(SequenceDefinition))]
+[JsonSerializable(typeof(SequenceState))]
 public sealed partial class AgentJsonContext : JsonSerializerContext;

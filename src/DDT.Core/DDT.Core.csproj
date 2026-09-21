@@ -6,4 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

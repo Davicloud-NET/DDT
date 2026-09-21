@@ -8,13 +8,16 @@ using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
 
 namespace DDT.Contracts;
 
+// Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    UseStringEnumConverter = true)]
+    UseStringEnumConverter = true,
+    AllowOutOfOrderMetadataProperties = true)]
 [JsonSerializable(typeof(LoginRequest))]
 [JsonSerializable(typeof(LoginResponse))]
 [JsonSerializable(typeof(CurrentUser))]
@@ -34,4 +37,6 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(DeploymentOptionsView))]
 [JsonSerializable(typeof(AboutInfo))]
 [JsonSerializable(typeof(ServerCertificateView))]
+[JsonSerializable(typeof(SequenceDefinition))]
+[JsonSerializable(typeof(IReadOnlyList<SequenceProblem>))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

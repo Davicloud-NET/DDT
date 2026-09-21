@@ -1,0 +1,28 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Text.Json.Serialization;
+
+namespace DDT.Contracts.Sequences;
+
+// PackageId names a Files package that is extracted and becomes the script's working directory.
+public sealed record RunScriptStep : SequenceStep
+{
+    public SequencePhase Phase { get; init; }
+
+    public ScriptInterpreter Interpreter { get; init; }
+
+    public required string Script { get; init; }
+
+    public Guid? PackageId { get; init; }
+
+    public int TimeoutMinutes { get; init; } = 60;
+
+    public IReadOnlyList<int> SuccessExitCodes { get; init; } = [0];
+
+    public IReadOnlyList<int> RebootExitCodes { get; init; } = [3010];
+
+    [JsonIgnore]
+    public override SequencePhase? RequiredPhase => Phase;
+}

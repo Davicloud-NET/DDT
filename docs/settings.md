@@ -431,12 +431,12 @@ its cached value when the token fires (framework behavior).
   not use the key ring to decrypt secrets.
 - The reads at composition time (DdtAuthenticationExtensions.cs:33, PxeHostingExtensions.cs:21-25,
   DeploymentServiceCollectionExtensions.cs:26-44) would need rewriting anyway.
-- Every reload would go through the reflection binder.
 - Decrypted secrets would sit in IConfiguration, where a configuration dump prints them.
 
-**Why not `IOptionsMonitor<T>` for DDT's own sections.** DeploymentOptions is init-only
-(DeploymentOptions.cs:14-24). Parsed objects would still need their own holders, which would leave two
-ways to reach the same value.
+**Why not `IOptionsMonitor<T>` for DDT's own sections.** The option classes use set, because the
+binding generator skips init accessors, so the one instance a monitor caches could be changed by any
+consumer for all the others. Parsed objects would still need their own holders, which would leave
+two ways to reach the same value.
 
 **The stored document is the desired state, and it is never reverted.** When applying a subsystem
 restart fails, that host keeps a safe running state and reports Failed in SettingsHostStates and in an
@@ -728,10 +728,8 @@ trusted proxies, no domain.
 - The pxe section also allows the bootstrap keys HttpBootPort and BootDirectory.
 - For logging, only keys under Logging:LogLevel are checked, because logging providers add their own
   subsections.
-- Today only three sections refuse unknown keys: DDT:Deployment, DDT:ForwardedHeaders and DDT:Pxe
-  (DeploymentServiceCollectionExtensions.cs:28, DdtForwardedHeadersExtensions.cs:26,
-  PxeHostingExtensions.cs:23). So, for example, a misspelled RequireWebApproval silently leaves web
-  approval off.
+- Since M5, every DDT section refuses unknown keys at startup (DdtConfigurationCheck), with an
+  explicit list for the root.
 
 **Other rules.**
 

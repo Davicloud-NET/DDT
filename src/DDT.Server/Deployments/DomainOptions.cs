@@ -8,12 +8,12 @@ namespace DDT.Server.Deployments;
 // create computer objects in the organizational unit: every Operator can read its password.
 public sealed class DomainOptions
 {
-    public string? Name { get; init; }
+    public string? Name { get; set; }
 
-    public string? OrganizationalUnit { get; init; }
+    public string? OrganizationalUnit { get; set; }
 
     // DOMAIN\user or user@suffix, written to the answer file whole.
-    public string? UserName { get; init; }
+    public string? UserName { get; set; }
 
-    public string? Password { get; init; }
+    public string? Password { get; set; }
 }

@@ -11,15 +11,15 @@ public sealed class DeploymentOptions
     public const string SectionName = "DDT:Deployment";
 
     // A Windows id such as W. Europe Standard Time. Unset, Windows picks the zone that matches the locale.
-    public string? TimeZone { get; init; }
+    public string? TimeZone { get; set; }
 
     // A culture name such as de-DE. Unset, the image's own language.
-    public string? Locale { get; init; }
+    public string? Locale { get; set; }
 
     // An input locale such as 0407:00000407 or de-DE. Unset, the locale.
-    public string? Keyboard { get; init; }
+    public string? Keyboard { get; set; }
 
-    public LocalAdministratorOptions LocalAdministrator { get; init; } = new();
+    public LocalAdministratorOptions LocalAdministrator { get; set; } = new();
 
-    public DomainOptions Domain { get; init; } = new();
+    public DomainOptions Domain { get; set; } = new();
 }

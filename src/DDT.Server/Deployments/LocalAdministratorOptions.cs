@@ -8,7 +8,7 @@ namespace DDT.Server.Deployments;
 // page. Every Operator can read the password by deploying a machine they control.
 public sealed class LocalAdministratorOptions
 {
-    public string Name { get; init; } = "Admin";
+    public string Name { get; set; } = "Admin";
 
-    public string? Password { get; init; }
+    public string? Password { get; set; }
 }

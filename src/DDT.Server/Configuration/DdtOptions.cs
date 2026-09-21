@@ -8,11 +8,11 @@ public sealed class DdtOptions
 {
     public const string SectionName = "DDT";
 
-    public string Roles { get; init; } = string.Empty;
+    public string Roles { get; set; } = string.Empty;
 
-    public string StorePath { get; init; } = "/var/lib/ddt";
+    public string StorePath { get; set; } = "/var/lib/ddt";
 
-    public bool RequireHttps { get; init; } = true;
+    public bool RequireHttps { get; set; } = true;
 
-    public HttpsOptions Https { get; init; } = new();
+    public HttpsOptions Https { get; set; } = new();
 }

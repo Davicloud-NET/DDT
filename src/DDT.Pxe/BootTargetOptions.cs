@@ -9,13 +9,13 @@ namespace DDT.Pxe;
 // variable would otherwise default its Method to Tftp.
 public sealed class BootTargetOptions
 {
-    public string? Method { get; init; }
+    public string? Method { get; set; }
 
-    public string? BootFile { get; init; }
+    public string? BootFile { get; set; }
 
-    public string? ServerAddress { get; init; }
+    public string? ServerAddress { get; set; }
 
-    public string? ServerHostName { get; init; }
+    public string? ServerHostName { get; set; }
 
-    public bool AdvertiseBootServerDiscovery { get; init; }
+    public bool AdvertiseBootServerDiscovery { get; set; }
 }

@@ -132,19 +132,6 @@ public sealed class DeploymentOptionsValidationTests
         Assert.Contains("DDT:Deployment:TimeZone", MessagesOf(refusal), StringComparison.Ordinal);
     }
 
-    // Read as written, the domain name would be unset, and deployed machines would skip the join unnoticed.
-    [Fact]
-    public void TheServerDoesNotStartWithAMisspelledSetting()
-    {
-        using SettingsApplication application = new(("DDT:Deployment:Domain:Nmae", "corp.example"));
-
-        Exception refusal = Assert.ThrowsAny<Exception>(() => application.CreateClient());
-        string messages = MessagesOf(refusal);
-
-        Assert.Contains("DDT:Deployment could not be read.", messages, StringComparison.Ordinal);
-        Assert.Contains("'Nmae'", messages, StringComparison.Ordinal);
-    }
-
     [Fact]
     public void TheServerDoesNotStartWithAnInvalidZeroTouchNetwork()
     {

@@ -6,9 +6,11 @@ namespace DDT.Server.Configuration;
 
 public sealed class HttpsOptions
 {
+    public const string SectionName = "DDT:Https";
+
     // The agent pins the DDT certificate chain and validates the hostname, so every name and
     // address the server is reached by has to be in the certificate.
-    public string SubjectAlternativeNames { get; init; } = string.Empty;
+    public string SubjectAlternativeNames { get; set; } = string.Empty;
 
-    public bool GenerateSelfSignedCertificate { get; init; } = true;
+    public bool GenerateSelfSignedCertificate { get; set; } = true;
 }

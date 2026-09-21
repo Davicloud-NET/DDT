@@ -21,6 +21,8 @@ using DDT.Server.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DdtConfigurationCheck.Validate(builder.Configuration);
+
 builder.AddServiceDefaults();
 
 builder.Services.Configure<DdtOptions>(builder.Configuration.GetSection(DdtOptions.SectionName));

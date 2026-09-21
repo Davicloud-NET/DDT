@@ -396,8 +396,8 @@ the boot image needs no WMI component, and it reports every MAC address it finds
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
 9 MB. It carries wimlib's `libwim-15.dll` inside itself and writes it next to itself before it
 applies an image, so the update below also updates wimlib, unless you supply your own as described
-under [Using your own libwim](#using-your-own-libwim). The loose DLL in the publish folder is not
-needed. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+under [Using your own libwim](#using-your-own-libwim). See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 At start-up the agent prints its legal notices: DDT's attribution notice, that it comes with
 absolutely no warranty, that it is free software under the GNU GPL version 3 or later with
@@ -432,7 +432,8 @@ and uses, and logs a line with both SHA-256 values; delete the file to make the 
 copy again. Put your DLL next to `ddt-agent.exe`, or build the boot image with
 `Build-BootImage.ps1 -WimLibraryPath`, which copies it to `X:\DDT\libwim-15.dll`. An agent that
 updated itself runs from the same folder, so it uses the same DLL. Alternatively, point the
-`EmbeddedResource` in `src/DDT.Agent/DDT.Agent.csproj` at your DLL and publish the agent again.
+`EmbeddedResource` in `src/DDT.Agent/DDT.Agent.csproj` at your DLL and publish the agent again. It
+then carries your DLL and writes it out wherever no `libwim-15.dll` is next to it yet.
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) names the source and the build script the
 embedded DLL comes from.
 

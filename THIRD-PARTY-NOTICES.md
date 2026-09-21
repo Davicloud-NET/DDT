@@ -193,7 +193,8 @@ changes, then use it in one of two ways:
    DLL. That works across wimlib releases as long as the library is still `libwim-15`, because
    wimlib changes that number when it breaks compatibility.
 2. Rebuild the agent around it. Point the `EmbeddedResource` in `src/DDT.Agent/DDT.Agent.csproj`
-   at your DLL and publish the agent again with `build/Publish-Agent.ps1`.
+   at your DLL and publish the agent again with `build/Publish-Agent.ps1`. The agent then carries
+   your DLL and, as under 1, writes it out wherever no `libwim-15.dll` is next to it yet.
 
 ## Windows PE and the Windows ADK
 

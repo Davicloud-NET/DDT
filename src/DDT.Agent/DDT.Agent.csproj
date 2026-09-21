@@ -26,6 +26,14 @@
     <EmbeddedResource Include="$(PkgManagedWimLib)\runtimes\win-x64\native\libwim-15.dll" LogicalName="libwim-15.dll" />
   </ItemGroup>
 
+  <!-- The package's DLL next to the published agent would be used instead of the one the agent carries, which may be
+       a libwim someone embedded in its place. The build still copies it, for the tests. -->
+  <Target Name="LeaveOutThePackageWimLibrary" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Filename)%(Extension)' == 'libwim-15.dll'" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <!-- The legal texts the agent prints, under the names AgentLegalNotices.Files lists. -->
     <EmbeddedResource Include="..\..\NOTICE;..\..\LICENSE;..\..\THIRD-PARTY-NOTICES.md" LogicalName="%(Filename)%(Extension)" />

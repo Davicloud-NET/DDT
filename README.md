@@ -618,8 +618,9 @@ What the agent does, with progress and each step's duration shown live on the Ma
 5. It makes the disk bootable with the applied image's own `bcdboot` and sets up the recovery
    environment with its `reagentc`.
 6. It writes `W:\Windows\Panther\unattend.xml`, adds a line to `SetupComplete.cmd` that deletes it
-   once setup finished, and writes the UEFI boot variables so that Windows Boot Manager on the new
-   disk comes first. A machine that starts from the network first then starts Windows next. The
+   once setup finished, and makes sure Windows Boot Manager on the new disk is the first UEFI boot
+   entry, writing the boot variables itself where `bcdboot` has not already done so. A machine that
+   starts from the network first then starts Windows next. The
    entry the previous deployment of this disk left is reused, so re-imaging does not pile up entries.
    If the firmware refuses, the deployment still finishes with a warning, and the machine's boot
    order has to be set by hand. A deployment that fails or is stopped after this step deletes the

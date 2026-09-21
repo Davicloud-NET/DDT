@@ -46,7 +46,8 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
             cancellationToken).ConfigureAwait(false);
     }
 
-    // bcdboot with /s leaves the firmware's boot entries alone, so the boot variables are written here.
+    // bcdboot with /s does not reliably touch the firmware's boot entries (on Hyper-V it put its entry first, and the
+    // documentation says it is for another machine's disk), so the boot variables are checked and written here.
     public async Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(volumes);

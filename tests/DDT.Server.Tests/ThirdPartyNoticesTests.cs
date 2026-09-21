@@ -8,10 +8,19 @@ using Xunit;
 namespace DDT.Server.Tests;
 
 // Every package whose code ends up in the server, the agent or the web bundle has to be named in
-// THIRD-PARTY-NOTICES.md, in backticks, so that a new dependency cannot ship without its notice.
+// THIRD-PARTY-NOTICES.md, in backticks, and every package of the web bundle needs its licence text in
+// licenses/web/THIRD-PARTY-LICENSES.txt at the version the lock file holds, so that a new or upgraded
+// dependency cannot ship without its notice.
 public sealed class ThirdPartyNoticesTests
 {
     private static readonly string[] s_outputAssetKinds = ["runtime", "native", "runtimeTargets"];
+
+    // Development packages whose own code the bundle contains: Rolldown's runtime helpers and the module preload
+    // polyfill Vite asks it for.
+    private static readonly string[] s_bundledBuildTools = ["rolldown", "vite"];
+
+    // Each entry in the web licence file starts with a line of this, followed by "<name> <version>".
+    private static readonly string s_webEntrySeparator = new('=', 100);
 
     [Fact]
     public async Task NamesEveryShippedPackage()
@@ -23,13 +32,28 @@ public sealed class ThirdPartyNoticesTests
         List<string> shipped = [];
         shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Host", "obj", "project.assets.json"), cancellationToken));
         shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent", "obj", "project.assets.json"), cancellationToken));
-        shipped.AddRange(await NpmPackagesAsync(Path.Combine(root, "src", "DDT.Web", "package-lock.json"), cancellationToken));
+        shipped.AddRange((await WebBundlePackagesAsync(root, cancellationToken)).Select(package => package.Name));
 
         Assert.Contains("ManagedWimLib", shipped);
         Assert.Contains("react", shipped);
+        Assert.Contains("vite", shipped);
 
         IEnumerable<string> unnamed = shipped.Distinct().Where(name => !notices.Contains($"`{name}`", StringComparison.Ordinal));
         Assert.Empty(unnamed.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task CarriesTheLicenceOfEveryWebPackageAtItsLockedVersion()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string root = Repository.Root();
+        string[] lines = await File.ReadAllLinesAsync(Path.Combine(root, "licenses", "web", "THIRD-PARTY-LICENSES.txt"), cancellationToken);
+
+        IEnumerable<string> expected = (await WebBundlePackagesAsync(root, cancellationToken))
+            .Select(package => $"{package.Name} {package.Version}");
+        IEnumerable<string> entries = lines.Zip(lines.Skip(1)).Where(pair => pair.First == s_webEntrySeparator).Select(pair => pair.Second);
+
+        Assert.Equal(expected.Order(StringComparer.Ordinal), entries.Order(StringComparer.Ordinal));
     }
 
     // A package ships when it puts a runtime or native file into the output. Compile-time packages have none, and
@@ -50,13 +74,19 @@ public sealed class ThirdPartyNoticesTests
             library.TryGetProperty(kind, out JsonElement files)
             && files.EnumerateObject().Any(file => Path.GetFileName(file.Name) != "_._"));
 
-    private static async Task<List<string>> NpmPackagesAsync(string path, CancellationToken cancellationToken)
+    // The non-development closure of the web UI's lock file, and the build tools whose code the bundle contains.
+    private static async Task<List<(string Name, string? Version)>> WebBundlePackagesAsync(string root, CancellationToken cancellationToken)
     {
-        using JsonDocument lockFile = await ReadJsonAsync(path, cancellationToken);
+        using JsonDocument lockFile = await ReadJsonAsync(Path.Combine(root, "src", "DDT.Web", "package-lock.json"), cancellationToken);
 
         return lockFile.RootElement.GetProperty("packages").EnumerateObject()
-            .Where(package => package.Name.Length > 0 && !(package.Value.TryGetProperty("dev", out JsonElement dev) && dev.GetBoolean()))
-            .Select(package => package.Name.Split("node_modules/")[^1])
+            .Where(package => package.Name.Length > 0)
+            .Select(package => (
+                Name: package.Name.Split("node_modules/")[^1],
+                Version: package.Value.GetProperty("version").GetString(),
+                Dev: package.Value.TryGetProperty("dev", out JsonElement dev) && dev.GetBoolean()))
+            .Where(package => !package.Dev || s_bundledBuildTools.Contains(package.Name))
+            .Select(package => (package.Name, package.Version))
             .ToList();
     }
 

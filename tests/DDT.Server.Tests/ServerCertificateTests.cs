@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Diagnostics;
 using System.Net;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
@@ -19,6 +20,7 @@ public sealed class ServerCertificateTests : IDisposable
     private const string ServerAuthentication = "1.3.6.1.5.5.7.3.1";
 
     private static readonly TimeSpan s_second = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan s_renewerTimeout = TimeSpan.FromSeconds(10);
 
     private readonly CertificateFolder _folder = new();
     private readonly ManualTimeProvider _clock = new();
@@ -502,6 +504,7 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Null(certificates.RootCertificatePem);
     }
 
+    // Again and again: the first check picks up a pair another process wrote, a later one renews.
     [Fact]
     public async Task TheRenewerChecksEveryFiveMinutes()
     {
@@ -512,24 +515,21 @@ public sealed class ServerCertificateTests : IDisposable
 
         using ServerCertificateRenewer renewer = new(certificates, _clock, NullLogger<ServerCertificateRenewer>.Instance);
         await renewer.StartAsync(cancellationToken);
+        await UntilAsync(() => _clock.HasTimerDueIn(TimeSpan.FromMinutes(5)), "The renewer set no five minute timer.", cancellationToken);
 
-        while (!_clock.HasTimerDueIn(ServerCertificateRenewer.Interval))
-        {
-            await Task.Delay(10, cancellationToken);
-        }
+        PemPair root = new(File.ReadAllText(_folder.Files.RootPath), File.ReadAllText(_folder.Files.RootKeyPath));
+        CertificateFolder.Write(_folder.Files, ServerCertificateAuthority.Issue(root, certificates.Names, [], _clock.GetUtcNow()));
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        await UntilAsync(() => !ReferenceEquals(certificates.Current, first), "The first check did not load the new pair.", cancellationToken);
+        X509Certificate2 reloaded = certificates.Current!;
 
         _clock.Advance(TimeSpan.FromDays(61));
-
-        while (ReferenceEquals(certificates.Current, first))
-        {
-            await Task.Delay(10, cancellationToken);
-        }
-
+        await UntilAsync(() => !ReferenceEquals(certificates.Current, reloaded), "No later check renewed the certificate.", cancellationToken);
         await renewer.StopAsync(cancellationToken);
 
         using X509Certificate2 renewed = _folder.Certificate();
         Assert.Equal(renewed.Thumbprint, certificates.Current?.Thumbprint);
-        Assert.NotEqual(first.Thumbprint, renewed.Thumbprint);
+        Assert.Equal(_clock.GetUtcNow().AddDays(90), new DateTimeOffset(renewed.NotAfter), s_second);
     }
 
     public void Dispose() => _folder.Dispose();
@@ -539,4 +539,16 @@ public sealed class ServerCertificateTests : IDisposable
 
     private static Task<CertificateCheck> CheckAsync(ServerCertificates certificates) =>
         certificates.CheckAsync(TestContext.Current.CancellationToken);
+
+    // The renewer checks on a thread of its own, so a check that never comes fails the test instead of hanging it.
+    private static async Task UntilAsync(Func<bool> condition, string failure, CancellationToken cancellationToken)
+    {
+        long start = Stopwatch.GetTimestamp();
+
+        while (!condition())
+        {
+            Assert.True(Stopwatch.GetElapsedTime(start) < s_renewerTimeout, failure);
+            await Task.Delay(10, cancellationToken);
+        }
+    }
 }

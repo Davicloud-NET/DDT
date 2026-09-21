@@ -1,0 +1,57 @@
+MIT-licensed files in libwim
+
+wimlib 1.14.4 compiles the source files listed below into libwim-15.dll. Their headers put them
+under the MIT licence that follows instead of the GNU LGPL. The copyright lines and the permission
+notice are copied from those headers, and the permission notice is the same in every one of them.
+
+The other files compiled into libwim carry the GNU Lesser General Public License, version 3 or
+later, in their headers, or no licence header, which leaves them under COPYING. None of them is
+placed in the public domain. src/compress_common.c and src/lzms_compress.c say that parts of them
+are based on public domain 7-Zip and LZMA code by Igor Pavlov.
+
+Copyright 2022 Eric Biggers
+    src/avl_tree.c
+    src/compress_common.c
+    src/decompress_common.c
+    src/lcpit_matchfinder.c
+    include/wimlib/avl_tree.h
+    include/wimlib/bitops.h
+    include/wimlib/bt_matchfinder.h
+    include/wimlib/compiler.h
+    include/wimlib/decompress_common.h
+    include/wimlib/endianness.h
+    include/wimlib/hc_matchfinder.h
+    include/wimlib/lcpit_matchfinder.h
+    include/wimlib/matchfinder_common.h
+    include/wimlib/security_descriptor.h
+    include/wimlib/unaligned.h
+    include/wimlib/wof.h
+
+Copyright 2022-2023 Eric Biggers
+    src/cpu_features.c
+    src/sha1.c
+    include/wimlib/sha1.h
+
+Copyright (c) 2003-2008 Yuta Mori All Rights Reserved.
+    src/divsufsort.c (the same notice is in COPYING.libdivsufsort-lite)
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.

@@ -7,11 +7,13 @@ the GNU General Public License, version 3 or later, with additional terms under 
 licence. [LICENSE](LICENSE) holds the licence text. [NOTICE](NOTICE) holds the attribution notice,
 the warranty disclaimer and the additional terms.
 
-DDT's built artefacts also contain software by others under their own licences. Once built, the
-container image, the agent and the web bundle hold that software's code but not the licence files
-that came with it, so this file lists it for each artefact, with its copyright holders and licence,
-and [licenses/](licenses) holds the licence texts. Pass LICENSE, NOTICE, this file and `licenses/`
-on with any artefact you distribute.
+DDT's built artefacts also contain software by others under their own licences. This file lists it
+for each artefact, with its copyright holders and licence, and [licenses/](licenses) holds the
+licence texts. The container image carries LICENSE, NOTICE, this file and `licenses/` in
+`/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
+file, `licenses/dotnet` and `licenses/wimlib`, and prints them with `ddt-agent --licenses`. The web
+bundle alone holds no licence files; its licences are in `licenses/web`, which the About page links
+to. Pass LICENSE, NOTICE, this file and `licenses/` on with any artefact you distribute.
 
 `src/DDT.ServiceDefaults/Extensions.cs` is code from the .NET Aspire ServiceDefaults project
 template, Copyright (c) .NET Foundation and Contributors, under the MIT licence in
@@ -22,6 +24,9 @@ template, Copyright (c) .NET Foundation and Contributors, under the MIT licence 
 `build/Dockerfile` publishes the server into `/app`. Besides DDT's own assemblies and the web UI
 bundle described in the next section, `/app` holds the NuGet packages of the server's runtime
 closure, grouped here by the project they come from.
+
+`/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
+sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
 ### Microsoft libraries
 
@@ -150,6 +155,10 @@ from `DDT.Agent`, `DDT.Core` and `DDT.Contracts`, it contains:
 - Startup code from the Microsoft Visual C++ runtime, which the linker adds. It is Microsoft's and
   comes with the Visual C++ build tools the agent is published with.
 - libwim, described next.
+
+The agent also carries LICENSE, NOTICE, this file and the texts in `licenses/dotnet` and
+`licenses/wimlib`. It prints its legal notices at start-up, and `ddt-agent --licenses` prints these
+texts.
 
 ### wimlib (libwim)
 

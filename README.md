@@ -813,8 +813,10 @@ boot image, means passing on its source code and its notices: LICENSE, NOTICE,
 https://github.com/Davide244/DDT.
 
 The web UI has an About page with DDT's legal notices. The sign-in page links to it, and so does
-the navigation once signed in, so it can be read without signing in. The agent prints its notices
-at start-up and its licence texts with `--licenses`.
+the navigation once signed in, so it can be read without signing in. The server publishes LICENSE,
+NOTICE, THIRD-PARTY-NOTICES.md and `licenses/` into `legal/` next to itself, `/app/legal` in the
+container image, and serves them without sign-in at `/api/about/legal/<path>`, where the About page
+links to them. The agent prints its notices at start-up and its licence texts with `--licenses`.
 
 DDT's built artefacts contain software by others under their own licences, among them wimlib in the
 agent, under the GNU LGPL version 3 or later. [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)

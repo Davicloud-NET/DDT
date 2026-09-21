@@ -8,11 +8,14 @@ namespace DDT.Contracts.Agents;
 
 // Token is a poll token while the machine waits for approval and a session token once approved. Both
 // tokens are null when the machine has been rejected: it gets nothing further to present. SignedInBy names
-// whoever signed in at the machine, so an agent that is waiting for a web approval does not ask again.
+// whoever signed in at the machine, so an agent that is waiting for a web approval does not ask again. RunId is set
+// when the registration's RunToken resumed that run, and RunToken is then the one to keep.
 public sealed record AgentRegistrationResult(
     Guid MachineId,
     MachineState State,
     string? Token,
     string? ResumeToken,
     int PollAfterSeconds,
-    string? SignedInBy);
+    string? SignedInBy,
+    Guid? RunId = null,
+    string? RunToken = null);

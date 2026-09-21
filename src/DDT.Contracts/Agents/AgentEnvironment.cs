@@ -4,5 +4,9 @@
 
 namespace DDT.Contracts.Agents;
 
-// StepId is the run's step that was running when the line was written.
-public sealed record AgentLogLine(DateTimeOffset TimestampUtc, AgentLogLevel Level, string Message, Guid? StepId = null);
+// Windows is the agent running as the temporary service in the installed Windows, to finish a run there.
+public enum AgentEnvironment
+{
+    WindowsPE,
+    Windows,
+}

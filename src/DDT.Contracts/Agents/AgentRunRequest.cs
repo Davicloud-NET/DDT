@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Agents;
 
-// StepId is the run's step that was running when the line was written.
-public sealed record AgentLogLine(DateTimeOffset TimestampUtc, AgentLogLevel Level, string Message, Guid? StepId = null);
+// The technician's pick at the machine. DiskNumber is set only for a sequence that erases a disk.
+public sealed record AgentRunRequest(Guid SequenceId, int? DiskNumber, string? ComputerName);

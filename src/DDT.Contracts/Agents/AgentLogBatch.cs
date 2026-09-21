@@ -4,4 +4,6 @@
 
 namespace DDT.Contracts.Agents;
 
-public sealed record AgentLogBatch(IReadOnlyList<AgentLogLine> Lines);
+// SentUtc is the agent's clock when it sent the batch. The server corrects the lines' times by the difference to its
+// own clock, because the Windows PE clock can be hours off.
+public sealed record AgentLogBatch(IReadOnlyList<AgentLogLine> Lines, DateTimeOffset? SentUtc = null);

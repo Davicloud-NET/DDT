@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Agents;
 
-// StepId is the run's step that was running when the line was written.
-public sealed record AgentLogLine(DateTimeOffset TimestampUtc, AgentLogLevel Level, string Message, Guid? StepId = null);
+// A driver or script zip for the step that uses it. A driver step can have several, matched to the machine's model.
+public sealed record AgentRunPackage(Guid StepId, string Name, string Sha256, long SizeBytes);

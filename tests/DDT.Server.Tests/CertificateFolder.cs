@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using DDT.Server.Certificates;
 
 namespace DDT.Server.Tests;
@@ -47,10 +49,37 @@ public sealed class CertificateFolder : IDisposable
         return chain.Build(certificate);
     }
 
+    // Like a read-only mount: what is in the folder can be read, but nothing can be created in it. Root ignores the
+    // mode on Linux, so there only a test run as another user shows it.
+    public void DenyWrites()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            using WindowsIdentity user = WindowsIdentity.GetCurrent();
+            DirectoryInfo folder = new(Path);
+            DirectorySecurity security = folder.GetAccessControl();
+            security.AddAccessRule(new FileSystemAccessRule(
+                user.User!,
+                FileSystemRights.CreateFiles | FileSystemRights.CreateDirectories,
+                AccessControlType.Deny));
+            folder.SetAccessControl(security);
+        }
+        else
+        {
+            File.SetUnixFileMode(Path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(Path))
         {
+            // Deleting what is in a folder takes write access to it on Linux, though not on Windows.
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+
             Directory.Delete(Path, recursive: true);
         }
     }

@@ -309,8 +309,25 @@ public sealed class ServerCertificateTests : IDisposable
         InvalidOperationException refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => CheckAsync(certificates));
 
         Assert.Contains(_folder.Files.CertificatePath, refusal.Message, StringComparison.Ordinal);
-        Assert.False(File.Exists(_folder.Files.RootPath));
-        Assert.False(File.Exists(_folder.Files.CertificatePath));
+        Assert.False(Directory.Exists(_folder.Path));
+    }
+
+    // Such as a read-only mount, where compose puts anything outside the store volume, or a folder another user owns.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AnAdministratorsCertificateInAFolderDdtCannotWriteToIsServed(bool generate)
+    {
+        DateTimeOffset now = _clock.GetUtcNow();
+        PemPair own = AdministratorCertificate.Create("CN=ddt.example", "ddt.example", now.AddDays(-1), now.AddDays(365));
+        CertificateFolder.Write(_folder.Files, own);
+        _folder.DenyWrites();
+
+        CertificateCheck check = await CheckAsync(new ServerCertificates(_folder.Files, ServerNames.Required("ddt.example"), generate, _clock));
+
+        Assert.Equal(CertificateAction.Loaded, check.Action);
+        Assert.False(check.ManagedByDdt);
+        Assert.False(File.Exists(_folder.Files.LockPath));
     }
 
     [Fact]

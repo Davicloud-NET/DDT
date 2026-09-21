@@ -24,7 +24,7 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
     // every boot image was built again with the root.
     public string ReplacedAnchorPath => Path.Combine(Folder, "ddt-anchor.replaced.pem");
 
-    // Taken by every DDT process that reads or writes these files, so two of them never renew at once.
+    // Taken by every DDT process that writes these files, or may have to, so two of them never renew at once.
     public string LockPath => Path.Combine(Folder, ".lock");
 
     // A PFX, or a key under a password, is managed by hand as before, so DDT only takes over two plain PEM files.

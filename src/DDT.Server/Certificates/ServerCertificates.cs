@@ -66,11 +66,18 @@ public sealed class ServerCertificates
 
         try
         {
+            // An administrator's certificate may sit where DDT cannot write, such as a read-only mount, so the lock is
+            // taken only in a folder that holds DDT's root, or once a check finds something to write.
+            if ((!_generate || !File.Exists(Files.RootPath)) && Check(_timeProvider.GetUtcNow(), locked: false) is { } check)
+            {
+                return check;
+            }
+
             Directory.CreateDirectory(Files.Folder);
 
             using FileStream fileLock = await LockAsync(cancellationToken).ConfigureAwait(false);
 
-            return Check(_timeProvider.GetUtcNow());
+            return Check(_timeProvider.GetUtcNow(), locked: true)!;
         }
         finally
         {
@@ -118,7 +125,8 @@ public sealed class ServerCertificates
 
     public void ForgetReplacedAnchor() => File.Delete(Files.ReplacedAnchorPath);
 
-    private CertificateCheck Check(DateTimeOffset now)
+    // Null when something is due to be written but the files are not locked, to be checked again under the lock.
+    private CertificateCheck? Check(DateTimeOffset now, bool locked)
     {
         PemPair? root = _generate ? ReadRoot() : null;
         FileStamp stamp = FileStamp.Of(Files);
@@ -129,13 +137,18 @@ public sealed class ServerCertificates
 
         if (_generate && root is null && pair is null && !stamp.AnyExists)
         {
-            return Replace(CreateRoot(now), null, CertificateAction.Created, now);
+            return locked ? Replace(CreateRoot(now), null, CertificateAction.Created, now) : null;
         }
 
         // Its only names are its subject alternative names, which the new certificate keeps. The break for boot images
         // that pin it cannot be avoided: it is no CA, so nothing new can chain to it.
         if (_generate && root is null && pair is not null && IsLegacy(pair))
         {
+            if (!locked)
+            {
+                return null;
+            }
+
             root = CreateRoot(now);
             PemFiles.Write(Files.ReplacedAnchorPath, pair.ExportCertificatePem(), isKey: false);
 
@@ -146,7 +159,7 @@ public sealed class ServerCertificates
         {
             if (pair is null)
             {
-                return Replace(root, null, CertificateAction.Issued, now);
+                return locked ? Replace(root, null, CertificateAction.Issued, now) : null;
             }
 
             using X509Certificate2 rootCertificate = X509Certificate2.CreateFromPem(root.CertificatePem);
@@ -156,12 +169,12 @@ public sealed class ServerCertificates
                 // Unless the root itself ends first, when renewing would only issue the same end date again.
                 if (now >= Utc(pair.NotAfter) - RenewBefore && rootCertificate.NotAfter > pair.NotAfter)
                 {
-                    return Replace(root, pair, CertificateAction.Renewed, now);
+                    return locked ? Replace(root, pair, CertificateAction.Renewed, now) : null;
                 }
 
                 if (!ServerNames.Covers(pair, Names))
                 {
-                    return Replace(root, pair, CertificateAction.Reissued, now);
+                    return locked ? Replace(root, pair, CertificateAction.Reissued, now) : null;
                 }
 
                 return Serve(loaded!, stamp, root.CertificatePem, LoadAction(changed), now);

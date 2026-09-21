@@ -14,6 +14,14 @@ Runs copype from the Windows ADK WinPE add-on, injects DDT.Agent and startnet.cm
 writes a BCD that boots boot.wim from a RAM disk over TFTP, and publishes both Microsoft signed
 boot managers. Nothing here is signed by DDT: Secure Boot sees only Microsoft's binaries.
 
+It also adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
+WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
+with their en-us language packages, so task sequences can run PowerShell scripts in Windows PE.
+Components cannot be added to a running Windows PE, so they have to be in the image. By the size of
+their packages they make boot.wim, which a PXE netboot fetches over TFTP, about 120 MB larger;
+-SkipPowerShell leaves them out. Either way boot.wim is exported at the end, which drops what
+servicing left behind in it, and its size is printed.
+
 Output layout, relative to -Destination, which is what DDT:Pxe:BootDirectory should contain:
 
   x64/bootmgfw.efi      boot manager signed by Microsoft Windows Production PCA 2011 (the default)
@@ -65,6 +73,10 @@ A libwim-15.dll of your own, for example one built from modified wimlib source, 
 the GNU LGPL, provides for. It is copied to X:\DDT\libwim-15.dll, next to the agent, which then uses
 it instead of the copy it carries and logs both SHA-256 values. Needs -AgentPath.
 
+.PARAMETER SkipPowerShell
+Builds the lean image without the PowerShell components, for sites where netboot time matters more.
+A task sequence step that runs PowerShell in Windows PE cannot run on machines booted from it.
+
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
 #>
@@ -88,7 +100,9 @@ param(
     [ValidateRange(1, 64)]
     [int] $TftpWindowSize = 4,
 
-    [string] $WimLibraryPath
+    [string] $WimLibraryPath,
+
+    [switch] $SkipPowerShell
 )
 
 Set-StrictMode -Version Latest
@@ -104,6 +118,18 @@ if (-not $WorkDirectory) { $WorkDirectory = Join-Path $PSScriptRoot '..\artifact
 $Destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination)
 $WorkDirectory = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($WorkDirectory)
 $Mount = Join-Path $WorkDirectory 'mount'
+
+# WMI, NetFx, Scripting and PowerShell in that order, which the other three each need.
+# WinPE-SecureBootCmdlets has no language resources, so the ADK ships no en-us package for it.
+$powerShellComponents = @(
+    [pscustomobject]@{ Name = 'WinPE-WMI'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-NetFx'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-Scripting'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-PowerShell'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-DismCmdlets'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-StorageWMI'; HasLanguagePackage = $true }
+    [pscustomobject]@{ Name = 'WinPE-SecureBootCmdlets'; HasLanguagePackage = $false }
+)
 
 function Get-AdkPaths {
     # Read from the registry rather than running DandISetEnv.bat, which changes PATH and the current
@@ -121,10 +147,11 @@ function Get-AdkPaths {
 
     $adk = Join-Path $kits 'Assessment and Deployment Kit'
     $paths = [pscustomobject]@{
-        WinPE   = Join-Path $adk 'Windows Preinstallation Environment'
-        Copype  = Join-Path $adk 'Windows Preinstallation Environment\copype.cmd'
-        Dism    = Join-Path $adk 'Deployment Tools\amd64\DISM'
-        Oscdimg = Join-Path $adk 'Deployment Tools\amd64\Oscdimg'
+        WinPE      = Join-Path $adk 'Windows Preinstallation Environment'
+        Copype     = Join-Path $adk 'Windows Preinstallation Environment\copype.cmd'
+        Components = Join-Path $adk 'Windows Preinstallation Environment\amd64\WinPE_OCs'
+        Dism       = Join-Path $adk 'Deployment Tools\amd64\DISM'
+        Oscdimg    = Join-Path $adk 'Deployment Tools\amd64\Oscdimg'
     }
 
     if (-not (Test-Path -LiteralPath $paths.Copype)) {
@@ -202,6 +229,24 @@ function Clear-StaleMount {
         & (Join-Path $adk.Dism 'dism.exe') /Unmount-Image "/MountDir:$Mount" /Discard | Out-Null
         & (Join-Path $adk.Dism 'dism.exe') /Cleanup-Mountpoints | Out-Null
     }
+}
+
+function Get-ComponentPackages {
+    # A language package has to match the image's language, and copype's image is en-us.
+    $packages = foreach ($component in $powerShellComponents) {
+        Join-Path $adk.Components "$($component.Name).cab"
+        if ($component.HasLanguagePackage) {
+            Join-Path $adk.Components "en-us\$($component.Name)_en-us.cab"
+        }
+    }
+
+    foreach ($package in $packages) {
+        if (-not (Test-Path -LiteralPath $package)) {
+            throw "$package is missing from the Windows PE add-on. Repair the add-on, or build with -SkipPowerShell."
+        }
+    }
+
+    return $packages
 }
 
 function New-Bcd {
@@ -308,6 +353,9 @@ if ($WimLibraryPath) {
     }
 }
 
+# Checked before anything is built, so a missing package does not cost a copype run first.
+$packages = @(if (-not $SkipPowerShell) { Get-ComponentPackages })
+
 Clear-StaleMount
 
 if (Test-Path -LiteralPath $WorkDirectory) {
@@ -339,6 +387,11 @@ $dism = Join-Path $adk.Dism 'dism.exe'
 Invoke-Native $dism /Mount-Image "/ImageFile:$wim" /Index:1 "/MountDir:$Mount" | Out-Null
 $committed = $false
 try {
+    foreach ($package in $packages) {
+        Write-Host "Adding $(Split-Path -Leaf $package)"
+        Invoke-Native $dism "/Image:$Mount" /Add-Package "/PackagePath:$package" | Out-Null
+    }
+
     if ($AgentPath) {
         New-Item -ItemType Directory -Force -Path (Join-Path $Mount 'DDT') | Out-Null
         Copy-Item -LiteralPath $AgentPath -Destination (Join-Path $Mount 'DDT\ddt-agent.exe')
@@ -385,6 +438,14 @@ try {
     }
 
     Invoke-Native $dism "/Image:$Mount" /Set-ScratchSpace:512 | Out-Null
+
+    # Makes the added packages permanent and removes the component versions they superseded, the step
+    # Microsoft documents for a serviced Windows PE image.
+    if ($packages.Count -gt 0) {
+        $scratch = New-Item -ItemType Directory -Force -Path (Join-Path $WorkDirectory 'scratch')
+        Invoke-Native $dism "/Image:$Mount" /Cleanup-Image /StartComponentCleanup /ResetBase "/ScratchDir:$($scratch.FullName)" | Out-Null
+    }
+
     Invoke-Native $dism /Unmount-Image "/MountDir:$Mount" /Commit | Out-Null
     $committed = $true
 }
@@ -393,6 +454,13 @@ finally {
         & $dism /Unmount-Image "/MountDir:$Mount" /Discard | Out-Null
     }
 }
+
+# Committing a mounted image adds what changed and keeps what it replaced in the file; an export copies
+# only what the image still uses. copype's boot.wim marks its one image bootable, boot index 1, and the
+# copy is marked the same way.
+$exported = Join-Path $WorkDirectory 'boot-exported.wim'
+Invoke-Native $dism /Export-Image "/SourceImageFile:$wim" /SourceIndex:1 "/DestinationImageFile:$exported" /Compress:max /Bootable | Out-Null
+Move-Item -LiteralPath $exported -Destination $wim -Force
 
 New-Bcd -Path (Join-Path $WorkDirectory 'BCD')
 
@@ -413,3 +481,7 @@ Get-ChildItem -LiteralPath $Destination -Recurse -File |
     Select-Object @{ Name = 'File'; Expression = { $_.FullName.Substring($Destination.Length + 1) } },
                   @{ Name = 'MB'; Expression = { [math]::Round($_.Length / 1MB, 1) } } |
     Format-Table -AutoSize
+
+# A PXE netboot fetches boot.wim over TFTP, so its size is most of what the netboot takes.
+$variant = if ($SkipPowerShell) { 'without PowerShell' } else { 'with PowerShell' }
+Write-Host ('boot.wim, {0}: {1:N1} MB' -f $variant, ((Get-Item -LiteralPath (Join-Path $Destination 'Boot\boot.wim')).Length / 1MB))

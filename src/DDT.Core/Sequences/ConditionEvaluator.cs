@@ -60,6 +60,6 @@ public static class ConditionEvaluator
 
     // 00:15:5d:01:02:03, 00-15-5D-01-02-03 and 0015.5d01.0203 all become 00155D010203; a prefix such as 00:15:5D
     // becomes 00155D.
-    private static string NormaliseMac(string value) =>
+    internal static string NormaliseMac(string value) =>
         string.Concat(value.Where(c => c is not (':' or '-' or '.' or ' '))).ToUpperInvariant();
 }

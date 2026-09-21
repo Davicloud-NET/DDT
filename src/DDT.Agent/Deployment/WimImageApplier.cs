@@ -24,7 +24,15 @@ public sealed class WimImageApplier(AgentLog log, string libraryDirectory, strin
 
         try
         {
-            WimLibraryFile.EnsureExtracted(libraryDirectory);
+            WimLibraryInUse library = WimLibraryFile.EnsureExtracted(libraryDirectory);
+
+            if (!library.IsCarriedCopy)
+            {
+                log.Warning(
+                    $"Using the {WimLibraryFile.FileName} at {library.Path}, SHA-256 {library.Sha256}, instead of the agent's own copy, " +
+                    $"SHA-256 {library.CarriedSha256}. Delete that file to make the agent use its own copy.");
+            }
+
             _errorLogPosition = ErrorLogLength();
             _library = new WimLibrary(strict: true, errorLogPath);
         }

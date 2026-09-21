@@ -52,6 +52,11 @@ never serves more than its own cap of 1380, which fits a WireGuard tunnel.
 Written to the BCD as ramdisktftpwindowsize. Only 4 has Microsoft backing. DDT caps the window at
 DDT:Pxe:TftpMaxWindowSize, so raise both together when measuring 8 or 16.
 
+.PARAMETER WimLibraryPath
+A libwim-15.dll of your own, for example one built from modified wimlib source, as wimlib's licence,
+the GNU LGPL, provides for. It is copied to X:\DDT\libwim-15.dll, next to the agent, which then uses
+it instead of the copy it carries and logs both SHA-256 values. Needs -AgentPath.
+
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt.pem
 #>
@@ -73,7 +78,9 @@ param(
     [int] $TftpBlockSize = 1380,
 
     [ValidateRange(1, 64)]
-    [int] $TftpWindowSize = 4
+    [int] $TftpWindowSize = 4,
+
+    [string] $WimLibraryPath
 )
 
 Set-StrictMode -Version Latest
@@ -273,6 +280,16 @@ if ($AgentPath) {
     }
 }
 
+if ($WimLibraryPath) {
+    if (-not $AgentPath) {
+        throw 'A libwim needs -AgentPath: only the agent uses it.'
+    }
+
+    if (-not (Test-Path -LiteralPath $WimLibraryPath -PathType Leaf)) {
+        throw "libwim not found at $WimLibraryPath."
+    }
+}
+
 Clear-StaleMount
 
 if (Test-Path -LiteralPath $WorkDirectory) {
@@ -307,6 +324,11 @@ try {
     if ($AgentPath) {
         New-Item -ItemType Directory -Force -Path (Join-Path $Mount 'DDT') | Out-Null
         Copy-Item -LiteralPath $AgentPath -Destination (Join-Path $Mount 'DDT\ddt-agent.exe')
+
+        # The agent uses a libwim-15.dll it finds next to itself instead of writing out its own copy.
+        if ($WimLibraryPath) {
+            Copy-Item -LiteralPath $WimLibraryPath -Destination (Join-Path $Mount 'DDT\libwim-15.dll')
+        }
 
         $configuration = [ordered]@{
             serverUrl       = $ServerUrl

@@ -8,27 +8,36 @@ public static class WimLibraryFile
 {
     public const string FileName = "libwim-15.dll";
 
-    // Writes the library when it is missing or differs, for example one left behind by an older agent, and
-    // returns its full path. Must run before the first wimlib call: a loaded library cannot be replaced.
-    public static string EnsureExtracted(string directory)
+    // Writes the carried library only where there is none. One that is there is used as it is, even when it
+    // differs: wimlib's licence, the LGPL, lets users run the agent with a libwim they built themselves. Must run
+    // before the first wimlib call: a loaded library cannot be replaced.
+    public static WimLibraryInUse EnsureExtracted(string directory)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
 
         string path = Path.GetFullPath(Path.Combine(directory, FileName));
         byte[] library = ReadResource();
+        string carriedSha256 = Convert.ToHexStringLower(SHA256.HashData(library));
 
-        if (File.Exists(path) && SHA256.HashData(File.ReadAllBytes(path)).AsSpan().SequenceEqual(SHA256.HashData(library)))
+        if (File.Exists(path))
         {
-            return path;
+            return new WimLibraryInUse(path, Sha256(path), carriedSha256);
         }
 
         Directory.CreateDirectory(directory);
 
         string partial = path + ".part";
         File.WriteAllBytes(partial, library);
-        File.Move(partial, path, overwrite: true);
+        File.Move(partial, path);
 
-        return path;
+        return new WimLibraryInUse(path, carriedSha256, carriedSha256);
+    }
+
+    private static string Sha256(string path)
+    {
+        using FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        return Convert.ToHexStringLower(SHA256.HashData(file));
     }
 
     private static byte[] ReadResource()

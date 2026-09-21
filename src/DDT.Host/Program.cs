@@ -10,6 +10,7 @@ using DDT.Host.Startup;
 using DDT.Pxe;
 using DDT.Server.About;
 using DDT.Server.Authentication;
+using DDT.Server.Certificates;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -30,8 +31,9 @@ builder.AddServiceDefaults();
 builder.Services.Configure<DdtOptions>(builder.Configuration.GetSection(DdtOptions.SectionName));
 
 string activeRoles = string.Join(", ", roles.Order());
-string certificatePath = builder.Configuration["Kestrel:Certificates:Default:Path"] ?? string.Empty;
-bool generatedCertificate = CertificateBootstrap.EnsureConfiguredCertificate(builder.Configuration, options);
+
+ServerCertificates? certificates = CertificateBootstrap.Create(builder.Configuration, options);
+CertificateAction? certificateAction = certificates?.EnsureExists(TimeProvider.System.GetUtcNow());
 
 builder.Services.ConfigureHttpJsonOptions(json =>
 {
@@ -71,9 +73,9 @@ var app = builder.Build();
 
 HostLog.ActiveRoles(app.Logger, activeRoles);
 
-if (generatedCertificate)
+if (certificates is not null && certificateAction is { } action)
 {
-    HostLog.GeneratedCertificate(app.Logger, certificatePath);
+    CertificateLog.Checked(app.Logger, certificates, action);
 }
 
 app.MapDefaultEndpoints();

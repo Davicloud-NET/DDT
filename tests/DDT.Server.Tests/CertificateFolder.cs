@@ -1,0 +1,46 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Security.Cryptography.X509Certificates;
+using DDT.Server.Certificates;
+
+namespace DDT.Server.Tests;
+
+// A certs folder of its own, laid out as build/compose.yaml configures the store.
+public sealed class CertificateFolder : IDisposable
+{
+    public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ddt-certs-" + Guid.NewGuid().ToString("N"));
+
+    public CertificateFiles Files => new(System.IO.Path.Combine(Path, "ddt.pem"), System.IO.Path.Combine(Path, "ddt-key.pem"));
+
+    public X509Certificate2 Root() => X509Certificate2.CreateFromPem(File.ReadAllText(Files.RootPath));
+
+    public X509Certificate2 Certificate() => X509Certificate2.CreateFromPemFile(Files.CertificatePath, Files.KeyPath);
+
+    // The chain the agent builds: DDT's root and nothing from the machine store, no revocation, no downloads.
+    public static bool ChainsUnderTheAgentsPolicy(X509Certificate2 certificate, X509Certificate2 root, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(certificate);
+
+        using X509Chain chain = new();
+        chain.ChainPolicy = new X509ChainPolicy
+        {
+            TrustMode = X509ChainTrustMode.CustomRootTrust,
+            RevocationMode = X509RevocationMode.NoCheck,
+            DisableCertificateDownloads = true,
+            CustomTrustStore = { root },
+            VerificationTime = at.UtcDateTime,
+        };
+
+        return chain.Build(certificate);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(Path))
+        {
+            Directory.Delete(Path, recursive: true);
+        }
+    }
+}

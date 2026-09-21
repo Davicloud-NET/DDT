@@ -348,6 +348,12 @@ DDT__Pxe__BootTargets__X64Uefi__BootFile=x64/bootmgfw.efi
 
 ### Boot files and Secure Boot
 
+`DDT:Pxe:BootDirectory` is the folder `boot` in `DDT:StorePath` unless set, and a relative path
+is inside the store as well. Everything below it is served to anyone who asks, so DDT refuses to
+start with a filesystem root, the store or a folder above it, anything in the key ring folder
+`keys` of the store, or the folder of any certificate or key file configured under `Kestrel`, such
+as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
+
 `build/Build-BootImage.ps1` writes this layout, which is what `DDT:Pxe:BootDirectory` should hold:
 
 | Path | Contents |

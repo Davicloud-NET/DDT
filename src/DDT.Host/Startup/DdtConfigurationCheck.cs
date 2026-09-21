@@ -23,9 +23,9 @@ public static class DdtConfigurationCheck
     private static readonly string[] s_rootKeys =
         ["Roles", "StorePath", "RequireHttps", "Https", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
 
-    public static void Validate(IConfiguration configuration, IReadOnlySet<DeploymentRole> roles)
+    public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
     {
-        IReadOnlyList<string> problems = FindProblems(configuration, roles);
+        IReadOnlyList<string> problems = FindProblems(configuration, options, roles);
 
         if (problems.Count > 0)
         {
@@ -34,9 +34,10 @@ public static class DdtConfigurationCheck
         }
     }
 
-    public static IReadOnlyList<string> FindProblems(IConfiguration configuration, IReadOnlySet<DeploymentRole> roles)
+    public static IReadOnlyList<string> FindProblems(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(roles);
 
         List<string> problems = [];
@@ -84,6 +85,7 @@ public static class DdtConfigurationCheck
         if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
         {
             Add(problems, PxeOptions.SectionName, PxeSetup.FindProblems(pxe));
+            Add(problems, PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(pxe, options.StorePath, configuration));
         }
 
         return problems;

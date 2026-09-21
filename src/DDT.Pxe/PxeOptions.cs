@@ -13,7 +13,8 @@ public sealed class PxeOptions
     // not answer PXE there. Unset means serve nothing.
     public string Interfaces { get; set; } = string.Empty;
 
-    public string BootDirectory { get; set; } = "/var/lib/ddt/boot";
+    // Everything below it is served to anyone who asks. A relative path is inside DDT:StorePath.
+    public string BootDirectory { get; set; } = "boot";
 
     public int HttpBootPort { get; set; } = 8080;
 

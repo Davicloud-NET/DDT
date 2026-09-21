@@ -56,7 +56,7 @@ Two changes shorten this list in practice:
   - the filesystem root
   - the store path or one of its parents
   - a directory inside `<StorePath>/keys`
-  - a directory that holds the certificate key
+  - the folder of any certificate or key file configured under Kestrel, or a folder above it
 - **Container defaults move into the Dockerfile.** They leave build/compose.yaml:19,28-30 and become
   ENV lines in the final stage of build/Dockerfile, next to `EXPOSE 8443` (Dockerfile:39):
   - DDT__StorePath=/var/lib/ddt

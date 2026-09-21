@@ -13,6 +13,8 @@ public sealed class DdtConfigurationCheckTests
 {
     private static readonly IReadOnlySet<DeploymentRole> s_webAndPxe = new HashSet<DeploymentRole> { DeploymentRole.Web, DeploymentRole.Pxe };
 
+    private static readonly DdtOptions s_store = new() { StorePath = Path.Combine(Path.GetTempPath(), "ddt-check-store") };
+
     // One per section. Read as written, each would leave its setting at the default without a word.
     [Theory]
     [InlineData("DDT:RequireHttp", "false")]
@@ -46,7 +48,7 @@ public sealed class DdtConfigurationCheckTests
             ("DDT:Pxe:BootTargets:X64Uefi:Method", "Tftp"),
             ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"));
 
-        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe));
+        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe));
     }
 
     [Fact]
@@ -57,7 +59,7 @@ public sealed class DdtConfigurationCheckTests
             ("DDT:Machines:MaxWaitng", "10"),
             ("DDT:Deployment:LocalAdministrator:Nmae", "Admin"));
 
-        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe);
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe);
 
         Assert.Equal(3, problems.Count);
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Rolse is not a setting DDT reads.", StringComparison.Ordinal));
@@ -74,7 +76,7 @@ public sealed class DdtConfigurationCheckTests
             ("DDT:ForwardedHeaders:KnownProxies", "proxy.corp.example"),
             ("DDT:Pxe:TftpMaxWindowSize", "65"));
 
-        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe);
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe);
 
         Assert.Equal(4, problems.Count);
         Assert.StartsWith("DDT:Deployment:TimeZone: 'Europe/Berlin'", problems[0], StringComparison.Ordinal);
@@ -88,7 +90,37 @@ public sealed class DdtConfigurationCheckTests
     {
         IConfiguration configuration = Configuration(("DDT:Pxe:TftpMaxWindowSize", "65"));
 
-        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, DeploymentRoles.Default));
+        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, s_store, DeploymentRoles.Default));
+    }
+
+    [Fact]
+    public void RefusesABootDirectoryThatWouldServeTheStoreOrTheTlsKey()
+    {
+        IConfiguration configuration = Configuration(
+            ("DDT:Pxe:BootDirectory", s_store.StorePath),
+            ("Kestrel:Certificates:Default:KeyPath", Path.Combine(s_store.StorePath, "certs", "ddt-key.pem")));
+
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe);
+
+        Assert.Equal(2, problems.Count);
+        Assert.All(problems, problem => Assert.StartsWith($"DDT:Pxe:BootDirectory: '{s_store.StorePath}' holds ", problem, StringComparison.Ordinal));
+    }
+
+    // A PFX needs no KeyPath, and an endpoint can carry a certificate of its own.
+    [Theory]
+    [InlineData("Kestrel:Certificates:Default:Path")]
+    [InlineData("Kestrel:Endpoints:Https:Certificate:KeyPath")]
+    public void RefusesABootDirectoryThatHoldsAnyCertificateFile(string key)
+    {
+        string boot = Path.Combine(Path.GetTempPath(), "ddt-check-boot");
+        IConfiguration configuration = Configuration(
+            ("DDT:Pxe:BootDirectory", boot),
+            (key, Path.Combine(boot, "certs", "ddt.pfx")),
+            ("Kestrel:Certificates:Default:Password", "secret"));
+
+        string problem = Assert.Single(DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe));
+
+        Assert.StartsWith($"DDT:Pxe:BootDirectory: '{boot}' holds the folder of the TLS certificate or key ", problem, StringComparison.Ordinal);
     }
 
     [Fact]

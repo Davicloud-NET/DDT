@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using DDT.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,13 +15,16 @@ public static class PxeHostingExtensions
 {
     public const string BootEndpointName = "Boot";
 
-    public static PxeSetup AddDdtPxe(this WebApplicationBuilder builder)
+    public static PxeSetup AddDdtPxe(this WebApplicationBuilder builder, string storePath)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         PxeOptions options = builder.Configuration
             .GetSection(PxeOptions.SectionName)
             .Get<PxeOptions>(binder => binder.ErrorOnUnknownConfiguration = true) ?? new PxeOptions();
+
+        SettingProblem.ThrowIfAny(PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(options, storePath, builder.Configuration));
+        options.BootDirectory = PxeSetup.BootDirectoryIn(options.BootDirectory, storePath);
 
         PxeSetup setup = PxeSetup.Create(options, NetworkInterfaceMap.FromHost(options.Interfaces));
 

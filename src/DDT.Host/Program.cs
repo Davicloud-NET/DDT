@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();
 IReadOnlySet<DeploymentRole> roles = DeploymentRoles.Parse(options.Roles);
-DdtConfigurationCheck.Validate(builder.Configuration, roles);
+DdtConfigurationCheck.Validate(builder.Configuration, options, roles);
 
 builder.AddServiceDefaults();
 
@@ -63,7 +63,7 @@ builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
-PxeSetup? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe() : null;
+PxeSetup? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe(options.StorePath) : null;
 
 HttpsConfigurationCheck.Validate(builder.Configuration, options, roles);
 

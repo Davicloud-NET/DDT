@@ -11,6 +11,7 @@ using DDT.Core.Configuration;
 using DDT.Protocols.Dhcp;
 using DDT.Protocols.Pxe;
 using DDT.Protocols.Tftp;
+using Microsoft.Extensions.Configuration;
 
 namespace DDT.Pxe;
 
@@ -52,6 +53,60 @@ public sealed class PxeSetup
 
         List<SettingProblem> problems = [];
         _ = Read(options, problems);
+
+        return problems;
+    }
+
+    public static string BootDirectoryIn(string bootDirectory, string storePath) =>
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Combine(storePath, bootDirectory)));
+
+    // Everything below the boot directory is served without a credential, over TFTP and plain HTTP, so it must not
+    // hold the store with its database, the key ring that signs administrator cookies, or a TLS key.
+    public static IReadOnlyList<SettingProblem> FindBootDirectoryProblems(PxeOptions options, string storePath, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrWhiteSpace(storePath);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        // Resolved against the store, an empty value would be the store itself.
+        if (string.IsNullOrWhiteSpace(options.BootDirectory))
+        {
+            return [new("BootDirectory", "Must not be empty. Leave it out for the folder boot in DDT:StorePath.")];
+        }
+
+        string boot = BootDirectoryIn(options.BootDirectory, storePath);
+        string store = Path.TrimEndingDirectorySeparator(Path.GetFullPath(storePath));
+        string keys = Path.Combine(store, "keys");
+        string suggestion = $"Use a directory of its own, such as {Path.Combine(store, "boot")}.";
+
+        if (string.Equals(boot, Path.GetPathRoot(boot), StringComparison.OrdinalIgnoreCase))
+        {
+            return [new("BootDirectory", $"'{boot}' is the root of a filesystem, which would serve every file on it. {suggestion}")];
+        }
+
+        List<SettingProblem> problems = [];
+
+        if (IsSameOrInside(store, boot))
+        {
+            problems.Add(new(
+                "BootDirectory",
+                $"'{boot}' holds DDT:StorePath, {store}, which would serve the database and the key ring. {suggestion}"));
+        }
+        else if (IsSameOrInside(boot, keys))
+        {
+            problems.Add(new("BootDirectory", $"'{boot}' is in the key ring folder {keys}, which would serve its keys. {suggestion}"));
+        }
+
+        foreach (string file in CertificateFilesIn(configuration))
+        {
+            if (Path.GetDirectoryName(Path.GetFullPath(file)) is { } folder
+                && IsSameOrInside(Path.TrimEndingDirectorySeparator(folder), boot))
+            {
+                problems.Add(new(
+                    "BootDirectory",
+                    $"'{boot}' holds the folder of the TLS certificate or key {file}, which would serve the key. {suggestion}"));
+            }
+        }
 
         return problems;
     }
@@ -136,11 +191,6 @@ public sealed class PxeSetup
         if (options.MaxConcurrentTftpTransfers < 1)
         {
             problems.Add(new("MaxConcurrentTftpTransfers", "Must be at least 1."));
-        }
-
-        if (string.IsNullOrWhiteSpace(options.BootDirectory))
-        {
-            problems.Add(new("BootDirectory", "Must be set."));
         }
 
         return (targets, relays.ToImmutable());
@@ -235,6 +285,22 @@ public sealed class PxeSetup
             AdvertiseBootServerDiscovery = target.AdvertiseBootServerDiscovery,
         };
     }
+
+    // Kestrel loads a PFX from Path alone, and a PEM key is kept next to its certificate, so every certificate file
+    // counts: under Kestrel:Certificates, and under each endpoint and its SNI entries.
+    private static IEnumerable<string> CertificateFilesIn(IConfiguration configuration) =>
+        configuration.GetSection("Kestrel").AsEnumerable()
+            .Where(setting => !string.IsNullOrWhiteSpace(setting.Value)
+                && (setting.Key.EndsWith(":Path", StringComparison.OrdinalIgnoreCase)
+                    || setting.Key.EndsWith(":KeyPath", StringComparison.OrdinalIgnoreCase)))
+            .Select(setting => setting.Value!);
+
+    // Without regard to case, which on a case sensitive filesystem refuses slightly more than it has to.
+    private static bool IsSameOrInside(string path, string directory) =>
+        string.Equals(path, directory, StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith(
+            Path.EndsInDirectorySeparator(directory) ? directory : directory + Path.DirectorySeparatorChar,
+            StringComparison.OrdinalIgnoreCase);
 
     private static bool IsHttpUrl(string value) =>
         Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)

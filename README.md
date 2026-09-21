@@ -69,6 +69,7 @@ LICENSE                    GNU General Public License, version 3
 NOTICE                     attribution notice and the additional terms under GPL section 7
 THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
 licenses/                  licence texts of that software, one folder per component
+docs/settings.md           plan for moving admin settings from configuration to a settings page
 src/
   DDT.Core/                domain model, image library, hashing, task sequences. No ASP.NET, no EF
   DDT.Protocols/           DHCP/PXE codec and TFTP state machine. Pure, no sockets

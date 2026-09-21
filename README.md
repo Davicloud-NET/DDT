@@ -350,7 +350,7 @@ boot image nor a change in any browser. Its files sit next to `Kestrel:Certifica
 | File | Contents |
 |---|---|
 | `ddt-root.pem` | DDT's root certificate, valid for 20 years. Boot images pin it, browsers trust it |
-| `ddt-root-key.pem` | The root's private key. On Linux only its owner can read it, as with `ddt-key.pem`; on Windows the folder's permissions apply |
+| `ddt-root-key.pem` | The root's private key. As with `ddt-key.pem`, only the account DDT runs as can read it, and on Windows also SYSTEM and administrators |
 | `ddt.pem`, `ddt-key.pem` | The server certificate and its key, as the two configured paths name them |
 | `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal replaced, to go back to by hand |
 | `ddt-anchor.replaced.pem` | Only after the upgrade described below: the old self-signed certificate |

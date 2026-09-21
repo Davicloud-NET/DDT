@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using DDT.Contracts.Server;
 using DDT.Server.Certificates;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -172,8 +174,26 @@ public sealed class ServerCertificateTests : IDisposable
         {
             Assert.Contains("PRIVATE KEY", File.ReadAllText(key), StringComparison.Ordinal);
 
-            // Windows has no file mode; the store's folder permissions apply there.
-            if (!OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindows())
+            {
+                // Nothing inherited from the folder, and only the account, SYSTEM and administrators in the list.
+                using WindowsIdentity account = WindowsIdentity.GetCurrent();
+                SecurityIdentifier[] allowed =
+                [
+                    account.User!,
+                    new(WellKnownSidType.LocalSystemSid, null),
+                    new(WellKnownSidType.BuiltinAdministratorsSid, null),
+                ];
+                FileSecurity security = new FileInfo(key).GetAccessControl();
+
+                Assert.True(security.AreAccessRulesProtected);
+
+                foreach (FileSystemAccessRule rule in security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)))
+                {
+                    Assert.Contains((SecurityIdentifier)rule.IdentityReference, allowed);
+                }
+            }
+            else
             {
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(key));
             }

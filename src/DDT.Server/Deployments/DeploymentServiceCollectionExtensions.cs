@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Core.Configuration;
 using DDT.Server.Machines;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ public static class DeploymentServiceCollectionExtensions
                 exception);
         }
 
-        DeploymentOptionsValidation.Validate(deployment);
+        SettingProblem.ThrowIfAny(DeploymentOptions.SectionName, DeploymentOptionsValidation.FindProblems(deployment));
 
         ZeroTouchNetworks zeroTouchNetworks = ZeroTouchNetworks.Parse(
             configuration.GetSection(MachineOptions.SectionName).Get<MachineOptions>()?.ZeroTouchNetworks);

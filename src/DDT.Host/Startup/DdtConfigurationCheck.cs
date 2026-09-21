@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Core.Configuration;
 using DDT.Pxe;
 using DDT.Server.Authentication;
 using DDT.Server.Configuration;
@@ -12,17 +13,19 @@ using DDT.Server.Security;
 
 namespace DDT.Host.Startup;
 
-// A key nothing reads binds nothing, so a misspelled DDT:Machines:RequireWebApproval would leave web approval off
-// without a word. Every key under DDT has to be one DDT reads, whichever roles this process runs.
+// Every configuration mistake DDT can recognise stops the server here, all of them in one message, before any
+// section is used. A key nothing reads binds nothing, so a misspelled DDT:Machines:RequireWebApproval would
+// otherwise leave web approval off without a word: every key under DDT has to be one DDT reads, whichever roles
+// this process runs.
 public static class DdtConfigurationCheck
 {
     // Listed rather than bound with ErrorOnUnknownConfiguration, which on DdtOptions would refuse every section.
     private static readonly string[] s_rootKeys =
         ["Roles", "StorePath", "RequireHttps", "Https", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
 
-    public static void Validate(IConfiguration configuration)
+    public static void Validate(IConfiguration configuration, IReadOnlySet<DeploymentRole> roles)
     {
-        IReadOnlyList<string> problems = FindUnknownKeys(configuration);
+        IReadOnlyList<string> problems = FindProblems(configuration, roles);
 
         if (problems.Count > 0)
         {
@@ -31,9 +34,10 @@ public static class DdtConfigurationCheck
         }
     }
 
-    public static IReadOnlyList<string> FindUnknownKeys(IConfiguration configuration)
+    public static IReadOnlyList<string> FindProblems(IConfiguration configuration, IReadOnlySet<DeploymentRole> roles)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(roles);
 
         List<string> problems = [];
 
@@ -47,30 +51,63 @@ public static class DdtConfigurationCheck
             }
         }
 
-        Check(configuration, HttpsOptions.SectionName, problems, section => section.Get<HttpsOptions>(Strict));
-        Check(configuration, DeploymentOptions.SectionName, problems, section => section.Get<DeploymentOptions>(Strict));
-        Check(configuration, MachineOptions.SectionName, problems, section => section.Get<MachineOptions>(Strict));
-        Check(configuration, LdapOptions.SectionName, problems, section => section.Get<LdapOptions>(Strict));
-        Check(configuration, OidcOptions.SectionName, problems, section => section.Get<OidcOptions>(Strict));
-        Check(configuration, DdtForwardedHeadersOptions.SectionName, problems, section => section.Get<DdtForwardedHeadersOptions>(Strict));
-        Check(configuration, PxeOptions.SectionName, problems, section => section.Get<PxeOptions>(Strict));
-        Check(configuration, AgentReleaseOptions.SectionName, problems, section => section.Get<AgentReleaseOptions>(Strict));
+        _ = Read(configuration, HttpsOptions.SectionName, problems, section => section.Get<HttpsOptions>(Strict));
+        _ = Read(configuration, LdapOptions.SectionName, problems, section => section.Get<LdapOptions>(Strict));
+        _ = Read(configuration, OidcOptions.SectionName, problems, section => section.Get<OidcOptions>(Strict));
+        _ = Read(configuration, AgentReleaseOptions.SectionName, problems, section => section.Get<AgentReleaseOptions>(Strict));
+
+        DeploymentOptions? deployment = Read(
+            configuration, DeploymentOptions.SectionName, problems, section => section.Get<DeploymentOptions>(Strict) ?? new());
+        MachineOptions? machines = Read(
+            configuration, MachineOptions.SectionName, problems, section => section.Get<MachineOptions>(Strict) ?? new());
+        DdtForwardedHeadersOptions? forwardedHeaders = Read(
+            configuration, DdtForwardedHeadersOptions.SectionName, problems, section => section.Get<DdtForwardedHeadersOptions>(Strict) ?? new());
+        PxeOptions? pxe = Read(
+            configuration, PxeOptions.SectionName, problems, section => section.Get<PxeOptions>(Strict) ?? new());
+
+        if (deployment is not null)
+        {
+            Add(problems, DeploymentOptions.SectionName, DeploymentOptionsValidation.FindProblems(deployment));
+        }
+
+        if (machines is not null)
+        {
+            Add(problems, MachineOptions.SectionName, ZeroTouchNetworks.FindProblems(machines.ZeroTouchNetworks));
+        }
+
+        if (forwardedHeaders is not null)
+        {
+            Add(problems, DdtForwardedHeadersOptions.SectionName, DdtForwardedHeadersExtensions.FindProblems(forwardedHeaders));
+        }
+
+        // Its values matter only to a process that serves netboot. Its keys are checked in every process.
+        if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
+        {
+            Add(problems, PxeOptions.SectionName, PxeSetup.FindProblems(pxe));
+        }
 
         return problems;
     }
 
     private static void Strict(BinderOptions binder) => binder.ErrorOnUnknownConfiguration = true;
 
-    // Bound with the concrete type at each call, because the binding generator cannot bind a type parameter.
-    private static void Check(IConfiguration configuration, string sectionName, List<string> problems, Action<IConfigurationSection> bind)
+    // Bound with the concrete type at each call, because the binding generator cannot bind a type parameter. A
+    // section that cannot be read has no values to check.
+    private static T? Read<T>(IConfiguration configuration, string sectionName, List<string> problems, Func<IConfigurationSection, T?> bind)
+        where T : class
     {
         try
         {
-            bind(configuration.GetSection(sectionName));
+            return bind(configuration.GetSection(sectionName));
         }
         catch (InvalidOperationException exception)
         {
             problems.Add($"{sectionName} could not be read. Correct or remove the setting this names: {exception.Message}");
+
+            return null;
         }
     }
+
+    private static void Add(List<string> problems, string sectionName, IReadOnlyList<SettingProblem> found) =>
+        problems.AddRange(found.Select(problem => problem.Describe(sectionName)));
 }

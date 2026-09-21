@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Core.Configuration;
 using DDT.Server.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -46,9 +47,14 @@ public sealed class ForwardedHeadersConfigurationTests
     [InlineData("", "198.51.100.0/33")]
     public void MistakesAreRefused(string proxies, string networks)
     {
-        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => Trust(proxies, networks));
+        SettingProblem problem = Assert.Single(
+            DdtForwardedHeadersExtensions.FindProblems(new DdtForwardedHeadersOptions { KnownProxies = proxies, KnownNetworks = networks }));
 
-        Assert.Contains($"'{proxies}{networks}'", error.Message, StringComparison.Ordinal);
+        Assert.Equal(proxies.Length > 0 ? "KnownProxies" : "KnownNetworks", problem.Field);
+        Assert.StartsWith($"'{proxies}{networks}'", problem.Message, StringComparison.Ordinal);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => Trust(proxies, networks));
+        Assert.Contains($"DDT:ForwardedHeaders:{problem.Field}: '{proxies}{networks}'", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers;
+using DDT.Core.Configuration;
 using DDT.Core.Unattend;
 
 namespace DDT.Server.Deployments;
@@ -15,36 +16,26 @@ public static class DeploymentOptionsValidation
 
     private static readonly SearchValues<char> s_forbiddenInAccountName = SearchValues.Create("\"/\\[]:;|=,+*?<>");
 
-    public static void Validate(DeploymentOptions options)
-    {
-        IReadOnlyList<string> problems = FindProblems(options);
-
-        if (problems.Count > 0)
-        {
-            throw new InvalidOperationException(
-                $"{DeploymentOptions.SectionName} is not valid:{Environment.NewLine}{string.Join(Environment.NewLine, problems)}");
-        }
-    }
-
-    public static IReadOnlyList<string> FindProblems(DeploymentOptions options)
+    public static IReadOnlyList<SettingProblem> FindProblems(DeploymentOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        const string section = DeploymentOptions.SectionName;
-        List<string> problems = [];
+        List<SettingProblem> problems = [];
 
         if (!string.IsNullOrWhiteSpace(options.TimeZone) && !WindowsTimeZones.IsValidId(options.TimeZone))
         {
-            problems.Add(
-                $"{section}:TimeZone '{options.TimeZone}' is not a Windows time zone id. Use a name that tzutil /l lists, " +
-                "such as W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale.");
+            problems.Add(new(
+                "TimeZone",
+                $"'{options.TimeZone}' is not a Windows time zone id. Use a name that tzutil /l lists, such as " +
+                "W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale."));
         }
 
         if (!string.IsNullOrEmpty(options.LocalAdministrator.Password) && !IsAccountName(options.LocalAdministrator.Name))
         {
-            problems.Add(
-                $"{section}:LocalAdministrator:Name '{options.LocalAdministrator.Name}' is not a valid account name. Use 1 to " +
-                $"{MaxAdministratorNameLength} characters and none of \" / \\ [ ] : ; | = , + * ? < >.");
+            problems.Add(new(
+                "LocalAdministrator:Name",
+                $"'{options.LocalAdministrator.Name}' is not a valid account name. Use 1 to {MaxAdministratorNameLength} " +
+                "characters and none of \" / \\ [ ] : ; | = , + * ? < >."));
         }
 
         if (string.IsNullOrWhiteSpace(options.Domain.Name))
@@ -56,30 +47,32 @@ public static class DeploymentOptionsValidation
 
         if (string.IsNullOrWhiteSpace(domain.UserName))
         {
-            problems.Add(
-                $"{section}:Domain:UserName must be set when {section}:Domain:Name is. Name the account that joins " +
-                "the machines, as DOMAIN\\user or user@domain.example.");
+            problems.Add(new(
+                "Domain:UserName",
+                "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or " +
+                "user@domain.example."));
         }
         else if (!IsQualifiedUserName(domain.UserName))
         {
-            problems.Add($"{section}:Domain:UserName '{domain.UserName}' must be written as DOMAIN\\user or user@domain.example.");
+            problems.Add(new("Domain:UserName", $"'{domain.UserName}' must be written as DOMAIN\\user or user@domain.example."));
         }
 
         if (string.IsNullOrEmpty(domain.Password))
         {
-            problems.Add($"{section}:Domain:Password must be set when {section}:Domain:Name is.");
+            problems.Add(new("Domain:Password", "Required when Domain:Name is set."));
         }
 
         if (string.IsNullOrEmpty(options.LocalAdministrator.Password))
         {
-            problems.Add(
-                $"{section}:LocalAdministrator:Password must be set when {section}:Domain:Name is. Without a local " +
-                "administrator, a domain machine stops at the account page of its first start.");
+            problems.Add(new(
+                "LocalAdministrator:Password",
+                "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account " +
+                "page of its first start."));
         }
 
         if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitProblem(domain.OrganizationalUnit) is { } problem)
         {
-            problems.Add(problem);
+            problems.Add(new("Domain:OrganizationalUnit", problem));
         }
 
         return problems;
@@ -107,7 +100,7 @@ public static class DeploymentOptionsValidation
 
         if (value.StartsWith("LDAP://", StringComparison.OrdinalIgnoreCase))
         {
-            return $"{DeploymentOptions.SectionName}:Domain:OrganizationalUnit must be a distinguished name without the LDAP:// prefix, such as {example}.";
+            return $"Must be a distinguished name without the LDAP:// prefix, such as {example}.";
         }
 
         bool distinguishedName =
@@ -116,6 +109,6 @@ public static class DeploymentOptionsValidation
 
         return distinguishedName
             ? null
-            : $"{DeploymentOptions.SectionName}:Domain:OrganizationalUnit '{value}' is not a distinguished name. Write it like {example}.";
+            : $"'{value}' is not a distinguished name. Write it like {example}.";
     }
 }

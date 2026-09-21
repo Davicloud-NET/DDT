@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Core.Configuration;
+using DDT.Server.Machines;
 
 namespace DDT.Server.Deployments;
 
@@ -17,33 +19,25 @@ public sealed class ZeroTouchNetworks
         _networks = networks;
     }
 
+    public static IReadOnlyList<SettingProblem> FindProblems(string? value) =>
+    [
+        .. Entries(value)
+            .Where(entry => Network(entry) is null)
+            .Select(entry => new SettingProblem(
+                "ZeroTouchNetworks",
+                $"'{entry}' is not a network. Write each one as an address and a prefix length with no address bits set " +
+                "after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine.")),
+    ];
+
     public static ZeroTouchNetworks Parse(string? value)
     {
-        List<IPNetwork> networks = [];
-        List<string> problems = [];
+        SettingProblem.ThrowIfAny(MachineOptions.SectionName, FindProblems(value));
 
-        foreach (string entry in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            if (Network(entry) is { } network)
-            {
-                networks.Add(network);
-            }
-            else
-            {
-                problems.Add(
-                    $"DDT:Machines:ZeroTouchNetworks contains '{entry}', which is not a network. Write each one as an address " +
-                    "and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 " +
-                    "or 10.20.1.5/32 for one machine.");
-            }
-        }
-
-        if (problems.Count > 0)
-        {
-            throw new InvalidOperationException(string.Join(Environment.NewLine, problems));
-        }
-
-        return new ZeroTouchNetworks([.. networks]);
+        return new ZeroTouchNetworks([.. Entries(value).Select(entry => Network(entry)!.Value)]);
     }
+
+    private static string[] Entries(string? value) =>
+        (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     // IPNetwork.Parse clears address bits after the prefix. Such an entry is refused instead: 10.20.30.40/16 more
     // likely lacks a digit in its prefix than means all of 10.20.0.0/16.

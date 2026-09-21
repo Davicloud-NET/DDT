@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Core.Configuration;
 using DDT.Protocols.Dhcp;
 using DDT.Protocols.Pxe;
 using Xunit;
@@ -37,24 +38,29 @@ public sealed class PxeSetupTests
     }
 
     [Theory]
-    [InlineData("X64Uefl", "Tftp", "x64/bootmgfw.efi", "is not a client architecture")]
-    [InlineData("7", "Tftp", "x64/bootmgfw.efi", "is not a client architecture")]
-    [InlineData("X64Uefi", null, "x64/bootmgfw.efi", "Method must be Tftp or Http")]
-    [InlineData("X64Uefi", "Http", "http://192.0.2.10/boot/x64/bootmgfw.efi", "Method must be Tftp for X64Uefi")]
-    [InlineData("X64UefiHttp", "Tftp", "x64/bootmgfw.efi", "Method must be Http for X64UefiHttp")]
-    [InlineData("X64UefiHttp", "Http", "x64/bootmgfw.efi", "absolute http or https URL")]
-    [InlineData("X64Uefi", "Tftp", null, "BootFile must be set")]
-    public void RefusesABootTargetByName(string key, string? method, string? bootFile, string expected)
+    [InlineData("X64Uefl", "Tftp", "x64/bootmgfw.efi", "BootTargets:X64Uefl", "is not a client architecture")]
+    [InlineData("7", "Tftp", "x64/bootmgfw.efi", "BootTargets:7", "is not a client architecture")]
+    [InlineData("X64Uefi", null, "x64/bootmgfw.efi", "BootTargets:X64Uefi:Method", "Must be Tftp or Http")]
+    [InlineData("X64Uefi", "Http", "http://192.0.2.10/boot/x64/bootmgfw.efi", "BootTargets:X64Uefi:Method", "Must be Tftp for X64Uefi")]
+    [InlineData("X64UefiHttp", "Tftp", "x64/bootmgfw.efi", "BootTargets:X64UefiHttp:Method", "Must be Http for X64UefiHttp")]
+    [InlineData("X64UefiHttp", "Http", "x64/bootmgfw.efi", "BootTargets:X64UefiHttp:BootFile", "absolute http or https URL")]
+    [InlineData("X64Uefi", "Tftp", null, "BootTargets:X64Uefi:BootFile", "Must be set")]
+    public void RefusesABootTargetByName(string key, string? method, string? bootFile, string field, string expected)
     {
         PxeOptions options = new()
         {
             BootTargets = { [key] = new BootTargetOptions { Method = method, BootFile = bootFile } },
         };
 
+        SettingProblem problem = Assert.Single(PxeSetup.FindProblems(options));
+
+        Assert.Equal(field, problem.Field);
+        Assert.Contains(expected, problem.Message, StringComparison.Ordinal);
+
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
             () => PxeSetup.Create(options, Loopback.Map()));
 
-        Assert.Contains(expected, exception.Message, StringComparison.Ordinal);
+        Assert.Contains($"DDT:Pxe:{field}: ", exception.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -68,10 +74,7 @@ public sealed class PxeSetupTests
     {
         PxeOptions options = new() { AuthorisedRelayAgents = relay };
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => PxeSetup.Create(options, Loopback.Map()));
-
-        Assert.Contains("AuthorisedRelayAgents", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("AuthorisedRelayAgents", Assert.Single(PxeSetup.FindProblems(options)).Field);
     }
 
     [Theory]
@@ -81,7 +84,7 @@ public sealed class PxeSetupTests
     {
         PxeOptions options = new() { TftpMaxWindowSize = windowSize };
 
-        Assert.Throws<InvalidOperationException>(() => PxeSetup.Create(options, Loopback.Map()));
+        Assert.Equal("TftpMaxWindowSize", Assert.Single(PxeSetup.FindProblems(options)).Field);
     }
 
     [Fact]
@@ -93,10 +96,10 @@ public sealed class PxeSetupTests
             BootTargets = { ["X64Uefi"] = new BootTargetOptions { Method = "Tftp", BootFile = "x64/bootmgfw.efi" } },
         };
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => PxeSetup.Create(options, Loopback.Map()));
+        SettingProblem problem = Assert.Single(PxeSetup.FindProblems(options));
 
-        Assert.Contains("BootTargets:X64Uefi uses Tftp while DDT:Pxe:EnableTftp is false", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("BootTargets:X64Uefi:ServerAddress", problem.Field);
+        Assert.StartsWith("Required while EnableTftp is false", problem.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -126,11 +129,8 @@ public sealed class PxeSetupTests
             BootTargets = { ["Nope"] = new BootTargetOptions() },
         };
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => PxeSetup.Create(options, Loopback.Map()));
-
-        Assert.Contains("HttpBootPort", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("AuthorisedRelayAgents", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("BootTargets:Nope", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            ["BootTargets:Nope", "AuthorisedRelayAgents", "HttpBootPort"],
+            PxeSetup.FindProblems(options).Select(problem => problem.Field));
     }
 }

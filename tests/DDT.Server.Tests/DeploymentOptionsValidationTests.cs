@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Core.Configuration;
 using DDT.Server.Deployments;
 using Xunit;
 
@@ -44,21 +45,19 @@ public sealed class DeploymentOptionsValidationTests
     [InlineData("Mars Standard Time", false)]
     public void AcceptsOnlyWindowsTimeZoneIds(string timeZone, bool valid)
     {
-        IReadOnlyList<string> problems = DeploymentOptionsValidation.FindProblems(new DeploymentOptions { TimeZone = timeZone });
+        IReadOnlyList<SettingProblem> problems = DeploymentOptionsValidation.FindProblems(new DeploymentOptions { TimeZone = timeZone });
 
         Assert.Equal(valid, problems.Count == 0);
-        Assert.All(problems, problem => Assert.Contains("DDT:Deployment:TimeZone", problem, StringComparison.Ordinal));
+        Assert.All(problems, problem => Assert.Equal("TimeZone", problem.Field));
     }
 
     [Fact]
     public void ADomainNeedsItsAccountAndALocalAdministrator()
     {
-        IReadOnlyList<string> problems = DeploymentOptionsValidation.FindProblems(Domain(userName: null, password: null, administratorPassword: null));
+        IReadOnlyList<SettingProblem> problems =
+            DeploymentOptionsValidation.FindProblems(Domain(userName: null, password: null, administratorPassword: null));
 
-        Assert.Equal(3, problems.Count);
-        Assert.Contains(problems, p => p.StartsWith("DDT:Deployment:Domain:UserName", StringComparison.Ordinal));
-        Assert.Contains(problems, p => p.StartsWith("DDT:Deployment:Domain:Password", StringComparison.Ordinal));
-        Assert.Contains(problems, p => p.StartsWith("DDT:Deployment:LocalAdministrator:Password", StringComparison.Ordinal));
+        Assert.Equal(["Domain:UserName", "Domain:Password", "LocalAdministrator:Password"], problems.Select(problem => problem.Field));
     }
 
     [Theory]
@@ -102,7 +101,7 @@ public sealed class DeploymentOptionsValidationTests
     }
 
     [Fact]
-    public void ListsEveryProblemInOneException()
+    public void ListsEveryProblemByItsField()
     {
         DeploymentOptions options = new()
         {
@@ -110,14 +109,9 @@ public sealed class DeploymentOptionsValidationTests
             Domain = new DomainOptions { Name = "corp.example", OrganizationalUnit = "LDAP://OU=x,DC=corp" },
         };
 
-        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => DeploymentOptionsValidation.Validate(options));
-
-        Assert.StartsWith("DDT:Deployment is not valid:", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:TimeZone", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:Domain:UserName", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:Domain:Password", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:LocalAdministrator:Password", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:Domain:OrganizationalUnit", refusal.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            ["TimeZone", "Domain:UserName", "Domain:Password", "LocalAdministrator:Password", "Domain:OrganizationalUnit"],
+            DeploymentOptionsValidation.FindProblems(options).Select(problem => problem.Field));
     }
 
     [Fact]

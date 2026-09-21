@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using DDT.Core.Configuration;
 using DDT.Protocols.Dhcp;
 using DDT.Protocols.Pxe;
 using DDT.Protocols.Tftp;
@@ -45,17 +46,49 @@ public sealed class PxeSetup
 
     public TftpLimits TftpLimits { get; }
 
+    public static IReadOnlyList<SettingProblem> FindProblems(PxeOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        List<SettingProblem> problems = [];
+        _ = Read(options, problems);
+
+        return problems;
+    }
+
     public static PxeSetup Create(PxeOptions options, NetworkInterfaceMap interfaces)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(interfaces);
 
-        List<string> failures = [];
+        List<SettingProblem> problems = [];
+        (Dictionary<ClientArchitecture, BootTarget> targets, ImmutableArray<IPAddress> relays) = Read(options, problems);
+        SettingProblem.ThrowIfAny(PxeOptions.SectionName, problems);
+
+        ProxyDhcpConfiguration proxyDhcp = new()
+        {
+            BootTargets = targets.ToFrozenDictionary(),
+            LocalAddresses = [.. interfaces.Served.SelectMany(served => served.Addresses)],
+            AuthorisedRelayAgents = relays,
+        };
+
+        return new PxeSetup(
+            options,
+            interfaces,
+            new BootFileResolver(options.BootDirectory),
+            proxyDhcp,
+            TftpLimits.Default with { MaxWindowSize = options.TftpMaxWindowSize });
+    }
+
+    private static (Dictionary<ClientArchitecture, BootTarget> Targets, ImmutableArray<IPAddress> Relays) Read(
+        PxeOptions options,
+        List<SettingProblem> problems)
+    {
         Dictionary<ClientArchitecture, BootTarget> targets = [];
 
         foreach ((string key, BootTargetOptions target) in options.BootTargets)
         {
-            if (TryReadTarget(key, target, failures) is { } parsed)
+            if (TryReadTarget(key, target, problems) is { } parsed)
             {
                 targets[parsed.Architecture] = parsed;
             }
@@ -71,7 +104,7 @@ public sealed class PxeSetup
             }
             else
             {
-                failures.Add($"DDT:Pxe:AuthorisedRelayAgents contains '{relay}', which is not an IPv4 address.");
+                problems.Add(new("AuthorisedRelayAgents", $"'{relay}' is not an IPv4 address."));
             }
         }
 
@@ -83,55 +116,39 @@ public sealed class PxeSetup
             {
                 if (target.Method == BootMethod.Tftp && target.ServerAddress is null)
                 {
-                    failures.Add($"DDT:Pxe:BootTargets:{architecture} uses Tftp while DDT:Pxe:EnableTftp is false. Set its ServerAddress to the TFTP server that serves it.");
+                    problems.Add(new(
+                        $"BootTargets:{architecture}:ServerAddress",
+                        "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it."));
                 }
             }
         }
 
         if (options.HttpBootPort is < 1 or > 65535)
         {
-            failures.Add($"DDT:Pxe:HttpBootPort {options.HttpBootPort} is not a port number.");
+            problems.Add(new("HttpBootPort", $"{options.HttpBootPort} is not a port number."));
         }
 
         if (options.TftpMaxWindowSize is < 1 or > MaxWindowSize)
         {
-            failures.Add($"DDT:Pxe:TftpMaxWindowSize must be between 1 and {MaxWindowSize}.");
+            problems.Add(new("TftpMaxWindowSize", $"Must be between 1 and {MaxWindowSize}."));
         }
 
         if (options.MaxConcurrentTftpTransfers < 1)
         {
-            failures.Add("DDT:Pxe:MaxConcurrentTftpTransfers must be at least 1.");
+            problems.Add(new("MaxConcurrentTftpTransfers", "Must be at least 1."));
         }
 
         if (string.IsNullOrWhiteSpace(options.BootDirectory))
         {
-            failures.Add("DDT:Pxe:BootDirectory must be set.");
+            problems.Add(new("BootDirectory", "Must be set."));
         }
 
-        if (failures.Count > 0)
-        {
-            throw new InvalidOperationException(
-                "DDT:Pxe is not valid:" + Environment.NewLine + string.Join(Environment.NewLine, failures));
-        }
-
-        ProxyDhcpConfiguration proxyDhcp = new()
-        {
-            BootTargets = targets.ToFrozenDictionary(),
-            LocalAddresses = [.. interfaces.Served.SelectMany(served => served.Addresses)],
-            AuthorisedRelayAgents = relays.ToImmutable(),
-        };
-
-        return new PxeSetup(
-            options,
-            interfaces,
-            new BootFileResolver(options.BootDirectory),
-            proxyDhcp,
-            TftpLimits.Default with { MaxWindowSize = options.TftpMaxWindowSize });
+        return (targets, relays.ToImmutable());
     }
 
-    private static BootTarget? TryReadTarget(string key, BootTargetOptions target, List<string> failures)
+    private static BootTarget? TryReadTarget(string key, BootTargetOptions target, List<SettingProblem> problems)
     {
-        string prefix = "DDT:Pxe:BootTargets:" + key;
+        string field = "BootTargets:" + key;
 
         // Matched against the member names rather than Enum.TryParse, which also accepts "7".
         string? name = Enum.GetNames<ClientArchitecture>()
@@ -139,13 +156,15 @@ public sealed class PxeSetup
 
         if (name is null)
         {
-            failures.Add($"{prefix} is not a client architecture. Use one of: {string.Join(", ", Enum.GetNames<ClientArchitecture>())}.");
+            problems.Add(new(
+                field,
+                $"'{key}' is not a client architecture. Use one of: {string.Join(", ", Enum.GetNames<ClientArchitecture>())}."));
 
             return null;
         }
 
         ClientArchitecture architecture = Enum.Parse<ClientArchitecture>(name);
-        int failuresBefore = failures.Count;
+        int problemsBefore = problems.Count;
 
         BootMethod? method = target.Method?.Trim().ToUpperInvariant() switch
         {
@@ -156,7 +175,7 @@ public sealed class PxeSetup
 
         if (method is null)
         {
-            failures.Add($"{prefix}:Method must be Tftp or Http.");
+            problems.Add(new($"{field}:Method", "Must be Tftp or Http."));
         }
 
         // The architecture already says which one the firmware speaks: a PXE client never accepts a
@@ -165,22 +184,22 @@ public sealed class PxeSetup
 
         if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
         {
-            failures.Add($"{prefix}:Method must be {(httpArchitecture ? "Http" : "Tftp")} for {name} clients.");
+            problems.Add(new($"{field}:Method", $"Must be {(httpArchitecture ? "Http" : "Tftp")} for {name} clients."));
         }
 
         string bootFile = target.BootFile?.Trim() ?? string.Empty;
 
         if (bootFile.Length == 0)
         {
-            failures.Add($"{prefix}:BootFile must be set.");
+            problems.Add(new($"{field}:BootFile", "Must be set."));
         }
         else if (bootFile.Length > MaxBootFileLength || !Ascii.IsValid(bootFile))
         {
-            failures.Add($"{prefix}:BootFile must be ASCII and at most {MaxBootFileLength} characters.");
+            problems.Add(new($"{field}:BootFile", $"Must be ASCII and at most {MaxBootFileLength} characters."));
         }
         else if (method == BootMethod.Http && !IsHttpUrl(bootFile))
         {
-            failures.Add($"{prefix}:BootFile must be an absolute http or https URL.");
+            problems.Add(new($"{field}:BootFile", "Must be an absolute http or https URL."));
         }
 
         IPAddress? serverAddress = null;
@@ -191,17 +210,17 @@ public sealed class PxeSetup
 
             if (serverAddress is null)
             {
-                failures.Add($"{prefix}:ServerAddress '{target.ServerAddress}' is not an IPv4 address.");
+                problems.Add(new($"{field}:ServerAddress", $"'{target.ServerAddress}' is not an IPv4 address."));
             }
         }
 
         if (target.ServerHostName is { } hostName
             && (hostName.Length > MaxServerHostNameLength || !Ascii.IsValid(hostName)))
         {
-            failures.Add($"{prefix}:ServerHostName must be ASCII and at most {MaxServerHostNameLength} characters.");
+            problems.Add(new($"{field}:ServerHostName", $"Must be ASCII and at most {MaxServerHostNameLength} characters."));
         }
 
-        if (failures.Count > failuresBefore || method is null)
+        if (problems.Count > problemsBefore || method is null)
         {
             return null;
         }

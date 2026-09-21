@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Core.Configuration;
 using DDT.Server.Deployments;
 using Xunit;
 
@@ -37,15 +38,17 @@ public sealed class ZeroTouchNetworksTests
     [Fact]
     public void RefusesEveryEntryThatIsNotANetwork()
     {
-        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(
-            () => ZeroTouchNetworks.Parse("10.20.0.0/16, 10.30.0.1/16, lab, 10.40.0.0/33, 10.50.0.5, fd00:30::1/64"));
+        const string networks = "10.20.0.0/16, 10.30.0.1/16, lab, 10.40.0.0/33, 10.50.0.5, fd00:30::1/64";
 
-        Assert.DoesNotContain("'10.20.0.0/16'", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("'10.30.0.1/16'", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("'lab'", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("'10.40.0.0/33'", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("'10.50.0.5'", refusal.Message, StringComparison.Ordinal);
-        Assert.Contains("'fd00:30::1/64'", refusal.Message, StringComparison.Ordinal);
+        IReadOnlyList<SettingProblem> problems = ZeroTouchNetworks.FindProblems(networks);
+
+        Assert.All(problems, problem => Assert.Equal("ZeroTouchNetworks", problem.Field));
+        Assert.Equal(
+            ["'10.30.0.1/16'", "'lab'", "'10.40.0.0/33'", "'10.50.0.5'", "'fd00:30::1/64'"],
+            problems.Select(problem => problem.Message[..(problem.Message.IndexOf('\'', 1) + 1)]));
+
+        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => ZeroTouchNetworks.Parse(networks));
+        Assert.Contains("DDT:Machines:ZeroTouchNetworks: 'lab'", refusal.Message, StringComparison.Ordinal);
     }
 
     [Fact]

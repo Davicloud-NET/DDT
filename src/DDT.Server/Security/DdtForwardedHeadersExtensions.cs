@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using DDT.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,47 +53,41 @@ public static class DdtForwardedHeadersExtensions
             : app.UseWhen(context => context.Connection.RemoteIpAddress is not null, proxied => proxied.UseForwardedHeaders(options));
     }
 
+    public static IReadOnlyList<SettingProblem> FindProblems(DdtForwardedHeadersOptions configured)
+    {
+        ArgumentNullException.ThrowIfNull(configured);
+
+        return
+        [
+            .. Split(configured.KnownProxies)
+                .Where(proxy => TryParseAddress(proxy) is null)
+                .Select(proxy => new SettingProblem("KnownProxies", $"'{proxy}' is not an IP address.")),
+            .. Split(configured.KnownNetworks)
+                .Where(network => TryParseNetwork(network) is null)
+                .Select(network => new SettingProblem(
+                    "KnownNetworks",
+                    $"'{network}' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length.")),
+        ];
+    }
+
     // Replaces the framework defaults rather than adding to them, because those trust loopback: a proxy on the same
     // host is listed like any other.
     public static void TrustOnly(ForwardedHeadersOptions options, DdtForwardedHeadersOptions configured)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(configured);
+        SettingProblem.ThrowIfAny(DdtForwardedHeadersOptions.SectionName, FindProblems(configured));
 
-        List<string> failures = [];
         options.KnownProxies.Clear();
         options.KnownIPNetworks.Clear();
 
         foreach (string proxy in Split(configured.KnownProxies))
         {
-            if (TryParseAddress(proxy) is { } address)
-            {
-                options.KnownProxies.Add(address);
-            }
-            else
-            {
-                failures.Add($"DDT:ForwardedHeaders:KnownProxies contains '{proxy}', which is not an IP address.");
-            }
+            options.KnownProxies.Add(TryParseAddress(proxy)!);
         }
 
         foreach (string network in Split(configured.KnownNetworks))
         {
-            if (TryParseNetwork(network) is { } parsed)
-            {
-                options.KnownIPNetworks.Add(parsed);
-            }
-            else
-            {
-                failures.Add(
-                    $"DDT:ForwardedHeaders:KnownNetworks contains '{network}', which is not a network such as 10.20.0.0/24 " +
-                    "with no address bits set past the prefix length.");
-            }
-        }
-
-        if (failures.Count > 0)
-        {
-            throw new InvalidOperationException(
-                "DDT:ForwardedHeaders is not valid:" + Environment.NewLine + string.Join(Environment.NewLine, failures));
+            options.KnownIPNetworks.Add(TryParseNetwork(network)!.Value);
         }
 
         bool trustsAny = options.KnownProxies.Count > 0 || options.KnownIPNetworks.Count > 0;

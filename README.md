@@ -194,7 +194,11 @@ unwanted roles running. Unknown role names fail at startup rather than being ign
 The same goes for keys: DDT refuses to start when a key under `DDT` is not one it reads, in any
 section and whichever roles run, and names it, so a misspelled setting cannot silently keep its
 default. The names of map entries, the groups in `DDT:Ldap:GroupRoleMap` and the architectures in
-`DDT:Pxe:BootTargets`, are free.
+`DDT:Pxe:BootTargets`, are free. Values it can check, it checks before it starts anything, and it
+lists the problems with keys and values in one message, each after its full key, such as
+`DDT:Deployment:TimeZone: 'Europe/Berlin' is not a Windows time zone id`. The `DDT:Pxe` values are
+checked only where the `pxe` role runs. Two checks stop it on their own, outside that message: an
+unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checked later.
 
 What a deployed Windows is set up with comes from `DDT:Deployment`, described under
 [Deploying a machine](#deploying-a-machine).

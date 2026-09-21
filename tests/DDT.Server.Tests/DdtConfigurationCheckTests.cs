@@ -3,13 +3,16 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Host.Startup;
+using DDT.Server.Configuration;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace DDT.Server.Tests;
 
-public sealed class ConfigurationKeyCheckTests
+public sealed class DdtConfigurationCheckTests
 {
+    private static readonly IReadOnlySet<DeploymentRole> s_webAndPxe = new HashSet<DeploymentRole> { DeploymentRole.Web, DeploymentRole.Pxe };
+
     // One per section. Read as written, each would leave its setting at the default without a word.
     [Theory]
     [InlineData("DDT:RequireHttp", "false")]
@@ -43,7 +46,7 @@ public sealed class ConfigurationKeyCheckTests
             ("DDT:Pxe:BootTargets:X64Uefi:Method", "Tftp"),
             ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"));
 
-        Assert.Empty(DdtConfigurationCheck.FindUnknownKeys(configuration));
+        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe));
     }
 
     [Fact]
@@ -54,12 +57,52 @@ public sealed class ConfigurationKeyCheckTests
             ("DDT:Machines:MaxWaitng", "10"),
             ("DDT:Deployment:LocalAdministrator:Nmae", "Admin"));
 
-        IReadOnlyList<string> problems = DdtConfigurationCheck.FindUnknownKeys(configuration);
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe);
 
         Assert.Equal(3, problems.Count);
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Rolse is not a setting DDT reads.", StringComparison.Ordinal));
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Machines could not be read.", StringComparison.Ordinal));
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Deployment could not be read.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReportsEveryInvalidValueAtOnceByItsKey()
+    {
+        IConfiguration configuration = Configuration(
+            ("DDT:Deployment:TimeZone", "Europe/Berlin"),
+            ("DDT:Machines:ZeroTouchNetworks", "10.30.0.1/16"),
+            ("DDT:ForwardedHeaders:KnownProxies", "proxy.corp.example"),
+            ("DDT:Pxe:TftpMaxWindowSize", "65"));
+
+        IReadOnlyList<string> problems = DdtConfigurationCheck.FindProblems(configuration, s_webAndPxe);
+
+        Assert.Equal(4, problems.Count);
+        Assert.StartsWith("DDT:Deployment:TimeZone: 'Europe/Berlin'", problems[0], StringComparison.Ordinal);
+        Assert.StartsWith("DDT:Machines:ZeroTouchNetworks: '10.30.0.1/16'", problems[1], StringComparison.Ordinal);
+        Assert.StartsWith("DDT:ForwardedHeaders:KnownProxies: 'proxy.corp.example'", problems[2], StringComparison.Ordinal);
+        Assert.StartsWith("DDT:Pxe:TftpMaxWindowSize: ", problems[3], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ChecksNetbootValuesOnlyWhereThePxeRoleRuns()
+    {
+        IConfiguration configuration = Configuration(("DDT:Pxe:TftpMaxWindowSize", "65"));
+
+        Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, DeploymentRoles.Default));
+    }
+
+    [Fact]
+    public void TheServerNamesEveryProblemWhenItRefusesToStart()
+    {
+        using SettingsApplication application = new(
+            ("DDT:Deployment:TimeZone", "Europe/Berlin"),
+            ("DDT:ForwardedHeaders:KnownNetworks", "198.51.100.7/24"));
+
+        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => application.CreateClient());
+
+        Assert.StartsWith("The configuration is not valid:", refusal.Message, StringComparison.Ordinal);
+        Assert.Contains("DDT:Deployment:TimeZone: ", refusal.Message, StringComparison.Ordinal);
+        Assert.Contains("DDT:ForwardedHeaders:KnownNetworks: '198.51.100.7/24'", refusal.Message, StringComparison.Ordinal);
     }
 
     private static IConfiguration Configuration(params (string Key, string Value)[] settings) =>

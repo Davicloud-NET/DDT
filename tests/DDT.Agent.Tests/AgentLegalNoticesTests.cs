@@ -3,7 +3,9 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
+using DDT.Agent.Deployment;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -37,6 +39,18 @@ public sealed class AgentLegalNoticesTests
 
         Assert.Equal(AgentLegalNotices.AttributionNotice, AgentLegalNotices.ReadText("NOTICE").Split('\n')[0]);
         Assert.Contains($"- {AgentLegalNotices.WimlibCopyright}, https://wimlib.net.", notices, StringComparison.Ordinal);
+    }
+
+    // The notices give the source of the libwim the agent carries by the DLL's hash. A new ManagedWimLib brings a
+    // new DLL, and with it a new source to name.
+    [Fact]
+    public void NamesTheSourceOfTheLibwimItCarries()
+    {
+        using Stream library = typeof(WimLibraryFile).Assembly.GetManifestResourceStream(WimLibraryFile.FileName)
+            ?? throw new InvalidOperationException($"The agent carries no {WimLibraryFile.FileName}.");
+        string sha256 = Convert.ToHexStringLower(SHA256.HashData(library));
+
+        Assert.Contains($"`{sha256}`", AgentLegalNotices.ReadText("THIRD-PARTY-NOTICES.md"), StringComparison.Ordinal);
     }
 
     [Fact]

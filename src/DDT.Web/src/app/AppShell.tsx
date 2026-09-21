@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 
 import { currentUserQuery, logout } from "@/auth/auth";
+import { LiveContext } from "@/live/LiveContext";
 import { useLiveUpdates } from "@/live/useLiveUpdates";
 import { cx } from "@/lib/cx";
 
@@ -22,7 +23,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const user = queryClient.getQueryData(currentUserQuery.queryKey) ?? null;
 
-  useLiveUpdates();
+  const live = useLiveUpdates();
 
   async function signOut() {
     await logout(queryClient);
@@ -60,7 +61,9 @@ export function AppShell() {
         </div>
       </aside>
       <main className={styles.main}>
-        <Outlet />
+        <LiveContext value={live}>
+          <Outlet />
+        </LiveContext>
       </main>
     </div>
   );

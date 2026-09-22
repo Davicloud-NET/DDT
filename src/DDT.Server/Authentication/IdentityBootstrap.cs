@@ -33,9 +33,19 @@ public sealed partial class IdentityBootstrap(
 
         foreach (string role in DdtRoleNames.All)
         {
-            if (!await roles.RoleExistsAsync(role).ConfigureAwait(false))
+            if (await roles.RoleExistsAsync(role).ConfigureAwait(false))
             {
-                await roles.CreateAsync(new DdtRole(role)).ConfigureAwait(false);
+                continue;
+            }
+
+            IdentityResult added = await roles.CreateAsync(new DdtRole(role)).ConfigureAwait(false);
+
+            if (!added.Succeeded)
+            {
+                // Every start creates the roles that are missing, so the next one tries again. Until then no first
+                // administrator is created: it might lack its role.
+                LogRoleFailed(role, string.Join("; ", added.Errors.Select(error => error.Description)));
+                return;
             }
         }
 
@@ -102,4 +112,7 @@ public sealed partial class IdentityBootstrap(
 
     [LoggerMessage(EventId = 301, Level = LogLevel.Error, Message = "Could not create the first administrator: {Errors}")]
     private partial void LogBootstrapFailed(string errors);
+
+    [LoggerMessage(EventId = 302, Level = LogLevel.Error, Message = "Could not create the role {Role}: {Errors}")]
+    private partial void LogRoleFailed(string role, string errors);
 }

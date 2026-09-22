@@ -40,4 +40,18 @@ public sealed class IdentityBootstrapTests
                 && entry.Message == "Could not create the first administrator: The test refuses every role.");
         Assert.False(application.Log.Logged(300, LogLevel.Warning));
     }
+
+    // Nobody could be made a viewer, and the first administrator waits for a start that creates every role.
+    [Fact]
+    public async Task AFailedRoleCreationIsLoggedAndLeavesNoAdministrator()
+    {
+        using ViewerRefusingApplication application = new();
+
+        Assert.Empty(await application.QueryAsync(database => database.Users.ToListAsync(TestContext.Current.CancellationToken)));
+        Assert.Contains(
+            application.Log.Entries,
+            entry => entry is { EventId.Id: 302, Level: LogLevel.Error }
+                && entry.Message == "Could not create the role Viewer: The test refuses the Viewer role.");
+        Assert.False(application.Log.Logged(300, LogLevel.Warning));
+    }
 }

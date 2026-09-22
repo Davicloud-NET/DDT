@@ -988,9 +988,10 @@ timeline from the machine's registration through each restart, with how long the
 and the hand-over to the end; the machine's earlier runs, one of which `?run=` pins; and the log.
 While the machine restarts, and after the hand-over until the service in the installed Windows
 starts, the agent does not report, and the page shows the last contact. Once the service runs, it
-reports while it waits for Windows setup to finish. A run whose machine never comes back stays
-running until the machine registers again or someone stops it. The same data is at
-`GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`.
+reports while it waits for Windows setup to finish. A run whose agent has been silent for longer
+than a run token lasts (7 days) can never go on, so the server fails it within the next hour, with
+an error that says since when; until then it stays running unless someone stops it. The same data
+is at `GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`.
 
 The log panel shows the newest 500 lines of the run, or of the machine with its registration and
 sign-in lines, and adds each line the agent sends as it arrives. It follows the newest line until
@@ -1229,8 +1230,9 @@ the Windows partition, in a folder only SYSTEM can open. It lets the agent regis
 restart and go on with its run, and nothing else: the server takes it only at registration, only
 for its machine and run, only while that run is the machine's running run in the token generation
 it was issued in, and for 7 days after it was issued, with a new one in every answer to a report.
-It dies with the run: when the run ends, is stopped or the machine is rejected, and the agent
-deletes it first when the run is over. Every registration that goes on with a run is audited with
+It dies with the run: when the run ends, is stopped, is failed by the server because the agent was
+silent for longer than a token lasts, or the machine is rejected, and the agent deletes it first
+when the run is over. Every registration that goes on with a run is audited with
 its address, and so is a refused run token. Whoever reads the token during the run, a local
 administrator in the installed Windows or anyone with the disk in hand, where the folder's
 permissions mean nothing, is the machine for that run: they can download its files, fetch a password

@@ -724,6 +724,27 @@ describe("MachinesPage", () => {
     expect(within(dialog).queryByText(/has not reported its disks/)).not.toBeInTheDocument();
   });
 
+  it("names a sequence's warnings, and a missing disk only for a sequence that erases one", async () => {
+    renderWith(
+      [machine({ state: "Approved", everApproved: true, disks: null, eligibleDiskCount: 0 })],
+      operator,
+      {
+        "GET /api/sequences": { body: [sequence({ erasesDisk: false, warningCount: 1 })] },
+        "GET /api/deployments/options": { body: options({}) },
+      },
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      await within(dialog).findByText(
+        "Install Windows has 1 warning. It runs, but look at the sequence first.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/reported no disk/)).not.toBeInTheDocument();
+  });
+
   it("does not offer the assignment when the deployment settings cannot be loaded", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now });
 
@@ -945,6 +966,48 @@ describe("MachinesPage", () => {
       method: "POST",
       path: `/api/machines/${waiting.id}/approve`,
       body: { expectedSequenceId: installWindowsId },
+    });
+  });
+
+  it("reads what the rules choose afresh before an approval, however recently it was read", async () => {
+    const waiting = machine({});
+    const { calls, queryClient } = renderWith([waiting], operator, {
+      [`GET /api/machines/${waiting.id}/sequence`]: { body: modelRule({}) },
+      "GET /api/sequences": { body: [sequence({})] },
+    });
+
+    // As the application keeps reads, with copies that no longer hold.
+    queryClient.setDefaultOptions({ queries: { retry: false, staleTime: 30_000 } });
+    queryClient.setQueryData(["machine-sequence", waiting.id], resolution({}));
+    queryClient.setQueryData(["sequences"], [sequence({ erasesDisk: false })]);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText(
+        "Approving Virtual Machine (00:15:5D:01:02:03) also runs Install Windows on it, which a rule for its model chose. All data on its disk is erased.",
+      ),
+    ).toBeInTheDocument();
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
+  it("closes the approval confirmation once someone else decided", async () => {
+    const waiting = machine({});
+    const { queryClient } = renderWith([waiting], operator, {
+      [`GET /api/machines/${waiting.id}/sequence`]: { body: modelRule({}) },
+      "GET /api/sequences": { body: [sequence({})] },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+    await screen.findByRole("dialog");
+
+    act(() => {
+      upsertMachine(queryClient, { ...waiting, state: "Rejected" });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 

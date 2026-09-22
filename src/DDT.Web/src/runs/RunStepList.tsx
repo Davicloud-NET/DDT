@@ -16,6 +16,7 @@ export interface RunStepListProps {
   definition: SequenceDefinition | null;
   machine: MachineSummary | null;
   now: number;
+  onShowLog: (stepId: string) => void;
 }
 
 const phaseTitles: Record<SequencePhase, string> = {
@@ -24,7 +25,7 @@ const phaseTitles: Record<SequencePhase, string> = {
 };
 
 // The steps in order, grouped by the phase they run in, as the server decided it.
-export function RunStepList({ steps, definition, machine, now }: RunStepListProps) {
+export function RunStepList({ steps, definition, machine, now, onShowLog }: RunStepListProps) {
   const planned = plannedSteps(definition);
   const groups: { phase: SequencePhase; steps: DeploymentStepView[] }[] = [];
 
@@ -52,6 +53,9 @@ export function RunStepList({ steps, definition, machine, now }: RunStepListProp
                 planned={planned.get(step.stepId)}
                 machine={machine}
                 now={now}
+                onShowLog={() => {
+                  onShowLog(step.stepId);
+                }}
               />
             ))}
           </ol>

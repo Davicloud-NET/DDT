@@ -4,9 +4,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
+import { isActive } from "@/deployments/deployments";
 import { useNow } from "@/lib/useNow";
+import { LogPanel } from "@/log/LogPanel";
 import { MachineActionErrors } from "@/machines/MachineActionErrors";
 import { MachineHeader } from "@/machines/MachineHeader";
 import { useMachineActions } from "@/machines/useMachineActions";
@@ -36,6 +39,15 @@ export function MachineDetailPage() {
   const now = useNow(1_000);
 
   const { machine, summary, view } = detail;
+
+  // A step belongs to one run, so its filter ends when another run is shown.
+  const [stepFilter, setStepFilter] = useState<{ runId: string | null; stepId: string } | null>(
+    null,
+  );
+  const filteredStep = stepFilter?.runId === detail.runId ? stepFilter.stepId : null;
+  const showStepLog = (stepId: string | null) => {
+    setStepFilter(stepId === null ? null : { runId: detail.runId, stepId });
+  };
 
   return (
     <div className={styles.page}>
@@ -102,9 +114,21 @@ export function MachineDetailPage() {
               definition={view.definition}
               machine={machine}
               now={now}
+              onShowLog={showStepLog}
             />
           )}
         </>
+      )}
+
+      {!detail.removed && (
+        <LogPanel
+          machineId={machineId}
+          runId={detail.runId}
+          active={isActive(summary)}
+          steps={view?.steps ?? []}
+          stepFilter={filteredStep}
+          onStepFilterChange={showStepLog}
+        />
       )}
 
       {detail.historyError && <p className={styles.error}>The run history could not be loaded.</p>}

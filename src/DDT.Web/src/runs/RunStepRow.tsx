@@ -18,13 +18,14 @@ export interface RunStepRowProps {
   planned: SequenceStep | undefined;
   machine: MachineSummary | null;
   now: number;
+  onShowLog: () => void;
 }
 
 function clock(utc: string): string {
   return new Date(utc).toLocaleTimeString();
 }
 
-export function RunStepRow({ step, count, planned, machine, now }: RunStepRowProps) {
+export function RunStepRow({ step, count, planned, machine, now, onShowLog }: RunStepRowProps) {
   const duration = stepDuration(step, now);
 
   return (
@@ -38,6 +39,11 @@ export function RunStepRow({ step, count, planned, machine, now }: RunStepRowPro
         <span className={styles.state} data-state={step.state}>
           {step.state === "Running" ? `Running, ${String(step.percent)}%` : step.state}
         </span>
+        {step.startedUtc !== null && (
+          <button type="button" className={styles.log} onClick={onShowLog}>
+            Show this step's log
+          </button>
+        )}
       </div>
 
       {step.startedUtc !== null && (

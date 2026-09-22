@@ -54,6 +54,12 @@
   }
 }
 
+.log {
+  font: inherit;
+  font-size: var(--font-size-100);
+  cursor: pointer;
+}
+
 .progress {
   width: 100%;
   max-width: 32rem;

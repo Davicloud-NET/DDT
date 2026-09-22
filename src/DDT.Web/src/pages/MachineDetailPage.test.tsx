@@ -189,33 +189,44 @@ interface Answer {
   body?: unknown;
 }
 
-// A connection that is up and hands the page's watch to the test.
+// A connection that is up and hands the page's watches to the test, which sends events to all of them.
 function fakeLive() {
-  const watchers = new Map<string, MachineWatchHandlers>();
+  const watches = new Set<{ id: string; handlers: MachineWatchHandlers }>();
   const live: LiveConnection = {
     start: () => undefined,
     stop: () => undefined,
     status: () => "live",
     onStatusChange: () => () => undefined,
     watchMachine: (id, handlers) => {
-      watchers.set(id, handlers);
+      const watch = { id, handlers };
+      watches.add(watch);
 
       return () => {
-        watchers.delete(id);
+        watches.delete(watch);
       };
     },
   };
 
   return {
     live,
-    watcher: (id: string) => {
-      const handlers = watchers.get(id);
+    watcher: (id: string): MachineWatchHandlers => {
+      const own = [...watches].filter((watch) => watch.id === id).map((watch) => watch.handlers);
 
-      if (handlers === undefined) {
+      if (own.length === 0) {
         throw new Error(`Nothing watches ${id}.`);
       }
 
-      return handlers;
+      return {
+        onRunStepChanged: (event) => {
+          own.forEach((handlers) => handlers.onRunStepChanged?.(event));
+        },
+        onLogAppended: (event) => {
+          own.forEach((handlers) => handlers.onLogAppended?.(event));
+        },
+        onReconnect: () => {
+          own.forEach((handlers) => handlers.onReconnect?.());
+        },
+      };
     },
   };
 }

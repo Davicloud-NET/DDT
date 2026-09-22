@@ -22,12 +22,13 @@ const administrator: CurrentUser = {
   roles: ["Administrator"],
 };
 
-// The application's own router, which reads the browser's address. A null user has not signed in.
-function open(path: string, user: CurrentUser | null) {
+// The application's own router, which reads the browser's address. A null user has not signed in. Every
+// sign-in is refused, and its body is kept in logins.
+function open(path: string, user: CurrentUser | null, logins: unknown[] = []) {
   vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal(
     "fetch",
-    vi.fn((input: RequestInfo | URL) => {
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input.toString();
 
       switch (url.replace("http://localhost", "")) {
@@ -37,6 +38,9 @@ function open(path: string, user: CurrentUser | null) {
               ? new Response(null, { status: 401 })
               : new Response(JSON.stringify(user), { status: 200 }),
           );
+        case "/api/auth/login":
+          logins.push(JSON.parse(init?.body as string));
+          return Promise.resolve(new Response(null, { status: 401 }));
         case "/api/machines":
           return Promise.resolve(new Response("[]", { status: 200 }));
         default:
@@ -84,5 +88,44 @@ describe("the About page", () => {
 
     expect(await screen.findByRole("heading", { name: "About DDT" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/about");
+  });
+});
+
+describe("the sign-in page", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("asks only for the code of an account the server sent back from OpenID Connect", async () => {
+    const logins: unknown[] = [];
+    open("/sign-in?step=two-factor", null, logins);
+
+    fireEvent.change(await screen.findByLabelText("Authentication code"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("That code is not valid.");
+    expect(screen.queryByLabelText("User name")).not.toBeInTheDocument();
+    expect(logins).toEqual([{ userName: "", password: "", twoFactorCode: "123456" }]);
+  });
+
+  it("asks for the user name and password otherwise", async () => {
+    open("/sign-in?step=something-else&error=something-else", null);
+
+    expect(await screen.findByLabelText("User name")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Authentication code")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["locked", "This account is locked. Try again later or ask an administrator."],
+    ["not-allowed", "This account may not sign in. Ask an administrator."],
+  ])("says why the server refused an OpenID Connect sign-in: %s", async (error, message) => {
+    open(`/sign-in?error=${error}`, null);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("User name")).toBeInTheDocument();
   });
 });

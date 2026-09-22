@@ -65,6 +65,12 @@ public static class AuthEndpoints
         ILogger logger = loggerFactory.CreateLogger(typeof(AuthEndpoints));
         string address = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
+        // A code belongs to the account Identity keeps in its two-factor cookie, which a success clears. After an
+        // OpenID Connect sign-in the request names no account at all.
+        string userName = request.RecoveryCode is { Length: > 0 } || request.TwoFactorCode is { Length: > 0 }
+            ? (await signInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false))?.UserName ?? request.UserName
+            : request.UserName;
+
         SignInResult result = request switch
         {
             { RecoveryCode.Length: > 0 } =>
@@ -84,19 +90,19 @@ public static class AuthEndpoints
 
         if (result.IsLockedOut)
         {
-            AuthLog.LockedOut(logger, request.UserName);
+            AuthLog.LockedOut(logger, userName);
 
             return TypedResults.Ok(new LoginResponse(LoginStatus.LockedOut));
         }
 
         if (!result.Succeeded)
         {
-            AuthLog.SignInFailed(logger, request.UserName, address);
+            AuthLog.SignInFailed(logger, userName, address);
 
             return TypedResults.Unauthorized();
         }
 
-        AuthLog.SignedIn(logger, request.UserName);
+        AuthLog.SignedIn(logger, userName);
         RefreshAntiforgeryToken(context, antiforgery);
 
         return TypedResults.Ok(new LoginResponse(LoginStatus.Succeeded));

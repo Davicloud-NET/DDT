@@ -277,7 +277,8 @@ Three sources of accounts, all optional except the first:
   keyed on issuer and subject. They get the role in `DDT:Oidc:AutoProvisionRole`, `Viewer` by
   default. A role that does not exist stops the server at startup, and `Administrator` is logged as
   a warning at every start. When linking the identity or granting the role fails, the new account is
-  deleted again and the sign in fails.
+  deleted again and the sign in fails. A linked account with an authenticator still enters its code
+  after the provider's sign in, and a disabled or locked out account is refused as with a password.
 
 Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
 carries the passkey table from the first migration so turning them on later needs no migration.

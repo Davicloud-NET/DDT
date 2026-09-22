@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { currentUserQuery, login, type LoginStatus } from "@/auth/auth";
@@ -12,16 +12,33 @@ import styles from "./SignInPage.module.scss";
 
 type Step = "credentials" | "twoFactor";
 
+const lockedMessage = "This account is locked. Try again later or ask an administrator.";
+
+// Why the server's OpenID Connect callback refused a sign-in.
+const externalErrors = new Map<string, string>([
+  ["external", "The sign-in at the identity provider did not finish. Try again."],
+  ["unlinked", "No DDT account is linked to that identity. Ask an administrator."],
+  ["provision", "No account could be created for that identity. Ask an administrator."],
+  ["locked", lockedMessage],
+  ["not-allowed", "This account may not sign in. Ask an administrator."],
+]);
+
 export function SignInPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const search = useSearch({ from: "/sign-in" });
 
-  const [step, setStep] = useState<Step>("credentials");
+  // After an OpenID Connect sign-in the server knows the account, and only its code is asked for.
+  const [step, setStep] = useState<Step>(
+    search.step === "two-factor" ? "twoFactor" : "credentials",
+  );
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    search.error === undefined ? null : (externalErrors.get(search.error) ?? null),
+  );
   const [busy, setBusy] = useState(false);
 
   async function submit() {
@@ -42,7 +59,7 @@ export function SignInPage() {
       }
 
       if (status === "LockedOut") {
-        setError("This account is locked. Try again later or ask an administrator.");
+        setError(lockedMessage);
         return;
       }
 

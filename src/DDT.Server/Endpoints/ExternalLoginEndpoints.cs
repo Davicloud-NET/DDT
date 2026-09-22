@@ -52,6 +52,12 @@ public static class ExternalLoginEndpoints
             return TypedResults.Redirect("/sign-in?error=external");
         }
 
+        // Identity does not know DDT's disabled flag, so this checks it as the password sign-in does.
+        if (await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey).ConfigureAwait(false) is { IsDisabled: true })
+        {
+            return TypedResults.Redirect("/sign-in?error=not-allowed");
+        }
+
         SignInResult result = await signInManager
             .ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: false)
             .ConfigureAwait(false);
@@ -61,9 +67,21 @@ public static class ExternalLoginEndpoints
             return TypedResults.Redirect("/");
         }
 
+        // As after a correct password, Identity keeps the account in its two-factor cookie, and the sign-in page's
+        // code step finishes the sign-in through the login endpoint.
+        if (result.RequiresTwoFactor)
+        {
+            return TypedResults.Redirect("/sign-in?step=two-factor");
+        }
+
         if (result.IsLockedOut)
         {
             return TypedResults.Redirect("/sign-in?error=locked");
+        }
+
+        if (result.IsNotAllowed)
+        {
+            return TypedResults.Redirect("/sign-in?error=not-allowed");
         }
 
         if (!options.Value.AutoProvision)

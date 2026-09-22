@@ -26,9 +26,15 @@ export interface RouterContext {
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({ component: RootLayout });
 
+// The server's OpenID Connect callback sends an account with a second factor here for its code, and a sign-in it
+// refused with the reason.
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
+  validateSearch: (search: Record<string, unknown>): { step?: "two-factor"; error?: string } => ({
+    ...(search.step === "two-factor" ? { step: "two-factor" as const } : {}),
+    ...(typeof search.error === "string" ? { error: search.error } : {}),
+  }),
   component: SignInPage,
 });
 

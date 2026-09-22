@@ -52,6 +52,8 @@ public sealed class PostgresMigrationTests
         Guid assigned = Guid.NewGuid();
         Guid older = Guid.NewGuid();
         Guid finished = Guid.NewGuid();
+        Guid windows11 = Guid.NewGuid();
+        Guid windows10 = Guid.NewGuid();
         DateTimeOffset earlier = new(2026, 9, 1, 8, 0, 0, TimeSpan.Zero);
         DateTimeOffset later = earlier.AddHours(1);
 
@@ -65,14 +67,24 @@ public sealed class PostgresMigrationTests
             """,
             cancellationToken);
 
+        // Every image deployment named its image, and the library keeps the images.
         await database.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO ddt."Deployments" ("Id", "MachineId", "ImageName", "Sha256", "SizeBytes", "WimIndex", "InstalledBytes", "State", "Step", "Percent", "Source", "CreatedUtc", "UpdatedUtc")
+            INSERT INTO ddt."Images" ("Id", "Name", "Kind", "Sha256", "SizeBytes", "WimIndex", "InstalledBytes", "UploadedUtc")
             VALUES
-                ({running}, {deploying}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Running', 'Apply', 40, 'Web', {later}, {later}),
-                ({assigned}, {waiting}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Assigned', NULL, 0, 'Web', {later}, {later}),
-                ({older}, {done}, 'Windows 10 Pro', 'bb', 1, 1, 4, 'Done', 'Reboot', 100, 'Console', {earlier}, {earlier}),
-                ({finished}, {done}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Done', 'Reboot', 100, 'Web', {later}, {later})
+                ({windows11}, 'Windows 11 Pro', 'Wim', 'aa', 1, 6, 4, {earlier}),
+                ({windows10}, 'Windows 10 Pro', 'Wim', 'bb', 1, 1, 4, {earlier})
+            """,
+            cancellationToken);
+
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."Deployments" ("Id", "MachineId", "ImageId", "ImageName", "Sha256", "SizeBytes", "WimIndex", "InstalledBytes", "State", "Step", "Percent", "Source", "CreatedUtc", "UpdatedUtc")
+            VALUES
+                ({running}, {deploying}, {windows11}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Running', 'Apply', 40, 'Web', {later}, {later}),
+                ({assigned}, {waiting}, {windows11}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Assigned', NULL, 0, 'Web', {later}, {later}),
+                ({older}, {done}, {windows10}, 'Windows 10 Pro', 'bb', 1, 1, 4, 'Done', 'Reboot', 100, 'Console', {earlier}, {earlier}),
+                ({finished}, {done}, {windows11}, 'Windows 11 Pro', 'aa', 1, 6, 4, 'Done', 'Reboot', 100, 'Web', {later}, {later})
             """,
             cancellationToken);
 
@@ -107,6 +119,10 @@ public sealed class PostgresMigrationTests
         Assert.Equal(DeploymentState.Done, deployments[finished].State);
         Assert.Null(deployments[finished].Error);
         Assert.Equal("Windows 10 Pro", deployments[older].Title);
+
+        // The image column became the sequence column, and no image id may be taken for a sequence's.
+        Assert.All(deployments.Values, deployment => Assert.Null(deployment.TaskSequenceId));
+        Assert.Equal(2, await database.Images.CountAsync(i => i.Id == windows11 || i.Id == windows10, cancellationToken));
 
         Assert.Equal((MachineState.Failed, 4, (Guid?)null, (Guid?)running), Facts(machines[deploying]));
         Assert.Equal((MachineState.Pending, 2, (Guid?)null, (Guid?)assigned), Facts(machines[waiting]));

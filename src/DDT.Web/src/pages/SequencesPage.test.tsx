@@ -15,7 +15,6 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
-import type { DeploymentSummary } from "@/deployments/deployments";
 import type { MachineSummary } from "@/machines/machines";
 import type { AssignmentRuleView } from "@/rules/rules";
 import type {
@@ -24,6 +23,7 @@ import type {
   SequenceTemplate,
   SequenceView,
 } from "@/sequences/sequences";
+import { deploymentSummary, machineSummary } from "@/test/builders";
 
 import { SequencesPage } from "./SequencesPage";
 
@@ -111,9 +111,11 @@ function view(request: CreateSequenceRequest, id: string): SequenceView {
 }
 
 function runningMachine(sequenceId: string): MachineSummary {
-  const deployment = { state: "Running", sequenceId } as DeploymentSummary;
-
-  return { id: crypto.randomUUID(), deployment } as MachineSummary;
+  return machineSummary({
+    id: crypto.randomUUID(),
+    state: "Deploying",
+    deployment: deploymentSummary({ state: "Running", sequenceId }),
+  });
 }
 
 interface Sent {

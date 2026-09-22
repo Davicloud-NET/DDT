@@ -23,7 +23,8 @@ import type { LiveConnection, MachineWatchHandlers } from "@/live/liveConnection
 import { LiveContext } from "@/live/LiveContext";
 import { upsertMachine, type MachineSummary } from "@/machines/machines";
 import { machineSearch } from "@/machines/machineSearch";
-import type { SequenceStep } from "@/sequences/sequences";
+import type { SequenceStep, StepKind } from "@/sequences/sequences";
+import { newStep } from "@/sequences/steps";
 
 import { MachineDetailPage } from "./MachineDetailPage";
 
@@ -84,18 +85,10 @@ function machine(overrides: Partial<MachineSummary>): MachineSummary {
 function planned(
   id: string,
   name: string,
-  kind: SequenceStep["kind"],
-  more: object = {},
+  kind: StepKind,
+  more: Partial<Pick<SequenceStep, "conditions" | "continueOnError" | "rebootAfter">> = {},
 ): SequenceStep {
-  return {
-    id,
-    name,
-    kind,
-    conditions: [],
-    continueOnError: false,
-    rebootAfter: false,
-    ...more,
-  } as SequenceStep;
+  return { ...newStep(kind, id), name, ...more };
 }
 
 function step(

@@ -14,9 +14,10 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
-import type { HardwareModelCount, MachineSummary } from "@/machines/machines";
+import type { HardwareModelCount } from "@/machines/machines";
 import type { AssignmentRuleView, SaveAssignmentRuleRequest } from "@/rules/rules";
 import type { SequenceSummary } from "@/sequences/sequences";
+import { machineSummary } from "@/test/builders";
 
 import { RulesPage } from "./RulesPage";
 
@@ -85,11 +86,7 @@ const models: HardwareModelCount[] = [
   { manufacturer: "Dell Inc.", model: "Latitude 5440", machines: 2 },
 ];
 
-const machine = {
-  id: "m1",
-  primaryMac: "00155D010203",
-  macAddresses: ["00155D010203"],
-} as MachineSummary;
+const machine = machineSummary({ id: "m1" });
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status });

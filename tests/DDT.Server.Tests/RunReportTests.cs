@@ -124,10 +124,36 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentState.Done, view.Summary.State);
         Assert.NotNull(view.Summary.FinishedUtc);
         Assert.All(view.Steps, step => Assert.Equal(StepState.Done, step.State));
-        Assert.Equal(MachineState.Done, (await application.MachineAsync(machine.Id)).State);
+        Machine finished = await application.MachineAsync(machine.Id);
+        Assert.Equal(MachineState.Done, finished.State);
+        Assert.Null(finished.ActiveDeploymentId);
         Assert.Equal(
             [AuditActions.DeploymentAssigned, AuditActions.DeploymentStarted, AuditActions.DeploymentDone],
             (await AuditAsync(run.Id)).Select(a => a.Split(' ')[0]));
+
+        // Done holds no token, so a later request cannot send it again. One still in flight can, and is answered like
+        // the first.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await machine.ReportAsync(run.Id, done)).StatusCode);
+
+        using (IServiceScope scope = application.Services.CreateScope())
+        {
+            Machine stored = await scope.ServiceProvider.GetRequiredService<DdtDbContext>().Machines.SingleAsync(
+                m => m.Id == machine.Id,
+                TestContext.Current.CancellationToken);
+            DeploymentDecision again = await scope.ServiceProvider.GetRequiredService<RunReports>().ApplyAsync(
+                stored,
+                run.Id,
+                done,
+                null,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(DeploymentOutcome.Unchanged, again.Outcome);
+        }
+
+        // Nothing is left running, so the machine takes its next sequence.
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView next = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        (await administrator.AssignAsync(machine.Id, next.Id)).EnsureSuccessStatusCode();
     }
 
     // A report sent again while the first is still in flight, or one that overlaps a heartbeat, can save after a newer
@@ -296,6 +322,10 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         HttpResponseMessage open = await machine.ReportAsync(run.Id, Report(DeploymentState.Done, [Step(Partition(run), StepState.Done)]));
         Assert.Equal(HttpStatusCode.Conflict, open.StatusCode);
         Assert.StartsWith("Step 2, Apply, is pending, so the run is not done.", await TestDatabase.TitleAsync(open), StringComparison.Ordinal);
+
+        HttpResponseMessage running = await machine.ReportAsync(run.Id, Report(DeploymentState.Done, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Running)]));
+        Assert.Equal(HttpStatusCode.Conflict, running.StatusCode);
+        Assert.StartsWith("Step 2, Apply, is running, so the run is not done.", await TestDatabase.TitleAsync(running), StringComparison.Ordinal);
 
         Assert.Equal(HttpStatusCode.NotFound, (await machine.ReportAsync(Guid.NewGuid(), Running())).StatusCode);
         Assert.Equal(DeploymentState.Running, (await StoredAsync(run.Id)).State);

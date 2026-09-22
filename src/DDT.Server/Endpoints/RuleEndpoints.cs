@@ -316,6 +316,6 @@ public static class RuleEndpoints
             ActorName = user.Identity?.Name,
             SubjectId = rule.Id.ToString("D"),
             SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-            Detail = detail.Length <= 2048 ? detail : detail[..2048],
+            Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
         };
 }

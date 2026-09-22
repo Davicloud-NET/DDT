@@ -403,11 +403,7 @@ public static class SequenceEndpoints
         ClaimsPrincipal user,
         HttpContext context,
         DateTimeOffset now,
-        string detail)
-    {
-        string text = detail.Replace("\0", string.Empty, StringComparison.Ordinal);
-
-        return new AuditEvent
+        string detail) => new()
         {
             OccurredUtc = now,
             Action = action,
@@ -415,7 +411,6 @@ public static class SequenceEndpoints
             ActorName = user.Identity?.Name,
             SubjectId = sequence.Id.ToString("D"),
             SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-            Detail = text.Length <= 2048 ? text : text[..2048],
+            Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
         };
-    }
 }

@@ -14,8 +14,6 @@ namespace DDT.Server.Sequences;
 // log shows which code went out without holding the code. Each run keeps the full definition it ran.
 public static class SequenceChanges
 {
-    private const int MaxDetailLength = 2048;
-
     public static string Describe(string oldName, string? oldDescription, SequenceDefinition before, string newName, string? newDescription, SequenceDefinition after)
     {
         ArgumentNullException.ThrowIfNull(before);
@@ -59,9 +57,7 @@ public static class SequenceChanges
             detail.Append("Moved steps. ");
         }
 
-        string text = detail.Length > 0 ? detail.ToString().TrimEnd() : "Saved without changes to the steps.";
-
-        return text.Length <= MaxDetailLength ? text : text[..MaxDetailLength];
+        return detail.Length > 0 ? detail.ToString().TrimEnd() : "Saved without changes to the steps.";
     }
 
     private static Dictionary<Guid, SequenceStep> ById(SequenceDefinition definition)

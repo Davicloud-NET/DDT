@@ -35,6 +35,8 @@ public static class DeploymentServiceCollectionExtensions
         services.AddSingleton(zeroTouchNetworks);
         services.AddSingleton<UnattendRenderer>();
         services.AddScoped<DeploymentService>();
+        services.AddScoped<RunReports>();
+        services.AddScoped<RunSecrets>();
 
         return services;
     }

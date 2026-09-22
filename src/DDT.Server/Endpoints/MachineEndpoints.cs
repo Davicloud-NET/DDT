@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Endpoints;
 
@@ -189,7 +190,12 @@ public static class MachineEndpoints
                 loggerFactory,
                 AuditActions.MachineApproved,
                 Refusal,
-                (machine, _, now) => Approve(machine, Principals.UserId(user), now),
+                (machine, _, now) =>
+                {
+                    Approve(machine, Principals.UserId(user), now);
+
+                    return Task.CompletedTask;
+                },
                 cancellationToken).ConfigureAwait(false);
         }
 
@@ -320,12 +326,14 @@ public static class MachineEndpoints
                 machine.TokenGeneration++;
                 machine.ApprovedByUserId = null;
                 machine.ApprovedUtc = null;
-                deployments.EndForRejection(
+
+                return deployments.EndForRejectionAsync(
                     machine,
                     active,
                     Principals.UserId(user),
                     user.Identity?.Name,
-                    context.Connection.RemoteIpAddress?.ToString());
+                    context.Connection.RemoteIpAddress?.ToString(),
+                    cancellationToken);
             },
             cancellationToken);
 
@@ -428,6 +436,7 @@ public static class MachineEndpoints
         }
 
         Deployment deployment = decision.Deployment!;
+        IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
 
         try
         {
@@ -440,6 +449,7 @@ public static class MachineEndpoints
 
         DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), deployment, before);
         live.MachineChanged(machine, deployment);
+        live.RunStepsChanged(machine.Id, changedSteps);
 
         return TypedResults.Ok(MachineSummaries.From(machine, deployment));
     }
@@ -555,7 +565,7 @@ public static class MachineEndpoints
         ILoggerFactory loggerFactory,
         string action,
         Func<Machine, string?> refusal,
-        Action<Machine, Deployment?, DateTimeOffset> apply,
+        Func<Machine, Deployment?, DateTimeOffset, Task> apply,
         CancellationToken cancellationToken)
     {
         Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
@@ -575,7 +585,7 @@ public static class MachineEndpoints
         Deployment? active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
         DeploymentState? activeState = active?.State;
 
-        apply(machine, active, now);
+        await apply(machine, active, now).ConfigureAwait(false);
 
         database.AuditEvents.Add(new AuditEvent
         {
@@ -589,6 +599,8 @@ public static class MachineEndpoints
                 ? $"Was {previous}. Signed in at the machine by {signer}."
                 : $"Was {previous}.",
         });
+
+        IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
 
         try
         {
@@ -605,6 +617,8 @@ public static class MachineEndpoints
         {
             DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), active, activeState);
         }
+
+        live.RunStepsChanged(machine.Id, changedSteps);
 
         Deployment? shown = await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false);
         live.MachineChanged(machine, shown);

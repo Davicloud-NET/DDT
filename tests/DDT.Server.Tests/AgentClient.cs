@@ -42,6 +42,24 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> PickRunAsync(Guid machineId, string token, AgentRunRequest request) =>
         SendAsync(HttpMethod.Post, AgentRoutes.Runs(machineId), token, JsonContent.Create(request, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> RunReportAsync(Guid machineId, string token, Guid runId, AgentRunReport report) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId), token, JsonContent.Create(report, options: TestJson.Options));
+
+    public Task<HttpResponseMessage> RunFileAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        string sha256,
+        HttpMethod? method = null,
+        RangeHeaderValue? range = null) =>
+        SendAsync(method ?? HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null, request => request.Headers.Range = range);
+
+    public Task<HttpResponseMessage> RunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunStepUnattend(machineId, runId, stepId), token, null);
+
+    public Task<HttpResponseMessage> RunCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunStepCredentials(machineId, runId, stepId), token, null);
+
     public void Dispose() => client.Dispose();
 
     private async Task<HttpResponseMessage> SendAsync(

@@ -12,6 +12,7 @@ using DDT.Server.Live;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Machines;
 
@@ -104,7 +105,7 @@ public sealed partial class MachineRegistrar(
         {
             active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
             before = active?.State;
-            StartOver(machine, active, remoteAddress, address, now);
+            await StartOverAsync(machine, active, remoteAddress, address, now, cancellationToken).ConfigureAwait(false);
         }
 
         machine.PrimaryMac = registration.PrimaryMac;
@@ -113,6 +114,8 @@ public sealed partial class MachineRegistrar(
         machine.Model = registration.Model;
         machine.SerialNumber = registration.SerialNumber;
         machine.AgentVersion = registration.AgentVersion;
+        machine.SequenceVersion = registration.SequenceVersion;
+        machine.AgentEnvironment = registration.Environment;
         machine.LastSeenUtc = now;
         machine.LastSeenAddress = address;
 
@@ -123,12 +126,16 @@ public sealed partial class MachineRegistrar(
             machine.EligibleDiskCount = registration.EligibleDiskCount;
         }
 
+        IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
+
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         if (active is not null)
         {
             DeploymentLog.Changed(logger, active, before);
         }
+
+        live.RunStepsChanged(machine.Id, changedSteps);
 
         live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
 
@@ -148,12 +155,13 @@ public sealed partial class MachineRegistrar(
     // so far dies with the generation bump, so two agents can never share one machine's tokens. The one exception
     // is zero touch: an operator assigned an image on the web, and the machine netboots from a network listed for
     // that. What the agent that is gone had started or chosen ends, see DeploymentService.EndForRestart.
-    private void StartOver(
+    private async Task StartOverAsync(
         Machine machine,
         Deployment? active,
         IPAddress? remoteAddress,
         string? address,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
         bool zeroTouch = deployments.KeepsApprovalOnNetboot(active, remoteAddress);
 
@@ -166,7 +174,7 @@ public sealed partial class MachineRegistrar(
                 ? $"Kept approved for {active!.Title} assigned by {active.RequestedByName}: netbooted from {address} in a zero touch network."
                 : $"Was {machine.State}."));
 
-        deployments.EndForRestart(machine, active, address);
+        await deployments.EndForRestartAsync(machine, active, address, cancellationToken).ConfigureAwait(false);
 
         machine.TokenGeneration++;
         machine.SignedInByUserId = null;

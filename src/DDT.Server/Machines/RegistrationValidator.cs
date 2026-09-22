@@ -70,6 +70,13 @@ public static class RegistrationValidator
             return false;
         }
 
+        if (!Enum.IsDefined(registration.Environment))
+        {
+            error = "environment is not one this server knows.";
+
+            return false;
+        }
+
         AgentDisk[]? disks = registration.Disks is null ? null : [.. registration.Disks.OfType<AgentDisk>()];
 
         normalised = new NormalisedRegistration(
@@ -82,7 +89,10 @@ public static class RegistrationValidator
             Bound(registration.AgentVersion, MaxVersionLength) ?? "unknown",
             registration.ResumeToken,
             disks is null ? null : DescribeDisks(disks),
-            disks?.Length);
+            disks?.Length,
+            registration.RunToken,
+            Math.Max(registration.SequenceVersion, 0),
+            registration.Environment);
         error = string.Empty;
 
         return true;

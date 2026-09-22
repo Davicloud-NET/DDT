@@ -16,4 +16,6 @@ public sealed record DeploymentDecision(DeploymentOutcome Outcome, Deployment? D
     public static DeploymentDecision Conflict(string reason) => new(DeploymentOutcome.Conflict, null, reason, null);
 
     public static DeploymentDecision Invalid(string field, string reason) => new(DeploymentOutcome.Invalid, null, reason, field);
+
+    public static DeploymentDecision Refused(Deployment deployment, string reason) => new(DeploymentOutcome.Refused, deployment, reason, null);
 }

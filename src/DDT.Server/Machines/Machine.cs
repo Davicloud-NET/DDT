@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
 
@@ -31,6 +32,12 @@ public sealed class Machine
     public string? AssignedName { get; set; }
 
     public string? AgentVersion { get; set; }
+
+    // From the last registration: the highest sequence version its agent runs, and whether it runs in Windows PE or as
+    // the service in the installed Windows.
+    public int SequenceVersion { get; set; }
+
+    public AgentEnvironment AgentEnvironment { get; set; }
 
     public MachineState State { get; set; } = MachineState.Pending;
 

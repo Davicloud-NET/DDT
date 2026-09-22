@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Sequences;
 using DDT.Core.Unattend;
-using DDT.Server.Images;
-using DDT.Server.Machines;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
+// The answer file of a Write answer file step: the settings taken when the run started, the step's own overrides, and
+// the local administrator's password as the configuration holds it now.
 public sealed class UnattendRenderer(IOptions<DeploymentOptions> options)
 {
     // Only x64 images can be deployed, so every component is the amd64 one.
@@ -18,31 +19,26 @@ public sealed class UnattendRenderer(IOptions<DeploymentOptions> options)
     // Setup generates a name for "*".
     private const string GeneratedComputerName = "*";
 
-    public string Render(Machine machine, Image? image)
-    {
-        ArgumentNullException.ThrowIfNull(machine);
+    public string Render(RunInputs inputs, WriteUnattendStep step, string? imageLanguage) =>
+        UnattendWriter.Write(Settings(inputs, step, imageLanguage));
 
-        return UnattendWriter.Write(Settings(machine.AssignedName, image?.Language));
-    }
-
-    public UnattendSettings Settings(string? assignedName, string? imageLanguage)
+    public UnattendSettings Settings(RunInputs inputs, WriteUnattendStep step, string? imageLanguage)
     {
-        DeploymentOptions deployment = options.Value;
+        ArgumentNullException.ThrowIfNull(inputs);
+        ArgumentNullException.ThrowIfNull(step);
+
         string uiLanguage = Value(imageLanguage) ?? FallbackLanguage;
-        string locale = Value(deployment.Locale) ?? uiLanguage;
-
-        LocalAdministrator? administrator = string.IsNullOrEmpty(deployment.LocalAdministrator.Password)
-            ? null
-            : new LocalAdministrator(deployment.LocalAdministrator.Name.Trim(), deployment.LocalAdministrator.Password);
+        string locale = Value(step.Locale) ?? Value(inputs.Locale) ?? uiLanguage;
+        string? password = options.Value.LocalAdministrator.Password;
 
         return new UnattendSettings(
             ProcessorArchitecture,
-            Value(assignedName) ?? GeneratedComputerName,
-            Value(deployment.TimeZone),
+            Value(inputs.ComputerName) ?? GeneratedComputerName,
+            Value(step.TimeZone) ?? Value(inputs.TimeZone),
             uiLanguage,
             locale,
-            Value(deployment.Keyboard) ?? locale,
-            administrator);
+            Value(step.Keyboard) ?? Value(inputs.Keyboard) ?? locale,
+            step.LocalAdministrator && !string.IsNullOrEmpty(password) ? new LocalAdministrator(inputs.AdministratorName, password) : null);
     }
 
     private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();

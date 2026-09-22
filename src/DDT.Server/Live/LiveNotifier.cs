@@ -2,25 +2,48 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Live;
 
 // Pushes are not awaited by the request that caused them: a browser that stops reading would otherwise
 // hold up an agent's poll or an operator's approval.
-public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveNotifier> logger)
+public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, TimeProvider timeProvider, ILogger<LiveNotifier> logger)
 {
-    // The deployment the Machines page shows for this machine, see MachineSummaries.From.
+    // A running sequence reports every few seconds, and every browser redraws the machine's row for each push.
+    public static readonly TimeSpan MachinePushInterval = TimeSpan.FromSeconds(1);
+
+    private readonly PushThrottle _machines = new(timeProvider, MachinePushInterval);
+
+    // The deployment the Machines page shows for this machine, see MachineSummaries.From. Taken now, so a push the
+    // throttle delays still carries the latest state.
     public void MachineChanged(Machine machine, Deployment? deployment)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        _ = PushAsync(MachineSummaries.From(machine, deployment));
+        MachineSummary summary = MachineSummaries.From(machine, deployment);
+        _machines.Push(summary.Id, () => PushAsync(summary));
+    }
+
+    // Only the connections that watch the machine get its steps.
+    public void RunStepsChanged(Guid machineId, IEnumerable<DeploymentStep> steps)
+    {
+        ArgumentNullException.ThrowIfNull(steps);
+
+        foreach (DeploymentStep step in steps)
+        {
+            _ = PushToWatchersAsync(
+                machineId,
+                LiveEvents.RunStepChanged,
+                new RunStepChangedEvent(machineId, step.DeploymentId, DeploymentSummaries.Step(step)));
+        }
     }
 
     public void MachinesRemoved() => _ = PushEventAsync(LiveEvents.MachinesRemoved);
@@ -46,6 +69,18 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
             await (payload is null
                 ? hub.Clients.All.SendAsync(liveEvent, CancellationToken.None)
                 : hub.Clients.All.SendAsync(liveEvent, payload, CancellationToken.None)).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            LogEventPushFailed(liveEvent, exception);
+        }
+    }
+
+    private async Task PushToWatchersAsync(Guid machineId, string liveEvent, object payload)
+    {
+        try
+        {
+            await hub.Clients.Group(LiveGroups.Machine(machineId)).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

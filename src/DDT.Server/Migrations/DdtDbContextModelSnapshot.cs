@@ -534,6 +534,13 @@ namespace DDT.Server.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AgentEnvironment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("WindowsPE");
+
                     b.Property<string>("AgentVersion")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
@@ -592,6 +599,9 @@ namespace DDT.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<int>("SequenceVersion")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SerialNumber")
                         .HasMaxLength(128)

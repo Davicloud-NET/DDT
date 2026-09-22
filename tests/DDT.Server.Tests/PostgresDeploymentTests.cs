@@ -63,6 +63,21 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(
             [run.Id],
             (await RegisteredMachine.ReadAsync<IReadOnlyList<DeploymentSummary>>(await administrator.GetAsync($"/api/machines/{machine.Id}/deployments"))).Select(r => r.Id));
+
+        AgentRun handed = (await machine.NextAsync()).Run!;
+        await machine.ReportOkAsync(handed.Id, TestReports.Running(TestReports.Step(handed.Sequence.Steps[0], StepState.Running)));
+        await machine.ReportOkAsync(handed.Id, TestReports.Report(
+            DeploymentState.Done,
+            [.. handed.Sequence.Steps.Select(step => TestReports.Step(step, StepState.Done, "A NUL\0 in a note"))]));
+
+        DeploymentView done = await administrator.RunAsync(run.Id);
+
+        Assert.Equal(DeploymentState.Done, done.Summary.State);
+        Assert.All(done.Steps, step => Assert.Equal("A NUL in a note", step.Error));
+        Assert.Equal(TimeSpan.Zero, done.Steps[0].StartedUtc?.Offset);
+        Assert.Equal(MachineState.Done, Assert.Single(
+            await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
+            m => m.Id == machine.Id).State);
     }
 
     [Fact]

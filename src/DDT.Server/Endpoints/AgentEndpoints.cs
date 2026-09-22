@@ -165,6 +165,8 @@ public static class AgentEndpoints
         // A waiting machine learns nothing about what it will be given: anyone can register as it. An agent from
         // before task sequences is never given an image deployment: this server creates none.
         bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
+        Deployment? active = authorized ? await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false) : null;
+        AgentRun? run = active is null ? null : await deployments.HandOverAsync(machine, active, cancellationToken).ConfigureAwait(false);
         bool canPick = await deployments.CanPickAsync(machine, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok(new AgentNextResult(
@@ -177,7 +179,7 @@ public static class AgentEndpoints
             CanPickImage: false,
             DomainConfigured: authorized && deployments.DomainConfigured,
             AssignedName: authorized ? machine.AssignedName : null,
-            Run: null,
+            Run: run,
             CanPickSequence: canPick,
             SuggestedSequenceId: canPick ? await deployments.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null));
     }

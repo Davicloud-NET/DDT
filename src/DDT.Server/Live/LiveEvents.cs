@@ -22,4 +22,7 @@ public static class LiveEvents
 
     // Carries nothing: clients load the rules again.
     public const string RulesChanged = "rulesChanged";
+
+    // Carries a RunStepChangedEvent, only to the connections that watch the machine.
+    public const string RunStepChanged = "runStepChanged";
 }

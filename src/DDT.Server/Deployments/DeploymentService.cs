@@ -416,6 +416,24 @@ public sealed class DeploymentService(
         return DeploymentDecision.Accepted(deployment);
     }
 
+    // Null for an agent too old for the run's sequence, which would throw on a kind it does not know, and for the
+    // service in Windows, which only ever continues a run that is running.
+    public async Task<AgentRun?> HandOverAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+
+        if (run.State is not (DeploymentState.Assigned or DeploymentState.Running)
+            || (machine.AgentEnvironment == AgentEnvironment.Windows && run.State == DeploymentState.Assigned))
+        {
+            return null;
+        }
+
+        AgentRun handed = await AgentRunAsync(machine, run, cancellationToken).ConfigureAwait(false);
+
+        return machine.SequenceVersion >= handed.Sequence.Version ? handed : null;
+    }
+
     // The run as its agent receives it, from what was frozen when it was assigned.
     public async Task<AgentRun> AgentRunAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
     {
@@ -467,6 +485,7 @@ public sealed class DeploymentService(
 
             case DeploymentState.Running:
                 string error = $"Stopped by {by}.";
+                await FailRunningStepsAsync(active, error, now, cancellationToken).ConfigureAwait(false);
                 End(machine, active, DeploymentState.Failed, error, now);
                 machine.State = MachineState.Failed;
                 machine.TokenGeneration++;
@@ -487,7 +506,13 @@ public sealed class DeploymentService(
         }
     }
 
-    public void EndForRejection(Machine machine, Deployment? active, Guid? userId, string? userName, string? address)
+    public async Task EndForRejectionAsync(
+        Machine machine,
+        Deployment? active,
+        Guid? userId,
+        string? userName,
+        string? address,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
@@ -510,6 +535,7 @@ public sealed class DeploymentService(
 
             case DeploymentState.Running:
                 string error = $"Rejected by {by}.";
+                await FailRunningStepsAsync(active, error, now, cancellationToken).ConfigureAwait(false);
                 End(machine, active, DeploymentState.Failed, error, now);
                 database.AuditEvents.Add(Audit(
                     AuditActions.DeploymentFailed,
@@ -542,7 +568,7 @@ public sealed class DeploymentService(
     // fails. A run chosen at the machine or by a rule is cancelled: the disk and the ERASE typed there, and the
     // approval that took the rule's sequence, belonged to that boot. A web assignment stays for the next sign-in or a
     // zero touch netboot.
-    public void EndForRestart(Machine machine, Deployment? active, string? address)
+    public async Task EndForRestartAsync(Machine machine, Deployment? active, string? address, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
@@ -552,6 +578,7 @@ public sealed class DeploymentService(
         {
             case { State: DeploymentState.Running }:
                 const string error = "The machine started again during the run.";
+                await FailRunningStepsAsync(active, error, now, cancellationToken).ConfigureAwait(false);
                 End(machine, active, DeploymentState.Failed, error, now);
                 database.AuditEvents.Add(Audit(
                     AuditActions.DeploymentFailed,
@@ -679,6 +706,16 @@ public sealed class DeploymentService(
         machine.LastDeploymentId = deployment.Id;
 
         return deployment;
+    }
+
+    private async Task FailRunningStepsAsync(Deployment run, string error, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        List<DeploymentStep> running = await database.DeploymentSteps
+            .Where(s => s.DeploymentId == run.Id && s.State == StepState.Running)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        RunReports.FailRunning(running, error, now);
     }
 
     private static void End(Machine machine, Deployment deployment, DeploymentState state, string? error, DateTimeOffset now)

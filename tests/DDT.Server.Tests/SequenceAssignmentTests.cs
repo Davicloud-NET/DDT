@@ -76,6 +76,13 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         Assert.Null(next.Deployment);
         Assert.Equal("PC-0001", next.AssignedName);
 
+        AgentRun handed = Assert.IsType<AgentRun>(next.Run);
+        Assert.Equal(run.Id, handed.Id);
+        Assert.Equal(DeploymentState.Assigned, handed.State);
+        Assert.Equal(sequence.Name, handed.SequenceName);
+        Assert.Equal(image.Sha256, Assert.Single(handed.Images).Sha256);
+        Assert.Equal("PC-0001", handed.ComputerName);
+
         Assert.Equal(
             [$"{AuditActions.DeploymentAssigned} {sequence.Name}, revision 1, to machine {machine.Id:D}."],
             await AuditAsync(run.Id));

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
+
 namespace DDT.Server.Machines;
 
 // Disks and EligibleDiskCount are null when the agent is too old to report its disks.
@@ -15,4 +17,7 @@ public sealed record NormalisedRegistration(
     string AgentVersion,
     string? ResumeToken,
     string? Disks,
-    int? EligibleDiskCount);
+    int? EligibleDiskCount,
+    string? RunToken = null,
+    int SequenceVersion = 0,
+    AgentEnvironment Environment = AgentEnvironment.WindowsPE);

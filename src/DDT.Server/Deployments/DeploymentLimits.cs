@@ -14,6 +14,9 @@ public static class DeploymentLimits
 
     public const int MaxRequestBytes = 16 * 1024;
 
+    // A report names every step that has left Pending, and several failed steps can each carry a long error.
+    public const int MaxReportBytes = 64 * 1024;
+
     // Two last-seen resolutions and a poll. A Pending machine seen longer ago may not be the one at the prompt
     // any more, and whoever still holds its tokens must not be authorized by an assignment.
     public static readonly TimeSpan WaitingAtPrompt = TimeSpan.FromSeconds(90);

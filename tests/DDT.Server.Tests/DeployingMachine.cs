@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net.Http.Json;
 using DDT.Contracts.Agents;
 using Xunit;
 
@@ -29,6 +30,9 @@ public sealed class DeployingMachine : IDisposable
     public string Token { get; private set; }
 
     public string ResumeToken { get; private set; }
+
+    // The newest run token a report or a registration handed out, as the agent keeps it on disk.
+    public string? RunToken { get; private set; }
 
     public static AgentDisk Disk(int number, string model = "Msft Virtual Disk", long sizeBytes = 64L * 1024 * 1024 * 1024) =>
         new(number, model, sizeBytes, "SCSI", 0);
@@ -95,6 +99,29 @@ public sealed class DeployingMachine : IDisposable
         ResumeToken = next.ResumeToken;
 
         return next;
+    }
+
+    // A run's report, keeping the tokens it hands out as the agent does.
+    public async Task<HttpResponseMessage> ReportAsync(Guid runId, AgentRunReport report)
+    {
+        HttpResponseMessage response = await Agent.RunReportAsync(Id, Token, runId, report);
+
+        if (response.IsSuccessStatusCode)
+        {
+            AgentRunReportResult result = (await response.Content.ReadFromJsonAsync<AgentRunReportResult>(TestJson.Options))!;
+            Token = result.Token;
+            ResumeToken = result.ResumeToken;
+            RunToken = result.RunToken ?? RunToken;
+        }
+
+        return response;
+    }
+
+    public async Task ReportOkAsync(Guid runId, AgentRunReport report)
+    {
+        HttpResponseMessage response = await ReportAsync(runId, report);
+
+        Assert.True(response.IsSuccessStatusCode, $"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
     // Without the resume token, as a new agent process does after the machine netbooted again.

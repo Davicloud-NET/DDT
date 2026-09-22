@@ -16,7 +16,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DDT.Server.Migrations
 {
     [DbContext(typeof(DdtDbContext))]
-    [Migration("20260922102542_TaskSequences")]
+    [Migration("20260922104833_TaskSequences")]
     partial class TaskSequences
     {
         /// <inheritdoc />
@@ -537,6 +537,13 @@ namespace DDT.Server.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AgentEnvironment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("WindowsPE");
+
                     b.Property<string>("AgentVersion")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
@@ -595,6 +602,9 @@ namespace DDT.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<int>("SequenceVersion")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SerialNumber")
                         .HasMaxLength(128)

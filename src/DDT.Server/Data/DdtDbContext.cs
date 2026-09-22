@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -71,6 +72,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.Property(m => m.AssignedName).HasMaxLength(15);
             machine.Property(m => m.FirstSeenAddress).HasMaxLength(64);
             machine.Property(m => m.State).HasConversion<string>().HasMaxLength(16);
+            machine.Property(m => m.AgentEnvironment).HasConversion<string>().HasMaxLength(16).HasDefaultValue(AgentEnvironment.WindowsPE);
 
             // State and generation are checked on save, so an approval, a rejection and a registration that
             // starts over cannot silently overwrite one another: the loser retries or reports a conflict.

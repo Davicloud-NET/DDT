@@ -72,12 +72,29 @@ namespace DDT.Server.Migrations
                 table: "Deployments",
                 newName: "IX_Deployments_TaskSequenceId");
 
+            migrationBuilder.AddColumn<string>(
+                name: "AgentEnvironment",
+                schema: "ddt",
+                table: "Machines",
+                type: "character varying(16)",
+                maxLength: 16,
+                nullable: false,
+                defaultValue: "WindowsPE");
+
             migrationBuilder.AddColumn<Guid>(
                 name: "LastDeploymentId",
                 schema: "ddt",
                 table: "Machines",
                 type: "uuid",
                 nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "SequenceVersion",
+                schema: "ddt",
+                table: "Machines",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "Kind",
@@ -449,7 +466,17 @@ namespace DDT.Server.Migrations
                 schema: "ddt");
 
             migrationBuilder.DropColumn(
+                name: "AgentEnvironment",
+                schema: "ddt",
+                table: "Machines");
+
+            migrationBuilder.DropColumn(
                 name: "LastDeploymentId",
+                schema: "ddt",
+                table: "Machines");
+
+            migrationBuilder.DropColumn(
+                name: "SequenceVersion",
                 schema: "ddt",
                 table: "Machines");
 

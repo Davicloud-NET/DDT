@@ -13,4 +13,7 @@ public enum DeploymentOutcome
     NotFound,
     Conflict,
     Invalid,
+
+    // The run was ended because it cannot go on: the change is saved, and the caller answers 409 with the reason.
+    Refused,
 }

@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Security.Cryptography;
 using System.Threading.Channels;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
+using DDT.Server.Images;
+using DDT.Server.Live;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,5 +92,37 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
 
         (await administrator.PostAsync($"/api/machines/{machine.Id}/reject")).EnsureSuccessStatusCode();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Rejected)).Deployment?.Id);
+    }
+
+    // A running run's row shows its step, and every push carries the latest of it.
+    [Fact]
+    public async Task APushCarriesTheStepTheRunIsAt()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener listener = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<MachineSummary> pushes = listener.Listen<MachineSummary>(LiveEvents.MachineChanged);
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Minimal(image.Id));
+
+        await administrator.AssignedAsync(machine.Id, sequence.Id);
+        AgentRun run = (await machine.NextAsync()).Run!;
+        await machine.ReportOkAsync(run.Id, TestReports.Report(
+            DeploymentState.Running,
+            [TestReports.Step(run.Sequence.Steps[0], StepState.Done), TestReports.Step(run.Sequence.Steps[1], StepState.Running)],
+            percent: 35));
+
+        MachineSummary running = await PushedAsync(pushes, machine.Id, m => m.Deployment?.StepName == "Apply");
+
+        Assert.Equal(MachineState.Deploying, running.State);
+        Assert.Equal(1, running.Deployment?.StepIndex);
+        Assert.Equal(2, running.Deployment?.StepCount);
+        Assert.Equal(35, running.Deployment?.Percent);
+        Assert.Equal(SequencePhase.WindowsPE, running.Deployment?.Phase);
+        Assert.NotNull(running.Deployment?.StartedUtc);
+
+        await machine.ReportOkAsync(run.Id, TestReports.Report(DeploymentState.Failed, [], error: "Apply failed."));
+
+        Assert.Equal("Apply failed.", (await PushedAsync(pushes, machine.Id, m => m.State == MachineState.Failed)).Deployment?.Error);
     }
 }

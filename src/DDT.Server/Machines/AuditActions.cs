@@ -19,6 +19,7 @@ public static class AuditActions
     public const string DeploymentStarted = "deployment.started";
     public const string DeploymentDone = "deployment.done";
     public const string DeploymentFailed = "deployment.failed";
+    public const string DeploymentSecretRead = "deployment.secret-read";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
     public const string SequenceCreated = "sequence.created";
     public const string SequenceChanged = "sequence.changed";

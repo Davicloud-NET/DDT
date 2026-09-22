@@ -713,13 +713,14 @@ The file is stored once, named by its SHA-256, under `images/objects` in `DDT:St
 progress sit under `images/uploads` on the same volume. Uploading a file that is already there adds
 nothing. A new upload needs free space for its size, plus what other unfinished uploads still have to
 send, plus 1 GB. Unfinished uploads that nobody touched for 24 hours are removed. Deleting an entry is
-refused while an assigned or running deployment uses it, and the stored file goes when no entry uses
-it any more.
+refused while an assigned or running run uses it, and the stored file goes when no image or package
+uses it any more. A sequence whose Apply image step names a deleted image shows a problem.
 
 Behind a reverse proxy the chunk size matters. nginx refuses bodies over 1 MB by default, and
-Traefik gives a whole request 60 seconds, so an 8 MiB chunk needs at least 140 KB/s. Machines download
-images with range requests, which the proxy must pass through without buffering the whole file. For
-nginx, with DDT listening on port 8443 behind it:
+Traefik gives a whole request 60 seconds, so an 8 MiB chunk needs at least 140 KB/s. Packages are
+uploaded through the same route. Machines download images and packages with range requests, which
+the proxy must pass through without buffering the whole file. For nginx, with DDT listening on port
+8443 behind it:
 
 ```
 proxy_set_header Host $http_host;
@@ -733,7 +734,7 @@ location /api/images/uploads {
     proxy_pass https://127.0.0.1:8443;
 }
 
-location ~ ^/api/agents/[^/]+/images/ {
+location ~ ^/api/agents/[^/]+/runs/[^/]+/files/ {
     proxy_buffering off;
     proxy_pass https://127.0.0.1:8443;
 }
@@ -746,6 +747,158 @@ loopback here, so list it with `DDT__ForwardedHeaders__KnownProxies=127.0.0.1`.
 
 Checking a large file after its last chunk can take longer than a proxy waits. The server carries on
 and the page asks again.
+
+## Packages
+
+A package is a zip that the steps of a task sequence unpack on the machine. An administrator uploads
+it on the Packages page as one of two kinds, in resumable chunks like an image.
+
+- A **driver package** holds the driver folder of one hardware model with its `.inf` files. Its
+  targets say which machines get it: a model as the machine's firmware reports it, optionally with
+  a manufacturer. A model ending in `*` matches every model that starts with what comes before it,
+  such as a Lenovo machine type, and needs at least three characters there. Case and spacing are
+  ignored, and the placeholders firmware leaves in unset fields, such as "To Be Filled By O.E.M.",
+  are refused and never match. An Inject drivers step adds every driver package whose targets match
+  the machine.
+- A **files package** has no targets. A Run script step that names it has it unpacked into a folder
+  of its own, which becomes the script's working directory and is named in `DDT_PACKAGE`.
+
+The agent unpacks a package as SYSTEM, so the server checks every zip before any machine gets it,
+and never writes an entry anywhere itself. It refuses encrypted entries, symbolic links, a name that
+would leave the folder it is unpacked to or that Windows cannot create (a leading slash or
+backslash, `..`, a colon, a device name such as `CON` or `COM1`, a control character, a trailing dot
+or space), a name longer than 240 characters or more than 32 folders deep, the same name twice when
+case is ignored, a file and a folder of the same name, more than 200,000 entries and more than 64 GB
+unpacked. It inflates every entry to prove its size and checksum, and a driver package needs at
+least one `.inf`. The agent checks the names again as it unpacks, and never writes more than an
+entry declared.
+
+A file uploaded again is not stored twice: the upload names the package it already is. A package
+cannot be deleted while an assigned or running run uses it, and a sequence whose Run script step
+names a deleted package shows a problem.
+
+## Task sequences
+
+A task sequence is the list of steps a machine runs, in order. Administrators create and edit
+sequences on the Sequences page, and everyone signed in can read them, scripts included. A
+deployment runs one sequence on one machine, as [Deploying a machine](#deploying-a-machine)
+describes.
+
+| Step | Runs in | What it does |
+|---|---|---|
+| Partition the disk | Windows PE | Erases the disk and partitions it with one `diskpart` script: EFI system partition, 16 MB MSR, Windows, and a recovery partition at the end. The EFI system partition is 260 to 4096 MB, 300 by default, and the recovery partition 300 to 65536 MB, 1024 by default. |
+| Apply image | Windows PE | Downloads the chosen image from the library to the Windows partition, resuming after a dropped connection, checks its size and SHA-256, applies it with wimlib and deletes the download. It gives up when the download has not grown for 15 minutes. |
+| Inject drivers | Windows PE | Adds the drivers of every driver package that matches the machine's model to the applied Windows with `dism /Add-Driver /Recurse`. Without such a package the step does nothing, or fails with "Fail when no driver package matches the model" on. |
+| Write the answer file | Windows PE | Writes the answer file for Windows setup, see [Deploying a machine](#deploying-a-machine). Time zone, language and region, and keyboard left empty take the `DDT:Deployment` defaults. "Add the local administrator" adds the account configured there. |
+| Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect. |
+| Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
+| Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
+
+Every step has a name, conditions and two switches. "Go on when this step fails" lets the run go on
+after the step failed, which stays marked as failed. "Restart after this step" restarts the machine
+after the step succeeded and goes on with the next one; a script asks for the same with a restart
+exit code. A script must not restart the machine itself: a step that was running when the machine
+restarted, lost power or the agent stopped is never run again. It fails as interrupted, and "Go on
+when this step fails" applies to it as to any failure.
+
+**Scripts.** The agent writes a script to a file and runs it with `cmd.exe /d /c`, or with Windows
+PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`, see
+[Security model](#security-model) for a Group Policy that overrides the execution policy. A script
+finds the phase, `WindowsPE` or `Windows`, in `DDT_PHASE`, and the run's and the step's ids in
+`DDT_RUN_ID` and `DDT_STEP_ID`. With a files package, `DDT_PACKAGE` names the folder the package
+is unpacked to, which is the script's working directory and is deleted when the script ends.
+Without one, the working directory is the folder the agent wrote the script to. In Windows PE after
+Partition the disk, `DDT_WINDOWS` is the root of the Windows partition, usually `W:\`, for a script
+that changes the applied Windows offline.
+
+**Phases.** A sequence runs in Windows PE first. When it has steps in Windows, a Join the domain or
+a Run script step set to Windows, the agent hands the run over to the installed Windows once the
+Windows PE steps are done, and the rest runs there after Windows setup. A sequence without such
+steps ends in Windows PE, and the machine restarts into Windows setup.
+
+**Conditions.** A step with conditions runs only when all of them hold, and is skipped otherwise.
+A condition compares one of the machine's values, Manufacturer, Model, Serial number, SMBIOS UUID,
+MAC address, Computer name (the name assigned to the machine) or Phase (`WindowsPE` or `Windows`),
+with equals, does not equal, starts with or contains, ignoring case. MAC addresses are compared
+without their separators, and a machine with several holds a condition when any of its addresses
+does, or for does not equal, when none equals.
+
+**What makes a sequence runnable.** A sequence is saved with problems, as a draft, but one with a
+problem cannot be assigned, chosen at a machine or run by a rule. The editor shows each problem at
+its step and field. The rules:
+
+- A sequence has 1 to 100 steps, each with a name of at most 100 characters and at most 10
+  conditions. A MAC address condition needs 12 hex digits for equals and does not equal, 1 to 12
+  for starts with and contains.
+- It partitions the disk at most once and applies at most one image, in that order. Neither step
+  may have conditions or go on when it fails, because the steps after them rely on them.
+- Inject drivers and Write the answer file come after Apply image. The answer file is written at
+  most once, and the domain joined at most once.
+- Steps in Windows come after every step in Windows PE, and need an Apply image step without
+  conditions before them.
+- Windows PE restarts only after Partition the disk, because the run's state is kept on that disk.
+  That holds for Restart steps, "Restart after this step" and a script's restart exit codes. A
+  Windows PE script with a files package also runs only after it.
+- A script has at most 64 KiB, 1 to 16 exit codes for success and at most 16 for a restart, and no
+  code in both lists.
+- The image must be an x64 image in the library, and a script's package a files package in the
+  library. A time zone, language and region, and keyboard must be ones Windows knows. "Add the local
+  administrator" needs `DDT:Deployment:LocalAdministrator:Password`, and Join the domain needs
+  `DDT:Deployment:Domain`.
+
+One finding is only a warning: a sequence that goes on in Windows without a Write the answer file
+step that adds the local administrator. Windows setup then stops at its account page, and the run
+waits there until someone finishes it. Deleting an image or a package, or changing a setting, can
+give a saved sequence a problem, which the page then shows.
+
+**Templates.** "New from the Install Windows template" makes a sequence with Partition the disk,
+Apply image, Inject drivers, and Write the answer file, which adds the local administrator when one
+is configured. With a domain configured, it ends with Join the domain. The template chooses no
+image, so the new sequence has a problem until you choose one in its Apply image step. "New empty
+sequence" starts without steps.
+
+**Editing.** The editor saves by itself: 700 ms after typing stops, at least every 3 seconds while
+typing goes on, and at once for switches, choices and moves. Steps move with their Move buttons,
+with the arrow keys, Home and End on a Move button, or with Alt and the up or down arrow within a
+step. A removed step comes back with Undo for 10 seconds. Every save raises the sequence's revision,
+and a save based on an older revision is refused: the editor then says who saved meanwhile and what
+they changed, and offers "Use theirs", which drops your changes since your last save, or "Keep
+mine", which saves yours over theirs after a confirmation. With no unsaved changes, another
+administrator's save appears as it happens. Every save is written to the audit table with what
+changed, and the SHA-256 of every script that changed. Names are unique, ignoring case. A sequence a
+rule chooses cannot be deleted, and runs keep the copy they ran either way.
+
+**Who may change them.** A sequence's scripts run as SYSTEM on every machine it goes to, so
+changing a sequence is running code on those machines, see [Security model](#security-model). Only
+administrators create and change sequences, packages and rules. Operators assign, approve and stop
+runs, and viewers read everything, scripts included: never put a password in a script.
+
+## Rules
+
+A rule chooses the task sequence for a machine by one of its MAC addresses or by its model. An
+administrator adds rules on the Rules page. A rule never authorizes a machine: it only chooses what
+an operator's approval runs, or what is offered first at the machine.
+
+What counts first: a sequence assigned on the web or chosen at the machine comes before every rule.
+Then a rule for one of the machine's MAC addresses, the primary one first, then a rule for its
+model: an exact model before a model ending in `*`, the longest such prefix first, and a rule that
+names the manufacturer before one for any manufacturer. Models are matched as for
+[driver packages](#packages). The machine's page says which choice applies and why.
+
+A rule's sequence runs only in two ways:
+
+- **Approved on the web.** Approving a waiting machine that a rule chooses a sequence for runs it,
+  after a confirmation that names the sequence and whether it erases the disk. The approval carries
+  the sequence the operator saw, and the server refuses it when the rules now choose another. When
+  the sequence has a problem, erases a disk on a machine that reported more than one, or joins a
+  domain and the machine has no name yet, the approval only authorizes the machine. So does an
+  approval with someone signed in at the machine, who chooses there; with
+  `DDT:Machines:RequireWebApproval` on, an approval therefore never runs a rule's sequence.
+- **Suggested at the machine.** The technician signed in at the machine sees the rule's sequence
+  first, marked as suggested, and still chooses it, confirming with `ERASE` when it erases a disk.
+
+A rule's run never counts as zero touch, and like a choice at the machine it is cancelled when the
+machine starts again before the run began. A new rule starts nothing by itself.
 
 ## Deploying a machine
 

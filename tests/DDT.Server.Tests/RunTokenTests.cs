@@ -163,6 +163,50 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(DeploymentState.Running, (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary.State);
     }
 
+    // A token names one run: an earlier run's token does not continue the next one, though the generation is the same.
+    [Fact]
+    public async Task AnEarlierRunsTokenDoesNotContinueTheNextRun()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (DeployingMachine machine, AgentRun first) = await RunningAsync(application);
+        using DeployingMachine _ = machine;
+        string firstToken = machine.RunToken!;
+        int generation = (await application.MachineAsync(machine.Id)).TokenGeneration;
+
+        await machine.ReportOkAsync(first.Id, Report(DeploymentState.Failed, [], error: "The script failed."));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        await administrator.AssignedAsync(machine.Id, sequence.Id);
+        AgentRun second = (await machine.NextAsync()).Run!;
+        await machine.ReportOkAsync(second.Id, Running(Step(second.Sequence.Steps[0], StepState.Running)));
+
+        Assert.Equal(generation, (await application.MachineAsync(machine.Id)).TokenGeneration);
+
+        AgentRegistrationResult after = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await ContinueAsync(machine, firstToken));
+
+        Assert.Null(after.RunId);
+        Assert.Null(after.RunToken);
+        Assert.Equal(MachineState.Pending, after.State);
+
+        DeploymentView failed = await administrator.RunAsync(second.Id);
+        Assert.Equal(DeploymentState.Failed, failed.Summary.State);
+        Assert.Equal("The machine started again during the run, with a run token the server no longer accepts.", failed.Summary.Error);
+    }
+
+    // A stop, a rejection or a start over raises the generation, and that alone ends every token of the one before.
+    [Fact]
+    public async Task ARunTokenOfAnEarlierGenerationDoesNotContinueTheRun()
+    {
+        (DeployingMachine machine, AgentRun run) = await RunningAsync(application);
+        using DeployingMachine _ = machine;
+
+        await application.ChangeMachineAsync(machine.Id, m => m.TokenGeneration++);
+        AgentRegistrationResult after = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await ContinueAsync(machine, machine.RunToken));
+
+        Assert.Null(after.RunId);
+        Assert.Equal(MachineState.Pending, after.State);
+        Assert.Equal(DeploymentState.Failed, (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary.State);
+    }
+
     [Fact]
     public async Task ARestartWithoutTheRunTokenFailsTheRun()
     {

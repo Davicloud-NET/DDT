@@ -157,6 +157,18 @@ function machine(id: string): MachineSummary {
   };
 }
 
+// Everything that may have changed while the connection was down, which every connect reads again.
+const resynced = [
+  ["machines"],
+  ["images"],
+  ["packages"],
+  ["image-uploads"],
+  ["sequences"],
+  ["rules"],
+  ["machine-sequence"],
+  ["sequence"],
+];
+
 describe("createLiveConnection", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -171,8 +183,9 @@ describe("createLiveConnection", () => {
     await settle();
 
     expect(live.status()).toBe("live");
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["machines"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
+    for (const queryKey of resynced) {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey });
+    }
 
     hub().emit("machineChanged", { ...machine("m1"), state: "Approved" });
 
@@ -183,8 +196,9 @@ describe("createLiveConnection", () => {
     hub().reconnect();
     await settle();
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["machines"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
+    for (const queryKey of resynced) {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey });
+    }
   });
 
   it("refetches the sequences, the rules and what the rules choose when either changes", async () => {
@@ -246,6 +260,7 @@ describe("createLiveConnection", () => {
     hub().emit("packagesChanged");
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["packages"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["image-uploads"] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequence"] });
   });
 

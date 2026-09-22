@@ -52,6 +52,7 @@ public static class WindowsPhaseService
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
         ToolRunner tools = new(log, TimeProvider.System);
+        WindowsRebooter rebooter = new(tools);
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
         SequenceRunner runner = new(
@@ -59,7 +60,7 @@ public static class WindowsPhaseService
             new DiskpartPartitioner(tools, log, TimeProvider.System, directory),
             new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(directory, "logs", "wimlib.log")),
             new BcdbootWriter(tools, new UefiVariables(), log),
-            new WindowsRebooter(tools),
+            rebooter,
             tools,
             new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
             log,
@@ -74,6 +75,8 @@ public static class WindowsPhaseService
             new HardwareMachineIdentityReader(),
             runner,
             new RegistrySetupProbe(),
+            rebooter,
+            new VolatileRestartMarker(log),
             new AgentRemoval(windowsRoot, log),
             log,
             TimeProvider.System,

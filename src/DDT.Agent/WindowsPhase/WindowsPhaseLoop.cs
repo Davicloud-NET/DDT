@@ -16,12 +16,15 @@ namespace DDT.Agent.WindowsPhase;
 // that run; any other answer means the run is over there, and the agent removes itself. Before the next step it waits
 // for Windows setup to finish, however long someone takes at the out-of-box experience, and then deletes the answer
 // file, which holds passwords. The run ends with its Done report or its failure, after which the agent removes itself
-// too, or with a restart of Windows, after which the service starts again and goes on.
+// too, or with a restart of Windows, after which the service starts again and goes on. The run records the restart
+// before anything else, so a service that starts again without it restarts Windows instead of going on.
 public sealed class WindowsPhaseLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
     SequenceRunner runner,
     IWindowsSetupProbe setup,
+    IRebooter rebooter,
+    IRestartMarker restartMarker,
     IAgentRemoval removal,
     AgentLog log,
     TimeProvider timeProvider,
@@ -34,6 +37,9 @@ public sealed class WindowsPhaseLoop(
 
     public static readonly TimeSpan SetupPollInterval = TimeSpan.FromSeconds(15);
     public static readonly TimeSpan SetupWarningInterval = TimeSpan.FromMinutes(30);
+
+    // How long a restart may take to stop the service before it is asked for again.
+    public static readonly TimeSpan RestartTimeout = TimeSpan.FromMinutes(5);
 
     private MachineIdentity? _identity;
 
@@ -80,6 +86,16 @@ public sealed class WindowsPhaseLoop(
 
         for (int attempt = 0; ; attempt++)
         {
+            // The state already says the step before the restart is done, so nothing may go on before the restart:
+            // neither a service the agent's stop left without it, nor this loop when a run comes back without it.
+            if (restartMarker.IsSet)
+            {
+                log.Warning("Windows was to restart for the run but has not restarted since. Restarting it now.");
+                await RestartAsync(cancellationToken).ConfigureAwait(false);
+
+                return await WaitForRestartAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             if (attempt > 0)
             {
                 await Task.Delay(AgentLimits.RetryDelay(attempt), timeProvider, cancellationToken).ConfigureAwait(false);
@@ -142,7 +158,9 @@ public sealed class WindowsPhaseLoop(
 
             DeleteAnswerFile(local);
 
-            RunResult result = await runner.GoOnInWindowsAsync(machineId, run, local, tokens, _identity!, cancellationToken).ConfigureAwait(false);
+            RunResult result = await runner
+                .GoOnInWindowsAsync(machineId, run, local, tokens, _identity!, restartMarker.Set, cancellationToken)
+                .ConfigureAwait(false);
             runToken = tokens.RunToken ?? runToken;
 
             switch (result.Outcome)
@@ -280,21 +298,40 @@ public sealed class WindowsPhaseLoop(
         }
     }
 
-    // The restart stops the service. A dry run has no service to stop.
+    // The restart stops the service, and until then there is nothing to do but ask again now and then, in case the
+    // restart never came. A dry run has no service to stop.
     private async Task<int> WaitForRestartAsync(CancellationToken cancellationToken)
     {
-        if (!dryRun)
+        if (dryRun)
         {
-            try
-            {
-                await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-            }
+            return AgentExitCodes.Restarting;
         }
 
-        return AgentExitCodes.Restarting;
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(RestartTimeout, timeProvider, cancellationToken).ConfigureAwait(false);
+                log.Warning($"Windows has not restarted {RestartTimeout.TotalMinutes:0} minutes after the run asked it to. Asking again.");
+                await RestartAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return AgentExitCodes.Restarting;
+        }
+    }
+
+    private async Task RestartAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await rebooter.RebootAsync(RestartInto.Windows, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            log.Error($"Windows could not restart itself ({LogText.OneLine(exception)}). Restart it by hand; the run goes on after the restart.");
+        }
     }
 
     // True once the server has the report, or refused it.

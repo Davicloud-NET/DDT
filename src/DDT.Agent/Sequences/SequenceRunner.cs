@@ -71,6 +71,9 @@ public sealed class SequenceRunner(
     // Where the run goes on: in Windows PE, or in the installed Windows.
     private SequencePhase _phase;
 
+    // Records in Windows that the run restarts it; null in Windows PE.
+    private Action? _recordRestart;
+
     // confirmedDisk is the disk the technician confirmed with ERASE in this process, if any. Disk numbers can change
     // when the machine starts again, so a run chosen at the machine only erases that same disk. resumed is the run's
     // state found on the disk, for a run that goes on after a restart.
@@ -82,25 +85,30 @@ public sealed class SequenceRunner(
         DeploymentTokens tokens,
         MachineIdentity identity,
         CancellationToken cancellationToken) =>
-        RunAsync(SequencePhase.WindowsPE, machineId, run, resumed, confirmedDisk, tokens, identity, cancellationToken);
+        RunAsync(SequencePhase.WindowsPE, null, machineId, run, resumed, confirmedDisk, tokens, identity, cancellationToken);
 
     // resumed is the run as the hand-over left it in the running Windows, whose volume it names. The run ends with its
-    // Done report and no restart, as the agent still has to remove itself.
+    // Done report and no restart, as the agent still has to remove itself. recordRestart is called as soon as the run
+    // knows that it restarts Windows, before it tells the server, so an agent that stops or dies before the restart
+    // finds out at its next start that the restart is still due.
     public Task<RunResult> GoOnInWindowsAsync(
         Guid machineId,
         AgentRun run,
         LocalRun resumed,
         DeploymentTokens tokens,
         MachineIdentity identity,
+        Action recordRestart,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(resumed);
+        ArgumentNullException.ThrowIfNull(recordRestart);
 
-        return RunAsync(SequencePhase.Windows, machineId, run, resumed, null, tokens, identity, cancellationToken);
+        return RunAsync(SequencePhase.Windows, recordRestart, machineId, run, resumed, null, tokens, identity, cancellationToken);
     }
 
     private async Task<RunResult> RunAsync(
         SequencePhase phase,
+        Action? recordRestart,
         Guid machineId,
         AgentRun run,
         LocalRun? resumed,
@@ -115,6 +123,7 @@ public sealed class SequenceRunner(
 
         _windowsFirst = false;
         _phase = phase;
+        _recordRestart = recordRestart;
 
         RunSession session = new(machineId, run, tokens);
         FileRunStateStore? store = null;
@@ -261,6 +270,11 @@ public sealed class SequenceRunner(
             outcome = result.Outcome;
             error = result.Error;
             restartDue = outcome == SequenceOutcome.RebootRequired;
+
+            if (restartDue)
+            {
+                _recordRestart?.Invoke();
+            }
 
             switch (outcome)
             {

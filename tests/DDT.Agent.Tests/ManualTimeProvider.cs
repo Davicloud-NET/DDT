@@ -21,6 +21,18 @@ internal sealed class ManualTimeProvider : TimeProvider
         }
     }
 
+    // The timers that fire once time moves far enough, so a test can wait until the code under test waits.
+    public int PendingTimers
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _timers.Count(timer => timer.DueAt is not null);
+            }
+        }
+    }
+
     public override long TimestampFrequency => TimeSpan.TicksPerSecond;
 
     public override long GetTimestamp() => GetUtcNow().UtcTicks;

@@ -80,7 +80,7 @@ internal static class TestAgents
         return system;
     }
 
-    // The service in the Windows on tools.Volumes.Windows, with the fake's setup and removal.
+    // The service in the Windows on tools.Volumes.Windows, with the fake's setup, restart and removal.
     public static WindowsPhaseLoop WindowsLoop(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -95,6 +95,8 @@ internal static class TestAgents
             server,
             new DryRunMachineIdentityReader(1),
             runner,
+            tools,
+            tools,
             tools,
             tools,
             log,

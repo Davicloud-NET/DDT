@@ -356,29 +356,168 @@ public sealed class WindowsPhaseLoopTests : IDisposable
     }
 
     [Fact]
-    public async Task ARestartWaitsForWindowsToStopTheService()
+    public async Task ARestartIsRecordedFirstAndWaitsForWindowsToStopTheService()
     {
         AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
         await HandOverAsync(run);
         ScriptedAgentServer server = new ScriptedAgentServer()
             .OnRegister(_ => Continued())
             .OnNext(_ => Next("session-1", run));
-
-        Task<int> running = RunAsync(server);
-
-        while (!_tools.Calls.Contains("reboot"))
+        server.AnswerRunReports = (report, token) =>
         {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
+            if (report.Activity == RunActivity.Restarting)
+            {
+                _tools.Note("restarting report");
+            }
+
+            return new AgentRunReportResult(token, "resume", null);
+        };
+
+        // Five minutes never pass, so nothing asks for the restart again.
+        Task<int> running = RunAsync(server, new ManualTimeProvider());
+        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+
+        Assert.False(running.IsCompleted);
+        await server.Stop.CancelAsync();
+        Assert.Equal(AgentExitCodes.Restarting, await running);
+        Assert.Equal(["setup finished", "restart due", "restarting report", "reboot"], _tools.Calls);
+        Assert.Equal(5, (await RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
+    }
+
+    // Stopped between the step that asked for the restart and the restart itself, the service starts again in the same
+    // Windows, whose state says the step is done: it restarts Windows instead of going on.
+    [Fact]
+    public async Task AStopBeforeTheRestartRestartsWindowsAtTheNextStart()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer first = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+        first.AnswerRunReports = (report, token) =>
+        {
+            if (report.Activity == RunActivity.Restarting)
+            {
+                first.Stop.Cancel();
+            }
+
+            return new AgentRunReportResult(token, "resume", null);
+        };
+
+        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
+        Assert.Equal(["setup finished", "restart due"], _tools.Calls);
+
+        ScriptedAgentServer second = new();
+        Task<int> running = RunAsync(second, new ManualTimeProvider());
+        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
+        await second.Stop.CancelAsync();
+
+        Assert.Equal(AgentExitCodes.Restarting, await running);
+        Assert.Empty(second.Registrations);
+        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
+        Assert.Single(_toolRunner.Calls);
+    }
+
+    // The server may stop taking the machine's token once the step asked for the restart, when it is told of the
+    // restart or sent the last log lines, which only the runner sends then. Unlike at the hand-over, Windows still
+    // restarts before the next step runs.
+    [Theory]
+    [InlineData("the restart")]
+    [InlineData("the last log lines")]
+    public async Task ARefusedTokenAtTheRestartStillRestartsWindowsBeforeTheNextStep(string refused)
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-2", run));
+
+        if (refused == "the restart")
+        {
+            server.AnswerRunReports = (report, token) => report.Activity == RunActivity.Restarting
+                ? throw new AgentTokenRejectedException()
+                : new AgentRunReportResult(token, "resume", null);
+        }
+        else
+        {
+            server.AnswerLogs = batch =>
+            {
+                if (batch.Lines.Any(line => line.Message == "Windows restarts, and the run goes on after the restart."))
+                {
+                    throw new AgentTokenRejectedException();
+                }
+            };
         }
 
+        Task<int> running = RunAsync(server, new ManualTimeProvider());
+        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
         await Task.Delay(50, TestContext.Current.CancellationToken);
-        Assert.False(running.IsCompleted);
         await server.Stop.CancelAsync();
 
         Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(["setup finished", "reboot"], _tools.Calls);
-        Assert.Equal(RunActivity.Restarting, server.RunReports[^1].Activity);
-        Assert.Equal(5, (await RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
+        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
+        Assert.Single(_toolRunner.Calls);
+    }
+
+    // However the loop comes round again, a restart the run recorded comes first.
+    [Fact]
+    public async Task ARestartThatIsDueComesBeforeTheNextRegistration()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ =>
+            {
+                // As a run that recorded its restart and came back without it leaves the marker.
+                _tools.RestartDue = true;
+
+                throw new AgentTokenRejectedException();
+            })
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-2", run));
+
+        Task<int> running = RunAsync(server, new ManualTimeProvider());
+        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
+        await server.Stop.CancelAsync();
+
+        Assert.Equal(AgentExitCodes.Restarting, await running);
+        Assert.Equal(["reboot"], _tools.Calls);
+        Assert.Single(server.Registrations);
+        Assert.Empty(_toolRunner.Calls);
+    }
+
+    [Fact]
+    public async Task AsksForTheRestartAgainWhenWindowsHasNotRestartedAfterFiveMinutes()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot);
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+        ManualTimeProvider time = new();
+        StringWriter console = new();
+
+        Task<int> running = RunAsync(server, time, new AgentLog(time, console));
+
+        // Then the loop's wait for the restart is the only timer.
+        await WaitForAsync(() => Restarts() == 1 && time.PendingTimers == 1);
+        time.Advance(WindowsPhaseLoop.RestartTimeout - TimeSpan.FromSeconds(1));
+
+        Assert.Equal(1, Restarts());
+
+        time.Advance(TimeSpan.FromSeconds(1));
+        await WaitForAsync(() => Restarts() == 2);
+        await server.Stop.CancelAsync();
+
+        Assert.Equal(AgentExitCodes.Restarting, await running);
+        Assert.Equal(2, Restarts());
+        Assert.Contains(
+            console.ToString().Split(Environment.NewLine),
+            line => line.EndsWith("Windows has not restarted 5 minutes after the run asked it to. Asking again.", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -391,10 +530,24 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             .OnNext(_ => Next("session-1", run));
 
         Assert.Equal(AgentExitCodes.Restarting, await RunAsync(server, dryRun: true));
-        Assert.Equal(["setup finished", "reboot"], _tools.Calls);
+        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
     }
 
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
+
+    private int Restarts() => _tools.Calls.Count(call => call == "reboot");
+
+    // For what happens on the loop's own thread, which a test cannot await.
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+
+        while (!condition())
+        {
+            await Task.Delay(10, timeout.Token);
+        }
+    }
 
     private static AgentRegistrationResult Continued() =>
         new(s_machineId, MachineState.Deploying, "session-0", "resume-0", 10, null, TestRuns.RunId, "run-token-2");

@@ -8,10 +8,12 @@ using DDT.Agent.WindowsPhase;
 namespace DDT.Agent.Tests;
 
 // Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
-// setup and the agent's removal, and records each call in one journal so a test can check their order. FailAt names
-// the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find, remove, or one passed to
-// Note. The volumes are directories in a temporary folder, created by the partitioning, that Dispose removes.
-internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IAgentRemoval, IDisposable
+// setup, the due restart and the agent's removal, and records each call in one journal so a test can check their
+// order. FailAt names the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find,
+// remove, or one passed to Note. The volumes are directories in a temporary folder, created by the partitioning, that
+// Dispose removes.
+internal sealed class FakeDeploymentTools
+    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IRestartMarker, IAgentRemoval, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
@@ -195,6 +197,17 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
         Record("setup", pending is null ? " finished" : $" {pending}");
 
         return pending;
+    }
+
+    // Set until the test says Windows restarted, as the restart itself would.
+    public bool RestartDue { get; set; }
+
+    bool IRestartMarker.IsSet => RestartDue;
+
+    void IRestartMarker.Set()
+    {
+        RestartDue = true;
+        Record("restart due");
     }
 
     public Task RemoveAsync(CancellationToken cancellationToken)

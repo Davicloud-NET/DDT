@@ -9,6 +9,7 @@ import { currentUserQuery, logout } from "@/auth/auth";
 import { LiveContext } from "@/live/LiveContext";
 import { useLiveUpdates } from "@/live/useLiveUpdates";
 import { cx } from "@/lib/cx";
+import { ReplacedAnchorBanner } from "@/server/ReplacedAnchorBanner";
 
 import styles from "./AppShell.module.scss";
 
@@ -61,6 +62,7 @@ export function AppShell() {
         </div>
       </aside>
       <main className={styles.main}>
+        <ReplacedAnchorBanner />
         <LiveContext value={live}>
           <Outlet />
         </LiveContext>

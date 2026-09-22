@@ -102,6 +102,13 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         SequenceDefinition edited = SequenceRequests.Definition([.. sequence.Definition.Steps, .. SequenceRequests.ScriptOnly().Steps]);
         (await administrator.SaveSequenceAsync(sequence, edited, name: $"Renamed {Guid.NewGuid():N}")).EnsureSuccessStatusCode();
 
+        // What runs is what the agent is handed, and that is the frozen sequence too.
+        AgentRun handed = (await machine.NextAsync()).Run!;
+
+        Assert.Equal(sequence.Name, handed.SequenceName);
+        Assert.Equal(SequenceRequests.Json(sequence.Definition), SequenceRequests.Json(handed.Sequence));
+        Assert.Equal(image.Sha256, Assert.Single(handed.Images).Sha256);
+
         DeploymentView view = await administrator.RunAsync(run.Id);
 
         Assert.Equal(sequence.Name, view.Summary.Title);

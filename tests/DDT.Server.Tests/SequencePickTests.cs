@@ -143,16 +143,21 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Equal([new AgentRunImage(image.Id, image.Name, image.Sha256, image.SizeBytes, image.WimIndex, image.InstalledBytes)], picked.Images);
         Assert.Equal([new AgentRunPackage(inject.Id, drivers.Name, drivers.Sha256, drivers.SizeBytes)], picked.Packages);
 
+        // An edit after the choice changes nothing the agent is handed.
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceDefinition edited = SequenceRequests.Definition([.. sequence.Definition.Steps, .. SequenceRequests.ScriptOnly().Steps]);
+        (await administrator.SaveSequenceAsync(sequence, edited)).EnsureSuccessStatusCode();
+
         AgentNextResult next = await machine.NextAsync();
 
         Assert.False(next.CanPickSequence);
         Assert.Equal("PC-0002", next.AssignedName);
+        Assert.Equal(SequenceRequests.Json(picked.Sequence), SequenceRequests.Json(next.Run!.Sequence));
 
         HttpResponseMessage again = await PickAsync(machine, sequence.Id);
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
         Assert.Equal("This machine already has a run. It starts once the agent asks the server again.", await TestDatabase.TitleAsync(again));
 
-        SignedInClient administrator = await application.AdministratorAsync();
         IReadOnlyList<MachineSummary> machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines"));
         DeploymentSummary summary = Assert.IsType<DeploymentSummary>(Assert.Single(machines, m => m.Id == machine.Id).Deployment);
 

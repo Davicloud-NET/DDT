@@ -11,4 +11,7 @@ public enum MachineTokenPurpose
     Poll,
     Session,
     Resume,
+
+    // Only ever presented at registration, never as a bearer token, see MachineTokenService.IssueRunToken.
+    Run,
 }

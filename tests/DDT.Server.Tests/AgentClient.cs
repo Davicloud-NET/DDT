@@ -13,6 +13,8 @@ namespace DDT.Server.Tests;
 // client its own rate limit partitions.
 public sealed class AgentClient(HttpClient client, string? remoteAddress = null) : IDisposable
 {
+    public string? RemoteAddress => remoteAddress;
+
     // An agent that runs task sequences of the current version.
     public static AgentRegistration Registration(string uuid, string mac, params string[] otherMacs) =>
         new(uuid, mac, [mac, .. otherMacs], "Microsoft Corporation", "Virtual Machine", "0000-0000", "1.0.0")

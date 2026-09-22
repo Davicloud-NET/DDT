@@ -82,15 +82,20 @@ public static class AgentEndpoints
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["registration"] = [error] });
         }
 
-        AgentRegistrationResult? result = await registrar
+        MachineRegistration registered = await registrar
             .RegisterAsync(normalised!, context.Connection.RemoteIpAddress, cancellationToken)
             .ConfigureAwait(false);
 
-        return result is null
-            ? TypedResults.Problem(
+        return registered.Refusal switch
+        {
+            RegistrationRefusal.TooManyWaiting => TypedResults.Problem(
                 title: "Too many machines are waiting to be authorized. Approve or remove some on the Machines page.",
-                statusCode: StatusCodes.Status429TooManyRequests)
-            : TypedResults.Ok(result);
+                statusCode: StatusCodes.Status429TooManyRequests),
+            RegistrationRefusal.NothingToContinue => TypedResults.Problem(
+                title: "This machine has no run for the DDT service to continue. The service removes itself.",
+                statusCode: StatusCodes.Status409Conflict),
+            _ => TypedResults.Ok(registered.Result!),
+        };
     }
 
     private static async Task<Results<Ok<AgentRelease>, NotFound>> GetReleaseAsync(

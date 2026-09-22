@@ -29,8 +29,7 @@ public sealed partial class MachineRegistrar(
 
     private const int MaxAttempts = 3;
 
-    // Null when a machine the server has not seen before is refused, because too many are already waiting.
-    public async Task<AgentRegistrationResult?> RegisterAsync(
+    public async Task<MachineRegistration> RegisterAsync(
         NormalisedRegistration registration,
         IPAddress? remoteAddress,
         CancellationToken cancellationToken)
@@ -65,7 +64,7 @@ public sealed partial class MachineRegistrar(
                 : MachineTokenPurpose.Poll);
     }
 
-    private async Task<AgentRegistrationResult?> TryRegisterAsync(
+    private async Task<MachineRegistration> TryRegisterAsync(
         NormalisedRegistration registration,
         IPAddress? remoteAddress,
         CancellationToken cancellationToken)
@@ -73,8 +72,19 @@ public sealed partial class MachineRegistrar(
         DateTimeOffset now = timeProvider.GetUtcNow();
         string? address = remoteAddress?.ToString();
         Machine? machine = await FindAsync(registration, cancellationToken).ConfigureAwait(false);
-        Deployment? active = null;
-        DeploymentState? before = null;
+        Deployment? active = machine is null ? null : await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+        DeploymentState? before = active?.State;
+        bool resumes = machine is not null && Resumes(registration, machine);
+        Deployment? continued = machine is not null && ContinuesRun(registration, machine, active) ? active : null;
+
+        // The service in Windows only ever continues a run. Starting over would make the machine Pending, and an
+        // approval would then hand Windows PE steps to a running Windows. It changes nothing, and removes itself.
+        if (registration.Environment == AgentEnvironment.Windows && !resumes && continued is null)
+        {
+            LogNothingToContinue(machine?.Id, address ?? "unknown");
+
+            return MachineRegistration.Refused(RegistrationRefusal.NothingToContinue);
+        }
 
         if (machine is null)
         {
@@ -82,7 +92,7 @@ public sealed partial class MachineRegistrar(
             {
                 LogTooManyWaiting(address ?? "unknown");
 
-                return null;
+                return MachineRegistration.Refused(RegistrationRefusal.TooManyWaiting);
             }
 
             machine = new Machine
@@ -101,11 +111,30 @@ public sealed partial class MachineRegistrar(
         {
             database.AuditEvents.Add(Audit(now, AuditActions.MachineReregistered, machine, address, "Still rejected."));
         }
-        else if (!Resumes(registration, machine))
+        else if (continued is not null)
         {
-            active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
-            before = active?.State;
-            await StartOverAsync(machine, active, remoteAddress, address, now, cancellationToken).ConfigureAwait(false);
+            database.AuditEvents.Add(Audit(
+                now,
+                AuditActions.DeploymentResumed,
+                machine,
+                address,
+                $"Continued {continued.Title} ({continued.Id:D}) from {registration.Environment} with its run token.",
+                continued.Id));
+            LogContinued(machine.Id, continued.Id, address ?? "unknown", registration.Environment);
+        }
+        else if (!resumes)
+        {
+            await StartOverAsync(machine, active, remoteAddress, address, now, registration.RunToken is not null, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (machine.State != MachineState.Rejected && registration.RunToken is not null && continued is null)
+        {
+            database.AuditEvents.Add(Audit(
+                now,
+                AuditActions.DeploymentRunTokenRefused,
+                machine,
+                address,
+                "Presented a run token the server no longer accepts: its run is over, or the machine started over since."));
         }
 
         machine.PrimaryMac = registration.PrimaryMac;
@@ -136,18 +165,21 @@ public sealed partial class MachineRegistrar(
         }
 
         live.RunStepsChanged(machine.Id, changedSteps);
-
         live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
 
-        return machine.State == MachineState.Rejected
-            ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null)
-            : new AgentRegistrationResult(
-                machine.Id,
-                machine.State,
-                CurrentToken(machine),
-                tokens.Issue(machine, MachineTokenPurpose.Resume),
-                PollAfterSeconds,
-                machine.SignedInUserName);
+        return new MachineRegistration(
+            machine.State == MachineState.Rejected
+                ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null)
+                : new AgentRegistrationResult(
+                    machine.Id,
+                    machine.State,
+                    CurrentToken(machine),
+                    tokens.Issue(machine, MachineTokenPurpose.Resume),
+                    PollAfterSeconds,
+                    machine.SignedInUserName,
+                    continued?.Id,
+                    continued is null ? null : tokens.IssueRunToken(machine, continued.Id)),
+            RegistrationRefusal.None);
     }
 
     // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration proves it comes
@@ -161,6 +193,7 @@ public sealed partial class MachineRegistrar(
         IPAddress? remoteAddress,
         string? address,
         DateTimeOffset now,
+        bool presentedRunToken,
         CancellationToken cancellationToken)
     {
         bool zeroTouch = deployments.KeepsApprovalOnNetboot(active, remoteAddress);
@@ -174,7 +207,7 @@ public sealed partial class MachineRegistrar(
                 ? $"Kept approved for {active!.Title} assigned by {active.RequestedByName}: netbooted from {address} in a zero touch network."
                 : $"Was {machine.State}."));
 
-        await deployments.EndForRestartAsync(machine, active, address, cancellationToken).ConfigureAwait(false);
+        await deployments.EndForRestartAsync(machine, active, address, presentedRunToken, cancellationToken).ConfigureAwait(false);
 
         machine.TokenGeneration++;
         machine.SignedInByUserId = null;
@@ -213,6 +246,16 @@ public sealed partial class MachineRegistrar(
         && payload.MachineId == machine.Id
         && payload.TokenGeneration == machine.TokenGeneration;
 
+    // An agent that restarted during its run, in Windows PE or as the service in Windows, continues it with the run
+    // token it kept on disk: its run is the machine's active one and still running, in the generation it was issued in.
+    // It keeps the generation, so the tokens the agent held before the restart stay valid.
+    private bool ContinuesRun(NormalisedRegistration registration, Machine machine, Deployment? active) =>
+        tokens.ValidateRunToken(registration.RunToken) is { } payload
+        && payload.MachineId == machine.Id
+        && payload.TokenGeneration == machine.TokenGeneration
+        && active is { State: DeploymentState.Running }
+        && active.Id == payload.RunId;
+
     // A machine is the same one when the UUID matches exactly and at least one of its network adapters is
     // still present. A UUID alone is not enough: cloned virtual machines and some boards share one, and
     // SMBIOS reserves all zeros and all ones for "no UUID", which cheap firmware reports. Matching on the
@@ -235,16 +278,23 @@ public sealed partial class MachineRegistrar(
         string action,
         Machine machine,
         string? address,
-        string? detail = null) => new()
+        string? detail = null,
+        Guid? subjectId = null) => new()
         {
             OccurredUtc = now,
             Action = action,
             ActorMachineId = machine.Id,
-            SubjectId = machine.Id.ToString("D"),
+            SubjectId = (subjectId ?? machine.Id).ToString("D"),
             SourceAddress = address,
             Detail = detail,
         };
 
     [LoggerMessage(EventId = 410, Level = LogLevel.Warning, Message = "Refused a new machine from {Address}: too many machines nobody approved are waiting")]
     private partial void LogTooManyWaiting(string address);
+
+    [LoggerMessage(EventId = 440, Level = LogLevel.Information, Message = "Machine {MachineId} continued run {RunId} from {Address} in {Environment}")]
+    private partial void LogContinued(Guid machineId, Guid runId, string address, AgentEnvironment environment);
+
+    [LoggerMessage(EventId = 441, Level = LogLevel.Warning, Message = "Refused the DDT service in Windows on machine {MachineId} from {Address}: it has no run to continue, so it removes itself")]
+    private partial void LogNothingToContinue(Guid? machineId, string address);
 }

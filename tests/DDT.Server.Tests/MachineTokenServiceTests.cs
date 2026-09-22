@@ -10,7 +10,7 @@ namespace DDT.Server.Tests;
 
 public sealed class MachineTokenServiceTests
 {
-    private static readonly MachineTokenService s_tokens = new(new EphemeralDataProtectionProvider());
+    private static readonly MachineTokenService s_tokens = new(new EphemeralDataProtectionProvider(), TimeProvider.System);
 
     private static Machine NewMachine(int generation = 1) => new()
     {
@@ -71,13 +71,44 @@ public sealed class MachineTokenServiceTests
     }
 
     [Fact]
-    public void OnlyThePollSessionAndResumePurposesExist()
+    public void OnlyThePollSessionResumeAndRunPurposesExist()
     {
         // Image and secret grants were never used: the machine's own session token and its running deployment
         // decide what it may download and read.
         Assert.Equal(
-            [MachineTokenPurpose.Poll, MachineTokenPurpose.Session, MachineTokenPurpose.Resume],
+            [MachineTokenPurpose.Poll, MachineTokenPurpose.Session, MachineTokenPurpose.Resume, MachineTokenPurpose.Run],
             Enum.GetValues<MachineTokenPurpose>());
+    }
+
+    [Fact]
+    public void ARunTokenNamesItsRunAndLastsSevenDays()
+    {
+        ManualTimeProvider clock = new();
+        MachineTokenService tokens = new(new EphemeralDataProtectionProvider(), clock);
+        Machine machine = NewMachine(generation: 3);
+        Guid runId = Guid.NewGuid();
+
+        string token = tokens.IssueRunToken(machine, runId);
+        RunTokenPayload? payload = tokens.ValidateRunToken(token);
+
+        Assert.Equal(new RunTokenPayload(machine.Id, runId, 3, clock.GetUtcNow() + TimeSpan.FromDays(7)), payload);
+
+        clock.Advance(TimeSpan.FromDays(7) - TimeSpan.FromSeconds(1));
+        Assert.NotNull(tokens.ValidateRunToken(token));
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Null(tokens.ValidateRunToken(token));
+    }
+
+    // A run token is presented only at registration. As any other purpose it is nothing.
+    [Fact]
+    public void ARunTokenIsNoOtherToken()
+    {
+        string run = s_tokens.IssueRunToken(NewMachine(), Guid.NewGuid());
+
+        Assert.All(Enum.GetValues<MachineTokenPurpose>(), purpose => Assert.Null(s_tokens.Validate(run, purpose)));
+        Assert.Null(s_tokens.ValidateRunToken(s_tokens.Issue(NewMachine(), MachineTokenPurpose.Resume)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s_tokens.Issue(NewMachine(), MachineTokenPurpose.Run));
     }
 
     [Theory]
@@ -87,5 +118,6 @@ public sealed class MachineTokenServiceTests
     public void GarbageIsRejectedRatherThanThrowing(string token)
     {
         Assert.Null(s_tokens.Validate(token, MachineTokenPurpose.Session));
+        Assert.Null(s_tokens.ValidateRunToken(token));
     }
 }

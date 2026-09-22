@@ -8,4 +8,5 @@ namespace DDT.Server.Machines;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(MachineTokenPayload))]
+[JsonSerializable(typeof(RunTokenPayload))]
 internal sealed partial class MachineTokenJsonContext : JsonSerializerContext;

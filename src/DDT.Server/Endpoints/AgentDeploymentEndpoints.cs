@@ -240,7 +240,7 @@ public static class AgentDeploymentEndpoints
                 case DeploymentOutcome.Invalid:
                     return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
                 case DeploymentOutcome.Unchanged:
-                    return TypedResults.Ok(Tokens(machine, registrar, tokens));
+                    return TypedResults.Ok(Tokens(machine, decision.Deployment!, registrar, tokens));
             }
 
             Deployment run = decision.Deployment!;
@@ -266,7 +266,7 @@ public static class AgentDeploymentEndpoints
 
             return decision.Outcome == DeploymentOutcome.Refused
                 ? TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict)
-                : TypedResults.Ok(Tokens(machine, registrar, tokens));
+                : TypedResults.Ok(Tokens(machine, run, registrar, tokens));
         }
     }
 
@@ -403,6 +403,10 @@ public static class AgentDeploymentEndpoints
         return machine is not null && Principals.HoldsCurrentGeneration(user, machine) ? machine : null;
     }
 
-    private static AgentRunReportResult Tokens(Machine machine, MachineRegistrar registrar, MachineTokenService tokens) =>
-        new(registrar.CurrentToken(machine), tokens.Issue(machine, MachineTokenPurpose.Resume), null);
+    // The run token comes with every answer while the run runs, so the agent has one on disk before it first restarts.
+    private static AgentRunReportResult Tokens(Machine machine, Deployment run, MachineRegistrar registrar, MachineTokenService tokens) =>
+        new(
+            registrar.CurrentToken(machine),
+            tokens.Issue(machine, MachineTokenPurpose.Resume),
+            run.State == DeploymentState.Running ? tokens.IssueRunToken(machine, run.Id) : null);
 }

@@ -13,4 +13,7 @@ public static class MachineTokenLifetimes
 
     // How long the server may be unreachable before an approved machine has to be approved again.
     public static readonly TimeSpan Resume = TimeSpan.FromHours(24);
+
+    // A run can stop for a weekend, at Windows setup or with the machine switched off, and still continue.
+    public static readonly TimeSpan Run = TimeSpan.FromDays(7);
 }

@@ -147,7 +147,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
 
         Assert.Equal(MachineState.Pending, restarted.State);
         Assert.Equal(DeploymentState.Failed, failed.State);
-        Assert.Equal("The machine started again during the run.", failed.Error);
+        Assert.Equal("The machine started again during the run, without the run's token, so the run could not continue.", failed.Error);
         Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
 
         AuditEvent audit = await AuditAsync(deployment, AuditActions.DeploymentFailed);
@@ -155,7 +155,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         Assert.Equal(machine.Id, audit.ActorMachineId);
         Assert.Null(audit.ActorUserId);
         Assert.Equal("10.200.7.7", audit.SourceAddress);
-        Assert.Equal($"{failed.Title} on machine {machine.Id:D}. The machine started again during the run.", audit.Detail);
+        Assert.Equal($"{failed.Title} on machine {machine.Id:D}. {failed.Error}", audit.Detail);
     }
 
     // The disk and the ERASE were typed at the machine in the boot that ended, and its disk numbers can differ

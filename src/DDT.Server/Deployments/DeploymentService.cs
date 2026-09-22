@@ -568,7 +568,12 @@ public sealed class DeploymentService(
     // fails. A run chosen at the machine or by a rule is cancelled: the disk and the ERASE typed there, and the
     // approval that took the rule's sequence, belonged to that boot. A web assignment stays for the next sign-in or a
     // zero touch netboot.
-    public async Task EndForRestartAsync(Machine machine, Deployment? active, string? address, CancellationToken cancellationToken)
+    public async Task EndForRestartAsync(
+        Machine machine,
+        Deployment? active,
+        string? address,
+        bool presentedRunToken,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
@@ -577,7 +582,9 @@ public sealed class DeploymentService(
         switch (active)
         {
             case { State: DeploymentState.Running }:
-                const string error = "The machine started again during the run.";
+                string error = presentedRunToken
+                    ? "The machine started again during the run, with a run token the server no longer accepts."
+                    : "The machine started again during the run, without the run's token, so the run could not continue.";
                 await FailRunningStepsAsync(active, error, now, cancellationToken).ConfigureAwait(false);
                 End(machine, active, DeploymentState.Failed, error, now);
                 database.AuditEvents.Add(Audit(

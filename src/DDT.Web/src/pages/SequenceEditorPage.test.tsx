@@ -93,6 +93,7 @@ type SaveAnswer = (request: SaveSequenceRequest) => Response;
 // next revision, as the server does.
 function serve(user: CurrentUser, initial: SequenceView, answer?: SaveAnswer) {
   let stored = initial;
+  let deleted = false;
   const saves: SaveSequenceRequest[] = [];
 
   const store: SaveAnswer = (request) => {
@@ -122,7 +123,7 @@ function serve(user: CurrentUser, initial: SequenceView, answer?: SaveAnswer) {
         case "GET /api/auth/session":
           return Promise.resolve(new Response(null, { headers: { "X-CSRF-TOKEN": "token" } }));
         case `GET /api/sequences/${sequenceId}`:
-          return Promise.resolve(json(stored));
+          return Promise.resolve(deleted ? new Response(null, { status: 404 }) : json(stored));
         case `PUT /api/sequences/${sequenceId}`: {
           const body = typeof init?.body === "string" ? init.body : "null";
           const request = JSON.parse(body) as SaveSequenceRequest;
@@ -185,7 +186,11 @@ function serve(user: CurrentUser, initial: SequenceView, answer?: SaveAnswer) {
     </QueryClientProvider>,
   );
 
-  return { saves, queryClient, router, stored: () => stored };
+  const remove = () => {
+    deleted = true;
+  };
+
+  return { saves, queryClient, router, stored: () => stored, remove };
 }
 
 // The debounce of typing is 700 ms.
@@ -536,6 +541,26 @@ describe("SequenceEditorPage", () => {
     fireEvent.keyDown(link, { key: "ArrowDown", altKey: true });
 
     expect(order()).toEqual(["Move Partition the disk", "Move Inject drivers", "Move Restart"]);
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(0);
+  });
+
+  it("stops saving, unsaved edits too, once someone else deleted the sequence", async () => {
+    const { saves, queryClient, remove } = serve(administrator, view());
+
+    fireEvent.change(await screen.findByLabelText("Sequence name"), { target: { value: "Lab" } });
+
+    // As the live connection does for a sequenceChanged without a revision.
+    remove();
+    act(() => {
+      void queryClient.invalidateQueries({ queryKey: ["sequence", sequenceId] });
+    });
+
+    expect(
+      await screen.findByText("This sequence was deleted, so nothing more is saved."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Sequence name")).toBeDisabled();
+
     await new Promise((resolve) => setTimeout(resolve, 1_000));
     expect(saves).toHaveLength(0);
   });

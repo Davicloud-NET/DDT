@@ -4,7 +4,7 @@
 
 import { queryOptions } from "@tanstack/react-query";
 
-import { apiGet } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type SequencePhase = "WindowsPE" | "Windows";
 
@@ -114,12 +114,76 @@ export interface SequenceSummary {
   updatedBy: string | null;
 }
 
+// SequenceDefinition.CurrentVersion: the document schema this page writes.
+export const SEQUENCE_VERSION = 1;
+
+// stepId is null for a problem of the whole sequence. field is the camelCase name within the step, such as
+// "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not.
+export interface SequenceProblem {
+  stepId: string | null;
+  field: string | null;
+  message: string;
+}
+
+// stepPhases holds the phase each step runs in, in step order, as the engine decides it. Problems and warnings
+// are worked out on every read, because a deleted image or a changed setting changes them.
+export interface SequenceView {
+  id: string;
+  name: string;
+  description: string | null;
+  revision: number;
+  definition: SequenceDefinition;
+  stepPhases: SequencePhase[];
+  problems: SequenceProblem[];
+  warnings: SequenceProblem[];
+  updatedUtc: string;
+  updatedBy: string | null;
+}
+
+// A starting point for a new sequence.
+export interface SequenceTemplate {
+  key: string;
+  name: string;
+  description: string;
+  definition: SequenceDefinition;
+}
+
+export interface CreateSequenceRequest {
+  name: string;
+  description: string | null;
+  definition: SequenceDefinition;
+}
+
 export const sequencesQuery = queryOptions({
   queryKey: ["sequences"],
   queryFn: () => apiGet<SequenceSummary[]>("/api/sequences"),
 });
 
+// Only administrators may read the templates.
+export const templatesQuery = queryOptions({
+  queryKey: ["sequence-templates"],
+  queryFn: () => apiGet<SequenceTemplate[]>("/api/sequences/templates"),
+  staleTime: 5 * 60_000,
+});
+
+// A root of its own, so a change of the list never reads an open editor's document again.
+export function sequenceQuery(id: string) {
+  return queryOptions({
+    queryKey: ["sequence", id],
+    queryFn: () => apiGet<SequenceView>(`/api/sequences/${id}`),
+  });
+}
+
 // The server refuses to assign or start a sequence with problems.
 export function canRun(sequence: SequenceSummary): boolean {
   return sequence.problemCount === 0;
+}
+
+export function createSequence(request: CreateSequenceRequest): Promise<SequenceView> {
+  return apiPost<SequenceView>("/api/sequences", request);
+}
+
+// Refused with 409 while a rule chooses the sequence.
+export function deleteSequence(id: string): Promise<void> {
+  return apiDelete(`/api/sequences/${id}`);
 }

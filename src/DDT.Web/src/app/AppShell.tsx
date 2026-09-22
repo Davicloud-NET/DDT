@@ -13,8 +13,10 @@ import { ReplacedAnchorBanner } from "@/server/ReplacedAnchorBanner";
 
 import styles from "./AppShell.module.scss";
 
+// Every section but Machines stays marked on the pages below its path, such as a sequence's editor.
 const navigation = [
   { to: "/", label: "Machines" },
+  { to: "/sequences", label: "Sequences" },
   { to: "/images", label: "Images" },
   { to: "/account", label: "Account" },
 ] as const;
@@ -50,7 +52,7 @@ export function AppShell() {
                 to={item.to}
                 className={cx(styles.navLink, forced && styles.navLinkActive)}
                 activeProps={{ className: cx(styles.navLink, styles.navLinkActive) }}
-                activeOptions={{ exact: true }}
+                activeOptions={{ exact: item.to === "/" }}
                 {...(forced ? { "aria-current": "page" as const } : {})}
               >
                 {item.label}

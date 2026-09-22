@@ -147,4 +147,12 @@ describe("the navigation", () => {
     expect(screen.getByRole("link", { name: "Machines" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Images" })).not.toHaveAttribute("aria-current");
   });
+
+  it("marks Sequences in a sequence's editor", async () => {
+    open("/sequences/0193a4b2-0000-7000-8000-0000000000e1", administrator);
+
+    expect(await screen.findByRole("link", { name: "All sequences" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sequences" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Machines" })).not.toHaveAttribute("aria-current");
+  });
 });

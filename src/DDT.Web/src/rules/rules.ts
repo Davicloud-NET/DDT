@@ -5,6 +5,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiGet } from "@/lib/api";
+import { formatMac } from "@/machines/machines";
 
 // Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine,
 // a rule for one of its MAC addresses, a rule for its model.
@@ -29,6 +30,37 @@ export function sequenceResolutionQuery(machineId: string) {
     queryKey: [...sequenceResolutionsKey, machineId],
     queryFn: () => apiGet<MachineSequenceResolution>(`/api/machines/${machineId}/sequence`),
   });
+}
+
+export type AssignmentRuleKind = "Mac" | "Model";
+
+// mac is set for a MAC rule, twelve hex digits; manufacturer and model for a model rule, where a null
+// manufacturer matches any and a model ending in * matches every model that starts with the text before it.
+export interface AssignmentRuleView {
+  id: string;
+  kind: AssignmentRuleKind;
+  mac: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  sequenceId: string;
+  sequenceName: string;
+  description: string | null;
+  updatedUtc: string;
+  updatedBy: string | null;
+}
+
+export const rulesQuery = queryOptions({
+  queryKey: ["rules"],
+  queryFn: () => apiGet<AssignmentRuleView[]>("/api/rules"),
+});
+
+// "MAC 00:15:5D:01:02:03" or "model Dell Inc. Latitude 7440", to put in a sentence.
+export function describeRule(rule: AssignmentRuleView): string {
+  if (rule.kind === "Mac") {
+    return `MAC ${formatMac(rule.mac ?? "")}`;
+  }
+
+  return `model ${rule.manufacturer === null ? "" : `${rule.manufacturer} `}${rule.model ?? ""}`;
 }
 
 export function isRuleChoice(resolution: MachineSequenceResolution): boolean {

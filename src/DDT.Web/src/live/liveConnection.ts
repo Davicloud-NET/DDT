@@ -8,7 +8,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { DeploymentStepView } from "@/deployments/deployments";
 import { imagesQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
-import { sequenceResolutionsKey } from "@/rules/rules";
+import { rulesQuery, sequenceResolutionsKey } from "@/rules/rules";
 import { sequencesQuery } from "@/sequences/sequences";
 
 // The part of SignalR's HubConnection the live connection uses, so tests can hand in a fake hub. The never
@@ -116,9 +116,15 @@ export function createLiveConnection(
     void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
   };
 
+  const refetchRules = () => {
+    void queryClient.invalidateQueries({ queryKey: rulesQuery.queryKey });
+    refetchResolutions();
+  };
+
+  // A rule shows the name of the sequence it chooses.
   const refetchSequences = () => {
     void queryClient.invalidateQueries({ queryKey: sequencesQuery.queryKey });
-    refetchResolutions();
+    refetchRules();
   };
 
   const watchesOf = (machineId: string) => [...(watchers.get(machineId) ?? [])];
@@ -181,7 +187,7 @@ export function createLiveConnection(
 
     current.on("sequenceChanged", refetchSequences);
 
-    current.on("rulesChanged", refetchResolutions);
+    current.on("rulesChanged", refetchRules);
 
     current.on("machineLogAppended", (event: MachineLogAppended) => {
       for (const watch of watchesOf(event.machineId)) {

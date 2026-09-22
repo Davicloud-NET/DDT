@@ -17,6 +17,8 @@ import { AccountPage } from "@/pages/AccountPage";
 import { ImagesPage } from "@/pages/ImagesPage";
 import { MachineDetailPage } from "@/pages/MachineDetailPage";
 import { MachinesPage } from "@/pages/MachinesPage";
+import { SequenceEditorPage } from "@/pages/SequenceEditorPage";
+import { SequencesPage } from "@/pages/SequencesPage";
 import { SignInPage } from "@/pages/SignInPage";
 
 import { AppShell } from "./AppShell";
@@ -77,6 +79,18 @@ const machineRoute = createRoute({
   component: MachineDetailPage,
 });
 
+const sequencesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/sequences",
+  component: SequencesPage,
+});
+
+const sequenceRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/sequences/$sequenceId",
+  component: SequenceEditorPage,
+});
+
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/images",
@@ -92,7 +106,14 @@ const accountRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   signInRoute,
   aboutRoute,
-  shellRoute.addChildren([machinesRoute, machineRoute, imagesRoute, accountRoute]),
+  shellRoute.addChildren([
+    machinesRoute,
+    machineRoute,
+    sequencesRoute,
+    sequenceRoute,
+    imagesRoute,
+    accountRoute,
+  ]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

@@ -187,7 +187,7 @@ describe("createLiveConnection", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
   });
 
-  it("refetches the sequences and what the rules choose when either changes", async () => {
+  it("refetches the sequences, the rules and what the rules choose when either changes", async () => {
     const { live, hub, queryClient } = connection();
     live.start();
     await settle();
@@ -195,13 +195,17 @@ describe("createLiveConnection", () => {
 
     hub().emit("rulesChanged");
 
-    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
+    expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: ["rules"] }],
+      [{ queryKey: ["machine-sequence"] }],
+    ]);
 
     invalidate.mockClear();
     hub().emit("sequenceChanged", { id: "s1", revision: 2, changedBy: "admin" });
 
     expect(invalidate.mock.calls).toEqual([
       [{ queryKey: ["sequences"] }],
+      [{ queryKey: ["rules"] }],
       [{ queryKey: ["machine-sequence"] }],
     ]);
   });

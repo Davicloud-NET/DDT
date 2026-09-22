@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -191,6 +191,26 @@ describe("LogPanel", () => {
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(viewport.scrollTop).toBe(2000);
+  });
+
+  it("follows again once scrolled back to the newest line", async () => {
+    logServer(range(1, 3));
+    const { live } = fakeLive();
+    renderPanel(live);
+
+    await screen.findByText("Line 3");
+    const viewport = screen.getByRole("log");
+    layOut(viewport, 2000, 200);
+    viewport.scrollTop = 100;
+    fireEvent.scroll(viewport);
+    expect(await screen.findByRole("status")).toHaveTextContent("Paused.");
+
+    viewport.scrollTop = 1800;
+    fireEvent.scroll(viewport);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
   });
 
   it("loads older lines without moving the lines in view", async () => {

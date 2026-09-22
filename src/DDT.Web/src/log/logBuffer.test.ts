@@ -52,6 +52,18 @@ describe("the log buffer", () => {
     expect(capped.hasOlder).toBe(true);
   });
 
+  it("keeps as many lines as its cap and drops the first line past it", () => {
+    const full = mergeLines(emptyLog, [line(1), line(2), line(3), line(4), line(5)], 5);
+
+    expect(ids(full)).toEqual([1, 2, 3, 4, 5]);
+    expect(full.hasOlder).toBe(false);
+
+    const past = mergeLines(full, [line(6)], 5);
+
+    expect(ids(past)).toEqual([2, 3, 4, 5, 6]);
+    expect(past.hasOlder).toBe(true);
+  });
+
   it("puts older lines first and takes from their page whether still older ones exist", () => {
     const buffer = mergeLines({ lines: [], hasOlder: true }, [line(5), line(6)]);
     const older = withOlder(buffer, { lines: [line(3), line(4)], hasOlder: false });

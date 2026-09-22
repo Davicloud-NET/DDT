@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { LOG_PAGE_LINES, type LogRead, type MachineLogEntry, type MachineLogPage } from "./log";
+import { MAX_BUFFERED_LINES } from "./logBuffer";
 import { createLogReader, type LogReader } from "./logReader";
 
 function line(id: number): MachineLogEntry {
@@ -26,7 +27,7 @@ function lines(from: number, to: number): MachineLogEntry[] {
 
 interface Waiting {
   read: LogRead;
-  answer: (lines: MachineLogEntry[]) => Promise<void>;
+  answer: (lines: MachineLogEntry[], hasOlder?: boolean) => Promise<void>;
 }
 
 // A server whose reads wait until the test answers them, oldest first.
@@ -39,8 +40,8 @@ function slowServer() {
       reads.push(request);
       waiting.push({
         read: request,
-        answer: async (answered) => {
-          resolve({ lines: answered, hasOlder: false });
+        answer: async (answered, hasOlder = false) => {
+          resolve({ lines: answered, hasOlder });
           // Lets the reader take the answer and send its next read.
           await new Promise((settled) => setTimeout(settled, 0));
         },
@@ -145,5 +146,22 @@ describe("the log reader", () => {
     reader.close();
     await late.answer([line(11)]);
     expect(ids(reader)).toEqual([10]);
+  });
+
+  it("reads older lines only as far as the buffer has room", async () => {
+    const server = slowServer();
+    const reader = createLogReader("m", null, server.read);
+    const held = MAX_BUFFERED_LINES - 200;
+
+    reader.start();
+    await server.next().answer(lines(1_001, 1_000 + held), true);
+
+    reader.loadOlder();
+    const older = server.next();
+    expect(older.read).toEqual({ before: 1_001, limit: 200, deploymentId: null });
+    await older.answer(lines(801, 1_000), true);
+
+    reader.loadOlder();
+    expect(server.waiting()).toBe(0);
   });
 });

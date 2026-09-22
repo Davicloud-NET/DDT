@@ -6,6 +6,10 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Agent;
 
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip)]
+// Written only for the agent staged into Windows, which has no keyboard layout to show.
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(AgentConfiguration))]
 public sealed partial class AgentConfigurationJsonContext : JsonSerializerContext;

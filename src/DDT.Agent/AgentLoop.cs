@@ -48,7 +48,6 @@ public sealed class AgentLoop(
     private IReadOnlyList<LocalDisk>? _pickableDisks;
     private bool _toldNoSequences;
     private bool _toldNoDeployments;
-    private Guid? _toldWindowsPhase;
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -177,18 +176,7 @@ public sealed class AgentLoop(
                         ? local
                         : null;
 
-                    if (resumable is { State.Phase: SequencePhase.Windows })
-                    {
-                        // Only the agent in the installed Windows goes on with it; this one leaves it alone.
-                        if (_toldWindowsPhase != run!.Id)
-                        {
-                            _toldWindowsPhase = run.Id;
-                            log.Warning(
-                                $"Run {run.Id} goes on in the Windows on this machine's disk, but the machine started Windows PE. " +
-                                "Start it from its disk, or stop the run on the Machines page.");
-                        }
-                    }
-                    else if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && run.Sequence.Steps.Any(step => step.ErasesDisk))
+                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && run.Sequence.Steps.Any(step => step.ErasesDisk))
                     {
                         // The picker said why when the server answered the choice.
                         AgentRunReportResult reported = await server

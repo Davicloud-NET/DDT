@@ -43,6 +43,10 @@ public sealed class AgentRunLoopTests : IDisposable
     private AgentRun InstallWindows(DeploymentState state = DeploymentState.Assigned, int? diskNumber = null) =>
         TestRuns.Run(TestRuns.InstallWindows, _image, state, diskNumber);
 
+    // Goes on in Windows after the answer file.
+    private AgentRun InWindows(DeploymentState state) =>
+        TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image, state);
+
     [Fact]
     public async Task RunsAnAssignedRunAndEndsWithTheDeployedExitCode()
     {
@@ -324,26 +328,26 @@ public sealed class AgentRunLoopTests : IDisposable
     }
 
     [Fact]
-    public async Task LeavesARunThatGoesOnInWindowsAlone()
+    public async Task HandsARunThatGoesOnInWindowsOverAgainWhenWindowsPEStarts()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         await LeaveRunOnDiskAsync(SequencePhase.Windows, cancellationToken);
-        AgentRun run = InstallWindows(DeploymentState.Running);
-        StringWriter console = new();
+        AgentRun run = InWindows(DeploymentState.Running);
         ScriptedAgentServer server = new ScriptedAgentServer()
             .OnRegister(_ => Registered(MachineState.Deploying) with { RunId = run.Id, RunToken = "run-token-1" })
-            .OnNext(_ => Next(MachineState.Deploying, "session-1", run))
-            .OnNext(_ => Next(MachineState.Deploying, "session-2", run));
-
+            .OnNext(_ => Next(MachineState.Deploying, "session-1", run));
         ImmediateTimeProvider time = new();
-        await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, new AgentLog(time, console), time)
+        AgentLog log = new(time, TextWriter.Null);
+
+        // A dry run's hand-over, which needs no SYSTEM hive to register the service in.
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, dryRunHandOver: true);
+        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, log, time, runner: runner)
             .RunAsync(server.Stop.Token);
 
-        Assert.Empty(server.RunReports);
-        Assert.True(File.Exists(RunFiles.StatePathIn(Windows)));
-        Assert.Single(
-            console.ToString().Split(Environment.NewLine),
-            line => line.Contains($"Run {run.Id} goes on in the Windows on this machine's disk", StringComparison.Ordinal));
+        Assert.Equal(AgentExitCodes.Restarting, exitCode);
+        Assert.Equal(["list", $"find {FakeDeploymentTools.WindowsPartitionId}", "bcd", "firmware after the answer file", "reboot"], _tools.Calls);
+        SequenceState? state = await RunFiles.In(Windows, Log()).LoadStateAsync(cancellationToken);
+        Assert.Equal((SequencePhase.Windows, "1"), (state?.Phase, state?.Variables[RunVariables.WindowsPEReturns]));
     }
 
     [Fact]
@@ -366,15 +370,16 @@ public sealed class AgentRunLoopTests : IDisposable
 
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
 
-    // As an earlier start of the agent leaves it: Partition and the answer file done, and the run token.
+    // As an earlier start of the agent leaves it: the steps in Windows PE done, the answer file written, and the run
+    // token.
     private async Task LeaveRunOnDiskAsync(SequencePhase phase, CancellationToken cancellationToken)
     {
-        AgentRun run = InstallWindows(DeploymentState.Running);
+        AgentRun run = InWindows(DeploymentState.Running);
         SequenceState state = SequenceStates.Start(run.Id, run.Sequence) with
         {
             Phase = phase,
             NextIndex = 3,
-            Steps = [.. run.Sequence.Steps.Select(step => new StepRunState(step.Id, StepState.Done, null))],
+            Steps = [.. run.Sequence.Steps.Select((step, index) => new StepRunState(step.Id, index < 3 ? StepState.Done : StepState.Pending, null))],
             Variables = RunVariables.Of(_tools.Volumes),
         };
         RunFiles files = RunFiles.In(Windows, Log());

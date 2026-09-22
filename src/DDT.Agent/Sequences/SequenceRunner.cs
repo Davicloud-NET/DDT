@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
@@ -11,11 +12,13 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // Runs a task sequence in Windows PE. A fresh run is checked first, so nothing is erased for a run that cannot
-// succeed; a run found on the disk after a restart goes on where it was. The engine runs the steps, and the Windows
-// PE phase ends in a restart back into Windows PE for the rest of the run, or in the end of the run, after which the
-// machine restarts into the Windows it installed. Nothing it does may end the agent: every failure is reported,
-// because an agent that crashes is replaced by the boot image's. In a dry run, workDirectory is the dry run's root,
-// which stands in for the disk and is deleted when the run ends. systemDirectory is where Windows PE keeps its tools.
+// succeed; a run found on the disk after a restart goes on where it was, or is handed over again when the installed
+// Windows was to go on with it. The engine runs the steps, and the Windows PE phase ends in one of three ways: a
+// restart back into Windows PE for the rest of the run, the hand-over to the installed Windows for its steps there, or
+// the end of the run, after which the machine restarts into the Windows it installed. Nothing it does may end the
+// agent: every failure is reported, because an agent that crashes is replaced by the boot image's. In a dry run,
+// workDirectory is the dry run's root, which stands in for the disk and is deleted when the run ends. systemDirectory
+// is where Windows PE keeps its tools.
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
@@ -23,6 +26,7 @@ public sealed class SequenceRunner(
     IBcdWriter bcdWriter,
     IRebooter rebooter,
     IToolRunner tools,
+    WindowsHandOver handOver,
     AgentLog log,
     TimeProvider timeProvider,
     TimeSpan heartbeatInterval,
@@ -40,12 +44,19 @@ public sealed class SequenceRunner(
 
     public const string LostContactMessage = "The agent lost contact with the server during the run.";
 
+    public const string WindowsDidNotStartMessage =
+        "The machine keeps starting Windows PE instead of the installed Windows, so the run cannot go on there. Set its " +
+        "firmware to start Windows Boot Manager first, then run the sequence again.";
+
     // 2 GB more keeps the downloads and the applied image from filling the disk to the last byte.
     private const long SpareBytes = 2048L * 1024 * 1024;
     private const long Megabyte = 1024L * 1024;
 
     private const int MaxFinalFlushes = 20;
     private const int MaxFinalFlushFailures = 3;
+
+    // How often Windows PE may start instead of the installed Windows and hand the run over again.
+    private const int MaxWindowsPEReturns = 3;
 
     // Whether this run put Windows Boot Manager first, which a run that does not finish puts back.
     private bool _windowsFirst;
@@ -205,7 +216,9 @@ public sealed class SequenceRunner(
 
         try
         {
-            SequenceRunResult result = await engine.RunAsync(state, machine, steps.Token).ConfigureAwait(false);
+            SequenceRunResult result = state.Phase == SequencePhase.Windows
+                ? await HandOverAgainAsync(store, state).ConfigureAwait(false)
+                : await engine.RunAsync(state, machine, steps.Token).ConfigureAwait(false);
             state = result.State;
             outcome = result.Outcome;
             error = result.Error;
@@ -213,17 +226,24 @@ public sealed class SequenceRunner(
 
             switch (outcome)
             {
+                case SequenceOutcome.Completed when WindowsApplied(state):
+                    heartbeat.Activity = RunActivity.Finishing;
+                    await MakeBootableAsync(session.RequireVolumes(), null, steps.Token).ConfigureAwait(false);
+                    break;
                 case SequenceOutcome.Completed:
                     heartbeat.Activity = RunActivity.Finishing;
-                    await MakeBootableAsync(session, state, steps.Token).ConfigureAwait(false);
+                    break;
+                case SequenceOutcome.PhaseChangeRequired:
+                    heartbeat.Activity = RunActivity.HandingOver;
+                    SequenceState handedOver = state;
+                    await MakeBootableAsync(
+                        session.RequireVolumes(),
+                        () => handOver.StageAsync(session, store, handedOver, steps.Token),
+                        steps.Token).ConfigureAwait(false);
                     break;
                 case SequenceOutcome.RebootRequired:
                     heartbeat.Activity = RunActivity.Restarting;
                     await store.SaveTokenAsync(CancellationToken.None).ConfigureAwait(false);
-                    break;
-                case SequenceOutcome.PhaseChangeRequired:
-                    outcome = SequenceOutcome.Failed;
-                    error = "The run goes on in Windows, but this agent cannot hand it over to Windows.";
                     break;
             }
 
@@ -258,11 +278,7 @@ public sealed class SequenceRunner(
 
         if (heartbeat.Failure is AgentTokenRejectedException)
         {
-            // The run's state and answer file stay: the registration with the run token decides whether it goes on.
-            await RestoreBootOrderAsync().ConfigureAwait(false);
-            log.Warning("The server no longer accepts this machine's token during the run. Registering again.");
-
-            return new RunResult(RunOutcome.TokenRejected, heartbeat.Snapshot(DeploymentState.Failed, LostContactMessage));
+            return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
         }
 
         if (heartbeat.Failure is { } refusal)
@@ -273,11 +289,40 @@ public sealed class SequenceRunner(
         return outcome switch
         {
             SequenceOutcome.Completed => await FinishAsync(session, store, heartbeat, state, cancellationToken).ConfigureAwait(false),
-            SequenceOutcome.RebootRequired => await RestartAsync(heartbeat, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.RebootRequired => await RestartAsync(heartbeat, RestartInto.WindowsPE, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.PhaseChangeRequired => await RestartAsync(heartbeat, RestartInto.Windows, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
             _ => await FailAsync(session, store, heartbeat, state, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
         };
     }
+
+    // Windows PE started, but the run goes on in the installed Windows: the hand-over was interrupted, or the firmware
+    // started the network first. Doing the hand-over again repeats nothing that could harm what it did before.
+    private async Task<SequenceRunResult> HandOverAgainAsync(FileRunStateStore store, SequenceState state)
+    {
+        int returns = int.TryParse(state.Variables.GetValueOrDefault(RunVariables.WindowsPEReturns), NumberStyles.None, CultureInfo.InvariantCulture, out int earlier)
+            ? earlier + 1
+            : 1;
+
+        if (returns > MaxWindowsPEReturns)
+        {
+            return new SequenceRunResult(SequenceOutcome.Failed, state, WindowsDidNotStartMessage);
+        }
+
+        log.Warning($"The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again ({returns} of {MaxWindowsPEReturns} times).");
+
+        Dictionary<string, string> variables = new(state.Variables, StringComparer.Ordinal)
+        {
+            [RunVariables.WindowsPEReturns] = returns.ToString(CultureInfo.InvariantCulture),
+        };
+        state = state with { Phase = SequencePhase.WindowsPE, Variables = variables };
+        await store.SaveAsync(state, CancellationToken.None).ConfigureAwait(false);
+
+        return new SequenceRunResult(SequenceOutcome.PhaseChangeRequired, state, null);
+    }
+
+    private static bool WindowsApplied(SequenceState state) =>
+        state.Variables.TryGetValue(RunVariables.WindowsApplied, out string? applied) && applied == RunVariables.Set;
 
     private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
     {
@@ -440,17 +485,17 @@ public sealed class SequenceRunner(
             timeProvider);
     }
 
-    // As in Microsoft's sequence after applying: the applied image's bcdboot and its recovery environment, and then,
-    // last, Windows Boot Manager first in the firmware's boot order: until then a restart starts the machine from the
-    // network, not into a Windows that is not finished.
-    private async Task MakeBootableAsync(RunSession session, SequenceState state, CancellationToken cancellationToken)
+    // What Windows needs to go on with the run, if anything, then, as in Microsoft's sequence after applying, the applied
+    // image's bcdboot and its recovery environment, and last Windows Boot Manager first in the firmware's boot order:
+    // until then a restart starts the machine from the network, not into a Windows that is not ready. The hand-over comes
+    // first because bcdboot may put its entry first itself, which a failed hand-over could not undo.
+    private async Task MakeBootableAsync(TargetVolumes volumes, Func<Task>? handOverRun, CancellationToken cancellationToken)
     {
-        if (!state.Variables.TryGetValue(RunVariables.WindowsApplied, out string? applied) || applied != RunVariables.Set)
+        if (handOverRun is not null)
         {
-            return;
+            await handOverRun().ConfigureAwait(false);
         }
 
-        TargetVolumes volumes = session.RequireVolumes();
         await bcdWriter.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
         _windowsFirst = true;
         await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
@@ -512,11 +557,16 @@ public sealed class SequenceRunner(
             .ConfigureAwait(false);
     }
 
-    // The run's state and token are on the disk, and the rest of the run follows the next start of Windows PE.
-    private async Task<RunResult> RestartAsync(RunHeartbeat heartbeat, CancellationToken cancellationToken)
+    // The run's state and token are on the disk, and the rest of the run follows the next start of Windows PE, or of the
+    // installed Windows after the hand-over. The registration after a restart into Windows PE decides whether the run
+    // goes on, but the installed Windows would go on with it and use its answer file, so a refused token keeps it from
+    // starting.
+    private async Task<RunResult> RestartAsync(RunHeartbeat heartbeat, RestartInto into, CancellationToken cancellationToken)
     {
-        log.Information("The machine restarts into Windows PE, and the run goes on after the restart.");
-        await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false);
+        heartbeat.Activity = RunActivity.Restarting;
+        log.Information(into == RestartInto.WindowsPE
+            ? "The machine restarts into Windows PE, and the run goes on after the restart."
+            : "The machine restarts into the installed Windows, where the agent goes on with the run.");
 
         try
         {
@@ -531,14 +581,32 @@ public sealed class SequenceRunner(
         {
             return new RunResult(RunOutcome.Stopped);
         }
+        catch (AgentTokenRejectedException) when (into == RestartInto.Windows)
+        {
+            return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
+        }
         catch (Exception exception)
         {
-            // The registration after the restart tells whether the run goes on.
             log.Warning($"The server could not be told of the restart ({LogText.OneLine(exception)}). The machine restarts anyway.");
         }
 
-        return await RebootAsync(RestartInto.WindowsPE, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
+        if (!await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false) && into == RestartInto.Windows)
+        {
+            return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
+        }
+
+        return await RebootAsync(into, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    // The run's state and answer file stay: the registration with the run token decides whether it goes on. Until then
+    // the machine starts from the network.
+    private async Task<RunResult> TokenRejectedAsync(RunHeartbeat heartbeat)
+    {
+        await RestoreBootOrderAsync().ConfigureAwait(false);
+        log.Warning("The server no longer accepts this machine's token during the run. Registering again.");
+
+        return new RunResult(RunOutcome.TokenRejected, heartbeat.Snapshot(DeploymentState.Failed, LostContactMessage));
     }
 
     private async Task<RunResult> RebootAsync(RestartInto into, RunOutcome outcome, string byHand, CancellationToken cancellationToken)

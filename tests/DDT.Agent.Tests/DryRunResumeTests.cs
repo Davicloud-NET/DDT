@@ -152,6 +152,7 @@ public sealed class DryRunResumeTests : IDisposable
 
     private AgentLoop Agent(AgentLog log)
     {
+        DryRunToolRunner tools = new(log);
         DryRunDiskPartitioner disks = new(_root, log);
         SequenceRunner runner = new(
             _server,
@@ -159,7 +160,8 @@ public sealed class DryRunResumeTests : IDisposable
             new DryRunImageApplier(log),
             new DryRunBcdWriter(log),
             new DryRunRebooter(log),
-            new DryRunToolRunner(log),
+            tools,
+            new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
             log,
             _time,
             Timeout.InfiniteTimeSpan,

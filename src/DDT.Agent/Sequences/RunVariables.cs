@@ -20,6 +20,10 @@ public static class RunVariables
     // "1" once the image is on the disk, which then has to be made bootable before the run ends.
     public const string WindowsApplied = "ddt.windows-applied";
 
+    // How often Windows PE started after the run was handed over to the installed Windows, which it then hands over
+    // again.
+    public const string WindowsPEReturns = "ddt.winpe-returns";
+
     public const string Set = "1";
 
     public static IReadOnlyDictionary<string, string> Of(TargetVolumes volumes)

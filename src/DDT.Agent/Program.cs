@@ -78,12 +78,17 @@ SequenceRunner runner;
 IDiskPartitioner disks;
 LocalRunLocator locator;
 
+// What the agent staged into Windows needs to reach the server, and nothing else.
+AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
+
 // A dry run works in a normal Windows session: its disk is a directory that holds the run's state across a restart,
 // which is the end of the process, until the run ends. It runs no tool and never loads wimlib, whose strict mode needs
-// Windows PE's privileges. Started again with the same dry run id, it goes on with the run.
+// Windows PE's privileges. Started again with the same dry run id, it goes on with the run. The hand-over really
+// stages the agent into the directory that stands in for Windows.
 if (options.DryRun)
 {
     string root = Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}");
+    DryRunToolRunner tools = new(log);
     disks = new DryRunDiskPartitioner(root, log);
     runner = new SequenceRunner(
         server,
@@ -91,7 +96,8 @@ if (options.DryRun)
         new DryRunImageApplier(log),
         new DryRunBcdWriter(log),
         new DryRunRebooter(log),
-        new DryRunToolRunner(log),
+        tools,
+        new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, staged, log, dryRun: true),
         log,
         TimeProvider.System,
         RunHeartbeat.DefaultInterval,
@@ -113,6 +119,7 @@ else
         new BcdbootWriter(tools, firmware, log),
         new WindowsPERebooter(tools, firmware, log),
         tools,
+        new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
         log,
         TimeProvider.System,
         RunHeartbeat.DefaultInterval,

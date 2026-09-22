@@ -20,4 +20,7 @@ public static class AuditActions
     public const string DeploymentDone = "deployment.done";
     public const string DeploymentFailed = "deployment.failed";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
+    public const string SequenceCreated = "sequence.created";
+    public const string SequenceChanged = "sequence.changed";
+    public const string SequenceDeleted = "sequence.deleted";
 }

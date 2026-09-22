@@ -5,6 +5,7 @@
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<ImageUpload> ImageUploads => Set<ImageUpload>();
 
     public DbSet<Deployment> Deployments => Set<Deployment>();
+
+    public DbSet<TaskSequence> TaskSequences => Set<TaskSequence>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -115,6 +118,17 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             deployment.HasOne<Machine>().WithMany().HasForeignKey(d => d.MachineId).OnDelete(DeleteBehavior.Cascade);
             deployment.HasOne<Image>().WithMany().HasForeignKey(d => d.ImageId).OnDelete(DeleteBehavior.SetNull);
             deployment.HasOne<DdtUser>().WithMany().HasForeignKey(d => d.RequestedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<TaskSequence>(sequence =>
+        {
+            sequence.Property(s => s.Name).HasMaxLength(SequenceLimits.MaxNameLength);
+            sequence.Property(s => s.NormalizedName).HasMaxLength(SequenceLimits.MaxNameLength);
+            sequence.Property(s => s.Description).HasMaxLength(SequenceLimits.MaxDescriptionLength);
+            sequence.Property(s => s.Revision).IsConcurrencyToken();
+            sequence.Property(s => s.UpdatedByName).HasMaxLength(256);
+            sequence.HasIndex(s => s.NormalizedName).IsUnique();
+            sequence.HasOne<DdtUser>().WithMany().HasForeignKey(s => s.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<AuditEvent>(audit =>

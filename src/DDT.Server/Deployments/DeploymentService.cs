@@ -548,7 +548,7 @@ public sealed class DeploymentService(
     private static Deployment? Latest(IEnumerable<Deployment> deployments) =>
         deployments.OrderByDescending(d => d.CreatedUtc).ThenByDescending(d => d.Id).FirstOrDefault();
 
-    private static string? NotDeployable(Image image) => image.Architecture switch
+    internal static string? NotDeployable(Image image) => image.Architecture switch
     {
         DeployableArchitecture => null,
         null => $"{image.Name} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",

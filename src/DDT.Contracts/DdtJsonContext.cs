@@ -39,4 +39,11 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(ServerCertificateView))]
 [JsonSerializable(typeof(SequenceDefinition))]
 [JsonSerializable(typeof(IReadOnlyList<SequenceProblem>))]
+[JsonSerializable(typeof(IReadOnlyList<SequenceSummary>))]
+[JsonSerializable(typeof(SequenceView))]
+[JsonSerializable(typeof(CreateSequenceRequest))]
+[JsonSerializable(typeof(SaveSequenceRequest))]
+[JsonSerializable(typeof(SequenceValidation))]
+[JsonSerializable(typeof(IReadOnlyList<SequenceTemplate>))]
+[JsonSerializable(typeof(SequenceChangedEvent))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

@@ -93,7 +93,7 @@ public static class DeploymentOptionsValidation
             || (upn.Length == 2 && !string.IsNullOrWhiteSpace(upn[0]) && !string.IsNullOrWhiteSpace(upn[1]) && down.Length == 1);
     }
 
-    private static string? OrganizationalUnitProblem(string organizationalUnit)
+    internal static string? OrganizationalUnitProblem(string organizationalUnit)
     {
         string value = organizationalUnit.Trim();
         const string example = "OU=Workstations,DC=example,DC=com";

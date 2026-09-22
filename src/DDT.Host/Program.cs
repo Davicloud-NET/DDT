@@ -19,6 +19,7 @@ using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
+using DDT.Server.Sequences;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,8 @@ if (certificates is not null)
 
 builder.Services.ConfigureHttpJsonOptions(json =>
 {
+    // The contexts' own option reaches only their own options, not these: a step's "kind" may come after its members.
+    json.SerializerOptions.AllowOutOfOrderMetadataProperties = true;
     json.SerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default);
     json.SerializerOptions.TypeInfoResolverChain.Insert(0, AgentJsonContext.Default);
 });
@@ -66,6 +69,7 @@ builder.Services.AddDdtForwardedHeaders();
 builder.Services.AddDdtMachines();
 builder.Services.AddDdtImages();
 builder.Services.AddDdtDeployments(builder.Configuration);
+builder.Services.AddDdtSequences();
 
 string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext.BaseDirectory, "legal")));
@@ -125,6 +129,7 @@ api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
+api.MapGroup("/sequences").MapSequenceEndpoints();
 api.MapGroup("/about").MapAboutEndpoints();
 api.MapGroup("/server").MapServerEndpoints();
 

@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Images;
 using DotNet.Testcontainers.Builders;
 using Testcontainers.PostgreSql;
@@ -77,5 +79,31 @@ public sealed class PostgresDeploymentTests
         Assert.Equal("PC-0006", done.AssignedName);
         Assert.NotNull(done.Deployment?.FinishedUtc);
         Assert.DoesNotContain('\0', done.Disks!);
+    }
+
+    [Fact]
+    public async Task StoresTheLibraryOfTaskSequences()
+    {
+        PostgreSqlContainer? started = await StartAsync();
+        Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
+
+        await using PostgreSqlContainer container = started;
+        using PostgresApplication application = new(container.GetConnectionString());
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+
+        SequenceView created = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.PostAsync(
+            SequenceRequests.Sequences,
+            new CreateSequenceRequest("Install", "A NUL\0 in the description", SequenceRequests.Minimal(image.Id))));
+        SequenceView saved = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.SaveSequenceAsync(
+            created,
+            created.Definition with { Steps = [.. created.Definition.Steps, new RebootStep { Id = Guid.NewGuid(), Name = "A NUL\0 in a step" }] },
+            "Install Windows"));
+
+        Assert.Equal("A NUL in the description", saved.Description);
+        Assert.Equal(2, saved.Revision);
+        Assert.Empty(saved.Problems);
+        Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateSequenceAsync(saved.Definition, "INSTALL WINDOWS")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.SaveSequenceAsync(created)).StatusCode);
     }
 }

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
@@ -26,11 +27,21 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
 
     public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);
 
-    private async Task PushEventAsync(string liveEvent)
+    public void SequenceChanged(SequenceChangedEvent change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        _ = PushEventAsync(LiveEvents.SequenceChanged, change);
+    }
+
+    private async Task PushEventAsync(string liveEvent, object? payload = null)
     {
         try
         {
-            await hub.Clients.All.SendAsync(liveEvent, CancellationToken.None).ConfigureAwait(false);
+            // A null argument would still be sent as one, so an event without a payload is sent without arguments.
+            await (payload is null
+                ? hub.Clients.All.SendAsync(liveEvent, CancellationToken.None)
+                : hub.Clients.All.SendAsync(liveEvent, payload, CancellationToken.None)).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

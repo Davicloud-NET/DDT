@@ -13,4 +13,7 @@ public static class LiveEvents
 
     // Carries nothing either: clients load the image list again.
     public const string ImagesChanged = "imagesChanged";
+
+    // Carries a SequenceChangedEvent, so an editor can tell another administrator's save from its own.
+    public const string SequenceChanged = "sequenceChanged";
 }

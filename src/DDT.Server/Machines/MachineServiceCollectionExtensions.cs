@@ -24,8 +24,13 @@ public static class MachineServiceCollectionExtensions
         services.AddScoped<MachineRegistrar>();
         services.AddSingleton<LiveNotifier>();
 
+        // The context's own option reaches only its own options, not these.
         services.AddSignalR()
-            .AddJsonProtocol(json => json.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default));
+            .AddJsonProtocol(json =>
+            {
+                json.PayloadSerializerOptions.AllowOutOfOrderMetadataProperties = true;
+                json.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default);
+            });
 
         return services;
     }

@@ -13,7 +13,7 @@ import { LogPanel } from "@/log/LogPanel";
 import { MachineActionErrors } from "@/machines/MachineActionErrors";
 import { MachineHeader } from "@/machines/MachineHeader";
 import { useMachineActions } from "@/machines/useMachineActions";
-import { sequenceResolutionQuery } from "@/rules/rules";
+import { useSequenceResolution } from "@/rules/useSequenceResolution";
 import { RunHistory } from "@/runs/RunHistory";
 import { RunOverview } from "@/runs/RunOverview";
 import { RunStepList } from "@/runs/RunStepList";
@@ -34,7 +34,7 @@ export function MachineDetailPage() {
   const canDecide = roles.includes("Administrator") || roles.includes("Operator");
 
   const detail = useRunDetail(machineId, pinnedRunId);
-  const resolution = useQuery(sequenceResolutionQuery(machineId));
+  const resolution = useSequenceResolution(machineId, detail.machine);
   const actions = useMachineActions();
   const now = useNow(1_000);
 

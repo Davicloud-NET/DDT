@@ -539,6 +539,60 @@ describe("MachineDetailPage", () => {
     expect(calls.filter((call) => call === historyCall)).toHaveLength(2);
   });
 
+  it("reads again what chooses the sequence once the machine is approved", async () => {
+    const resolutionCall = `GET /api/machines/${machineId}/sequence`;
+    const answers = standardAnswers([machine({ state: "Pending", deployment: null })], [], []);
+    answers[resolutionCall] = {
+      body: {
+        source: "ModelRule",
+        sequenceId: "0193a4b2-0000-7000-8000-0000000000e1",
+        sequenceName: "Install Windows",
+        ruleId: "0193a4b2-0000-7000-8000-0000000000f1",
+        problemCount: 0,
+        explanation: "The rule for model Virtual Machine chooses Install Windows.",
+      },
+    };
+    const { calls, queryClient } = renderAt(`/machines/${machineId}`, answers);
+
+    expect(
+      await screen.findByText("The rule for model Virtual Machine chooses Install Windows."),
+    ).toBeInTheDocument();
+
+    answers[resolutionCall] = {
+      body: {
+        source: "Assigned",
+        sequenceId: "0193a4b2-0000-7000-8000-0000000000e1",
+        sequenceName: "Install Windows",
+        ruleId: null,
+        problemCount: 0,
+        explanation: "operator approved PC-042 with Install Windows, which a rule chose.",
+      },
+    };
+    act(() => {
+      upsertMachine(
+        queryClient,
+        machine({
+          state: "Approved",
+          deployment: run({
+            state: "Assigned",
+            source: "Rule",
+            stepIndex: null,
+            stepName: null,
+            percent: 0,
+            phase: null,
+            activity: null,
+            startedUtc: null,
+          }),
+        }),
+      );
+    });
+
+    expect(
+      await screen.findByText("operator approved PC-042 with Install Windows, which a rule chose."),
+    ).toBeInTheDocument();
+    expect(calls.filter((call) => call === resolutionCall)).toHaveLength(2);
+  });
+
   it.each([
     {
       phase: "WindowsPE" as const,

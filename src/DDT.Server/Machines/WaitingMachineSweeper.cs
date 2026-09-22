@@ -30,7 +30,7 @@ public sealed partial class WaitingMachineSweeper(
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
         // SQLite cannot compare DateTimeOffset, so the age is judged here. The delete repeats the rest of the
-        // condition, because a machine may have been approved in between. A machine an operator assigned an image
+        // condition, because a machine may have been approved in between. A machine an operator assigned a sequence
         // is kept: it waits for its next netboot or a sign-in at it.
         var waiting = await database.Machines
             .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null && m.ActiveDeploymentId == null)

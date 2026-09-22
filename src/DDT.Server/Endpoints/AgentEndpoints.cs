@@ -156,7 +156,7 @@ public static class AgentEndpoints
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Approved, rejected, assigned an image or registered again since this token was checked. Last
+                // Approved, rejected, assigned a sequence or registered again since this token was checked. Last
                 // seen can wait for the next poll; the answer has to reflect what is stored now.
                 await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
 

@@ -183,10 +183,11 @@ public sealed partial class MachineRegistrar(
     }
 
     // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration proves it comes
-    // from the agent already holding this machine, it starts over: any approval is dropped and every token issued
-    // so far dies with the generation bump, so two agents can never share one machine's tokens. The one exception
-    // is zero touch: an operator assigned an image on the web, and the machine netboots from a network listed for
-    // that. What the agent that is gone had started or chosen ends, see DeploymentService.EndForRestart.
+    // from the agent already holding this machine, with its resume token or its run's token, it starts over: any
+    // approval is dropped and every token issued so far dies with the generation bump, so two agents can never share
+    // one machine's tokens. The one exception is zero touch: an operator assigned a sequence on the web, and the
+    // machine netboots from a network listed for that. What the agent that is gone had started or chosen ends, see
+    // DeploymentService.EndForRestartAsync.
     private async Task StartOverAsync(
         Machine machine,
         Deployment? active,

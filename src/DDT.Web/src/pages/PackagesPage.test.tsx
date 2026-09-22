@@ -10,7 +10,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
@@ -173,15 +173,15 @@ function serve(
     history: createMemoryHistory({ initialEntries: ["/packages"] }),
   });
 
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
 
-  return requests;
+  return { requests, queryClient };
 }
 
 function row(name: string): HTMLElement {
@@ -220,7 +220,7 @@ describe("PackagesPage", () => {
       kind: "Files",
     };
 
-    const requests = serve(administrator, () => list, {
+    const { requests } = serve(administrator, () => list, {
       "POST /api/images/uploads": () => json(session, 201),
       [`PATCH /api/images/uploads/${session.id}`]: () =>
         new Response(null, { status: 204, headers: { "Upload-Offset": "4" } }),
@@ -304,6 +304,31 @@ describe("PackagesPage", () => {
     );
     expect(await within(row("Latitude drivers")).findByText("Saved")).toBeInTheDocument();
     expect(row("Latitude drivers")).toHaveTextContent("3 machines");
+  });
+
+  it("shows another administrator's change in a row with nothing unsaved, and keeps a row's own edit", async () => {
+    const { queryClient } = serve(administrator, () => [drivers, scripts]);
+
+    fireEvent.change(await screen.findByLabelText("Name of Lab scripts"), {
+      target: { value: "Lab scripts 2" },
+    });
+
+    act(() => {
+      queryClient.setQueryData(
+        ["packages"],
+        [
+          { ...drivers, targets: [{ manufacturer: "Dell Inc.", model: "Latitude 7440" }] },
+          { ...scripts, description: "Wallpapers and printers" },
+        ],
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Model of target 1 of Latitude drivers")).toHaveValue(
+        "Latitude 7440",
+      );
+    });
+    expect(screen.getByLabelText("Name of Lab scripts")).toHaveValue("Lab scripts 2");
   });
 
   it("saves an edit at once when the page is left before the pause", async () => {

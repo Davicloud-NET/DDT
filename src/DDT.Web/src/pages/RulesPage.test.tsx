@@ -10,7 +10,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
@@ -154,15 +154,15 @@ function serve(
     history: createMemoryHistory({ initialEntries: ["/rules"] }),
   });
 
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
 
-  return requests;
+  return { requests, queryClient };
 }
 
 function ruleItem(description: string): HTMLElement {
@@ -246,6 +246,34 @@ describe("RulesPage", () => {
     expect(
       await within(ruleItem("model Dell Inc. Latitude*")).findByText("Saved"),
     ).toBeInTheDocument();
+  });
+
+  it("shows another administrator's change in a row with nothing unsaved, and keeps a row's own edit", async () => {
+    const { queryClient } = serve(administrator, () => [rule({}), macRule]);
+
+    await screen.findByRole("heading", { name: "Rules by model" });
+    fireEvent.change(within(ruleItem("MAC 00:15:5D:01:02:03")).getByLabelText("Description"), {
+      target: { value: "Room 4" },
+    });
+
+    act(() => {
+      queryClient.setQueryData(
+        ["rules"],
+        [
+          rule({ sequenceId: "s2", sequenceName: "Lab PCs", updatedBy: "bob" }),
+          { ...macRule, description: "Lab bench", updatedBy: "bob" },
+        ],
+      );
+    });
+
+    await waitFor(() => {
+      expect(within(ruleItem("model Dell Inc. Latitude*")).getByLabelText("Sequence")).toHaveValue(
+        "s2",
+      );
+    });
+    expect(within(ruleItem("MAC 00:15:5D:01:02:03")).getByLabelText("Description")).toHaveValue(
+      "Room 4",
+    );
   });
 
   it("adds a new rule only with Add, and shows a duplicate at its MAC address", async () => {

@@ -44,7 +44,8 @@ export function CodesInput({ control, value, onChange }: CodesInputProps) {
       />
       {invalid && (
         <span className={styles.local} role="alert">
-          Enter whole numbers separated by commas. Until then the last list stays.
+          Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the
+          last list stays.
         </span>
       )}
     </>

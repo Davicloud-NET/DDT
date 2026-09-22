@@ -299,6 +299,40 @@ describe("SequenceEditorPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps numbers the server cannot store out of the document", async () => {
+    const { saves } = serve(administrator, view());
+
+    await screen.findByRole("heading", { level: 1, name: "Lab PCs" });
+    const script = within(card("Set wallpaper"));
+    fireEvent.change(script.getByLabelText("Timeout (minutes)"), {
+      target: { value: "3000000000" },
+    });
+    fireEvent.change(script.getByLabelText("Exit codes that mean success"), {
+      target: { value: "0, 3000000000" },
+    });
+
+    expect(
+      script.getByText(
+        "Enter a whole number from -2147483648 to 2147483647. Until then the last number stays.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      script.getByText(
+        "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(script.getByLabelText("Timeout (minutes)"), { target: { value: "90" } });
+
+    await waitFor(() => {
+      expect(saves).toHaveLength(1);
+    }, saveWait);
+    expect(saves[0]?.definition.steps[2]).toMatchObject({
+      timeoutMinutes: 90,
+      successExitCodes: [0],
+    });
+  });
+
   it("moves a step with the keyboard, keeps the focus on it, says where it went and saves the order", async () => {
     const { saves } = serve(administrator, view());
 

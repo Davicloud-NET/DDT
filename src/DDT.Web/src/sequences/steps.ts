@@ -86,11 +86,18 @@ export function interpreterLabel(interpreter: ScriptInterpreter): string {
   return interpreter === "Cmd" ? "cmd" : "PowerShell";
 }
 
+// The server reads a sequence's numbers as Int32 and refuses the whole document when one is larger.
+export function isInt32(value: number): boolean {
+  return Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647;
+}
+
 // Exit codes typed as whole numbers separated by commas or spaces; null when the text holds something else.
 export function parseCodes(text: string): number[] | null {
   const parts = text.split(/[\s,;]+/).filter((part) => part !== "");
 
-  return parts.every((part) => /^-?\d{1,10}$/.test(part)) ? parts.map(Number) : null;
+  return parts.every((part) => /^-?\d{1,10}$/.test(part) && isInt32(Number(part)))
+    ? parts.map(Number)
+    : null;
 }
 
 export function newCondition(): StepCondition {

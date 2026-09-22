@@ -11,7 +11,11 @@ import {
   type MachineState,
   type MachineSummary,
 } from "@/machines/machines";
-import { isStopRequested, type MachineActionState } from "@/machines/useMachineActions";
+import {
+  approvalRequested,
+  isStopRequested,
+  type MachineActionState,
+} from "@/machines/useMachineActions";
 
 import styles from "./MachineActions.module.scss";
 
@@ -31,7 +35,8 @@ export interface MachineActionsProps {
 
 // The buttons for one machine, with the dialogs they open.
 export function MachineActions({ machine, actions, strays = null }: MachineActionsProps) {
-  const { decide, remove, cancel, stop, busy } = actions;
+  const { decide, prepareApproval, approveWithPlan, remove, cancel, stop, busy } = actions;
+  const approval = approvalRequested(actions.approveOn, machine);
   const deploymentState = machine.deployment?.state;
   const running = deploymentState === "Running" ? machine.deployment : null;
 
@@ -44,7 +49,7 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
             className={styles.approve}
             disabled={busy}
             onClick={() => {
-              decide.mutate({ id: machine.id, approve: true });
+              prepareApproval.mutate(machine);
             }}
           >
             Approve
@@ -134,6 +139,25 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
         />
       )}
 
+      {approval !== null && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              actions.setApproveOn(null);
+            }
+          }}
+          title={`Approve ${machineLabel(machine)}?`}
+          consequence={approval.consequence}
+          confirmLabel={approval.confirmLabel}
+          busy={approveWithPlan.isPending}
+          error={approveWithPlan.isError ? approveWithPlan.error.message : null}
+          onConfirm={() => {
+            approveWithPlan.mutate({ id: machine.id, plan: approval });
+          }}
+        />
+      )}
+
       {isStopRequested(actions.stopOn, machine) && (
         <ConfirmDialog
           open
@@ -143,7 +167,7 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
             }
           }}
           title="Stop the deployment?"
-          consequence={`This stops the deployment on ${machineLabel(machine)}. Its disk is left half written; assign an image again to deploy it.`}
+          consequence={`This stops the deployment on ${machineLabel(machine)}. Its disk is left half written; assign a sequence again to deploy it.`}
           confirmLabel="Stop deployment"
           busy={stop.isPending}
           error={stop.isError ? stop.error.message : null}

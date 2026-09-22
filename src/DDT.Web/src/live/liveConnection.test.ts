@@ -187,6 +187,25 @@ describe("createLiveConnection", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
   });
 
+  it("refetches the sequences and what the rules choose when either changes", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    hub().emit("rulesChanged");
+
+    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
+
+    invalidate.mockClear();
+    hub().emit("sequenceChanged", { id: "s1", revision: 2, changedBy: "admin" });
+
+    expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: ["sequences"] }],
+      [{ queryKey: ["machine-sequence"] }],
+    ]);
+  });
+
   it("watches a machine once however many watch it, and unwatches it when the last one stops", async () => {
     const { live, log } = connection();
     live.start();

@@ -61,8 +61,16 @@ export function upsertMachine(queryClient: QueryClient, machine: MachineSummary)
   });
 }
 
-export function approveMachine(id: string): Promise<MachineSummary> {
-  return apiPost<MachineSummary>(`/api/machines/${id}/approve`);
+// With the sequence the page showed a rule choosing, the approval also runs it, and the server refuses when the
+// rules choose otherwise by now. Without one the approval runs nothing.
+export function approveMachine(
+  id: string,
+  expectedSequenceId: string | null = null,
+): Promise<MachineSummary> {
+  return apiPost<MachineSummary>(
+    `/api/machines/${id}/approve`,
+    expectedSequenceId === null ? undefined : { expectedSequenceId },
+  );
 }
 
 export function rejectMachine(id: string): Promise<MachineSummary> {
@@ -70,7 +78,7 @@ export function rejectMachine(id: string): Promise<MachineSummary> {
 }
 
 // Anyone who reaches the server can register a machine, so a waiting machine nobody ever approved may be a
-// stray, and an operator can throw it away. One with an assigned image waits for it on purpose.
+// stray, and an operator can throw it away. One with an assigned sequence waits for it on purpose.
 export function isStray(machine: MachineSummary): boolean {
   return machine.state === "Pending" && !machine.everApproved && !isActive(machine.deployment);
 }

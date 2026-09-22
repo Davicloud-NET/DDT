@@ -44,6 +44,16 @@ export function formatDuration(milliseconds: number): string {
   return `${String(seconds)} s`;
 }
 
+// "1 problem", "2 problems": for nouns that add an s.
+export function plural(count: number, noun: string): string {
+  return `${number.format(count)} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+// For a phrase that also appears inside sentences, such as "step 4 of 9", when it starts one.
+export function upperFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // Rounded down, so 100% appears only once everything is there.
 export function percentOf(part: number, whole: number): number {
   if (whole <= 0) {

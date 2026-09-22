@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { endDeployment } from "@/deployments/deployments";
+import { approvalPlan, type ApprovalPlan } from "@/machines/approval";
 import {
   approveMachine,
   machinesQuery,
@@ -15,11 +16,19 @@ import {
   upsertMachine,
   type MachineSummary,
 } from "@/machines/machines";
+import { isRuleChoice, sequenceResolutionQuery } from "@/rules/rules";
+import { sequencesQuery } from "@/sequences/sequences";
 
 // The deployment the stop confirmation was opened for.
 export interface StopRequest {
   machineId: string;
   deploymentId: string;
+}
+
+// The approval the confirmation was opened for.
+export interface ApprovalRequest {
+  machineId: string;
+  plan: ApprovalPlan;
 }
 
 // What an operator does to machines, shared by every page that shows them. One set serves all machines on a
@@ -29,6 +38,7 @@ export function useMachineActions() {
 
   const [assignTo, setAssignTo] = useState<string | null>(null);
   const [stopOn, setStopOn] = useState<StopRequest | null>(null);
+  const [approveOn, setApproveOn] = useState<ApprovalRequest | null>(null);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
@@ -42,6 +52,43 @@ export function useMachineActions() {
     },
     // Usually someone else decided first, or the machine registered again. Show what is stored now.
     onError: refresh,
+  });
+
+  const approveWithPlan = useMutation({
+    mutationFn: ({ id, plan }: { id: string; plan: ApprovalPlan }) =>
+      approveMachine(id, plan.expectedSequenceId),
+    onSuccess: (machine) => {
+      upsertMachine(queryClient, machine);
+      setApproveOn(null);
+    },
+    onError: refresh,
+  });
+
+  // Reads fresh what the rules choose before an approval, because the approval runs that sequence.
+  const prepareApproval = useMutation({
+    mutationFn: async (machine: MachineSummary) => {
+      if (machine.signedInBy !== null) {
+        return null;
+      }
+
+      const resolution = await queryClient.query({
+        ...sequenceResolutionQuery(machine.id),
+        staleTime: 0,
+      });
+      const sequences = isRuleChoice(resolution)
+        ? await queryClient.query({ ...sequencesQuery, staleTime: 0 })
+        : [];
+
+      return approvalPlan(machine, resolution, sequences);
+    },
+    onSuccess: (plan, machine) => {
+      if (plan === null) {
+        decide.mutate({ id: machine.id, approve: true });
+      } else {
+        approveWithPlan.reset();
+        setApproveOn({ machineId: machine.id, plan });
+      }
+    },
   });
 
   const remove = useMutation({
@@ -69,14 +116,24 @@ export function useMachineActions() {
 
   return {
     decide,
+    prepareApproval,
+    approveWithPlan,
     remove,
     cancel,
     stop,
-    busy: decide.isPending || remove.isPending || cancel.isPending || stop.isPending,
+    busy:
+      decide.isPending ||
+      prepareApproval.isPending ||
+      approveWithPlan.isPending ||
+      remove.isPending ||
+      cancel.isPending ||
+      stop.isPending,
     assignTo,
     setAssignTo,
     stopOn,
     setStopOn,
+    approveOn,
+    setApproveOn,
   };
 }
 
@@ -91,4 +148,14 @@ export function isStopRequested(stopOn: StopRequest | null, machine: MachineSumm
     machine.deployment?.id === stopOn.deploymentId &&
     machine.deployment.state === "Running"
   );
+}
+
+// The plan holds while the machine waits. Once someone else decided, the dialog closes.
+export function approvalRequested(
+  approveOn: ApprovalRequest | null,
+  machine: MachineSummary,
+): ApprovalPlan | null {
+  return approveOn !== null && approveOn.machineId === machine.id && machine.state === "Pending"
+    ? approveOn.plan
+    : null;
 }

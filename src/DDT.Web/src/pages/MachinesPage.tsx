@@ -8,6 +8,7 @@ import { currentUserQuery } from "@/auth/auth";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
 import { DeploymentCell } from "@/machines/DeploymentCell";
+import { MachineActionErrors } from "@/machines/MachineActionErrors";
 import { MachineActions } from "@/machines/MachineActions";
 import { formatMac, isStray, machinesQuery } from "@/machines/machines";
 import { useMachineActions } from "@/machines/useMachineActions";
@@ -100,7 +101,11 @@ export function MachinesPage() {
                     <div className={styles.secondary}>{machine.lastSeenAddress}</div>
                   </td>
                   <td>
-                    <DeploymentCell deployment={machine.deployment} now={now} />
+                    <DeploymentCell
+                      deployment={machine.deployment}
+                      lastSeenUtc={machine.lastSeenUtc}
+                      now={now}
+                    />
                   </td>
                   {canDecide && (
                     <td>
@@ -118,13 +123,7 @@ export function MachinesPage() {
         </table>
       )}
 
-      {actions.decide.isError && <p className={styles.error}>{actions.decide.error.message}</p>}
-      {actions.remove.isError && <p className={styles.error}>{actions.remove.error.message}</p>}
-      {actions.cancel.isError && (
-        <p className={styles.error} role="alert">
-          {actions.cancel.error.message}
-        </p>
-      )}
+      <MachineActionErrors actions={actions} />
     </div>
   );
 }

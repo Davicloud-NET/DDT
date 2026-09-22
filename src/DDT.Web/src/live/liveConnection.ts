@@ -7,6 +7,8 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { imagesQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
+import { sequenceResolutionsKey } from "@/rules/rules";
+import { sequencesQuery } from "@/sequences/sequences";
 
 // The part of SignalR's HubConnection the live connection uses, so tests can hand in a fake hub. The never
 // lets each handler declare the payload of its own event.
@@ -107,6 +109,16 @@ export function createLiveConnection(
     void queryClient.invalidateQueries({ queryKey: imagesQuery.queryKey });
   };
 
+  // What a machine would run depends on the rules and on whether the chosen sequence has problems.
+  const refetchResolutions = () => {
+    void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
+  };
+
+  const refetchSequences = () => {
+    void queryClient.invalidateQueries({ queryKey: sequencesQuery.queryKey });
+    refetchResolutions();
+  };
+
   const watchesOf = (machineId: string) => [...(watchers.get(machineId) ?? [])];
 
   // Groups do not survive a lost connection, so every watched machine is watched again before its
@@ -115,6 +127,7 @@ export function createLiveConnection(
     setStatus("live");
     refetchMachines();
     refetchImages();
+    refetchSequences();
 
     const missed = [...watchers].flatMap(([machineId, watches]) =>
       [...watches].map((watch) => ({ machineId, watch })),
@@ -163,6 +176,10 @@ export function createLiveConnection(
     current.on("machinesRemoved", refetchMachines);
 
     current.on("imagesChanged", refetchImages);
+
+    current.on("sequenceChanged", refetchSequences);
+
+    current.on("rulesChanged", refetchResolutions);
 
     current.on("machineLogAppended", (event: MachineLogAppended) => {
       for (const watch of watchesOf(event.machineId)) {

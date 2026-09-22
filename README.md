@@ -2,10 +2,11 @@
 
 DDT is a self-hostable, open-source replacement for the Microsoft Deployment Toolkit, aimed at small
 networks of 10 to 100 machines that may span several sites over a VPN. It netboots machines into
-Windows PE, runs an agent there that applies a Windows image or writes a raw Linux disk image,
-executes a task sequence, and reports progress live to a web UI. Windows PE is the only deployment
-environment: Linux is deployed from inside WinPE by writing a raw disk image and a cloud-init seed
-partition, so there is a single agent and a single boot path. DDT never ships its own EFI
+Windows PE and runs an agent there that executes a task sequence: it applies a Windows image, goes
+on in the installed Windows where the sequence asks for it, and reports progress live to a web UI.
+Windows PE is the only deployment environment: Linux, a later milestone, is to be deployed from
+inside WinPE by writing a raw disk image and a cloud-init seed partition, so there is a single agent
+and a single boot path. DDT never ships its own EFI
 bootloader. It serves the Microsoft-signed `bootmgfw.efi` from the Windows ADK and does everything
 interesting after the boot manager has loaded, which is what lets it work on stock PCs with UEFI
 Secure Boot enabled.
@@ -21,7 +22,7 @@ configuration value.
                          |                                                  |
    browser  ---HTTPS-->  |  web      ASP.NET Core host                      |
                          |           web UI, agent API, image library,      |
-                         |           task sequence engine, database         |
+                         |           task sequences, packages, database     |
                          |                                                  |
    firmware ---UDP--->   |  pxe      ProxyDHCP 67 + 4011, TFTP 69, HTTP     |
             <--TFTP--    |           boot 8080. Host networking. One        |
@@ -80,7 +81,7 @@ src/
   DDT.Server/              EF Core, image storage, minimal API endpoints, SignalR hubs
   DDT.Host/                ASP.NET Core entry point. Registers roles, serves the API, hubs and SPA
   DDT.Web/                 Vite + React + TypeScript SPA, SCSS modules
-  DDT.Agent/               NativeAOT console app for Windows PE
+  DDT.Agent/               NativeAOT agent for Windows PE, and its temporary service in Windows
   DDT.AppHost/             Aspire orchestration, development only
   DDT.ServiceDefaults/     OpenTelemetry, health checks, service discovery
 tests/
@@ -89,7 +90,7 @@ tests/
   DDT.Pxe.Tests/
   DDT.Server.Tests/
   DDT.Agent.Tests/
-  DDT.E2E/                 Hyper-V driven, excluded from the default test run
+  DDT.E2E/                 end-to-end checks, trait Category=E2E, not in the default test run
 build/
   Dockerfile
   compose.yaml
@@ -127,7 +128,8 @@ positional solution path. `--ignore-exit-code 8` is required because filtering e
 `DDT.E2E` makes that assembly report "zero tests ran", which is otherwise a failure. Tests that need
 an elevated prompt or real hardware carry the same trait. Server tests run the real host on SQLite
 and a temporary store directory, not an in-memory store, because images are served as files. The
-PostgreSQL migration test runs only while Docker is running, and is skipped otherwise.
+PostgreSQL tests, of the migrations and of a run, start a PostgreSQL container and run only while
+Docker is running; they are skipped otherwise.
 
 Run the whole development stack, host plus SPA dev server, through Aspire:
 
@@ -1310,13 +1312,32 @@ Agent registration (M3) is complete: the NativeAOT agent registers, is authorize
 signing in at the machine or by an approval on the Machines page, polls and streams its log, and the
 Machines page updates live over SignalR.
 
-The image library and deployment (M4) are built: resumable uploads, range downloads, the Images page,
-assignment on the page and at the machine, zero touch, and an agent that partitions, downloads,
-applies with wimlib, makes the disk bootable, writes the answer file and restarts into Windows. They
-have run end to end on one PC with the published agent in dry-run mode against a real host. Not yet
-run: a real deployment in Windows PE, PostgreSQL (its test needs Docker), a reverse proxy, and the web
-UI in a browser against the server. Later milestones, in order: task sequences, Linux raw disk images,
-and the task sequence flow builder.
+The image library and deployment (M4) have run for real on a Hyper-V Generation 2 machine: two
+deployments of Windows, a re-image that kept a single firmware boot entry, and the agent updating
+itself in Windows PE. PostgreSQL runs in the tests through Docker, and the web UI has been used in a
+browser against the server. A reverse proxy has not been tried yet.
+
+Task sequences (M5), which replace M4's fixed list of deployment steps, are built: sequences and
+their editor, packages, rules, runs in Windows PE and in the installed Windows, the machine page
+with its live log and clock correction, DDT's own root certificate with renewal, and PowerShell in
+the boot image. They are tested with fakes and with the dry run through both phases, not yet on a
+machine. The maintainer's run on the Hyper-V test machine is still to come, and checks:
+
+- the certificate switch with its one boot image rebuild, with the size of `boot.wim` and the
+  netboot time before and after PowerShell and at TFTP windows of 4, 8 and 16, and a forced renewal
+  that needs no rebuild;
+- a sequence with Partition the disk, a PowerShell and a cmd script in Windows PE, a restart in
+  Windows PE and the resume after it, Apply image, a driver package made from one inbox driver
+  folder, the answer file, the hand-over, a PowerShell script in Windows, a restart in Windows, and
+  the end of the run, after which there is no `DdtSequence` service and no `C:\DDT`, and Windows
+  Boot Manager comes first;
+- an edit conflict between two administrators, a model rule, and power lost during Apply image.
+
+The domain join is covered only by unit tests and the dry run, because the test network has no
+Active Directory.
+
+Later milestones, in order: M6 Linux raw disk images; M6.5 the real UI, as the web UI and the
+agent's console in Windows PE are concept UIs until then; M7 the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

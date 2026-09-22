@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeploymentStepView, DeploymentSummary } from "@/deployments/deployments";
+import { newStep } from "@/sequences/steps";
 
 import { runTimeline } from "./runs";
 
@@ -71,6 +72,28 @@ describe("runTimeline", () => {
       "The agent started the run",
       "Handed over to Windows; after Windows setup the agent continued there 15 min 30 s later",
       "The run failed: The script ended with exit code 1.",
+    ]);
+  });
+
+  it("shows a restart after a step set to restart, and puts the entries in time order", () => {
+    // The first report of a run can arrive after a step has ended already.
+    const entries = runTimeline(
+      null,
+      { ...run, state: "Running", finishedUtc: null, startedUtc: "2026-09-16T10:02:00Z" },
+      [
+        step(0, { startedUtc: "2026-09-16T10:01:00Z", finishedUtc: "2026-09-16T10:01:30Z" }),
+        step(1, { state: "Running", startedUtc: "2026-09-16T10:04:00Z" }),
+      ],
+      {
+        version: 1,
+        steps: [{ ...newStep("runScript", "s0"), rebootAfter: true }, newStep("runScript", "s1")],
+      },
+    );
+
+    expect(entries.map((entry) => entry.text)).toEqual([
+      "operator approved the machine on the web to run Install Windows, which a rule chose",
+      "Restarted after step 1, Step 0; back after 2 min 30 s",
+      "The agent started the run",
     ]);
   });
 

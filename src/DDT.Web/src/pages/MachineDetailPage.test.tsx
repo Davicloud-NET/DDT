@@ -391,6 +391,17 @@ describe("MachineDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows only a step's log lines once asked from its row", async () => {
+    renderAt(`/machines/${machineId}`, standardAnswers([machine({})], [run({})], [view({})]));
+
+    await screen.findByText("Running, 45%");
+    fireEvent.click(
+      within(stepRow("Partition")).getByRole("button", { name: "Show this step's log" }),
+    );
+
+    expect(await screen.findByText(/^Only the lines of step 1, Partition\./)).toBeInTheDocument();
+  });
+
   it("does not say a run went on after the step it was stopped in", async () => {
     const stopped = run({
       state: "Failed",

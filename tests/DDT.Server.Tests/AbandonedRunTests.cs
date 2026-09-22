@@ -148,12 +148,13 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         using DeployingMachine _ = machine;
 
         await LastSeenAsync(machine.Id, s_canNoLongerResume);
-        application.Clock.Advance(TimeSpan.FromHours(1));
 
         DeploymentState state = DeploymentState.Running;
 
+        // Every pass moves the clock, so the sweep also comes when the sweeper's timer started after the first move.
         for (int attempt = 0; attempt < 200 && state == DeploymentState.Running; attempt++)
         {
+            application.Clock.Advance(TimeSpan.FromHours(1));
             await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
             state = (await administrator.RunAsync(run.Id)).Summary.State;
         }

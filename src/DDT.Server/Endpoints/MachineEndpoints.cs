@@ -581,7 +581,7 @@ public static class MachineEndpoints
 
         if (machines.Count > 0)
         {
-            live.MachinesRemoved();
+            live.MachinesRemoved(machines.Select(m => m.Id));
         }
 
         return TypedResults.NoContent();

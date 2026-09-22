@@ -47,6 +47,15 @@ public sealed class PushThrottle(TimeProvider timeProvider, TimeSpan interval)
         _ = wait > TimeSpan.Zero ? PushLaterAsync(key, wait) : push();
     }
 
+    // Drops the push that waits for the key, when what it would push is gone.
+    public void Discard(Guid key)
+    {
+        lock (_lock)
+        {
+            _waiting.Remove(key);
+        }
+    }
+
     private async Task PushLaterAsync(Guid key, TimeSpan wait)
     {
         await Task.Delay(wait, timeProvider).ConfigureAwait(false);

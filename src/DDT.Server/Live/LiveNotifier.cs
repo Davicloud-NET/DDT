@@ -56,7 +56,18 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, TimeProvider 
             machineId,
             () => PushToWatchersAsync(machineId, LiveEvents.MachineLogAppended, new MachineLogAppendedEvent(machineId, lastLineId)));
 
-    public void MachinesRemoved() => _ = PushEventAsync(LiveEvents.MachinesRemoved);
+    // A push that still waits would bring a removed machine back to the page.
+    public void MachinesRemoved(IEnumerable<Guid> machineIds)
+    {
+        ArgumentNullException.ThrowIfNull(machineIds);
+
+        foreach (Guid machineId in machineIds)
+        {
+            _machines.Discard(machineId);
+        }
+
+        _ = PushEventAsync(LiveEvents.MachinesRemoved);
+    }
 
     public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);
 

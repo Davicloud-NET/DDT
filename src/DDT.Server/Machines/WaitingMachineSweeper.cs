@@ -56,7 +56,7 @@ public sealed partial class WaitingMachineSweeper(
         if (removed > 0)
         {
             LogSwept(removed);
-            live.MachinesRemoved();
+            live.MachinesRemoved(stale);
         }
 
         return removed;

@@ -89,7 +89,8 @@ Some keys are not settings at all and never appear on the page:
   resources, the Vite variables, compose DDT_TAG and the Dockerfile build arguments.
 - **Build and test script parameters:** Start-DevHost, Publish-Agent, New-TestVm, and Build-BootImage
   -Destination and -WorkDirectory.
-- **Agent command-line flags.** startnet.cmd never passes any (Build-BootImage.ps1:358).
+- **Agent command-line flags.** startnet.cmd never passes any (Build-BootImage.ps1:358). The
+  DdtSequence service that M5 registers in the installed Windows passes only `--service`.
 - **ASPNETCORE_FORWARDEDHEADERS_ENABLED,** which is inert by design (DdtForwardedHeadersExtensions.cs:31-33).
 - **Constants that stay constants:**
   - UDP 67, 4011 and 69 (PxeHost.cs:17-19)
@@ -97,7 +98,8 @@ Some keys are not settings at all and never appear on the page:
   - the TFTP retransmit timings (TftpLimits.cs:20-24)
   - the first administrator (IdentityBootstrap.cs:22-24)
   - values the agent and server must agree on, such as MaxLinesPerBatch (AgentLimits.cs:9-10,
-    MachineLogLimits.cs:9)
+    MachineLogLimits.cs:9), and since M5 the limits of SequenceValidator, which the agent checks
+    again before a run
 
 ## 3. The settings page
 
@@ -119,7 +121,7 @@ section 6.
 - An account without a local or directory password cannot change these fields.
 - The main reason is the agent upload. It turns an admin session into code that runs as SYSTEM on
   every netbooting machine, and the agent checks only the size and hash announced by the same server
-  (AgentUpdate.cs:128-135, README.md:759-762). README's security model has to say this.
+  (AgentUpdate.cs:128-135, README "Security model"). README's security model has to say this.
 
 **How a change applies.**
 
@@ -130,10 +132,17 @@ section 6.
 
 ### Deployment (section `deployment`, keys under DDT:Deployment)
 
-A change applies to deployments that start after the save. Once groundwork (d) from section 7 is
-done, a deployment keeps the non-secret values it started with, and the passwords are read when the
-agent fetches them. Until then, the answer file is rendered when the agent fetches it
-(AgentDeploymentEndpoints.cs:300).
+A change applies to runs that start after the save. Since groundwork (d) from section 7, a run keeps
+the non-secret values it started with, and the passwords are read when the agent fetches them, while
+the Write the answer file or Join the domain step that needs them runs. A run whose sequence needs a
+password that is no longer set fails as it starts, and the join account is refused when Domain:Name
+changed since then.
+
+Since M5 these values are used by task sequence steps. TimeZone, Locale and Keyboard are defaults
+that a Write the answer file step can override, and the local administrator is added only by such a
+step with "Add the local administrator" on. The domain is joined only by a Join the domain step,
+online in Windows, and Domain:OrganizationalUnit is a default that the step can override. The step
+has no domain field, because the join password is bound to Domain:Name (rule 6 in section 7).
 
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
@@ -261,7 +270,8 @@ Certificate actions have these limits:
 | Logging:LogLevel:{category} | log level per category | Default Information; Microsoft.AspNetCore and two EF Core categories Warning | | live | Admin |
 
 - The defaults move from appsettings.json:2-9 into code (5.6).
-- README.md:376 recommends DDT.Pxe at Debug or Trace for netboot problems.
+- README "Diagnosing a machine that does not boot" recommends DDT.Pxe at Debug or Trace for netboot
+  problems.
 
 ### Later, when someone needs them
 
@@ -269,32 +279,35 @@ These constants could join a section later. They are not in M6.5 scope.
 
 - TftpLimits.MaxBlockSize, together with the -TftpBlockSize range (TftpLimits.cs:24,
   Build-BootImage.ps1:81-82)
-- MachineTokenLifetimes.Resume (MachineTokenLifetimes.cs:15)
-- MaxStoredLinesPerMachine (MachineLogLimits.cs:13)
-- WaitingMachineLifetime (MachineLogLimits.cs:26)
+- MachineTokenLifetimes.Resume (MachineTokenLifetimes.cs:15), and since M5
+  MachineTokenLifetimes.Run (MachineTokenLifetimes.cs:18), 7 days, how long a run can go without
+  contact and still go on
+- MaxStoredLinesPerMachine (MachineLogLimits.cs:16), 50,000 since M5
+- the package limits added in M5 (PackageLimits): 200,000 entries and 64 GB unpacked
+- WaitingMachineLifetime (MachineLogLimits.cs:30)
 - the per-address agent and sign-in rate limits (RateLimitingExtensions.cs:25-63)
 - the Identity password and lockout policy (DdtAuthenticationExtensions.cs:50-54). This one needs a
   validator that reads the snapshot, because UserManager caches `IOptions<IdentityOptions>`.
 - the cookie lifetime (DdtAuthenticationExtensions.cs:88-89)
 - the upload chunk size, which the server already announces (ImageUploadEndpoints.cs:37)
 - ProtectYourPC (UnattendWriter.cs:85-96)
-- PollAfterSeconds (MachineRegistrar.cs:27). Other limits assume its value (MachineLogLimits.cs:18-20,
-  DeploymentLimits.cs:14-16).
+- PollAfterSeconds (MachineRegistrar.cs:28). Other limits assume its value (MachineLogLimits.cs:22-24,
+  DeploymentLimits.cs:20-22).
 
 ## 4. Boot image and agent values
 
 | Value | Lives in | Can the server hand it out instead? |
 |---|---|---|
 | serverUrl (agent.json, -ServerUrl, --server) | boot.wim (Build-BootImage.ps1:337-347) | No: it is how the agent finds the server (AgentOptions.cs:93-127). |
-| rootCertificate (agent.json, -RootCertificatePath, --root-certificate) | boot.wim | No: a trust anchor cannot come over the channel it protects (HttpAgentServer.cs:41-53). A private CA (question 5) would make it change rarely. |
+| rootCertificate (agent.json, -RootCertificatePath, --root-certificate) | boot.wim | No: a trust anchor cannot come over the channel it protects (HttpAgentServer.cs:41-53). Since M5 the boot image pins DDT's own root, which is valid for 20 years, so it changes only with a new root (question 5). |
 | keyboardLayout (agent.json, -KeyboardLayout) | boot.wim, twice: the input locale and the name shown at the prompt (Build-BootImage.ps1:340,367-371) | Not yet (see below). |
 | -AgentPath | boot.wim, as the fallback agent (Build-BootImage.ps1:328-330) | Already done: the agent updates itself from the server at every boot (AgentUpdate.cs:36-62). The page uploads it. |
 | -WimLibraryPath | boot.wim (Build-BootImage.ps1:287-295,333-335) | It could ship with the agent release. That has little value, so it stays as is. |
 | -TftpBlockSize, -TftpWindowSize | the BCD (Build-BootImage.ps1:215-216) | No: the boot manager reads them before any DDT code runs. The server-side caps apply (TftpMaxWindowSize on the page). |
 | startnet.cmd, scratch space, BCD layout, amd64 | Build-BootImage.ps1:212-233,350-373 | No, and nothing there needs steering. |
 | Agent constants: heartbeat, HTTP timeouts, retries, download, stall and give-up timeouts, log queue | ddt-agent.exe | Changed by publishing a new agent, with no new boot image. If one ever needs tuning, send it additively in AgentNextResult (AgentNextResult.cs:10-19). The contracts are frozen (AgentRelease.cs:7). |
-| Disk eligibility, partition sizes, free space rule | ddt-agent.exe (DiskEligibility.cs:9-31, DiskpartScript.cs:10-21, DeploymentRunner.cs:33-36) | Yes: in M5 they become task sequence data that the server sends. |
-| PollAfterSeconds | a server constant (MachineRegistrar.cs:27) | Already sent in every response. |
+| Disk eligibility, partition sizes, free space rule | ddt-agent.exe (DiskEligibility.cs:9-31, DiskpartScript.cs:10-21, SequenceRunner.cs:59-60,457-490) | Partly: since M5 the partition sizes are fields of the Partition the disk step, which the server sends. Disk eligibility and the free space rule stay in the agent. |
+| PollAfterSeconds | a server constant (MachineRegistrar.cs:28) | Already sent in every response. |
 
 **Keyboard layout.** The server could send a layout as a new additive field on
 AgentRegistrationResult or AgentNextResult, with the baked layout kept as the fallback. But
@@ -308,8 +321,8 @@ the root certificate. It also generates the Build-BootImage.ps1 command line.
 - A rebuild needs Windows, the ADK and elevation (Build-BootImage.ps1:5-6).
 - The output goes into the boot directory, which is read on every request (BootFileResolver.cs:45-78),
   so the server needs no restart.
-- README.md:423-424 should also list the BCD TFTP block and window size among the things that need a
-  new boot image.
+- README "Updating the agent without a new boot image" should also list the BCD TFTP block and
+  window size among the things that need a new boot image.
 
 ## 5. How it works
 
@@ -458,7 +471,8 @@ audit row. What "safe" means is defined per subsystem below.
 - The HTTP boot gate reads the setup that PxeHost applied last, instead of values captured at startup
   (PxeHostingExtensions.cs:49, BootHttpEndpoints.cs:25-48).
 - Interfaces are enumerated again on every apply; today this happens once (NetworkInterfaceMap.cs:17).
-  The page gets a Rescan action, and README.md:295 ("restart DDT after changing them") no longer holds.
+  The page gets a Rescan action, and README "Which interfaces are served" ("restart DDT after
+  changing them") no longer holds.
 - A bind failure caused by a configuration value still stops the host, as PxeHost.cs:39-40 intends.
   A bind failure caused by a stored value is reported instead (question 3).
 
@@ -507,7 +521,7 @@ audit row. What "safe" means is defined per subsystem below.
   root accepts the new certificate. A new root, and an upload with a new root, need the confirmation
   `certificate.newRoot`. The page says that two things must then be updated:
   - every boot image, because boot images pin the root (HttpAgentServer.cs:41-53)
-  - every browser that trusted the old certificate, as README.md:232-235 advises
+  - every browser that trusted the old certificate, as README "The server certificate" advises
 - A new pair is provisional. The selector records on each connection which pair it served. Unless an
   admin confirms within 5 minutes, from a connection that was served the new pair, DDT switches back.
   This rollback keeps the page reachable: outside Development the host sends HSTS (Program.cs:90-93),
@@ -524,8 +538,8 @@ audit row. What "safe" means is defined per subsystem below.
 
 - A save applies in its own process at once. Other processes pick it up within 15 s.
 - Every process on one database must share the key ring (5.4).
-- Interfaces is one global value, which matches the single central PXE instance of README.md:28-29
-  (question 9).
+- Interfaces is one global value, which matches the single central PXE instance of README "Where DDT
+  runs" (question 9).
 
 ### 5.3 Validation
 
@@ -555,7 +569,8 @@ Field is a path relative to the section.
     DdtForwardedHeadersExtensions.cs:119-129).
   - A network wider than /16 (IPv4) or /48 (IPv6) needs the confirmation `network.wide`.
   - A zero touch network that contains a listed proxy or overlaps a listed proxy network is an error
-    (README.md:713-716). The check runs on a save of either section and at load.
+    (README "Deploying a machine", zero touch). The check runs on a save of either section and at
+    load.
 - **ldap:**
   - When enabled, Host is required.
   - Port is between 1 and 65535.
@@ -643,7 +658,7 @@ stated requirement.
 - It protects copies that hold only the database: a dump, or a database backup.
 - It does not protect the store volume, where the key ring is plain files.
 - Keep key ring backups apart from database backups, and protect them like the volume. The key ring
-  can also mint an administrator cookie (README.md:755-758).
+  can also mint an administrator cookie (README "Security model").
 
 ### 5.5 Audit and live push
 
@@ -750,7 +765,7 @@ problems.
 
 | Section | Fails closed as |
 |---|---|
-| deployment | New assignments, image picks and the first Running report are refused, with the problems listed. The agent sends that report before it partitions (DeploymentRunner.cs:111,139,260). Deployments already running keep the values captured when they started. Refusing the answer file instead would hit machines whose disks are already wiped, because the agent fetches it after partitioning, applying the image and writing the boot entry (DeploymentRunner.cs:260-307). |
+| deployment | New assignments, picks at the machine and the first Running report are refused, with the problems listed. The agent sends that report before it partitions (SequenceRunner.cs:217-229). Deployments already running keep the values captured when they started. Refusing the answer file instead would hit machines whose disks are already wiped, because the agent fetches it in the Write the answer file step, after partitioning and applying the image (WriteUnattendStepRunner.cs:21-41). |
 | machines | Zero touch is off. RequireWebApproval is true if the stored or the configured value is true. The caps take their defaults. |
 | ldap | Directory sign-in is off. Local accounts keep working. |
 | oidc | The scheme is not registered. |
@@ -928,15 +943,20 @@ Each item here is useful on its own. Items marked done are in the M5 groundwork 
   section in one message, each after its configuration key.
 - **(d) Deployment settings:**
   - Decide for each DDT:Deployment field whether it is a global default or task sequence data.
+    Done: TimeZone, Locale and Keyboard are defaults a Write the answer file step can override,
+    Domain:OrganizationalUnit a default a Join the domain step can override, and the rest global.
   - Capture the non-secret inputs on the Deployment row when the deployment starts, and render the
     answer file from them. The secrets are read from configuration when the agent fetches them, so
-    none is copied into a row.
-  - Refuse at start when the values are invalid.
+    none is copied into a row. Done.
+  - Refuse at start when the values are invalid. Done: a run whose sequence needs a password that
+    is no longer set fails as it starts.
   - Register the validated DeploymentOptions instance instead of binding a second one
     (DeploymentServiceCollectionExtensions.cs:26-42). Done.
 
   This also closes a gap: a domain switched on between the name check (DeploymentService.cs:559-569)
-  and the answer file fetch.
+  and the answer file fetch. Since M5 the computer name is required when the sequence has a Join the
+  domain step and the machine has no name yet, and the domain is joined by that step, not through
+  the answer file.
 - **(e) The BootDirectory default and the refused roots** (section 2). Done. A relative
   BootDirectory is inside the store as well.
 - **(f) OIDC provisioning fixes:**
@@ -952,6 +972,10 @@ Each item here is useful on its own. Items marked done are in the M5 groundwork 
   - README records the class A list and these rules.
 
   Done.
+
+M5 itself added no configuration key. Task sequences, packages and rules are entities with an API
+and a page (rule 2), and its new limits are constants: those that could join a section later are
+listed in section 3, the others are values the agent and the server must agree on (section 2).
 
 ## 8. Open questions for the maintainer
 
@@ -979,8 +1003,10 @@ Each item here is useful on its own. Items marked done are in the M5 groundwork 
    machines sections? The plan says no.
 9. **Several PXE hosts.** Interfaces is one global value. If several PXE hosts ever share a database,
    the pxe section needs one entry per host.
-10. **Offline domain join.** Offline domain join (djoin) in M5 would take Domain:Password out of
-    answer files, where Operators can read it today.
+10. **Offline domain join.** Answered in M5 in another way. The domain is joined online in Windows
+    by a Join the domain step through NetJoinDomain, which fetches the join account while the step
+    runs, so Domain:Password is in no answer file any more. Operators can still obtain it by running
+    such a sequence on a machine they control; a one-time machine password would end that.
 11. **The web role.** DDT:Roles cannot turn the web role off (Program.cs:50-57,106-126), so every
     process serves the settings API. Fix this in M5?
 12. **Keyboard layout from the server.** It needs a Windows PE test that switches the agent's own

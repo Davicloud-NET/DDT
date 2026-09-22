@@ -210,7 +210,9 @@ checked only where the `pxe` role runs. Two checks stop it on their own, outside
 unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checked later.
 
 What a deployed Windows is set up with comes from `DDT:Deployment`, described under
-[Deploying a machine](#deploying-a-machine).
+[What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
+[Joining a domain](#joining-a-domain). Task sequences, packages and rules are not configuration:
+they live in the database and are managed on their pages.
 
 ### What stays in configuration
 
@@ -226,7 +228,7 @@ available as an override for recovery and for installs managed as code:
 | `DDT:StorePath` | It holds the key ring that decrypts stored secrets, and the SQLite file. |
 | `DDT:Roles` | It decides what a process runs, and two processes on one database can differ. |
 | `DDT:RequireHttps` | It names the cookies and refuses to start without HTTPS. |
-| `DDT:Https:GenerateSelfSignedCertificate`, `DDT:Https:SubjectAlternativeNames` | They give a fresh install a certificate to serve the page with. |
+| `DDT:Https:GenerateSelfSignedCertificate`, `DDT:Https:SubjectAlternativeNames` | They let DDT make its root and issue, renew and reissue the server certificate from it, so a fresh install has a certificate to serve the page with. |
 | `Kestrel:Endpoints:*`, `Kestrel:Certificates:Default:Path`, `KeyPath`, `Password` | The listener and the certificate that serve the page. |
 | `DDT:Pxe:HttpBootPort` | A Kestrel endpoint: a port in use stops the whole host. |
 | `DDT:Pxe:BootDirectory` | Everything below it is served to anyone, so one edit on a page could publish the store. |
@@ -387,6 +389,16 @@ certificate of its own, so yours may sit on a read-only mount. A PFX, a key unde
 `Kestrel:Certificates:Default:Password`, and any setup without both paths are left to Kestrel
 entirely, as before.
 
+DDT does not start when its root cannot be used with its key, or when a certificate it cannot issue
+again, such as one of your own, does not load at startup; the message says what to do. It never
+makes a new root over an existing one by itself, because that would break every boot image.
+
+**Limits while DDT serves the certificate.** With both paths set and no password, DDT hands every
+HTTPS endpoint the certificate it holds, its own or yours, and a certificate configured for a single
+endpoint, under `Kestrel:Endpoints:<name>:Certificate`, is ignored. HTTP/3 cannot be turned on:
+with `Http3` among an endpoint's `Protocols`, Kestrel refuses to start. And Kestrel does not reload
+its endpoint configuration when a configuration file changes; restart DDT for that.
+
 ### Upgrading from the self-signed certificate
 
 Versions before the root generated a self-signed certificate valid for two years and never renewed
@@ -406,10 +418,11 @@ to it, and this break cannot be avoided:
    it with a client that has not been to DDT before, such as
    `curl -k https://ddt.example:8443/api/about/root-certificate`, and compare its SHA-256 with the
    one in the warning.
-3. Until an administrator confirms that every boot image was built again,
-   `GET /api/server/certificate` reports when the old certificate was replaced, in
-   `anchorReplacedUtc`. `DELETE /api/server/certificate/replaced-anchor` confirms it, deletes the
-   copy and is written to the audit table.
+3. Until an administrator confirms that every boot image was built again, the web UI shows
+   administrators a banner with the root's path and SHA-256, and `GET /api/server/certificate`
+   reports when the old certificate was replaced, in `anchorReplacedUtc`. The banner's Done button,
+   or `DELETE /api/server/certificate/replaced-anchor`, confirms it, deletes the copy and is written
+   to the audit table.
 
 ## Netboot
 
@@ -500,9 +513,11 @@ The script adds the Windows PE optional components PowerShell needs, WinPE-WMI, 
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
 with their en-us language packages, so task sequence steps can run PowerShell scripts in Windows PE.
 Components cannot be added to a running Windows PE, so they have to be in `boot.wim`: by the size of
-their packages they take it from about 330 MB to about 450 MB, and the script prints the real size
-at the end. `-SkipPowerShell` builds the lean image for sites where netboot time matters more; a
-step that runs PowerShell in Windows PE cannot run on it. Either way the script exports `boot.wim`
+their packages they take it from about 330 MB to about 450 MB. The script prints the real size at
+the end; the sizes and netboot times of both images are to be measured on the test machine.
+`-SkipPowerShell` builds the lean image for sites where netboot time matters more. On it the agent
+refuses a run with a PowerShell script in Windows PE before it touches the disk, and says to build
+the image without `-SkipPowerShell`. Either way the script exports `boot.wim`
 at the end, which drops what servicing left behind in the file. A build needs an elevated prompt,
 the Windows ADK and its Windows PE add-on.
 
@@ -791,9 +806,8 @@ names a deleted package shows a problem.
 ## Task sequences
 
 A task sequence is the list of steps a machine runs, in order. Administrators create and edit
-sequences on the Sequences page, and everyone signed in can read them, scripts included. A
-deployment runs one sequence on one machine, as [Deploying a machine](#deploying-a-machine)
-describes.
+sequences on the Sequences page. A deployment runs one sequence on one machine, as
+[Deploying a machine](#deploying-a-machine) describes.
 
 | Step | Runs in | What it does |
 |---|---|---|
@@ -879,10 +893,9 @@ administrator's save appears as it happens. Every save is written to the audit t
 changed, and the SHA-256 of every script that changed. Names are unique, ignoring case. A sequence a
 rule chooses cannot be deleted, and runs keep the copy they ran either way.
 
-**Who may change them.** A sequence's scripts run as SYSTEM on every machine it goes to, so
-changing a sequence is running code on those machines, see [Security model](#security-model). Only
-administrators create and change sequences, packages and rules. Operators assign, approve and stop
-runs, and viewers read everything, scripts included: never put a password in a script.
+**Who may change them.** Only administrators create and change sequences, packages and rules, and
+operators assign, approve and stop runs. A sequence is code that runs as SYSTEM on every machine it
+goes to, see [Security model](#security-model).
 
 ## Rules
 
@@ -1162,13 +1175,14 @@ machine or approving it on the Machines page, before it can write a log line or 
 an image or a secret. That gate is the control that the published attacks against SCCM operating
 system deployment walk straight through, and it is the reason the rest of this design exists.
 
-A deployment hands an authorized machine its image and an answer file with the `DDT:Deployment`
-passwords. Assigning an image on the Machines page is an operator's decision like an approval, with
-two consequences to keep in mind. A machine counts as waiting at its prompt for 90 seconds after it
-was last seen, and anyone presenting its UUID and a MAC address can register as it in that time, so
-the assign dialog shows where it was last seen from: check it, as for an approval. And with
-`DDT:Machines:ZeroTouchNetworks` set, a registration from a listed network that presents an assigned
-machine's UUID and a MAC receives the image and the passwords. Every viewer can see both values, and
+A run hands an authorized machine its sequence, the files the sequence downloads, and, while the
+steps that need them run, the `DDT:Deployment` passwords. Assigning a sequence on the Machines page
+is an operator's decision like an approval, with two consequences to keep in mind. A machine counts
+as waiting at its prompt for 90 seconds after it was last seen, and anyone presenting its UUID and a
+MAC address can register as it in that time, so the assign dialog shows where it was last seen from:
+check it, as for an approval. And with `DDT:Machines:ZeroTouchNetworks` set, a registration from a
+listed network that presents an assigned machine's UUID and a MAC receives the run and the
+passwords. Every viewer can see both values, and
 every PXE request carries them, so list only provisioning segments and cancel assignments that are
 not about to be used. Behind a reverse proxy listed in `DDT:ForwardedHeaders`, the network is judged
 by the address the proxy reports, and a listed proxy network that also holds clients lets them claim
@@ -1178,10 +1192,58 @@ the headers, comes from the proxy's own address, so a zero touch network must no
 overlap a listed proxy network. DDT refuses zero touch to a request that still comes from a listed
 proxy, but it cannot tell a proxy it does not list from a machine.
 
-Every operator can obtain the local administrator and domain join passwords by deploying a machine
-they control, and they sit in DDT's configuration. Treat the local administrator password as known to
-all operators, for example by letting Windows LAPS take the account over after the join, and give the
-join account nothing but the right to create computer objects in its OU.
+**Rules never authorize.** A rule only chooses a sequence. It never counts as an approval, never
+makes a machine zero touch, and runs only through an operator's approval, which carries the sequence
+the operator was shown. Spoofing a MAC address or a model only changes the sequence of a machine
+that still has to be authorized.
+
+Every operator can obtain the local administrator and domain join passwords by running a sequence
+that needs them on a machine they control, and they sit in DDT's configuration. Treat the local
+administrator password as known to all operators, for example by letting Windows LAPS take the
+account over after the join, and give the join account nothing but the right to create computer
+objects in its OU.
+
+**A task sequence is code that runs as SYSTEM** on every machine it goes to, in Windows PE on the
+provisioning network and in the installed Windows, and the packages it uses are unpacked and their
+drivers installed there as SYSTEM. A script can do anything SYSTEM can, including reading the domain
+join account's password when a later Join the domain step fetches it. Only administrators change
+sequences, packages and rules, and every change is audited, but every signed-in user can read the
+scripts: never put a password in one. The zip checks keep a package from writing outside its folder
+on the machine; they say nothing about what it contains.
+
+**Secrets are handed out just in time.** The run the agent receives holds no password. The agent
+fetches the answer file while its Write the answer file step runs, and the join account while its
+Join the domain step runs. The server answers only for the machine's running run, only for that
+step while it knows the step runs, with `Cache-Control: no-store`, and writes an audit row for every
+read. The passwords are read from the configuration at that moment and never stored with the run.
+The join account goes only to an agent that registered as the service in the installed Windows,
+which is what the agent says of itself, and only for the domain that was configured when the run
+started. It lives in the agent's memory and is never written to disk or logged. The local
+administrator's password stays in the answer file until Windows setup is done, as
+[What Windows shows at its first start](#what-windows-shows-at-its-first-start) describes.
+
+**The run token.** From Partition the disk on, the agent keeps a run token in `DDT\run\token` on
+the Windows partition, in a folder only SYSTEM can open. It lets the agent register again after a
+restart and go on with its run, and nothing else: the server takes it only at registration, only
+for its machine and run, only while that run is the machine's running run in the token generation
+it was issued in, and for 7 days after it was issued, with a new one in every answer to a report.
+It dies with the run: when the run ends, is stopped or the machine is rejected, and the agent
+deletes it first when the run is over. Every registration that goes on with a run is audited with
+its address, and so is a refused run token. Whoever reads the token during the run, a local
+administrator in the installed Windows or anyone with the disk in hand, where the folder's
+permissions mean nothing, is the machine for that run: they can download its files, fetch a password
+whose step has not run yet, report false progress or fail it.
+
+**In the installed Windows** the agent is an unsigned executable in `C:\DDT`. Microsoft Defender or
+Smart App Control may block it, and so may WDAC or AppLocker rules in the image; the run then makes
+no contact after the hand-over. Where such rules block it, allow `C:\DDT\agent\ddt-agent.exe` in
+them by its path, or sign the agent you put at `DDT:Agent:BinaryPath` and allow its signer: machines
+run that agent in place of the boot image's, as
+[Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image)
+describes. A Group Policy that sets the PowerShell execution policy overrides
+`-ExecutionPolicy Bypass` for scripts once the machine has joined the domain. Re-imaging a PC under
+its old name can fail on the domain's rules for reusing a computer account, see
+[Joining a domain](#joining-a-domain).
 
 Because anyone who registers a machine reaches the sign in at it, it is exposed exactly like the web
 sign in page, and treated the same: the same accounts and lockout, and the same limit of 10
@@ -1190,13 +1252,16 @@ the registration that asked for it, so an agent that registers the machine again
 is being checked does not receive it.
 
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
-operator is written to the audit table with the actor and source address. Waiting machines removed
-after a day unseen are only counted in the server log. Since anyone can register, approve on the page
-only a machine you can tie to a real PC, by its address or by someone signing in at it.
+operator is written to the audit table with the actor and source address, and so is every run that
+is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
+sequence, package or rule. Waiting machines removed after a day unseen are only counted in the
+server log. Since anyone can register, approve on the page only a machine you can tie to a real PC,
+by its address or by someone signing in at it.
 
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
 ring is already required, already rotates, and this needs no token library. Each purpose, poll,
-session and resume, has its own protector, so a poll token cannot be replayed as a session token.
+session, resume and run, has its own protector, so a poll token cannot be replayed as a session
+token, and a run token is never taken as a bearer token.
 Every token carries the machine's token generation, so bumping one column invalidates all of that
 machine's outstanding tokens at once.
 
@@ -1230,7 +1295,8 @@ who can read the Data Protection key ring, which can mint an administrator cooki
 token, or DDT's root key. Treat that volume as a secret. Anyone who can write to it can also replace
 the boot files and the agent at `DDT:Agent:BinaryPath`, which every machine that netboots runs as
 SYSTEM before anyone has authorized it: the SHA-256 the agent checks proves only that it received
-what the server announced.
+what the server announced. And until a run ends, whoever can read the machine's disk is that machine
+for the run, as the run token above describes.
 
 ## Status
 

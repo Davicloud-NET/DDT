@@ -12,7 +12,7 @@ namespace DDT.Agent.Deployment;
 // winioctl.h lays them out on 64-bit Windows.
 public static class EspReader
 {
-    public const int PartitionInformationLength = 144;
+    public const int PartitionInformationLength = PartitionReader.PartitionInformationLength;
     public const int GeometryLength = 24;
 
     private const int StartingOffsetOffset = 8;
@@ -27,44 +27,9 @@ public static class EspReader
     // systemRoot is the partition's drive, such as S:\.
     public static unsafe EspPartition Read(string systemRoot)
     {
-        ArgumentException.ThrowIfNullOrEmpty(systemRoot);
-
-        string drive = systemRoot.TrimEnd('\\');
-
-        if (drive.Length != 2 || drive[1] != ':' || !char.IsAsciiLetter(drive[0]))
-        {
-            throw new DeploymentStepException($"The system partition {systemRoot} is not a drive, so its place on the disk cannot be read.");
-        }
-
-        using SafeFileHandle volume = DiskNativeMethods.CreateFile(
-            $@"\\.\{drive}",
-            DiskNativeMethods.GenericRead,
-            DiskNativeMethods.FileShareRead | DiskNativeMethods.FileShareWrite,
-            0,
-            DiskNativeMethods.OpenExisting,
-            0,
-            0);
-
-        if (volume.IsInvalid)
-        {
-            throw new DeploymentStepException($"The system partition {systemRoot} cannot be opened (Windows error {Marshal.GetLastPInvokeError()}).");
-        }
-
+        using SafeFileHandle volume = PartitionReader.OpenVolume(systemRoot);
         byte* partition = stackalloc byte[PartitionInformationLength];
-
-        if (!DiskNativeMethods.DeviceIoControl(
-            volume,
-            DiskNativeMethods.IoctlDiskGetPartitionInfoEx,
-            null,
-            0,
-            partition,
-            PartitionInformationLength,
-            out uint returned,
-            0)
-            || returned < PartitionInformationLength)
-        {
-            throw new DeploymentStepException($"The partition of {systemRoot} cannot be read (Windows error {Marshal.GetLastPInvokeError()}).");
-        }
+        PartitionReader.ReadInformation(volume, systemRoot, partition);
 
         byte* geometry = stackalloc byte[GeometryLength];
 
@@ -75,7 +40,7 @@ public static class EspReader
             0,
             geometry,
             GeometryLength,
-            out returned,
+            out uint returned,
             0)
             || returned < GeometryLength)
         {

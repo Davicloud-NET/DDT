@@ -8,7 +8,8 @@ using System.Text;
 namespace DDT.Agent.Deployment;
 
 // Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition right after Windows so that Windows
-// can grow it later. 300 MB covers 4K native disks too, and 1 GB leaves WinRE its 250 MB free.
+// can grow it later. 300 MB covers 4K native disks too, and 1 GB leaves WinRE its 250 MB free: the defaults, which a
+// Partition step can change.
 public static class DiskpartScript
 {
     public const int SystemPartitionMegabytes = 300;
@@ -21,21 +22,29 @@ public static class DiskpartScript
     private const string RecoveryAttributes = "0x8000000000000001";
 
     // diskpart reads ASCII with CRLF line ends and stops at a blank line.
-    public static string Build(int diskNumber, char system, char windows, char recovery)
+    public static string Build(
+        int diskNumber,
+        char system,
+        char windows,
+        char recovery,
+        int systemPartitionMegabytes = SystemPartitionMegabytes,
+        int recoveryPartitionMegabytes = RecoveryPartitionMegabytes)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(systemPartitionMegabytes);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(recoveryPartitionMegabytes);
 
         string[] lines =
         [
             string.Create(CultureInfo.InvariantCulture, $"select disk {diskNumber}"),
             "clean",
             "convert gpt",
-            string.Create(CultureInfo.InvariantCulture, $"create partition efi size={SystemPartitionMegabytes}"),
+            string.Create(CultureInfo.InvariantCulture, $"create partition efi size={systemPartitionMegabytes}"),
             "format quick fs=fat32 label=\"System\"",
             $"assign letter={system}",
             string.Create(CultureInfo.InvariantCulture, $"create partition msr size={ReservedPartitionMegabytes}"),
             "create partition primary",
-            string.Create(CultureInfo.InvariantCulture, $"shrink minimum={RecoveryPartitionMegabytes}"),
+            string.Create(CultureInfo.InvariantCulture, $"shrink minimum={recoveryPartitionMegabytes}"),
             "format quick fs=ntfs label=\"Windows\"",
             $"assign letter={windows}",
             "create partition primary",

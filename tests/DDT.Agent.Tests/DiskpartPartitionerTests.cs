@@ -24,7 +24,7 @@ public sealed class DiskpartPartitionerTests : IDisposable
         DiskpartPartitioner partitioner = new(tools, log, time, _work);
         string script = Path.Combine(_work, "partition.txt");
 
-        Task<TargetVolumes> partitioning = partitioner.PartitionAsync(FakeDeploymentTools.Disk(3), TestContext.Current.CancellationToken);
+        Task<TargetVolumes> partitioning = partitioner.PartitionAsync(FakeDeploymentTools.Disk(3), 500, 2048, TestContext.Current.CancellationToken);
 
         // Nothing is partitioned here, so the new volumes never appear.
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(1), () => partitioning.IsCompleted);
@@ -32,7 +32,11 @@ public sealed class DiskpartPartitionerTests : IDisposable
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => partitioning);
         Assert.StartsWith("The new volume ", exception.Message, StringComparison.Ordinal);
         Assert.Equal([RecordingToolRunner.CommandLine(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), "/s", script)], tools.Calls);
-        Assert.StartsWith("select disk 3\r\nclean\r\n", await File.ReadAllTextAsync(script, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+        string written = await File.ReadAllTextAsync(script, TestContext.Current.CancellationToken);
+        Assert.StartsWith("select disk 3\r\nclean\r\n", written, StringComparison.Ordinal);
+        Assert.Contains("create partition efi size=500\r\n", written, StringComparison.Ordinal);
+        Assert.Contains("shrink minimum=2048\r\n", written, StringComparison.Ordinal);
     }
 
     // Reads this PC's disks with the real IOCTLs and changes nothing. Opening a disk for its size needs an

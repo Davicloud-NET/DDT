@@ -46,6 +46,25 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
 
     public bool ImageWasThereToApply { get; private set; }
 
+    // The sizes of the last partitioning, in MB.
+    public (int System, int Recovery)? PartitionSizes { get; private set; }
+
+    // What the partitioning creates.
+    public TargetVolumes Volumes => new(Path.Combine(Root, "S"), Path.Combine(Root, "W"), Path.Combine(Root, "R"), [ErasedSystemPartitionId])
+    {
+        SystemPartitionId = SystemPartitionId,
+        WindowsPartitionId = WindowsPartitionId,
+        RecoveryPartitionId = RecoveryPartitionId,
+    };
+
+    public static Guid SystemPartitionId { get; } = Guid.Parse("5a5a0000-0000-4000-8000-000000000001");
+
+    public static Guid WindowsPartitionId { get; } = Guid.Parse("5a5a0000-0000-4000-8000-000000000002");
+
+    public static Guid RecoveryPartitionId { get; } = Guid.Parse("5a5a0000-0000-4000-8000-000000000003");
+
+    public static Guid ErasedSystemPartitionId { get; } = Guid.Parse("5a5a0000-0000-4000-8000-0000000000e0");
+
     public List<string> Calls
     {
         get
@@ -67,11 +86,16 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
         return Task.FromResult<IReadOnlyList<LocalDisk>>([.. Disks]);
     }
 
-    public Task<TargetVolumes> PartitionAsync(LocalDisk disk, CancellationToken cancellationToken)
+    public Task<TargetVolumes> PartitionAsync(
+        LocalDisk disk,
+        int systemPartitionMegabytes,
+        int recoveryPartitionMegabytes,
+        CancellationToken cancellationToken)
     {
+        PartitionSizes = (systemPartitionMegabytes, recoveryPartitionMegabytes);
         Record("partition", $" {disk.Number}");
 
-        TargetVolumes volumes = new(Path.Combine(Root, "S"), Path.Combine(Root, "W"), Path.Combine(Root, "R"), []);
+        TargetVolumes volumes = Volumes;
         Directory.CreateDirectory(volumes.System);
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);

@@ -54,6 +54,27 @@ public sealed class EspReaderTests
         Assert.Throws<DeploymentStepException>(() => EspReader.Parse(SystemRoot, information, Geometry(512).AsSpan(0, 20)));
     }
 
+    [Fact]
+    public void ReadsTheUniqueGuidOfAnyGptPartition() =>
+        Assert.Equal(s_partitionId, PartitionReader.ParseId(@"W:\", PartitionInformation(DriveLayoutReader.StyleGpt, s_basicDataType)));
+
+    [Fact]
+    public void AnMbrPartitionHasNoGuidToFindItAgain()
+    {
+        DeploymentStepException exception = Assert.Throws<DeploymentStepException>(
+            () => PartitionReader.ParseId(@"W:\", PartitionInformation(DriveLayoutReader.StyleMbr, s_basicDataType)));
+
+        Assert.Equal(@"W:\ is not on a GPT disk, so its partition cannot be found again after a restart.", exception.Message);
+    }
+
+    [Fact]
+    public void RefusesAVolumeThatIsNoDrive()
+    {
+        DeploymentStepException exception = Assert.Throws<DeploymentStepException>(() => PartitionReader.ReadId(Path.GetTempPath()));
+
+        Assert.EndsWith(" is not a drive, so its partition cannot be read.", exception.Message, StringComparison.Ordinal);
+    }
+
     // PARTITION_INFORMATION_EX: the style, then StartingOffset at 8, PartitionLength at 16 and PartitionNumber at 24,
     // then for GPT the type GUID at 32 and the unique GUID at 48.
     private static byte[] PartitionInformation(int style, Guid type)

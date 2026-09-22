@@ -257,7 +257,14 @@ public sealed class DeploymentRunner(
         DeploymentHeartbeat heartbeat,
         CancellationToken cancellationToken)
     {
-        TargetVolumes volumes = await StepAsync(heartbeat, DeploymentStep.Partition, () => partitioner.PartitionAsync(disk, cancellationToken))
+        TargetVolumes volumes = await StepAsync(
+            heartbeat,
+            DeploymentStep.Partition,
+            () => partitioner.PartitionAsync(
+                disk,
+                DiskpartScript.SystemPartitionMegabytes,
+                DiskpartScript.RecoveryPartitionMegabytes,
+                cancellationToken))
             .ConfigureAwait(false);
 
         string cache = Path.Combine(volumes.Windows, "DDT");

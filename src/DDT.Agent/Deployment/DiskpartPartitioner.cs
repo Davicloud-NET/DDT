@@ -40,12 +40,16 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
         return Task.FromResult<IReadOnlyList<LocalDisk>>(disks);
     }
 
-    public async Task<TargetVolumes> PartitionAsync(LocalDisk disk, CancellationToken cancellationToken)
+    public async Task<TargetVolumes> PartitionAsync(
+        LocalDisk disk,
+        int systemPartitionMegabytes,
+        int recoveryPartitionMegabytes,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(disk);
 
         (char system, char windows, char recovery) = DriveLetters.Choose(DiskNativeMethods.GetLogicalDrives());
-        string script = DiskpartScript.Build(disk.Number, system, windows, recovery);
+        string script = DiskpartScript.Build(disk.Number, system, windows, recovery, systemPartitionMegabytes, recoveryPartitionMegabytes);
         string path = Path.Combine(workDirectory, "partition.txt");
 
         Directory.CreateDirectory(workDirectory);
@@ -69,7 +73,12 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
             await WaitForVolumeAsync(root, cancellationToken).ConfigureAwait(false);
         }
 
-        return volumes;
+        return volumes with
+        {
+            SystemPartitionId = PartitionReader.ReadId(volumes.System),
+            WindowsPartitionId = PartitionReader.ReadId(volumes.Windows),
+            RecoveryPartitionId = PartitionReader.ReadId(volumes.Recovery),
+        };
     }
 
     // diskpart assigns letters before it exits, but the volume can still take a moment to mount.

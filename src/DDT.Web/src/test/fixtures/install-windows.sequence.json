@@ -1,0 +1,59 @@
+{
+  "key": "install-windows",
+  "name": "Install Windows",
+  "description": "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file, then joins the domain in Windows.",
+  "definition": {
+    "version": 1,
+    "steps": [
+      {
+        "kind": "partition",
+        "systemPartitionMegabytes": 300,
+        "recoveryPartitionMegabytes": 1024,
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Partition the disk",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "applyImage",
+        "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Apply the image",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "injectDrivers",
+        "requireMatch": false,
+        "id": "00000000-0000-4000-8000-000000000003",
+        "name": "Add the drivers for the model",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "writeUnattend",
+        "timeZone": null,
+        "locale": null,
+        "keyboard": null,
+        "localAdministrator": true,
+        "id": "00000000-0000-4000-8000-000000000004",
+        "name": "Write the answer file",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "joinDomain",
+        "organizationalUnit": null,
+        "id": "00000000-0000-4000-8000-000000000005",
+        "name": "Join the domain",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": true
+      }
+    ]
+  }
+}

@@ -5,17 +5,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
+import { currentUserQuery } from "@/auth/auth";
+import { ApiError } from "@/lib/api";
+import { SequenceEditor } from "@/sequences/SequenceEditor";
 import { sequenceQuery } from "@/sequences/sequences";
-import { phaseLabel, stepKindLabel } from "@/sequences/steps";
 
 import styles from "./SequenceEditorPage.module.scss";
 
-// One sequence with its steps in order, the phase each runs in and what keeps it from running.
+// One sequence, edited in place by administrators and read by everyone else.
 export function SequenceEditorPage() {
   // Not strict, so the page reads its parameters in any router that has its path, as its tests do.
   const sequenceId = useParams({ strict: false }).sequenceId ?? "";
   const sequence = useQuery(sequenceQuery(sequenceId));
-  const view = sequence.data ?? null;
+  const user = useQuery(currentUserQuery).data ?? null;
+
+  const isAdministrator = user?.roles.includes("Administrator") === true;
+  // The editor keeps its copy once open, and says itself when the sequence goes away.
+  const missing =
+    sequence.data === undefined &&
+    sequence.error instanceof ApiError &&
+    sequence.error.status === 404;
 
   return (
     <div className={styles.page}>
@@ -23,33 +32,19 @@ export function SequenceEditorPage() {
         All sequences
       </Link>
 
-      {sequence.isError && <p className={styles.error}>The sequence could not be loaded.</p>}
+      {missing && (
+        <section className={styles.notice}>
+          <h1>Sequence not found</h1>
+          <p>This sequence does not exist. It may have been deleted.</p>
+        </section>
+      )}
 
-      {view !== null && (
-        <>
-          <h1>{view.name}</h1>
-          {view.description !== null && <p className={styles.secondary}>{view.description}</p>}
+      {!missing && sequence.isError && sequence.data === undefined && (
+        <p className={styles.error}>The sequence could not be loaded.</p>
+      )}
 
-          {view.problems.length > 0 && (
-            <ul className={styles.problems}>
-              {view.problems.map((problem, index) => (
-                <li key={index}>{problem.message}</li>
-              ))}
-            </ul>
-          )}
-
-          <ol className={styles.steps}>
-            {view.definition.steps.map((step, index) => {
-              const phase = view.stepPhases[index];
-
-              return (
-                <li key={step.id}>
-                  {`${step.name} (${stepKindLabel(step.kind)}${phase === undefined ? "" : `, ${phaseLabel(phase)}`})`}
-                </li>
-              );
-            })}
-          </ol>
-        </>
+      {sequence.data !== undefined && user !== null && (
+        <SequenceEditor key={sequenceId} initial={sequence.data} readOnly={!isAdministrator} />
       )}
     </div>
   );

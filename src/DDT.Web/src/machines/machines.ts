@@ -35,6 +35,14 @@ export interface MachineSummary {
   deployment: DeploymentSummary | null;
 }
 
+// A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A
+// null manufacturer matches any, and a model that ends in * matches every model that starts with the text
+// before it.
+export interface HardwareModel {
+  manufacturer: string | null;
+  model: string;
+}
+
 export const machinesQuery = queryOptions({
   queryKey: ["machines"],
   queryFn: () => apiGet<MachineSummary[]>("/api/machines"),

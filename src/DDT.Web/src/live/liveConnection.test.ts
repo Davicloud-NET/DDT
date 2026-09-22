@@ -207,7 +207,46 @@ describe("createLiveConnection", () => {
       [{ queryKey: ["sequences"] }],
       [{ queryKey: ["rules"] }],
       [{ queryKey: ["machine-sequence"] }],
+      [{ queryKey: ["sequence", "s1"] }],
     ]);
+  });
+
+  it("reads an open sequence again only when the change is newer than its copy", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    queryClient.setQueryData(["sequence", "s1"], { id: "s1", revision: 3 });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const readsOf = () =>
+      invalidate.mock.calls.filter(([filters]) => filters?.queryKey?.[0] === "sequence").length;
+
+    hub().emit("sequenceChanged", { id: "s1", revision: 3, changedBy: "admin" });
+    expect(readsOf()).toBe(0);
+
+    hub().emit("sequenceChanged", { id: "s1", revision: 4, changedBy: "other" });
+    expect(readsOf()).toBe(1);
+
+    hub().emit("sequenceChanged", { id: "s1", revision: null, changedBy: "other" });
+    expect(readsOf()).toBe(2);
+  });
+
+  it("reads the open sequences again when the library changes, as their problems may have", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    hub().emit("imagesChanged");
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequences"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequence"] });
+
+    invalidate.mockClear();
+    hub().emit("packagesChanged");
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["packages"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequence"] });
   });
 
   it("watches a machine once however many watch it, and unwatches it when the last one stops", async () => {

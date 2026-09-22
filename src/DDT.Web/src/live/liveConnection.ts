@@ -8,8 +8,14 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { DeploymentStepView } from "@/deployments/deployments";
 import { imagesQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
+import { packagesQuery } from "@/packages/packages";
 import { rulesQuery, sequenceResolutionsKey } from "@/rules/rules";
-import { sequencesQuery } from "@/sequences/sequences";
+import {
+  sequenceDocumentsKey,
+  sequenceQuery,
+  sequencesQuery,
+  type SequenceChanged,
+} from "@/sequences/sequences";
 
 // The part of SignalR's HubConnection the live connection uses, so tests can hand in a fake hub. The never
 // lets each handler declare the payload of its own event.
@@ -127,6 +133,29 @@ export function createLiveConnection(
     refetchRules();
   };
 
+  // A sequence's problems depend on the library, so a change there reads the open sequences again. An editor
+  // takes the new problems and keeps its unsaved edits.
+  const refetchLibrary = () => {
+    refetchSequences();
+    void queryClient.invalidateQueries({ queryKey: sequenceDocumentsKey });
+  };
+
+  // A copy at least as new as the change, such as the one this page's own save returned, is kept.
+  const sequenceChanged = (event: SequenceChanged) => {
+    refetchSequences();
+
+    const cached = queryClient.getQueryData(sequenceQuery(event.id).queryKey);
+
+    if (cached === undefined || event.revision === null || cached.revision < event.revision) {
+      void queryClient.invalidateQueries({ queryKey: sequenceQuery(event.id).queryKey });
+    }
+  };
+
+  const packagesChanged = () => {
+    void queryClient.invalidateQueries({ queryKey: packagesQuery.queryKey });
+    refetchLibrary();
+  };
+
   const watchesOf = (machineId: string) => [...(watchers.get(machineId) ?? [])];
 
   // Groups do not survive a lost connection, so every watched machine is watched again before its
@@ -135,7 +164,7 @@ export function createLiveConnection(
     setStatus("live");
     refetchMachines();
     refetchImages();
-    refetchSequences();
+    packagesChanged();
 
     const missed = [...watchers].flatMap(([machineId, watches]) =>
       [...watches].map((watch) => ({ machineId, watch })),
@@ -183,9 +212,14 @@ export function createLiveConnection(
 
     current.on("machinesRemoved", refetchMachines);
 
-    current.on("imagesChanged", refetchImages);
+    current.on("imagesChanged", () => {
+      refetchImages();
+      refetchLibrary();
+    });
 
-    current.on("sequenceChanged", refetchSequences);
+    current.on("packagesChanged", packagesChanged);
+
+    current.on("sequenceChanged", sequenceChanged);
 
     current.on("rulesChanged", refetchRules);
 

@@ -4,7 +4,7 @@
 
 import { queryOptions } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 
 export type SequencePhase = "WindowsPE" | "Windows";
 
@@ -154,6 +154,21 @@ export interface CreateSequenceRequest {
   definition: SequenceDefinition;
 }
 
+// revision is the one the page last read. A save over a newer one is refused with 409 and the current view.
+export interface SaveSequenceRequest {
+  revision: number;
+  name: string;
+  description: string | null;
+  definition: SequenceDefinition;
+}
+
+// The server's SequenceChangedEvent. revision is null when the sequence was deleted.
+export interface SequenceChanged {
+  id: string;
+  revision: number | null;
+  changedBy: string | null;
+}
+
 export const sequencesQuery = queryOptions({
   queryKey: ["sequences"],
   queryFn: () => apiGet<SequenceSummary[]>("/api/sequences"),
@@ -167,9 +182,11 @@ export const templatesQuery = queryOptions({
 });
 
 // A root of its own, so a change of the list never reads an open editor's document again.
+export const sequenceDocumentsKey = ["sequence"] as const;
+
 export function sequenceQuery(id: string) {
   return queryOptions({
-    queryKey: ["sequence", id],
+    queryKey: [...sequenceDocumentsKey, id],
     queryFn: () => apiGet<SequenceView>(`/api/sequences/${id}`),
   });
 }
@@ -181,6 +198,14 @@ export function canRun(sequence: SequenceSummary): boolean {
 
 export function createSequence(request: CreateSequenceRequest): Promise<SequenceView> {
   return apiPost<SequenceView>("/api/sequences", request);
+}
+
+export function saveSequence(
+  id: string,
+  request: SaveSequenceRequest,
+  keepalive = false,
+): Promise<SequenceView> {
+  return apiPut<SequenceView>(`/api/sequences/${id}`, request, { keepalive });
 }
 
 // Refused with 409 while a rule chooses the sequence.

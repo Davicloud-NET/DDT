@@ -37,6 +37,8 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<DeploymentService>();
         services.AddScoped<RunReports>();
         services.AddScoped<RunSecrets>();
+        services.AddSingleton<AbandonedRunSweeper>();
+        services.AddHostedService(provider => provider.GetRequiredService<AbandonedRunSweeper>());
 
         return services;
     }

@@ -11,7 +11,10 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Server.Deployments;
 using DDT.Server.Images;
+using DDT.Server.Machines;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -78,6 +81,16 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(MachineState.Done, Assert.Single(
             await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
             m => m.Id == machine.Id).State);
+
+        // A run whose agent is gone for good fails.
+        using DeployingMachine silent = await DeployingMachine.ApprovedAsync(application, administrator);
+        await administrator.AssignedAsync(silent.Id, sequence.Id);
+        AgentRun abandoned = (await silent.NextAsync()).Run!;
+        await silent.ReportOkAsync(abandoned.Id, TestReports.Running(TestReports.Step(abandoned.Sequence.Steps[0], StepState.Running)));
+        await application.ChangeMachineAsync(silent.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - MachineTokenLifetimes.Run - TimeSpan.FromMinutes(1));
+
+        Assert.Equal(1, await application.Services.GetRequiredService<AbandonedRunSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(DeploymentState.Failed, (await administrator.RunAsync(abandoned.Id)).Summary.State);
     }
 
     [Fact]

@@ -618,6 +618,27 @@ public sealed class DeploymentService(
         }
     }
 
+    // A running run whose agent has been silent for longer than a run token lasts, see AbandonedRunSweeper.
+    public async Task EndForLostContactAsync(Machine machine, Deployment running, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(running);
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        string error = $"The agent has not been in contact since {machine.LastSeenUtc:u} and could no longer resume the run.";
+
+        await FailRunningStepsAsync(running, error, now, cancellationToken).ConfigureAwait(false);
+        End(machine, running, DeploymentState.Failed, error, now);
+        machine.State = MachineState.Failed;
+        machine.TokenGeneration++;
+        database.AuditEvents.Add(Audit(
+            AuditActions.DeploymentFailed,
+            running,
+            now,
+            address: null,
+            $"{running.Title} on machine {machine.Id:D}. {error}"));
+    }
+
     internal static string? NotDeployable(Image image) => image.Architecture switch
     {
         DeployableArchitecture => null,

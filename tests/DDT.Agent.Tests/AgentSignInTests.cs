@@ -8,9 +8,13 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-public sealed class AgentSignInTests
+public sealed class AgentSignInTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
+
+    private readonly FakeDeploymentTools _tools = new();
+
+    public void Dispose() => _tools.Dispose();
 
     private static AgentRegistrationResult Pending() =>
         new(s_machineId, MachineState.Pending, "poll-0", "resume", 10, null);
@@ -20,11 +24,11 @@ public sealed class AgentSignInTests
 
     private static AgentSignInResult Answer(AgentSignInStatus status) => new(status);
 
-    private static AgentLoop Create(ScriptedAgentServer server, ScriptedSignInPrompt prompt)
+    private AgentLoop Create(ScriptedAgentServer server, ScriptedSignInPrompt prompt)
     {
         ImmediateTimeProvider time = new();
 
-        return TestAgents.Loop(server, prompt, new FakeDeploymentTools(), new AgentLog(time, TextWriter.Null), time);
+        return TestAgents.Loop(server, prompt, _tools, new AgentLog(time, TextWriter.Null), time);
     }
 
     [Fact]

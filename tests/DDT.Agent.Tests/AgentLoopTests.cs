@@ -8,9 +8,13 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-public sealed class AgentLoopTests
+public sealed class AgentLoopTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
+
+    private readonly FakeDeploymentTools _tools = new();
+
+    public void Dispose() => _tools.Dispose();
 
     private static AgentRegistrationResult Registered(
         MachineState state = MachineState.Pending,
@@ -22,13 +26,13 @@ public sealed class AgentLoopTests
         new(state, token, resumeToken, 10, null);
 
     // Without a keyboard, as these tests are about registering and polling.
-    private static (AgentLoop Loop, ImmediateTimeProvider Time) Create(ScriptedAgentServer server, IMachineIdentityReader? identity = null)
+    private (AgentLoop Loop, ImmediateTimeProvider Time) Create(ScriptedAgentServer server, IMachineIdentityReader? identity = null)
     {
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null);
         ScriptedSignInPrompt nobody = new() { IsAvailable = false };
 
-        return (TestAgents.Loop(server, nobody, new FakeDeploymentTools(), log, time, identity), time);
+        return (TestAgents.Loop(server, nobody, _tools, log, time, identity), time);
     }
 
     [Fact]

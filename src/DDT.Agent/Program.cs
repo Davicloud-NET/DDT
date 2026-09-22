@@ -61,10 +61,6 @@ string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "u
 
 using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
 
-IMachineIdentityReader identity = options.DryRun
-    ? new DryRunMachineIdentityReader(options.DryRunId)
-    : new HardwareMachineIdentityReader();
-
 AgentLog log = new(TimeProvider.System, Console.Out);
 
 if (options.DryRun)
@@ -90,63 +86,56 @@ else if (!options.NoUpdate)
 }
 
 ConsoleSignInPrompt prompt = new(log, TimeProvider.System, options.KeyboardLayout);
-SequenceRunner runner;
-IDiskPartitioner disks;
-LocalRunLocator locator;
 
-// What the agent staged into Windows needs to reach the server, and nothing else.
-AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
-
-// A dry run works in a normal Windows session: its disk is a directory that holds the run's state across a restart,
-// which is the end of the process, until the run ends. It runs no tool and never loads wimlib, whose strict mode needs
-// Windows PE's privileges. Started again with the same dry run id, it goes on with the run. The hand-over really
-// stages the agent into the directory that stands in for Windows.
+// The whole run, both phases, in this process, with a directory for the machine's disk that holds the run until it
+// ends. The Windows phase reaches the server as the agent.json the hand-over staged says.
 if (options.DryRun)
 {
-    string root = Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}");
-    DryRunToolRunner tools = new(log);
-    disks = new DryRunDiskPartitioner(root, log);
-    runner = new SequenceRunner(
+    DryRunMachine machine = new(
+        options,
         server,
-        disks,
-        new DryRunImageApplier(log),
-        new DryRunBcdWriter(log),
-        new DryRunRebooter(log),
-        tools,
-        new DryRunDomainJoiner(log),
-        new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, staged, log, dryRun: true),
+        staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate),
+        prompt,
+        Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}"),
+        Environment.ProcessPath!,
         log,
         TimeProvider.System,
         RunHeartbeat.DefaultInterval,
-        root,
-        Environment.SystemDirectory,
-        dryRun: true);
-    locator = new LocalRunLocator([Path.Combine(root, "W")]);
-}
-else
-{
-    // The agent's directory is X:\DDT in Windows PE.
-    ToolRunner tools = new(log, TimeProvider.System);
-    UefiVariables firmware = new();
-    disks = new DiskpartPartitioner(tools, log, TimeProvider.System, AppContext.BaseDirectory);
-    runner = new SequenceRunner(
-        server,
-        disks,
-        new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
-        new BcdbootWriter(tools, firmware, log),
-        new WindowsPERebooter(tools, firmware, log),
-        tools,
-        new NetJoinDomainJoiner(),
-        new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
-        log,
-        TimeProvider.System,
-        RunHeartbeat.DefaultInterval,
-        AppContext.BaseDirectory,
-        Environment.SystemDirectory,
-        dryRun: false);
-    locator = new LocalRunLocator(LocalRunLocator.FixedDrives());
+        version);
+
+    return await machine.RunAsync(stop.Token).ConfigureAwait(false);
 }
 
-AgentLoop loop = new(server, identity, prompt, disks, runner, locator, log, TimeProvider.System, version);
+// The agent's directory is X:\DDT in Windows PE. What it stages into Windows needs to reach the server, and nothing
+// else.
+ToolRunner tools = new(log, TimeProvider.System);
+UefiVariables firmware = new();
+DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
+AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
+SequenceRunner runner = new(
+    server,
+    disks,
+    new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
+    new BcdbootWriter(tools, firmware, log),
+    new WindowsPERebooter(tools, firmware, log),
+    tools,
+    new NetJoinDomainJoiner(),
+    new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
+    log,
+    TimeProvider.System,
+    RunHeartbeat.DefaultInterval,
+    AppContext.BaseDirectory,
+    Environment.SystemDirectory,
+    dryRun: false);
+AgentLoop loop = new(
+    server,
+    new HardwareMachineIdentityReader(),
+    prompt,
+    disks,
+    runner,
+    new LocalRunLocator(LocalRunLocator.FixedDrives()),
+    log,
+    TimeProvider.System,
+    version);
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);

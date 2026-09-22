@@ -109,8 +109,9 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.Contains(after, line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("a4.cmd", StringComparison.Ordinal));
     }
 
-    // As Program puts a dry run together: the first start ends with the restart's exit code, and a second start with the
-    // same dry run id finds the run in the dry run's root and finishes it, which removes the root.
+    // The agent of Windows PE as a dry run puts it together, started twice: the first start ends with the restart's exit
+    // code, and a second one, which shares nothing with the first but the dry run's root, finds the run there and
+    // finishes it, which removes the root.
     [Fact]
     public async Task TheAgentStartedAgainGoesOnWithTheRun()
     {

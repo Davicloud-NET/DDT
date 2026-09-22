@@ -35,10 +35,6 @@ public sealed class UnattendRenderer(IOptions<DeploymentOptions> options)
             ? null
             : new LocalAdministrator(deployment.LocalAdministrator.Name.Trim(), deployment.LocalAdministrator.Password);
 
-        DomainJoin? join = Value(deployment.Domain.Name) is { } domain
-            ? new DomainJoin(domain, Value(deployment.Domain.OrganizationalUnit), deployment.Domain.UserName ?? string.Empty, deployment.Domain.Password ?? string.Empty)
-            : null;
-
         return new UnattendSettings(
             ProcessorArchitecture,
             Value(assignedName) ?? GeneratedComputerName,
@@ -46,8 +42,7 @@ public sealed class UnattendRenderer(IOptions<DeploymentOptions> options)
             uiLanguage,
             locale,
             Value(deployment.Keyboard) ?? locale,
-            administrator,
-            join);
+            administrator);
     }
 
     private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();

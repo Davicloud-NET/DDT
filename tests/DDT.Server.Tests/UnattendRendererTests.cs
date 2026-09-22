@@ -26,7 +26,6 @@ public sealed class UnattendRendererTests
         Assert.Equal("de-DE", settings.Locale);
         Assert.Equal("de-DE", settings.Keyboard);
         Assert.Null(settings.LocalAdministrator);
-        Assert.Null(settings.DomainJoin);
     }
 
     [Fact]
@@ -65,9 +64,6 @@ public sealed class UnattendRendererTests
         Assert.Equal("de-CH", settings.Locale);
         Assert.Equal("0807:00000807", settings.Keyboard);
         Assert.Equal(new LocalAdministrator("Support", "Local password 7"), settings.LocalAdministrator);
-        Assert.Equal(
-            new DomainJoin("corp.example", "OU=Workstations,DC=corp,DC=example", "ddt-join@corp.example", "Join password 7"),
-            settings.DomainJoin);
     }
 
     [Fact]

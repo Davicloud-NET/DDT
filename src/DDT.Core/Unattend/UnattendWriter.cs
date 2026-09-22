@@ -36,13 +36,6 @@ public static class UnattendWriter
             ArgumentException.ThrowIfNullOrEmpty(administrator.Password);
         }
 
-        if (settings.DomainJoin is { } join)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(join.Domain);
-            ArgumentException.ThrowIfNullOrWhiteSpace(join.UserName);
-            ArgumentException.ThrowIfNullOrEmpty(join.Password);
-        }
-
         XmlWriterSettings xmlSettings = new()
         {
             Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
@@ -91,27 +84,6 @@ public static class UnattendWriter
             WriteElement(writer, "Order", "1");
             WriteElement(writer, "Path", LiftPasswordAgeCommand);
             writer.WriteEndElement();
-            writer.WriteEndElement();
-            writer.WriteEndElement();
-        }
-
-        if (settings.DomainJoin is { } join)
-        {
-            StartComponent(writer, "Microsoft-Windows-UnattendedJoin", settings.ProcessorArchitecture);
-            StartElement(writer, "Identification");
-            StartElement(writer, "Credentials");
-
-            // Setup takes a UPN or DOMAIN\user here only when Credentials has no Domain element.
-            WriteElement(writer, "Username", join.UserName);
-            WriteElement(writer, "Password", join.Password);
-            writer.WriteEndElement();
-            WriteElement(writer, "JoinDomain", join.Domain);
-
-            if (!string.IsNullOrWhiteSpace(join.OrganizationalUnit))
-            {
-                WriteElement(writer, "MachineObjectOU", join.OrganizationalUnit);
-            }
-
             writer.WriteEndElement();
             writer.WriteEndElement();
         }

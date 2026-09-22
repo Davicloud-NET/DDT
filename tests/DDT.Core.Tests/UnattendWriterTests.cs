@@ -13,7 +13,6 @@ public sealed class UnattendWriterTests
 {
     private const string ShellSetup = "Microsoft-Windows-Shell-Setup";
     private const string Deployment = "Microsoft-Windows-Deployment";
-    private const string UnattendedJoin = "Microsoft-Windows-UnattendedJoin";
     private const string InternationalCore = "Microsoft-Windows-International-Core";
 
     private static readonly XNamespace s_unattend = "urn:schemas-microsoft-com:unattend";
@@ -22,17 +21,8 @@ public sealed class UnattendWriterTests
 
     private static readonly LocalAdministrator s_administrator = new("Admin", "Adm1n-Secret");
 
-    private static readonly DomainJoin s_join = new(
-        "corp.example.com",
-        "OU=Clients,DC=corp,DC=example,DC=com",
-        @"CORP\deploy-join",
-        "J0in-Secret");
-
-    private static UnattendSettings Settings(
-        LocalAdministrator? administrator = null,
-        DomainJoin? join = null,
-        string? timeZone = "W. Europe Standard Time") =>
-        new("amd64", "PC-0042", timeZone, "en-US", "de-DE", "0407:00000407", administrator, join);
+    private static UnattendSettings Settings(LocalAdministrator? administrator = null, string? timeZone = "W. Europe Standard Time") =>
+        new("amd64", "PC-0042", timeZone, "en-US", "de-DE", "0407:00000407", administrator);
 
     private static XDocument Render(UnattendSettings settings) => XDocument.Parse(UnattendWriter.Write(settings));
 
@@ -64,7 +54,7 @@ public sealed class UnattendWriterTests
     [Fact]
     public void WritesAWellFormedUtf8DocumentInTheUnattendNamespace()
     {
-        string xml = UnattendWriter.Write(Settings(s_administrator, s_join));
+        string xml = UnattendWriter.Write(Settings(s_administrator));
         XDocument document = XDocument.Parse(xml);
 
         Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", xml, StringComparison.Ordinal);
@@ -78,10 +68,10 @@ public sealed class UnattendWriterTests
     [Fact]
     public void GivesEveryComponentTheIdentityWindowsSetupMatches()
     {
-        XDocument document = Render(Settings(s_administrator, s_join) with { ProcessorArchitecture = "arm64" });
+        XDocument document = Render(Settings(s_administrator) with { ProcessorArchitecture = "arm64" });
         XElement[] components = [.. document.Descendants(s_unattend + "component")];
 
-        Assert.Equal(5, components.Length);
+        Assert.Equal(4, components.Length);
         Assert.All(components, component =>
         {
             Assert.Equal("arm64", (string?)component.Attribute("processorArchitecture"));
@@ -94,17 +84,30 @@ public sealed class UnattendWriterTests
     }
 
     [Theory]
-    [InlineData(false, false, ShellSetup)]
-    [InlineData(true, false, ShellSetup + "," + Deployment)]
-    [InlineData(true, true, ShellSetup + "," + Deployment + "," + UnattendedJoin)]
-    [InlineData(false, true, ShellSetup + "," + UnattendedJoin)]
-    public void WritesTheComponentsOfEachCombination(bool withAdministrator, bool withDomain, string specialize)
+    [InlineData(false, ShellSetup)]
+    [InlineData(true, ShellSetup + "," + Deployment)]
+    public void WritesTheComponentsOfEachCombination(bool withAdministrator, string specialize)
     {
-        XDocument document = Render(Settings(withAdministrator ? s_administrator : null, withDomain ? s_join : null));
+        XDocument document = Render(Settings(withAdministrator ? s_administrator : null));
 
         Assert.Equal(specialize.Split(','), ComponentNames(document, "specialize"));
         Assert.Equal([InternationalCore, ShellSetup], ComponentNames(document, "oobeSystem"));
         Assert.Equal(withAdministrator, Component(document, "oobeSystem", ShellSetup).Element(s_unattend + "UserAccounts") is not null);
+    }
+
+    // The machine joins its domain in Windows, with credentials fetched while that step runs, so the join account's
+    // password never lands in Panther\unattend.xml.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NeverJoinsADomain(bool withAdministrator)
+    {
+        string xml = UnattendWriter.Write(Settings(withAdministrator ? s_administrator : null));
+        string[] names = [.. XDocument.Parse(xml).Descendants().Select(e => e.Name.LocalName)];
+
+        Assert.DoesNotContain("Microsoft-Windows-UnattendedJoin", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("JoinDomain", names);
+        Assert.DoesNotContain("Credentials", names);
     }
 
     [Fact]
@@ -123,7 +126,7 @@ public sealed class UnattendWriterTests
     [InlineData(" ")]
     public void LeavesTheTimeZoneToWindowsWhenNoneIsSet(string? timeZone)
     {
-        XDocument document = Render(Settings(s_administrator, s_join, timeZone));
+        XDocument document = Render(Settings(s_administrator, timeZone));
 
         Assert.Empty(document.Descendants(s_unattend + "TimeZone"));
         Assert.Equal("PC-0042", Text(Component(document, "specialize", ShellSetup), "ComputerName"));
@@ -144,13 +147,11 @@ public sealed class UnattendWriterTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    [InlineData(false, true)]
-    public void HidesTheOobePagesThatNeedNoAnswer(bool withAdministrator, bool withDomain)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HidesTheOobePagesThatNeedNoAnswer(bool withAdministrator)
     {
-        XDocument document = Render(Settings(withAdministrator ? s_administrator : null, withDomain ? s_join : null));
+        XDocument document = Render(Settings(withAdministrator ? s_administrator : null));
         XElement oobe = Assert.Single(Component(document, "oobeSystem", ShellSetup).Elements(s_unattend + "OOBE"));
 
         Assert.Equal(
@@ -165,13 +166,11 @@ public sealed class UnattendWriterTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    [InlineData(false, true)]
-    public void NeverSkipsOobeOrSignsInAutomatically(bool withAdministrator, bool withDomain)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NeverSkipsOobeOrSignsInAutomatically(bool withAdministrator)
     {
-        XDocument document = Render(Settings(withAdministrator ? s_administrator : null, withDomain ? s_join : null));
+        XDocument document = Render(Settings(withAdministrator ? s_administrator : null));
         string[] names = [.. document.Descendants().Select(e => e.Name.LocalName)];
 
         Assert.DoesNotContain("AutoLogon", names);
@@ -219,79 +218,24 @@ public sealed class UnattendWriterTests
         Assert.Equal("net accounts /maxpwage:unlimited", Text(command, "Path"));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RunsNoCommandWithoutALocalAdministrator(bool withDomain)
+    [Fact]
+    public void RunsNoCommandWithoutALocalAdministrator()
     {
-        string xml = UnattendWriter.Write(Settings(join: withDomain ? s_join : null));
+        string xml = UnattendWriter.Write(Settings());
 
         Assert.DoesNotContain("maxpwage", xml, StringComparison.Ordinal);
         Assert.Empty(XDocument.Parse(xml).Descendants(s_unattend + "RunSynchronous"));
     }
 
-    [Theory]
-    [InlineData(@"CORP\deploy-join")]
-    [InlineData("deploy-join@example.com")]
-    [InlineData(@"corp.example.com\deploy-join")]
-    public void JoinsTheDomainWithTheUserNameAsGiven(string userName)
-    {
-        XDocument document = Render(Settings(s_administrator, s_join with { UserName = userName }));
-        XElement identification = Assert.Single(Component(document, "specialize", UnattendedJoin).Elements());
-
-        Assert.Equal(s_unattend + "Identification", identification.Name);
-        Assert.Equal(
-            ["Credentials", "JoinDomain", "MachineObjectOU"],
-            identification.Elements().Select(e => e.Name.LocalName));
-        Assert.Equal(userName, Text(identification, "Credentials", "Username"));
-        Assert.Equal("J0in-Secret", Text(identification, "Credentials", "Password"));
-        Assert.Equal("corp.example.com", Text(identification, "JoinDomain"));
-        Assert.Equal("OU=Clients,DC=corp,DC=example,DC=com", Text(identification, "MachineObjectOU"));
-    }
-
     [Fact]
-    public void NeverWritesACredentialsDomain()
+    public void WritesTheSecretOnlyIntoItsPasswordElement()
     {
-        XElement credentials = Assert.Single(Render(Settings(s_administrator, s_join)).Descendants(s_unattend + "Credentials"));
-
-        Assert.Equal(["Username", "Password"], credentials.Elements().Select(e => e.Name.LocalName));
-        Assert.Empty(credentials.Descendants(s_unattend + "Domain"));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public void LeavesTheOrganizationalUnitToTheDomainWhenNoneIsSet(string? organizationalUnit)
-    {
-        XDocument document = Render(Settings(s_administrator, s_join with { OrganizationalUnit = organizationalUnit }));
-        XElement identification = Assert.Single(Component(document, "specialize", UnattendedJoin).Elements());
-
-        Assert.Equal(["Credentials", "JoinDomain"], identification.Elements().Select(e => e.Name.LocalName));
-    }
-
-    [Fact]
-    public void StillWritesADomainJoinWithoutALocalAdministrator()
-    {
-        XDocument document = Render(Settings(join: s_join));
-
-        Assert.Equal("corp.example.com", Text(Component(document, "specialize", UnattendedJoin), "Identification", "JoinDomain"));
-        Assert.Empty(document.Descendants(s_unattend + "UserAccounts"));
-    }
-
-    [Fact]
-    public void WritesEachSecretOnlyIntoItsPasswordElement()
-    {
-        string xml = UnattendWriter.Write(Settings(s_administrator, s_join));
+        string xml = UnattendWriter.Write(Settings(s_administrator));
         XDocument document = XDocument.Parse(xml);
         XText[] texts = [.. document.DescendantNodes().OfType<XText>()];
 
         Assert.DoesNotContain("Adm1n", xml, StringComparison.Ordinal);
         Assert.DoesNotContain(document.Descendants().Attributes(), a => a.Value.Contains("Secret", StringComparison.Ordinal));
-
-        XText join = Assert.Single(texts, t => t.Value.Contains("Secret", StringComparison.Ordinal));
-        Assert.Equal("J0in-Secret", join.Value);
-        Assert.Equal(s_unattend + "Password", join.Parent!.Name);
-        Assert.Equal(s_unattend + "Credentials", join.Parent.Parent!.Name);
 
         XText administrator = Assert.Single(texts, t => t.Value == Encoded("Adm1n-Secret"));
         Assert.Equal(s_unattend + "Value", administrator.Parent!.Name);
@@ -304,7 +248,7 @@ public sealed class UnattendWriterTests
     {
         static string Hostile(string field) => $"{field}&amp;<\"'></ComputerName><AutoLogon>]]><!--";
 
-        UnattendSettings benign = Settings(s_administrator, s_join);
+        UnattendSettings benign = Settings(s_administrator);
         UnattendSettings hostile = new(
             Hostile("arch"),
             Hostile("name"),
@@ -312,8 +256,7 @@ public sealed class UnattendWriterTests
             Hostile("ui"),
             Hostile("locale"),
             Hostile("keyboard"),
-            new LocalAdministrator(Hostile("admin"), Hostile("adminpw")),
-            new DomainJoin(Hostile("domain"), Hostile("ou"), Hostile("user"), Hostile("joinpw")));
+            new LocalAdministrator(Hostile("admin"), Hostile("adminpw")));
 
         XDocument document = Render(hostile);
 
@@ -328,12 +271,6 @@ public sealed class UnattendWriterTests
         XElement specializeShell = Component(document, "specialize", ShellSetup);
         Assert.Equal(Hostile("name"), Text(specializeShell, "ComputerName"));
         Assert.Equal(Hostile("zone"), Text(specializeShell, "TimeZone"));
-
-        XElement identification = Assert.Single(Component(document, "specialize", UnattendedJoin).Elements());
-        Assert.Equal(Hostile("user"), Text(identification, "Credentials", "Username"));
-        Assert.Equal(Hostile("joinpw"), Text(identification, "Credentials", "Password"));
-        Assert.Equal(Hostile("domain"), Text(identification, "JoinDomain"));
-        Assert.Equal(Hostile("ou"), Text(identification, "MachineObjectOU"));
 
         XElement international = Component(document, "oobeSystem", InternationalCore);
         Assert.Equal(Hostile("keyboard"), Text(international, "InputLocale"));
@@ -351,15 +288,17 @@ public sealed class UnattendWriterTests
     {
         const string password = "first\r\nsecond\nthird\rfourth\tfifth";
 
-        XDocument document = Render(Settings(s_administrator, s_join with { Password = password }));
+        XDocument document = Render(Settings(new LocalAdministrator("Admin", password)));
+        string encoded = Text(Assert.Single(document.Descendants(s_unattend + "LocalAccount")), "Password", "Value");
 
-        Assert.Equal(password, Text(Assert.Single(document.Descendants(s_unattend + "Credentials")), "Password"));
+        Assert.Equal(password + "Password", Encoding.Unicode.GetString(Convert.FromBase64String(encoded)));
+        Assert.Equal("first\r\nsecond", Render(Settings() with { ComputerName = "first\r\nsecond" }).Descendants(s_unattend + "ComputerName").Single().Value);
     }
 
     [Fact]
     public void RefusesCharactersXmlCannotCarry()
     {
-        Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings(s_administrator, s_join with { Password = "J0in\u0001" })));
+        Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings() with { ComputerName = "PC" }));
     }
 
     [Fact]
@@ -369,16 +308,15 @@ public sealed class UnattendWriterTests
         Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings() with { ComputerName = "" }));
         Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings() with { ProcessorArchitecture = " " }));
         Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings(new LocalAdministrator("Admin", ""))));
-        Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings(join: s_join with { UserName = "" })));
+        Assert.Throws<ArgumentException>(() => UnattendWriter.Write(Settings(new LocalAdministrator(" ", "Adm1n-Secret"))));
     }
 
     [Fact]
     public void KeepsPasswordsOutOfTheSettingsText()
     {
-        string text = Settings(s_administrator, s_join).ToString();
+        string text = Settings(s_administrator).ToString();
 
         Assert.Contains("Admin", text, StringComparison.Ordinal);
-        Assert.Contains(@"CORP\deploy-join", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Secret", text, StringComparison.Ordinal);
     }
 }

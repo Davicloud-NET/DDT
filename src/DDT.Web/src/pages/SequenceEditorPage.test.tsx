@@ -247,6 +247,8 @@ describe("SequenceEditorPage", () => {
     expect(
       within(script).getByText("A step in Windows needs an earlier step."),
     ).toBeInTheDocument();
+    // At its field only, not again among the step's own problems.
+    expect(within(script).getAllByText("Enter the value to compare with.")).toHaveLength(1);
     expect(within(card("Partition the disk")).queryByRole("list", { name: "Problems" })).toBeNull();
   });
 
@@ -493,6 +495,36 @@ describe("SequenceEditorPage", () => {
     await waitFor(() => {
       expect(saves.at(-1)?.definition.steps.map((step) => step.id)).toEqual(["p", "i", "s"]);
     }, saveWait);
+  });
+
+  it("divides the steps by the phase the server gives, and puts a new step in the phase before it", async () => {
+    serve(administrator, view({ stepPhases: ["WindowsPE", "WindowsPE", "Windows"] }));
+
+    const stepsUnder = (divider: string) => {
+      const group = screen.getByRole("heading", { level: 2, name: divider }).closest("section");
+
+      if (group === null) {
+        throw new Error(`${divider} divides no steps.`);
+      }
+
+      return within(group)
+        .getAllByRole("button", { name: /^Move (?!.* (up|down)$)/ })
+        .map((handle) => handle.getAttribute("aria-label"));
+    };
+
+    await screen.findByRole("heading", { level: 1, name: "Lab PCs" });
+    expect(stepsUnder("Windows PE")).toEqual(["Move Partition the disk", "Move Apply image"]);
+    expect(stepsUnder("Windows, after the hand-over")).toEqual(["Move Set wallpaper"]);
+
+    fireEvent.change(screen.getByLabelText("Kind of step to add at the end"), {
+      target: { value: "reboot" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add step" }));
+
+    expect(stepsUnder("Windows, after the hand-over")).toEqual([
+      "Move Set wallpaper",
+      "Move Restart",
+    ]);
   });
 
   it("adds a step of the chosen kind at the end", async () => {

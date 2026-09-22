@@ -82,6 +82,44 @@ public sealed class RuleRunTests(DdtApplication application) : IClassFixture<Ddt
     }
 
     [Fact]
+    public async Task OnlyAWaitingMachineIsApprovedWithTheRulesSequence()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (_, SequenceView sequence, RegisteredMachine registered) = await MatchedMachineAsync();
+        using RegisteredMachine machine = registered;
+        (await administrator.ApproveAsync(machine.Id, null)).EnsureSuccessStatusCode();
+
+        HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, sequence.Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal("The machine is Approved.", await TestDatabase.TitleAsync(refused));
+        Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+    }
+
+    // Nobody at the machine can say which disk to erase, so the rule's sequence waits for someone to sign in there.
+    [Fact]
+    public async Task AnApprovalDoesNotEraseOneOfSeveralDisks()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(
+            application,
+            [DeployingMachine.Disk(0), DeployingMachine.Disk(1, "Samsung SSD 990 PRO")]);
+        SequenceView erasing = await application.RunnableSequenceAsync();
+        await administrator.CreatedRuleAsync(RuleRequests.MacRule(erasing.Id, machine.Registration.PrimaryMac));
+
+        HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, erasing.Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(
+            $"{erasing.Name} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.",
+            await TestDatabase.TitleAsync(refused));
+
+        Machine stored = await application.MachineAsync(machine.Id);
+        Assert.Equal(MachineState.Pending, stored.State);
+        Assert.Null(stored.ActiveDeploymentId);
+    }
+
+    [Fact]
     public async Task AnApprovalWithoutASequenceRunsNothing()
     {
         SignedInClient administrator = await application.AdministratorAsync();

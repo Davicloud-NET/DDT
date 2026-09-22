@@ -7,6 +7,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
+using DDT.Server.Machines;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -45,5 +46,25 @@ public sealed class WebApprovalRuleTests(WebApprovalApplication application) : I
             $"{operatorName} signed in at the machine and chooses its sequence there. Approve it without a sequence.",
             await TestDatabase.TitleAsync(refused));
         Assert.Equal(MachineState.Pending, (await application.MachineAsync(machine.Id)).State);
+    }
+
+    // Approving with the rule's sequence is no more than the web half either: without the sign-in it approves nothing.
+    [Fact]
+    public async Task AnApprovalWithTheRulesSequenceStillNeedsTheSignIn()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView sequence = await application.RunnableSequenceAsync();
+        string model = RuleRequests.UniqueModel();
+        await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
+        using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model);
+
+        HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, sequence.Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal("Nobody has signed in at this machine yet.", await TestDatabase.TitleAsync(refused));
+
+        Machine stored = await application.MachineAsync(machine.Id);
+        Assert.Equal(MachineState.Pending, stored.State);
+        Assert.Null(stored.ActiveDeploymentId);
     }
 }

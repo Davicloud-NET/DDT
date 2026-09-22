@@ -18,6 +18,7 @@ using DDT.Server.Packages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using static DDT.Server.Tests.TestReports;
 
 namespace DDT.Server.Tests;
 
@@ -362,7 +363,8 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
 
         Guid assignment = (await administrator.AssignedAsync(assigned.Id, sequence.Id)).Id;
         Guid run = (await administrator.AssignedAsync(running.Id, sequence.Id)).Id;
-        await application.MoveRunAsync(running.Id, DeploymentState.Running);
+        AgentRun started = (await running.NextAsync()).Run!;
+        await running.ReportOkAsync(run, Running(Step(started.Sequence.Steps[0], StepState.Running)));
 
         MachineSummary cancelled = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.PostAsync($"/api/machines/{assigned.Id}/reject"));
         MachineSummary failed = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.PostAsync($"/api/machines/{running.Id}/reject"));
@@ -382,6 +384,11 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
             $"{AuditActions.DeploymentFailed} {sequence.Name} on machine {running.Id:D}. Rejected by {administratorName}.",
             await AuditAsync(run));
         Assert.Null((await application.MachineAsync(running.Id)).ActiveDeploymentId);
+
+        // The step that ran ended with the run.
+        DeploymentStepView step = Assert.Single((await administrator.RunAsync(run)).Steps);
+        Assert.Equal(StepState.Failed, step.State);
+        Assert.Equal(failed.Deployment?.Error, step.Error);
 
         // Rejected stays final: a second rejection is refused.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync($"/api/machines/{running.Id}/reject")).StatusCode);

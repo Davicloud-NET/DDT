@@ -439,28 +439,33 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
     }
 
     // The settings the run needs went away with a restart of the server between the assignment and the start. The run
-    // fails at once instead of when the agent asks for them, halfway through.
-    [Fact]
-    public async Task ARunWhoseSettingsAreGoneFailsAtTheStart()
+    // fails at once instead of when the agent asks for them, halfway through. This server has neither setting, so the
+    // step that needs one is added to what the run froze.
+    [Theory]
+    [InlineData(false, "The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password")]
+    [InlineData(true, "The sequence joins the domain, but DDT:Deployment:Domain no longer names a domain")]
+    public async Task ARunWhoseSettingsAreGoneFailsAtTheStart(bool joinsDomain, string expected)
     {
         (DeployingMachine machine, AgentRun run) = await AssignedAsync();
         using DeployingMachine _ = machine;
-        SequenceDefinition needsAdministrator = SequenceRequests.Definition(
+        SequenceDefinition needsSettings = SequenceRequests.Definition(
         [
             .. run.Sequence.Steps,
-            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", LocalAdministrator = true },
+            joinsDomain
+                ? new JoinDomainStep { Id = Guid.NewGuid(), Name = "Join" }
+                : new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", LocalAdministrator = true },
         ]);
 
         await application.QueryAsync(database => database.DeploymentSnapshots
             .Where(s => s.DeploymentId == run.Id)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Definition, SequenceRequests.Json(needsAdministrator)), TestContext.Current.CancellationToken));
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Definition, SequenceRequests.Json(needsSettings)), TestContext.Current.CancellationToken));
 
         HttpResponseMessage refused = await machine.ReportAsync(run.Id, Running());
 
         string? reason = await TestDatabase.TitleAsync(refused);
 
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-        Assert.StartsWith("The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password", reason, StringComparison.Ordinal);
+        Assert.StartsWith(expected, reason, StringComparison.Ordinal);
 
         Deployment failed = await StoredAsync(run.Id);
         Assert.Equal(DeploymentState.Failed, failed.State);

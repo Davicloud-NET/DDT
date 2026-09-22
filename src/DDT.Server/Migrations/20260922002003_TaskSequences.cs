@@ -15,6 +15,15 @@ namespace DDT.Server.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "Kind",
+                schema: "ddt",
+                table: "ImageUploads",
+                type: "character varying(16)",
+                maxLength: 16,
+                nullable: false,
+                defaultValue: "Image");
+
             migrationBuilder.CreateTable(
                 name: "TaskSequences",
                 schema: "ddt",
@@ -63,6 +72,11 @@ namespace DDT.Server.Migrations
             migrationBuilder.DropTable(
                 name: "TaskSequences",
                 schema: "ddt");
+
+            migrationBuilder.DropColumn(
+                name: "Kind",
+                schema: "ddt",
+                table: "ImageUploads");
         }
     }
 }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Images;
+
 namespace DDT.Server.Images;
 
 public sealed class ImageUpload
@@ -13,6 +15,8 @@ public sealed class ImageUpload
     public long Length { get; set; }
 
     public long LastModified { get; set; }
+
+    public UploadKind Kind { get; set; } = UploadKind.Image;
 
     // Bytes that are on disk and flushed, so a chunk that was cut off is sent again from here.
     public long Offset { get; set; }

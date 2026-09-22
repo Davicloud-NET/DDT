@@ -59,6 +59,15 @@ public static class ImageUploadEndpoints
             });
         }
 
+        // Packages come with their library.
+        if (request.Kind != UploadKind.Image)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["kind"] = ["This server takes only images."],
+            });
+        }
+
         if (request.Length <= 0 || request.Length > store.Volume().TotalSize)
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>

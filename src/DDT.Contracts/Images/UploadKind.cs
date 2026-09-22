@@ -4,11 +4,10 @@
 
 namespace DDT.Contracts.Images;
 
-public sealed record ImageUploadSession(
-    Guid Id,
-    string FileName,
-    long Length,
-    long LastModified,
-    long Offset,
-    int ChunkBytes,
-    UploadKind Kind = UploadKind.Image);
+// What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files.
+public enum UploadKind
+{
+    Image,
+    Drivers,
+    Files,
+}

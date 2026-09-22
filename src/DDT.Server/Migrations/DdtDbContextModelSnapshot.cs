@@ -368,6 +368,13 @@ namespace DDT.Server.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Image");
+
                     b.Property<long>("LastModified")
                         .HasColumnType("bigint");
 

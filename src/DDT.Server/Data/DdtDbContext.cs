@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Images;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
@@ -100,6 +101,9 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
         {
             upload.Property(u => u.FileName).HasMaxLength(ImageUploadLimits.MaxFileNameLength);
             upload.Property(u => u.CompletedSha256).HasMaxLength(64);
+
+            // The default fills the column for uploads made before packages existed, which were all images.
+            upload.Property(u => u.Kind).HasConversion<string>().HasMaxLength(16).HasDefaultValue(UploadKind.Image);
             upload.HasIndex(u => new { u.FileName, u.Length, u.LastModified });
             upload.HasOne<DdtUser>().WithMany().HasForeignKey(u => u.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
         });

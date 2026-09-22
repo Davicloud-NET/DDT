@@ -35,7 +35,10 @@ public sealed class ImageUploadSessions(
 
             // The same file selected again, after a reload or in a second tab, continues where it stopped.
             ImageUpload? found = open.FirstOrDefault(u =>
-                u.FileName == request.FileName && u.Length == request.Length && u.LastModified == request.LastModified);
+                u.FileName == request.FileName
+                && u.Length == request.Length
+                && u.LastModified == request.LastModified
+                && u.Kind == request.Kind);
 
             if (found is not null)
             {
@@ -58,6 +61,7 @@ public sealed class ImageUploadSessions(
                 FileName = request.FileName,
                 Length = request.Length,
                 LastModified = request.LastModified,
+                Kind = request.Kind,
                 CreatedByUserId = userId,
                 CreatedUtc = now,
                 UpdatedUtc = now,
@@ -272,5 +276,5 @@ public sealed class ImageUploadSessions(
         exception.HResult is unchecked((int)0x80070070) or unchecked((int)0x80070027) or 28;
 
     private static ImageUploadSession Session(ImageUpload upload) =>
-        new(upload.Id, upload.FileName, upload.Length, upload.LastModified, upload.Offset, ImageUploadLimits.ChunkBytes);
+        new(upload.Id, upload.FileName, upload.Length, upload.LastModified, upload.Offset, ImageUploadLimits.ChunkBytes, upload.Kind);
 }

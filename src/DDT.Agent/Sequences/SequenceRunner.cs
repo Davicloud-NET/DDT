@@ -203,9 +203,15 @@ public sealed class SequenceRunner(
         {
             string message = LogText.OneLine(exception);
             log.Error(resumed is null ? $"The run cannot start: {message}" : $"The run cannot go on: {message}");
-            resumed?.Discard(log);
+            AgentRunReport report = heartbeat.Snapshot(DeploymentState.Failed, message);
 
-            return await ReportFailedAsync(heartbeat, message, cancellationToken).ConfigureAwait(false);
+            if (resumed is not null)
+            {
+                await EndRunAsync(resumed.Files, report).ConfigureAwait(false);
+                LocalRun.DeleteAnswerFile(resumed.State, resumed.WindowsRoot, log);
+            }
+
+            return await ReportFailedAsync(heartbeat, resumed?.Files, report, cancellationToken).ConfigureAwait(false);
         }
 
         // Nothing is changed on any disk before the server has the run as running. A run that goes on is running
@@ -567,7 +573,9 @@ public sealed class SequenceRunner(
 
     // The order matters: the log goes while the machine may still send it, and the Done report is the last call the
     // server gets. The restart follows whatever the Done report answers: the run is over either way. In Windows the run
-    // ends without a restart, and the agent's removal deletes the rest of the run's directory, which holds the agent.
+    // ends here without a restart: the agent first removes itself with the rest of the run's directory, then restarts.
+    // There the Done report waits on the disk with the token until the server has it, even when it cannot be reached
+    // for a while.
     private async Task<RunResult> FinishAsync(
         RunSession session,
         FileRunStateStore store,
@@ -578,8 +586,8 @@ public sealed class SequenceRunner(
         bool inWindows = _phase == SequencePhase.Windows;
         log.Information(inWindows ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
 
-        // The token first, so nothing left on the disk can act as the machine.
-        store.Files?.Discard();
+        AgentRunReport done = heartbeat.Snapshot(DeploymentState.Done);
+        await EndRunAsync(store.Files, done).ConfigureAwait(false);
 
         if (!inWindows && session.RunDirectory is { } directory)
         {
@@ -599,7 +607,7 @@ public sealed class SequenceRunner(
             }
 
             await ServerCallRules.CallAsync(
-                call => heartbeat.ReportAsync(heartbeat.Snapshot(DeploymentState.Done), call),
+                call => heartbeat.ReportAsync(done, call),
                 "the end of the run",
                 log,
                 timeProvider,
@@ -614,11 +622,19 @@ public sealed class SequenceRunner(
             // The server stores Done before it answers, so a lost answer makes the retry look like this.
             log.Warning("The server no longer accepts this machine's token. It most likely recorded the run as done already.");
         }
+        catch (DeploymentStepException exception) when (inWindows && exception.InnerException is { } cause && !ServerCallRules.IsRefusal(cause))
+        {
+            log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). It is told once it can be reached.");
+
+            return new RunResult(RunOutcome.Finished, done);
+        }
         catch (Exception exception)
         {
             log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). " +
                 (inWindows ? "The agent removes itself anyway." : "The machine restarts anyway."));
         }
+
+        Reported(store.Files);
 
         if (inWindows)
         {
@@ -712,17 +728,16 @@ public sealed class SequenceRunner(
     {
         log.Error($"The run failed: {error}");
         await UndoAsync(session, state).ConfigureAwait(false);
-        store.Files?.Discard();
+        AgentRunReport report = heartbeat.Snapshot(DeploymentState.Failed, error);
+        await EndRunAsync(store.Files, report).ConfigureAwait(false);
         await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false);
 
-        return await ReportFailedAsync(heartbeat, error, cancellationToken).ConfigureAwait(false);
+        return await ReportFailedAsync(heartbeat, store.Files, report, cancellationToken).ConfigureAwait(false);
     }
 
     // A failure the server was not told about is handed back, for the loop to report once it can.
-    private async Task<RunResult> ReportFailedAsync(RunHeartbeat heartbeat, string error, CancellationToken cancellationToken)
+    private async Task<RunResult> ReportFailedAsync(RunHeartbeat heartbeat, RunFiles? files, AgentRunReport report, CancellationToken cancellationToken)
     {
-        AgentRunReport report = heartbeat.Snapshot(DeploymentState.Failed, error);
-
         try
         {
             await ServerCallRules.CallAsync(
@@ -731,6 +746,8 @@ public sealed class SequenceRunner(
                 log,
                 timeProvider,
                 cancellationToken).ConfigureAwait(false);
+
+            Reported(files);
 
             return new RunResult(RunOutcome.Failed);
         }
@@ -749,6 +766,43 @@ public sealed class SequenceRunner(
             log.Warning($"The failure could not be reported ({LogText.OneLine(exception)}).");
 
             return new RunResult(RunOutcome.Failed, report);
+        }
+    }
+
+    // The run is over, and report is what the server is to learn of it. In Windows PE the run's files go at once, the
+    // token first. In the installed Windows the token stays with the report until the server has it, as nothing else
+    // could tell the server after a stop, or once it can be reached again: the next start sends it. Should the report
+    // not reach the disk, the files go all the same, so nothing goes on with a run that is over.
+    private async Task EndRunAsync(RunFiles? files, AgentRunReport report)
+    {
+        if (files is null)
+        {
+            return;
+        }
+
+        if (_phase == SequencePhase.Windows)
+        {
+            try
+            {
+                await files.SaveFinalReportAsync(report, CancellationToken.None).ConfigureAwait(false);
+
+                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                log.Warning($"The run's last report could not be kept on the disk ({exception.Message}), so it is lost should the agent stop before the server has it.");
+            }
+        }
+
+        files.Discard();
+    }
+
+    // The server has the run's last report, or will never take it.
+    private void Reported(RunFiles? files)
+    {
+        if (_phase == SequencePhase.Windows)
+        {
+            files?.Discard();
         }
     }
 

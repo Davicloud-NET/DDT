@@ -16,8 +16,10 @@ namespace DDT.Agent.WindowsPhase;
 // that run; any other answer means the run is over there, and the agent removes itself. Before the next step it waits
 // for Windows setup to finish, however long someone takes at the out-of-box experience, and then deletes the answer
 // file, which holds passwords. The run ends with its Done report or its failure, after which the agent removes itself
-// too, or with a restart of Windows, after which the service starts again and goes on. The run records the restart
-// before anything else, so a service that starts again without it restarts Windows instead of going on.
+// too, and after the Done report Windows restarts once more to delete the agent's last files; or the run goes on after
+// a restart of Windows, after which the service starts again. The run records that restart before anything else, so a
+// service that starts again without it restarts Windows instead of going on. The report of how the run ended stays on
+// the disk with the run token until the server has it, so a stop, or a server out of reach, only puts it off.
 public sealed class WindowsPhaseLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
@@ -34,6 +36,8 @@ public sealed class WindowsPhaseLoop(
     bool dryRun)
 {
     public const string StateGoneMessage = "The run's state in the installed Windows is gone, so the run cannot go on there.";
+
+    public const string FinalReportLostMessage = "The run ended in the installed Windows, but how it ended cannot be read from the disk there.";
 
     public static readonly TimeSpan SetupPollInterval = TimeSpan.FromSeconds(15);
     public static readonly TimeSpan SetupWarningInterval = TimeSpan.FromMinutes(30);
@@ -141,15 +145,30 @@ public sealed class WindowsPhaseLoop(
                     log.Error(StateGoneMessage);
                 }
 
-                if (!await ReportAsync(machineId, tokens, runId, unsent ?? Failed(StateGoneMessage), cancellationToken).ConfigureAwait(false))
+                AgentRunReport lastReport = unsent ?? Failed(StateGoneMessage);
+
+                if (!await ReportAsync(machineId, tokens, runId, lastReport, cancellationToken).ConfigureAwait(false))
                 {
                     continue;
                 }
 
-                return await RemoveAsync(AgentExitCodes.Stopped).ConfigureAwait(false);
+                return await EndAsync(lastReport, cancellationToken).ConfigureAwait(false);
             }
 
             unsent = null;
+
+            // The run is over here, and only the server does not know yet how it ended.
+            if (await FinalReportAsync(local, cancellationToken).ConfigureAwait(false) is { } final)
+            {
+                if (!await ReportAsync(machineId, tokens, runId, final, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                local.Discard(log);
+
+                return await EndAsync(final, cancellationToken).ConfigureAwait(false);
+            }
 
             if (!await WaitForSetupAsync(machineId, local, tokens, cancellationToken).ConfigureAwait(false))
             {
@@ -165,18 +184,18 @@ public sealed class WindowsPhaseLoop(
 
             switch (result.Outcome)
             {
-                case RunOutcome.Finished:
-                    return await RemoveAsync(AgentExitCodes.Deployed).ConfigureAwait(false);
+                case RunOutcome.Finished when result.UnsentReport is null:
+                    return await RemoveAndRestartAsync(cancellationToken).ConfigureAwait(false);
                 case RunOutcome.Restarting:
                     return await WaitForRestartAsync(cancellationToken).ConfigureAwait(false);
                 case RunOutcome.Stopped:
                     return AgentExitCodes.Stopped;
-                case RunOutcome.Failed when result.UnsentFailure is null:
+                case RunOutcome.Failed when result.UnsentReport is null:
                     return await RemoveAsync(AgentExitCodes.Stopped).ConfigureAwait(false);
                 default:
-                    // A failure the server did not get, or a refused token: the next registration decides, and the
-                    // failure goes out if the run cannot go on.
-                    unsent = result.UnsentFailure;
+                    // A last report the server did not get, kept on the disk with the token, or a refused token: the
+                    // next registration decides, and the report goes out while the server still runs the run.
+                    unsent = result.UnsentReport;
 
                     continue;
             }
@@ -322,6 +341,37 @@ public sealed class WindowsPhaseLoop(
         }
     }
 
+    // The agent and the log it holds open go only when Windows next starts, and a finished run leaves nothing of DDT
+    // behind. Should the service start once more after it, it finds no run and only removes itself, so this restart
+    // never leads to another.
+    private async Task<int> RemoveAndRestartAsync(CancellationToken cancellationToken)
+    {
+        await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            log.Information("The agent was stopped. What is left of it goes when Windows next starts.");
+
+            return AgentExitCodes.Deployed;
+        }
+
+        log.Information("Windows restarts once more, which deletes what is left of the agent.");
+
+        try
+        {
+            await rebooter.RebootAsync(RestartInto.Windows, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            log.Warning($"Windows could not restart itself ({LogText.OneLine(exception)}). What is left of the agent goes when Windows next starts.");
+        }
+
+        return AgentExitCodes.Deployed;
+    }
+
     private async Task RestartAsync(CancellationToken cancellationToken)
     {
         try
@@ -345,17 +395,33 @@ public sealed class WindowsPhaseLoop(
         }
         catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
         {
-            log.Warning(ServerCallRules.Reason(exception, "the failure report"));
+            log.Warning(ServerCallRules.Reason(exception, "the run's last report"));
 
             return true;
         }
         catch (Exception exception) when (exception is AgentTokenRejectedException || ServerCallRules.IsTransient(exception, cancellationToken))
         {
-            log.Warning($"The failure could not be reported ({exception.Message}). Trying again.");
+            log.Warning($"The run's last report could not be sent ({exception.Message}). Trying again.");
 
             return false;
         }
     }
+
+    // The report the runner kept once the run was over here, until the server has it; null while the run goes on. One
+    // that cannot be read still ends the run: its steps must not run again.
+    private async Task<AgentRunReport?> FinalReportAsync(LocalRun local, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(local.Files.FinalReportPath))
+        {
+            return null;
+        }
+
+        return await local.Files.LoadFinalReportAsync(cancellationToken).ConfigureAwait(false) ?? Failed(FinalReportLostMessage);
+    }
+
+    // After the server has the run's last report: Windows restarts once more after a finished run.
+    private Task<int> EndAsync(AgentRunReport report, CancellationToken cancellationToken) =>
+        report.State == DeploymentState.Done ? RemoveAndRestartAsync(cancellationToken) : RemoveAsync(AgentExitCodes.Stopped);
 
     // The run's state and answer file go first, token first, whatever is still there.
     private async Task<int> RunIsOverAsync(Guid runId, CancellationToken cancellationToken)

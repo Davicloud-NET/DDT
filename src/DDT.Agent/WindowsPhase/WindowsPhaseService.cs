@@ -13,14 +13,16 @@ namespace DDT.Agent.WindowsPhase;
 // server.
 public static class WindowsPhaseService
 {
+    public static string LogPathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "logs", "agent.log");
+
     public static async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         string windowsRoot = Path.GetPathRoot(Environment.SystemDirectory)!;
         string directory = Path.Combine(windowsRoot, "DDT");
-        string logs = Path.Combine(directory, "logs");
-        Directory.CreateDirectory(logs);
+        string logPath = LogPathIn(windowsRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
 
-        FileStream file = new(Path.Combine(logs, "agent.log"), FileMode.Append, FileAccess.Write, FileShare.Read);
+        FileStream file = new(logPath, FileMode.Append, FileAccess.Write, FileShare.Read);
         StreamWriter writer = new(file, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
 
         await using (writer.ConfigureAwait(false))
@@ -78,7 +80,7 @@ public static class WindowsPhaseService
             new RegistrySetupProbe(),
             rebooter,
             new VolatileRestartMarker(log),
-            new AgentRemoval(windowsRoot, log),
+            new AgentRemoval(windowsRoot, tools, new MoveFileRestartDeleter(log), log),
             log,
             TimeProvider.System,
             RunHeartbeat.DefaultInterval,

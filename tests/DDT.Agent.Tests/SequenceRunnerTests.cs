@@ -419,9 +419,9 @@ public sealed class SequenceRunnerTests : IDisposable
         RunResult result = await RunAsync(server);
 
         Assert.Equal(tokenRefused ? RunOutcome.TokenRejected : RunOutcome.Failed, result.Outcome);
-        Assert.NotNull(result.UnsentFailure);
-        Assert.Equal((DeploymentState.Failed, "The scripted step failed."), (result.UnsentFailure.State, result.UnsentFailure.Error));
-        Assert.Contains(new StepRunState(TestRuns.Apply.Id, StepState.Failed, "The scripted step failed."), result.UnsentFailure.Steps);
+        Assert.NotNull(result.UnsentReport);
+        Assert.Equal((DeploymentState.Failed, "The scripted step failed."), (result.UnsentReport.State, result.UnsentReport.Error));
+        Assert.Contains(new StepRunState(TestRuns.Apply.Id, StepState.Failed, "The scripted step failed."), result.UnsentReport.Steps);
     }
 
     [Fact]
@@ -467,8 +467,8 @@ public sealed class SequenceRunnerTests : IDisposable
 
         // The registration with the run token decides whether the run goes on, so its state stays.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
-        Assert.NotNull(result.UnsentFailure);
-        Assert.Contains(new StepRunState(TestRuns.Unattend.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentFailure.Steps);
+        Assert.NotNull(result.UnsentReport);
+        Assert.Contains(new StepRunState(TestRuns.Unattend.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentReport.Steps);
         Assert.Equal(StepState.Running, (await LoadStateAsync())?.Steps[2].State);
         Assert.Equal("run-token-1", await RunFiles.In(Windows, Log()).LoadTokenAsync(TestContext.Current.CancellationToken));
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
@@ -542,8 +542,8 @@ public sealed class SequenceRunnerTests : IDisposable
 
         // The registration with the run token decides whether the run goes on, so its state stays.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
-        Assert.NotNull(result.UnsentFailure);
-        Assert.Contains(new StepRunState(TestRuns.Apply.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentFailure.Steps);
+        Assert.NotNull(result.UnsentReport);
+        Assert.Contains(new StepRunState(TestRuns.Apply.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentReport.Steps);
         Assert.Equal(StepState.Running, (await LoadStateAsync())?.Steps[1].State);
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
         Assert.DoesNotContain("reboot", _tools.Calls);
@@ -604,7 +604,7 @@ public sealed class SequenceRunnerTests : IDisposable
 
         // The registration with the run token decides whether the run goes on, so its state and answer file stay.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
-        Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentFailure?.Error);
+        Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.True(File.Exists(StatePath));
@@ -961,7 +961,7 @@ public sealed class SequenceRunnerTests : IDisposable
         // Most likely the run was stopped. The registration with the run token decides, so the state and the answer
         // file stay, but Windows must not start and go on with the run meanwhile.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
-        Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentFailure?.Error);
+        Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.Equal(SequencePhase.Windows, (await LoadStateAsync())?.Phase);

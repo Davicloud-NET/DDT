@@ -19,6 +19,9 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
 
     public string TokenPath => Path.Combine(runDirectory, "run", "token");
 
+    // In the installed Windows, the report of how the run ended, which stays with the token until the server has it.
+    public string FinalReportPath => Path.Combine(runDirectory, "run", "final-report.json");
+
     // The files of a run whose Windows volume is at windowsRoot, such as C:\.
     public static RunFiles In(string windowsRoot, AgentLog log) => new(Path.Combine(windowsRoot, "DDT"), log);
 
@@ -33,6 +36,31 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
         ArgumentException.ThrowIfNullOrEmpty(token);
 
         return ReplaceAsync(TokenPath, Encoding.ASCII.GetBytes(token), cancellationToken);
+    }
+
+    public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
+        ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), cancellationToken);
+
+    // Null when there is none, and after a warning when it cannot be read.
+    public async Task<AgentRunReport?> LoadFinalReportAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(FinalReportPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            byte[] json = await File.ReadAllBytesAsync(FinalReportPath, cancellationToken).ConfigureAwait(false);
+
+            return JsonSerializer.Deserialize(json, AgentJsonContext.Default.AgentRunReport);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        {
+            log.Warning($"{FinalReportPath} cannot be read ({exception.Message}).");
+
+            return null;
+        }
     }
 
     // Null when there is no state, and after a warning when it cannot be read: a run that cannot go on is no run.
@@ -93,6 +121,7 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     {
         Leftovers.Delete(TokenPath, log);
         Leftovers.Delete(StatePath, log);
+        Leftovers.Delete(FinalReportPath, log);
         Leftovers.Delete(Path.Combine(runDirectory, "run"), log);
     }
 

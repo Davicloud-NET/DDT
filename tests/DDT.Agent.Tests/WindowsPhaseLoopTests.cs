@@ -31,7 +31,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
     private string AnswerFile => UnattendFile.PathIn(Windows);
 
     [Fact]
-    public async Task GoesOnWithTheRunAndRemovesItselfAfterTheDoneReport()
+    public async Task GoesOnWithTheRunAndRemovesItselfAfterTheDoneReportThenRestartsWindows()
     {
         RunScriptStep cmd = TestRuns.Script(4, SequencePhase.Windows);
         RunScriptStep powerShell = TestRuns.Script(5, SequencePhase.Windows, ScriptInterpreter.PowerShell);
@@ -62,7 +62,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         int exitCode = await RunAsync(server);
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
-        Assert.Equal(["setup finished", "run cmd.exe", "run powershell.exe", "done report", "remove"], _tools.Calls);
+        Assert.Equal(["setup finished", "run cmd.exe", "run powershell.exe", "done report", "remove", "reboot"], _tools.Calls);
 
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.Equal(
@@ -89,6 +89,74 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.Equal(Enumerable.Repeat(StepState.Done, 5), done.Steps.Select(step => step.State));
         Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
         Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
+    }
+
+    // With the agent's own removal, and the agent staged as the hand-over leaves it.
+    [Fact]
+    public async Task AFinishedRunLeavesNothingOfDdtOnceWindowsStartsAgain()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        string agent = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory);
+        Directory.CreateDirectory(agent);
+        File.WriteAllBytes(Path.Combine(agent, WindowsHandOver.AgentFileName), [0x4D, 0x5A]);
+        File.WriteAllText(Path.Combine(agent, WindowsHandOver.ConfigurationFileName), "{}");
+
+        _toolRunner.Answer = (fileName, arguments) =>
+        {
+            _tools.Note($"run {Path.GetFileName(fileName)} {string.Join(' ', arguments)}");
+
+            return [];
+        };
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(DeploymentState.Done, _ =>
+            {
+                _tools.Note("done report");
+
+                return new AgentRunReportResult("session-d", "resume-d", null);
+            });
+        AgentLog log = Log();
+
+        int exitCode = await RunAsync(server, log: log, removal: new AgentRemoval(Windows, _toolRunner, _tools, log));
+
+        Assert.Equal(AgentExitCodes.Deployed, exitCode);
+        Assert.Equal(
+            [
+                "setup finished",
+                "done report",
+                "run sc.exe delete DdtSequence",
+                @"delete at restart DDT\agent\agent.json",
+                @"delete at restart DDT\agent\ddt-agent.exe",
+                @"delete at restart DDT\agent",
+                @"delete at restart DDT",
+                "reboot",
+            ],
+            _tools.Calls);
+
+        _tools.DeleteMarkedAsWindowsStarts();
+
+        Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
+    }
+
+    [Fact]
+    public async Task AStopAfterTheDoneReportStillRemovesTheAgentButDoesNotRestartWindows()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+        server.OnRunReport(DeploymentState.Done, _ =>
+        {
+            server.Stop.Cancel();
+
+            return new AgentRunReportResult("session-d", "resume-d", null);
+        });
+
+        Assert.Equal(AgentExitCodes.Deployed, await RunAsync(server));
+        Assert.Equal(["setup finished", "remove"], _tools.Calls);
     }
 
     [Theory]
@@ -209,7 +277,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
         Assert.Equal(
-            ["setup Windows setup is still running", "setup the out-of-box experience is still running", "setup finished", "remove"],
+            ["setup Windows setup is still running", "setup the out-of-box experience is still running", "setup finished", "remove", "reboot"],
             _tools.Calls);
 
         // Setup still needed the answer file while the server was told what the machine waits for.
@@ -318,6 +386,147 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.Equal("run-report Failed session-2", server.Calls[^1]);
         Assert.StartsWith("The script ended with exit code 1", server.RunReports[^1].Error, StringComparison.Ordinal);
         Assert.Equal("remove", _tools.Calls[^1]);
+    }
+
+    // The server was out of reach for longer than the runner tries: the Done report goes out once it is back, and the
+    // agent removes itself only then.
+    [Fact]
+    public async Task ADoneReportTheServerDidNotGetGoesOutAfterRegisteringAgain()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-2", run));
+
+        for (int attempt = 0; attempt <= ServerCallRules.MaxRetries; attempt++)
+        {
+            server.OnRunReport(DeploymentState.Done, _ => throw new HttpRequestException("The server is restarting."));
+        }
+
+        server.OnRunReport(DeploymentState.Done, _ =>
+        {
+            _tools.Note("done report");
+
+            return new AgentRunReportResult("session-d", "resume-d", null);
+        });
+
+        int exitCode = await RunAsync(server);
+
+        Assert.Equal(AgentExitCodes.Deployed, exitCode);
+        Assert.Equal(["setup finished", "done report", "remove", "reboot"], _tools.Calls);
+        Assert.Equal(["run-token-1", "run-token-2"], server.Registrations.Select(registration => registration.RunToken));
+        Assert.Equal("run-report Done session-2", server.Calls[^1]);
+        Assert.Equal(Enumerable.Repeat(StepState.Done, 4), server.RunReports[^1].Steps.Select(step => step.State));
+        Assert.Single(_toolRunner.Calls);
+        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
+        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
+    }
+
+    // Windows may restart, or the service stop, while the Done report is on its way: the next start sends it, as the
+    // run token that can is still there.
+    [Fact]
+    public async Task ADoneReportAStopInterruptedGoesOutAtTheNextStart()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer first = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+        first.OnRunReport(DeploymentState.Done, _ =>
+        {
+            first.Stop.Cancel();
+
+            throw new OperationCanceledException(first.Stop.Token);
+        });
+
+        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
+        Assert.Equal(["setup finished"], _tools.Calls);
+
+        ScriptedAgentServer second = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-2", run))
+            .OnRunReport(DeploymentState.Done, _ =>
+            {
+                _tools.Note("done report");
+
+                return new AgentRunReportResult("session-d", "resume-d", null);
+            });
+
+        Assert.Equal(AgentExitCodes.Deployed, await RunAsync(second));
+        Assert.Equal(["setup finished", "done report", "remove", "reboot"], _tools.Calls);
+        Assert.NotNull(Assert.Single(second.Registrations).RunToken);
+        AgentRunReport done = Assert.Single(second.RunReports);
+        Assert.Equal((DeploymentState.Done, SequencePhase.Windows), (done.State, done.Phase));
+        Assert.Equal(Enumerable.Repeat(StepState.Done, 4), done.Steps.Select(step => step.State));
+        Assert.Single(_toolRunner.Calls);
+        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
+        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
+    }
+
+    [Fact]
+    public async Task AFailureTheServerDidNotGetBeforeAStopGoesOutAtTheNextStart()
+    {
+        _toolRunner.AnswerExitCode = (_, _, _) => 1;
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer first = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+        first.OnRegister(_ =>
+        {
+            first.Stop.Cancel();
+
+            throw new OperationCanceledException(first.Stop.Token);
+        });
+
+        for (int attempt = 0; attempt <= ServerCallRules.MaxRetries; attempt++)
+        {
+            first.OnRunReport(DeploymentState.Failed, _ => throw new HttpRequestException("The server is restarting."));
+        }
+
+        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
+
+        ScriptedAgentServer second = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-2", run))
+            .OnRunReport(DeploymentState.Failed, _ =>
+            {
+                _tools.Note("failed report");
+
+                return new AgentRunReportResult("session-f", "resume-f", null);
+            });
+
+        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(second));
+        Assert.Equal(["setup finished", "failed report", "remove"], _tools.Calls);
+        AgentRunReport failed = Assert.Single(second.RunReports);
+        Assert.StartsWith("The script ended with exit code 1", failed.Error, StringComparison.Ordinal);
+        Assert.Single(_toolRunner.Calls);
+        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
+        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
+    }
+
+    // Only a run that is over here keeps a final report, so its steps must not run again.
+    [Fact]
+    public async Task AFinalReportThatCannotBeReadStillEndsTheRun()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        await File.WriteAllTextAsync(RunFiles.In(Windows, Log()).FinalReportPath, "{ not json", TestContext.Current.CancellationToken);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+
+        int exitCode = await RunAsync(server);
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(["remove"], _tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        AgentRunReport failed = Assert.Single(server.RunReports);
+        Assert.Equal((DeploymentState.Failed, WindowsPhaseLoop.FinalReportLostMessage), (failed.State, failed.Error));
+        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
     }
 
     [Fact]
@@ -608,7 +817,12 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         await UnattendFile.WriteAsync(Windows, TestImage.Unattend, cancellationToken);
     }
 
-    private Task<int> RunAsync(ScriptedAgentServer server, TimeProvider? time = null, AgentLog? log = null, bool dryRun = false)
+    private Task<int> RunAsync(
+        ScriptedAgentServer server,
+        TimeProvider? time = null,
+        AgentLog? log = null,
+        bool dryRun = false,
+        IAgentRemoval? removal = null)
     {
         time ??= new ImmediateTimeProvider();
         log ??= new AgentLog(time, TextWriter.Null);
@@ -621,6 +835,6 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             systemDirectory: TestAgents.SystemDirectory(_tools),
             dryRun: false);
 
-        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun).RunAsync(server.Stop.Token);
+        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal).RunAsync(server.Stop.Token);
     }
 }

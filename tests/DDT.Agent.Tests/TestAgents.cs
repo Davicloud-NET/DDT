@@ -82,14 +82,16 @@ internal static class TestAgents
         return system;
     }
 
-    // The service in the Windows on tools.Volumes.Windows, with the fake's setup, restart and removal.
+    // The service in the Windows on tools.Volumes.Windows, with the fake's setup and restart, and its removal unless
+    // removal says otherwise.
     public static WindowsPhaseLoop WindowsLoop(
         IAgentServer server,
         FakeDeploymentTools tools,
         SequenceRunner runner,
         AgentLog log,
         TimeProvider timeProvider,
-        bool dryRun = false)
+        bool dryRun = false,
+        IAgentRemoval? removal = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
@@ -100,7 +102,7 @@ internal static class TestAgents
             tools,
             tools,
             tools,
-            tools,
+            removal ?? tools,
             log,
             timeProvider,
             Timeout.InfiniteTimeSpan,

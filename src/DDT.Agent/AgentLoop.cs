@@ -195,7 +195,7 @@ public sealed class AgentLoop(
                             .RunAsync(machineId, run!, resumable, resumable is null ? _confirmedDisk : null, tokens, _lastIdentity!, cancellationToken)
                             .ConfigureAwait(false);
 
-                        _abandonedRun = result.UnsentFailure is { } unsent ? (run!.Id, unsent) : null;
+                        _abandonedRun = result.UnsentReport is { } unsent ? (run!.Id, unsent) : null;
 
                         // The run kept the session alive; the tokens this loop last saw may have expired.
                         token = tokens.Token;

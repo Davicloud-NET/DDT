@@ -5,6 +5,7 @@
 using System.Text.Json;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -90,10 +91,42 @@ public sealed class RunFilesTests : IDisposable
     }
 
     [Fact]
+    public async Task KeepsHowTheRunEndedInTheRunsDirectory()
+    {
+        AgentRunReport done = new(
+            DeploymentState.Done,
+            SequencePhase.Windows,
+            [new StepRunState(Guid.Parse("0193a4b2-0000-7000-8000-0000000000a1"), StepState.Done, null)],
+            null,
+            100,
+            RunActivity.Finishing,
+            null);
+
+        await _files.SaveFinalReportAsync(done, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Path.Combine(_windows, "DDT", "run", "final-report.json"), _files.FinalReportPath);
+        Assert.Equal(Json(done), Json(await _files.LoadFinalReportAsync(TestContext.Current.CancellationToken)));
+    }
+
+    [Fact]
+    public async Task AFinalReportThatCannotBeReadIsNoneAfterAWarning()
+    {
+        Assert.Null(await _files.LoadFinalReportAsync(TestContext.Current.CancellationToken));
+        Assert.Empty(_console.ToString());
+
+        Directory.CreateDirectory(Path.GetDirectoryName(_files.FinalReportPath)!);
+        await File.WriteAllTextAsync(_files.FinalReportPath, "{ not json", TestContext.Current.CancellationToken);
+
+        Assert.Null(await _files.LoadFinalReportAsync(TestContext.Current.CancellationToken));
+        Assert.Contains($"WARN  {_files.FinalReportPath} cannot be read", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task DiscardRemovesTheRunsFiles()
     {
         await _files.SaveStateAsync(s_state, TestContext.Current.CancellationToken);
         await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await _files.SaveFinalReportAsync(new AgentRunReport(DeploymentState.Failed, SequencePhase.Windows, [], null, 0, RunActivity.Step, "The step failed."), TestContext.Current.CancellationToken);
 
         _files.Discard();
 
@@ -103,4 +136,7 @@ public sealed class RunFilesTests : IDisposable
 
     private static string Json(SequenceState? state) =>
         JsonSerializer.Serialize(state, AgentJsonContext.Default.SequenceState);
+
+    private static string Json(AgentRunReport? report) =>
+        JsonSerializer.Serialize(report, AgentJsonContext.Default.AgentRunReport);
 }

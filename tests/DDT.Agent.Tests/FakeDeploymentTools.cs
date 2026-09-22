@@ -9,17 +9,18 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Tests;
 
 // Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
-// setup, the domain join, the due restart and the agent's removal, and records each call in one journal so a test can
-// check their order. FailAt names the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot,
-// find, join, remove, or one passed to Note. The volumes are directories in a temporary folder, created by the
-// partitioning, that Dispose removes.
+// setup, the domain join, the due restart, the agent's removal and what Windows deletes when it next starts, and records
+// each call in one journal so a test can check their order. FailAt names the call that throws Failure: list, prepare,
+// partition, apply, bcd, firmware, reboot, find, join, remove, or one passed to Note. The volumes are directories in a
+// temporary folder, created by the partitioning, that Dispose removes.
 internal sealed class FakeDeploymentTools
-    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IDisposable
+    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
     private readonly Queue<string> _setupPending = new();
     private readonly Queue<int> _joinAnswers = new();
+    private readonly List<string> _deletedAtRestart = [];
     private AgentJoinDomainCredentials? _joinedWith;
 
     public FakeDeploymentTools(params LocalDisk[] disks)
@@ -259,6 +260,41 @@ internal sealed class FakeDeploymentTools
         Record("remove");
 
         return Task.CompletedTask;
+    }
+
+    // In the journal relative to the Windows volume.
+    public void DeleteAtRestart(string path)
+    {
+        lock (_lock)
+        {
+            _deletedAtRestart.Add(path);
+        }
+
+        Record("delete at restart", $" {Path.GetRelativePath(Volumes.Windows, path)}");
+    }
+
+    // Deletes what was marked, in order, as Windows does when it starts: a directory only once it is empty.
+    public void DeleteMarkedAsWindowsStarts()
+    {
+        List<string> marked;
+
+        lock (_lock)
+        {
+            marked = [.. _deletedAtRestart];
+            _deletedAtRestart.Clear();
+        }
+
+        foreach (string path in marked)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+            else if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                Directory.Delete(path);
+            }
+        }
     }
 
     // Another fake's call, such as a tool run, in the same journal, so a test can check the order of both.

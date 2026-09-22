@@ -215,6 +215,7 @@ const order = () =>
 describe("SequenceEditorPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("shows each problem on its step and field, and the sequence's own ones above the steps", async () => {
@@ -361,6 +362,20 @@ describe("SequenceEditorPage", () => {
     await waitFor(() => {
       expect(saves.at(-1)?.definition.steps.map((step) => step.id)).toEqual(["i", "s", "p"]);
     }, saveWait);
+  });
+
+  it("moves a step to the first or the last place with Home and End on its Move button", async () => {
+    serve(administrator, view());
+
+    const handle = await screen.findByRole("button", { name: "Move Set wallpaper" });
+    handle.focus();
+    fireEvent.keyDown(handle, { key: "Home" });
+
+    expect(order()).toEqual(["Move Set wallpaper", "Move Partition the disk", "Move Apply image"]);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Move Set wallpaper" }), { key: "End" });
+
+    expect(order()).toEqual(["Move Partition the disk", "Move Apply image", "Move Set wallpaper"]);
   });
 
   it("names who saved in between, and keeps this page's version only once confirmed", async () => {
@@ -544,6 +559,22 @@ describe("SequenceEditorPage", () => {
         "reboot",
       ]);
     }, saveWait);
+    // The sequence has no description, which the page edits as empty text.
+    expect(saves.at(-1)?.description).toBeNull();
+  });
+
+  it("offers to bring a removed step back for 10 s", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    serve(administrator, view());
+
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Apply image" }));
+    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+
+    await act(() => vi.advanceTimersByTimeAsync(9_000));
+    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+
+    await act(() => vi.advanceTimersByTimeAsync(1_500));
+    expect(screen.queryByRole("button", { name: "Undo" })).not.toBeInTheDocument();
   });
 
   it("shows a viewer the sequence without letting anything change", async () => {

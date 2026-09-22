@@ -233,7 +233,8 @@ function fakeLive() {
 }
 
 // Answers the given "METHOD path" requests; everything else gets a 404.
-function renderAt(path: string, answers: Record<string, Answer>) {
+// Without a live connection the page polls.
+function renderAt(path: string, answers: Record<string, Answer>, connected = true) {
   const calls: string[] = [];
 
   vi.stubGlobal(
@@ -274,7 +275,7 @@ function renderAt(path: string, answers: Record<string, Answer>) {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <LiveContext value={live}>
+      <LiveContext value={connected ? live : null}>
         <RouterProvider router={router} />
       </LiveContext>
     </QueryClientProvider>,
@@ -573,6 +574,102 @@ describe("MachineDetailPage", () => {
       ]);
     });
     expect(calls.filter((call) => call === historyCall)).toHaveLength(2);
+  });
+
+  it("reads the history and the shown run again after a reconnect", async () => {
+    const { calls, watcher } = renderAt(
+      `/machines/${machineId}`,
+      standardAnswers([machine({})], [run({})], [view({})]),
+    );
+    const readsOf = (path: string) => calls.filter((call) => call === `GET ${path}`).length;
+
+    await screen.findByText("Running, 45%");
+    const history = readsOf(`/api/machines/${machineId}/deployments`);
+    const shown = readsOf(`/api/deployments/${runId}`);
+
+    act(() => {
+      watcher(machineId).onReconnect?.();
+    });
+
+    await waitFor(() => {
+      expect(readsOf(`/api/machines/${machineId}/deployments`)).toBe(history + 1);
+      expect(readsOf(`/api/deployments/${runId}`)).toBe(shown + 1);
+    });
+  });
+
+  it("polls every 5 s without a live connection while the run is active, and stops once it ended", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now });
+    const answers = standardAnswers([machine({})], [run({})], [view({})]);
+    const { calls } = renderAt(`/machines/${machineId}`, answers, false);
+    const readsOf = (path: string) => calls.filter((call) => call === `GET ${path}`).length;
+    const reads = () => [readsOf("/api/machines"), readsOf(`/api/deployments/${runId}`)];
+
+    await screen.findByText("Running, 45%");
+    const [machines = 0, shown = 0] = reads();
+
+    await act(() => vi.advanceTimersByTimeAsync(5_000));
+    const [polledMachines = 0, polledShown = 0] = reads();
+    expect(polledMachines).toBeGreaterThan(machines);
+    expect(polledShown).toBeGreaterThan(shown);
+
+    const done = run({
+      state: "Done",
+      activity: null,
+      finishedUtc: "2026-09-16T10:06:00Z",
+      updatedUtc: "2026-09-16T10:06:00Z",
+    });
+    answers["GET /api/machines"] = { body: [machine({ state: "Done", deployment: done })] };
+    answers[`GET /api/deployments/${runId}`] = { body: view({ summary: done }) };
+    await act(() => vi.advanceTimersByTimeAsync(5_000));
+    await screen.findByText("The run is done");
+
+    const ended = reads();
+    await act(() => vi.advanceTimersByTimeAsync(15_000));
+    expect(reads()).toEqual(ended);
+  });
+
+  it("lists a new run in the history as soon as the machine list has it", async () => {
+    const earlier = run({
+      state: "Done",
+      activity: null,
+      finishedUtc: "2026-09-16T10:05:50Z",
+      updatedUtc: "2026-09-16T10:05:50Z",
+    });
+    const { queryClient } = renderAt(
+      `/machines/${machineId}`,
+      standardAnswers(
+        [machine({ state: "Done", deployment: earlier })],
+        [earlier],
+        [view({ summary: earlier })],
+      ),
+    );
+
+    const history = await screen.findByRole("region", { name: "History" });
+    await within(history).findByText("Done");
+
+    act(() => {
+      upsertMachine(
+        queryClient,
+        machine({
+          state: "Approved",
+          deployment: run({
+            id: newerRunId,
+            title: "Lab setup",
+            state: "Assigned",
+            stepIndex: null,
+            stepName: null,
+            percent: 0,
+            phase: null,
+            activity: null,
+            startedUtc: null,
+          }),
+        }),
+      );
+    });
+
+    // The server's history does not have it yet.
+    expect(await within(history).findByRole("link", { name: "Lab setup" })).toBeInTheDocument();
+    expect(within(history).getAllByRole("row")).toHaveLength(3);
   });
 
   it("reads again what chooses the sequence once the machine is approved", async () => {

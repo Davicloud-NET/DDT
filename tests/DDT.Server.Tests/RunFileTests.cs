@@ -112,9 +112,14 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
     {
         using DeployingMachine idle = await ApprovedAsync();
         using DeployingMachine assigned = await ApprovedAsync();
+        using DeployingMachine neighbour = await ApprovedAsync();
         (Image image, _) = await ImageAsync();
         (Image other, _) = await ImageAsync();
         AgentRun run = await AssignAsync(assigned, image.Id);
+
+        // The other image is another machine's to download right now, but never this run's.
+        AgentRun neighbourRun = await AssignAsync(neighbour, other.Id);
+        Assert.Equal(HttpStatusCode.OK, (await neighbour.Agent.RunFileAsync(neighbour.Id, neighbour.Token, neighbourRun.Id, other.Sha256, HttpMethod.Head)).StatusCode);
 
         HttpResponseMessage nothingAssigned = await idle.Agent.RunFileAsync(idle.Id, idle.Token, run.Id, image.Sha256);
         Assert.Equal(HttpStatusCode.Forbidden, nothingAssigned.StatusCode);

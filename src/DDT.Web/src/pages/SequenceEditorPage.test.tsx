@@ -487,6 +487,25 @@ describe("SequenceEditorPage", () => {
     expect(saves).toHaveLength(0);
   });
 
+  it("does not move a step for a viewer from a link in its card", async () => {
+    const withLink = [
+      newStep("partition", "p"),
+      newStep("injectDrivers", "d"),
+      newStep("reboot", "r"),
+    ];
+    const { saves } = serve(viewer, view({ definition: { version: 1, steps: withLink } }));
+
+    const link = await screen.findByRole("link", {
+      name: "Driver packages and their targets are on the Packages page.",
+    });
+    link.focus();
+    fireEvent.keyDown(link, { key: "ArrowDown", altKey: true });
+
+    expect(order()).toEqual(["Move Partition the disk", "Move Inject drivers", "Move Restart"]);
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(0);
+  });
+
   it("stops saving once the sequence is gone", async () => {
     const { saves } = serve(administrator, view(), () => new Response(null, { status: 404 }));
 

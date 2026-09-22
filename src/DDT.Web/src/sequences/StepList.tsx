@@ -18,6 +18,7 @@ export interface StepListProps {
   phases: SequencePhase[];
   findings: Findings;
   catalog: StepCatalog;
+  readOnly: boolean;
   onEdit: (edit: SequenceEdit) => void;
   onRemove: (stepId: string) => void;
   // Said politely to screen readers, for example where a step moved to.
@@ -40,6 +41,7 @@ export function StepList({
   phases,
   findings,
   catalog,
+  readOnly,
   onEdit,
   onRemove,
   onAnnounce,
@@ -75,6 +77,10 @@ export function StepList({
   });
 
   const move = (step: SequenceStep, to: number) => {
+    if (readOnly) {
+      return;
+    }
+
     refocus.current = { element: document.activeElement, stepId: step.id };
     onEdit({ type: "moveStep", id: step.id, to });
     onAnnounce(`${step.name} moved to position ${String(to + 1)} of ${String(steps.length)}.`);

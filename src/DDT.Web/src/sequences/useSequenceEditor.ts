@@ -42,8 +42,8 @@ export interface RemovedStep {
 }
 
 // One sequence being edited: the draft, saved in place as it changes, and the server's copy, which other
-// administrators' saves replace live while this page has no unsaved edits.
-export function useSequenceEditor(initial: SequenceView) {
+// administrators' saves replace live while this page has no unsaved edits. Read only, nothing changes it.
+export function useSequenceEditor(initial: SequenceView, readOnly: boolean) {
   const queryClient = useQueryClient();
   const id = initial.id;
 
@@ -73,6 +73,8 @@ export function useSequenceEditor(initial: SequenceView) {
   // The newest copy the server gave, with its problems, which the draft is compared against.
   const latest = stored.data ?? initial;
   const deleted = stored.error instanceof ApiError && stored.error.status === 404;
+  // A disabled fieldset leaves links focusable, and a card's keys move its step from them too.
+  const locked = readOnly || deleted;
   const { receive, stop, update } = autosave;
 
   useEffect(() => {
@@ -86,7 +88,9 @@ export function useSequenceEditor(initial: SequenceView) {
   }, [stop, deleted]);
 
   const edit = (change: SequenceEdit) => {
-    update((draft) => sequenceEdits(draft, change), !isTyping(change));
+    if (!locked) {
+      update((draft) => sequenceEdits(draft, change), !isTyping(change));
+    }
   };
 
   const draft = autosave.value;
@@ -97,6 +101,7 @@ export function useSequenceEditor(initial: SequenceView) {
     state: autosave.state,
     dirty: autosave.dirty,
     deleted,
+    locked,
     findings: { problems: latest.problems, warnings: latest.warnings } satisfies Findings,
     phases: phasesOf(draft.steps, latest.definition.steps, latest.stepPhases),
     catalog: {
@@ -118,7 +123,7 @@ export function useSequenceEditor(initial: SequenceView) {
       const index = draft.steps.findIndex((step) => step.id === stepId);
       const step = draft.steps[index];
 
-      if (step !== undefined) {
+      if (step !== undefined && !locked) {
         edit({ type: "removeStep", id: stepId });
         setRemoved({ step, index });
       }

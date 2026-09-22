@@ -49,7 +49,7 @@ function leaveConsequence(state: AutosaveState): string {
 // Edits a sequence in place: every change is saved as it is made, and other administrators' saves appear
 // while this page has nothing unsaved.
 export function SequenceEditor({ initial, readOnly }: SequenceEditorProps) {
-  const editor = useSequenceEditor(initial);
+  const editor = useSequenceEditor(initial, readOnly);
   const container = useRef<HTMLDivElement>(null);
   const [announcement, setAnnouncement] = useState("");
 
@@ -86,7 +86,7 @@ export function SequenceEditor({ initial, readOnly }: SequenceEditorProps) {
         </p>
       )}
 
-      <fieldset className={styles.body} disabled={readOnly || editor.deleted}>
+      <fieldset className={styles.body} disabled={editor.locked}>
         <SequenceHeader
           name={draft.name}
           description={draft.description}
@@ -120,6 +120,7 @@ export function SequenceEditor({ initial, readOnly }: SequenceEditorProps) {
             phases={editor.phases}
             findings={editor.findings}
             catalog={editor.catalog}
+            readOnly={editor.locked}
             onEdit={editor.edit}
             onRemove={editor.remove}
             onAnnounce={setAnnouncement}

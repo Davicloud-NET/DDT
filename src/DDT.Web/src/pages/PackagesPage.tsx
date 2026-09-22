@@ -130,7 +130,7 @@ export function PackagesPage() {
             }
           }}
           title={`Delete ${deleteTarget.name}?`}
-          consequence={deletionConsequence(deleteTarget, library.usersOf(deleteTarget) ?? [])}
+          consequence={deletionConsequence(deleteTarget, library.usersOf(deleteTarget))}
           confirmLabel="Delete package"
           busy={remove.isPending}
           error={remove.isError ? remove.error.message : null}

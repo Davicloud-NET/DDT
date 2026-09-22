@@ -110,23 +110,32 @@ export function describeTarget(target: HardwareModel): string {
   return target.manufacturer === null ? target.model : `${target.manufacturer} ${target.model}`;
 }
 
-export function deletionConsequence(item: PackageSummary, users: readonly SequenceView[]): string {
-  const names = users.map((sequence) => sequence.name).join(", ");
+// users is null while not every sequence is read.
+export function deletionConsequence(
+  item: PackageSummary,
+  users: readonly SequenceView[] | null,
+): string {
+  const known = users ?? [];
+  const names = known.map((sequence) => sequence.name).join(", ");
   const sentences = [`${item.name} (${formatBytes(item.sizeBytes)}) is deleted from the library.`];
 
-  if (item.kind === "Files" && users.length === 0) {
+  if (item.kind === "Files" && users === null) {
+    sentences.push(
+      "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen.",
+    );
+  } else if (item.kind === "Files" && known.length === 0) {
     sentences.push("No sequence names it.");
-  } else if (item.kind === "Files" && users.length === 1) {
+  } else if (item.kind === "Files" && known.length === 1) {
     sentences.push(
       `The sequence ${names} names it in a Run script step and shows a problem until another package is chosen.`,
     );
   } else if (item.kind === "Files") {
     sentences.push(
-      `The ${plural(users.length, "sequence")} ${names} name it in a Run script step and show a problem until another package is chosen.`,
+      `The ${plural(known.length, "sequence")} ${names} name it in a Run script step and show a problem until another package is chosen.`,
     );
   } else if (item.targets.length > 0) {
     sentences.push(
-      `Machines of ${item.targets.map(describeTarget).join(", ")} no longer get these drivers${users.length === 0 ? "" : ` from the Inject drivers step of ${names}`}.`,
+      `Machines of ${item.targets.map(describeTarget).join(", ")} no longer get these drivers${known.length === 0 ? "" : ` from the Inject drivers step of ${names}`}.`,
     );
   }
 

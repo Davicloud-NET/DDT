@@ -356,6 +356,20 @@ describe("PackagesPage", () => {
     );
   });
 
+  it("does not claim no sequence names a package while a sequence could not be read", async () => {
+    serve(administrator, () => [drivers, scripts], {
+      "GET /api/sequences/s1": () => json({ title: "The server failed." }, 500),
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Delete Lab scripts" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Delete Lab scripts?" });
+    expect(dialog).toHaveTextContent(
+      "Lab scripts (300 MB) is deleted from the library. Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen.",
+    );
+    expect(dialog).not.toHaveTextContent("No sequence names it.");
+  });
+
   it("shows a viewer the library without changes", async () => {
     serve(viewer, () => [drivers]);
 

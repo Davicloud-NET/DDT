@@ -67,12 +67,15 @@ public static class AuthEndpoints
 
         // A code belongs to the account Identity keeps in its two-factor cookie, which a success clears. After an
         // OpenID Connect sign-in the request names no account at all.
-        string userName = request.RecoveryCode is { Length: > 0 } || request.TwoFactorCode is { Length: > 0 }
-            ? (await signInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false))?.UserName ?? request.UserName
-            : request.UserName;
+        DdtUser? codeAccount = request.RecoveryCode is { Length: > 0 } || request.TwoFactorCode is { Length: > 0 }
+            ? await signInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false)
+            : null;
+        string userName = codeAccount?.UserName ?? request.UserName;
 
         SignInResult result = request switch
         {
+            // Identity does not know DDT's disabled flag, and the account may have been disabled since the first step.
+            _ when codeAccount is { IsDisabled: true } => SignInResult.NotAllowed,
             { RecoveryCode.Length: > 0 } =>
                 await signInManager.TwoFactorRecoveryCodeSignInAsync(request.RecoveryCode!).ConfigureAwait(false),
             { TwoFactorCode.Length: > 0 } =>

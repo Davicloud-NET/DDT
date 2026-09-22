@@ -90,6 +90,41 @@ public sealed class AgentLogTests
     }
 
     [Fact]
+    public async Task SendsItsClockWithEachBatch()
+    {
+        ManualTimeProvider time = new();
+        AgentLog log = new(time, TextWriter.Null);
+        DateTimeOffset written = time.GetUtcNow();
+        log.Information("Partitioning disk 0.");
+        time.Advance(TimeSpan.FromMinutes(5));
+        AgentLogBatch? sent = null;
+        ScriptedAgentServer server = new ScriptedAgentServer().OnLog(batch => sent = batch);
+
+        await log.FlushAsync(server, s_machineId, "token", TestContext.Current.CancellationToken);
+
+        Assert.NotNull(sent);
+        Assert.Equal(time.GetUtcNow(), sent.SentUtc);
+        Assert.Equal(written, Assert.Single(sent.Lines).TimestampUtc);
+    }
+
+    [Fact]
+    public async Task NamesTheStepThatRanWhenALineWasWritten()
+    {
+        Guid step = Guid.Parse("0197a3c0-0000-7000-8000-00000000000c");
+        AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
+        ScriptedAgentServer server = new();
+
+        log.Information("Before the step.");
+        log.StepId = step;
+        log.Warning("During the step.");
+        log.StepId = null;
+        log.Information("After the step.");
+        await log.FlushAsync(server, s_machineId, "token", TestContext.Current.CancellationToken);
+
+        Assert.Equal([null, step, null], server.SentLines.Select(line => line.StepId));
+    }
+
+    [Fact]
     public async Task SendsNothingWhenNothingIsQueued()
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);

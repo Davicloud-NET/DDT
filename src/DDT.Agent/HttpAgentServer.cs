@@ -205,11 +205,82 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
-    // reason. Only the headers are read, in case a server ignores the range and sends the whole image.
-    public async Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken)
+    public Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken) =>
+        HeadAsync(AgentRoutes.ImageContent(machineId, sha256), token, cancellationToken);
+
+    public Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken) =>
+        OpenAsync(AgentRoutes.ImageContent(machineId, sha256), token, offset, cancellationToken);
+
+    public async Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ImageContent(machineId, sha256));
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.Sequences(machineId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.IReadOnlyListAgentSequenceChoice, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AgentRun> PickSequenceAsync(Guid machineId, string token, AgentRunRequest request, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage message = new(HttpMethod.Post, AgentRoutes.Runs(machineId))
+        {
+            Content = JsonContent.Create(request, AgentJsonContext.Default.AgentRunRequest),
+        };
+
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentRun, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AgentRunReportResult> ReportRunAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        AgentRunReport report,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId))
+        {
+            Content = JsonContent.Create(report, AgentJsonContext.Default.AgentRunReport),
+        };
+
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentRunReportResult, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken) =>
+        HeadAsync(AgentRoutes.RunFile(machineId, runId, sha256), token, cancellationToken);
+
+    public Task<AgentImageStream> OpenRunFileAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        string sha256,
+        long offset,
+        CancellationToken cancellationToken) =>
+        OpenAsync(AgentRoutes.RunFile(machineId, runId, sha256), token, offset, cancellationToken);
+
+    public async Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.RunStepUnattend(machineId, runId, stepId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
+    // reason. Only the headers are read, in case a server ignores the range and sends the whole file.
+    private async Task<long?> HeadAsync(string route, string token, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, route);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Range = new RangeHeaderValue(0, 0);
 
@@ -223,16 +294,11 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     // Through the download client: an image takes far longer than a request may, and a stalled read is caught by
     // the caller instead.
-    public async Task<AgentImageStream> OpenImageAsync(
-        Guid machineId,
-        string token,
-        string sha256,
-        long offset,
-        CancellationToken cancellationToken)
+    private async Task<AgentImageStream> OpenAsync(string route, string token, long offset, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ImageContent(machineId, sha256));
+        using HttpRequestMessage request = new(HttpMethod.Get, route);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         if (offset > 0)

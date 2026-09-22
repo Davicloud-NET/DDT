@@ -7,13 +7,17 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Tests;
 
 // Records each tool call as the file name and its arguments joined by spaces, instead of running it. Answer decides
-// what a call prints, or throws; without it every call prints nothing.
+// what a call prints, or throws; without it every call prints nothing. AnswerExitCode decides the exit code of a
+// call that asks for one, or throws; without it every such call ends with 0. Options holds each such call's options.
 internal sealed class RecordingToolRunner : IToolRunner
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
+    private readonly List<ToolRunOptions> _options = [];
 
     public Func<string, IReadOnlyList<string>, IReadOnlyList<string>>? Answer { get; set; }
+
+    public Func<string, IReadOnlyList<string>, ToolRunOptions, int>? AnswerExitCode { get; set; }
 
     public List<string> Calls
     {
@@ -22,6 +26,17 @@ internal sealed class RecordingToolRunner : IToolRunner
             lock (_lock)
             {
                 return [.. _calls];
+            }
+        }
+    }
+
+    public List<ToolRunOptions> Options
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return [.. _options];
             }
         }
     }
@@ -42,6 +57,24 @@ internal sealed class RecordingToolRunner : IToolRunner
         catch (Exception exception)
         {
             return Task.FromException<IReadOnlyList<string>>(exception);
+        }
+    }
+
+    public Task<int> RunForExitCodeAsync(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _calls.Add(CommandLine(fileName, [.. arguments]));
+            _options.Add(options);
+        }
+
+        try
+        {
+            return Task.FromResult(AnswerExitCode?.Invoke(fileName, arguments, options) ?? 0);
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<int>(exception);
         }
     }
 }

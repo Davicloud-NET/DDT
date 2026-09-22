@@ -267,10 +267,15 @@ public sealed class DeploymentRunner(
         await StepAsync(heartbeat, DeploymentStep.Download, async () =>
         {
             Directory.CreateDirectory(cache);
-            ImageDownloader downloader = new(server, tokens, log, timeProvider, heartbeatInterval);
+            ContentDownloader downloader = new(
+                (token, hash, offset, call) => server.OpenImageAsync(machineId, token, hash, offset, call),
+                tokens,
+                log,
+                timeProvider,
+                heartbeatInterval);
 
             await downloader.DownloadAsync(
-                machineId,
+                deployment.ImageName,
                 sha256,
                 deployment.SizeBytes,
                 Path.Combine(cache, $"{sha256}.part"),

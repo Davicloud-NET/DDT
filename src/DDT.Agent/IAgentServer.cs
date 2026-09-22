@@ -39,4 +39,27 @@ public interface IAgentServer
 
     // From offset to the end. A server that ignores the range answers from 0, which the result's Offset shows.
     Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken);
+
+    // Starts the sequence the technician picked at the machine.
+    Task<AgentRun> PickSequenceAsync(Guid machineId, string token, AgentRunRequest request, CancellationToken cancellationToken);
+
+    Task<AgentRunReportResult> ReportRunAsync(Guid machineId, string token, Guid runId, AgentRunReport report, CancellationToken cancellationToken);
+
+    // The length of one of the run's images or packages, or null when the server did not say.
+    Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken);
+
+    // As OpenImageAsync, for one of the run's images or packages.
+    Task<AgentImageStream> OpenRunFileAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        string sha256,
+        long offset,
+        CancellationToken cancellationToken);
+
+    // The answer file of a WriteUnattend step, which the server renders only while the step is running. It holds
+    // passwords.
+    Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 }

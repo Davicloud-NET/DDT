@@ -8,8 +8,9 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.Tests;
 
 // Answers from a script. When the register, next or sign-in script runs out it stops the loop, so every test
-// ends deterministically without timing; so do the image list, pick, unattend and image calls. Log requests
-// succeed unless a scripted action throws, and a report without a script echoes the token it was sent with.
+// ends deterministically without timing; so do the image list, pick, unattend and image calls, and their run
+// counterparts. Log requests succeed unless a scripted action throws, and a report without a script echoes the token
+// it was sent with. A run file without a script is answered from the files given to ServeFile.
 // A deployment's heartbeat calls from another thread, so everything is guarded by one lock, and scripted answers
 // run outside it.
 internal sealed class ScriptedAgentServer : IAgentServer
@@ -27,8 +28,16 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Queue<Func<string>> _unattends = new();
     private readonly Queue<Func<long?>> _heads = new();
     private readonly Queue<Func<long, AgentImageStream>> _opens = new();
+    private readonly Queue<Func<IReadOnlyList<AgentSequenceChoice>>> _sequences = new();
+    private readonly Queue<Func<AgentRunRequest, AgentRun>> _sequencePicks = new();
+    private readonly Dictionary<DeploymentState, Queue<Func<AgentRunReport, AgentRunReportResult>>> _runReports = [];
+    private readonly Queue<Func<string, long?>> _fileHeads = new();
+    private readonly Queue<Func<string, long, AgentImageStream>> _fileOpens = new();
+    private readonly Dictionary<string, byte[]> _files = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<Func<Guid, string>> _runUnattends = new();
     private readonly List<string> _calls = [];
     private readonly List<AgentDeploymentReport> _sentReports = [];
+    private readonly List<AgentRunReport> _sentRunReports = [];
 
     public CancellationTokenSource Stop { get; } = new();
 
@@ -55,6 +64,17 @@ internal sealed class ScriptedAgentServer : IAgentServer
         }
     }
 
+    public List<AgentRunReport> RunReports
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return [.. _sentRunReports];
+            }
+        }
+    }
+
     public List<AgentRegistration> Registrations { get; } = [];
 
     public List<AgentLogLine> SentLines { get; } = [];
@@ -62,6 +82,11 @@ internal sealed class ScriptedAgentServer : IAgentServer
     public List<AgentSignInRequest> SignIns { get; } = [];
 
     public List<AgentPickRequest> Picks { get; } = [];
+
+    public List<AgentRunRequest> RunRequests { get; } = [];
+
+    // Answers every run report when set, ahead of the scripts.
+    public Func<AgentRunReport, string, AgentRunReportResult>? AnswerRunReports { get; set; }
 
     // Answers every report when set, ahead of the scripts: a test can switch it while a deployment runs.
     public Func<AgentDeploymentReport, string, AgentDeploymentReportResult>? AnswerReports { get; set; }
@@ -91,6 +116,47 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     // Receives the offset asked for.
     public ScriptedAgentServer OnOpenImage(Func<long, AgentImageStream> response) => Enqueue(_opens, response);
+
+    public ScriptedAgentServer OnSequences(Func<IReadOnlyList<AgentSequenceChoice>> response) => Enqueue(_sequences, response);
+
+    public ScriptedAgentServer OnPickSequence(Func<AgentRunRequest, AgentRun> response) => Enqueue(_sequencePicks, response);
+
+    // Receives the SHA-256 asked for.
+    public ScriptedAgentServer OnHeadRunFile(Func<string, long?> response) => Enqueue(_fileHeads, response);
+
+    // Receives the SHA-256 and the offset asked for.
+    public ScriptedAgentServer OnOpenRunFile(Func<string, long, AgentImageStream> response) => Enqueue(_fileOpens, response);
+
+    // Receives the step id.
+    public ScriptedAgentServer OnRunUnattend(Func<Guid, string> response) => Enqueue(_runUnattends, response);
+
+    // Serves content as the run file sha256 whenever no scripted answer is left.
+    public ScriptedAgentServer ServeFile(string sha256, byte[] content)
+    {
+        lock (_lock)
+        {
+            _files[sha256] = content;
+        }
+
+        return this;
+    }
+
+    // For run reports of this state only, so the heartbeat's reports do not use up the script.
+    public ScriptedAgentServer OnRunReport(DeploymentState state, Func<AgentRunReport, AgentRunReportResult> response)
+    {
+        lock (_lock)
+        {
+            if (!_runReports.TryGetValue(state, out Queue<Func<AgentRunReport, AgentRunReportResult>>? queue))
+            {
+                queue = new Queue<Func<AgentRunReport, AgentRunReportResult>>();
+                _runReports[state] = queue;
+            }
+
+            queue.Enqueue(response);
+        }
+
+        return this;
+    }
 
     // For reports of this state only, so the heartbeat's progress reports do not use up the script.
     public ScriptedAgentServer OnReport(DeploymentState state, Func<AgentDeploymentReport, AgentDeploymentReportResult> response)
@@ -242,6 +308,71 @@ internal sealed class ScriptedAgentServer : IAgentServer
     public Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken) =>
         Answer($"open {offset} {token}", _opens, response => response(offset));
 
+    public Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken) =>
+        Answer($"sequences {token}", _sequences, response => response());
+
+    public Task<AgentRun> PickSequenceAsync(Guid machineId, string token, AgentRunRequest request, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            RunRequests.Add(request);
+        }
+
+        return Answer($"pick-sequence {token}", _sequencePicks, response => response(request));
+    }
+
+    public Task<AgentRunReportResult> ReportRunAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        AgentRunReport report,
+        CancellationToken cancellationToken)
+    {
+        Func<AgentRunReport, AgentRunReportResult>? response = null;
+        Func<AgentRunReport, string, AgentRunReportResult>? answer;
+
+        lock (_lock)
+        {
+            _calls.Add($"run-report {report.State} {token}");
+            _sentRunReports.Add(report);
+            answer = AnswerRunReports;
+
+            if (answer is null && _runReports.TryGetValue(report.State, out Queue<Func<AgentRunReport, AgentRunReportResult>>? queue))
+            {
+                queue.TryDequeue(out response);
+            }
+        }
+
+        try
+        {
+            return Task.FromResult(answer?.Invoke(report, token) ?? response?.Invoke(report) ?? new AgentRunReportResult(token, "resume", null));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<AgentRunReportResult>(exception);
+        }
+    }
+
+    public Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken) =>
+        AnswerFile($"head-file {sha256} {token}", _fileHeads, sha256, response => response(sha256), content => (long?)content.Length);
+
+    public Task<AgentImageStream> OpenRunFileAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        string sha256,
+        long offset,
+        CancellationToken cancellationToken) =>
+        AnswerFile(
+            $"open-file {sha256} {offset} {token}",
+            _fileOpens,
+            sha256,
+            response => response(sha256, offset),
+            content => new AgentImageStream(new MemoryStream(content[(int)offset..]), offset, content.Length));
+
+    public Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
+        Answer($"run-unattend {stepId} {token}", _runUnattends, response => response(stepId));
+
     private ScriptedAgentServer Enqueue<T>(Queue<T> queue, T item)
     {
         lock (_lock)
@@ -272,6 +403,39 @@ internal sealed class ScriptedAgentServer : IAgentServer
         try
         {
             return Task.FromResult(run(script));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<TResult>(exception);
+        }
+    }
+
+    private Task<TResult> AnswerFile<TScript, TResult>(
+        string call,
+        Queue<TScript> queue,
+        string sha256,
+        Func<TScript, TResult> run,
+        Func<byte[], TResult> serve)
+        where TScript : class
+    {
+        TScript? script;
+        byte[]? content;
+
+        lock (_lock)
+        {
+            _calls.Add(call);
+            queue.TryDequeue(out script);
+            _files.TryGetValue(sha256, out content);
+        }
+
+        try
+        {
+            if (script is not null)
+            {
+                return Task.FromResult(run(script));
+            }
+
+            return content is not null ? Task.FromResult(serve(content)) : Stopped<TResult>();
         }
         catch (Exception exception)
         {

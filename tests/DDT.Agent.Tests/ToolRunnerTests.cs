@@ -52,6 +52,104 @@ public sealed class ToolRunnerTests
         Assert.StartsWith($"{missing} cannot be started", exception.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task HandsBackAnyExitCodeAndLogsTheOutput()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+
+        int exitCode = await tools.RunForExitCodeAsync(
+            s_cmd,
+            ["/d", "/c", "echo out& echo err 1>&2& exit /b 3010"],
+            new ToolRunOptions(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(3010, exitCode);
+
+        List<AgentLogLine> lines = await SentAsync(server, log);
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Information, Message: "out" });
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Warning, Message: "err" });
+        Assert.StartsWith("cmd.exe ended with exit code 3010 after ", lines[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunsInTheWorkingDirectoryWithTheExtraVariables()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+        string directory = Directory.CreateTempSubdirectory("ddt-tool-").FullName;
+
+        try
+        {
+            int exitCode = await tools.RunForExitCodeAsync(
+                s_cmd,
+                ["/d", "/c", "cd& echo %DDT_STEP_ID%"],
+                new ToolRunOptions(directory, new Dictionary<string, string> { ["DDT_STEP_ID"] = "step-1" }),
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(0, exitCode);
+
+            List<AgentLogLine> lines = await SentAsync(server, log);
+            Assert.Contains(lines, line => line.Message == directory);
+            Assert.Contains(lines, line => line.Message == "step-1");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    // outer.cmd starts inner.cmd, which writes a file after about two seconds unless it was stopped with outer.cmd.
+    [Fact]
+    public async Task StopsTheToolAndEverythingItStartedAtTheTimeout()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+        string directory = Directory.CreateTempSubdirectory("ddt-tool-").FullName;
+        string marker = Path.Combine(directory, "marker.txt");
+        await File.WriteAllTextAsync(
+            Path.Combine(directory, "outer.cmd"),
+            "@echo waiting for inner.cmd\r\n@cmd /d /c \"%~dp0inner.cmd\"\r\n",
+            TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Combine(directory, "inner.cmd"),
+            "@ping -n 3 127.0.0.1 >nul\r\n@echo done>\"%~dp0marker.txt\"\r\n",
+            TestContext.Current.CancellationToken);
+
+        try
+        {
+            DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => tools.RunForExitCodeAsync(
+                s_cmd,
+                ["/d", "/c", Path.Combine(directory, "outer.cmd")],
+                new ToolRunOptions(Timeout: TimeSpan.FromMilliseconds(500)),
+                TestContext.Current.CancellationToken));
+
+            Assert.StartsWith("cmd.exe was still running after ", exception.Message, StringComparison.Ordinal);
+            Assert.EndsWith(", so it was stopped with every process it started.", exception.Message, StringComparison.Ordinal);
+
+            // What it printed before it hung says why.
+            Assert.Contains(await SentAsync(server, log), line => line.Message == "waiting for inner.cmd");
+
+            await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+            Assert.False(File.Exists(marker));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AStopEndsTheToolAsCancelled()
+    {
+        (ToolRunner tools, _, _) = Create();
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        stop.CancelAfter(TimeSpan.FromMilliseconds(200));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tools.RunForExitCodeAsync(
+            s_cmd,
+            ["/d", "/c", "ping -n 30 127.0.0.1 >nul"],
+            new ToolRunOptions(Timeout: TimeSpan.FromMinutes(5)),
+            stop.Token));
+    }
+
     private static (ToolRunner Tools, ScriptedAgentServer Server, AgentLog Log) Create()
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);

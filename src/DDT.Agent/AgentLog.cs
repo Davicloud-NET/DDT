@@ -19,6 +19,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
     private long _nextSequence;
     private int _dropped;
     private bool _consoleHeld;
+    private Guid? _stepId;
 
     public void Information(string message) => Write(AgentLogLevel.Information, message);
 
@@ -49,6 +50,27 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
             }
 
             _heldConsoleLines.Clear();
+        }
+    }
+
+    // The run's step that is running, which every line written meanwhile names, so the server can show a step's
+    // lines. Null between steps.
+    public Guid? StepId
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _stepId;
+            }
+        }
+
+        set
+        {
+            lock (_lock)
+            {
+                _stepId = value;
+            }
         }
     }
 
@@ -95,7 +117,8 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
             return;
         }
 
-        await server.SendLogAsync(machineId, token, new AgentLogBatch(batch), cancellationToken).ConfigureAwait(false);
+        // The server corrects the lines' times by how far this clock is from its own when the batch arrives.
+        await server.SendLogAsync(machineId, token, new AgentLogBatch(batch, timeProvider.GetUtcNow()), cancellationToken).ConfigureAwait(false);
 
         // Removed by sequence, not position: lines evicted while the batch was on its way have shifted the
         // queue, and must not take unsent lines with them.
@@ -128,7 +151,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
                 _dropped++;
             }
 
-            _pending.Add((_nextSequence++, new AgentLogLine(now, level, message)));
+            _pending.Add((_nextSequence++, new AgentLogLine(now, level, message, _stepId)));
         }
     }
 

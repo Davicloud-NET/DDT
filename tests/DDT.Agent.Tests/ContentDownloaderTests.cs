@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-public sealed class ImageDownloaderTests : IDisposable
+public sealed class ContentDownloaderTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     private static readonly TimeSpan s_tokenWait = TimeSpan.FromSeconds(10);
@@ -123,7 +123,7 @@ public sealed class ImageDownloaderTests : IDisposable
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
-        Assert.Equal("The server sent the image from byte 600 when byte 1200 was asked for.", exception.Message);
+        Assert.Equal("The server sent Windows 11 Pro from byte 600 when byte 1200 was asked for.", exception.Message);
         Assert.Equal(_image.Content[..1200], await File.ReadAllBytesAsync(PartPath, TestContext.Current.CancellationToken));
         Assert.False(File.Exists(FinalPath));
     }
@@ -136,7 +136,7 @@ public sealed class ImageDownloaderTests : IDisposable
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
-        Assert.StartsWith("The server's image file holds 6000 bytes, but the deployment expects 5000.", exception.Message, StringComparison.Ordinal);
+        Assert.StartsWith("The server's file for Windows 11 Pro holds 6000 bytes, but 5000 were announced.", exception.Message, StringComparison.Ordinal);
         Assert.False(File.Exists(FinalPath));
     }
 
@@ -181,7 +181,7 @@ public sealed class ImageDownloaderTests : IDisposable
         await stalling.Stalled.WaitAsync(TestContext.Current.CancellationToken);
 
         // Nothing happens before the watchdog's minute is up.
-        time.Advance(ImageDownloader.StallTimeout - TimeSpan.FromSeconds(1));
+        time.Advance(ContentDownloader.StallTimeout - TimeSpan.FromSeconds(1));
         Assert.Single(server.Calls);
 
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(1), () => download.IsCompleted);
@@ -195,7 +195,7 @@ public sealed class ImageDownloaderTests : IDisposable
     public async Task ASlowTransferIsNotAStall()
     {
         // Every wait is shorter than the stall watchdog's minute, but together they are longer.
-        TimeSpan wait = ImageDownloader.StallTimeout - TimeSpan.FromSeconds(20);
+        TimeSpan wait = ContentDownloader.StallTimeout - TimeSpan.FromSeconds(20);
         using PacedStream paced = new(_image.Content[..1000], _image.Content[1000..2000], _image.Content[2000..]);
         ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_ => new AgentImageStream(paced, 0, _image.Content.Length));
         ManualTimeProvider time = new();
@@ -233,8 +233,8 @@ public sealed class ImageDownloaderTests : IDisposable
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(30), () => download.IsCompleted);
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => download);
-        Assert.Equal("The image download made no progress for 15 minutes (last: 503).", exception.Message);
-        Assert.True(time.GetUtcNow() - start >= ImageDownloader.GiveUpAfter);
+        Assert.Equal("The download of Windows 11 Pro made no progress for 15 minutes (last: 503).", exception.Message);
+        Assert.True(time.GetUtcNow() - start >= ContentDownloader.GiveUpAfter);
     }
 
     [Fact]
@@ -325,10 +325,15 @@ public sealed class ImageDownloaderTests : IDisposable
     private Task DownloadAsync(ScriptedAgentServer server, TimeProvider time, DeploymentTokens? tokens = null)
     {
         AgentLog log = new(time, TextWriter.Null);
-        ImageDownloader downloader = new(server, tokens ?? new DeploymentTokens("session", "resume"), log, time, s_tokenWait);
+        ContentDownloader downloader = new(
+            (token, sha256, offset, call) => server.OpenImageAsync(s_machineId, token, sha256, offset, call),
+            tokens ?? new DeploymentTokens("session", "resume"),
+            log,
+            time,
+            s_tokenWait);
 
         return downloader.DownloadAsync(
-            s_machineId,
+            "Windows 11 Pro",
             _image.Sha256,
             _image.Content.Length,
             PartPath,

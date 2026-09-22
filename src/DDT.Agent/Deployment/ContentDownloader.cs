@@ -7,22 +7,29 @@ using System.Security.Cryptography;
 
 namespace DDT.Agent.Deployment;
 
-// Downloads an image into a part file and resumes it after any interruption: the bytes already there are hashed
-// again and the rest is asked for with a Range request. The file only gets its final name once its length and
-// SHA-256 match what the server announced.
-public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens, AgentLog log, TimeProvider timeProvider, TimeSpan tokenWait)
+// Downloads a file, such as an image or a package, into a part file and resumes it after any interruption: the bytes
+// already there are hashed again and the rest is asked for with a Range request. The file only gets its final name
+// once its length and SHA-256 match what the server announced. open asks the server for a file by token, SHA-256 and
+// offset.
+public sealed class ContentDownloader(
+    Func<string, string, long, CancellationToken, Task<AgentImageStream>> open,
+    DeploymentTokens tokens,
+    AgentLog log,
+    TimeProvider timeProvider,
+    TimeSpan tokenWait)
 {
     // A connection that drops without a reset, as a VPN can, would otherwise wait for ever.
     public static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
     // As long as a server outage may last. While the progress reports get through, the tokens stay valid, so a
-    // failure of the image transfer alone would otherwise be retried for ever.
+    // failure of the transfer alone would otherwise be retried for ever.
     public static readonly TimeSpan GiveUpAfter = TimeSpan.FromMinutes(15);
 
     private const int BufferSize = 1024 * 1024;
 
+    // name says what the file is in messages, such as "Windows 11 Pro" or "package Dell drivers".
     public async Task DownloadAsync(
-        Guid machineId,
+        string name,
         string sha256,
         long sizeBytes,
         string partPath,
@@ -30,6 +37,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
         IProgress<int> percent,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(sha256);
         ArgumentNullException.ThrowIfNull(percent);
 
@@ -50,7 +58,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
             if (file.Length > 0)
             {
-                log.Information($"Resuming the download at {ByteSize.Format(file.Length)} of {ByteSize.Format(sizeBytes)}.");
+                log.Information($"Resuming the download of {name} at {ByteSize.Format(file.Length)} of {ByteSize.Format(sizeBytes)}.");
             }
 
             ByteProgress progress = new(percent, sizeBytes);
@@ -68,7 +76,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
                 try
                 {
-                    await ReceiveAsync(machineId, token, sha256, sizeBytes, file, hash, progress, cancellationToken).ConfigureAwait(false);
+                    await ReceiveAsync(name, token, sha256, sizeBytes, file, hash, progress, cancellationToken).ConfigureAwait(false);
                     waitedForToken = false;
 
                     if (file.Length < sizeBytes)
@@ -78,7 +86,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
                 }
                 catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
                 {
-                    log.Warning("The server has less of this image than was already downloaded. Starting the download over.");
+                    log.Warning($"The server has less of {name} than was already downloaded. Starting the download over.");
                     Restart(file, hash);
                 }
                 catch (AgentTokenRejectedException)
@@ -94,7 +102,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
                 }
                 catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
                 {
-                    throw new DeploymentStepException(ServerCallRules.Reason(exception, "the image download"), exception);
+                    throw new DeploymentStepException(ServerCallRules.Reason(exception, $"the download of {name}"), exception);
                 }
                 catch (Exception exception) when (exception is HttpRequestException or TimeoutException
                     || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested))
@@ -116,12 +124,14 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
                     if (timeProvider.GetElapsedTime(progressed) >= GiveUpAfter)
                     {
                         throw new DeploymentStepException(
-                            $"The image download made no progress for {GiveUpAfter.TotalMinutes:0} minutes (last: {interruption}).");
+                            $"The download of {name} made no progress for {GiveUpAfter.TotalMinutes:0} minutes (last: {interruption}).");
                     }
 
                     failures++;
                     TimeSpan delay = AgentLimits.RetryDelay(failures);
-                    log.Warning($"The download was interrupted at {ByteSize.Format(file.Length)} ({interruption}). Resuming in {delay.TotalSeconds:0} s.");
+                    log.Warning(
+                        $"The download of {name} was interrupted at {ByteSize.Format(file.Length)} ({interruption}). " +
+                        $"Resuming in {delay.TotalSeconds:0} s.");
                     await Task.Delay(delay, timeProvider, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -139,7 +149,8 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
         {
             File.Delete(partPath);
 
-            throw new DeploymentStepException("The downloaded image does not match the SHA-256 the server announced. Start the deployment again; if it fails again, upload the image again.");
+            throw new DeploymentStepException(
+                $"The download of {name} does not match the SHA-256 the server announced. Start again; if it fails again, upload {name} again.");
         }
 
         File.Move(partPath, finalPath, overwrite: true);
@@ -166,7 +177,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
     // One request, appending what arrives to the file, which may be less than the rest when the connection ends
     // early.
     private async Task ReceiveAsync(
-        Guid machineId,
+        string name,
         string token,
         string sha256,
         long sizeBytes,
@@ -180,28 +191,28 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
         long offset = file.Length;
         stall.CancelAfter(StallTimeout);
-        AgentImageStream image = await server.OpenImageAsync(machineId, token, sha256, offset, reading.Token).ConfigureAwait(false);
+        AgentImageStream content = await open(token, sha256, offset, reading.Token).ConfigureAwait(false);
 
-        await using (image.ConfigureAwait(false))
+        await using (content.ConfigureAwait(false))
         {
             // A server may ignore the range and send everything, which RFC 9110 allows.
-            if (image.Offset == 0 && offset > 0)
+            if (content.Offset == 0 && offset > 0)
             {
-                log.Warning("The server sent the whole image instead of the missing part. Starting the download over.");
+                log.Warning($"The server sent all of {name} instead of the missing part. Starting the download over.");
                 Restart(file, hash);
                 offset = 0;
                 progress.Report(0);
             }
 
-            if (image.Offset != offset)
+            if (content.Offset != offset)
             {
-                throw new DeploymentStepException($"The server sent the image from byte {image.Offset} when byte {offset} was asked for.");
+                throw new DeploymentStepException($"The server sent {name} from byte {content.Offset} when byte {offset} was asked for.");
             }
 
-            if (image.TotalLength >= 0 && image.TotalLength != sizeBytes)
+            if (content.TotalLength >= 0 && content.TotalLength != sizeBytes)
             {
                 throw new DeploymentStepException(
-                    $"The server's image file holds {image.TotalLength} bytes, but the deployment expects {sizeBytes}. Upload the image again.");
+                    $"The server's file for {name} holds {content.TotalLength} bytes, but {sizeBytes} were announced. Upload {name} again.");
             }
 
             byte[] buffer = new byte[BufferSize];
@@ -214,7 +225,7 @@ public sealed class ImageDownloader(IAgentServer server, DeploymentTokens tokens
 
                 try
                 {
-                    read = await image.Content.ReadAsync(buffer, reading.Token).ConfigureAwait(false);
+                    read = await content.Content.ReadAsync(buffer, reading.Token).ConfigureAwait(false);
                 }
                 catch (IOException exception)
                 {

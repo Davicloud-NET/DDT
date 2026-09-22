@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 
 namespace DDT.Agent.Deployment;
 
@@ -12,6 +13,10 @@ namespace DDT.Agent.Deployment;
 // only record of why diskpart, bcdboot or reagentc refused.
 public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolRunner
 {
+    // A process that a script starts in the background inherits its output and can keep it open long after the
+    // script ended, so the rest of the output is not waited for beyond this.
+    public static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(10);
+
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
@@ -20,25 +25,8 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         string tool = Path.GetFileName(fileName);
         log.Information($"Running {CommandLine(fileName, arguments)}");
 
-        ProcessStartInfo start = new(fileName)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-
-        foreach (string argument in arguments)
-        {
-            start.ArgumentList.Add(argument);
-        }
-
         long started = timeProvider.GetTimestamp();
-        using Process process = Start(start, tool);
-
-        // No tool DDT runs reads its input; closing it keeps one that asks a question from waiting for ever.
-        process.StandardInput.Close();
+        using Process process = Start(StartInfo(fileName, arguments), tool);
 
         List<string> lines = [];
         Task output = ForwardAsync(process.StandardOutput, line =>
@@ -54,7 +42,7 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         }
         catch (OperationCanceledException)
         {
-            process.Kill(entireProcessTree: true);
+            Kill(process, tool);
 
             throw;
         }
@@ -77,6 +65,76 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         return lines;
     }
 
+    public async Task<int> RunForExitCodeAsync(
+        string fileName,
+        IReadOnlyList<string> arguments,
+        ToolRunOptions options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(fileName);
+        ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(options);
+
+        string tool = Path.GetFileName(fileName);
+        log.Information($"Running {CommandLine(fileName, arguments)}");
+
+        ProcessStartInfo start = StartInfo(fileName, arguments);
+
+        // Script steps switch cmd to code page 65001 first, so what they print arrives as UTF-8.
+        start.StandardOutputEncoding = Encoding.UTF8;
+        start.StandardErrorEncoding = Encoding.UTF8;
+
+        if (options.WorkingDirectory is { } directory)
+        {
+            start.WorkingDirectory = directory;
+        }
+
+        foreach ((string name, string value) in options.Environment ?? new Dictionary<string, string>())
+        {
+            start.Environment[name] = value;
+        }
+
+        using CancellationTokenSource timeout = new(options.Timeout ?? Timeout.InfiniteTimeSpan, timeProvider);
+        using CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+
+        long started = timeProvider.GetTimestamp();
+        using Process process = Start(start, tool);
+
+        Task output = ForwardAsync(process.StandardOutput, log.Information);
+        Task errors = ForwardAsync(process.StandardError, log.Warning);
+
+        try
+        {
+            await process.WaitForExitAsync(waiting.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            Kill(process, tool);
+
+            // The last lines often say why it hung.
+            await DrainAsync(output, errors, tool).ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
+            throw new DeploymentStepException(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{tool} was still running after {options.Timeout!.Value.TotalMinutes:0.#} minutes, so it was stopped with every process it started."));
+        }
+
+        await DrainAsync(output, errors, tool).ConfigureAwait(false);
+
+        TimeSpan elapsed = timeProvider.GetElapsedTime(started);
+        int exitCode = process.ExitCode;
+        log.Information(string.Create(
+            CultureInfo.InvariantCulture,
+            $"{tool} ended with exit code {exitCode} after {elapsed.TotalSeconds:0.0} s."));
+
+        return exitCode;
+    }
+
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);
@@ -84,15 +142,65 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         return string.Join(' ', new[] { fileName }.Concat(arguments).Select(Quote));
     }
 
+    private static ProcessStartInfo StartInfo(string fileName, IReadOnlyList<string> arguments)
+    {
+        ProcessStartInfo start = new(fileName)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+
+        foreach (string argument in arguments)
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        return start;
+    }
+
     private static Process Start(ProcessStartInfo start, string tool)
     {
+        Process process;
+
         try
         {
-            return Process.Start(start) ?? throw new DeploymentStepException($"{tool} did not start.");
+            process = Process.Start(start) ?? throw new DeploymentStepException($"{tool} did not start.");
         }
         catch (Win32Exception exception)
         {
             throw new DeploymentStepException($"{start.FileName} cannot be started: {exception.Message}", exception);
+        }
+
+        // No tool DDT runs reads its input; closing it keeps one that asks a question from waiting for ever.
+        process.StandardInput.Close();
+
+        return process;
+    }
+
+    private async Task DrainAsync(Task output, Task errors, string tool)
+    {
+        try
+        {
+            await Task.WhenAll(output, errors).WaitAsync(OutputGrace, timeProvider).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            log.Warning($"{tool} ended, but a process it started still holds its output. What that process prints is not logged.");
+        }
+    }
+
+    private void Kill(Process process, string tool)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
+        {
+            log.Warning($"{tool} could not be stopped ({exception.Message}).");
         }
     }
 

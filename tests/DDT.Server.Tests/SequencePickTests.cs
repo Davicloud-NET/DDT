@@ -193,6 +193,40 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
 
         Assert.Null(picked.DiskNumber);
         Assert.Empty(picked.Images);
+
+        using DeployingMachine without = await DeployingMachine.SignedInAsync(application, operatorName);
+        AgentRun withoutDisk = await RegisteredMachine.ReadAsync<AgentRun>(await PickAsync(without, sequence.Id, diskNumber: null));
+
+        Assert.Equal(DeploymentState.Assigned, withoutDisk.State);
+        Assert.Null(withoutDisk.DiskNumber);
+    }
+
+    // The agent sends a disk with every choice it listed as erasing one. A choice without a disk was made before an
+    // administrator changed the sequence to erase one, so nobody at the machine chose a disk or typed ERASE.
+    [Fact]
+    public async Task RefusesAChoiceWithoutADiskOfASequenceThatErasesOne()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)]);
+        SequenceView sequence = await SequenceAsync(SequenceRequests.ScriptOnly());
+
+        Assert.False(Assert.Single(await ChoicesAsync(machine), c => c.Id == sequence.Id).ErasesDisk);
+
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceDefinition erasing = SequenceRequests.Definition([.. SequenceRequests.Minimal((await ImageAsync()).Id).Steps, .. sequence.Definition.Steps]);
+        (await administrator.SaveSequenceAsync(sequence, erasing)).EnsureSuccessStatusCode();
+
+        HttpResponseMessage refused = await PickAsync(machine, sequence.Id, diskNumber: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(
+            $"{sequence.Name} erases a disk, and no disk was chosen for it at the machine. It was probably changed after the list was shown. Choose it again.",
+            await TestDatabase.TitleAsync(refused));
+
+        Machine stored = await application.MachineAsync(machine.Id);
+        Assert.Null(stored.ActiveDeploymentId);
+        Assert.Null(stored.LastDeploymentId);
+        Assert.True((await machine.NextAsync()).CanPickSequence);
     }
 
     [Fact]

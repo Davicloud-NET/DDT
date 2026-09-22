@@ -376,6 +376,15 @@ public sealed class DeploymentService(
 
         bool erases = Erases(definition);
 
+        // The agent sends a disk for every sequence it listed as erasing one, once the technician typed ERASE. A pick
+        // without one means the sequence was changed to erase a disk after the list was shown. The agent refuses such
+        // a run itself, but only if the answer to this pick reached it and told it the run's id.
+        if (erases && request.DiskNumber is null)
+        {
+            return DeploymentDecision.Conflict(
+                $"{sequence.Name} erases a disk, and no disk was chosen for it at the machine. It was probably changed after the list was shown. Choose it again.");
+        }
+
         if (erases && request.DiskNumber is < 0)
         {
             return DeploymentDecision.Invalid("diskNumber", "Choose one of the disks the agent listed.");

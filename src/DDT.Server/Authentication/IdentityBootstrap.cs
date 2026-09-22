@@ -62,7 +62,16 @@ public sealed partial class IdentityBootstrap(
             return;
         }
 
-        await users.AddToRoleAsync(administrator, DdtRoleNames.Administrator).ConfigureAwait(false);
+        IdentityResult granted = await users.AddToRoleAsync(administrator, DdtRoleNames.Administrator).ConfigureAwait(false);
+
+        if (!granted.Succeeded)
+        {
+            // Without its role the account administers nothing, and while it exists no later start creates one that
+            // does.
+            IdentityResult deleted = await users.DeleteAsync(administrator).ConfigureAwait(false);
+            LogBootstrapFailed(string.Join("; ", granted.Errors.Concat(deleted.Errors).Select(error => error.Description)));
+            return;
+        }
 
         LogAdministratorCreated(AdministratorUserName, password);
     }

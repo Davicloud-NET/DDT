@@ -397,6 +397,7 @@ namespace DDT.Server.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("State")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");

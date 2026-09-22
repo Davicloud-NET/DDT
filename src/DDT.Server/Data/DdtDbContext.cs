@@ -153,6 +153,9 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             step.Property(s => s.Kind).HasMaxLength(32);
             step.Property(s => s.Phase).HasConversion<string>().HasMaxLength(16);
             step.Property(s => s.State).HasConversion<string>().HasMaxLength(16);
+
+            // A report that saves after a newer one could otherwise move a finished step back to Running.
+            step.Property(s => s.State).IsConcurrencyToken();
             step.Property(s => s.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);
             step.HasOne<Deployment>().WithMany().HasForeignKey(s => s.DeploymentId).OnDelete(DeleteBehavior.Cascade);
         });

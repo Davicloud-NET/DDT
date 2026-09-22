@@ -8,10 +8,12 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
+using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static DDT.Server.Tests.TestReports;
 
@@ -126,6 +128,46 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(
             [AuditActions.DeploymentAssigned, AuditActions.DeploymentStarted, AuditActions.DeploymentDone],
             (await AuditAsync(run.Id)).Select(a => a.Split(' ')[0]));
+    }
+
+    // A report sent again while the first is still in flight, or one that overlaps a heartbeat, can save after a newer
+    // one. It must not move a finished step back, which would also serve that step's secrets again.
+    [Fact]
+    public async Task AnOlderReportThatSavesLastCannotMoveAFinishedStepBack()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        await machine.ReportOkAsync(run.Id, Running());
+
+        using IServiceScope older = application.Services.CreateScope();
+        using IServiceScope newer = application.Services.CreateScope();
+        DdtDbContext olderDatabase = older.ServiceProvider.GetRequiredService<DdtDbContext>();
+        DdtDbContext newerDatabase = newer.ServiceProvider.GetRequiredService<DdtDbContext>();
+
+        DeploymentDecision olderDecision = await older.ServiceProvider.GetRequiredService<RunReports>().ApplyAsync(
+            await olderDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken),
+            run.Id,
+            Running(Step(Partition(run), StepState.Running)),
+            null,
+            cancellationToken);
+        DeploymentDecision newerDecision = await newer.ServiceProvider.GetRequiredService<RunReports>().ApplyAsync(
+            await newerDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken),
+            run.Id,
+            Running(Step(Partition(run), StepState.Done)),
+            null,
+            cancellationToken);
+
+        Assert.Equal(DeploymentOutcome.Accepted, olderDecision.Outcome);
+        Assert.Equal(DeploymentOutcome.Accepted, newerDecision.Outcome);
+
+        await newerDatabase.SaveChangesAsync(cancellationToken);
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => olderDatabase.SaveChangesAsync(cancellationToken));
+
+        Assert.Equal(StepState.Done, (await ViewAsync(run.Id)).Steps[0].State);
+
+        // The endpoint decides the older report again from what is stored now, and refuses it.
+        Assert.Equal(HttpStatusCode.Conflict, (await machine.ReportAsync(run.Id, Running(Step(Partition(run), StepState.Running)))).StatusCode);
     }
 
     // Steps a report skips over, such as one the heartbeat missed or one skipped by its conditions, are taken as they

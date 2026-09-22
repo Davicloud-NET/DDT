@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import type { DeploymentStepView, DeploymentSummary } from "@/deployments/deployments";
+import type {
+  DeploymentState,
+  DeploymentStepView,
+  DeploymentSummary,
+} from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import type {
@@ -94,6 +98,20 @@ export function skipReason(
 
 export function plannedSteps(definition: SequenceDefinition | null): Map<string, SequenceStep> {
   return new Map((definition?.steps ?? []).map((step) => [step.id, step]));
+}
+
+// Whether the run went on after a failed step. Stopping or rejecting the run also marks its running step
+// failed, and then the run ended there although the step goes on when it fails.
+export function wentOnAfter(
+  step: DeploymentStepView,
+  steps: readonly DeploymentStepView[],
+  run: DeploymentState,
+): boolean {
+  return (
+    run === "Running" ||
+    run === "Done" ||
+    steps.some((other) => other.index > step.index && other.state !== "Pending")
+  );
 }
 
 // A started step's time: until it ended, or until now while it runs.

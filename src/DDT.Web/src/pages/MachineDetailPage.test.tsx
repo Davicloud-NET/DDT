@@ -390,6 +390,42 @@ describe("MachineDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not say a run went on after the step it was stopped in", async () => {
+    const stopped = run({
+      state: "Failed",
+      stepIndex: 2,
+      stepName: "Optional tool",
+      percent: 0,
+      activity: null,
+      finishedUtc: "2026-09-16T10:01:50Z",
+      updatedUtc: "2026-09-16T10:01:50Z",
+      error: "Stopped by operator.",
+    });
+    const base = view({});
+    const steps = base.steps.map((each) =>
+      each.index < 2
+        ? each
+        : each.index === 2
+          ? { ...each, finishedUtc: "2026-09-16T10:01:50Z", error: "Stopped by operator." }
+          : { ...each, state: "Pending" as const, percent: 0, startedUtc: null, finishedUtc: null },
+    );
+    renderAt(
+      `/machines/${machineId}`,
+      standardAnswers(
+        [machine({ state: "Failed", deployment: stopped })],
+        [stopped],
+        [{ ...base, summary: stopped, steps }],
+      ),
+    );
+
+    await screen.findByText("Optional tool", { selector: "span" });
+    const failed = within(stepRow("Optional tool"));
+    expect(failed.getByText("Stopped by operator.")).toBeInTheDocument();
+    expect(
+      failed.queryByText("The run continued, because Continue on error is on for this step."),
+    ).not.toBeInTheDocument();
+  });
+
   it("moves a step on when the server pushes its change", async () => {
     const { watcher } = renderAt(
       `/machines/${machineId}`,

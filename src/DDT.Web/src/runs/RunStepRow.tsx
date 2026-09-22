@@ -16,6 +16,8 @@ export interface RunStepRowProps {
   count: number;
   // The step as the run's frozen sequence defines it.
   planned: SequenceStep | undefined;
+  // The run went on after this step.
+  wentOn: boolean;
   machine: MachineSummary | null;
   now: number;
   onShowLog: () => void;
@@ -25,7 +27,15 @@ function clock(utc: string): string {
   return new Date(utc).toLocaleTimeString();
 }
 
-export function RunStepRow({ step, count, planned, machine, now, onShowLog }: RunStepRowProps) {
+export function RunStepRow({
+  step,
+  count,
+  planned,
+  wentOn,
+  machine,
+  now,
+  onShowLog,
+}: RunStepRowProps) {
   const duration = stepDuration(step, now);
 
   return (
@@ -69,7 +79,7 @@ export function RunStepRow({ step, count, planned, machine, now, onShowLog }: Ru
       {step.state === "Failed" && (
         <div className={styles.error}>
           {step.error ?? "The step failed without saying why."}
-          {planned?.continueOnError === true && (
+          {planned?.continueOnError === true && wentOn && (
             <div className={styles.secondary}>
               The run continued, because Continue on error is on for this step.
             </div>

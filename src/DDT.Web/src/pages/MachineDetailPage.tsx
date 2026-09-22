@@ -111,6 +111,7 @@ export function MachineDetailPage() {
           ) : (
             <RunStepList
               steps={view.steps}
+              runState={summary.state}
               definition={view.definition}
               machine={machine}
               now={now}

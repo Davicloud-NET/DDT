@@ -15,7 +15,13 @@ namespace DDT.Agent.Sequences;
 // because Windows PE's own scratch space holds only 512 MB.
 public sealed class InjectDriversStepRunner(IToolRunner tools, RunDownloads downloads, RunSession session, AgentLog log)
 {
-    public static string DismPath => Path.Combine(Environment.SystemDirectory, "dism.exe");
+    public const string NoDismMessage =
+        "This boot image has no DISM, which a driver step of this sequence needs. Build the boot image again with " +
+        "build\\Build-BootImage.ps1.";
+
+    public static string DismPath => DismIn(Environment.SystemDirectory);
+
+    public static string DismIn(string systemDirectory) => Path.Combine(systemDirectory, "dism.exe");
 
     public async Task<StepResult> RunAsync(InjectDriversStep step, StepContext context, CancellationToken cancellationToken)
     {

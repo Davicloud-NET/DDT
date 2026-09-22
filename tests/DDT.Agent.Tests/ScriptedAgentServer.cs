@@ -8,11 +8,11 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.Tests;
 
 // Answers from a script. When the register, next or sign-in script runs out it stops the loop, so every test
-// ends deterministically without timing; so do the image list, pick, unattend and image calls, and their run
-// counterparts. Log requests succeed unless a scripted action throws, and a report without a script echoes the token
-// it was sent with. A run file without a script is answered from the files given to ServeFile.
-// A deployment's heartbeat calls from another thread, so everything is guarded by one lock, and scripted answers
-// run outside it.
+// ends deterministically without timing; so do the sequence list, pick and answer file calls. Log requests succeed
+// unless a scripted action throws, and a run report without a script echoes the token it was sent with. A run file
+// without a script is answered from the files given to ServeFile.
+// A run's heartbeat calls from another thread, so everything is guarded by one lock, and scripted answers run outside
+// it.
 internal sealed class ScriptedAgentServer : IAgentServer
 {
     private readonly Lock _lock = new();
@@ -22,12 +22,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Queue<Func<AgentSignInRequest, AgentSignInResult>> _signIns = new();
     private readonly Queue<Func<AgentRelease?>> _releases = new();
     private readonly Queue<byte[]> _downloads = new();
-    private readonly Queue<Func<IReadOnlyList<AgentImageChoice>>> _images = new();
-    private readonly Queue<Func<AgentPickRequest, AgentDeployment>> _picks = new();
-    private readonly Dictionary<DeploymentState, Queue<Func<AgentDeploymentReport, AgentDeploymentReportResult>>> _reports = [];
-    private readonly Queue<Func<string>> _unattends = new();
-    private readonly Queue<Func<long?>> _heads = new();
-    private readonly Queue<Func<long, AgentImageStream>> _opens = new();
     private readonly Queue<Func<IReadOnlyList<AgentSequenceChoice>>> _sequences = new();
     private readonly Queue<Func<AgentRunRequest, AgentRun>> _sequencePicks = new();
     private readonly Dictionary<DeploymentState, Queue<Func<AgentRunReport, AgentRunReportResult>>> _runReports = [];
@@ -36,7 +30,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Dictionary<string, byte[]> _files = new(StringComparer.OrdinalIgnoreCase);
     private readonly Queue<Func<Guid, string>> _runUnattends = new();
     private readonly List<string> _calls = [];
-    private readonly List<AgentDeploymentReport> _sentReports = [];
     private readonly List<AgentRunReport> _sentRunReports = [];
 
     public CancellationTokenSource Stop { get; } = new();
@@ -49,17 +42,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
             lock (_lock)
             {
                 return [.. _calls];
-            }
-        }
-    }
-
-    public List<AgentDeploymentReport> Reports
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return [.. _sentReports];
             }
         }
     }
@@ -81,15 +63,10 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public List<AgentSignInRequest> SignIns { get; } = [];
 
-    public List<AgentPickRequest> Picks { get; } = [];
-
     public List<AgentRunRequest> RunRequests { get; } = [];
 
     // Answers every run report when set, ahead of the scripts.
     public Func<AgentRunReport, string, AgentRunReportResult>? AnswerRunReports { get; set; }
-
-    // Answers every report when set, ahead of the scripts: a test can switch it while a deployment runs.
-    public Func<AgentDeploymentReport, string, AgentDeploymentReportResult>? AnswerReports { get; set; }
 
     // Runs for every log request when set, ahead of the scripts, and may throw to refuse it.
     public Action<AgentLogBatch>? AnswerLogs { get; set; }
@@ -106,17 +83,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public ScriptedAgentServer OnDownload(byte[] content) => Enqueue(_downloads, content);
 
-    public ScriptedAgentServer OnImages(Func<IReadOnlyList<AgentImageChoice>> response) => Enqueue(_images, response);
-
-    public ScriptedAgentServer OnPick(Func<AgentPickRequest, AgentDeployment> response) => Enqueue(_picks, response);
-
-    public ScriptedAgentServer OnUnattend(Func<string> response) => Enqueue(_unattends, response);
-
-    public ScriptedAgentServer OnHeadImage(Func<long?> response) => Enqueue(_heads, response);
-
-    // Receives the offset asked for.
-    public ScriptedAgentServer OnOpenImage(Func<long, AgentImageStream> response) => Enqueue(_opens, response);
-
     public ScriptedAgentServer OnSequences(Func<IReadOnlyList<AgentSequenceChoice>> response) => Enqueue(_sequences, response);
 
     public ScriptedAgentServer OnPickSequence(Func<AgentRunRequest, AgentRun> response) => Enqueue(_sequencePicks, response);
@@ -126,6 +92,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     // Receives the SHA-256 and the offset asked for.
     public ScriptedAgentServer OnOpenRunFile(Func<string, long, AgentImageStream> response) => Enqueue(_fileOpens, response);
+
+    // Receives only the offset asked for.
+    public ScriptedAgentServer OnOpenRunFile(Func<long, AgentImageStream> response) => OnOpenRunFile((_, offset) => response(offset));
 
     // Receives the step id.
     public ScriptedAgentServer OnRunUnattend(Func<Guid, string> response) => Enqueue(_runUnattends, response);
@@ -150,23 +119,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
             {
                 queue = new Queue<Func<AgentRunReport, AgentRunReportResult>>();
                 _runReports[state] = queue;
-            }
-
-            queue.Enqueue(response);
-        }
-
-        return this;
-    }
-
-    // For reports of this state only, so the heartbeat's progress reports do not use up the script.
-    public ScriptedAgentServer OnReport(DeploymentState state, Func<AgentDeploymentReport, AgentDeploymentReportResult> response)
-    {
-        lock (_lock)
-        {
-            if (!_reports.TryGetValue(state, out Queue<Func<AgentDeploymentReport, AgentDeploymentReportResult>>? queue))
-            {
-                queue = new Queue<Func<AgentDeploymentReport, AgentDeploymentReportResult>>();
-                _reports[state] = queue;
             }
 
             queue.Enqueue(response);
@@ -253,60 +205,6 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
         await destination.WriteAsync(content, cancellationToken);
     }
-
-    public Task<IReadOnlyList<AgentImageChoice>> GetImagesAsync(Guid machineId, string token, CancellationToken cancellationToken) =>
-        Answer($"images {token}", _images, response => response());
-
-    public Task<AgentDeployment> PickImageAsync(Guid machineId, string token, AgentPickRequest request, CancellationToken cancellationToken)
-    {
-        lock (_lock)
-        {
-            Picks.Add(request);
-        }
-
-        return Answer($"pick {token}", _picks, response => response(request));
-    }
-
-    public Task<AgentDeploymentReportResult> ReportDeploymentAsync(
-        Guid machineId,
-        string token,
-        Guid deploymentId,
-        AgentDeploymentReport report,
-        CancellationToken cancellationToken)
-    {
-        Func<AgentDeploymentReport, AgentDeploymentReportResult>? response = null;
-        Func<AgentDeploymentReport, string, AgentDeploymentReportResult>? answer;
-
-        lock (_lock)
-        {
-            _calls.Add($"report {report.State} {token}");
-            _sentReports.Add(report);
-            answer = AnswerReports;
-
-            if (answer is null && _reports.TryGetValue(report.State, out Queue<Func<AgentDeploymentReport, AgentDeploymentReportResult>>? queue))
-            {
-                queue.TryDequeue(out response);
-            }
-        }
-
-        try
-        {
-            return Task.FromResult(answer?.Invoke(report, token) ?? response?.Invoke(report) ?? new AgentDeploymentReportResult(token, "resume"));
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException<AgentDeploymentReportResult>(exception);
-        }
-    }
-
-    public Task<string> GetUnattendAsync(Guid machineId, string token, Guid deploymentId, CancellationToken cancellationToken) =>
-        Answer($"unattend {token}", _unattends, response => response());
-
-    public Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken) =>
-        Answer($"head {token}", _heads, response => response());
-
-    public Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken) =>
-        Answer($"open {offset} {token}", _opens, response => response(offset));
 
     public Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken) =>
         Answer($"sequences {token}", _sequences, response => response());

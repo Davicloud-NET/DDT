@@ -5,6 +5,7 @@
 using System.Text;
 using DDT.Agent;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 
 if (args.Contains(AgentLegalNotices.LicensesArgument))
 {
@@ -73,25 +74,31 @@ else if (!options.NoUpdate)
 }
 
 ConsoleSignInPrompt prompt = new(log, TimeProvider.System, options.KeyboardLayout);
-DeploymentRunner runner;
+SequenceRunner runner;
 IDiskPartitioner disks;
+LocalRunLocator locator;
 
-// A dry run works in a normal Windows session: its disk is a directory the run deletes when it ends, and it
-// never loads wimlib, whose strict mode needs Windows PE's privileges.
+// A dry run works in a normal Windows session: its disk is a directory that holds the run's state across a restart,
+// which is the end of the process, until the run ends. It runs no tool and never loads wimlib, whose strict mode needs
+// Windows PE's privileges. Started again with the same dry run id, it goes on with the run.
 if (options.DryRun)
 {
     string root = Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}");
     disks = new DryRunDiskPartitioner(root, log);
-    runner = new DeploymentRunner(
+    runner = new SequenceRunner(
         server,
         disks,
         new DryRunImageApplier(log),
         new DryRunBcdWriter(log),
         new DryRunRebooter(log),
+        new DryRunToolRunner(log),
         log,
         TimeProvider.System,
-        DeploymentHeartbeat.DefaultInterval,
-        root);
+        RunHeartbeat.DefaultInterval,
+        root,
+        Environment.SystemDirectory,
+        dryRun: true);
+    locator = new LocalRunLocator([Path.Combine(root, "W")]);
 }
 else
 {
@@ -99,17 +106,22 @@ else
     ToolRunner tools = new(log, TimeProvider.System);
     UefiVariables firmware = new();
     disks = new DiskpartPartitioner(tools, log, TimeProvider.System, AppContext.BaseDirectory);
-    runner = new DeploymentRunner(
+    runner = new SequenceRunner(
         server,
         disks,
         new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
         new BcdbootWriter(tools, firmware, log),
         new WindowsPERebooter(tools, firmware, log),
+        tools,
         log,
         TimeProvider.System,
-        DeploymentHeartbeat.DefaultInterval);
+        RunHeartbeat.DefaultInterval,
+        AppContext.BaseDirectory,
+        Environment.SystemDirectory,
+        dryRun: false);
+    locator = new LocalRunLocator(LocalRunLocator.FixedDrives());
 }
 
-AgentLoop loop = new(server, identity, prompt, disks, runner, log, TimeProvider.System, version);
+AgentLoop loop = new(server, identity, prompt, disks, runner, locator, log, TimeProvider.System, version);
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);

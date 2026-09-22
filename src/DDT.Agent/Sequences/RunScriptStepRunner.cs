@@ -22,7 +22,9 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
 
     public static string CmdPath => Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-    public static string PowerShellPath => Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+    public static string PowerShellPath => PowerShellIn(Environment.SystemDirectory);
+
+    public static string PowerShellIn(string systemDirectory) => Path.Combine(systemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
 
     // cmd reads a script in the console's code page, line by line, so the first line switches it to UTF-8 for the rest.
     // Windows PowerShell 5.1 reads a file without a byte order mark as ANSI.

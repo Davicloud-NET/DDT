@@ -109,6 +109,76 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.Contains(after, line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("a4.cmd", StringComparison.Ordinal));
     }
 
+    // As Program puts a dry run together: the first start ends with the restart's exit code, and a second start with the
+    // same dry run id finds the run in the dry run's root and finishes it, which removes the root.
+    [Fact]
+    public async Task TheAgentStartedAgainGoesOnWithTheRun()
+    {
+        AgentRun assigned = s_run with { State = DeploymentState.Assigned, DiskNumber = null };
+        _server.OnRegister(_ => Registered())
+            .OnNext(_ => Next("session-1", assigned))
+            .OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-2", "resume-2", "run-token-1"));
+
+        // The consoles, as the server only gets what the agents flushed.
+        using StringWriter firstConsole = new();
+        int first = await Agent(new AgentLog(_time, firstConsole)).RunAsync(_server.Stop.Token);
+
+        Assert.Equal(AgentExitCodes.Restarting, first);
+        Assert.True(File.Exists(RunFiles.StatePathIn(Path.Combine(_root, "W"))));
+
+        _server.OnRegister(registration => Registered() with { RunId = s_runId, RunToken = registration.RunToken })
+            .OnNext(_ => Next("session-3", s_run with { DiskNumber = null }));
+
+        using StringWriter secondConsole = new();
+        int second = await Agent(new AgentLog(_time, secondConsole)).RunAsync(_server.Stop.Token);
+
+        Assert.Equal(AgentExitCodes.Deployed, second);
+        Assert.Equal("run-token-1", _server.Registrations[1].RunToken);
+        Assert.False(Directory.Exists(_root));
+
+        // Each console line starts with the time and the level.
+        string[] before = [.. firstConsole.ToString().Split(Environment.NewLine).Select(line => line.Length > 15 ? line[15..] : line)];
+        string[] after = [.. secondConsole.ToString().Split(Environment.NewLine).Select(line => line.Length > 15 ? line[15..] : line)];
+        Assert.Contains(before, line => line.Contains("BootNext would be set to BootCurrent", StringComparison.Ordinal));
+        Assert.DoesNotContain(after, line => line.StartsWith("Dry run: diskpart is not run. It would get this script", StringComparison.Ordinal));
+        Assert.Contains(after, line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("a4.cmd", StringComparison.Ordinal));
+    }
+
+    private static AgentRegistrationResult Registered() =>
+        new(s_machineId, Contracts.Machines.MachineState.Approved, "session-0", "resume-0", 10, null);
+
+    private static AgentNextResult Next(string token, AgentRun run) =>
+        new(Contracts.Machines.MachineState.Approved, token, "resume", 10, null, Run: run);
+
+    private AgentLoop Agent(AgentLog log)
+    {
+        DryRunDiskPartitioner disks = new(_root, log);
+        SequenceRunner runner = new(
+            _server,
+            disks,
+            new DryRunImageApplier(log),
+            new DryRunBcdWriter(log),
+            new DryRunRebooter(log),
+            new DryRunToolRunner(log),
+            log,
+            _time,
+            Timeout.InfiniteTimeSpan,
+            _root,
+            Environment.SystemDirectory,
+            dryRun: true);
+
+        return new AgentLoop(
+            _server,
+            new DryRunMachineIdentityReader(1),
+            new ScriptedSignInPrompt { IsAvailable = false },
+            disks,
+            runner,
+            new LocalRunLocator([Path.Combine(_root, "W")]),
+            log,
+            _time,
+            TestAgents.Version);
+    }
+
     private static RunScriptStep Script(string id, string name) => new()
     {
         Id = Guid.Parse(id),
@@ -127,6 +197,7 @@ public sealed class DryRunResumeTests : IDisposable
             new InjectDriversStepRunner(tools, downloads, session, log),
             new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
             new RunScriptStepRunner(tools, downloads, session, log, _root),
+            _ => { },
             log,
             _time);
 

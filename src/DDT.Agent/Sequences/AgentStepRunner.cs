@@ -8,13 +8,15 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // Runs each step with the runner for its kind and names the step in every log line meanwhile. A step that throws
-// fails with the exception's message; after a stop the exception goes on, which the engine takes as the stop.
+// fails with the exception's message; after a stop the exception goes on, which the engine takes as the stop. A 401
+// goes to tokenRejected, which stops the run as a refused beat does, and then on to the engine too.
 public sealed class AgentStepRunner(
     PartitionStepRunner partition,
     ApplyImageStepRunner applyImage,
     InjectDriversStepRunner injectDrivers,
     WriteUnattendStepRunner writeUnattend,
     RunScriptStepRunner runScript,
+    Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
     TimeProvider timeProvider) : IStepRunner
 {
@@ -53,6 +55,13 @@ public sealed class AgentStepRunner(
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 log.Warning($"Step {step.Name} was stopped.");
+
+                throw;
+            }
+            catch (AgentTokenRejectedException exception)
+            {
+                log.Warning($"Step {step.Name} was stopped: the server no longer accepts this machine's token.");
+                tokenRejected(exception);
 
                 throw;
             }

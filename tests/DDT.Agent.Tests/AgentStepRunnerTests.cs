@@ -72,6 +72,20 @@ public sealed class AgentStepRunnerTests
     }
 
     [Fact]
+    public async Task ARefusedTokenEndsTheRunAndReachesTheEngine()
+    {
+        WriteUnattendStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000aa"), Name = "Answer file" };
+        using StepRunnerFixture run = new([step]);
+        run.Partitioned();
+        AgentTokenRejectedException refused = new();
+        run.Server.OnRunUnattend(_ => throw refused);
+
+        await Assert.ThrowsAsync<AgentTokenRejectedException>(() => run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken));
+
+        Assert.Same(refused, Assert.Single(run.TokenRejections));
+    }
+
+    [Fact]
     public async Task AStopReachesTheEngineAsTheStop()
     {
         RunScriptStep step = new()

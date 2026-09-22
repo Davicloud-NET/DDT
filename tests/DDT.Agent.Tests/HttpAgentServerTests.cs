@@ -59,65 +59,9 @@ public sealed class HttpAgentServerTests
         await serving;
     }
 
-    [Fact]
-    public async Task ResumesAnImageWithARangeRequest()
-    {
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        byte[] rest = RandomNumberGenerator.GetBytes(500);
-        using TcpListener listener = new(IPAddress.Loopback, 0);
-        listener.Start();
-
-        Task<string> serving = AnswerAsync(
-            listener,
-            $"HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 1000-1499/1500\r\nContent-Length: {rest.Length}\r\n",
-            rest,
-            cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
-
-        AgentImageStream image = await server.OpenImageAsync(Guid.Empty, "session", "ab12", 1000, cancellationToken);
-
-        await using (image)
-        {
-            using MemoryStream received = new();
-            await image.Content.CopyToAsync(received, cancellationToken);
-
-            Assert.Equal(1000, image.Offset);
-            Assert.Equal(1500, image.TotalLength);
-            Assert.Equal(rest, received.ToArray());
-        }
-
-        string request = await serving;
-        Assert.StartsWith($"GET /api/agents/{Guid.Empty:D}/images/ab12 HTTP/1.1", request, StringComparison.Ordinal);
-        Assert.Contains("Range: bytes=1000-", request, StringComparison.Ordinal);
-        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task AsksForAnImagesLengthWithItsFirstByte()
-    {
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        using TcpListener listener = new(IPAddress.Loopback, 0);
-        listener.Start();
-
-        Task<string> serving = AnswerAsync(
-            listener,
-            "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-0/5368709120\r\nContent-Length: 1\r\n",
-            [0x4D],
-            cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
-
-        long? length = await server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken);
-
-        Assert.Equal(5368709120, length);
-        string request = await serving;
-        Assert.StartsWith($"GET /api/agents/{Guid.Empty:D}/images/ab12 HTTP/1.1", request, StringComparison.Ordinal);
-        Assert.Contains("Range: bytes=0-0", request, StringComparison.Ordinal);
-        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
-    }
-
     // Only the headers are read: the body of a whole image would not even fit HttpClient's buffer.
     [Fact]
-    public async Task TakesTheLengthOfAWholeImageFromAServerThatIgnoresTheRange()
+    public async Task TakesTheLengthOfAWholeRunFileFromAServerThatIgnoresTheRange()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         using TcpListener listener = new(IPAddress.Loopback, 0);
@@ -126,14 +70,14 @@ public sealed class HttpAgentServerTests
         Task<string> serving = AnswerAsync(listener, "HTTP/1.1 200 OK\r\nContent-Length: 5368709120\r\n", new byte[4096], cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        long? length = await server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken);
+        long? length = await server.HeadRunFileAsync(s_machineId, "session", s_runId, "ab12", cancellationToken);
         await serving;
 
         Assert.Equal(5368709120, length);
     }
 
     [Fact]
-    public async Task ARefusedImageCheckCarriesTheServersProblemTitle()
+    public async Task ARefusedRunFileCheckCarriesTheServersProblemTitle()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         byte[] problem = """{"title":"The image file is missing from the server's library.","status":404}"""u8.ToArray();
@@ -148,7 +92,7 @@ public sealed class HttpAgentServerTests
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
         AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
-            () => server.HeadImageAsync(Guid.Empty, "session", "ab12", cancellationToken));
+            () => server.HeadRunFileAsync(s_machineId, "session", s_runId, "ab12", cancellationToken));
         await serving;
 
         Assert.Equal(HttpStatusCode.NotFound, exception.StatusCode);
@@ -159,7 +103,7 @@ public sealed class HttpAgentServerTests
     public async Task ARefusalCarriesTheServersProblemTitle()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        byte[] problem = """{"title":"This machine cannot pick an image now.","status":409}"""u8.ToArray();
+        byte[] problem = """{"title":"This machine cannot pick a sequence now.","status":409}"""u8.ToArray();
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
 
@@ -171,11 +115,11 @@ public sealed class HttpAgentServerTests
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
         AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
-            () => server.PickImageAsync(Guid.Empty, "session", new Contracts.Agents.AgentPickRequest(Guid.Empty, 0, null), cancellationToken));
+            () => server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 0, null), cancellationToken));
         await serving;
 
         Assert.Equal(HttpStatusCode.Conflict, exception.StatusCode);
-        Assert.Equal("This machine cannot pick an image now.", exception.ProblemTitle);
+        Assert.Equal("This machine cannot pick a sequence now.", exception.ProblemTitle);
     }
 
     [Fact]

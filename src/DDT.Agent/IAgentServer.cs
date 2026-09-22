@@ -21,25 +21,6 @@ public interface IAgentServer
 
     Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<AgentImageChoice>> GetImagesAsync(Guid machineId, string token, CancellationToken cancellationToken);
-
-    Task<AgentDeployment> PickImageAsync(Guid machineId, string token, AgentPickRequest request, CancellationToken cancellationToken);
-
-    Task<AgentDeploymentReportResult> ReportDeploymentAsync(
-        Guid machineId,
-        string token,
-        Guid deploymentId,
-        AgentDeploymentReport report,
-        CancellationToken cancellationToken);
-
-    Task<string> GetUnattendAsync(Guid machineId, string token, Guid deploymentId, CancellationToken cancellationToken);
-
-    // The image's length, or null when the server did not say.
-    Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken);
-
-    // From offset to the end. A server that ignores the range answers from 0, which the result's Offset shows.
-    Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken);
-
     Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken);
 
     // Starts the sequence the technician picked at the machine.
@@ -50,7 +31,8 @@ public interface IAgentServer
     // The length of one of the run's images or packages, or null when the server did not say.
     Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken);
 
-    // As OpenImageAsync, for one of the run's images or packages.
+    // One of the run's images or packages, from offset to the end. A server that ignores the range answers from 0,
+    // which the result's Offset shows.
     Task<AgentImageStream> OpenRunFileAsync(
         Guid machineId,
         string token,

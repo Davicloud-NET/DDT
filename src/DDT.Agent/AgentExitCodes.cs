@@ -13,5 +13,9 @@ public static class AgentExitCodes
     public const int Rejected = 2;
     public const int ConfigurationError = 3;
     public const int Deployed = 4;
+
+    // The machine restarts in the middle of a run, which goes on from its state on the disk after the restart.
+    public const int Restarting = 5;
+
     public const int HighestAgentCode = 63;
 }

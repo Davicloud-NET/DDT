@@ -8,6 +8,7 @@ namespace DDT.Agent;
 public sealed class AgentTokenRejectedException : Exception
 {
     public AgentTokenRejectedException()
+        : base("The server no longer accepts this machine's token.")
     {
     }
 

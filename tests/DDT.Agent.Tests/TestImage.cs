@@ -4,7 +4,6 @@
 
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.Tests;
 
@@ -49,26 +48,19 @@ internal sealed class TestImage
 
     public string Sha256 { get; }
 
-    public AgentDeployment Deployment(int? diskNumber = null, DeploymentState state = DeploymentState.Assigned) =>
-        new(
-            Guid.Parse("0193a4b2-0000-7000-8000-00000000d001"),
-            state,
-            Guid.Parse("0193a4b2-0000-7000-8000-00000000a001"),
-            "Windows 11 Pro",
-            Sha256,
-            Content.Length,
-            1,
-            10_000,
-            diskNumber);
+    public static Guid ImageId { get; } = Guid.Parse("0193a4b2-0000-7000-8000-00000000a001");
+
+    // Image 1 of the file, which takes 10 000 bytes installed.
+    public AgentRunImage RunImage => new(ImageId, "Windows 11 Pro", Sha256, Content.Length, 1, 10_000);
 
     // The rest of the file from offset, as a 206 answer or, from 0, a 200.
     public AgentImageStream From(long offset) =>
         new(new MemoryStream(Content[(int)offset..]), offset, Content.Length);
 
-    // Scripts a whole successful run on the server, apart from the reports, which echo by default.
+    // Serves the image as a run file, and the answer file once, which is all a run needs from the server apart from
+    // the reports, which echo by default.
     public ScriptedAgentServer Serve(ScriptedAgentServer server) =>
         server
-            .OnHeadImage(() => Content.Length)
-            .OnOpenImage(From)
-            .OnUnattend(() => Unattend);
+            .ServeFile(Sha256, Content)
+            .OnRunUnattend(_ => Unattend);
 }

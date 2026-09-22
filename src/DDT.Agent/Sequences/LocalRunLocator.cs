@@ -8,15 +8,20 @@ namespace DDT.Agent.Sequences;
 // the newest DDT\run\state.json in roots, which are the fixed drives that are ready, other than Windows PE's own X:.
 public sealed class LocalRunLocator(IEnumerable<string> roots)
 {
+    // Listed again at every Find, so a Windows volume that got its letter after the agent started is found too.
     public static IEnumerable<string> FixedDrives()
     {
         string? own = Path.GetPathRoot(Environment.SystemDirectory);
 
-        return DriveInfo.GetDrives()
-            .Where(drive => drive.DriveType == DriveType.Fixed && drive.IsReady)
-            .Select(drive => drive.RootDirectory.FullName)
-            .Where(root => !string.Equals(root, own, StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        foreach (DriveInfo drive in DriveInfo.GetDrives())
+        {
+            if (drive.DriveType == DriveType.Fixed
+                && drive.IsReady
+                && !string.Equals(drive.RootDirectory.FullName, own, StringComparison.OrdinalIgnoreCase))
+            {
+                yield return drive.RootDirectory.FullName;
+            }
+        }
     }
 
     // The root of the Windows volume holding the run, such as C:\, or null when none holds one.

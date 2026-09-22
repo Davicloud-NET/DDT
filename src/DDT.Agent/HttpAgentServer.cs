@@ -152,65 +152,6 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         await response.Content.CopyToAsync(destination, deadline.Token).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<AgentImageChoice>> GetImagesAsync(Guid machineId, string token, CancellationToken cancellationToken)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.Images(machineId));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-        return await ReadAsync(response, AgentJsonContext.Default.IReadOnlyListAgentImageChoice, cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<AgentDeployment> PickImageAsync(Guid machineId, string token, AgentPickRequest request, CancellationToken cancellationToken)
-    {
-        using HttpRequestMessage message = new(HttpMethod.Post, AgentRoutes.Deployments(machineId))
-        {
-            Content = JsonContent.Create(request, AgentJsonContext.Default.AgentPickRequest),
-        };
-
-        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
-
-        return await ReadAsync(response, AgentJsonContext.Default.AgentDeployment, cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<AgentDeploymentReportResult> ReportDeploymentAsync(
-        Guid machineId,
-        string token,
-        Guid deploymentId,
-        AgentDeploymentReport report,
-        CancellationToken cancellationToken)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, AgentRoutes.DeploymentReport(machineId, deploymentId))
-        {
-            Content = JsonContent.Create(report, AgentJsonContext.Default.AgentDeploymentReport),
-        };
-
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-        return await ReadAsync(response, AgentJsonContext.Default.AgentDeploymentReportResult, cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<string> GetUnattendAsync(Guid machineId, string token, Guid deploymentId, CancellationToken cancellationToken)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.DeploymentUnattend(machineId, deploymentId));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-        return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    public Task<long?> HeadImageAsync(Guid machineId, string token, string sha256, CancellationToken cancellationToken) =>
-        HeadAsync(AgentRoutes.ImageContent(machineId, sha256), token, cancellationToken);
-
-    public Task<AgentImageStream> OpenImageAsync(Guid machineId, string token, string sha256, long offset, CancellationToken cancellationToken) =>
-        OpenAsync(AgentRoutes.ImageContent(machineId, sha256), token, offset, cancellationToken);
-
     public async Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.Sequences(machineId));

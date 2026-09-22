@@ -4,37 +4,51 @@
 
 using System.Text.Json;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
+// Registers the machine, waits until it may run a task sequence, runs it, and after a restart in the middle of a run
+// goes on with the run whose state it finds on the disk, as long as the server still runs it.
 public sealed class AgentLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
     ISignInPrompt prompt,
     IDiskPartitioner disks,
-    DeploymentRunner runner,
+    SequenceRunner runner,
+    LocalRunLocator locator,
     AgentLog log,
     TimeProvider timeProvider,
     string agentVersion)
 {
-    private const string LostContactMessage = "The agent lost contact with the server during the deployment.";
-
     private MachineIdentity? _lastIdentity;
     private string? _resumeToken;
 
-    // Where a run ended that the server still has as running, and why, for the report that it failed.
-    private (Guid DeploymentId, DeploymentStep Step, int Percent, string Error)? _abandonedRun;
+    // The run an earlier start of the agent left on the disk, until it goes on or the server ended it.
+    private LocalRun? _localRun;
+
+    // The newest run token: from the disk, a registration or the run itself.
+    private string? _runToken;
+
+    // A run that ended in this process without the server hearing so, and the Failed report that tells it.
+    private (Guid RunId, AgentRunReport Report)? _abandonedRun;
 
     // The disk last confirmed with ERASE in this process. Kept past the pick's answer: a pick the server stored but
-    // did not confirm still arrives as an Assigned deployment.
+    // did not confirm still arrives as an Assigned run.
     private LocalDisk? _confirmedDisk;
+
+    // The run last chosen at this console without a disk confirmed with ERASE, which therefore must not erase one.
+    private Guid? _pickedWithoutErase;
 
     // The disks the picker offers, read once each time the machine may pick; null until then.
     private IReadOnlyList<LocalDisk>? _pickableDisks;
-    private bool _toldNoImages;
+    private bool _toldNoSequences;
+    private bool _toldNoDeployments;
+    private Guid? _toldWindowsPhase;
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -58,12 +72,23 @@ public sealed class AgentLoop(
 
             first = false;
 
+            try
+            {
+                await FindLocalRunAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return AgentExitCodes.Stopped;
+            }
+
             AgentRegistrationResult? registration = await RegisterAsync(cancellationToken).ConfigureAwait(false);
 
             if (registration is null)
             {
                 return AgentExitCodes.Stopped;
             }
+
+            KeepOrDiscardLocalRun(registration);
 
             if (registration.Token is null)
             {
@@ -87,7 +112,7 @@ public sealed class AgentLoop(
     }
 
     // Returns null to register again, or an exit code. Requests stay on this loop, in order: only reading the
-    // keyboard runs alongside polling, and a deployment is awaited here, with its own heartbeat instead of polls.
+    // keyboard runs alongside polling, and a run is awaited here, with its own heartbeat instead of polls.
     private async Task<int?> PollAsync(AgentRegistrationResult registration, CancellationToken cancellationToken)
     {
         Guid machineId = registration.MachineId;
@@ -98,7 +123,7 @@ public sealed class AgentLoop(
         int failures = 0;
 
         SignInConversation conversation = new(prompt, log);
-        ImagePicker picker = new(prompt, log);
+        SequencePicker picker = new(prompt, log);
         CancellationTokenSource? stopTyping = null;
         Task<string?>? typing = null;
         bool typingForPicker = false;
@@ -133,69 +158,100 @@ public sealed class AgentLoop(
                         }
                     }
 
-                    AgentDeployment? deployment = state is MachineState.Approved or MachineState.Deploying or MachineState.Failed
-                        ? next.Deployment
-                        : null;
+                    bool authorized = state is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
+                    AgentRun? run = authorized ? next.Run : null;
 
-                    if (deployment is { State: DeploymentState.Assigned or DeploymentState.Running } && typing is not null)
+                    if (authorized && next.Deployment is not null && next.Run is null && !_toldNoDeployments)
+                    {
+                        _toldNoDeployments = true;
+                        log.Warning("The server assigned an image deployment, which this agent no longer runs. Assign a task sequence instead.");
+                    }
+
+                    if (run is { State: DeploymentState.Assigned or DeploymentState.Running } && typing is not null)
                     {
                         await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
                         typing = null;
                     }
 
-                    if (deployment is { State: DeploymentState.Assigned })
+                    LocalRun? resumable = run is { State: DeploymentState.Running } && _localRun is { } local && local.State.RunId == run.Id
+                        ? local
+                        : null;
+
+                    if (resumable is { State.Phase: SequencePhase.Windows })
                     {
-                        DeploymentRunResult result = await runner.RunAsync(machineId, deployment, _confirmedDisk, token, _resumeToken, cancellationToken)
+                        // Only the agent in the installed Windows goes on with it; this one leaves it alone.
+                        if (_toldWindowsPhase != run!.Id)
+                        {
+                            _toldWindowsPhase = run.Id;
+                            log.Warning(
+                                $"Run {run.Id} goes on in the Windows on this machine's disk, but the machine started Windows PE. " +
+                                "Start it from its disk, or stop the run on the Machines page.");
+                        }
+                    }
+                    else if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && run.Sequence.Steps.Any(step => step.ErasesDisk))
+                    {
+                        // The picker said why when the server answered the choice.
+                        AgentRunReportResult reported = await server
+                            .ReportRunAsync(machineId, token, run.Id, FailedBeforeItRan(SequencePicker.ChangedAfterChoiceMessage), cancellationToken)
                             .ConfigureAwait(false);
 
-                        _abandonedRun = result.UnsentError is not null || result.Outcome == DeploymentOutcome.TokenRejected
-                            ? (deployment.Id, result.Step, result.Percent, result.UnsentError ?? LostContactMessage)
-                            : null;
+                        token = reported.Token;
+                        _resumeToken = reported.ResumeToken;
+                        _pickedWithoutErase = null;
+                    }
+                    else if (run is { State: DeploymentState.Assigned } || resumable is not null)
+                    {
+                        _localRun = null;
+                        DeploymentTokens tokens = new(token, next.ResumeToken, _runToken);
+                        RunResult result = await runner
+                            .RunAsync(machineId, run!, resumable, resumable is null ? _confirmedDisk : null, tokens, _lastIdentity!, cancellationToken)
+                            .ConfigureAwait(false);
+
+                        _abandonedRun = result.UnsentFailure is { } unsent ? (run!.Id, unsent) : null;
+
+                        // The run kept the session alive; the tokens this loop last saw may have expired.
+                        token = tokens.Token;
+                        _resumeToken = tokens.ResumeToken;
+                        _runToken = tokens.RunToken;
 
                         switch (result.Outcome)
                         {
-                            case DeploymentOutcome.Deployed:
+                            case RunOutcome.Finished:
                                 return AgentExitCodes.Deployed;
-                            case DeploymentOutcome.Stopped:
+                            case RunOutcome.Restarting:
+                                return AgentExitCodes.Restarting;
+                            case RunOutcome.Stopped:
                                 return AgentExitCodes.Stopped;
-                            case DeploymentOutcome.TokenRejected:
-                                _resumeToken = result.ResumeToken;
-
+                            case RunOutcome.TokenRejected:
                                 return null;
                             default:
-                                // The runner kept the session alive; the tokens this loop last saw may have expired.
-                                token = result.Token;
-                                _resumeToken = result.ResumeToken;
+                                _runToken = null;
                                 picker.Reset();
                                 _pickableDisks = null;
 
                                 continue;
                         }
                     }
-
-                    // Nothing in this process runs it: the agent restarted, a refused token ended the run, or the run's
-                    // own failure report did not get through.
-                    if (deployment is { State: DeploymentState.Running })
+                    else if (run is { State: DeploymentState.Running })
                     {
-                        (DeploymentStep step, int percent, string error) = _abandonedRun is { } run && run.DeploymentId == deployment.Id
-                            ? (run.Step, run.Percent, run.Error)
-                            : (DeploymentStep.Partition, 0, LostContactMessage);
+                        // Nothing here can go on with it: its state is not on this machine's disks, a refused token
+                        // ended it, or its own failure report did not get through.
+                        AgentRunReport report = _abandonedRun is { } abandoned && abandoned.RunId == run.Id
+                            ? abandoned.Report
+                            : FailedBeforeItRan(SequenceRunner.LostContactMessage);
 
-                        log.Error(error);
-                        AgentDeploymentReportResult reported = await server.ReportDeploymentAsync(
-                            machineId,
-                            token,
-                            deployment.Id,
-                            new AgentDeploymentReport(DeploymentState.Failed, step, percent, error),
-                            cancellationToken).ConfigureAwait(false);
+                        log.Error(report.Error!);
+                        AgentRunReportResult reported = await server.ReportRunAsync(machineId, token, run.Id, report, cancellationToken)
+                            .ConfigureAwait(false);
 
                         token = reported.Token;
                         _resumeToken = reported.ResumeToken;
                         _abandonedRun = null;
+                        _runToken = null;
                     }
 
                     bool signInWanted = state == MachineState.Pending && signedInBy is null && conversation.IsAvailable;
-                    bool pickWanted = next.CanPickImage && deployment is null && picker.IsAvailable;
+                    bool pickWanted = next.CanPickSequence && run is null && picker.IsAvailable;
 
                     if (!pickWanted)
                     {
@@ -204,7 +260,7 @@ public sealed class AgentLoop(
                     }
                     else if (!picker.IsOffered)
                     {
-                        await OfferImagesAsync(picker, machineId, token, next, cancellationToken).ConfigureAwait(false);
+                        await OfferSequencesAsync(picker, machineId, token, cancellationToken).ConfigureAwait(false);
                     }
 
                     if (typing is not null && (typingForPicker ? !picker.IsOffered : !signInWanted))
@@ -221,7 +277,7 @@ public sealed class AgentLoop(
                     }
 
                     // Only an authorized machine may write to the server's log. Until then lines wait here.
-                    if (state is MachineState.Approved or MachineState.Deploying or MachineState.Failed)
+                    if (authorized)
                     {
                         await FlushAsync(machineId, token, cancellationToken).ConfigureAwait(false);
                     }
@@ -341,7 +397,7 @@ public sealed class AgentLoop(
     }
 
     // A refused token and a stop reach the caller.
-    private async Task SendPickAsync(ImagePicker picker, Guid machineId, string token, string typed, CancellationToken cancellationToken)
+    private async Task SendPickAsync(SequencePicker picker, Guid machineId, string token, string typed, CancellationToken cancellationToken)
     {
         if (picker.Accept(typed) is not { } request)
         {
@@ -352,8 +408,9 @@ public sealed class AgentLoop(
 
         try
         {
-            AgentDeployment deployment = await server.PickImageAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
-            picker.Picked(deployment);
+            AgentRun run = await server.PickSequenceAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
+            _pickedWithoutErase = request.DiskNumber is null ? run.Id : null;
+            picker.Picked(run);
         }
         catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
         {
@@ -365,30 +422,16 @@ public sealed class AgentLoop(
         }
     }
 
-    // Reads the disks once per stretch in which the machine may pick, and asks for the images until there are
-    // some. With no disk there is nothing to offer: a restart is the only way a disk appears.
-    private async Task OfferImagesAsync(ImagePicker picker, Guid machineId, string token, AgentNextResult next, CancellationToken cancellationToken)
+    // Asks for the sequences until there are some, and reads the disks once per stretch in which the machine may pick,
+    // when a sequence erases one. With no disk only sequences that erase none can be offered: a restart is the only
+    // way a disk appears.
+    private async Task OfferSequencesAsync(SequencePicker picker, Guid machineId, string token, CancellationToken cancellationToken)
     {
-        if (_pickableDisks is null)
-        {
-            _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
-
-            if (_pickableDisks.Count == 0)
-            {
-                log.Error(DeploymentRunner.NoDiskMessage);
-            }
-        }
-
-        if (_pickableDisks.Count == 0)
-        {
-            return;
-        }
-
-        IReadOnlyList<AgentImageChoice> images;
+        IReadOnlyList<AgentSequenceChoice> sequences;
 
         try
         {
-            images = await server.GetImagesAsync(machineId, token, cancellationToken).ConfigureAwait(false);
+            sequences = await server.GetSequencesAsync(machineId, token, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException exception) when (ServerCallRules.IsRefusal(exception))
         {
@@ -396,19 +439,30 @@ public sealed class AgentLoop(
             return;
         }
 
-        if (images.Count == 0)
+        if (sequences.Count == 0)
         {
-            if (!_toldNoImages)
+            if (!_toldNoSequences)
             {
-                _toldNoImages = true;
-                log.Warning("The server has no image this machine can install. Upload an x64 Windows image on the Images page.");
+                _toldNoSequences = true;
+                log.Warning("The server has no task sequence this machine can run. Create one on the Sequences page.");
             }
 
             return;
         }
 
-        _toldNoImages = false;
-        picker.Offer(images, _pickableDisks, next.DomainConfigured && string.IsNullOrEmpty(next.AssignedName));
+        _toldNoSequences = false;
+
+        if (_pickableDisks is null && sequences.Any(sequence => sequence.ErasesDisk))
+        {
+            _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_pickableDisks.Count == 0)
+            {
+                log.Error(SequenceRunner.NoDiskMessage);
+            }
+        }
+
+        picker.Offer(sequences, _pickableDisks ?? []);
     }
 
     // Waits for the prompt to let go of the console before anything else can ask for input.
@@ -431,6 +485,36 @@ public sealed class AgentLoop(
         catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
         {
         }
+    }
+
+    // Looked for before every registration, so a run that a refused token interrupted is found again too.
+    private async Task FindLocalRunAsync(CancellationToken cancellationToken)
+    {
+        Guid? known = _localRun?.State.RunId;
+        _localRun = locator.Find() is { } root ? await LocalRun.LoadAsync(root, log, cancellationToken).ConfigureAwait(false) : null;
+
+        if (_localRun is { } local)
+        {
+            _runToken = local.RunToken ?? _runToken;
+
+            if (local.State.RunId != known)
+            {
+                log.Information($"Found run {local.State.RunId} on {local.WindowsRoot}. It goes on if the server still runs it.");
+            }
+        }
+    }
+
+    // The server resumes a run only for the run token of its active run, and says so with the run's id.
+    private void KeepOrDiscardLocalRun(AgentRegistrationResult registration)
+    {
+        if (_localRun is { } local && registration.RunId != local.State.RunId)
+        {
+            local.Discard(log);
+            log.Information($"The server ended run {local.State.RunId}; its state on disk was removed.");
+            _localRun = null;
+        }
+
+        _runToken = registration.RunId is null ? null : registration.RunToken ?? _runToken;
     }
 
     private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
@@ -457,7 +541,9 @@ public sealed class AgentLoop(
                         identity.SerialNumber,
                         agentVersion,
                         _resumeToken,
-                        eligibleDisks),
+                        eligibleDisks,
+                        _runToken,
+                        SequenceDefinition.CurrentVersion),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException)
@@ -502,19 +588,27 @@ public sealed class AgentLoop(
         }
     }
 
+    // Kept, as the run's conditions test it.
     private void ReportIdentity(MachineIdentity identity)
     {
-        if (_lastIdentity is not null
+        bool known = _lastIdentity is not null
             && _lastIdentity.SmbiosUuid == identity.SmbiosUuid
-            && _lastIdentity.PrimaryMac == identity.PrimaryMac)
+            && _lastIdentity.PrimaryMac == identity.PrimaryMac;
+
+        _lastIdentity = identity;
+
+        if (known)
         {
             return;
         }
 
-        _lastIdentity = identity;
         log.Information($"SMBIOS UUID {identity.SmbiosUuid}, primary MAC {identity.PrimaryMac}");
         log.Information($"{identity.Manufacturer} {identity.Model}, serial {identity.SerialNumber}");
     }
+
+    // A Failed report for a run this agent does not run, which names no step.
+    private static AgentRunReport FailedBeforeItRan(string error) =>
+        new(DeploymentState.Failed, SequencePhase.WindowsPE, [], null, 0, RunActivity.Preparing, error);
 
     // JsonException covers an HTML page from a wrong URL and a newer server reporting a state this agent
     // does not know; neither may end the agent.
@@ -538,7 +632,7 @@ public sealed class AgentLoop(
     private static string Describe(MachineState state) => state switch
     {
         MachineState.Pending => "waiting to be authorized",
-        MachineState.Approved => "approved, waiting for an image",
+        MachineState.Approved => "approved, waiting for a task sequence",
         _ => state.ToString(),
     };
 }

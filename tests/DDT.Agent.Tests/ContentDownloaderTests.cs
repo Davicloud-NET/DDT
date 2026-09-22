@@ -11,6 +11,7 @@ namespace DDT.Agent.Tests;
 public sealed class ContentDownloaderTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
+    private static readonly Guid s_runId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
     private static readonly TimeSpan s_tokenWait = TimeSpan.FromSeconds(10);
 
     private readonly string _directory = Directory.CreateTempSubdirectory("ddt-download-").FullName;
@@ -25,11 +26,11 @@ public sealed class ContentDownloaderTests : IDisposable
     [Fact]
     public async Task DownloadsTheWholeImage()
     {
-        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_image.From);
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenRunFile(_image.From);
 
         await DownloadAsync(server, new ImmediateTimeProvider());
 
-        Assert.Equal(["open 0 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
         Assert.False(File.Exists(PartPath));
     }
@@ -38,11 +39,11 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task ResumesFromAPartialFile()
     {
         await File.WriteAllBytesAsync(PartPath, _image.Content[..1200], TestContext.Current.CancellationToken);
-        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_image.From);
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenRunFile(_image.From);
 
         await DownloadAsync(server, new ImmediateTimeProvider());
 
-        Assert.Equal(["open 1200 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 1200 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
     }
 
@@ -50,13 +51,13 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task ResumesWhereAnEarlyEndLeftOff()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => new AgentImageStream(new MemoryStream(_image.Content[..2000]), 0, _image.Content.Length))
-            .OnOpenImage(_image.From);
+            .OnOpenRunFile(_ => new AgentImageStream(new MemoryStream(_image.Content[..2000]), 0, _image.Content.Length))
+            .OnOpenRunFile(_image.From);
         ImmediateTimeProvider time = new();
 
         await DownloadAsync(server, time);
 
-        Assert.Equal(["open 0 session", "open 2000 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session", $"open-file {_image.Sha256} 2000 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
         Assert.Equal([AgentLimits.RetryDelay(1)], time.Delays);
     }
@@ -65,11 +66,11 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task StartsOverWhenTheServerIgnoresTheRange()
     {
         await File.WriteAllBytesAsync(PartPath, _image.Content[..1200], TestContext.Current.CancellationToken);
-        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_ => _image.From(0));
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenRunFile(_ => _image.From(0));
 
         await DownloadAsync(server, new ImmediateTimeProvider());
 
-        Assert.Equal(["open 1200 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 1200 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
     }
 
@@ -78,12 +79,12 @@ public sealed class ContentDownloaderTests : IDisposable
     {
         await File.WriteAllBytesAsync(PartPath, new byte[1200], TestContext.Current.CancellationToken);
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => throw new HttpRequestException("416", null, HttpStatusCode.RequestedRangeNotSatisfiable))
-            .OnOpenImage(_image.From);
+            .OnOpenRunFile(_ => throw new HttpRequestException("416", null, HttpStatusCode.RequestedRangeNotSatisfiable))
+            .OnOpenRunFile(_image.From);
 
         await DownloadAsync(server, new ImmediateTimeProvider());
 
-        Assert.Equal(["open 1200 session", "open 0 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 1200 session", $"open-file {_image.Sha256} 0 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
     }
 
@@ -105,7 +106,7 @@ public sealed class ContentDownloaderTests : IDisposable
         byte[] damaged = [.. _image.Content];
         damaged[4000] ^= 0xFF;
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(offset => new AgentImageStream(new MemoryStream(damaged[(int)offset..]), offset, damaged.Length));
+            .OnOpenRunFile(offset => new AgentImageStream(new MemoryStream(damaged[(int)offset..]), offset, damaged.Length));
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
@@ -119,7 +120,7 @@ public sealed class ContentDownloaderTests : IDisposable
     {
         await File.WriteAllBytesAsync(PartPath, _image.Content[..1200], TestContext.Current.CancellationToken);
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => new AgentImageStream(new MemoryStream(_image.Content[600..]), 600, _image.Content.Length));
+            .OnOpenRunFile(_ => new AgentImageStream(new MemoryStream(_image.Content[600..]), 600, _image.Content.Length));
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
@@ -132,7 +133,7 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task AServerFileOfAnotherSizeFailsTheStep()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(offset => new AgentImageStream(new MemoryStream(_image.Content[(int)offset..]), offset, _image.Content.Length + 1000));
+            .OnOpenRunFile(offset => new AgentImageStream(new MemoryStream(_image.Content[(int)offset..]), offset, _image.Content.Length + 1000));
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
@@ -146,7 +147,7 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task ARefusalFailsTheStepWithTheServersReason(HttpStatusCode status)
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => throw new AgentRequestException("refused", "This machine may not download this image.", status));
+            .OnOpenRunFile(_ => throw new AgentRequestException("refused", "This machine may not download this image.", status));
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => DownloadAsync(server, new ImmediateTimeProvider()));
 
@@ -157,9 +158,9 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task RetriesAServerErrorAndABusyServer()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable))
-            .OnOpenImage(_ => throw new HttpRequestException("429", null, HttpStatusCode.TooManyRequests))
-            .OnOpenImage(_image.From);
+            .OnOpenRunFile(_ => throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable))
+            .OnOpenRunFile(_ => throw new HttpRequestException("429", null, HttpStatusCode.TooManyRequests))
+            .OnOpenRunFile(_image.From);
         ImmediateTimeProvider time = new();
 
         await DownloadAsync(server, time);
@@ -173,8 +174,8 @@ public sealed class ContentDownloaderTests : IDisposable
     {
         StallingStream stalling = new(_image.Content[..1000]);
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => new AgentImageStream(stalling, 0, _image.Content.Length))
-            .OnOpenImage(_image.From);
+            .OnOpenRunFile(_ => new AgentImageStream(stalling, 0, _image.Content.Length))
+            .OnOpenRunFile(_image.From);
         ManualTimeProvider time = new();
 
         Task download = DownloadAsync(server, time);
@@ -187,7 +188,7 @@ public sealed class ContentDownloaderTests : IDisposable
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(1), () => download.IsCompleted);
         await download;
 
-        Assert.Equal(["open 0 session", "open 1000 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session", $"open-file {_image.Sha256} 1000 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
     }
 
@@ -197,7 +198,7 @@ public sealed class ContentDownloaderTests : IDisposable
         // Every wait is shorter than the stall watchdog's minute, but together they are longer.
         TimeSpan wait = ContentDownloader.StallTimeout - TimeSpan.FromSeconds(20);
         using PacedStream paced = new(_image.Content[..1000], _image.Content[1000..2000], _image.Content[2000..]);
-        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_ => new AgentImageStream(paced, 0, _image.Content.Length));
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenRunFile(_ => new AgentImageStream(paced, 0, _image.Content.Length));
         ManualTimeProvider time = new();
 
         Task download = DownloadAsync(server, time);
@@ -212,7 +213,7 @@ public sealed class ContentDownloaderTests : IDisposable
         // Bounded, so a watchdog that is not reset fails the test instead of leaving the download waiting for time.
         await download.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
-        Assert.Equal(["open 0 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session"], server.Calls);
         Assert.Equal(_image.Content, await File.ReadAllBytesAsync(FinalPath, TestContext.Current.CancellationToken));
     }
 
@@ -223,7 +224,7 @@ public sealed class ContentDownloaderTests : IDisposable
 
         for (int attempt = 0; attempt < 100; attempt++)
         {
-            server.OnOpenImage(_ => throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable));
+            server.OnOpenRunFile(_ => throw new HttpRequestException("503", null, HttpStatusCode.ServiceUnavailable));
         }
 
         ManualTimeProvider time = new();
@@ -265,7 +266,7 @@ public sealed class ContentDownloaderTests : IDisposable
 
         for (int attempt = 0; attempt < 100; attempt++)
         {
-            server.OnOpenImage(Answer);
+            server.OnOpenRunFile(Answer);
         }
 
         Task download = DownloadAsync(server, time);
@@ -279,8 +280,8 @@ public sealed class ContentDownloaderTests : IDisposable
     public async Task WaitsForTheHeartbeatsNextTokenAfterA401()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => throw new AgentTokenRejectedException())
-            .OnOpenImage(_image.From);
+            .OnOpenRunFile(_ => throw new AgentTokenRejectedException())
+            .OnOpenRunFile(_image.From);
         DeploymentTokens tokens = new("session-1", "resume-1");
         ManualTimeProvider time = new();
 
@@ -289,28 +290,28 @@ public sealed class ContentDownloaderTests : IDisposable
         tokens.Update("session-2", "resume-2");
         await download.WaitAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(["open 0 session-1", "open 0 session-2"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session-1", $"open-file {_image.Sha256} 0 session-2"], server.Calls);
     }
 
     [Fact]
     public async Task EndsTheRunWhenNoNewTokenComesWithinABeat()
     {
-        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenImage(_ => throw new AgentTokenRejectedException());
+        ScriptedAgentServer server = new ScriptedAgentServer().OnOpenRunFile(_ => throw new AgentTokenRejectedException());
         ManualTimeProvider time = new();
 
         Task download = DownloadAsync(server, time);
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(5), () => download.IsCompleted);
 
         await Assert.ThrowsAsync<AgentTokenRejectedException>(() => download);
-        Assert.Equal(["open 0 session"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session"], server.Calls);
     }
 
     [Fact]
     public async Task EndsTheRunWhenTheNewTokenIsRefusedToo()
     {
         ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnOpenImage(_ => throw new AgentTokenRejectedException())
-            .OnOpenImage(_ => throw new AgentTokenRejectedException());
+            .OnOpenRunFile(_ => throw new AgentTokenRejectedException())
+            .OnOpenRunFile(_ => throw new AgentTokenRejectedException());
         DeploymentTokens tokens = new("session-1", "resume-1");
         ManualTimeProvider time = new();
 
@@ -319,14 +320,14 @@ public sealed class ContentDownloaderTests : IDisposable
         tokens.Update("session-2", "resume-2");
 
         await Assert.ThrowsAsync<AgentTokenRejectedException>(() => download.WaitAsync(TestContext.Current.CancellationToken));
-        Assert.Equal(["open 0 session-1", "open 0 session-2"], server.Calls);
+        Assert.Equal([$"open-file {_image.Sha256} 0 session-1", $"open-file {_image.Sha256} 0 session-2"], server.Calls);
     }
 
     private Task DownloadAsync(ScriptedAgentServer server, TimeProvider time, DeploymentTokens? tokens = null)
     {
         AgentLog log = new(time, TextWriter.Null);
         ContentDownloader downloader = new(
-            (token, sha256, offset, call) => server.OpenImageAsync(s_machineId, token, sha256, offset, call),
+            (token, sha256, offset, call) => server.OpenRunFileAsync(s_machineId, token, s_runId, sha256, offset, call),
             tokens ?? new DeploymentTokens("session", "resume"),
             log,
             time,

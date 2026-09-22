@@ -390,7 +390,7 @@ public sealed class DeploymentRunner(
 
         try
         {
-            await rebooter.RebootAsync(cancellationToken).ConfigureAwait(false);
+            await rebooter.RebootAsync(RestartInto.Windows, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

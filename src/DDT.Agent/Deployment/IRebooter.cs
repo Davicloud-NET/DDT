@@ -6,5 +6,5 @@ namespace DDT.Agent.Deployment;
 
 public interface IRebooter
 {
-    Task RebootAsync(CancellationToken cancellationToken);
+    Task RebootAsync(RestartInto into, CancellationToken cancellationToken);
 }

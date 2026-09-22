@@ -34,4 +34,39 @@ public static class RunVariables
             [ErasedSystemPartitions] = string.Join(',', volumes.ErasedSystemPartitionIds.Select(id => id.ToString("D"))),
         };
     }
+
+    // What Of wrote, or null when the variables do not hold all of it, as before Partition.
+    public static RunDiskIds? DiskIds(IReadOnlyDictionary<string, string> variables)
+    {
+        ArgumentNullException.ThrowIfNull(variables);
+
+        if (!TryGetId(variables, SystemPartition, out Guid system)
+            || !TryGetId(variables, WindowsPartition, out Guid windows)
+            || !TryGetId(variables, RecoveryPartition, out Guid recovery)
+            || !variables.TryGetValue(ErasedSystemPartitions, out string? erasedList))
+        {
+            return null;
+        }
+
+        List<Guid> erased = [];
+
+        foreach (string value in erasedList.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!Guid.TryParse(value, out Guid id))
+            {
+                return null;
+            }
+
+            erased.Add(id);
+        }
+
+        return new RunDiskIds(system, windows, recovery, erased);
+    }
+
+    private static bool TryGetId(IReadOnlyDictionary<string, string> variables, string name, out Guid id)
+    {
+        id = Guid.Empty;
+
+        return variables.TryGetValue(name, out string? value) && Guid.TryParse(value, out id);
+    }
 }

@@ -13,10 +13,12 @@ using Xunit;
 namespace DDT.Agent.Tests;
 
 // One run with fakes for everything outside the agent: the disk and wimlib (Tools), the other tools (ToolRunner),
-// the server and time. The disk 0 is chosen for the run. Everything on disk lives under Tools.Root, which Dispose
-// removes.
+// the server and time. The disk 0 is chosen for the run, and the server has issued RunToken. Everything on disk lives
+// under Tools.Root, which Dispose removes.
 internal sealed class StepRunnerFixture : IDisposable
 {
+    public const string RunToken = "run-token-1";
+
     public static readonly Guid MachineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
@@ -36,7 +38,8 @@ internal sealed class StepRunnerFixture : IDisposable
             "PC-042");
 
         Log = new AgentLog(Time, TextWriter.Null);
-        Session = new RunSession(MachineId, run, new DeploymentTokens("session", "resume")) { Disk = FakeDeploymentTools.Disk(0) };
+        Session = new RunSession(MachineId, run, new DeploymentTokens("session", "resume", RunToken)) { Disk = FakeDeploymentTools.Disk(0) };
+        Store = new FileRunStateStore(Session.Tokens);
         Downloads = new RunDownloads(Server, Session, Log, Time, TimeSpan.FromSeconds(10));
         Directory.CreateDirectory(WorkDirectory);
     }
@@ -57,10 +60,12 @@ internal sealed class StepRunnerFixture : IDisposable
 
     public RunDownloads Downloads { get; }
 
+    public FileRunStateStore Store { get; }
+
     // Stands in for the agent's own directory, X:\DDT in Windows PE.
     public string WorkDirectory => Path.Combine(Tools.Root, "X");
 
-    public PartitionStepRunner Partition => new(Tools, Session, Log, dryRun: true);
+    public PartitionStepRunner Partition => new(Tools, Session, Store, Log, dryRun: true);
 
     public ApplyImageStepRunner ApplyImage => new(Tools, Downloads, Session, Log);
 

@@ -39,6 +39,22 @@ public sealed class DiskpartPartitionerTests : IDisposable
         Assert.Contains("shrink minimum=2048\r\n", written, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task FindsNothingOnAVolumeThatIsNoDrive()
+    {
+        ImmediateTimeProvider time = new();
+        RecordingToolRunner tools = new();
+        DiskpartPartitioner partitioner = new(tools, new AgentLog(time, TextWriter.Null), time, _work);
+
+        DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => partitioner.FindAsync(
+            new RunDiskIds(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), []),
+            _work,
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal($"{_work} is not a drive, so its partition cannot be read.", exception.Message);
+        Assert.Empty(tools.Calls);
+    }
+
     // Reads this PC's disks with the real IOCTLs and changes nothing. Opening a disk for its size needs an
     // elevated session, as in Windows PE.
     [Fact]

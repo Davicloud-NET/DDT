@@ -15,4 +15,8 @@ public interface IDiskPartitioner
         int systemPartitionMegabytes,
         int recoveryPartitionMegabytes,
         CancellationToken cancellationToken);
+
+    // Finds a run's partitions again after a restart: Windows PE gave the Windows volume at windowsRoot a letter of
+    // its own choosing and the system and recovery partitions none, so they get letters again here.
+    Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken);
 }

@@ -100,6 +100,24 @@ public sealed class DiskEligibilityTests
     }
 
     [Fact]
+    public void FindsThePartitionNumberOfAUniqueGuid()
+    {
+        Guid system = Guid.Parse("7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d");
+        Guid recovery = Guid.Parse("0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0");
+        Guid basicData = Guid.Parse("ebd0a0a2-b9e5-4433-87c0-68b6b72699c7");
+        byte[] layout = GptLayout(
+            (DriveLayoutReader.EfiSystemPartitionType, system),
+            (basicData, Guid.Parse("5e2b1a3c-4d6f-4a8b-9c0d-1e2f3a4b5c6d")),
+            (basicData, Guid.Parse("6e2b1a3c-4d6f-4a8b-9c0d-1e2f3a4b5c6d")),
+            (Guid.Parse("de94bba4-06d1-4d40-a16a-bfd50179d6ac"), recovery));
+
+        Assert.Equal(1u, DriveLayoutReader.PartitionNumberOf(layout, system));
+        Assert.Equal(4u, DriveLayoutReader.PartitionNumberOf(layout, recovery));
+        Assert.Null(DriveLayoutReader.PartitionNumberOf(layout, Guid.Parse("11111111-2222-4333-8444-555555555555")));
+        Assert.Null(DriveLayoutReader.PartitionNumberOf(Layout(DriveLayoutReader.StyleMbr, (1, 0x07)), system));
+    }
+
+    [Fact]
     public void AnMbrDiskHasNoEfiSystemPartitionGuids() =>
         Assert.Empty(DriveLayoutReader.EfiSystemPartitionIds(Layout(DriveLayoutReader.StyleMbr, (1, 0xEF))));
 

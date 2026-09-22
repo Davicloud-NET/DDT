@@ -20,6 +20,7 @@ internal static unsafe partial class DiskNativeMethods
     public const uint IoctlDiskGetDriveLayoutEx = 0x00070050;
     public const uint IoctlDiskGetPartitionInfoEx = 0x00070048;
     public const uint IoctlDiskGetDriveGeometry = 0x00070000;
+    public const uint IoctlStorageGetDeviceNumber = 0x002D1080;
 
     public const int ErrorFileNotFound = 2;
     public const int ErrorPathNotFound = 3;

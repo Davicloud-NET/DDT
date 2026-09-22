@@ -40,6 +40,30 @@ public sealed class DiskpartScriptTests
     }
 
     [Fact]
+    public void GivesARunsPartitionsLettersAgain()
+    {
+        string script = DiskpartScript.AssignLetters(1, 1, 'S', 4, 'R');
+
+        Assert.Equal(
+            "select disk 1\r\n" +
+            "select partition 1\r\n" +
+            "assign letter=S\r\n" +
+            "select partition 4\r\n" +
+            "assign letter=R\r\n" +
+            "exit\r\n",
+            script);
+    }
+
+    [Fact]
+    public void UsesThePartitionSizesItIsGiven()
+    {
+        string script = DiskpartScript.Build(0, 'S', 'W', 'R', 260, 65536);
+
+        Assert.Contains("create partition efi size=260\r\n", script, StringComparison.Ordinal);
+        Assert.Contains("shrink minimum=65536\r\n", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void UsesTheLettersItIsGiven() =>
         Assert.Contains("assign letter=Z\r\n", DiskpartScript.Build(0, 'Z', 'Y', 'X'), StringComparison.Ordinal);
 

@@ -13,26 +13,30 @@ public sealed class SystemOnlyDirectoryTests : IDisposable
 {
     private readonly string _parent = Directory.CreateTempSubdirectory("ddt-acl-").FullName;
 
-    // The test's account created the directory, so as its owner it may still read and change the DACL, and puts one
-    // back that lets it delete the directory.
     public void Dispose()
     {
-        string directory = Path.Combine(_parent, "DDT");
+        Reopen(Path.Combine(_parent, "DDT"));
+        Directory.Delete(_parent, recursive: true);
+    }
 
-        if (Directory.Exists(directory))
+    // The test's account created the directory, so as its owner it may still read and change the DACL, and puts one
+    // back that lets it delete the directory.
+    internal static void Reopen(string directory)
+    {
+        if (!Directory.Exists(directory))
         {
-            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
-            DirectorySecurity open = new();
-            open.AddAccessRule(new FileSystemAccessRule(
-                identity.User!,
-                FileSystemRights.FullControl,
-                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                PropagationFlags.None,
-                AccessControlType.Allow));
-            new DirectoryInfo(directory).SetAccessControl(open);
+            return;
         }
 
-        Directory.Delete(_parent, recursive: true);
+        using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+        DirectorySecurity open = new();
+        open.AddAccessRule(new FileSystemAccessRule(
+            identity.User!,
+            FileSystemRights.FullControl,
+            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+            PropagationFlags.None,
+            AccessControlType.Allow));
+        new DirectoryInfo(directory).SetAccessControl(open);
     }
 
     [Fact]

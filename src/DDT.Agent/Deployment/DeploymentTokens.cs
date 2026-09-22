@@ -5,13 +5,15 @@
 namespace DDT.Agent.Deployment;
 
 // The machine's current session and resume tokens during a run. Every report hands out fresh ones; the download and
-// the unattend request read whatever is current.
-public sealed class DeploymentTokens(string token, string resumeToken)
+// the unattend request read whatever is current. The run token resumes the run after a restart: the server issues it
+// while the run is running and does not rotate it, and the newest one it sent is kept.
+public sealed class DeploymentTokens(string token, string resumeToken, string? runToken = null)
 {
     private readonly Lock _lock = new();
     private TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private string _token = token;
     private string _resumeToken = resumeToken;
+    private string? _runToken = runToken;
 
     public string Token
     {
@@ -35,7 +37,20 @@ public sealed class DeploymentTokens(string token, string resumeToken)
         }
     }
 
-    public void Update(string newToken, string newResumeToken)
+    // Null until the server issued one.
+    public string? RunToken
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _runToken;
+            }
+        }
+    }
+
+    // A null newRunToken keeps the run token there is: an answer without one does not end the run.
+    public void Update(string newToken, string newResumeToken, string? newRunToken = null)
     {
         TaskCompletionSource changed;
 
@@ -43,6 +58,7 @@ public sealed class DeploymentTokens(string token, string resumeToken)
         {
             _token = newToken;
             _resumeToken = newResumeToken;
+            _runToken = newRunToken ?? _runToken;
             changed = _changed;
             _changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }

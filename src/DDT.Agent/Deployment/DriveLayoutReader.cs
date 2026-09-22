@@ -87,6 +87,31 @@ public static class DriveLayoutReader
         return ids;
     }
 
+    // The number of the GPT partition whose unique GUID is id, which diskpart's select partition takes, or null when
+    // the disk has none.
+    public static uint? PartitionNumberOf(ReadOnlySpan<byte> layout, Guid id)
+    {
+        int count = EntryCount(layout, out int style);
+
+        if (style != StyleGpt)
+        {
+            return null;
+        }
+
+        for (int index = 0; index < count; index++)
+        {
+            ReadOnlySpan<byte> entry = Entry(layout, index);
+            uint number = BinaryPrimitives.ReadUInt32LittleEndian(entry[EntryPartitionNumberOffset..]);
+
+            if (number != 0 && new Guid(entry.Slice(EntryGptIdOffset, GuidLength)) == id)
+            {
+                return number;
+            }
+        }
+
+        return null;
+    }
+
     private static int EntryCount(ReadOnlySpan<byte> layout, out int style)
     {
         if (layout.Length < HeaderLength)

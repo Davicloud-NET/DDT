@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Security.AccessControl;
+using System.Security.Principal;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Sequences;
@@ -66,6 +68,47 @@ public sealed class PartitionStepRunnerTests : IDisposable
         Assert.Contains(
             await _run.SentLinesAsync(),
             line => line.Message == $"Dry run: {directory} is left open. In Windows PE only SYSTEM could open it ({SystemOnlyDirectory.Sddl}).");
+    }
+
+    [Fact]
+    public async Task OutsideADryRunOnlySystemCanOpenTheRunsDirectory()
+    {
+        // With no state and no run token yet, the store writes nothing the test's account could no longer write.
+        FileRunStateStore store = new(new DeploymentTokens("session", "resume"));
+        PartitionStepRunner partition = new(_run.Tools, _run.Session, store, _run.Log, dryRun: false);
+        string directory = Path.Combine(_run.Tools.Volumes.Windows, "DDT");
+
+        try
+        {
+            await partition.RunAsync(s_step, _run.Context(), TestContext.Current.CancellationToken);
+
+            DirectorySecurity security = new DirectoryInfo(directory).GetAccessControl(AccessControlSections.Access);
+            Assert.True(security.AreAccessRulesProtected);
+            FileSystemAccessRule rule = Assert.IsType<FileSystemAccessRule>(Assert.Single(security.GetAccessRules(true, true, typeof(SecurityIdentifier))));
+            Assert.Equal(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), rule.IdentityReference);
+            Assert.Equal(FileSystemRights.FullControl, rule.FileSystemRights);
+        }
+        finally
+        {
+            SystemOnlyDirectoryTests.Reopen(directory);
+        }
+    }
+
+    [Fact]
+    public async Task FromHereOnTheRunsStateAndTokenAreOnTheDisk()
+    {
+        SequenceState running = SequenceStates.Start(StepRunnerFixture.RunId, _run.Session.Run.Sequence) with
+        {
+            Steps = [new StepRunState(s_step.Id, StepState.Running, null)],
+        };
+        await _run.Store.SaveAsync(running, TestContext.Current.CancellationToken);
+
+        await _run.Partition.RunAsync(s_step, _run.Context(), TestContext.Current.CancellationToken);
+
+        RunFiles files = RunFiles.In(_run.Tools.Volumes.Windows, _run.Log);
+        Assert.Equal(files.StatePath, _run.Store.Files?.StatePath);
+        Assert.Equal(StepState.Running, (await files.LoadStateAsync(TestContext.Current.CancellationToken))?.Steps[0].State);
+        Assert.Equal(StepRunnerFixture.RunToken, await files.LoadTokenAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -8,7 +8,7 @@ namespace DDT.Agent.Tests;
 
 // Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and records each call in one
 // journal so a test can check their order. FailAt names the call that throws Failure: list, prepare, partition,
-// apply, bcd, firmware or reboot. The volumes are directories in a temporary folder, created by the partitioning,
+// apply, bcd, firmware, reboot or find. The volumes are directories in a temporary folder, created by the partitioning,
 // that Dispose removes.
 internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IDisposable
 {
@@ -148,11 +148,24 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
         return Task.CompletedTask;
     }
 
-    public Task RebootAsync(CancellationToken cancellationToken)
+    // Into Windows it is a plain reboot, as before task sequences.
+    public Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
-        Record("reboot");
+        Record("reboot", into == RestartInto.WindowsPE ? " into Windows PE" : string.Empty);
 
         return Task.CompletedTask;
+    }
+
+    public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
+    {
+        Record("find", $" {ids.Windows}");
+
+        return Task.FromResult(new TargetVolumes(Path.Combine(Root, "S"), windowsRoot, Path.Combine(Root, "R"), ids.ErasedSystemPartitionIds)
+        {
+            SystemPartitionId = ids.System,
+            WindowsPartitionId = ids.Windows,
+            RecoveryPartitionId = ids.Recovery,
+        });
     }
 
     public void Dispose()

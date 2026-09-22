@@ -97,13 +97,14 @@ else
 {
     // The agent's directory is X:\DDT in Windows PE.
     ToolRunner tools = new(log, TimeProvider.System);
+    UefiVariables firmware = new();
     disks = new DiskpartPartitioner(tools, log, TimeProvider.System, AppContext.BaseDirectory);
     runner = new DeploymentRunner(
         server,
         disks,
         new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
-        new BcdbootWriter(tools, new UefiVariables(), log),
-        new WpeutilRebooter(tools),
+        new BcdbootWriter(tools, firmware, log),
+        new WindowsPERebooter(tools, firmware, log),
         log,
         TimeProvider.System,
         DeploymentHeartbeat.DefaultInterval);

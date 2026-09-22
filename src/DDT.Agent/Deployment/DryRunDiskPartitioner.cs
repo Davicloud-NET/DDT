@@ -57,6 +57,28 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         return volumes;
     }
 
+    // The directories are where the partitioning left them; nothing gets a letter.
+    public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        TargetVolumes volumes = Volumes() with { ErasedSystemPartitionIds = ids.ErasedSystemPartitionIds };
+        bool made = ids.Windows == volumes.WindowsPartitionId
+            && string.Equals(
+                Path.TrimEndingDirectorySeparator(Path.GetFullPath(windowsRoot)),
+                Path.TrimEndingDirectorySeparator(Path.GetFullPath(volumes.Windows)),
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!made)
+        {
+            throw new DeploymentStepException($"{windowsRoot} holds a run's state, but not the Windows partition this dry run made, so the run cannot go on.");
+        }
+
+        log.Information($"Dry run: diskpart is not run. The run's partitions are the directories under {root} again.");
+
+        return Task.FromResult(volumes);
+    }
+
     private TargetVolumes Volumes() =>
         new(Path.Combine(root, "S"), Path.Combine(root, "W"), Path.Combine(root, "R"), [])
         {

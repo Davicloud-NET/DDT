@@ -55,6 +55,28 @@ public static class DiskpartScript
             "exit",
         ];
 
+        return Script(lines);
+    }
+
+    // Gives the system and recovery partitions of a run letters again after a restart. The recovery partition keeps
+    // its attributes: they only keep Windows from giving it a letter by itself.
+    public static string AssignLetters(int diskNumber, uint systemPartition, char system, uint recoveryPartition, char recovery)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);
+
+        return Script(
+        [
+            string.Create(CultureInfo.InvariantCulture, $"select disk {diskNumber}"),
+            string.Create(CultureInfo.InvariantCulture, $"select partition {systemPartition}"),
+            $"assign letter={system}",
+            string.Create(CultureInfo.InvariantCulture, $"select partition {recoveryPartition}"),
+            $"assign letter={recovery}",
+            "exit",
+        ]);
+    }
+
+    private static string Script(string[] lines)
+    {
         StringBuilder script = new();
 
         foreach (string line in lines)

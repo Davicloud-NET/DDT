@@ -18,6 +18,7 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
 
     private const int StoragePropertyQueryLength = 12;
     private const int LengthInformationLength = 8;
+    private const int StorageDeviceNumberLength = 12;
     private const int MaxLayoutLength = 1024 * 1024;
 
     private static readonly TimeSpan s_volumeTimeout = TimeSpan.FromSeconds(30);
@@ -79,6 +80,104 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
             WindowsPartitionId = PartitionReader.ReadId(volumes.Windows),
             RecoveryPartitionId = PartitionReader.ReadId(volumes.Recovery),
         };
+    }
+
+    public async Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        if (PartitionReader.ReadId(windowsRoot) != ids.Windows)
+        {
+            throw new DeploymentStepException(
+                $"{windowsRoot} holds a run's state but is not the Windows partition that run made, so the run cannot go on.");
+        }
+
+        int number = ReadDiskNumber(windowsRoot);
+        byte[] layout;
+
+        using (SafeFileHandle disk = OpenDisk(number))
+        {
+            if (disk.IsInvalid)
+            {
+                throw new DeploymentStepException($"Disk {number}, which holds the run's Windows partition, cannot be opened (Windows error {Marshal.GetLastPInvokeError()}).");
+            }
+
+            layout = ReadLayout(disk, number)
+                ?? throw new DeploymentStepException($"The partitions of disk {number} cannot be read, so the run's system and recovery partitions cannot be found.");
+        }
+
+        uint system = PartitionNumber(layout, ids.System, "system", number);
+        uint recovery = PartitionNumber(layout, ids.Recovery, "recovery", number);
+
+        (char systemLetter, _, char recoveryLetter) = DriveLetters.Choose(DiskNativeMethods.GetLogicalDrives());
+        string script = DiskpartScript.AssignLetters(number, system, systemLetter, recovery, recoveryLetter);
+        string path = Path.Combine(workDirectory, "find.txt");
+
+        Directory.CreateDirectory(workDirectory);
+        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+
+        log.Information($"The run's Windows partition is {windowsRoot} on disk {number}. Its system and recovery partitions get letters again:");
+
+        foreach (string line in script.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            log.Information($"  {line}");
+        }
+
+        await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
+
+        TargetVolumes volumes = new($"{systemLetter}:\\", windowsRoot, $"{recoveryLetter}:\\", ids.ErasedSystemPartitionIds)
+        {
+            SystemPartitionId = ids.System,
+            WindowsPartitionId = ids.Windows,
+            RecoveryPartitionId = ids.Recovery,
+        };
+
+        await WaitForVolumeAsync(volumes.System, cancellationToken).ConfigureAwait(false);
+        await WaitForVolumeAsync(volumes.Recovery, cancellationToken).ConfigureAwait(false);
+
+        // The run's end puts the boot files there and points the firmware at it.
+        EspReader.Read(volumes.System);
+
+        return volumes;
+    }
+
+    private static uint PartitionNumber(byte[] layout, Guid id, string what, int disk)
+    {
+        uint? number;
+
+        try
+        {
+            number = DriveLayoutReader.PartitionNumberOf(layout, id);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new DeploymentStepException($"The partitions of disk {disk} cannot be read ({exception.Message}).", exception);
+        }
+
+        return number ?? throw new DeploymentStepException($"The run's {what} partition is no longer on disk {disk}, so the run cannot go on.");
+    }
+
+    // STORAGE_DEVICE_NUMBER: the device type, then the number of \\.\PhysicalDriveN at 4.
+    private static unsafe int ReadDiskNumber(string root)
+    {
+        using SafeFileHandle volume = PartitionReader.OpenVolume(root);
+        byte* number = stackalloc byte[StorageDeviceNumberLength];
+
+        if (!DiskNativeMethods.DeviceIoControl(
+            volume,
+            DiskNativeMethods.IoctlStorageGetDeviceNumber,
+            null,
+            0,
+            number,
+            StorageDeviceNumberLength,
+            out uint returned,
+            0)
+            || returned < StorageDeviceNumberLength)
+        {
+            throw new DeploymentStepException($"The disk that holds {root} cannot be told (Windows error {Marshal.GetLastPInvokeError()}).");
+        }
+
+        return (int)BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(number + 4, 4));
     }
 
     // diskpart assigns letters before it exits, but the volume can still take a moment to mount.

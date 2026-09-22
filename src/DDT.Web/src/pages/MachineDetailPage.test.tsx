@@ -21,7 +21,7 @@ import type {
 } from "@/deployments/deployments";
 import type { LiveConnection, MachineWatchHandlers } from "@/live/liveConnection";
 import { LiveContext } from "@/live/LiveContext";
-import type { MachineSummary } from "@/machines/machines";
+import { upsertMachine, type MachineSummary } from "@/machines/machines";
 import { machineSearch } from "@/machines/machineSearch";
 import type { SequenceStep } from "@/sequences/sequences";
 
@@ -31,6 +31,7 @@ const now = new Date("2026-09-16T10:06:00Z");
 const machineId = "0193a4b2-0000-7000-8000-000000000001";
 const runId = "0193a4b2-0000-7000-8000-0000000000d2";
 const olderRunId = "0193a4b2-0000-7000-8000-0000000000d1";
+const newerRunId = "0193a4b2-0000-7000-8000-0000000000d3";
 
 function run(overrides: Partial<DeploymentSummary>): DeploymentSummary {
   return {
@@ -279,7 +280,7 @@ function renderAt(path: string, answers: Record<string, Answer>) {
     </QueryClientProvider>,
   );
 
-  return { calls, router, watcher };
+  return { calls, router, watcher, queryClient };
 }
 
 function standardAnswers(
@@ -485,6 +486,57 @@ describe("MachineDetailPage", () => {
         "Step 5 of 6: Apply Windows 11, 45%",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("keeps a run's last state in the history once another run is current", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now });
+    const historyCall = `GET /api/machines/${machineId}/deployments`;
+    const answers = standardAnswers([machine({})], [run({})], [view({})]);
+    const { calls, queryClient } = renderAt(`/machines/${machineId}`, answers);
+
+    const history = await screen.findByRole("region", { name: "History" });
+    await within(history).findByText("Running");
+
+    const done = run({
+      state: "Done",
+      activity: null,
+      finishedUtc: "2026-09-16T10:05:50Z",
+      updatedUtc: "2026-09-16T10:05:50Z",
+    });
+    act(() => {
+      upsertMachine(queryClient, machine({ state: "Done", deployment: done }));
+    });
+    await within(history).findByText("Done");
+
+    const next = run({
+      id: newerRunId,
+      state: "Assigned",
+      stepIndex: null,
+      stepName: null,
+      percent: 0,
+      phase: null,
+      activity: null,
+      createdUtc: "2026-09-16T10:05:55Z",
+      startedUtc: null,
+      updatedUtc: "2026-09-16T10:05:55Z",
+    });
+    answers[historyCall] = { body: [next, done] };
+    act(() => {
+      upsertMachine(queryClient, machine({ state: "Approved", deployment: next }));
+    });
+
+    await waitFor(() => {
+      expect(
+        within(history)
+          .getAllByRole("row")
+          .map((row) => row.textContent),
+      ).toEqual([
+        "SequenceStateSourceAssignedDuration",
+        expect.stringMatching(/AssignedAssigned on the weboperator.*Not started$/),
+        expect.stringMatching(/DoneAssigned on the weboperator.*4 min 50 s$/),
+      ]);
+    });
+    expect(calls.filter((call) => call === historyCall)).toHaveLength(2);
   });
 
   it.each([

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 import {
   deploymentQuery,
@@ -49,10 +50,27 @@ export function useRunDetail(machineId: string, pinnedRunId: string | null) {
         : false,
   });
   const machine = machines.data?.find((candidate) => candidate.id === machineId) ?? null;
+  const current = machine?.deployment ?? null;
+
+  // The history takes only the current run from the machine list, so a run that stops being current keeps
+  // its last copy from there, and the history is read again.
+  const lastCurrent = useRef(current);
+  useEffect(() => {
+    const previous = lastCurrent.current;
+    lastCurrent.current = current;
+
+    if (previous !== null && previous.id !== current?.id) {
+      const key = machineDeploymentsQuery(machineId).queryKey;
+      queryClient.setQueryData(key, (runs) =>
+        runs === undefined ? runs : withCurrentRun(runs, previous),
+      );
+      void queryClient.invalidateQueries({ queryKey: key });
+    }
+  }, [current, machineId, queryClient]);
 
   const history = useQuery(machineDeploymentsQuery(machineId));
-  const runs = withCurrentRun(history.data ?? [], machine?.deployment ?? null);
-  const runId = pinnedRunId ?? machine?.deployment?.id ?? runs[0]?.id ?? null;
+  const runs = withCurrentRun(history.data ?? [], current);
+  const runId = pinnedRunId ?? current?.id ?? runs[0]?.id ?? null;
   const listed = runs.find((run) => run.id === runId) ?? null;
 
   const detail = useQuery({
@@ -67,8 +85,6 @@ export function useRunDetail(machineId: string, pinnedRunId: string | null) {
       : view === undefined
         ? listed
         : newerRun(listed, view.summary);
-
-  const current = machine?.deployment ?? null;
 
   return {
     status,

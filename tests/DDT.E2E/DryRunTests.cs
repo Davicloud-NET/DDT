@@ -1,0 +1,393 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Globalization;
+using System.Net;
+using System.Text.Json;
+using DDT.Contracts;
+using DDT.Contracts.Deployments;
+using DDT.Contracts.Machines;
+using DDT.Contracts.Rules;
+using DDT.Contracts.Sequences;
+using DDT.Server.Data;
+using Xunit;
+
+namespace DDT.E2E;
+
+// The real host and the published agent in dry runs, which run whole task sequences on this computer without changing
+// it: every run goes through Windows PE and, after the hand-over, the installed Windows in one agent process.
+[Trait("Category", "E2E")]
+public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
+{
+    // The agent's exit codes: stopped, and a run that finished.
+    private const int Stopped = 0;
+    private const int Deployed = 4;
+
+    private const string StoppedError = "Stopped by admin.";
+    private const string InterruptedError = "The machine restarted or the agent stopped while this step ran.";
+    private const string TokenRefused = "The server no longer accepts this machine's token";
+
+    private static readonly TimeSpan s_runTimeout = TimeSpan.FromMinutes(3);
+
+    [Fact(Timeout = 600_000)]
+    public async Task AWholeSequenceRunsThroughBothPhasesAndTheAgentRemovesItself()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        PartitionStep partition = Partition();
+        RunScriptStep phase = Script("Show the phase", SequencePhase.WindowsPE, "echo %DDT_PHASE% %DDT_WINDOWS%");
+        RunScriptStep skipped = Script("Only on another model", SequencePhase.WindowsPE, "echo not here") with
+        {
+            Conditions = [new StepCondition(MachineVariableNames.Model, ConditionOperator.Equals, "Another model")],
+        };
+
+        // A dry run takes every script's exit code as 0, so this one fails by accepting only 1.
+        RunScriptStep failing = Script("Fails, and the run goes on", SequencePhase.WindowsPE, "exit /b 1") with
+        {
+            ContinueOnError = true,
+            SuccessExitCodes = [1],
+        };
+        RebootStep restartWindowsPE = new() { Id = Guid.CreateVersion7(), Name = "Restart Windows PE" };
+        RunScriptStep afterRestart = Script("After the restart", SequencePhase.WindowsPE, "echo again");
+        ApplyImageStep apply = new() { Id = Guid.CreateVersion7(), Name = "Apply the image", ImageId = lab.Image.Id };
+        InjectDriversStep drivers = new() { Id = Guid.CreateVersion7(), Name = "Add drivers", RequireMatch = true };
+        WriteUnattendStep unattend = new() { Id = Guid.CreateVersion7(), Name = "Write the answer file", LocalAdministrator = true };
+        RunScriptStep powerShell = Script("PowerShell in Windows", SequencePhase.Windows, "Write-Output $env:DDT_PHASE", ScriptInterpreter.PowerShell);
+        RebootStep restartWindows = new() { Id = Guid.CreateVersion7(), Name = "Restart Windows" };
+        RunScriptStep packaged = Script("Script from a package", SequencePhase.Windows, "type readme.txt") with { PackageId = lab.Files.Id };
+        JoinDomainStep join = new() { Id = Guid.CreateVersion7(), Name = "Join the domain" };
+
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Whole run",
+            [partition, phase, skipped, failing, restartWindowsPE, afterRestart, apply, drivers, unattend, powerShell, restartWindows, packaged, join],
+            cancellationToken);
+
+        await using AgentProcess agent = lab.StartAgent();
+        MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
+        Assert.Equal(MachineState.Pending, machine.State);
+        await lab.Live.WatchAsync(machine.Id, cancellationToken);
+
+        // Once approved, the agent sends the lines it kept while it waited, which belong to no run.
+        Assert.Equal(MachineState.Approved, (await lab.ApproveAsync(machine.Id, null, cancellationToken)).State);
+        MachineLogAppendedEvent firstPush = await lab.Live.WaitForLogPushAsync(machine.Id, TimeSpan.FromMinutes(1), () => agent.Output.Tail(), cancellationToken);
+
+        string computerName = string.Create(CultureInfo.InvariantCulture, $"E2E-{agent.DryRunId % 100_000:D5}");
+        DeploymentSummary assigned = (await lab.AssignAsync(machine.Id, sequence.Id, computerName, cancellationToken)).Deployment!;
+        Assert.Equal((DeploymentState.Assigned, DeploymentSource.Web), (assigned.State, assigned.Source));
+
+        Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+        AssertRemovedItself(agent);
+        Assert.Equal(1, agent.Output.Count("Windows restarts once more, which deletes what is left of the agent."));
+
+        DeploymentView run = await lab.RunAsync(assigned.Id, cancellationToken);
+        Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+        Assert.Equal(
+            [
+                (partition.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (phase.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (skipped.Id, SequencePhase.WindowsPE, StepState.Skipped, null),
+                (failing.Id, SequencePhase.WindowsPE, StepState.Failed, "The script ended with exit code 0, which is not one of its success codes (1)."),
+                (restartWindowsPE.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (afterRestart.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (apply.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (drivers.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (unattend.Id, SequencePhase.WindowsPE, StepState.Done, null),
+                (powerShell.Id, SequencePhase.Windows, StepState.Done, null),
+                (restartWindows.Id, SequencePhase.Windows, StepState.Done, null),
+                (packaged.Id, SequencePhase.Windows, StepState.Done, null),
+                (join.Id, SequencePhase.Windows, StepState.Done, (string?)null),
+            ],
+            run.Steps.Select(step => (step.StepId, step.Phase, step.State, step.Error)));
+        Assert.All(
+            run.Steps.Where(step => step.State != StepState.Skipped),
+            step => Assert.True(step.StartedUtc <= step.FinishedUtc, $"{step.Name} has no times."));
+
+        // Every step's end reached the page that watched the machine.
+        Assert.All(run.Steps, step => Assert.Contains(lab.Live.StepPushes(machine.Id), pushed => (pushed.StepId, pushed.State) == (step.StepId, step.State)));
+
+        // The run keeps what it was assigned, whatever happens to the sequence later.
+        Assert.Equal(sequence.Revision, run.SequenceRevision);
+        Assert.Equal(Json(sequence.Definition), Json(run.Definition!));
+        Assert.Equal(
+            [
+                (apply.Id, ArtifactKind.Image, lab.Image.Id, lab.Image.Sha256),
+                (drivers.Id, ArtifactKind.Drivers, lab.Drivers.Id, lab.Drivers.Sha256),
+                (packaged.Id, ArtifactKind.Files, lab.Files.Id, lab.Files.Sha256),
+            ],
+            run.Artifacts.OrderBy(artifact => artifact.Kind).Select(artifact => (artifact.StepId, artifact.Kind, artifact.SourceId, artifact.Sha256)));
+        await lab.Api.SendAsync(
+            HttpMethod.Put,
+            $"api/sequences/{sequence.Id:D}",
+            new SaveSequenceRequest(
+                sequence.Revision,
+                sequence.Name,
+                sequence.Description,
+                sequence.Definition with { Steps = [partition with { Name = "Renamed after the run" }, .. sequence.Definition.Steps.Skip(1)] }),
+            DdtJsonContext.Default.SaveSequenceRequest,
+            DdtJsonContext.Default.SequenceView,
+            HttpStatusCode.OK,
+            cancellationToken);
+        Assert.Equal(Json(sequence.Definition), Json((await lab.RunAsync(assigned.Id, cancellationToken)).Definition!));
+
+        // Partitioned once: after its restart, Windows PE found the run's partitions again.
+        Assert.Equal(1, agent.Output.Count($"Dry run: the new volumes are the directories under {agent.Root}."));
+        Assert.Equal(1, agent.Output.Count($"Dry run: diskpart is not run. The run's partitions are the directories under {agent.Root} again."));
+        Assert.Equal(1, agent.Output.Count("Dry run: wimlib is not run. It would apply image 1 (DDT E2E Windows"));
+        Assert.Equal(1, agent.Output.Count($"Dry run: this computer does not join {DryRunLab.Domain}."));
+
+        // Every start after the first went on with the run: Windows PE after its restart, and Windows after the
+        // hand-over and after each of its two restarts. The answer file and the join account were read once each.
+        IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(assigned.Id, cancellationToken);
+        Assert.Equal(
+            ["WindowsPE", "Windows", "Windows", "Windows"],
+            audit.Where(entry => entry.Action == "deployment.resumed").OrderBy(entry => entry.Id).Select(ResumedIn));
+        Assert.Equal(2, audit.Count(entry => entry.Action == "deployment.secret-read"));
+        Assert.All(audit.Where(entry => entry.Action is "deployment.resumed" or "deployment.secret-read"), entry => Assert.NotNull(entry.SourceAddress));
+
+        MachineLogEntry[] lines = await CheckLogAsync(machine.Id, assigned.Id, apply.Id, firstPush, cancellationToken);
+
+        lab.AssertClean(
+            [agent],
+            ["Step Fails, and the run goes on failed after"],
+            ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)),
+            ("The machine's log", string.Join(Environment.NewLine, lines.Select(line => line.Message))));
+    }
+
+    [Fact(Timeout = 600_000)]
+    public async Task AStopInTheWindowsPhaseEndsTheRunAndTheAgentRemovesItself()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        RunScriptStep packaged = Script("Script from a large package", SequencePhase.Windows, "Get-ChildItem", ScriptInterpreter.PowerShell) with
+        {
+            PackageId = lab.LargeFiles.Id,
+        };
+        RunScriptStep after = Script("After the stop", SequencePhase.Windows, "echo after");
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Stopped in Windows",
+            [Partition(), new ApplyImageStep { Id = Guid.CreateVersion7(), Name = "Apply the image", ImageId = lab.Image.Id }, packaged, after],
+            cancellationToken);
+
+        await using AgentProcess agent = lab.StartAgent(slowDownloads: true);
+        (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
+
+        // While the service in Windows downloads the package, which takes far longer than the agent's next call.
+        await agent.WaitForDownloadAsync(lab.LargeFiles.Sha256, s_runTimeout, cancellationToken);
+        DeploymentSummary stopped = (await lab.Api.SendAsync(
+            HttpMethod.Delete,
+            $"api/machines/{machineId:D}/deployments/current",
+            DdtJsonContext.Default.MachineSummary,
+            cancellationToken)).Deployment!;
+        Assert.Equal((DeploymentState.Failed, StoppedError), (stopped.State, stopped.Error));
+
+        // The agent learns of the stop at its next call, which stops the step, and runs nothing after it.
+        Assert.Equal(Stopped, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+        Assert.Equal(1, agent.Output.Count($"Step {packaged.Name} was stopped"));
+        Assert.Equal(0, agent.Output.Count($"Step {after.Name} begins."));
+        AssertRemovedItself(agent);
+        Assert.Equal(0, agent.Output.Count("Windows restarts once more"));
+
+        // The server keeps the run as the stop left it: the package's step failed with it if a call had reported it as
+        // running, and is pending otherwise.
+        DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+        Assert.Equal((DeploymentState.Failed, SequencePhase.Windows, StoppedError), (run.Summary.State, run.Summary.Phase, run.Summary.Error));
+        Assert.Equal([StepState.Done, StepState.Done], run.Steps.Take(2).Select(step => step.State));
+        Assert.Contains((run.Steps[2].State, run.Steps[2].Error), (IEnumerable<(StepState, string?)>)[(StepState.Pending, null), (StepState.Failed, StoppedError)]);
+        Assert.Equal((StepState.Pending, null), (run.Steps[3].State, run.Steps[3].Error));
+
+        lab.AssertClean(
+            [agent],
+            [TokenRefused, $"Step {packaged.Name} was stopped."],
+            ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
+    }
+
+    [Fact(Timeout = 600_000)]
+    public async Task AnAgentKilledDuringApplyImageFailsTheInterruptedStepWhenItStartsAgain()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        ApplyImageStep apply = new() { Id = Guid.CreateVersion7(), Name = "Apply the large image", ImageId = lab.LargeImage.Id };
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Killed while applying",
+            [Partition(), apply, Script("After the image", SequencePhase.WindowsPE, "echo after")],
+            cancellationToken);
+
+        await using AgentProcess first = lab.StartAgent(slowDownloads: true);
+        (_, Guid runId) = await AuthorizeAsync(first, sequence, null, cancellationToken);
+
+        // While the image downloads, as a power loss would.
+        await first.WaitForDownloadAsync(lab.LargeImage.Sha256, s_runTimeout, cancellationToken);
+        await first.KillAsync();
+        Assert.True(Directory.Exists(first.Root), "The dry run's disk went with the agent.");
+
+        // Until the run ends either way, so a wrong end fails at once rather than after the timeout.
+        await using AgentProcess second = lab.StartAgent(first.DryRunId);
+        DeploymentView run = await Eventually.GetAsync(
+            "The end of the interrupted run",
+            s_runTimeout,
+            async call => await lab.RunAsync(runId, call) is { Summary.State: DeploymentState.Done or DeploymentState.Failed } ended ? ended : null,
+            () => second.Output.Tail(),
+            cancellationToken);
+        Assert.Equal((DeploymentState.Failed, InterruptedError), (run.Summary.State, run.Summary.Error));
+        Assert.Equal(
+            [(StepState.Done, null), (StepState.Failed, InterruptedError), (StepState.Pending, (string?)null)],
+            run.Steps.Select(step => (step.State, step.Error)));
+
+        // The step failed without running again, and the run's disk went with the failure.
+        Assert.Equal(0, second.Output.Count("Downloading"));
+        await Eventually.WaitAsync(
+            "The removal of the dry run's disk",
+            TimeSpan.FromMinutes(1),
+            _ => Task.FromResult(!Directory.Exists(second.Root)),
+            () => second.Output.Tail(),
+            cancellationToken);
+
+        IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
+        Assert.Equal(["WindowsPE"], audit.Where(entry => entry.Action == "deployment.resumed").Select(ResumedIn));
+
+        lab.AssertClean([first, second], [$"The run failed: {InterruptedError}"]);
+    }
+
+    [Fact(Timeout = 600_000)]
+    public async Task AModelRuleLeavesANewMachinePendingUntilAnOperatorApprovesItsSequence()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        // Before a partition, Windows PE cannot restart, so the script cannot ask for it.
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Chosen by a rule",
+            [Script("Chosen by a rule", SequencePhase.WindowsPE, "echo chosen") with { RebootExitCodes = [] }],
+            cancellationToken);
+        AssignmentRuleView rule = await lab.Api.SendAsync(
+            HttpMethod.Post,
+            "api/rules",
+            new SaveAssignmentRuleRequest(AssignmentRuleKind.Model, null, DryRunLab.Manufacturer, DryRunLab.Model, sequence.Id, "Made by the end-to-end tests."),
+            DdtJsonContext.Default.SaveAssignmentRuleRequest,
+            DdtJsonContext.Default.AssignmentRuleView,
+            HttpStatusCode.Created,
+            cancellationToken);
+
+        try
+        {
+            await using AgentProcess agent = lab.StartAgent();
+            MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
+
+            // The rule chose the sequence, but nothing runs and nothing is authorized until an operator approves.
+            Assert.Equal((MachineState.Pending, null), (machine.State, machine.Deployment));
+            MachineSequenceResolution resolution = await lab.Api.GetAsync(
+                $"api/machines/{machine.Id:D}/sequence",
+                DdtJsonContext.Default.MachineSequenceResolution,
+                cancellationToken);
+            Assert.Equal((SequenceResolutionSource.ModelRule, sequence.Id, rule.Id), (resolution.Source, resolution.SequenceId, resolution.RuleId));
+            Assert.Empty(await lab.RunsAsync(machine.Id, cancellationToken));
+
+            MachineSummary approved = await lab.ApproveAsync(machine.Id, sequence.Id, cancellationToken);
+            Assert.Equal(
+                (MachineState.Approved, DeploymentState.Assigned, DeploymentSource.Rule),
+                (approved.State, approved.Deployment!.State, approved.Deployment.Source));
+
+            Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+            Assert.False(Directory.Exists(agent.Root), $"The dry run's disk {agent.Root} is still there.");
+            Assert.Equal(1, agent.Output.Count("waiting to be authorized"));
+
+            DeploymentView run = await lab.RunAsync(approved.Deployment.Id, cancellationToken);
+            Assert.Equal(
+                (DeploymentState.Done, DeploymentSource.Rule, rule.Id, "admin"),
+                (run.Summary.State, run.Summary.Source, run.RuleId, run.Summary.RequestedBy));
+
+            lab.AssertClean([agent], []);
+        }
+        finally
+        {
+            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None);
+        }
+    }
+
+    // Approved and assigned on the web, as an operator does for a machine waiting at its prompt. The machine is
+    // watched first, so no push about its run is missed. Returns the machine and its run.
+    private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(
+        AgentProcess agent,
+        SequenceView sequence,
+        string? computerName,
+        CancellationToken cancellationToken)
+    {
+        MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
+        await lab.Live.WatchAsync(machine.Id, cancellationToken);
+        await lab.ApproveAsync(machine.Id, null, cancellationToken);
+        MachineSummary assigned = await lab.AssignAsync(machine.Id, sequence.Id, computerName, cancellationToken);
+
+        return (machine.Id, assigned.Deployment!.Id);
+    }
+
+    // The log before the run, the run's own lines, pages back and forth, and the pushes that announced them.
+    private async Task<MachineLogEntry[]> CheckLogAsync(
+        Guid machineId,
+        Guid runId,
+        Guid applyStepId,
+        MachineLogAppendedEvent firstPush,
+        CancellationToken cancellationToken)
+    {
+        MachineLogPage all = await lab.LogAsync(machineId, "limit=1000", cancellationToken);
+        MachineLogEntry[] lines = [.. all.Lines];
+        Assert.False(all.HasOlder);
+        Assert.True(lines.Length > 40, $"The machine's log has only {lines.Length} lines.");
+        Assert.Contains(lines, line => line.DeploymentId is null);
+
+        MachineLogPage ofRun = await lab.LogAsync(machineId, $"deploymentId={runId:D}&limit=1000", cancellationToken);
+        Assert.Equal(lines.Where(line => line.DeploymentId == runId).Select(line => line.Id), ofRun.Lines.Select(line => line.Id));
+        Assert.InRange(ofRun.Lines.Count, 1, lines.Length - 1);
+        Assert.Contains(ofRun.Lines, line => line.StepId == applyStepId);
+
+        MachineLogPage newest = await lab.LogAsync(machineId, "limit=10", cancellationToken);
+        Assert.True(newest.HasOlder);
+        Assert.Equal(lines[^10..].Select(line => line.Id), newest.Lines.Select(line => line.Id));
+        MachineLogPage older = await lab.LogAsync(machineId, $"before={newest.Lines[0].Id}&limit=10", cancellationToken);
+        Assert.Equal(lines[^20..^10].Select(line => line.Id), older.Lines.Select(line => line.Id));
+        MachineLogPage later = await lab.LogAsync(machineId, $"after={lines[4].Id}&limit=10", cancellationToken);
+        Assert.Equal(lines[5..15].Select(line => line.Id), later.Lines.Select(line => line.Id));
+
+        // The first push came before the run, and the last one names the last line.
+        Assert.Contains(lines, line => line.Id == firstPush.LastLineId && line.DeploymentId is null);
+        await Eventually.WaitAsync(
+            "A push for the machine's last line",
+            TimeSpan.FromSeconds(10),
+            _ => Task.FromResult(lab.Live.LogPushes(machineId)[^1].LastLineId == lines[^1].Id),
+            () => string.Join(", ", lab.Live.LogPushes(machineId).Select(push => push.LastLineId)),
+            cancellationToken);
+        long[] pushed = [.. lab.Live.LogPushes(machineId).Select(push => push.LastLineId)];
+        Assert.Equal(pushed.Order(), pushed);
+
+        return lines;
+    }
+
+    // In the dry run's terms, as it only logs what the removal would change: the service deleted, and what is left of
+    // the agent marked for deletion when Windows next starts. The dry run's disk goes whatever the removal did.
+    private static void AssertRemovedItself(AgentProcess agent)
+    {
+        Assert.Equal(1, agent.Output.Count("The run is over here, so the agent removes itself."));
+        Assert.Equal(1, agent.Output.Count($"Dry run: not run: {Path.Combine(Environment.SystemDirectory, "sc.exe")} delete DdtSequence"));
+        Assert.Equal(1, agent.Output.Count($"Dry run: in Windows, {Path.Combine(agent.Root, "W", "DDT")} would be marked for deletion when Windows next starts."));
+        Assert.False(Directory.Exists(agent.Root), $"The dry run's disk {agent.Root} is still there.");
+    }
+
+    private static PartitionStep Partition() => new() { Id = Guid.CreateVersion7(), Name = "Partition" };
+
+    private static RunScriptStep Script(string name, SequencePhase phase, string script, ScriptInterpreter interpreter = ScriptInterpreter.Cmd) =>
+        new() { Id = Guid.CreateVersion7(), Name = name, Phase = phase, Interpreter = interpreter, Script = script };
+
+    private static string Json(SequenceDefinition definition) => JsonSerializer.Serialize(definition, DdtJsonContext.Default.SequenceDefinition);
+
+    // Where the agent went on, from "Continued <title> (<run>) from Windows with its run token.".
+    private static string ResumedIn(AuditEvent resumed) =>
+        resumed.Detail switch
+        {
+            { } detail when detail.Contains(" from WindowsPE ", StringComparison.Ordinal) => "WindowsPE",
+            { } detail when detail.Contains(" from Windows ", StringComparison.Ordinal) => "Windows",
+            var detail => detail ?? string.Empty,
+        };
+}

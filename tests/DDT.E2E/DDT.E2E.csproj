@@ -3,10 +3,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- For the database the host writes, which the tests read. -->
+    <ProjectReference Include="..\..\src\DDT.Server\DDT.Server.csproj" />
+
+    <!-- Built with the tests, which start it as a process of its own. -->
+    <ProjectReference Include="..\..\src\DDT.Host\DDT.Host.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

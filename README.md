@@ -90,7 +90,7 @@ tests/
   DDT.Pxe.Tests/
   DDT.Server.Tests/
   DDT.Agent.Tests/
-  DDT.E2E/                 end-to-end checks, trait Category=E2E, not in the default test run
+  DDT.E2E/                 the real host and the published agent in dry runs, not in the default run
 build/
   Dockerfile
   compose.yaml
@@ -130,6 +130,18 @@ an elevated prompt or real hardware carry the same trait. Server tests run the r
 and a temporary store directory, not an in-memory store, because images are served as files. The
 PostgreSQL tests, of the migrations and of a run, start a PostgreSQL container and run only while
 Docker is running; they are skipped otherwise.
+
+```bash
+dotnet test --project tests/DDT.E2E
+```
+
+runs whole task sequences end to end on this PC, in about a minute and a half. It publishes the
+agent from the sources with `build\Publish-Agent.ps1`, and is skipped when vswhere finds no Visual
+C++ build tools, which the publish needs; any other failure to publish fails it. It starts the host
+on a free localhost port with SQLite and a store in a temporary directory, uploads made-up images
+and packages, and runs the agent in dry runs, which change nothing on the PC, against it. The
+processes it starts end with it, even when it is killed, and its temporary directories go when it
+ends or is cancelled.
 
 Run the whole development stack, host plus SPA dev server, through Aspire:
 
@@ -1322,8 +1334,9 @@ browser against the server. A reverse proxy has not been tried yet.
 Task sequences (M5), which replace M4's fixed list of deployment steps, are built: sequences and
 their editor, packages, rules, runs in Windows PE and in the installed Windows, the machine page
 with its live log and clock correction, DDT's own root certificate with renewal, and PowerShell in
-the boot image. They are tested with fakes and with the dry run through both phases, not yet on a
-machine. The maintainer's run on the Hyper-V test machine is still to come, and checks:
+the boot image. They are tested with fakes, and end to end in `DDT.E2E`, where the real host runs
+whole sequences with the published agent in dry runs through both phases; not yet on a machine. The
+maintainer's run on the Hyper-V test machine is still to come, and checks:
 
 - the certificate switch with its one boot image rebuild, with the size of `boot.wim` and the
   netboot time before and after PowerShell and at TFTP windows of 4, 8 and 16, and a forced renewal

@@ -25,32 +25,6 @@ public sealed class ImageLibraryTests(DdtApplication application) : IClassFixtur
 
     private ImageStore Store => application.Services.GetRequiredService<ImageStore>();
 
-    private async Task<Guid> AddDeploymentAsync(Image image, DeploymentState state)
-    {
-        using RegisteredMachine machine = await application.RegisterMachineAsync();
-        using IServiceScope scope = application.Services.CreateScope();
-        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-        Deployment deployment = new()
-        {
-            Id = Guid.CreateVersion7(),
-            MachineId = machine.Id,
-            ImageId = image.Id,
-            ImageName = image.Name,
-            Sha256 = image.Sha256,
-            SizeBytes = image.SizeBytes,
-            WimIndex = image.WimIndex,
-            State = state,
-            Source = DeploymentSource.Web,
-            CreatedUtc = DateTimeOffset.UtcNow,
-            UpdatedUtc = DateTimeOffset.UtcNow,
-        };
-
-        database.Deployments.Add(deployment);
-        await database.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        return deployment.Id;
-    }
-
     private async Task SetStateAsync(Guid deploymentId, DeploymentState state)
     {
         using IServiceScope scope = application.Services.CreateScope();
@@ -113,7 +87,7 @@ public sealed class ImageLibraryTests(DdtApplication application) : IClassFixtur
     {
         SignedInClient administrator = await application.AdministratorAsync();
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(64));
-        Guid deploymentId = await AddDeploymentAsync(image, DeploymentState.Assigned);
+        Guid deploymentId = await application.AddAssignedRunAsync(ArtifactKind.Image, image.Id, image.Sha256);
 
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{Images}/{image.Id}")).StatusCode);
 
@@ -121,7 +95,7 @@ public sealed class ImageLibraryTests(DdtApplication application) : IClassFixtur
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{Images}/{image.Id}")).StatusCode);
         Assert.True(File.Exists(Store.ObjectPath(image.Sha256)));
 
-        // A finished deployment keeps its copy of the image's details, so the image can go.
+        // A finished run keeps its copy of the image's details, so the image can go.
         await SetStateAsync(deploymentId, DeploymentState.Done);
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{Images}/{image.Id}")).StatusCode);
         Assert.False(File.Exists(Store.ObjectPath(image.Sha256)));

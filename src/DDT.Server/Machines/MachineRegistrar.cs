@@ -163,7 +163,7 @@ public sealed partial class MachineRegistrar(
             machine,
             address,
             zeroTouch
-                ? $"Kept approved for {active!.ImageName} assigned by {active.RequestedByName}: netbooted from {address} in a zero touch network."
+                ? $"Kept approved for {active!.Title} assigned by {active.RequestedByName}: netbooted from {address} in a zero touch network."
                 : $"Was {machine.State}."));
 
         deployments.EndForRestart(machine, active, address);

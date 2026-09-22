@@ -6,25 +6,31 @@ using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Core.Unattend;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using DDT.Server.Rules;
 using DDT.Server.Security;
+using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
-// Which deployment a machine has and what may happen to it, for the web endpoints, the agent endpoints and the
-// registrar alike. Nothing here saves. The caller saves the change together with its audit rows, so the
-// concurrency tokens on Machine.State, TokenGeneration and ActiveDeploymentId settle every race between an
-// assignment, a pick, a cancel, a report and a registration.
+// Which run a machine has and what may happen to it, for the web endpoints, the agent endpoints and the registrar
+// alike. Nothing here saves. The caller saves the change together with its audit rows, so the concurrency tokens on
+// Machine.State, TokenGeneration and ActiveDeploymentId settle every race between an assignment, a pick, a cancel,
+// a report and a registration. A caller that creates a run holds ImageStore.LibraryLock, so nothing the run
+// downloads can be deleted between the lookup and the save.
 public sealed class DeploymentService(
     DdtDbContext database,
     UserManager<DdtUser> users,
+    SequenceCatalog catalog,
+    SequenceResolver resolver,
     IOptions<MachineOptions> machineOptions,
     IOptions<DeploymentOptions> deploymentOptions,
     ZeroTouchNetworks zeroTouchNetworks,
@@ -35,8 +41,6 @@ public sealed class DeploymentService(
     public const string DeployableArchitecture = "x64";
 
     private const string SomeOperator = "an operator";
-
-    private const string CurrentStep = "Ask the server for the current deployment and report its current step.";
 
     public bool DomainConfigured => !string.IsNullOrWhiteSpace(deploymentOptions.Value.Domain.Name);
 
@@ -52,44 +56,38 @@ public sealed class DeploymentService(
             : null;
     }
 
-    // What the Machines page shows: the active deployment, else the one that ended last.
+    // What the Machines page shows: the active run, else the one created last.
     public async Task<Deployment?> ShownAsync(Machine machine, CancellationToken cancellationToken)
     {
-        if (await ActiveAsync(machine, cancellationToken).ConfigureAwait(false) is { } active)
-        {
-            return active;
-        }
+        ArgumentNullException.ThrowIfNull(machine);
 
-        List<Deployment> deployments = await database.Deployments
-            .Where(d => d.MachineId == machine.Id)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return Latest(deployments);
+        return (machine.ActiveDeploymentId ?? machine.LastDeploymentId) is { } id
+            ? await database.Deployments.FindAsync([id], cancellationToken).ConfigureAwait(false)
+            : null;
     }
 
-    // One query for the whole list. SQLite cannot order by DateTimeOffset, so the latest is chosen here.
+    // One query for the whole list, which loads one run per machine.
     public async Task<IReadOnlyDictionary<Guid, Deployment>> ShownForAsync(
         IReadOnlyCollection<Machine> machines,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machines);
 
-        Dictionary<Guid, Guid?> active = machines.ToDictionary(m => m.Id, m => m.ActiveDeploymentId);
+        List<Guid> ids = [.. machines.Select(m => m.ActiveDeploymentId ?? m.LastDeploymentId).OfType<Guid>().Distinct()];
 
-        List<Deployment> deployments = await database.Deployments
-            .AsNoTracking()
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+        List<Deployment> deployments = ids.Count == 0
+            ? []
+            : await database.Deployments
+                .AsNoTracking()
+                .Where(d => ids.Contains(d.Id))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-        return deployments
-            .Where(d => active.ContainsKey(d.MachineId))
-            .GroupBy(d => d.MachineId)
-            .ToDictionary(g => g.Key, g => g.FirstOrDefault(d => d.Id == active[g.Key]) ?? Latest(g)!);
+        return deployments.ToDictionary(d => d.MachineId);
     }
 
     // Someone who may deploy signed in at this machine in its current token generation, and nothing is assigned.
-    public async Task<bool> CanPickImageAsync(Machine machine, CancellationToken cancellationToken)
+    public async Task<bool> CanPickAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         cancellationToken.ThrowIfCancellationRequested();
@@ -109,20 +107,53 @@ public sealed class DeploymentService(
                 || await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false));
     }
 
-    public async Task<IReadOnlyList<Image>> DeployableImagesAsync(CancellationToken cancellationToken)
+    // The sequences a technician at the machine can choose: only those that can run, with what each needs.
+    public async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(Machine machine, CancellationToken cancellationToken)
     {
-        List<Image> images = await database.Images
-            .AsNoTracking()
-            .Where(i => i.Architecture == DeployableArchitecture)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(machine);
 
-        return [.. images.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ThenBy(i => i.Id)];
+        List<TaskSequence> sequences = await database.TaskSequences.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
+        Guid? suggested = await SuggestedAsync(machine, references, cancellationToken).ConfigureAwait(false);
+        List<AgentSequenceChoice> choices = [];
+
+        foreach (TaskSequence sequence in sequences.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Id))
+        {
+            SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
+
+            if (SequenceChecks.Check(definition, references).Problems.Count > 0)
+            {
+                continue;
+            }
+
+            IReadOnlyList<DeploymentArtifact> artifacts = RunSnapshots.Artifacts(Guid.Empty, definition, references, machine);
+
+            choices.Add(new AgentSequenceChoice(
+                sequence.Id,
+                sequence.Name,
+                sequence.Description,
+                Erases(definition),
+                JoinsDomain(definition),
+                RunSnapshots.RequiredBytes(definition, artifacts),
+                sequence.Id == suggested));
+        }
+
+        return choices;
+    }
+
+    // The sequence an assignment rule chooses for the machine, offered first at the console. Only one that can run.
+    public async Task<Guid?> SuggestedAsync(Machine machine, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
+
+        return await SuggestedAsync(machine, references, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<DeploymentDecision> AssignAsync(
         Machine machine,
-        AssignImageRequest request,
+        AssignSequenceRequest request,
         Guid? userId,
         string? userName,
         string? address,
@@ -133,9 +164,9 @@ public sealed class DeploymentService(
 
         string? refusal = machine.State switch
         {
-            MachineState.Deploying => "The machine is installing an image. Stop that deployment before assigning another image.",
-            MachineState.Rejected => "The machine was rejected, so it cannot be given an image. Assign the image to another machine.",
-            MachineState.Retired => "The machine was retired, so it cannot be given an image. Assign the image to another machine.",
+            MachineState.Deploying => "The machine is running a task sequence. Stop that run before assigning another sequence.",
+            MachineState.Rejected => "The machine was rejected, so it cannot be given a sequence. Assign the sequence to another machine.",
+            MachineState.Retired => "The machine was retired, so it cannot be given a sequence. Assign the sequence to another machine.",
             _ => null,
         };
 
@@ -146,42 +177,60 @@ public sealed class DeploymentService(
 
         if (machine.ActiveDeploymentId is not null)
         {
-            return DeploymentDecision.Conflict("This machine already has a deployment. Cancel it before assigning another image.");
+            return DeploymentDecision.Conflict("This machine already has a run. Cancel it before assigning another sequence.");
         }
 
-        Image? image = await database.Images.FindAsync([request.ImageId], cancellationToken).ConfigureAwait(false);
+        TaskSequence? sequence = await database.TaskSequences
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == request.SequenceId, cancellationToken)
+            .ConfigureAwait(false);
 
-        if (image is null)
+        if (sequence is null)
         {
-            return DeploymentDecision.NotFound("The image no longer exists. Load the page again and choose another image.");
+            return DeploymentDecision.NotFound("The sequence no longer exists. Load the page again and choose another sequence.");
         }
 
-        if (NotDeployable(image) is { } reason)
+        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (problem is not null)
         {
-            return DeploymentDecision.Conflict(reason);
+            return DeploymentDecision.Conflict(problem);
         }
 
         // Nobody at the machine can say which disk to erase. A machine too old to report its disks is let through,
-        // and its agent refuses the deployment itself if it finds more than one.
-        if (machine.EligibleDiskCount > 1)
+        // and its agent refuses the run itself if it finds more than one.
+        if (Erases(definition) && machine.EligibleDiskCount > 1)
         {
-            return DeploymentDecision.Conflict("This machine has more than one disk. Sign in at it and choose the disk there.");
+            return DeploymentDecision.Conflict(
+                $"{sequence.Name} erases a disk, and this machine has more than one. Sign in at it and choose the disk there.");
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName) is { } problem)
+        if (ComputerNameProblem(machine, request.ComputerName, JoinsDomain(definition)) is { } nameProblem)
         {
-            return DeploymentDecision.Invalid("computerName", problem);
+            return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
-        Deployment deployment = Create(machine, image, DeploymentSource.Web, userId, userName, null, request.ComputerName, now);
+        Deployment deployment = Create(
+            machine,
+            sequence,
+            definition,
+            references,
+            DeploymentSource.Web,
+            ruleId: null,
+            userId,
+            userName,
+            diskNumber: null,
+            request.ComputerName,
+            now);
 
         database.AuditEvents.Add(Audit(
             AuditActions.DeploymentAssigned,
             deployment,
             now,
             address,
-            $"{image.Name} to machine {machine.Id:D}.",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}.",
             actorUserId: userId,
             actorName: userName));
 
@@ -211,60 +260,144 @@ public sealed class DeploymentService(
                 ActorName = userName,
                 SubjectId = machine.Id.ToString("D"),
                 SourceAddress = address,
-                Detail = $"Was Pending. Approved by assigning {image.Name}.",
+                Detail = StoredText.Bound($"Was Pending. Approved by assigning {sequence.Name}.", AuditEvent.MaxDetailLength),
             });
         }
 
         return DeploymentDecision.Accepted(deployment);
     }
 
-    // Chosen at the machine by whoever signed in there, who is also recorded as having requested it.
+    // The run of an approval on the web that took the sequence a rule chose. The approver saw that sequence, so the
+    // rules must still choose it. The caller approves the machine: the rule alone never would.
+    public async Task<DeploymentDecision> AssignByRuleAsync(
+        Machine machine,
+        Guid expectedSequenceId,
+        Guid? userId,
+        string? userName,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        if (machine.SignedInUserName is { } signer)
+        {
+            return DeploymentDecision.Conflict($"{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence.");
+        }
+
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+
+        if (resolution.Rule is not { } rule || resolution.Sequence is not { } sequence || sequence.Id != expectedSequenceId)
+        {
+            return DeploymentDecision.Conflict(
+                $"The rules no longer choose that sequence for this machine. {resolution.Explanation} Look at the machine again.");
+        }
+
+        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (problem is not null)
+        {
+            return DeploymentDecision.Conflict(problem);
+        }
+
+        if (Erases(definition) && machine.EligibleDiskCount > 1)
+        {
+            return DeploymentDecision.Conflict(
+                $"{sequence.Name} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.");
+        }
+
+        if (JoinsDomain(definition) && string.IsNullOrWhiteSpace(machine.AssignedName))
+        {
+            return DeploymentDecision.Conflict(
+                $"{sequence.Name} joins the domain, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.");
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        Deployment deployment = Create(
+            machine,
+            sequence,
+            definition,
+            references,
+            DeploymentSource.Rule,
+            rule.Id,
+            userId,
+            userName,
+            diskNumber: null,
+            computerName: null,
+            now);
+
+        database.AuditEvents.Add(Audit(
+            AuditActions.DeploymentAssigned,
+            deployment,
+            now,
+            address,
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.",
+            actorUserId: userId,
+            actorName: userName));
+
+        return DeploymentDecision.Accepted(deployment);
+    }
+
+    // Chosen at the machine by whoever signed in there, who is also recorded as having requested it. A run of the
+    // sequence a rule suggested keeps the rule, for the history.
     public async Task<DeploymentDecision> PickAsync(
         Machine machine,
-        AgentPickRequest request,
+        AgentRunRequest request,
         string? address,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!await CanPickImageAsync(machine, cancellationToken).ConfigureAwait(false))
+        if (!await CanPickAsync(machine, cancellationToken).ConfigureAwait(false))
         {
             return DeploymentDecision.Conflict(machine.ActiveDeploymentId is null
-                ? "Only an operator or administrator signed in at this machine can choose an image. Start the machine from the network again and sign in."
-                : "This machine already has a deployment. It starts once the agent asks the server again.");
+                ? "Only an operator or administrator signed in at this machine can choose a sequence. Start the machine from the network again and sign in."
+                : "This machine already has a run. It starts once the agent asks the server again.");
         }
 
-        Image? image = await database.Images.FindAsync([request.ImageId], cancellationToken).ConfigureAwait(false);
+        TaskSequence? sequence = await database.TaskSequences
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == request.SequenceId, cancellationToken)
+            .ConfigureAwait(false);
 
-        if (image is null)
+        if (sequence is null)
         {
-            return DeploymentDecision.NotFound("The image no longer exists. Choose another image.");
+            return DeploymentDecision.NotFound("The sequence no longer exists. Choose another sequence.");
         }
 
-        if (NotDeployable(image) is { } reason)
+        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (problem is not null)
         {
-            return DeploymentDecision.Conflict(reason);
+            return DeploymentDecision.Conflict(problem);
         }
 
-        if (request.DiskNumber is < 0)
+        bool erases = Erases(definition);
+
+        if (erases && request.DiskNumber is < 0)
         {
             return DeploymentDecision.Invalid("diskNumber", "Choose one of the disks the agent listed.");
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName) is { } problem)
+        if (ComputerNameProblem(machine, request.ComputerName, JoinsDomain(definition)) is { } nameProblem)
         {
-            return DeploymentDecision.Invalid("computerName", problem);
+            return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
         DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
-            image,
+            sequence,
+            definition,
+            references,
             DeploymentSource.Console,
+            resolution.Sequence?.Id == sequence.Id ? resolution.Rule?.Id : null,
             machine.SignedInByUserId,
             machine.SignedInUserName,
-            request.DiskNumber,
+            erases ? request.DiskNumber : null,
             request.ComputerName,
             now);
 
@@ -275,7 +408,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{image.Name} to machine {machine.Id:D}, chosen at the machine.",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen at the machine.",
             actorUserId: machine.SignedInByUserId,
             actorName: machine.SignedInUserName,
             actorMachineId: machine.Id));
@@ -283,8 +416,29 @@ public sealed class DeploymentService(
         return DeploymentDecision.Accepted(deployment);
     }
 
-    // Cancels an assigned deployment, or stops a running one: the agent's next call is refused, and its resume
-    // token no longer matches, so the machine starts over as Pending when it registers again.
+    // The run as its agent receives it, from what was frozen when it was assigned.
+    public async Task<AgentRun> AgentRunAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+
+        DeploymentSnapshot snapshot = await database.DeploymentSnapshots
+            .AsNoTracking()
+            .SingleAsync(s => s.DeploymentId == run.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<DeploymentArtifact> artifacts = await database.DeploymentArtifacts
+            .AsNoTracking()
+            .Where(a => a.DeploymentId == run.Id)
+            .OrderBy(a => a.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return RunSnapshots.ForAgent(run, SequenceDocuments.Read(snapshot.Definition), artifacts, machine.AssignedName);
+    }
+
+    // Cancels an assigned run, or stops a running one: the agent's next call is refused, and its resume token no
+    // longer matches, so the machine starts over as Pending when it registers again.
     public async Task<DeploymentDecision> EndCurrentAsync(
         Machine machine,
         Guid? userId,
@@ -305,7 +459,7 @@ public sealed class DeploymentService(
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. Cancelled by {by}.",
+                    $"{active.Title} on machine {machine.Id:D}. Cancelled by {by}.",
                     actorUserId: userId,
                     actorName: userName));
 
@@ -321,7 +475,7 @@ public sealed class DeploymentService(
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. {error}",
+                    $"{active.Title} on machine {machine.Id:D}. {error}",
                     actorUserId: userId,
                     actorName: userName));
 
@@ -329,7 +483,7 @@ public sealed class DeploymentService(
 
             default:
                 return DeploymentDecision.Conflict(
-                    "This machine has no deployment that is assigned or running. Load the page again to see its current state.");
+                    "This machine has no run that is assigned or running. Load the page again to see its current state.");
         }
     }
 
@@ -349,7 +503,7 @@ public sealed class DeploymentService(
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. The machine was rejected by {by}.",
+                    $"{active.Title} on machine {machine.Id:D}. The machine was rejected by {by}.",
                     actorUserId: userId,
                     actorName: userName));
                 break;
@@ -362,7 +516,7 @@ public sealed class DeploymentService(
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. {error}",
+                    $"{active.Title} on machine {machine.Id:D}. {error}",
                     actorUserId: userId,
                     actorName: userName));
                 break;
@@ -371,8 +525,8 @@ public sealed class DeploymentService(
         machine.ActiveDeploymentId = null;
     }
 
-    // Under RequireWebApproval, a sign-in at a machine an operator already assigned an image on the web completes
-    // the approval: the assignment was the web half.
+    // Under RequireWebApproval, a sign-in at a machine an operator already assigned a sequence on the web completes
+    // the approval: the assignment was the web half. A rule's run never counts, only a person's assignment.
     public static bool CountsAsWebApproval(Deployment? active) =>
         active is { State: DeploymentState.Assigned, Source: DeploymentSource.Web };
 
@@ -384,10 +538,10 @@ public sealed class DeploymentService(
         && zeroTouchNetworks.Contains(remoteAddress)
         && !listedProxies.Contains(remoteAddress);
 
-    // A registration without the resume token means the agent that had the deployment is gone. A running
-    // deployment fails. An image chosen at the machine is cancelled: the disk and the ERASE typed there belonged
-    // to that boot, and disk numbers can change across a restart. A web assignment stays for the next sign-in or
-    // a zero touch netboot.
+    // A registration that does not continue the machine's run means the agent that had it is gone. A running run
+    // fails. A run chosen at the machine or by a rule is cancelled: the disk and the ERASE typed there, and the
+    // approval that took the rule's sequence, belonged to that boot. A web assignment stays for the next sign-in or a
+    // zero touch netboot.
     public void EndForRestart(Machine machine, Deployment? active, string? address)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -397,156 +551,29 @@ public sealed class DeploymentService(
         switch (active)
         {
             case { State: DeploymentState.Running }:
-                const string error = "The machine started again during the deployment.";
+                const string error = "The machine started again during the run.";
                 End(machine, active, DeploymentState.Failed, error, now);
                 database.AuditEvents.Add(Audit(
                     AuditActions.DeploymentFailed,
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. {error}",
+                    $"{active.Title} on machine {machine.Id:D}. {error}",
                     actorMachineId: machine.Id));
                 break;
 
-            case { State: DeploymentState.Assigned, Source: DeploymentSource.Console }:
+            case { State: DeploymentState.Assigned, Source: DeploymentSource.Console or DeploymentSource.Rule }:
                 End(machine, active, DeploymentState.Cancelled, null, now);
                 database.AuditEvents.Add(Audit(
                     AuditActions.DeploymentCancelled,
                     active,
                     now,
                     address,
-                    $"{active.ImageName} on machine {machine.Id:D}. The machine started again before the image chosen at it was installed.",
+                    $"{active.Title} on machine {machine.Id:D}. The machine started again before the run began.",
                     actorMachineId: machine.Id));
                 break;
         }
     }
-
-    public async Task<DeploymentDecision> ReportAsync(
-        Machine machine,
-        Guid deploymentId,
-        AgentDeploymentReport report,
-        string? address,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(machine);
-        ArgumentNullException.ThrowIfNull(report);
-
-        if (!Enum.IsDefined(report.Step))
-        {
-            return DeploymentDecision.Invalid("step", "The report names a step this server does not know. Use the agent this server provides.");
-        }
-
-        Deployment? deployment = await database.Deployments.FindAsync([deploymentId], cancellationToken).ConfigureAwait(false);
-
-        if (deployment is null || deployment.MachineId != machine.Id)
-        {
-            return DeploymentDecision.NotFound("This machine has no such deployment. Ask the server for the current one.");
-        }
-
-        // The response to the last report can be lost, and the agent sends it again.
-        if (deployment.State == report.State && deployment.State is DeploymentState.Done or DeploymentState.Failed)
-        {
-            return DeploymentDecision.Unchanged(deployment);
-        }
-
-        if (machine.ActiveDeploymentId != deployment.Id)
-        {
-            return DeploymentDecision.Conflict(
-                $"The deployment is {Word(deployment.State)} and takes no further reports. Ask the server for the current one.");
-        }
-
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        int percent = Math.Clamp(report.Percent, 0, 100);
-
-        switch (deployment.State, report.State)
-        {
-            case (DeploymentState.Assigned, DeploymentState.Running):
-                deployment.State = DeploymentState.Running;
-                deployment.StartedUtc = now;
-                Progress(deployment, report.Step, percent, now);
-                machine.State = MachineState.Deploying;
-                database.AuditEvents.Add(Audit(
-                    AuditActions.DeploymentStarted,
-                    deployment,
-                    now,
-                    address,
-                    $"{deployment.ImageName} on machine {machine.Id:D}.",
-                    actorMachineId: machine.Id));
-                break;
-
-            case (DeploymentState.Running, DeploymentState.Running):
-                if (report.Step < deployment.Step)
-                {
-                    return DeploymentDecision.Conflict(
-                        $"The deployment is already at the {deployment.Step} step and cannot go back to the {report.Step} step. {CurrentStep}");
-                }
-
-                Progress(deployment, report.Step, percent, now);
-                break;
-
-            case (DeploymentState.Running, DeploymentState.Done):
-                Progress(deployment, report.Step, percent, now);
-                End(machine, deployment, DeploymentState.Done, null, now);
-                machine.State = MachineState.Done;
-                database.AuditEvents.Add(Audit(
-                    AuditActions.DeploymentDone,
-                    deployment,
-                    now,
-                    address,
-                    $"{deployment.ImageName} on machine {machine.Id:D}.",
-                    actorMachineId: machine.Id));
-                break;
-
-            // A check before the disk was touched failed. The contract makes the agent name a step, but none ran.
-            case (DeploymentState.Assigned, DeploymentState.Failed):
-                string refused = ErrorText(report.Error);
-                End(machine, deployment, DeploymentState.Failed, refused, now);
-                machine.State = MachineState.Failed;
-                database.AuditEvents.Add(Audit(
-                    AuditActions.DeploymentFailed,
-                    deployment,
-                    now,
-                    address,
-                    $"{deployment.ImageName} on machine {machine.Id:D}: {refused}",
-                    actorMachineId: machine.Id));
-                break;
-
-            case (DeploymentState.Running, DeploymentState.Failed):
-                string error = ErrorText(report.Error);
-                Progress(deployment, report.Step, percent, now);
-                End(machine, deployment, DeploymentState.Failed, error, now);
-                machine.State = MachineState.Failed;
-                database.AuditEvents.Add(Audit(
-                    AuditActions.DeploymentFailed,
-                    deployment,
-                    now,
-                    address,
-                    $"{deployment.ImageName} on machine {machine.Id:D} at {report.Step}: {error}",
-                    actorMachineId: machine.Id));
-                break;
-
-            default:
-                return DeploymentDecision.Conflict(
-                    $"A deployment that is {Word(deployment.State)} cannot be reported as {Word(report.State)}. {CurrentStep}");
-        }
-
-        return DeploymentDecision.Accepted(deployment);
-    }
-
-    // The answer file carries the deployment passwords, so only the machine's own running deployment gets it.
-    public async Task<Deployment?> RunningAsync(Machine machine, Guid deploymentId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(machine);
-
-        Deployment? deployment = await database.Deployments.FindAsync([deploymentId], cancellationToken).ConfigureAwait(false);
-
-        return deployment is { State: DeploymentState.Running } && deployment.MachineId == machine.Id ? deployment : null;
-    }
-
-    private static string Word(DeploymentState state) => state.ToString().ToLowerInvariant();
-
-    private static Deployment? Latest(IEnumerable<Deployment> deployments) =>
-        deployments.OrderByDescending(d => d.CreatedUtc).ThenByDescending(d => d.Id).FirstOrDefault();
 
     internal static string? NotDeployable(Image image) => image.Architecture switch
     {
@@ -555,16 +582,49 @@ public sealed class DeploymentService(
         string architecture => $"{image.Name} is an {architecture} image, and DDT deploys only x64 Windows. Choose an x64 image.",
     };
 
-    // A domain machine joins under its name, so it needs one. Without a domain, Setup makes one up.
-    private string? ComputerNameProblem(Machine machine, string? computerName)
+    private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);
+
+    private static bool JoinsDomain(SequenceDefinition definition) => definition.Steps.Any(step => step is JoinDomainStep);
+
+    // A sequence runs only without problems, which depend on the library and the settings of the moment.
+    private async Task<(SequenceDefinition Definition, SequenceReferences References, string? Problem)> CheckAsync(
+        TaskSequence sequence,
+        CancellationToken cancellationToken)
+    {
+        SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
+        SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
+
+        string? problem = SequenceChecks.Check(definition, references).Problems.Count switch
+        {
+            0 => null,
+            1 => $"{sequence.Name} has a problem, so it cannot run. Fix it on the sequence's page first.",
+            int count => $"{sequence.Name} has {count} problems, so it cannot run. Fix them on the sequence's page first.",
+        };
+
+        return (definition, references, problem);
+    }
+
+    private async Task<Guid?> SuggestedAsync(Machine machine, SequenceReferences references, CancellationToken cancellationToken)
+    {
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+
+        return resolution is { Rule: not null, Sequence: { } sequence }
+            && SequenceChecks.Check(SequenceDocuments.Read(sequence.Definition), references).Problems.Count == 0
+                ? sequence.Id
+                : null;
+    }
+
+    // A machine joins the domain under its name, so a sequence that joins one needs a name. Otherwise Setup makes
+    // one up.
+    private static string? ComputerNameProblem(Machine machine, string? computerName, bool joinsDomain)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
         {
             return ComputerNames.IsValid(computerName.Trim(), out string error) ? null : error;
         }
 
-        return DomainConfigured && string.IsNullOrWhiteSpace(machine.AssignedName)
-            ? "Enter a computer name. The machine joins the domain under this name."
+        return joinsDomain && string.IsNullOrWhiteSpace(machine.AssignedName)
+            ? "Enter a computer name. The sequence joins the machine to the domain under this name."
             : null;
     }
 
@@ -577,8 +637,11 @@ public sealed class DeploymentService(
 
     private Deployment Create(
         Machine machine,
-        Image image,
+        TaskSequence sequence,
+        SequenceDefinition definition,
+        SequenceReferences references,
         DeploymentSource source,
+        Guid? ruleId,
         Guid? requestedByUserId,
         string? requestedByName,
         int? diskNumber,
@@ -594,32 +657,28 @@ public sealed class DeploymentService(
         {
             Id = Guid.CreateVersion7(now),
             MachineId = machine.Id,
-            ImageId = image.Id,
-            ImageName = image.Name,
-            Sha256 = image.Sha256,
-            SizeBytes = image.SizeBytes,
-            WimIndex = image.WimIndex,
-            InstalledBytes = image.InstalledBytes,
+            TaskSequenceId = sequence.Id,
+            SequenceRevision = sequence.Revision,
+            RuleId = ruleId,
+            Title = sequence.Name,
             DiskNumber = diskNumber,
             State = DeploymentState.Assigned,
             Source = source,
             RequestedByUserId = requestedByUserId,
             RequestedByName = requestedByName,
+            StepCount = definition.Steps.Count,
             CreatedUtc = now,
             UpdatedUtc = now,
         };
 
         database.Deployments.Add(deployment);
+        database.DeploymentSnapshots.Add(new DeploymentSnapshot { DeploymentId = deployment.Id, Definition = sequence.Definition });
+        database.DeploymentSteps.AddRange(RunSnapshots.Steps(deployment.Id, definition));
+        database.DeploymentArtifacts.AddRange(RunSnapshots.Artifacts(deployment.Id, definition, references, machine));
         machine.ActiveDeploymentId = deployment.Id;
+        machine.LastDeploymentId = deployment.Id;
 
         return deployment;
-    }
-
-    private static void Progress(Deployment deployment, DeploymentStep step, int percent, DateTimeOffset now)
-    {
-        deployment.Step = step;
-        deployment.Percent = percent;
-        deployment.UpdatedUtc = now;
     }
 
     private static void End(Machine machine, Deployment deployment, DeploymentState state, string? error, DateTimeOffset now)
@@ -631,19 +690,7 @@ public sealed class DeploymentService(
         machine.ActiveDeploymentId = null;
     }
 
-    // PostgreSQL text cannot hold a NUL, and a report it refuses would be resent forever.
-    private static string ErrorText(string? error)
-    {
-        string text = (error ?? string.Empty).Replace("\0", string.Empty, StringComparison.Ordinal).Trim();
-
-        if (text.Length == 0)
-        {
-            return "The agent reported a failure without saying why.";
-        }
-
-        return text.Length <= DeploymentLimits.MaxErrorLength ? text : text[..DeploymentLimits.MaxErrorLength];
-    }
-
+    // A name in the detail is whatever an administrator typed, NUL included, which PostgreSQL refuses.
     private static AuditEvent Audit(
         string action,
         Deployment deployment,
@@ -661,6 +708,6 @@ public sealed class DeploymentService(
             ActorName = actorName,
             SubjectId = deployment.Id.ToString("D"),
             SourceAddress = address,
-            Detail = detail,
+            Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
         };
 }

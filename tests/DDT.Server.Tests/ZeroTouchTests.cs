@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -22,11 +23,11 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
     // Assigned on the web while the machine was not at its prompt, so the assignment waits for its next netboot.
     internal static async Task<Guid> AssignWhileAwayAsync(DdtApplication application, DeployingMachine machine)
     {
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly(), $"Hello {Guid.NewGuid():N}");
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
 
-        MachineSummary summary = await RegisteredMachine.ReadAsync<MachineSummary>(
-            await (await application.AdministratorAsync()).PostAsync($"/api/machines/{machine.Id}/deployments", new AssignImageRequest(image.Id, null)));
+        MachineSummary summary = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.AssignAsync(machine.Id, sequence.Id));
 
         Assert.Equal(MachineState.Pending, summary.State);
 
@@ -63,8 +64,6 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         AgentNextResult next = await machine.NextAsync();
 
         Assert.Equal(MachineState.Approved, next.State);
-        Assert.Equal(deployment, next.Deployment?.Id);
-        Assert.Equal(DeploymentState.Assigned, next.Deployment?.State);
         Assert.Null(next.SignedInBy);
 
         Machine stored = await application.MachineAsync(machine.Id);
@@ -74,9 +73,11 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
             .Select(e => e.Detail)
             .SingleAsync(TestContext.Current.CancellationToken)))!;
 
+        Assert.Equal(deployment, stored.ActiveDeploymentId);
+        Assert.Equal(DeploymentState.Assigned, (await StoredAsync(deployment)).State);
         Assert.NotNull(stored.FirstApprovedUtc);
         Assert.NotNull(stored.ApprovedByUserId);
-        Assert.StartsWith("Kept approved for Test image ", detail, StringComparison.Ordinal);
+        Assert.StartsWith("Kept approved for Hello ", detail, StringComparison.Ordinal);
         Assert.Contains(" assigned by administrator-", detail, StringComparison.Ordinal);
         Assert.EndsWith(": netbooted from 10.200.3.4 in a zero touch network.", detail, StringComparison.Ordinal);
     }
@@ -91,7 +92,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         using AgentClient lab = new(application.CreateDefaultClient(), address);
 
         Assert.Equal(MachineState.Approved, (await machine.RegisterAgainAsync(lab)).State);
-        Assert.Equal(deployment, (await machine.NextAsync()).Deployment?.Id);
+        Assert.Equal(deployment, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
     [Fact]
@@ -105,7 +106,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
 
         Assert.Equal(MachineState.Pending, registered.State);
         Assert.Equal(DeploymentState.Assigned, (await StoredAsync(deployment)).State);
-        Assert.Null((await machine.NextAsync()).Deployment);
+        Assert.Null((await machine.NextAsync()).Run);
 
         // The assignment survives, and a sign-in at the machine starts it.
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
@@ -117,20 +118,20 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         AgentNextResult next = await machine.NextAsync();
 
         Assert.Equal(MachineState.Approved, next.State);
-        Assert.Equal(deployment, next.Deployment?.Id);
-        Assert.False(next.CanPickImage);
+        Assert.Equal(deployment, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+        Assert.False(next.CanPickSequence);
     }
 
     [Fact]
-    public async Task ARunningDeploymentFailsWhenTheMachineStartsAgain()
+    public async Task ARunningRunFailsWhenTheMachineStartsAgain()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
-        Guid deployment = (await RegisteredMachine.ReadAsync<MachineSummary>(
-            await administrator.PostAsync($"/api/machines/{machine.Id}/deployments", new AssignImageRequest(image.Id, null)))).Deployment!.Id;
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        Guid deployment = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
 
-        await machine.ReportOkAsync(deployment, DeploymentState.Running, DeploymentStep.Download, 20);
+        await machine.NextAsync();
+        await application.MoveRunAsync(machine.Id, DeploymentState.Running);
 
         // Resuming with the resume token is the same agent after an outage: nothing changes.
         AgentRegistrationResult resumed = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
@@ -146,7 +147,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
 
         Assert.Equal(MachineState.Pending, restarted.State);
         Assert.Equal(DeploymentState.Failed, failed.State);
-        Assert.Equal("The machine started again during the deployment.", failed.Error);
+        Assert.Equal("The machine started again during the run.", failed.Error);
         Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
 
         AuditEvent audit = await AuditAsync(deployment, AuditActions.DeploymentFailed);
@@ -154,7 +155,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         Assert.Equal(machine.Id, audit.ActorMachineId);
         Assert.Null(audit.ActorUserId);
         Assert.Equal("10.200.7.7", audit.SourceAddress);
-        Assert.Equal($"{failed.ImageName} on machine {machine.Id:D}. The machine started again during the deployment.", audit.Detail);
+        Assert.Equal($"{failed.Title} on machine {machine.Id:D}. The machine started again during the run.", audit.Detail);
     }
 
     // The disk and the ERASE were typed at the machine in the boot that ended, and its disk numbers can differ
@@ -168,9 +169,10 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
             operatorName,
             [DeployingMachine.Disk(0), DeployingMachine.Disk(1, "Samsung SSD 990 PRO")]);
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SequenceView sequence = await (await application.AdministratorAsync()).CreatedSequenceAsync(SequenceRequests.Minimal(image.Id));
 
-        AgentDeployment picked = await RegisteredMachine.ReadAsync<AgentDeployment>(
-            await machine.Agent.PickAsync(machine.Id, machine.Token, new AgentPickRequest(image.Id, 1, null)));
+        AgentRun picked = await RegisteredMachine.ReadAsync<AgentRun>(
+            await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(sequence.Id, 1, null)));
 
         using AgentClient lab = new(application.CreateDefaultClient(), "10.200.8.8");
 
@@ -186,7 +188,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
         Assert.Equal(machine.Id, audit.ActorMachineId);
         Assert.Equal(
-            $"{image.Name} on machine {machine.Id:D}. The machine started again before the image chosen at it was installed.",
+            $"{sequence.Name} on machine {machine.Id:D}. The machine started again before the run began.",
             audit.Detail);
 
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
@@ -197,8 +199,8 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         AgentNextResult next = await machine.NextAsync();
 
         Assert.Equal(MachineState.Approved, next.State);
-        Assert.Null(next.Deployment);
-        Assert.True(next.CanPickImage);
+        Assert.Null(next.Run);
+        Assert.True(next.CanPickSequence);
     }
 
     [Fact]

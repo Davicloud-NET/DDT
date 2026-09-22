@@ -36,6 +36,7 @@ public static class MachineEndpoints
         group.MapGet("/{id:guid}/sequence", ResolveSequenceAsync).RequireAuthorization(DdtPolicies.Viewer);
         group.MapPost("/{id:guid}/approve", ApproveAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/reject", RejectAsync).RequireAuthorization(DdtPolicies.Operator);
+        group.MapGet("/{id:guid}/deployments", ListDeploymentsAsync).RequireAuthorization(DdtPolicies.Viewer);
         group.MapPost("/{id:guid}/deployments", AssignAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapDelete("/{id:guid}/deployments/current", EndCurrentAsync).RequireAuthorization(DdtPolicies.Operator);
 
@@ -154,40 +155,139 @@ public static class MachineEndpoints
         return TypedResults.Ok<IReadOnlyList<MachineLogEntry>>(entries);
     }
 
-    private static Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> ApproveAsync(
+    // With the sequence the page showed a rule choosing, the approval also runs it. Without one it runs nothing.
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> ApproveAsync(
         Guid id,
+        ApproveMachineRequest? request,
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
         DeploymentService deployments,
+        ImageStore store,
         LiveNotifier live,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory,
         IOptions<MachineOptions> options,
-        CancellationToken cancellationToken) =>
-        TransitionAsync(
-            id,
-            user,
-            context,
-            database,
-            deployments,
-            live,
-            timeProvider,
-            loggerFactory,
-            AuditActions.MachineApproved,
-            machine => machine.State != MachineState.Pending
-                ? $"The machine is {machine.State}."
-                : options.Value.RequireWebApproval && machine.SignedInByUserId is null
-                    ? "Nobody has signed in at this machine yet."
-                    : null,
-            (machine, _, now) =>
+        CancellationToken cancellationToken)
+    {
+        string? Refusal(Machine machine) => machine.State != MachineState.Pending
+            ? $"The machine is {machine.State}."
+            : options.Value.RequireWebApproval && machine.SignedInByUserId is null
+                ? "Nobody has signed in at this machine yet."
+                : null;
+
+        if (request?.ExpectedSequenceId is not { } expected)
+        {
+            return await TransitionAsync(
+                id,
+                user,
+                context,
+                database,
+                deployments,
+                live,
+                timeProvider,
+                loggerFactory,
+                AuditActions.MachineApproved,
+                Refusal,
+                (machine, _, now) => Approve(machine, Principals.UserId(user), now),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (Refusal(machine) is { } reason)
+        {
+            return TypedResults.Problem(title: reason, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        Deployment run;
+
+        // Under the library lock, so nothing the run downloads can be deleted between its lookup and the save.
+        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            string? address = context.Connection.RemoteIpAddress?.ToString();
+            DeploymentDecision decision = await deployments
+                .AssignByRuleAsync(machine, expected, Principals.UserId(user), user.Identity?.Name, address, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (decision.Outcome != DeploymentOutcome.Accepted)
             {
-                machine.State = MachineState.Approved;
-                machine.ApprovedByUserId = Principals.UserId(user);
-                machine.ApprovedUtc = now;
-                machine.FirstApprovedUtc ??= now;
-            },
-            cancellationToken);
+                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
+            }
+
+            run = decision.Deployment!;
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            Approve(machine, Principals.UserId(user), now);
+            database.AuditEvents.Add(new AuditEvent
+            {
+                OccurredUtc = now,
+                Action = AuditActions.MachineApproved,
+                ActorUserId = Principals.UserId(user),
+                ActorName = user.Identity?.Name,
+                SubjectId = machine.Id.ToString("D"),
+                SourceAddress = address,
+                Detail = StoredText.Bound($"Was Pending. Approved to run {run.Title}, which a rule chose.", AuditEvent.MaxDetailLength),
+            });
+
+            try
+            {
+                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return TypedResults.Problem(
+                    title: "The machine changed while this decision was made. Look at it again before deciding.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+        }
+        finally
+        {
+            store.LibraryLock.Release();
+        }
+
+        DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), run, null);
+        live.MachineChanged(machine, run);
+
+        return TypedResults.Ok(MachineSummaries.From(machine, run));
+    }
+
+    private static void Approve(Machine machine, Guid? userId, DateTimeOffset now)
+    {
+        machine.State = MachineState.Approved;
+        machine.ApprovedByUserId = userId;
+        machine.ApprovedUtc = now;
+        machine.FirstApprovedUtc ??= now;
+    }
+
+    // Newest first. SQLite cannot order by DateTimeOffset, and one machine has few runs, so they are ordered here.
+    private static async Task<Results<Ok<IReadOnlyList<DeploymentSummary>>, NotFound>> ListDeploymentsAsync(
+        Guid id,
+        DdtDbContext database,
+        CancellationToken cancellationToken)
+    {
+        if (!await database.Machines.AnyAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false))
+        {
+            return TypedResults.NotFound();
+        }
+
+        List<Deployment> runs = await database.Deployments
+            .AsNoTracking()
+            .Where(d => d.MachineId == id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return TypedResults.Ok<IReadOnlyList<DeploymentSummary>>(
+        [
+            .. runs.OrderByDescending(d => d.CreatedUtc).ThenByDescending(d => d.Id).Select(DeploymentSummaries.From),
+        ]);
+    }
 
     private static Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> RejectAsync(
         Guid id,
@@ -231,7 +331,7 @@ public static class MachineEndpoints
 
     private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> AssignAsync(
         Guid id,
-        AssignImageRequest request,
+        AssignSequenceRequest request,
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
@@ -248,7 +348,7 @@ public static class MachineEndpoints
             return TypedResults.NotFound();
         }
 
-        // Under the library lock, so the image cannot be deleted between its lookup and the saved deployment.
+        // Under the library lock, so nothing the run downloads can be deleted between its lookup and the save.
         await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
@@ -264,7 +364,7 @@ public static class MachineEndpoints
                 database,
                 live,
                 loggerFactory,
-                "The machine changed while the image was assigned. Look at it again before assigning.",
+                "The machine changed while the sequence was assigned. Look at it again before assigning.",
                 cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -303,7 +403,7 @@ public static class MachineEndpoints
             database,
             live,
             loggerFactory,
-            "The deployment changed while it was being stopped. Look at the machine again.",
+            "The run changed while it was being stopped. Look at the machine again.",
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -365,7 +465,7 @@ public static class MachineEndpoints
         if (!IsStray(machine) && machine.State != MachineState.Rejected)
         {
             return TypedResults.Problem(
-                title: "Only a rejected machine, or a waiting machine that was never approved and has no assigned image, can be removed.",
+                title: "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
@@ -392,7 +492,7 @@ public static class MachineEndpoints
         return await RemoveStraysAsync(machines, user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
     }
 
-    // A waiting machine with an assigned image waits on purpose, for a sign-in or a zero touch netboot.
+    // A waiting machine with an assigned run waits on purpose, for a sign-in or a zero touch netboot.
     private static bool IsStray(Machine machine) =>
         machine.State == MachineState.Pending && machine.FirstApprovedUtc is null && machine.ActiveDeploymentId is null;
 

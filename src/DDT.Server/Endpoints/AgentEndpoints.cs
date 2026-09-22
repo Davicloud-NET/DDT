@@ -162,11 +162,10 @@ public static class AgentEndpoints
             }
         }
 
-        // A waiting machine learns nothing about what it will be given: anyone can register as it.
+        // A waiting machine learns nothing about what it will be given: anyone can register as it. An agent from
+        // before task sequences is never given an image deployment: this server creates none.
         bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
-        Deployment? active = authorized
-            ? await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false)
-            : null;
+        bool canPick = await deployments.CanPickAsync(machine, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok(new AgentNextResult(
             machine.State,
@@ -174,10 +173,13 @@ public static class AgentEndpoints
             tokens.Issue(machine, MachineTokenPurpose.Resume),
             MachineRegistrar.PollAfterSeconds,
             machine.SignedInUserName,
-            active is null ? null : DeploymentSummaries.ForAgent(active),
-            await deployments.CanPickImageAsync(machine, cancellationToken).ConfigureAwait(false),
-            authorized && deployments.DomainConfigured,
-            authorized ? machine.AssignedName : null));
+            Deployment: null,
+            CanPickImage: false,
+            DomainConfigured: authorized && deployments.DomainConfigured,
+            AssignedName: authorized ? machine.AssignedName : null,
+            Run: null,
+            CanPickSequence: canPick,
+            SuggestedSequenceId: canPick ? await deployments.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null));
     }
 
     private static async Task<Results<Ok<AgentSignInResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ValidationProblem>> SignInAsync(
@@ -291,7 +293,7 @@ public static class AgentEndpoints
                 machine,
                 address,
                 options.Value.RequireWebApproval
-                    ? $"Was Pending. Signed in at the machine, which {active!.RequestedByName} had assigned {active.ImageName} on the web."
+                    ? $"Was Pending. Signed in at the machine, which {active!.RequestedByName} had assigned {active.Title} on the web."
                     : "Was Pending. Signed in at the machine."));
         }
 

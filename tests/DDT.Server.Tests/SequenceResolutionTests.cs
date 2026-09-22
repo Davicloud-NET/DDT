@@ -136,15 +136,15 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         string model = RuleRequests.UniqueModel();
         await administrator.CreatedRuleAsync(RuleRequests.ModelRule((await application.RunnableSequenceAsync()).Id, model));
         using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model);
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SequenceView assigned = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
 
-        (await administrator.PostAsync($"/api/machines/{machine.Id}/deployments", new AssignImageRequest(image.Id, null))).EnsureSuccessStatusCode();
+        (await administrator.AssignAsync(machine.Id, assigned.Id)).EnsureSuccessStatusCode();
         MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
 
         Assert.Equal(SequenceResolutionSource.Assigned, resolution.Source);
         Assert.Null(resolution.RuleId);
         Assert.StartsWith("administrator-", resolution.Explanation, StringComparison.Ordinal);
-        Assert.EndsWith($" assigned {image.Name} on the web, which comes before every rule.", resolution.Explanation, StringComparison.Ordinal);
+        Assert.EndsWith($" assigned {assigned.Name} on the web, which comes before every rule.", resolution.Explanation, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -154,13 +154,13 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
         await administrator.CreatedRuleAsync(RuleRequests.ModelRule((await application.RunnableSequenceAsync()).Id, "Virtual Machine", "Microsoft Corporation"));
         using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)]);
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SequenceView chosen = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
 
-        (await machine.Agent.PickAsync(machine.Id, machine.Token, new AgentPickRequest(image.Id, 0, null))).EnsureSuccessStatusCode();
+        (await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(chosen.Id, null, null))).EnsureSuccessStatusCode();
         MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
 
         Assert.Equal(SequenceResolutionSource.Console, resolution.Source);
-        Assert.Equal($"{operatorName} chose {image.Name} at the machine, which comes before every rule.", resolution.Explanation);
+        Assert.Equal($"{operatorName} chose {chosen.Name} at the machine, which comes before every rule.", resolution.Explanation);
     }
 
     [Fact]

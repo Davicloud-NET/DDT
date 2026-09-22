@@ -26,6 +26,18 @@ internal static class SequenceRequests
         new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" },
         new ApplyImageStep { Id = Guid.NewGuid(), Name = "Apply", ImageId = imageId });
 
+    // Erases nothing and needs no library: one cmd script in Windows PE.
+    public static SequenceDefinition ScriptOnly() => Definition(
+        new RunScriptStep
+        {
+            Id = Guid.NewGuid(),
+            Name = "Say hello",
+            Phase = SequencePhase.WindowsPE,
+            Interpreter = ScriptInterpreter.Cmd,
+            Script = "echo hello",
+            RebootExitCodes = [],
+        });
+
     public static Task<HttpResponseMessage> CreateSequenceAsync(this SignedInClient client, SequenceDefinition definition, string? name = null) =>
         client.PostAsync(Sequences, new CreateSequenceRequest(name ?? $"Sequence {Guid.NewGuid():N}", null, definition));
 

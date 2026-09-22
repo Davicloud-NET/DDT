@@ -4,8 +4,10 @@
 
 namespace DDT.Contracts.Deployments;
 
+// Rule: an assignment rule chose the sequence and an operator approved the machine with it on the web.
 public enum DeploymentSource
 {
     Web,
     Console,
+    Rule,
 }

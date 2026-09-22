@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Security.Cryptography;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
-using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -20,10 +18,10 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
 {
     private async Task<MachineSummary> AssignAsync(Guid machineId)
     {
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly(), $"Hello {Guid.NewGuid():N}");
 
-        return await RegisteredMachine.ReadAsync<MachineSummary>(
-            await (await application.AdministratorAsync()).PostAsync($"/api/machines/{machineId}/deployments", new AssignImageRequest(image.Id, null)));
+        return await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.AssignAsync(machineId, sequence.Id));
     }
 
     private static async Task<AgentSignInResult> SignInAsync(DeployingMachine machine, string userName) =>
@@ -40,14 +38,14 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
 
         // Fresh, but nobody vouched for it at the machine.
         Assert.Equal(MachineState.Pending, assigned.State);
-        Assert.Null((await machine.NextAsync()).Deployment);
+        Assert.Null((await machine.NextAsync()).Run);
 
         Assert.Equal(AgentSignInStatus.Succeeded, (await SignInAsync(machine, operatorName)).Status);
 
         AgentNextResult next = await machine.NextAsync();
 
         Assert.Equal(MachineState.Approved, next.State);
-        Assert.Equal(assigned.Deployment?.Id, next.Deployment?.Id);
+        Assert.Equal(assigned.Deployment?.Id, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
 
         string subject = machine.Id.ToString("D");
         List<string?> approvals = await application.QueryAsync(database => database.AuditEvents
@@ -55,7 +53,7 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
             .Select(e => e.Detail)
             .ToListAsync(TestContext.Current.CancellationToken));
 
-        Assert.Contains(" had assigned Test image ", Assert.Single(approvals), StringComparison.Ordinal);
+        Assert.Contains(" had assigned Hello ", Assert.Single(approvals), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -76,8 +74,8 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
 
         AgentNextResult next = await machine.NextAsync();
 
-        Assert.Equal(DeploymentState.Assigned, next.Deployment?.State);
-        Assert.False(next.CanPickImage);
+        Assert.Equal(assigned.Deployment?.Id, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+        Assert.False(next.CanPickSequence);
     }
 
     [Fact]
@@ -91,6 +89,6 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
         AgentNextResult next = await machine.NextAsync();
 
         Assert.Equal(MachineState.Pending, next.State);
-        Assert.False(next.CanPickImage);
+        Assert.False(next.CanPickSequence);
     }
 }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 
 namespace DDT.Server.Deployments;
@@ -15,33 +14,45 @@ public static class DeploymentSummaries
 
         return new DeploymentSummary(
             deployment.Id,
-            deployment.ImageId,
-            deployment.ImageName,
+            deployment.TaskSequenceId,
+            deployment.Title,
             deployment.State,
-            deployment.Step,
-            deployment.Percent,
             deployment.Source,
             deployment.RequestedByName,
+            deployment.StepCount,
+            deployment.CurrentStepIndex,
+            deployment.CurrentStepName,
+            deployment.Percent,
+            deployment.CurrentPhase,
+            deployment.Activity,
             deployment.CreatedUtc,
             deployment.StartedUtc,
             deployment.FinishedUtc,
+            deployment.UpdatedUtc,
             deployment.Error);
     }
 
-    // An image cannot be deleted while a deployment that is assigned or running uses it, so those always have one.
-    public static AgentDeployment ForAgent(Deployment deployment)
+    public static DeploymentStepView Step(DeploymentStep step)
     {
-        ArgumentNullException.ThrowIfNull(deployment);
+        ArgumentNullException.ThrowIfNull(step);
 
-        return new AgentDeployment(
-            deployment.Id,
-            deployment.State,
-            deployment.ImageId ?? Guid.Empty,
-            deployment.ImageName,
-            deployment.Sha256,
-            deployment.SizeBytes,
-            deployment.WimIndex,
-            deployment.InstalledBytes,
-            deployment.DiskNumber);
+        return new DeploymentStepView(
+            step.StepId,
+            step.Index,
+            step.Name,
+            step.Kind,
+            step.Phase,
+            step.State,
+            step.Percent,
+            step.StartedUtc,
+            step.FinishedUtc,
+            step.Error);
+    }
+
+    public static DeploymentArtifactView Artifact(DeploymentArtifact artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+
+        return new DeploymentArtifactView(artifact.StepId, artifact.Kind, artifact.SourceId, artifact.Name, artifact.Sha256, artifact.SizeBytes);
     }
 }

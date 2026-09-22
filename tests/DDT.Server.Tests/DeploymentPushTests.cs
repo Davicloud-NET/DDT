@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Security.Cryptography;
 using System.Threading.Channels;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
-using DDT.Server.Images;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,32 +60,25 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(1, registered.EligibleDiskCount);
         Assert.Equal("Disk 0: Msft Virtual Disk, 64 GB, SCSI", registered.Disks);
 
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
-        (await administrator.PostAsync($"/api/machines/{machine.Id}/deployments", new AssignImageRequest(image.Id, null))).EnsureSuccessStatusCode();
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        (await administrator.AssignAsync(machine.Id, sequence.Id)).EnsureSuccessStatusCode();
         Guid deployment = (await PushedAsync(pushes.Reader, machine.Id, m => m.Deployment?.State == DeploymentState.Assigned)).Deployment!.Id;
 
-        // A poll after a while records last seen and pushes: the deployment stays in the row.
+        // A poll after a while records last seen and pushes: the run stays in the row.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved)).Deployment?.Id);
 
-        await machine.ReportOkAsync(deployment, DeploymentState.Running, DeploymentStep.Download, 35);
-        MachineSummary running = await PushedAsync(pushes.Reader, machine.Id, m => m.Deployment?.State == DeploymentState.Running);
+        (await administrator.EndCurrentAsync(machine.Id)).EnsureSuccessStatusCode();
+        MachineSummary cancelled = await PushedAsync(pushes.Reader, machine.Id, m => m.Deployment?.State == DeploymentState.Cancelled);
 
-        Assert.Equal(MachineState.Deploying, running.State);
-        Assert.Equal(DeploymentStep.Download, running.Deployment?.Step);
-        Assert.Equal(35, running.Deployment?.Percent);
-        Assert.NotNull(running.Deployment?.StartedUtc);
-
-        await machine.ReportOkAsync(deployment, DeploymentState.Failed, DeploymentStep.Apply, 3, "Apply failed.");
-        MachineSummary failed = await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Failed);
-
-        Assert.Equal("Apply failed.", failed.Deployment?.Error);
+        Assert.Equal(sequence.Name, cancelled.Deployment?.Title);
+        Assert.Equal(1, cancelled.Deployment?.StepCount);
 
         // Nothing is active any more: every later push carries the one that ended last.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
-        Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Failed && m.Deployment?.State == DeploymentState.Failed)).Deployment?.Id);
+        Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved && m.Deployment?.State == DeploymentState.Cancelled)).Deployment?.Id);
 
         await machine.RegisterAgainAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Pending)).Deployment?.Id);

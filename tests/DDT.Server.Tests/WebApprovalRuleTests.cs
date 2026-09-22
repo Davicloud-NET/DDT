@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
@@ -35,5 +36,14 @@ public sealed class WebApprovalRuleTests(WebApprovalApplication application) : I
         Assert.False(Assert.Single(
             await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
             m => m.Id == machine.Id).EverApproved);
+
+        // Whoever signed in there chooses the sequence at the machine, so an approval cannot also run the rule's.
+        HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, sequence.Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(
+            $"{operatorName} signed in at the machine and chooses its sequence there. Approve it without a sequence.",
+            await TestDatabase.TitleAsync(refused));
+        Assert.Equal(MachineState.Pending, (await application.MachineAsync(machine.Id)).State);
     }
 }

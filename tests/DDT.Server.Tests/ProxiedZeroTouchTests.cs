@@ -23,7 +23,7 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
 
         Assert.Equal(MachineState.Approved, (await machine.RegisterAgainAsync(lab)).State);
         Assert.Equal(reported, (await application.MachineAsync(machine.Id)).LastSeenAddress);
-        Assert.Equal(deployment, (await machine.NextAsync()).Deployment?.Id);
+        Assert.Equal(deployment, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
 
         Assert.Equal(MachineState.Pending, (await machine.RegisterAgainAsync(elsewhere)).State);
         Assert.Equal("203.0.113.20", (await application.MachineAsync(machine.Id)).LastSeenAddress);
-        Assert.Null((await machine.NextAsync()).Deployment);
+        Assert.Null((await machine.NextAsync()).Run);
     }
 
     // The same header through the proxy afterwards shows that it was the connection, not the address, that did not count.
@@ -52,7 +52,7 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
         using AgentClient lab = ProxiedApplication.Agent(application, "10.200.3.6");
 
         Assert.Equal(MachineState.Approved, (await machine.RegisterAgainAsync(lab)).State);
-        Assert.Equal(deployment, (await machine.NextAsync()).Deployment?.Id);
+        Assert.Equal(deployment, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
     // A request the proxy forwards without X-Forwarded-For, from an nginx location that dropped it for example, stays at
@@ -70,11 +70,11 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
 
         Assert.Equal(MachineState.Pending, (await machine.RegisterAgainAsync(unreported)).State);
         Assert.Equal(proxy, (await overlapping.MachineAsync(machine.Id)).LastSeenAddress);
-        Assert.Null((await machine.NextAsync()).Deployment);
+        Assert.Null((await machine.NextAsync()).Run);
 
         using AgentClient reported = ProxiedApplication.Agent(overlapping, "192.0.2.50", proxy);
 
         Assert.Equal(MachineState.Approved, (await machine.RegisterAgainAsync(reported)).State);
-        Assert.Equal(deployment, (await machine.NextAsync()).Deployment?.Id);
+        Assert.Equal(deployment, (await overlapping.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 }

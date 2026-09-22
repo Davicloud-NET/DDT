@@ -76,16 +76,15 @@ public sealed class RateLimitTests(DdtApplication application) : IClassFixture<D
     {
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, await application.AdministratorAsync());
         using AgentClient stranger = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
-        string sha256 = new('0', 64);
 
         for (int attempt = 0; attempt <= MachineLogLimits.MaxAgentRequestsPerMinute; attempt++)
         {
             Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.NextAsync(machine.Id, "not a token")).StatusCode);
-            Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.ImageAsync(machine.Id, "not a token", sha256, HttpMethod.Head)).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.SequencesAsync(machine.Id, "not a token")).StatusCode);
         }
 
         Assert.Equal(HttpStatusCode.OK, (await machine.Agent.NextAsync(machine.Id, machine.Token)).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.ImageAsync(machine.Id, machine.Token, sha256, HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.SequencesAsync(machine.Id, machine.Token)).StatusCode);
     }
 
     // Anyone gets a valid poll token by registering, so a request counts against the machine that holds the token.
@@ -96,15 +95,14 @@ public sealed class RateLimitTests(DdtApplication application) : IClassFixture<D
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
         using DeployingMachine waiting = await DeployingMachine.RegisterAsync(application);
         using DeployingMachine approved = await DeployingMachine.ApprovedAsync(application, administrator);
-        string sha256 = new('0', 64);
 
         for (int attempt = 0; attempt <= MachineLogLimits.MaxAgentRequestsPerMinute; attempt++)
         {
             Assert.NotEqual(HttpStatusCode.OK, (await waiting.Agent.NextAsync(machine.Id, waiting.Token)).StatusCode);
-            Assert.NotEqual(HttpStatusCode.OK, (await approved.Agent.ImageAsync(machine.Id, approved.Token, sha256, HttpMethod.Head)).StatusCode);
+            Assert.NotEqual(HttpStatusCode.OK, (await approved.Agent.SequencesAsync(machine.Id, approved.Token)).StatusCode);
         }
 
         Assert.Equal(HttpStatusCode.OK, (await machine.Agent.NextAsync(machine.Id, machine.Token)).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.ImageAsync(machine.Id, machine.Token, sha256, HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.SequencesAsync(machine.Id, machine.Token)).StatusCode);
     }
 }

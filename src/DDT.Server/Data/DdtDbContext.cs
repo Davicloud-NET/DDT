@@ -37,6 +37,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
     public DbSet<DeploymentArtifact> DeploymentArtifacts => Set<DeploymentArtifact>();
 
+    public DbSet<DeploymentSnapshot> DeploymentSnapshots => Set<DeploymentSnapshot>();
+
+    public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
+
     public DbSet<AssignmentRule> AssignmentRules => Set<AssignmentRule>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -118,18 +122,36 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
         builder.Entity<Deployment>(deployment =>
         {
-            deployment.Property(d => d.ImageName).HasMaxLength(256);
-            deployment.Property(d => d.Sha256).HasMaxLength(64);
+            deployment.Property(d => d.Title).HasMaxLength(256);
             deployment.Property(d => d.State).HasConversion<string>().HasMaxLength(16);
             deployment.Property(d => d.State).IsConcurrencyToken();
-            deployment.Property(d => d.Step).HasConversion<string>().HasMaxLength(16);
             deployment.Property(d => d.Source).HasConversion<string>().HasMaxLength(16);
             deployment.Property(d => d.RequestedByName).HasMaxLength(256);
+            deployment.Property(d => d.CurrentStepName).HasMaxLength(DeploymentLimits.MaxStepNameLength);
+            deployment.Property(d => d.CurrentPhase).HasConversion<string>().HasMaxLength(16);
+            deployment.Property(d => d.Activity).HasConversion<string>().HasMaxLength(32);
             deployment.Property(d => d.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);
             deployment.HasIndex(d => d.MachineId);
             deployment.HasOne<Machine>().WithMany().HasForeignKey(d => d.MachineId).OnDelete(DeleteBehavior.Cascade);
-            deployment.HasOne<Image>().WithMany().HasForeignKey(d => d.ImageId).OnDelete(DeleteBehavior.SetNull);
+            deployment.HasOne<TaskSequence>().WithMany().HasForeignKey(d => d.TaskSequenceId).OnDelete(DeleteBehavior.SetNull);
             deployment.HasOne<DdtUser>().WithMany().HasForeignKey(d => d.RequestedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<DeploymentSnapshot>(snapshot =>
+        {
+            snapshot.HasKey(s => s.DeploymentId);
+            snapshot.HasOne<Deployment>().WithOne().HasForeignKey<DeploymentSnapshot>(s => s.DeploymentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<DeploymentStep>(step =>
+        {
+            step.HasKey(s => new { s.DeploymentId, s.StepId });
+            step.Property(s => s.Name).HasMaxLength(DeploymentLimits.MaxStepNameLength);
+            step.Property(s => s.Kind).HasMaxLength(32);
+            step.Property(s => s.Phase).HasConversion<string>().HasMaxLength(16);
+            step.Property(s => s.State).HasConversion<string>().HasMaxLength(16);
+            step.Property(s => s.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);
+            step.HasOne<Deployment>().WithMany().HasForeignKey(s => s.DeploymentId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<DeploymentArtifact>(artifact =>
@@ -188,7 +210,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             audit.Property(a => a.ActorName).HasMaxLength(256);
             audit.Property(a => a.SubjectId).HasMaxLength(64);
             audit.Property(a => a.SourceAddress).HasMaxLength(64);
-            audit.Property(a => a.Detail).HasMaxLength(2048);
+            audit.Property(a => a.Detail).HasMaxLength(AuditEvent.MaxDetailLength);
             audit.HasIndex(a => a.OccurredUtc);
             audit.HasIndex(a => a.Action);
         });

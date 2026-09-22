@@ -36,13 +36,13 @@ public sealed class SequenceResolver(DdtDbContext database)
                     null,
                     null,
                     active,
-                    $"{by} chose {active.ImageName} at the machine, which comes before every rule.")
+                    $"{by} chose {active.Title} at the machine, which comes before every rule.")
                 : new SequenceResolution(
                     SequenceResolutionSource.Assigned,
                     null,
                     null,
                     active,
-                    $"{by} assigned {active.ImageName} on the web, which comes before every rule.");
+                    $"{by} assigned {active.Title} on the web, which comes before every rule.");
         }
 
         List<AssignmentRule> rules = await database.AssignmentRules.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);

@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Images;
@@ -121,19 +122,18 @@ public sealed class WaitingMachineCleanupTests(DdtApplication application) : ICl
 
     // It waits on purpose, for a sign-in or a zero touch netboot, and removing it would silently drop the assignment.
     [Fact]
-    public async Task AWaitingMachineWithAnAssignedImageIsNotRemoved()
+    public async Task AWaitingMachineWithAnAssignedRunIsNotRemoved()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         string flood = TestRemoteAddress.Unique();
 
         using RegisteredMachine assigned = await application.RegisterMachineAsync(flood);
         using RegisteredMachine stray = await application.RegisterMachineAsync(flood);
-        Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
 
         await LastSeenAsync(assigned.Id, TimeSpan.FromMinutes(10));
 
-        MachineSummary summary = await RegisteredMachine.ReadAsync<MachineSummary>(
-            await administrator.PostAsync($"/api/machines/{assigned.Id}/deployments", new AssignImageRequest(image.Id, null)));
+        MachineSummary summary = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.AssignAsync(assigned.Id, sequence.Id));
 
         Assert.Equal(MachineState.Pending, summary.State);
 
@@ -141,7 +141,7 @@ public sealed class WaitingMachineCleanupTests(DdtApplication application) : ICl
 
         Assert.Equal(HttpStatusCode.Conflict, single.StatusCode);
         Assert.Equal(
-            "Only a rejected machine, or a waiting machine that was never approved and has no assigned image, can be removed.",
+            "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed.",
             await TestDatabase.TitleAsync(single));
 
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines?waitingFrom={flood}")).StatusCode);

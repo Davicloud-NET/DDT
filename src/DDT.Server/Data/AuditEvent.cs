@@ -22,5 +22,7 @@ public sealed class AuditEvent
 
     public string? SourceAddress { get; set; }
 
+    public const int MaxDetailLength = 2048;
+
     public string? Detail { get; set; }
 }

@@ -71,19 +71,14 @@ public static class ImageEndpoints
                 return TypedResults.NotFound();
             }
 
-            bool inUse = await database.Deployments
-                .AnyAsync(
-                    d => d.ImageId == id && (d.State == DeploymentState.Assigned || d.State == DeploymentState.Running),
-                    cancellationToken)
-                .ConfigureAwait(false)
-                || await ActiveArtifacts.Of(database)
-                    .AnyAsync(a => a.Kind == ArtifactKind.Image && a.SourceId == id, cancellationToken)
-                    .ConfigureAwait(false);
+            bool inUse = await ActiveArtifacts.Of(database)
+                .AnyAsync(a => a.Kind == ArtifactKind.Image && a.SourceId == id, cancellationToken)
+                .ConfigureAwait(false);
 
             if (inUse)
             {
                 return TypedResults.Problem(
-                    title: "Machines are waiting for this image or installing it. Cancel those deployments or let them finish, then delete it.",
+                    title: "Runs that are assigned or running use this image. Cancel them or let them finish, then delete it.",
                     statusCode: StatusCodes.Status409Conflict);
             }
 

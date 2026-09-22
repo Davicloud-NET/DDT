@@ -198,8 +198,23 @@ namespace DDT.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Activity")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<DateTimeOffset>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CurrentPhase")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int?>("CurrentStepIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CurrentStepName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("integer");
@@ -211,16 +226,8 @@ namespace DDT.Server.Migrations
                     b.Property<DateTimeOffset?>("FinishedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ImageId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ImageName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<long>("InstalledBytes")
-                        .HasColumnType("bigint");
+                    b.Property<string>("Inputs")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("MachineId")
                         .HasColumnType("uuid");
@@ -235,12 +242,10 @@ namespace DDT.Server.Migrations
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Sha256")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<Guid?>("RuleId")
+                        .HasColumnType("uuid");
 
-                    b.Property<long>("SizeBytes")
+                    b.Property<long?>("SequenceRevision")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Source")
@@ -257,23 +262,27 @@ namespace DDT.Server.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
-                    b.Property<string>("Step")
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                    b.Property<int>("StepCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TaskSequenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WimIndex")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("ImageId");
 
                     b.HasIndex("MachineId");
 
                     b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("TaskSequenceId");
 
                     b.ToTable("Deployments", "ddt");
                 });
@@ -332,6 +341,69 @@ namespace DDT.Server.Migrations
                     b.HasIndex("SourceId");
 
                     b.ToTable("DeploymentArtifacts", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentSnapshot", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("DeploymentId");
+
+                    b.ToTable("DeploymentSnapshots", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentStep", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTimeOffset?>("FinishedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("Percent")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset?>("StartedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("DeploymentId", "StepId");
+
+                    b.ToTable("DeploymentSteps", "ddt");
                 });
 
             modelBuilder.Entity("DDT.Server.Images.Image", b =>
@@ -492,6 +564,9 @@ namespace DDT.Server.Migrations
 
                     b.Property<DateTimeOffset>("FirstSeenUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeploymentId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("LastSeenAddress")
                         .HasMaxLength(64)
@@ -893,11 +968,6 @@ namespace DDT.Server.Migrations
 
             modelBuilder.Entity("DDT.Server.Deployments.Deployment", b =>
                 {
-                    b.HasOne("DDT.Server.Images.Image", null)
-                        .WithMany()
-                        .HasForeignKey("ImageId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("DDT.Server.Machines.Machine", null)
                         .WithMany()
                         .HasForeignKey("MachineId")
@@ -908,9 +978,32 @@ namespace DDT.Server.Migrations
                         .WithMany()
                         .HasForeignKey("RequestedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DDT.Server.Sequences.TaskSequence", null)
+                        .WithMany()
+                        .HasForeignKey("TaskSequenceId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentSnapshot", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithOne()
+                        .HasForeignKey("DDT.Server.Deployments.DeploymentSnapshot", "DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentStep", b =>
                 {
                     b.HasOne("DDT.Server.Deployments.Deployment", null)
                         .WithMany()

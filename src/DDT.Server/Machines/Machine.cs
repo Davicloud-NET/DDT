@@ -71,4 +71,7 @@ public sealed class Machine
     // The deployment that is assigned or running. It is checked on save, so an assignment on the web, a pick at the
     // machine and a registration cannot each start one.
     public Guid? ActiveDeploymentId { get; set; }
+
+    // The newest deployment, active or not, so the machines list loads one deployment per machine.
+    public Guid? LastDeploymentId { get; set; }
 }

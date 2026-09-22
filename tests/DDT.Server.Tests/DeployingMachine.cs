@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Net.Http.Json;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -56,7 +54,7 @@ public sealed class DeployingMachine : IDisposable
         return new DeployingMachine(agent, registration, registered);
     }
 
-    // An operator signed in at it: approved, and allowed to choose an image at the machine.
+    // An operator signed in at it: approved, and allowed to choose a sequence at the machine.
     public static async Task<DeployingMachine> SignedInAsync(
         DdtApplication application,
         string userName,
@@ -73,7 +71,7 @@ public sealed class DeployingMachine : IDisposable
         return machine;
     }
 
-    // Approved on the web: nobody signed in at it, so only a web assignment gives it an image.
+    // Approved on the web: nobody signed in at it, so only a web assignment gives it a run.
     public static async Task<DeployingMachine> ApprovedAsync(
         DdtApplication application,
         SignedInClient operatorClient,
@@ -97,32 +95,6 @@ public sealed class DeployingMachine : IDisposable
         ResumeToken = next.ResumeToken;
 
         return next;
-    }
-
-    public async Task<HttpResponseMessage> ReportAsync(
-        Guid deploymentId,
-        DeploymentState state,
-        DeploymentStep step,
-        int percent = 0,
-        string? error = null)
-    {
-        HttpResponseMessage response = await Agent.ReportAsync(Id, Token, deploymentId, new AgentDeploymentReport(state, step, percent, error));
-
-        if (response.IsSuccessStatusCode)
-        {
-            AgentDeploymentReportResult result = (await response.Content.ReadFromJsonAsync<AgentDeploymentReportResult>(TestJson.Options))!;
-            Token = result.Token;
-            ResumeToken = result.ResumeToken;
-        }
-
-        return response;
-    }
-
-    public async Task ReportOkAsync(Guid deploymentId, DeploymentState state, DeploymentStep step, int percent = 0, string? error = null)
-    {
-        HttpResponseMessage response = await ReportAsync(deploymentId, state, step, percent, error);
-
-        Assert.True(response.IsSuccessStatusCode, $"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
     // Without the resume token, as a new agent process does after the machine netbooted again.

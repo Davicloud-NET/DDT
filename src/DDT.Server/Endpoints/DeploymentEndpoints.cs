@@ -4,13 +4,17 @@
 
 using DDT.Contracts.Deployments;
 using DDT.Server.Authentication;
+using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
+using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Endpoints;
 
@@ -25,6 +29,9 @@ public static class DeploymentEndpoints
         // deployment passwords.
         group.MapGet("/options", ReadOptions).RequireAuthorization(DdtPolicies.Viewer);
 
+        // Viewers read the definition a run was given, scripts included, as they read the sequences.
+        group.MapGet("/{id:guid}", ReadAsync).RequireAuthorization(DdtPolicies.Viewer);
+
         return group;
     }
 
@@ -37,4 +44,45 @@ public static class DeploymentEndpoints
             machineOptions.Value.RequireWebApproval,
             deployments.ZeroTouchEnabled,
             timeProvider.GetUtcNow()));
+
+    private static async Task<Results<Ok<DeploymentView>, NotFound>> ReadAsync(
+        Guid id,
+        DdtDbContext database,
+        CancellationToken cancellationToken)
+    {
+        Deployment? run = await database.Deployments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (run is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        DeploymentSnapshot? snapshot = await database.DeploymentSnapshots
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.DeploymentId == id, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<DeploymentStep> steps = await database.DeploymentSteps
+            .AsNoTracking()
+            .Where(s => s.DeploymentId == id)
+            .OrderBy(s => s.Index)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        List<DeploymentArtifact> artifacts = await database.DeploymentArtifacts
+            .AsNoTracking()
+            .Where(a => a.DeploymentId == id)
+            .OrderBy(a => a.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return TypedResults.Ok(new DeploymentView(
+            DeploymentSummaries.From(run),
+            run.MachineId,
+            run.SequenceRevision,
+            run.RuleId,
+            snapshot is null ? null : SequenceDocuments.Read(snapshot.Definition),
+            [.. steps.Select(DeploymentSummaries.Step)],
+            [.. artifacts.Select(DeploymentSummaries.Artifact)]));
+    }
 }

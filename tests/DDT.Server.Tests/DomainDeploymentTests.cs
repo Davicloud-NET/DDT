@@ -4,14 +4,12 @@
 
 using System.Net;
 using System.Security.Cryptography;
-using System.Text;
-using System.Xml.Linq;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Deployments;
-using DDT.Server.Images;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -20,14 +18,21 @@ namespace DDT.Server.Tests;
 
 public sealed class DomainDeploymentTests(DomainDeploymentApplication application) : IClassFixture<DomainDeploymentApplication>
 {
-    private static readonly XNamespace s_unattend = "urn:schemas-microsoft-com:unattend";
+    // Installs Windows and joins the domain in it, as the Install Windows template does with a domain.
+    private async Task<SequenceView> DomainSequenceAsync()
+    {
+        Guid imageId = (await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096))).Id;
 
-    private Task<Image> ImageAsync() => application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
+        return await (await application.AdministratorAsync()).CreatedSequenceAsync(SequenceRequests.Definition(
+        [
+            .. SequenceRequests.Minimal(imageId).Steps,
+            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", LocalAdministrator = true },
+            new JoinDomainStep { Id = Guid.NewGuid(), Name = "Join", RebootAfter = true },
+        ]));
+    }
 
-    private async Task<HttpResponseMessage> AssignAsync(Guid machineId, Guid imageId, string? computerName) =>
-        await (await application.AdministratorAsync()).PostAsync(
-            $"/api/machines/{machineId}/deployments",
-            new AssignImageRequest(imageId, computerName));
+    private async Task<HttpResponseMessage> AssignAsync(Guid machineId, Guid sequenceId, string? computerName) =>
+        await (await application.AdministratorAsync()).AssignAsync(machineId, sequenceId, computerName);
 
     // A second binding of the section would be read on first use, from whatever the configuration then holds.
     [Fact]
@@ -59,17 +64,17 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
     public async Task AWaitingMachineLearnsItsNameAndTheDomainOnlyOnceAuthorized()
     {
         using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
-        Image image = await ImageAsync();
+        SequenceView sequence = await DomainSequenceAsync();
 
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
-        Assert.Equal(MachineState.Pending, (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id, "PC-0006"))).State);
+        Assert.Equal(MachineState.Pending, (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, sequence.Id, "PC-0006"))).State);
 
         AgentNextResult waiting = await machine.NextAsync();
 
         Assert.Equal(MachineState.Pending, waiting.State);
         Assert.False(waiting.DomainConfigured);
         Assert.Null(waiting.AssignedName);
-        Assert.Null(waiting.Deployment);
+        Assert.Null(waiting.Run);
 
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
@@ -82,7 +87,6 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.Equal(MachineState.Approved, approved.State);
         Assert.True(approved.DomainConfigured);
         Assert.Equal("PC-0006", approved.AssignedName);
-        Assert.NotNull(approved.Deployment);
     }
 
     [Fact]
@@ -90,18 +94,32 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
-        Image image = await ImageAsync();
+        SequenceView sequence = await DomainSequenceAsync();
 
-        HttpResponseMessage nameless = await AssignAsync(machine.Id, image.Id, null);
+        HttpResponseMessage nameless = await AssignAsync(machine.Id, sequence.Id, null);
         Assert.Equal(HttpStatusCode.BadRequest, nameless.StatusCode);
         Assert.Contains("computer name", await nameless.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
-        MachineSummary named = await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id, " PC-0003 "));
+        MachineSummary named = await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, sequence.Id, " PC-0003 "));
         Assert.Equal("PC-0003", named.AssignedName);
 
         // Once it has a name, a later assignment keeps it.
-        (await administrator.DeleteAsync($"/api/machines/{machine.Id}/deployments/current")).EnsureSuccessStatusCode();
-        Assert.Equal("PC-0003", (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id, null))).AssignedName);
+        (await administrator.EndCurrentAsync(machine.Id)).EnsureSuccessStatusCode();
+        Assert.Equal("PC-0003", (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, sequence.Id, null))).AssignedName);
+    }
+
+    // The name is for the join, so a sequence that joins nothing needs none, domain or not.
+    [Fact]
+    public async Task ASequenceThatJoinsNothingNeedsNoName()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+
+        MachineSummary assigned = await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, sequence.Id, null));
+
+        Assert.Null(assigned.AssignedName);
+        Assert.Equal(DeploymentState.Assigned, assigned.Deployment?.State);
     }
 
     [Fact]
@@ -109,65 +127,41 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
         using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName);
-        Image image = await ImageAsync();
+        SequenceView sequence = await DomainSequenceAsync();
+
+        AgentSequenceChoice choice = Assert.Single(
+            await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(await machine.Agent.SequencesAsync(machine.Id, machine.Token)),
+            c => c.Id == sequence.Id);
+        Assert.True(choice.NeedsComputerName);
 
         Assert.Equal(
             HttpStatusCode.BadRequest,
-            (await machine.Agent.PickAsync(machine.Id, machine.Token, new AgentPickRequest(image.Id, 0, null))).StatusCode);
+            (await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(sequence.Id, 0, null))).StatusCode);
 
-        AgentDeployment picked = await RegisteredMachine.ReadAsync<AgentDeployment>(
-            await machine.Agent.PickAsync(machine.Id, machine.Token, new AgentPickRequest(image.Id, 0, "PC-0004")));
+        AgentRun picked = await RegisteredMachine.ReadAsync<AgentRun>(
+            await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(sequence.Id, 0, "PC-0004")));
 
         Assert.Equal(DeploymentState.Assigned, picked.State);
+        Assert.Equal("PC-0004", picked.ComputerName);
         Assert.Equal("PC-0004", (await machine.NextAsync()).AssignedName);
     }
 
+    // A rule gives no name, so an approval cannot run its domain sequence on a machine that has none.
     [Fact]
-    public async Task OnlyARunningDeploymentGetsItsAnswerFile()
+    public async Task AnApprovalCannotRunARulesDomainSequenceWithoutAName()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
-        Image image = await ImageAsync();
+        SequenceView sequence = await DomainSequenceAsync();
+        string model = RuleRequests.UniqueModel();
+        await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
+        using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model);
 
-        Guid deployment = (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, image.Id, "PC-0005"))).Deployment!.Id;
+        HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, sequence.Id);
 
-        HttpResponseMessage early = await machine.Agent.UnattendAsync(machine.Id, machine.Token, deployment);
-        Assert.Equal(HttpStatusCode.Conflict, early.StatusCode);
-
-        await machine.ReportOkAsync(deployment, DeploymentState.Running, DeploymentStep.Partition);
-
-        HttpResponseMessage response = await machine.Agent.UnattendAsync(machine.Id, machine.Token, deployment);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
-        Assert.True(response.Headers.CacheControl?.NoStore);
-
-        XDocument answer = XDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-        string Value(string name) => answer.Descendants(s_unattend + name).Single().Value;
-
-        Assert.Equal("PC-0005", Value("ComputerName"));
-        Assert.Equal("W. Europe Standard Time", Value("TimeZone"));
-        Assert.Equal("en-US", Value("UILanguage"));
-        Assert.Equal("en-US", Value("SystemLocale"));
-        Assert.Equal("0407:00000407", Value("InputLocale"));
-        Assert.Equal("corp.example", Value("JoinDomain"));
-        Assert.Equal("OU=Workstations,DC=corp,DC=example", Value("MachineObjectOU"));
-        Assert.Equal(@"CORP\ddt-join", Value("Username"));
-        Assert.Equal(DomainDeploymentApplication.JoinPassword, answer.Descendants(s_unattend + "Credentials").Single().Element(s_unattend + "Password")?.Value);
-        Assert.Equal("Admin", answer.Descendants(s_unattend + "LocalAccount").Single().Element(s_unattend + "Name")?.Value);
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
         Assert.Equal(
-            Convert.ToBase64String(Encoding.Unicode.GetBytes(DomainDeploymentApplication.AdministratorPassword + "Password")),
-            answer.Descendants(s_unattend + "LocalAccount").Single().Descendants(s_unattend + "Value").Single().Value);
-        Assert.All(answer.Descendants().Where(e => e.Name.LocalName == "component"), component =>
-            Assert.Equal("amd64", component.Attribute("processorArchitecture")?.Value));
-
-        // Another machine's token never reaches this machine's answer file.
-        using DeployingMachine other = await DeployingMachine.ApprovedAsync(application, administrator);
-        Assert.Equal(HttpStatusCode.Forbidden, (await other.Agent.UnattendAsync(machine.Id, other.Token, deployment)).StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, (await other.Agent.UnattendAsync(other.Id, other.Token, deployment)).StatusCode);
-
-        await machine.ReportOkAsync(deployment, DeploymentState.Failed, DeploymentStep.Boot, 0, "bcdboot failed.");
-
-        Assert.Equal(HttpStatusCode.Conflict, (await machine.Agent.UnattendAsync(machine.Id, machine.Token, deployment)).StatusCode);
+            $"{sequence.Name} joins the domain, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.",
+            await TestDatabase.TitleAsync(refused));
+        Assert.Equal(MachineState.Pending, (await application.MachineAsync(machine.Id)).State);
     }
 }

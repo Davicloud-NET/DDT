@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using DDT.Contracts.Deployments;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -39,11 +38,6 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
 
         bool referenced = await database.Images.AnyAsync(i => i.Sha256 == sha256, cancellationToken).ConfigureAwait(false)
             || await database.Packages.AnyAsync(p => p.Sha256 == sha256, cancellationToken).ConfigureAwait(false)
-            || await database.Deployments
-                .AnyAsync(
-                    d => d.Sha256 == sha256 && (d.State == DeploymentState.Assigned || d.State == DeploymentState.Running),
-                    cancellationToken)
-                .ConfigureAwait(false)
             || await ActiveArtifacts.Of(database).AnyAsync(a => a.Sha256 == sha256, cancellationToken).ConfigureAwait(false);
 
         if (referenced)

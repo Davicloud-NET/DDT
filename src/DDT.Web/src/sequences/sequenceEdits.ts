@@ -34,14 +34,34 @@ export function insertStepAfter(afterId: string, kind: StepKind): SequenceEdit {
   return { type: "insertStepAfter", afterId, kind, id: crypto.randomUUID() };
 }
 
-// Typing waits for a pause before it is saved; a change of the structure is saved at once.
+type FieldOf<T> = T extends unknown ? keyof T : never;
+
+// The fields set by a checkbox or a select rather than by typing.
+const chosen: (FieldOf<StepPatch> | keyof StepCondition)[] = [
+  "continueOnError",
+  "rebootAfter",
+  "requireMatch",
+  "localAdministrator",
+  "imageId",
+  "phase",
+  "interpreter",
+  "packageId",
+  "operator",
+];
+const chosenFields: ReadonlySet<string> = new Set(chosen);
+
+// Typing waits for a pause before it is saved; a change of the structure or a choice is saved at once.
 export function isTyping(edit: SequenceEdit): boolean {
-  return (
-    edit.type === "rename" ||
-    edit.type === "describe" ||
-    edit.type === "updateStep" ||
-    edit.type === "updateCondition"
-  );
+  switch (edit.type) {
+    case "rename":
+    case "describe":
+      return true;
+    case "updateStep":
+    case "updateCondition":
+      return Object.keys(edit.patch).some((field) => !chosenFields.has(field));
+    default:
+      return false;
+  }
 }
 
 // A patch names the fields of one kind. A field the step does not have is left out, so a step keeps the shape

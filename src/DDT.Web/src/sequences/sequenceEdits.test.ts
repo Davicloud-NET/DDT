@@ -5,7 +5,13 @@
 import { describe, expect, it } from "vitest";
 
 import { changedParts, type SequenceDraft } from "./sequenceDraft";
-import { addStep, insertStepAfter, sequenceEdits, type SequenceEdit } from "./sequenceEdits";
+import {
+  addStep,
+  insertStepAfter,
+  isTyping,
+  sequenceEdits,
+  type SequenceEdit,
+} from "./sequenceEdits";
 import { newStep } from "./steps";
 
 function draft(...ids: string[]): SequenceDraft {
@@ -136,5 +142,34 @@ describe("sequenceEdits", () => {
       "the order of the steps",
     ]);
     expect(changedParts(base, base)).toEqual([]);
+  });
+});
+
+describe("isTyping", () => {
+  it("waits for a pause only after typing, and saves choices and structure at once", () => {
+    const typed: SequenceEdit[] = [
+      { type: "rename", name: "Lab" },
+      { type: "describe", description: "Room 4" },
+      { type: "updateStep", id: "a", patch: { name: "Set wallpaper" } },
+      { type: "updateStep", id: "a", patch: { script: "exit 0" } },
+      { type: "updateStep", id: "a", patch: { timeoutMinutes: 90 } },
+      { type: "updateCondition", stepId: "a", index: 0, patch: { value: "Latitude" } },
+    ];
+    const chosen: SequenceEdit[] = [
+      { type: "updateStep", id: "a", patch: { continueOnError: true } },
+      { type: "updateStep", id: "a", patch: { rebootAfter: true } },
+      { type: "updateStep", id: "a", patch: { requireMatch: true } },
+      { type: "updateStep", id: "a", patch: { localAdministrator: true } },
+      { type: "updateStep", id: "a", patch: { imageId: "0193a4b2-0000-7000-8000-0000000000a1" } },
+      { type: "updateStep", id: "a", patch: { phase: "Windows" } },
+      { type: "updateStep", id: "a", patch: { interpreter: "PowerShell" } },
+      { type: "updateStep", id: "a", patch: { packageId: null } },
+      { type: "updateCondition", stepId: "a", index: 0, patch: { operator: "Contains" } },
+      addStep("reboot"),
+      { type: "moveStep", id: "a", to: 1 },
+    ];
+
+    expect(typed.filter((edit) => !isTyping(edit))).toEqual([]);
+    expect(chosen.filter(isTyping)).toEqual([]);
   });
 });

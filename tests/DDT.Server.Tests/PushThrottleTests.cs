@@ -44,7 +44,7 @@ public sealed class PushThrottleTests
     [Fact]
     public async Task SendsTheFirstAtOnceAndOnlyTheLatestOfTheRestWhenTheSecondEnds()
     {
-        PushThrottle throttle = new(_clock, TimeSpan.FromSeconds(1));
+        PushThrottle throttle = new(_clock, TimeSpan.FromSeconds(1), CancellationToken.None);
         Guid machine = Guid.NewGuid();
 
         throttle.Push(machine, Push("first"));
@@ -70,5 +70,24 @@ public sealed class PushThrottleTests
         _clock.Advance(TimeSpan.FromSeconds(5));
         throttle.Push(machine, Push("fifth"));
         Assert.Equal("fifth", Sent()[^1]);
+    }
+
+    // When the server stops, a push that waits is dropped rather than keep its timer.
+    [Fact]
+    public async Task AStopDropsThePushThatWaits()
+    {
+        using CancellationTokenSource stopping = new();
+        PushThrottle throttle = new(_clock, TimeSpan.FromSeconds(1), stopping.Token);
+        Guid machine = Guid.NewGuid();
+
+        throttle.Push(machine, Push("first"));
+        throttle.Push(machine, Push("second"));
+        Assert.True(_clock.HasTimerDueIn(TimeSpan.FromSeconds(1)));
+
+        await stopping.CancelAsync();
+
+        Assert.False(_clock.HasTimerDueIn(TimeSpan.FromSeconds(1)));
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(["first"], Sent());
     }
 }

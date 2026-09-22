@@ -5,13 +5,15 @@
 using DDT.Contracts.Deployments;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Images;
 
-// Uploads are staged on the same volume as the library, so finishing one is a rename.
+// Uploads are staged on the same volume as the library, so finishing one is a rename. The objects are images and
+// packages alike, each stored once by its hash.
 public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<ImageStore> logger)
 {
     public string ObjectsDirectory => Path.GetFullPath(Path.Combine(options.Value.StorePath, "images", "objects"));
@@ -19,8 +21,8 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
     public string UploadsDirectory => Path.GetFullPath(Path.Combine(options.Value.StorePath, "images", "uploads"));
 
     // Held while stored files and the rows that refer to them change together: the commit of a completed upload,
-    // the removal of an image, an assignment or a pick that refers to an image, and the creation of an upload
-    // session, whose free space check counts the others.
+    // the removal of an image or a package, an assignment or a pick that refers to them, and the creation of an
+    // upload session, whose free space check counts the others.
     public SemaphoreSlim LibraryLock { get; } = new(1, 1);
 
     public string ObjectPath(string sha256) => Path.Combine(ObjectsDirectory, sha256);
@@ -36,11 +38,13 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
         ArgumentNullException.ThrowIfNull(database);
 
         bool referenced = await database.Images.AnyAsync(i => i.Sha256 == sha256, cancellationToken).ConfigureAwait(false)
+            || await database.Packages.AnyAsync(p => p.Sha256 == sha256, cancellationToken).ConfigureAwait(false)
             || await database.Deployments
                 .AnyAsync(
                     d => d.Sha256 == sha256 && (d.State == DeploymentState.Assigned || d.State == DeploymentState.Running),
                     cancellationToken)
-                .ConfigureAwait(false);
+                .ConfigureAwait(false)
+            || await ActiveArtifacts.Of(database).AnyAsync(a => a.Sha256 == sha256, cancellationToken).ConfigureAwait(false);
 
         if (referenced)
         {
@@ -65,6 +69,6 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
         return true;
     }
 
-    [LoggerMessage(EventId = 900, Level = LogLevel.Warning, Message = "Could not delete the image file {Path}, which no image uses any more")]
+    [LoggerMessage(EventId = 900, Level = LogLevel.Warning, Message = "Could not delete the stored file {Path}, which nothing uses any more")]
     private partial void LogObjectNotDeleted(string path, Exception exception);
 }

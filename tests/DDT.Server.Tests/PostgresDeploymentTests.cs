@@ -6,7 +6,9 @@ using System.Net;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Server.Images;
 using DotNet.Testcontainers.Builders;
@@ -82,7 +84,7 @@ public sealed class PostgresDeploymentTests
     }
 
     [Fact]
-    public async Task StoresTheLibraryOfTaskSequences()
+    public async Task StoresTheLibraryOfSequencesAndPackages()
     {
         PostgreSqlContainer? started = await StartAsync();
         Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
@@ -105,5 +107,16 @@ public sealed class PostgresDeploymentTests
         Assert.Empty(saved.Problems);
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateSequenceAsync(saved.Definition, "INSTALL WINDOWS")).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.SaveSequenceAsync(created)).StatusCode);
+
+        PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);
+        PackageSummary targeted = await RegisteredMachine.ReadAsync<PackageSummary>(await administrator.PutAsync(
+            $"{PackageRequests.Packages}/{package.Id}",
+            new UpdatePackageRequest("Latitude", "A NUL\0 here too", [new HardwareModel("Dell Inc.", "Latitude 5440")])));
+
+        Assert.Equal("A NUL here too", targeted.Description);
+        Assert.Equal(new HardwareModel("Dell Inc.", "Latitude 5440"), Assert.Single(targeted.Targets));
+
+        await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
     }
 }

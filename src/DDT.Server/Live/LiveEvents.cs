@@ -16,4 +16,7 @@ public static class LiveEvents
 
     // Carries a SequenceChangedEvent, so an editor can tell another administrator's save from its own.
     public const string SequenceChanged = "sequenceChanged";
+
+    // Carries nothing: clients load the package list again.
+    public const string PackagesChanged = "packagesChanged";
 }

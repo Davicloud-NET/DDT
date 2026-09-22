@@ -27,6 +27,8 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
 
     public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);
 
+    public void PackagesChanged() => _ = PushEventAsync(LiveEvents.PackagesChanged);
+
     public void SequenceChanged(SequenceChangedEvent change)
     {
         ArgumentNullException.ThrowIfNull(change);

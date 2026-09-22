@@ -3,11 +3,13 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Core.Unattend;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
+using DDT.Server.Packages;
 
 namespace DDT.Server.Sequences;
 
@@ -48,6 +50,9 @@ public static class SequenceChecks
                 case JoinDomainStep join:
                     CheckJoin(join, references, Add);
                     break;
+                case RunScriptStep { PackageId: { } packageId }:
+                    CheckPackage(packageId, references, Add);
+                    break;
             }
 
             continuesInWindows |= SequencePhases.Of(definition, index) == SequencePhase.Windows;
@@ -81,6 +86,18 @@ public static class SequenceChecks
         else if (DeploymentService.NotDeployable(image) is { } reason)
         {
             add("imageId", reason);
+        }
+    }
+
+    private static void CheckPackage(Guid packageId, SequenceReferences references, Action<string?, string> add)
+    {
+        if (!references.Packages.TryGetValue(packageId, out Package? package))
+        {
+            add("packageId", "The package is no longer in the library. Choose another package, or none.");
+        }
+        else if (package.Kind != PackageKind.Files)
+        {
+            add("packageId", $"{package.Name} is a driver package. A script runs with a files package.");
         }
     }
 

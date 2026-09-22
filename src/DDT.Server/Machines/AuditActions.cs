@@ -23,4 +23,7 @@ public static class AuditActions
     public const string SequenceCreated = "sequence.created";
     public const string SequenceChanged = "sequence.changed";
     public const string SequenceDeleted = "sequence.deleted";
+    public const string PackageUploaded = "package.uploaded";
+    public const string PackageChanged = "package.changed";
+    public const string PackageDeleted = "package.deleted";
 }

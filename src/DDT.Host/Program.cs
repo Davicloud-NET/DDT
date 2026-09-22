@@ -130,6 +130,7 @@ api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
 api.MapGroup("/sequences").MapSequenceEndpoints();
+api.MapGroup("/packages").MapPackageEndpoints();
 api.MapGroup("/about").MapAboutEndpoints();
 api.MapGroup("/server").MapServerEndpoints();
 

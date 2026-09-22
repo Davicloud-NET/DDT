@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Security.Claims;
 using DDT.Contracts.Images;
+using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.Images;
 using Microsoft.AspNetCore.Builder;
@@ -59,12 +60,11 @@ public static class ImageUploadEndpoints
             });
         }
 
-        // Packages come with their library.
-        if (request.Kind != UploadKind.Image)
+        if (!Enum.IsDefined(request.Kind))
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["kind"] = ["This server takes only images."],
+                ["kind"] = ["Choose an image, a driver package or a files package."],
             });
         }
 
@@ -162,7 +162,8 @@ public static class ImageUploadEndpoints
     private static async Task<Results<
         Created<IReadOnlyList<ImageSummary>>,
         Ok<IReadOnlyList<ImageSummary>>,
-        NotFound,
+        Created<PackageSummary>,
+        Ok<PackageSummary>,
         ProblemHttpResult,
         StatusCodeHttpResult>> CompleteAsync(
         Guid id,
@@ -187,12 +188,16 @@ public static class ImageUploadEndpoints
 
         switch (completion.Status)
         {
+            case UploadCompletionStatus.Added when completion.Package is { } package:
+                return TypedResults.Created((string?)null, package);
             case UploadCompletionStatus.Added:
                 return TypedResults.Created((string?)null, completion.Images);
+            case UploadCompletionStatus.Existing when completion.Package is { } package:
+                return TypedResults.Ok(package);
             case UploadCompletionStatus.Existing:
                 return TypedResults.Ok(completion.Images);
             case UploadCompletionStatus.NotFound:
-                return TypedResults.NotFound();
+                return Refusal("This upload no longer exists. Select the file again to upload it.", StatusCodes.Status404NotFound);
             case UploadCompletionStatus.Busy:
                 return RetryLater(context, "This upload is being checked or written to. Ask again in a few seconds.");
             case UploadCompletionStatus.Incomplete:

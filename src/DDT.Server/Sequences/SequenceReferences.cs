@@ -3,11 +3,13 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Images;
+using DDT.Server.Packages;
 
 namespace DDT.Server.Sequences;
 
 // What the steps of a sequence refer to outside of it, read once for every sequence a request checks.
 public sealed record SequenceReferences(
     IReadOnlyDictionary<Guid, Image> Images,
+    IReadOnlyDictionary<Guid, Package> Packages,
     bool DomainConfigured,
     bool LocalAdministratorConfigured);

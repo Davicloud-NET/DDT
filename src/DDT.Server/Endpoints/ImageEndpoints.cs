@@ -7,6 +7,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
@@ -74,7 +75,10 @@ public static class ImageEndpoints
                 .AnyAsync(
                     d => d.ImageId == id && (d.State == DeploymentState.Assigned || d.State == DeploymentState.Running),
                     cancellationToken)
-                .ConfigureAwait(false);
+                .ConfigureAwait(false)
+                || await ActiveArtifacts.Of(database)
+                    .AnyAsync(a => a.Kind == ArtifactKind.Image && a.SourceId == id, cancellationToken)
+                    .ConfigureAwait(false);
 
             if (inUse)
             {

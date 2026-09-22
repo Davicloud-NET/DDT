@@ -6,6 +6,7 @@ using DDT.Contracts.Images;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using DDT.Server.Packages;
 using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<Deployment> Deployments => Set<Deployment>();
 
     public DbSet<TaskSequence> TaskSequences => Set<TaskSequence>();
+
+    public DbSet<Package> Packages => Set<Package>();
+
+    public DbSet<DeploymentArtifact> DeploymentArtifacts => Set<DeploymentArtifact>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -122,6 +127,29 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             deployment.HasOne<Machine>().WithMany().HasForeignKey(d => d.MachineId).OnDelete(DeleteBehavior.Cascade);
             deployment.HasOne<Image>().WithMany().HasForeignKey(d => d.ImageId).OnDelete(DeleteBehavior.SetNull);
             deployment.HasOne<DdtUser>().WithMany().HasForeignKey(d => d.RequestedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<DeploymentArtifact>(artifact =>
+        {
+            artifact.Property(a => a.Kind).HasConversion<string>().HasMaxLength(16);
+            artifact.Property(a => a.Name).HasMaxLength(256);
+            artifact.Property(a => a.Sha256).HasMaxLength(64);
+            artifact.Property(a => a.Language).HasMaxLength(16);
+            artifact.HasIndex(a => a.Sha256);
+            artifact.HasIndex(a => a.SourceId);
+            artifact.HasOne<Deployment>().WithMany().HasForeignKey(a => a.DeploymentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Package>(package =>
+        {
+            package.Property(p => p.Name).HasMaxLength(PackageLimits.MaxNameLength);
+            package.Property(p => p.Kind).HasConversion<string>().HasMaxLength(16);
+            package.Property(p => p.Sha256).HasMaxLength(64);
+            package.Property(p => p.Description).HasMaxLength(PackageLimits.MaxDescriptionLength);
+            package.Property(p => p.OriginalFileName).HasMaxLength(ImageUploadLimits.MaxFileNameLength);
+            package.Property(p => p.UploadedByName).HasMaxLength(256);
+            package.HasIndex(p => p.Sha256);
+            package.HasOne<DdtUser>().WithMany().HasForeignKey(p => p.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<TaskSequence>(sequence =>

@@ -6,6 +6,7 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
+using DDT.Server.Packages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -17,10 +18,12 @@ public sealed class SequenceCatalog(DdtDbContext database, IOptions<DeploymentOp
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         DeploymentOptions deployment = options.Value;
 
         return new SequenceReferences(
             images.ToDictionary(i => i.Id),
+            packages.ToDictionary(p => p.Id),
             !string.IsNullOrWhiteSpace(deployment.Domain.Name),
             !string.IsNullOrEmpty(deployment.LocalAdministrator.Password));
     }

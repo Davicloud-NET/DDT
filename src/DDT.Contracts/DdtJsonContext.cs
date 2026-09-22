@@ -8,6 +8,7 @@ using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
 
@@ -46,4 +47,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(SequenceValidation))]
 [JsonSerializable(typeof(IReadOnlyList<SequenceTemplate>))]
 [JsonSerializable(typeof(SequenceChangedEvent))]
+[JsonSerializable(typeof(PackageSummary))]
+[JsonSerializable(typeof(IReadOnlyList<PackageSummary>))]
+[JsonSerializable(typeof(UpdatePackageRequest))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

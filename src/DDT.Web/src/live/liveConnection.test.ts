@@ -265,7 +265,22 @@ describe("createLiveConnection", () => {
     });
 
     const lines: MachineLogAppended = { machineId: "m1", lastLineId: 7 };
-    const step: RunStepChanged = { machineId: "m2", deploymentId: "d1" };
+    const step: RunStepChanged = {
+      machineId: "m2",
+      deploymentId: "d1",
+      step: {
+        stepId: "s1",
+        index: 0,
+        name: "Partition",
+        kind: "partition",
+        phase: "WindowsPE",
+        state: "Running",
+        percent: 0,
+        startedUtc: "2026-09-16T10:00:00Z",
+        finishedUtc: null,
+        error: null,
+      },
+    };
     hub().emit("machineLogAppended", lines);
     hub().emit("runStepChanged", step);
 

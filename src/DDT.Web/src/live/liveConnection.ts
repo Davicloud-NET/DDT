@@ -5,6 +5,7 @@
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { QueryClient } from "@tanstack/react-query";
 
+import type { DeploymentStepView } from "@/deployments/deployments";
 import { imagesQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
 import { sequenceResolutionsKey } from "@/rules/rules";
@@ -28,10 +29,11 @@ export interface MachineLogAppended {
   lastLineId: number;
 }
 
-// The server's RunStepChangedEvent. The step it carries is typed with the run's step list.
+// The server's RunStepChangedEvent: a step of the machine's run changed.
 export interface RunStepChanged {
   machineId: string;
   deploymentId: string;
+  step: DeploymentStepView;
 }
 
 // The server sends these events only to the connections that watch the machine.

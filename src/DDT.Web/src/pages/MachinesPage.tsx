@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
 import { relativeTime } from "@/lib/relativeTime";
@@ -89,7 +90,13 @@ export function MachinesPage() {
                     )}
                   </td>
                   <td>
-                    <div>{machine.assignedName ?? machine.model ?? "Unknown model"}</div>
+                    <Link
+                      to="/machines/$machineId"
+                      params={{ machineId: machine.id }}
+                      className={styles.link}
+                    >
+                      {machine.assignedName ?? machine.model ?? "Unknown model"}
+                    </Link>
                     <div className={styles.secondary}>
                       {[machine.manufacturer, machine.serialNumber].filter(Boolean).join(", ")}
                     </div>

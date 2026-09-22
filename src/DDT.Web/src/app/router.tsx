@@ -11,9 +11,11 @@ import {
 } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
+import { machineSearch } from "@/machines/machineSearch";
 import { AboutPage } from "@/pages/AboutPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { ImagesPage } from "@/pages/ImagesPage";
+import { MachineDetailPage } from "@/pages/MachineDetailPage";
 import { MachinesPage } from "@/pages/MachinesPage";
 import { SignInPage } from "@/pages/SignInPage";
 
@@ -68,6 +70,13 @@ const machinesRoute = createRoute({
   component: MachinesPage,
 });
 
+const machineRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines/$machineId",
+  validateSearch: machineSearch,
+  component: MachineDetailPage,
+});
+
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/images",
@@ -83,7 +92,7 @@ const accountRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   signInRoute,
   aboutRoute,
-  shellRoute.addChildren([machinesRoute, imagesRoute, accountRoute]),
+  shellRoute.addChildren([machinesRoute, machineRoute, imagesRoute, accountRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

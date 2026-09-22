@@ -167,7 +167,7 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
             }
           }}
           title="Stop the deployment?"
-          consequence={`This stops the deployment on ${machineLabel(machine)}. Its disk is left half written; assign a sequence again to deploy it.`}
+          consequence={stopConsequence(machine)}
           confirmLabel="Stop deployment"
           busy={stop.isPending}
           error={stop.isError ? stop.error.message : null}
@@ -178,4 +178,14 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
       )}
     </>
   );
+}
+
+// A run in Windows PE may have written part of the disk. In Windows the agent runs as a service that learns of
+// the stop at its next contact with the server and removes itself, and Windows stays as far as it got.
+function stopConsequence(machine: MachineSummary): string {
+  const label = machineLabel(machine);
+
+  return machine.deployment?.phase === "Windows"
+    ? `This stops the deployment on ${label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far.`
+    : `This stops the deployment on ${label}. Its disk is left half written; assign a sequence again to deploy it.`;
 }

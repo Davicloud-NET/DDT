@@ -259,6 +259,10 @@ describe("MachinesPage", () => {
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByText("00:15:5D:01:02:03")).toBeInTheDocument();
     expect(screen.getByText("Signed in by bob")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Virtual Machine" })).toHaveAttribute(
+      "href",
+      "/machines/0193a4b2-0000-7000-8000-000000000001",
+    );
   });
 
   it("offers operators to remove machines nobody approved, and all of them from one address once", async () => {

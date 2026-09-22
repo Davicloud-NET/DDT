@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, useMatchRoute, useNavigate } from "@tanstack/react-router";
 
 import { currentUserQuery, logout } from "@/auth/auth";
 import { LiveContext } from "@/live/LiveContext";
@@ -25,6 +25,8 @@ export function AppShell() {
   const user = queryClient.getQueryData(currentUserQuery.queryKey) ?? null;
 
   const live = useLiveUpdates();
+  // A machine's page belongs to Machines, whose own path matches only exactly.
+  const onMachine = useMatchRoute()({ to: "/machines/$machineId" }) !== false;
 
   async function signOut() {
     await logout(queryClient);
@@ -39,17 +41,22 @@ export function AppShell() {
           DDT
         </div>
         <nav className={styles.nav} aria-label="Sections">
-          {navigation.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={styles.navLink}
-              activeProps={{ className: cx(styles.navLink, styles.navLinkActive) }}
-              activeOptions={{ exact: true }}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const forced = item.to === "/" && onMachine;
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cx(styles.navLink, forced && styles.navLinkActive)}
+                activeProps={{ className: cx(styles.navLink, styles.navLinkActive) }}
+                activeOptions={{ exact: true }}
+                {...(forced ? { "aria-current": "page" as const } : {})}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className={styles.account}>
           <span className={styles.accountName}>{user?.displayName ?? user?.userName}</span>

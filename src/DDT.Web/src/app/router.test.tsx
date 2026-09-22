@@ -129,3 +129,22 @@ describe("the sign-in page", () => {
     expect(screen.getByLabelText("User name")).toBeInTheDocument();
   });
 });
+
+describe("the navigation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("marks Machines on a machine's page", async () => {
+    open("/machines/0193a4b2-0000-7000-8000-000000000009", administrator);
+
+    expect(
+      await screen.findByText(
+        "This machine was removed. It registers as a new machine at its next netboot.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Machines" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Images" })).not.toHaveAttribute("aria-current");
+  });
+});

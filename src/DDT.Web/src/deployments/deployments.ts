@@ -6,7 +6,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import type { MachineSummary } from "@/machines/machines";
-import type { SequencePhase } from "@/sequences/sequences";
+import type { SequenceDefinition, SequencePhase, StepState } from "@/sequences/sequences";
 
 export type DeploymentState = "Assigned" | "Running" | "Done" | "Failed" | "Cancelled";
 
@@ -46,6 +46,47 @@ export interface DeploymentSummary {
   error: string | null;
 }
 
+// One step of a run as the agent last reported it. kind is the step's kind as the sequence document names it.
+// The times are the server's, taken when a report showed the step start and end.
+export interface DeploymentStepView {
+  stepId: string;
+  index: number;
+  name: string;
+  kind: string;
+  phase: SequencePhase;
+  state: StepState;
+  percent: number;
+  startedUtc: string | null;
+  finishedUtc: string | null;
+  error: string | null;
+}
+
+// What a run downloads: the image it applies, or a package of drivers or files.
+export type ArtifactKind = "Image" | "Drivers" | "Files";
+
+// A file the run downloads, frozen when the run was assigned. sourceId is the image or package it came from,
+// which may have been deleted since.
+export interface DeploymentArtifactView {
+  stepId: string;
+  kind: ArtifactKind;
+  sourceId: string;
+  name: string;
+  sha256: string;
+  sizeBytes: number;
+}
+
+// A run with the definition it was given, frozen when it was assigned, its steps and its files. definition is
+// null for a deployment from before task sequences.
+export interface DeploymentView {
+  summary: DeploymentSummary;
+  machineId: string;
+  sequenceRevision: number | null;
+  ruleId: string | null;
+  definition: SequenceDefinition | null;
+  steps: DeploymentStepView[];
+  artifacts: DeploymentArtifactView[];
+}
+
 export interface AssignSequenceRequest {
   sequenceId: string;
   computerName: string | null;
@@ -72,7 +113,7 @@ export function isActive(deployment: DeploymentSummary | null): boolean {
   return deployment?.state === "Assigned" || deployment?.state === "Running";
 }
 
-// "Step 4 of 9: Apply image", or null before the agent reported a step.
+// "step 4 of 9: Apply image", to put in a sentence, or null before the agent reported a step.
 export function currentStepLabel(deployment: DeploymentSummary): string | null {
   if (deployment.stepIndex === null) {
     return null;
@@ -81,6 +122,22 @@ export function currentStepLabel(deployment: DeploymentSummary): string | null {
   const position = `step ${String(deployment.stepIndex + 1)} of ${String(deployment.stepCount)}`;
 
   return deployment.stepName === null ? position : `${position}: ${deployment.stepName}`;
+}
+
+// Who put the run on the machine, for a run that has not started.
+export function assignedBy(deployment: DeploymentSummary): string {
+  const by = deployment.requestedBy;
+
+  switch (deployment.source) {
+    case "Web":
+      return by === null ? "Assigned" : `Assigned by ${by}`;
+    case "Rule":
+      return by === null
+        ? "Approved with the sequence a rule chose"
+        : `Approved by ${by} with the sequence a rule chose`;
+    case "Console":
+      return by === null ? "Chosen at the machine" : `Chosen at the machine by ${by}`;
+  }
 }
 
 // Null while a step runs, which the step itself describes.
@@ -127,6 +184,62 @@ export const deploymentOptionsQuery = queryOptions({
   },
   staleTime: 5 * 60_000,
 });
+
+export function deploymentQuery(deploymentId: string) {
+  return queryOptions({
+    queryKey: ["deployment", deploymentId],
+    queryFn: () => apiGet<DeploymentView>(`/api/deployments/${deploymentId}`),
+  });
+}
+
+// Newest first.
+export function machineDeploymentsQuery(machineId: string) {
+  return queryOptions({
+    queryKey: ["machine-deployments", machineId],
+    queryFn: () => apiGet<DeploymentSummary[]>(`/api/machines/${machineId}/deployments`),
+  });
+}
+
+const stepOrder: Record<StepState, number> = {
+  Pending: 0,
+  Running: 1,
+  Done: 2,
+  Skipped: 2,
+  Failed: 2,
+};
+
+// A step only moves forward, so a push that arrives after a newer read is ignored.
+export function withStep(view: DeploymentView, step: DeploymentStepView): DeploymentView {
+  const known = view.steps.find((candidate) => candidate.stepId === step.stepId);
+
+  if (known === undefined || stepOrder[step.state] < stepOrder[known.state]) {
+    return view;
+  }
+
+  return {
+    ...view,
+    steps: view.steps.map((candidate) => (candidate.stepId === step.stepId ? step : candidate)),
+  };
+}
+
+// The later of two copies of one run, which the machine list and a read of the run can each hold.
+export function newerRun(a: DeploymentSummary, b: DeploymentSummary): DeploymentSummary {
+  return Date.parse(b.updatedUtc) > Date.parse(a.updatedUtc) ? b : a;
+}
+
+// The machine list follows the machine's current run live, so the history takes it from there.
+export function withCurrentRun(
+  history: readonly DeploymentSummary[],
+  current: DeploymentSummary | null,
+): DeploymentSummary[] {
+  if (current === null) {
+    return [...history];
+  }
+
+  return history.some((run) => run.id === current.id)
+    ? history.map((run) => (run.id === current.id ? newerRun(run, current) : run))
+    : [current, ...history];
+}
 
 export function assignSequence(
   machineId: string,

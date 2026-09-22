@@ -1,0 +1,29 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.time {
+  flex: none;
+  min-width: 11rem;
+  color: var(--text-muted);
+}

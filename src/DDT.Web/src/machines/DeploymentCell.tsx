@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import {
   activityLabel,
+  assignedBy,
   currentStepLabel,
   isSilentActivity,
   type DeploymentSummary,
@@ -109,20 +110,5 @@ function renderStatus(deployment: DeploymentSummary, lastSeenUtc: string, now: n
           {deployment.finishedUtc !== null && `, ${relativeTime(deployment.finishedUtc, now)}`}
         </div>
       );
-  }
-}
-
-function assignedBy(deployment: DeploymentSummary): string {
-  const by = deployment.requestedBy;
-
-  switch (deployment.source) {
-    case "Web":
-      return by === null ? "Assigned" : `Assigned by ${by}`;
-    case "Rule":
-      return by === null
-        ? "Approved with the sequence a rule chose"
-        : `Approved by ${by} with the sequence a rule chose`;
-    case "Console":
-      return by === null ? "Chosen at the machine" : `Chosen at the machine by ${by}`;
   }
 }

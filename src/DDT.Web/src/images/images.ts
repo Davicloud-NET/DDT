@@ -26,11 +26,16 @@ export interface ImageSummary {
   uploadedBy: string | null;
 }
 
+// What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files.
+export type UploadKind = "Image" | "Drivers" | "Files";
+
 export interface CreateImageUploadRequest {
   fileName: string;
   length: number;
-  // File.lastModified. With the name and length it recognises the same file selected again.
+  // File.lastModified. With the name, length and kind it recognises the same file selected again.
   lastModified: number;
+  // Image when left out.
+  kind?: UploadKind;
 }
 
 export interface ImageUploadSession {
@@ -40,6 +45,8 @@ export interface ImageUploadSession {
   lastModified: number;
   offset: number;
   chunkBytes: number;
+  // The server always sends it; a session without one is an image's.
+  kind?: UploadKind;
 }
 
 export const imagesQuery = queryOptions({

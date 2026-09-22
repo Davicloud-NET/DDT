@@ -97,6 +97,15 @@ public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions
                         $"Step {open.Index + 1}, {open.Name}, is {Word(open.State)}, so the run is not done. Report every step that ran, then Done.");
                 }
 
+                // A failed step ends the run, unless it may fail.
+                HashSet<Guid> mayFail = [.. (await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)).Steps.Where(s => s.ContinueOnError).Select(s => s.Id)];
+
+                if (steps.FirstOrDefault(s => s.State == StepState.Failed && !mayFail.Contains(s.StepId)) is { } failed)
+                {
+                    return DeploymentDecision.Conflict(
+                        $"Step {failed.Index + 1}, {failed.Name}, failed and must not fail, so the run is not done. Report the run as failed.");
+                }
+
                 End(machine, run, DeploymentState.Done, null, now);
                 machine.State = MachineState.Done;
                 database.AuditEvents.Add(Audit(AuditActions.DeploymentDone, run, machine, now, address, $"{run.Title} on machine {machine.Id:D}."));

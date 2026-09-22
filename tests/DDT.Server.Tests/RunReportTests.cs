@@ -170,6 +170,41 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(HttpStatusCode.Conflict, (await machine.ReportAsync(run.Id, Running(Step(Partition(run), StepState.Running)))).StatusCode);
     }
 
+    // A failed step ends the run unless it may fail, so a run past such a step is not done, whatever the agent says.
+    [Fact]
+    public async Task ARunIsNotDoneOverAStepThatMustNotFail()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        AgentRunReport done = Report(DeploymentState.Done, [Step(Partition(run), StepState.Failed, "diskpart failed."), Step(Apply(run), StepState.Done)]);
+        await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Failed, "diskpart failed.")));
+
+        HttpResponseMessage refused = await machine.ReportAsync(run.Id, done);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(
+            "Step 1, Partition, failed and must not fail, so the run is not done. Report the run as failed.",
+            await TestDatabase.TitleAsync(refused));
+        Assert.Equal(DeploymentState.Running, (await StoredAsync(run.Id)).State);
+        Assert.Equal(MachineState.Deploying, (await application.MachineAsync(machine.Id)).State);
+    }
+
+    [Fact]
+    public async Task AStepThatMayFailLeavesTheRunDone()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        SequenceStep mayFail = SequenceRequests.ScriptOnly().Steps[0] with { ContinueOnError = true };
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(mayFail));
+        await administrator.AssignedAsync(machine.Id, sequence.Id);
+        AgentRun run = (await machine.NextAsync()).Run!;
+
+        await machine.ReportOkAsync(run.Id, Running(Step(run.Sequence.Steps[0], StepState.Failed, "Exit code 1.")));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [Step(run.Sequence.Steps[0], StepState.Failed, "Exit code 1.")]));
+
+        Assert.Equal(DeploymentState.Done, (await StoredAsync(run.Id)).State);
+    }
+
     // Steps a report skips over, such as one the heartbeat missed or one skipped by its conditions, are taken as they
     // are reported.
     [Fact]

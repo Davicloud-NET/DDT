@@ -146,10 +146,13 @@ public sealed class AgentRemovalTests : IDisposable
             }
             finally
             {
-                helper.Kill();
+                helper.Kill(entireProcessTree: true);
                 await helper.WaitForExitAsync(TestContext.Current.CancellationToken);
             }
         }
+
+        // The console host of cmd.exe can hold the directory a moment longer; a real restart ends every process.
+        await WaitUntilFreeAsync(scripts);
 
         Assert.Equal(
             [
@@ -250,6 +253,28 @@ public sealed class AgentRemovalTests : IDisposable
         await process.StandardOutput.ReadAsync(said, TestContext.Current.CancellationToken);
 
         return process;
+    }
+
+    // A directory that is some process's working directory cannot be renamed.
+    private static async Task WaitUntilFreeAsync(string directory)
+    {
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        string probe = directory + ".probe";
+
+        while (true)
+        {
+            try
+            {
+                Directory.Move(directory, probe);
+                Directory.Move(probe, directory);
+                return;
+            }
+            catch (IOException)
+            {
+                await Task.Delay(10, timeout.Token);
+            }
+        }
     }
 
     private void Write(string relativePath, string content)

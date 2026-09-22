@@ -590,7 +590,12 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.False(running.IsCompleted);
         await server.Stop.CancelAsync();
         Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(["setup finished", "restart due", "restarting report", "reboot"], _tools.Calls);
+
+        // The heartbeat's own beat for the new activity can leave before the runner stops it, so the same Restarting
+        // report may reach the server twice.
+        Assert.Equal(
+            ["setup finished", "restart due", "restarting report", "reboot"],
+            _tools.Calls.Where((call, index) => index == 0 || call != _tools.Calls[index - 1]));
         Assert.Equal(5, (await RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
     }
 

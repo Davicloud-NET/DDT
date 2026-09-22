@@ -6,7 +6,7 @@ import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { DeploymentStepView } from "@/deployments/deployments";
-import { imagesQuery } from "@/images/images";
+import { imagesQuery, uploadsQuery } from "@/images/images";
 import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
 import { packagesQuery } from "@/packages/packages";
 import { rulesQuery, sequenceResolutionsKey } from "@/rules/rules";
@@ -151,8 +151,10 @@ export function createLiveConnection(
     }
   };
 
+  // An upload another administrator finished no longer waits to be resumed.
   const packagesChanged = () => {
     void queryClient.invalidateQueries({ queryKey: packagesQuery.queryKey });
+    void queryClient.invalidateQueries({ queryKey: uploadsQuery.queryKey });
     refetchLibrary();
   };
 

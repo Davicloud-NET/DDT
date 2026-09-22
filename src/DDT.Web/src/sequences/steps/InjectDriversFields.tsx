@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { Link } from "@tanstack/react-router";
+
 import { plural } from "@/lib/format";
 
 import { FormCheckbox } from "../FormCheckbox";
@@ -27,8 +29,9 @@ export function InjectDriversFields({
       </p>
       <p className={styles.hint}>
         {drivers.length === 0
-          ? "No driver package is in the library yet. Driver packages are uploaded on the Packages page."
-          : `${plural(drivers.length, "driver package")} in the library, each for the models its targets name.`}
+          ? "No driver package is in the library yet. "
+          : `${plural(drivers.length, "driver package")} in the library, each for the models its targets name. `}
+        <Link to="/packages">Driver packages and their targets are on the Packages page.</Link>
       </p>
       <FormCheckbox
         label="Fail when no driver package matches the model"

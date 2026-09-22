@@ -43,6 +43,19 @@ export interface HardwareModel {
   model: string;
 }
 
+// A model the registered machines report, with how many report it, for the pickers of rules and package
+// targets. Placeholders that firmware leaves in unset fields are left out.
+export interface HardwareModelCount {
+  manufacturer: string | null;
+  model: string;
+  machines: number;
+}
+
+export const modelsQuery = queryOptions({
+  queryKey: ["machine-models"],
+  queryFn: () => apiGet<HardwareModelCount[]>("/api/machines/models"),
+});
+
 export const machinesQuery = queryOptions({
   queryKey: ["machines"],
   queryFn: () => apiGet<MachineSummary[]>("/api/machines"),

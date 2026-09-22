@@ -17,6 +17,7 @@ import styles from "./AppShell.module.scss";
 const navigation = [
   { to: "/", label: "Machines" },
   { to: "/sequences", label: "Sequences" },
+  { to: "/packages", label: "Packages" },
   { to: "/images", label: "Images" },
   { to: "/account", label: "Account" },
 ] as const;

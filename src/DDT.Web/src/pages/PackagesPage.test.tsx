@@ -306,6 +306,32 @@ describe("PackagesPage", () => {
     expect(row("Latitude drivers")).toHaveTextContent("3 machines");
   });
 
+  it("saves an edit at once when the page is left before the pause", async () => {
+    const saves: UpdatePackageRequest[] = [];
+
+    serve(administrator, () => [drivers], {
+      [`PUT /api/packages/${drivers.id}`]: (request) => {
+        const body = request.body as UpdatePackageRequest;
+        saves.push(body);
+        return json({ ...drivers, ...body });
+      },
+    });
+
+    fireEvent.change(await screen.findByLabelText("Name of Latitude drivers"), {
+      target: { value: "Latitude 7440 drivers" },
+    });
+    fireEvent.click(await screen.findByRole("link", { name: "Install Windows" }));
+
+    expect(await screen.findByText("A sequence")).toBeInTheDocument();
+    // Well before the pause of 700 ms would have sent it.
+    await waitFor(
+      () => {
+        expect(saves).toEqual([expect.objectContaining({ name: "Latitude 7440 drivers" })]);
+      },
+      { timeout: 300 },
+    );
+  });
+
   it("shows the server's refusal of the targets at them", async () => {
     serve(administrator, () => [drivers], {
       [`PUT /api/packages/${drivers.id}`]: () =>

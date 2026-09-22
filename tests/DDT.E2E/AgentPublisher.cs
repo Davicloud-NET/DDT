@@ -37,6 +37,11 @@ internal static class AgentPublisher
             RedirectStandardError = true,
         };
 
+        // The job ends everything the publish starts, so it must start no MSBuild node or compiler server that a
+        // build outside the tests could be sharing at that moment.
+        start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+        start.Environment["UseSharedCompilation"] = "false";
+
         using Process process = Process.Start(start) ?? throw new InvalidOperationException("powershell.exe did not start.");
         KillOnExitJob.Add(process);
         using OutputLines lines = new(process, logPath);

@@ -180,7 +180,7 @@ public sealed class SequenceRunner(
         {
             if (resumed is null)
             {
-                log.Information($"The run of {run.SequenceName} begins: {count} steps.");
+                log.Information($"The run of {run.SequenceName} begins: {(count == 1 ? "1 step" : $"{count} steps")}.");
                 await PreflightAsync(session, confirmedDisk, cancellationToken).ConfigureAwait(false);
             }
             else

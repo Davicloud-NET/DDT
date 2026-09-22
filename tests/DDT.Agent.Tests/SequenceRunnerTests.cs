@@ -84,6 +84,23 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.DoesNotContain(server.SentLines, line => line.Message.Contains("c2VjcmV0UGFzc3dvcmQ=", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData(1, "1 step")]
+    [InlineData(2, "2 steps")]
+    public async Task SaysHowManyStepsTheRunHas(int count, string steps)
+    {
+        StringWriter console = new();
+        ImmediateTimeProvider time = new();
+
+        // Before a partition, Windows PE cannot restart, so the scripts cannot ask for it.
+        AgentRun run = TestRuns.Run([.. Enumerable.Range(1, count).Select(number => TestRuns.Script(number) with { RebootExitCodes = [] })]);
+
+        RunResult result = await RunAsync(new ScriptedAgentServer(), run, time: time, log: new AgentLog(time, console));
+
+        Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Contains($"The run of Install Windows begins: {steps}.", console.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task EndsWithTheLogThenTheDoneReportThenOneRestart()
     {

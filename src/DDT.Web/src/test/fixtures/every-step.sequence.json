@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "kind": "partition",
+      "systemPartitionMegabytes": 260,
+      "recoveryPartitionMegabytes": 2048,
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Partition",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "applyImage",
+      "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Apply",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "injectDrivers",
+      "requireMatch": true,
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Drivers",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "writeUnattend",
+      "timeZone": "W. Europe Standard Time",
+      "locale": "de-AT",
+      "keyboard": "0c07:00000407",
+      "localAdministrator": true,
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Answer file",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "joinDomain",
+      "organizationalUnit": "OU=Lab,DC=example,DC=org",
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "Join",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "reboot",
+      "id": "00000000-0000-4000-8000-000000000006",
+      "name": "Restart",
+      "conditions": [
+        {
+          "variable": "Model",
+          "operator": "Equals",
+          "value": "Latitude 7440"
+        },
+        {
+          "variable": "Model",
+          "operator": "NotEquals",
+          "value": "Latitude 7440"
+        },
+        {
+          "variable": "Model",
+          "operator": "StartsWith",
+          "value": "Latitude 7440"
+        },
+        {
+          "variable": "Model",
+          "operator": "Contains",
+          "value": "Latitude 7440"
+        }
+      ],
+      "continueOnError": true,
+      "rebootAfter": true
+    },
+    {
+      "kind": "runScript",
+      "phase": "WindowsPE",
+      "interpreter": "Cmd",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000007",
+      "name": "Script WindowsPE Cmd",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "WindowsPE",
+      "interpreter": "PowerShell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000008",
+      "name": "Script WindowsPE PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "Windows",
+      "interpreter": "Cmd",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "Script Windows Cmd",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "Windows",
+      "interpreter": "PowerShell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "Script Windows PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    }
+  ]
+}

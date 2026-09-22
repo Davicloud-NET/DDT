@@ -1,0 +1,39 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using DDT.Contracts.Agents;
+using DDT.Contracts.Machines;
+using DDT.Contracts.Rules;
+using DDT.Contracts.Sequences;
+using Xunit;
+
+namespace DDT.Server.Tests;
+
+// Zero touch keeps an approval a person gave on the web. A rule is no such approval, so a listed network gives a
+// machine that a rule matches nothing either.
+public sealed class ZeroTouchRuleTests(ZeroTouchApplication application) : IClassFixture<ZeroTouchApplication>
+{
+    [Fact]
+    public async Task AMachineARuleMatchesStaysWaitingOnAZeroTouchNetwork()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView sequence = await application.RunnableSequenceAsync();
+        string model = RuleRequests.UniqueModel();
+        await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
+
+        using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model, "10.200.7.1");
+        Assert.Equal(MachineState.Pending, (await machine.NextAsync()).State);
+
+        // Netbooted again from the listed network, as a zero touch machine is.
+        AgentRegistrationResult again = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await machine.Agent.RegisterAsync(machine.Registration));
+        AgentNextResult next = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, again.Token!));
+
+        Assert.Equal(MachineState.Pending, again.State);
+        Assert.Equal(MachineState.Pending, next.State);
+        Assert.Null(next.Deployment);
+        Assert.Null(next.Run);
+        Assert.Equal(SequenceResolutionSource.ModelRule, (await administrator.ResolutionAsync(machine.Id)).Source);
+    }
+}

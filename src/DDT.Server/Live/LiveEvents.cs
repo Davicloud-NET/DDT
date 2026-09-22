@@ -19,4 +19,7 @@ public static class LiveEvents
 
     // Carries nothing: clients load the package list again.
     public const string PackagesChanged = "packagesChanged";
+
+    // Carries nothing: clients load the rules again.
+    public const string RulesChanged = "rulesChanged";
 }

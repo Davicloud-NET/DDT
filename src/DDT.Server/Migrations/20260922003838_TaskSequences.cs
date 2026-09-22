@@ -114,6 +114,62 @@ namespace DDT.Server.Migrations
                         onDelete: ReferentialAction.SetNull);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "AssignmentRules",
+                schema: "ddt",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Kind = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    MatchKey = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    Mac = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: true),
+                    Manufacturer = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    Model = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    TaskSequenceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Description = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    CreatedUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    UpdatedByName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssignmentRules", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AssignmentRules_AspNetUsers_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalSchema: "ddt",
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_AssignmentRules_TaskSequences_TaskSequenceId",
+                        column: x => x.TaskSequenceId,
+                        principalSchema: "ddt",
+                        principalTable: "TaskSequences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_MatchKey",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "MatchKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_TaskSequenceId",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "TaskSequenceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_UpdatedByUserId",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "UpdatedByUserId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_DeploymentArtifacts_DeploymentId",
                 schema: "ddt",
@@ -161,6 +217,10 @@ namespace DDT.Server.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AssignmentRules",
+                schema: "ddt");
+
             migrationBuilder.DropTable(
                 name: "DeploymentArtifacts",
                 schema: "ddt");

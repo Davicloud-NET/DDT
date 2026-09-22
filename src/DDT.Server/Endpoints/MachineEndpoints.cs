@@ -5,12 +5,15 @@
 using System.Security.Claims;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Rules;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
+using DDT.Server.Rules;
+using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -28,7 +31,9 @@ public static class MachineEndpoints
         ArgumentNullException.ThrowIfNull(group);
 
         group.MapGet("/", ListAsync).RequireAuthorization(DdtPolicies.Viewer);
+        group.MapGet("/models", ListModelsAsync).RequireAuthorization(DdtPolicies.Viewer);
         group.MapGet("/{id:guid}/log", ReadLogAsync).RequireAuthorization(DdtPolicies.Viewer);
+        group.MapGet("/{id:guid}/sequence", ResolveSequenceAsync).RequireAuthorization(DdtPolicies.Viewer);
         group.MapPost("/{id:guid}/approve", ApproveAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/reject", RejectAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/deployments", AssignAsync).RequireAuthorization(DdtPolicies.Operator);
@@ -60,6 +65,68 @@ public static class MachineEndpoints
                 .ThenBy(m => m.Id)
                 .Select(m => MachineSummaries.From(m, shown.GetValueOrDefault(m.Id))),
         ]);
+    }
+
+    // The models the registered machines report, for choosing a rule's or a package's model from what exists.
+    // Placeholders are left out, because neither can match them.
+    private static async Task<Ok<IReadOnlyList<HardwareModelCount>>> ListModelsAsync(DdtDbContext database, CancellationToken cancellationToken)
+    {
+        var reported = await database.Machines
+            .AsNoTracking()
+            .Select(m => new { m.Manufacturer, m.Model })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return TypedResults.Ok<IReadOnlyList<HardwareModelCount>>(
+        [
+            .. reported
+                .Select(m => (
+                    Manufacturer: HardwareModels.IsPlaceholder(m.Manufacturer) ? null : HardwareModels.Clean(m.Manufacturer),
+                    Model: HardwareModels.Clean(m.Model)))
+                .Where(m => m.Model is not null && !HardwareModels.IsPlaceholder(m.Model))
+                .GroupBy(m => (HardwareModels.Normalize(m.Manufacturer), HardwareModels.Normalize(m.Model)))
+                .Select(group => (
+                    Spelling: group.OrderBy(m => m.Manufacturer, StringComparer.Ordinal).ThenBy(m => m.Model, StringComparer.Ordinal).First(),
+                    Count: group.Count()))
+                .Select(model => new HardwareModelCount(model.Spelling.Manufacturer, model.Spelling.Model!, model.Count))
+                .OrderByDescending(m => m.Machines)
+                .ThenBy(m => m.Manufacturer, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(m => m.Model, StringComparer.OrdinalIgnoreCase),
+        ]);
+    }
+
+    private static async Task<Results<Ok<MachineSequenceResolution>, NotFound>> ResolveSequenceAsync(
+        Guid id,
+        DdtDbContext database,
+        SequenceResolver resolver,
+        SequenceCatalog catalog,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+        int problems = resolution.Sequence is { } sequence
+            ? (await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false)).Problems.Count
+            : 0;
+        string explanation = problems switch
+        {
+            0 => resolution.Explanation,
+            1 => $"{resolution.Explanation} {resolution.Sequence!.Name} has 1 problem, so it cannot run until it is fixed.",
+            _ => $"{resolution.Explanation} {resolution.Sequence!.Name} has {problems} problems, so it cannot run until they are fixed.",
+        };
+
+        return TypedResults.Ok(new MachineSequenceResolution(
+            resolution.Source,
+            resolution.Sequence?.Id,
+            resolution.Sequence?.Name,
+            resolution.Rule?.Id,
+            problems,
+            explanation));
     }
 
     private static async Task<Results<Ok<IReadOnlyList<MachineLogEntry>>, NotFound>> ReadLogAsync(

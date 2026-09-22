@@ -29,6 +29,8 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, ILogger<LiveN
 
     public void PackagesChanged() => _ = PushEventAsync(LiveEvents.PackagesChanged);
 
+    public void RulesChanged() => _ = PushEventAsync(LiveEvents.RulesChanged);
+
     public void SequenceChanged(SequenceChangedEvent change)
     {
         ArgumentNullException.ThrowIfNull(change);

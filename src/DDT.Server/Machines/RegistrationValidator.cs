@@ -124,7 +124,7 @@ public static class RegistrationValidator
             : string.Create(CultureInfo.InvariantCulture, $"{gigabytes:0} GB");
     }
 
-    private static string? NormaliseMac(string? value)
+    internal static string? NormaliseMac(string? value)
     {
         if (value is null)
         {

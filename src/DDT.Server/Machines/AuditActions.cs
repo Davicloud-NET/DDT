@@ -26,4 +26,7 @@ public static class AuditActions
     public const string PackageUploaded = "package.uploaded";
     public const string PackageChanged = "package.changed";
     public const string PackageDeleted = "package.deleted";
+    public const string RuleCreated = "rule.created";
+    public const string RuleChanged = "rule.changed";
+    public const string RuleDeleted = "rule.deleted";
 }

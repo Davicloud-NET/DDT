@@ -9,6 +9,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
+using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Server.Images;
 using DotNet.Testcontainers.Builders;
@@ -84,7 +85,7 @@ public sealed class PostgresDeploymentTests
     }
 
     [Fact]
-    public async Task StoresTheLibraryOfSequencesAndPackages()
+    public async Task StoresTheLibraryOfSequencesPackagesAndRules()
     {
         PostgreSqlContainer? started = await StartAsync();
         Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
@@ -118,5 +119,12 @@ public sealed class PostgresDeploymentTests
 
         await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
+
+        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "Latitude 5440", "Dell Inc."));
+        using RegisteredMachine machine = await application.RegisterModelAsync("DELL INC.", "latitude 5440");
+
+        Assert.Equal(rule.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync(RuleRequests.Rules, RuleRequests.ModelRule(saved.Id, "LATITUDE 5440", "dell inc."))).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{saved.Id}")).StatusCode);
     }
 }

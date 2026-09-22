@@ -290,6 +290,17 @@ public static class SequenceEndpoints
             return TypedResults.NotFound();
         }
 
+        int rules = await database.AssignmentRules.CountAsync(r => r.TaskSequenceId == id, cancellationToken).ConfigureAwait(false);
+
+        if (rules > 0)
+        {
+            return TypedResults.Problem(
+                title: rules == 1
+                    ? "A rule chooses this sequence. Delete the rule or let it choose another sequence, then delete this one."
+                    : $"{rules} rules choose this sequence. Delete them or let them choose another sequence, then delete this one.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         database.TaskSequences.Remove(sequence);
         database.AuditEvents.Add(Audit(
             AuditActions.SequenceDeleted,
@@ -303,10 +314,11 @@ public static class SequenceEndpoints
         {
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (DbUpdateConcurrencyException)
+        // A save raises the revision, and a rule created meanwhile holds the sequence by its foreign key.
+        catch (DbUpdateException)
         {
             return TypedResults.Problem(
-                title: "The sequence changed while it was being deleted. Look at it again before deleting it.",
+                title: "The sequence changed, or a rule chose it, while it was being deleted. Look at it again before deleting it.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 

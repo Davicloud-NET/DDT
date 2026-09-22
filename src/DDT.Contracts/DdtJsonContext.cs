@@ -9,6 +9,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
+using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
 
@@ -50,4 +51,9 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(PackageSummary))]
 [JsonSerializable(typeof(IReadOnlyList<PackageSummary>))]
 [JsonSerializable(typeof(UpdatePackageRequest))]
+[JsonSerializable(typeof(AssignmentRuleView))]
+[JsonSerializable(typeof(IReadOnlyList<AssignmentRuleView>))]
+[JsonSerializable(typeof(SaveAssignmentRuleRequest))]
+[JsonSerializable(typeof(MachineSequenceResolution))]
+[JsonSerializable(typeof(IReadOnlyList<HardwareModelCount>))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

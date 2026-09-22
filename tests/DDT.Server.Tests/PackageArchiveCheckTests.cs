@@ -123,6 +123,17 @@ public sealed class PackageArchiveCheckTests
         Assert.StartsWith("The entry good.inf ", inspection.Refusal, StringComparison.Ordinal);
     }
 
+    // A reader stops at the size the zip states, so a smaller one reads as that many bytes without any error, and an
+    // agent would unpack a truncated driver.
+    [Fact]
+    public void RefusesAnEntryThatSaysItIsSmallerThanItIs()
+    {
+        byte[] zip = TestZip.Create(("good.inf", new byte[50_000]));
+        TestZip.PatchCentral(zip, 0, TestZip.UncompressedSize, 10);
+
+        AssertRefused(Inspect(zip), "The entry good.inf does not unpack to the bytes the zip says it holds.");
+    }
+
     // Each entry says it unpacks to just under 4 GB, together more than the limit, so nothing is inflated at all.
     [Fact]
     public void RefusesAZipThatSaysItUnpacksToMoreThanTheLimit()

@@ -10,8 +10,8 @@ using DDT.Contracts.Packages;
 namespace DDT.Server.Packages;
 
 // Every agent unpacks a package as SYSTEM, so a zip is checked here before any machine gets it: its names, which
-// must stay inside the folder they are unpacked to, and its sizes, which are proven by inflating every entry into
-// nothing. The server never writes an entry anywhere.
+// must stay inside the folder they are unpacked to, and its sizes and checksums, which are proven by inflating every
+// entry into nothing. The server never writes an entry anywhere.
 public static class PackageArchiveCheck
 {
     private const int BufferBytes = 1024 * 1024;
@@ -117,7 +117,8 @@ public static class PackageArchiveCheck
     }
 
     // The sizes in the zip are the uploader's word. Inflating proves them, so the agent can check its disk space
-    // against them and stop unpacking at them.
+    // against them and stop unpacking at them. A reader stops at the stated size without an error, so only the
+    // checksum shows an entry that holds more than it says.
     private static PackageInspection Inflate(List<ZipArchiveEntry> files, long declared, CancellationToken cancellationToken)
     {
         byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferBytes);
@@ -128,6 +129,7 @@ public static class PackageArchiveCheck
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 long actual = 0;
+                uint crc = 0;
 
                 try
                 {
@@ -137,6 +139,7 @@ public static class PackageArchiveCheck
                     while ((count = data.Read(buffer, 0, BufferBytes)) > 0)
                     {
                         actual += count;
+                        crc = ZipCrc32.Append(crc, buffer.AsSpan(0, count));
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
@@ -154,6 +157,11 @@ public static class PackageArchiveCheck
                     return Refused(string.Create(
                         CultureInfo.InvariantCulture,
                         $"The entry {Shown(file.FullName)} unpacks to {actual} bytes, but the zip says {file.Length}. Create the zip again."));
+                }
+
+                if (crc != file.Crc32)
+                {
+                    return Refused($"The entry {Shown(file.FullName)} does not unpack to the bytes the zip says it holds. Create the zip again.");
                 }
             }
         }

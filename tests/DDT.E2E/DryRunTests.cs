@@ -73,8 +73,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         Assert.Equal(MachineState.Approved, (await lab.ApproveAsync(machine.Id, null, cancellationToken)).State);
         MachineLogAppendedEvent firstPush = await lab.Live.WaitForLogPushAsync(machine.Id, TimeSpan.FromMinutes(1), () => agent.Output.Tail(), cancellationToken);
 
-        string computerName = string.Create(CultureInfo.InvariantCulture, $"E2E-{agent.DryRunId % 100_000:D5}");
-        DeploymentSummary assigned = (await lab.AssignAsync(machine.Id, sequence.Id, computerName, cancellationToken)).Deployment!;
+        DeploymentSummary assigned = (await lab.AssignAsync(machine.Id, sequence.Id, ComputerName(agent), cancellationToken)).Deployment!;
         Assert.Equal((DeploymentState.Assigned, DeploymentSource.Web), (assigned.State, assigned.Source));
 
         Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
@@ -308,6 +307,37 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         }
     }
 
+    // Quick steps change the run many times a second. Their reports, and the ones the agent sends at once before it
+    // reads the answer file and the join account, stay within the calls the server takes from a machine in a minute.
+    [Fact(Timeout = 600_000)]
+    public async Task ARunOfQuickStepsStaysWithinTheCallsTheServerTakesFromAMachine()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Quick steps",
+            [
+                Partition(),
+                .. Enumerable.Range(1, 40).Select(number => Script($"Quick step {number} in Windows PE", SequencePhase.WindowsPE, "echo quick")),
+                new ApplyImageStep { Id = Guid.CreateVersion7(), Name = "Apply the image", ImageId = lab.Image.Id },
+                new WriteUnattendStep { Id = Guid.CreateVersion7(), Name = "Write the answer file", LocalAdministrator = true },
+                .. Enumerable.Range(1, 40).Select(number => Script($"Quick step {number} in Windows", SequencePhase.Windows, "echo quick")),
+                new JoinDomainStep { Id = Guid.CreateVersion7(), Name = "Join the domain" },
+            ],
+            cancellationToken);
+
+        await using AgentProcess agent = lab.StartAgent();
+        (_, Guid runId) = await AuthorizeAsync(agent, sequence, ComputerName(agent), cancellationToken);
+
+        Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+        DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+        Assert.Equal(DeploymentState.Done, run.Summary.State);
+        Assert.All(run.Steps, step => Assert.Equal(StepState.Done, step.State));
+
+        lab.AssertClean([agent], []);
+    }
+
     // Approved and assigned on the web, as an operator does for a machine waiting at its prompt. The machine is
     // watched first, so no push about its run is missed. Returns the machine and its run.
     private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(
@@ -374,6 +404,9 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         Assert.Equal(1, agent.Output.Count($"Dry run: in Windows, {Path.Combine(agent.Root, "W", "DDT")} would be marked for deletion when Windows next starts."));
         Assert.False(Directory.Exists(agent.Root), $"The dry run's disk {agent.Root} is still there.");
     }
+
+    // A sequence that joins the domain needs one.
+    private static string ComputerName(AgentProcess agent) => string.Create(CultureInfo.InvariantCulture, $"E2E-{agent.DryRunId % 100_000:D5}");
 
     private static PartitionStep Partition() => new() { Id = Guid.CreateVersion7(), Name = "Partition" };
 

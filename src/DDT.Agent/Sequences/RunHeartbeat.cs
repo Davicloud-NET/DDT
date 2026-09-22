@@ -11,9 +11,9 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // The only sender of run reports and log batches during a run, so none of them overlap or arrive out of order. Every
-// interval, and at once when the run's state or activity changes, it reports a snapshot of the run and sends one log
-// batch. Each report brings fresh tokens, which keeps the session alive through a download of any length, and the
-// run token, which saveRunToken writes to the disk when it is a new one.
+// interval, and when the run's state or activity changes, at once or MinimumSpacing after the last beat, it reports a
+// snapshot of the run and sends one log batch. Each report brings fresh tokens, which keeps the session alive through
+// a download of any length, and the run token, which saveRunToken writes to the disk when it is a new one.
 public sealed class RunHeartbeat(
     IAgentServer server,
     AgentLog log,
@@ -25,6 +25,10 @@ public sealed class RunHeartbeat(
     TimeProvider timeProvider) : IProgress<StepPercent>
 {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
+
+    // The server takes 60 calls a minute from a machine, and a beat is two: its report and a batch of log lines. Quick
+    // steps change the run many times a second, so the changes that follow a beat this closely share the next one.
+    public static readonly TimeSpan MinimumSpacing = TimeSpan.FromSeconds(3);
 
     private readonly SemaphoreSlim _sender = new(1, 1);
     private readonly Lock _lock = new();
@@ -228,6 +232,7 @@ public sealed class RunHeartbeat(
         await Task.Yield();
 
         bool warned = false;
+        long? lastBeat = null;
 
         while (!stop.IsCancellationRequested)
         {
@@ -235,6 +240,13 @@ public sealed class RunHeartbeat(
             {
                 return;
             }
+
+            if (lastBeat is { } last && !await DelayAsync(MinimumSpacing - timeProvider.GetElapsedTime(last), stop).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            lastBeat = timeProvider.GetTimestamp();
 
             // Renewed before the snapshot: a change in between beats once more rather than never.
             lock (_lock)
@@ -287,6 +299,26 @@ public sealed class RunHeartbeat(
 
                 return;
             }
+        }
+    }
+
+    // False once stopped.
+    private async Task<bool> DelayAsync(TimeSpan delay, CancellationToken stop)
+    {
+        if (delay <= TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        try
+        {
+            await Task.Delay(delay, timeProvider, stop).ConfigureAwait(false);
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
     }
 

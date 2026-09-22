@@ -33,6 +33,15 @@ internal sealed class ManualTimeProvider : TimeProvider
         }
     }
 
+    // Whether a timer falls due exactly that far from now, so a test can tell which wait the code under test is in.
+    public bool HasTimerDueIn(TimeSpan dueIn)
+    {
+        lock (_lock)
+        {
+            return _timers.Any(timer => timer.DueAt == _now + dueIn);
+        }
+    }
+
     public override long TimestampFrequency => TimeSpan.TicksPerSecond;
 
     public override long GetTimestamp() => GetUtcNow().UtcTicks;

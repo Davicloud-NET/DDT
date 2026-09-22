@@ -106,6 +106,51 @@ public sealed class RunHeartbeatTests
         Assert.Empty(_savedTokens);
     }
 
+    // Quick steps change the run many times a second, and the server takes only so many calls a minute from a machine.
+    [Fact]
+    public async Task ChangesSoonAfterABeatWaitForTheSpacingAndShareTheNextBeat()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        ManualTimeProvider time = new();
+        RunHeartbeat heartbeat = new(
+            _server,
+            new AgentLog(time, TextWriter.Null),
+            _tokens,
+            s_machineId,
+            TestRuns.RunId,
+            _ => Task.CompletedTask,
+            TimeSpan.FromSeconds(10),
+            time);
+        using CancellationTokenSource run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        heartbeat.Update(State(StepState.Running));
+        heartbeat.Start(run, cancellationToken);
+        await WaitForAsync(() => _server.RunReports.Count == 1 && time.HasTimerDueIn(TimeSpan.FromSeconds(10)));
+
+        heartbeat.Update(State(StepState.Done, StepState.Running));
+        heartbeat.Update(State(StepState.Done, StepState.Done, StepState.Running));
+        await WaitForAsync(() => _server.RunReports.Count > 1 || time.HasTimerDueIn(RunHeartbeat.MinimumSpacing));
+        Assert.Single(_server.RunReports);
+
+        time.Advance(RunHeartbeat.MinimumSpacing);
+        await WaitForAsync(() => _server.RunReports.Count == 2);
+        Assert.Equal([StepState.Done, StepState.Done, StepState.Running], _server.RunReports[1].Steps.Select(step => step.State));
+
+        await heartbeat.StopAsync();
+    }
+
+    // For what happens on the heartbeat's own loop, which a test cannot await.
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+
+        while (!condition())
+        {
+            await Task.Delay(10, timeout.Token);
+        }
+    }
+
     private static SequenceState State(params StepState[] states) =>
         SequenceStates.Start(TestRuns.RunId, s_definition) with
         {

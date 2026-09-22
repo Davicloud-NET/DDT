@@ -8,6 +8,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
+import type { ServerCertificateView } from "@/server/serverCertificate";
 
 import { createAppRouter } from "./router";
 
@@ -22,16 +23,22 @@ const administrator: CurrentUser = {
   roles: ["Administrator"],
 };
 
-// The application's own router, which reads the browser's address. A null user has not signed in. Every
-// sign-in is refused, and its body is kept in logins.
-function open(path: string, user: CurrentUser | null, logins: unknown[] = []) {
+// The application's own router, which reads the browser's address. A null user has not signed in. Other reads
+// get the given answers, or a 404. Every sign-in is refused, and its body is kept in logins.
+function open(
+  path: string,
+  user: CurrentUser | null,
+  answers: Record<string, unknown> = {},
+  logins: unknown[] = [],
+) {
   vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input.toString();
+      const route = url.replace("http://localhost", "");
 
-      switch (url.replace("http://localhost", "")) {
+      switch (route) {
         case "/api/auth/me":
           return Promise.resolve(
             user === null
@@ -44,7 +51,11 @@ function open(path: string, user: CurrentUser | null, logins: unknown[] = []) {
         case "/api/machines":
           return Promise.resolve(new Response("[]", { status: 200 }));
         default:
-          return Promise.resolve(new Response(null, { status: 404 }));
+          return Promise.resolve(
+            route in answers
+              ? new Response(JSON.stringify(answers[route]), { status: 200 })
+              : new Response(null, { status: 404 }),
+          );
       }
     }),
   );
@@ -99,7 +110,7 @@ describe("the sign-in page", () => {
 
   it("asks only for the code of an account the server sent back from OpenID Connect", async () => {
     const logins: unknown[] = [];
-    open("/sign-in?step=two-factor", null, logins);
+    open("/sign-in?step=two-factor", null, {}, logins);
 
     fireEvent.change(await screen.findByLabelText("Authentication code"), {
       target: { value: "123456" },
@@ -127,6 +138,45 @@ describe("the sign-in page", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
     expect(screen.getByLabelText("User name")).toBeInTheDocument();
+  });
+});
+
+describe("the sections", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it.each([
+    { path: "/sequences", title: "Sequences" },
+    { path: "/packages", title: "Packages" },
+    { path: "/rules", title: "Rules" },
+  ])("open $path", async ({ path, title }) => {
+    open(path, administrator);
+
+    expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: title })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("ask administrators on every page to build the boot images again after the anchor changed", async () => {
+    const certificate: ServerCertificateView = {
+      managedByDdt: true,
+      subject: "CN=ddt",
+      sha256: "b".repeat(64),
+      notAfter: "2026-12-20T10:00:00Z",
+      renewsUtc: "2026-11-20T10:00:00Z",
+      names: ["ddt.example"],
+      rootSubject: "CN=DDT root",
+      rootSha256: "a".repeat(64),
+      rootNotAfter: "2046-09-16T10:00:00Z",
+      anchorReplacedUtc: "2026-09-16T10:00:00Z",
+    };
+
+    open("/rules", administrator, { "/api/server/certificate": certificate });
+
+    expect(
+      await screen.findByRole("region", { name: "Build every boot image again" }),
+    ).toBeInTheDocument();
   });
 });
 

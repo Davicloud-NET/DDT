@@ -318,5 +318,29 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
 
         Assert.Equal(DeploymentSource.Console, view.Summary.Source);
         Assert.Equal(rule.Id, view.RuleId);
+
+        // Choosing another sequence than the rule's leaves the rule out of the run.
+        using DeployingMachine another = await DeployingMachine.SignedInAsync(application, operatorName);
+        await administrator.CreatedRuleAsync(RuleRequests.MacRule(suggested.Id, another.Registration.PrimaryMac));
+        AgentRun chosen = await RegisteredMachine.ReadAsync<AgentRun>(await PickAsync(another, other.Id));
+
+        Assert.Null((await administrator.RunAsync(chosen.Id)).RuleId);
+    }
+
+    // The console could not start a sequence with problems, so the rule that chooses one suggests nothing.
+    [Fact]
+    public async Task ARulesSequenceWithProblemsIsNotSuggested()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName);
+        SequenceView broken = await SequenceAsync(SequenceRequests.Minimal(Guid.Empty));
+        await administrator.CreatedRuleAsync(RuleRequests.MacRule(broken.Id, machine.Registration.PrimaryMac));
+
+        AgentNextResult next = await machine.NextAsync();
+
+        Assert.True(next.CanPickSequence);
+        Assert.Null(next.SuggestedSequenceId);
+        Assert.DoesNotContain(await ChoicesAsync(machine), c => c.Id == broken.Id || c.Suggested);
     }
 }

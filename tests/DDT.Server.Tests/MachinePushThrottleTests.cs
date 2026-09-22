@@ -5,6 +5,7 @@
 using System.Net;
 using System.Threading.Channels;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Live;
 using Xunit;
 
@@ -35,6 +36,30 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         }
 
         return false;
+    }
+
+    // A running sequence reports every few seconds, and every browser redraws the machine's row for each push. What
+    // changes within a second after a push goes out as one push when the second ends, with the latest state.
+    [Fact]
+    public async Task ChangesWithinASecondGoOutAsOnePushWithTheLatest()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener listener = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<MachineSummary> pushes = listener.Listen<MachineSummary>(LiveEvents.MachineChanged);
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
+
+        Assert.Equal(MachineState.Pending, (await LiveListener.NextAsync(pushes, m => m.Id == machine.Id)).State);
+
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/approve")).EnsureSuccessStatusCode();
+        await administrator.AssignedAsync(machine.Id, sequence.Id);
+        application.Clock.Advance(LiveNotifier.MachinePushInterval);
+
+        // The approval alone never went out.
+        MachineSummary trailing = await LiveListener.NextAsync(pushes, m => m.Id == machine.Id);
+
+        Assert.Equal(MachineState.Approved, trailing.State);
+        Assert.Equal(sequence.Id, trailing.Deployment?.SequenceId);
     }
 
     // A machine removed right after a change must not come back to the page with that change's delayed push.

@@ -70,6 +70,7 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
 
         await LogAsync(machine, new AgentLogBatch([Line(agentNow - TimeSpan.FromSeconds(10), "behind"), Line(agentNow + TimeSpan.FromHours(4), "ahead")], agentNow));
         await LogAsync(machine, new AgentLogBatch([Line(received - TimeSpan.FromSeconds(5), "network")], received - TimeSpan.FromSeconds(1.5)));
+        await LogAsync(machine, new AgentLogBatch([Line(received - TimeSpan.FromSeconds(5), "tolerance")], received - TimeSpan.FromSeconds(2)));
         await LogAsync(machine, new AgentLogBatch([Line(agentNow, "old agent")]));
         await LogAsync(machine, new AgentLogBatch([Line(new DateTimeOffset(received.UtcDateTime).ToOffset(TimeSpan.FromHours(2)) - TimeSpan.FromMinutes(1), "offset")]));
 
@@ -81,8 +82,9 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
         // Never after the moment it arrived.
         Assert.Equal(received, lines["ahead"].TimestampUtc);
 
-        // Below the tolerance, the difference is the network's delay.
+        // Below the tolerance, the difference is the network's delay. From the tolerance on, it is the clock's.
         Assert.Equal(received - TimeSpan.FromSeconds(5), lines["network"].TimestampUtc);
+        Assert.Equal(received - TimeSpan.FromSeconds(3), lines["tolerance"].TimestampUtc);
 
         // An agent that does not say when it sent the batch keeps its own times.
         Assert.Equal(agentNow, lines["old agent"].TimestampUtc);

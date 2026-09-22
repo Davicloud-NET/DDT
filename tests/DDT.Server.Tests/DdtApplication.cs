@@ -183,8 +183,13 @@ public class DdtApplication : WebApplicationFactory<Program>
 
         if (disposing && Directory.Exists(StorePath))
         {
-            // Pooled SQLite connections keep the database file open after the host stops.
-            SqliteConnection.ClearAllPools();
+            // Pooled SQLite connections keep the database file open after the host stops. Only this host's pool is
+            // cleared: clearing every pool disposes connections other test classes are opening at that moment.
+            using (SqliteConnection database = new($"Data Source={Path.Combine(StorePath, "ddt-dev.db")}"))
+            {
+                SqliteConnection.ClearPool(database);
+            }
+
             Directory.Delete(StorePath, recursive: true);
         }
     }

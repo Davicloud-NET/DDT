@@ -655,6 +655,12 @@ namespace DDT.Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTimeOffset>("AgentTimestampUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeploymentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -671,10 +677,15 @@ namespace DDT.Server.Migrations
                     b.Property<DateTimeOffset>("ReceivedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("StepId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("TimestampUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeploymentId", "Id");
 
                     b.HasIndex("MachineId", "Id");
 

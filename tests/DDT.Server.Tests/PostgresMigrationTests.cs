@@ -76,6 +76,13 @@ public sealed class PostgresMigrationTests
             """,
             cancellationToken);
 
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."MachineLogLines" ("MachineId", "TimestampUtc", "ReceivedUtc", "Level", "Message")
+            VALUES ({deploying}, {earlier}, {later}, 'Information', 'Applying the image')
+            """,
+            cancellationToken);
+
         await database.Database.MigrateAsync(cancellationToken);
         database.ChangeTracker.Clear();
 
@@ -104,6 +111,12 @@ public sealed class PostgresMigrationTests
         Assert.Equal((MachineState.Failed, 4, (Guid?)null, (Guid?)running), Facts(machines[deploying]));
         Assert.Equal((MachineState.Pending, 2, (Guid?)null, (Guid?)assigned), Facts(machines[waiting]));
         Assert.Equal((MachineState.Done, 2, (Guid?)null, (Guid?)finished), Facts(machines[done]));
+
+        // Lines from before kept only the agent's time, uncorrected.
+        MachineLogLine line = await database.MachineLogLines.AsNoTracking().SingleAsync(l => l.MachineId == deploying, cancellationToken);
+        Assert.Equal(earlier, line.AgentTimestampUtc);
+        Assert.Equal(earlier, line.TimestampUtc);
+        Assert.Null(line.DeploymentId);
     }
 
     private static (MachineState, int, Guid?, Guid?) Facts(Machine machine) =>

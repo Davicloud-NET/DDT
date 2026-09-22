@@ -295,8 +295,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         Assert.Equal(HttpStatusCode.NoContent, (await agent.LogAsync(machineId, session, batch)).StatusCode);
 
-        IReadOnlyList<MachineLogEntry> log = await ReadAsync<IReadOnlyList<MachineLogEntry>>(
-            await admin.GetAsync($"/api/machines/{machineId}/log"));
+        IReadOnlyList<MachineLogEntry> log = (await ReadAsync<MachineLogPage>(
+            await admin.GetAsync($"/api/machines/{machineId}/log"))).Lines;
 
         Assert.Equal(["Registered", new string('x', 4000)], log.Select(entry => entry.Message));
         Assert.Equal(AgentLogLevel.Warning, log[1].Level);
@@ -311,21 +311,31 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         SignedInClient admin = await _application.AdministratorAsync();
         using AgentClient agent = Agent();
         (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent);
-        const int batches = (MachineLogLimits.MaxStoredLinesPerMachine / MachineLogLimits.MaxLinesPerBatch) + 1;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
-        for (int batch = 0; batch < batches; batch++)
-        {
-            AgentLogBatch lines = new(
-            [
-                .. Enumerable.Range(batch * MachineLogLimits.MaxLinesPerBatch, MachineLogLimits.MaxLinesPerBatch)
-                    .Select(line => new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, $"line {line}")),
-            ]);
-
-            Assert.Equal(HttpStatusCode.NoContent, (await agent.LogAsync(machineId, session, lines)).StatusCode);
-        }
-
+        // A full log, stored directly: sending it would take longer than a machine's request limit allows.
         using IServiceScope scope = _application.Services.CreateScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+        database.MachineLogLines.AddRange(Enumerable.Range(0, MachineLogLimits.MaxStoredLinesPerMachine).Select(line => new MachineLogLine
+        {
+            MachineId = machineId,
+            TimestampUtc = now,
+            AgentTimestampUtc = now,
+            ReceivedUtc = now,
+            Level = AgentLogLevel.Information,
+            Message = $"line {line}",
+        }));
+        await database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        database.ChangeTracker.Clear();
+
+        AgentLogBatch lines = new(
+        [
+            .. Enumerable.Range(MachineLogLimits.MaxStoredLinesPerMachine, MachineLogLimits.MaxLinesPerBatch)
+                .Select(line => new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, $"line {line}")),
+        ]);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await agent.LogAsync(machineId, session, lines)).StatusCode);
+
         List<string> stored = await database.MachineLogLines
             .Where(l => l.MachineId == machineId)
             .OrderBy(l => l.Id)

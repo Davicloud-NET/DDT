@@ -96,6 +96,28 @@ namespace DDT.Server.Migrations
                 nullable: false,
                 defaultValue: 0);
 
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "AgentTimestampUtc",
+                schema: "ddt",
+                table: "MachineLogLines",
+                type: "timestamp with time zone",
+                nullable: false,
+                defaultValue: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "DeploymentId",
+                schema: "ddt",
+                table: "MachineLogLines",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "StepId",
+                schema: "ddt",
+                table: "MachineLogLines",
+                type: "uuid",
+                nullable: true);
+
             migrationBuilder.AddColumn<string>(
                 name: "Kind",
                 schema: "ddt",
@@ -325,6 +347,12 @@ namespace DDT.Server.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_MachineLogLines_DeploymentId_Id",
+                schema: "ddt",
+                table: "MachineLogLines",
+                columns: new[] { "DeploymentId", "Id" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AssignmentRules_MatchKey",
                 schema: "ddt",
                 table: "AssignmentRules",
@@ -426,6 +454,10 @@ namespace DDT.Server.Migrations
                     ORDER BY d."CreatedUtc" DESC, d."Id" DESC
                     LIMIT 1);
                 """);
+
+            migrationBuilder.Sql("""
+                UPDATE ddt."MachineLogLines" SET "AgentTimestampUtc" = "TimestampUtc";
+                """);
         }
 
         /// <inheritdoc />
@@ -465,6 +497,11 @@ namespace DDT.Server.Migrations
                 name: "TaskSequences",
                 schema: "ddt");
 
+            migrationBuilder.DropIndex(
+                name: "IX_MachineLogLines_DeploymentId_Id",
+                schema: "ddt",
+                table: "MachineLogLines");
+
             migrationBuilder.DropColumn(
                 name: "AgentEnvironment",
                 schema: "ddt",
@@ -479,6 +516,21 @@ namespace DDT.Server.Migrations
                 name: "SequenceVersion",
                 schema: "ddt",
                 table: "Machines");
+
+            migrationBuilder.DropColumn(
+                name: "AgentTimestampUtc",
+                schema: "ddt",
+                table: "MachineLogLines");
+
+            migrationBuilder.DropColumn(
+                name: "DeploymentId",
+                schema: "ddt",
+                table: "MachineLogLines");
+
+            migrationBuilder.DropColumn(
+                name: "StepId",
+                schema: "ddt",
+                table: "MachineLogLines");
 
             migrationBuilder.DropColumn(
                 name: "Kind",

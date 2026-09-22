@@ -20,7 +20,12 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, TimeProvider 
     // A running sequence reports every few seconds, and every browser redraws the machine's row for each push.
     public static readonly TimeSpan MachinePushInterval = TimeSpan.FromSeconds(1);
 
+    // An agent flushes its log every few seconds, and a watcher reads what is new with each push.
+    public static readonly TimeSpan LogPushInterval = TimeSpan.FromSeconds(1);
+
     private readonly PushThrottle _machines = new(timeProvider, MachinePushInterval);
+
+    private readonly PushThrottle _logs = new(timeProvider, LogPushInterval);
 
     // The deployment the Machines page shows for this machine, see MachineSummaries.From. Taken now, so a push the
     // throttle delays still carries the latest state.
@@ -45,6 +50,11 @@ public sealed partial class LiveNotifier(IHubContext<LiveHub> hub, TimeProvider 
                 new RunStepChangedEvent(machineId, step.DeploymentId, DeploymentSummaries.Step(step)));
         }
     }
+
+    public void MachineLogAppended(Guid machineId, long lastLineId) =>
+        _logs.Push(
+            machineId,
+            () => PushToWatchersAsync(machineId, LiveEvents.MachineLogAppended, new MachineLogAppendedEvent(machineId, lastLineId)));
 
     public void MachinesRemoved() => _ = PushEventAsync(LiveEvents.MachinesRemoved);
 

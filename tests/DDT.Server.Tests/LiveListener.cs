@@ -72,5 +72,9 @@ public sealed class LiveListener : IAsyncDisposable
         throw new InvalidOperationException("The hub closed.");
     }
 
+    public Task WatchAsync(Guid machineId) => _connection.InvokeAsync("WatchMachine", machineId, TestContext.Current.CancellationToken);
+
+    public Task UnwatchAsync(Guid machineId) => _connection.InvokeAsync("UnwatchMachine", machineId, TestContext.Current.CancellationToken);
+
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 }

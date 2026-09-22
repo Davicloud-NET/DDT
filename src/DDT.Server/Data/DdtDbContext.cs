@@ -93,6 +93,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             line.Property(l => l.Level).HasConversion<string>().HasMaxLength(16);
             line.Property(l => l.Message).HasMaxLength(MachineLogLimits.MaxMessageLength);
             line.HasIndex(l => new { l.MachineId, l.Id });
+            line.HasIndex(l => new { l.DeploymentId, l.Id });
             line.HasOne<Machine>().WithMany().HasForeignKey(l => l.MachineId).OnDelete(DeleteBehavior.Cascade);
         });
 

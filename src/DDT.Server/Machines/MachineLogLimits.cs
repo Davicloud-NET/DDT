@@ -10,7 +10,11 @@ public static class MachineLogLimits
     public const int MaxMessageLength = 4000;
     public const int MaxRequestBytes = 1024 * 1024;
     public const int MaxLinesPerRead = 1000;
-    public const int MaxStoredLinesPerMachine = 10_000;
+    public const int DefaultLinesPerRead = 500;
+
+    // A sequence that runs scripts and installs drivers logs far more than an image deployment did.
+    public const int MaxStoredLinesPerMachine = 50_000;
+
     public const int MaxRegistrationBytes = 64 * 1024;
     public const int MaxSignInBytes = 4 * 1024;
     public const int MaxSignInFieldLength = 512;
@@ -24,4 +28,7 @@ public static class MachineLogLimits
     public static readonly TimeSpan LastSeenResolution = TimeSpan.FromSeconds(30);
 
     public static readonly TimeSpan WaitingMachineLifetime = TimeSpan.FromDays(1);
+
+    // Below this, the difference between the agent's clock and the server's is the network's delay.
+    public static readonly TimeSpan SkewTolerance = TimeSpan.FromSeconds(2);
 }

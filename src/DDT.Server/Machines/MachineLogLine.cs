@@ -12,11 +12,20 @@ public sealed class MachineLogLine
 
     public Guid MachineId { get; set; }
 
+    // The agent's time corrected by MachineLogClock, in UTC.
     public DateTimeOffset TimestampUtc { get; set; }
+
+    // The agent's time as it sent it, in UTC.
+    public DateTimeOffset AgentTimestampUtc { get; set; }
 
     public DateTimeOffset ReceivedUtc { get; set; }
 
     public AgentLogLevel Level { get; set; }
 
     public required string Message { get; set; }
+
+    // The machine's active run when the line arrived, without a foreign key, so the log outlives the run's rows.
+    public Guid? DeploymentId { get; set; }
+
+    public Guid? StepId { get; set; }
 }

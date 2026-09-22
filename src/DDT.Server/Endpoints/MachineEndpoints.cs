@@ -131,9 +131,14 @@ public static class MachineEndpoints
             explanation));
     }
 
-    private static async Task<Results<Ok<IReadOnlyList<MachineLogEntry>>, NotFound>> ReadLogAsync(
+    // Without a cursor, the newest lines. Before pages back from the first line a page showed; after catches up from
+    // the last one, such as the id a machineLogAppended push names. DeploymentId keeps only the lines of one run.
+    private static async Task<Results<Ok<MachineLogPage>, NotFound>> ReadLogAsync(
         Guid id,
+        long? before,
         long? after,
+        int? limit,
+        Guid? deploymentId,
         DdtDbContext database,
         CancellationToken cancellationToken)
     {
@@ -142,18 +147,46 @@ public static class MachineEndpoints
             return TypedResults.NotFound();
         }
 
-        long from = after ?? 0;
+        int take = Math.Clamp(limit ?? MachineLogLimits.DefaultLinesPerRead, 1, MachineLogLimits.MaxLinesPerRead);
+        IQueryable<MachineLogLine> lines = database.MachineLogLines.AsNoTracking().Where(line => line.MachineId == id);
 
-        List<MachineLogEntry> entries = await database.MachineLogLines
-            .AsNoTracking()
-            .Where(line => line.MachineId == id && line.Id > from)
-            .OrderBy(line => line.Id)
-            .Take(MachineLogLimits.MaxLinesPerRead)
-            .Select(line => new MachineLogEntry(line.Id, line.TimestampUtc, line.ReceivedUtc, line.Level, line.Message))
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+        if (deploymentId is { } runId)
+        {
+            lines = lines.Where(line => line.DeploymentId == runId);
+        }
 
-        return TypedResults.Ok<IReadOnlyList<MachineLogEntry>>(entries);
+        IQueryable<MachineLogLine> window = lines;
+
+        if (after is { } first)
+        {
+            window = window.Where(line => line.Id > first);
+        }
+
+        if (before is { } last)
+        {
+            window = window.Where(line => line.Id < last);
+        }
+
+        List<MachineLogLine> page = after is not null
+            ? await window.OrderBy(line => line.Id).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false)
+            : [.. (await window.OrderByDescending(line => line.Id).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false)).AsEnumerable().Reverse()];
+
+        long boundary = page.Count > 0 ? page[0].Id : after + 1 ?? before ?? long.MaxValue;
+        bool hasOlder = await lines.AnyAsync(line => line.Id < boundary, cancellationToken).ConfigureAwait(false);
+
+        return TypedResults.Ok(new MachineLogPage(
+            [
+                .. page.Select(line => new MachineLogEntry(
+                    line.Id,
+                    line.TimestampUtc,
+                    line.ReceivedUtc,
+                    line.Level,
+                    line.Message,
+                    line.AgentTimestampUtc,
+                    line.DeploymentId,
+                    line.StepId)),
+            ],
+            hasOlder));
     }
 
     // With the sequence the page showed a rule choosing, the approval also runs it. Without one it runs nothing.

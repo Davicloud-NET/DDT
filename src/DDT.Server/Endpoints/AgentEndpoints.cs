@@ -342,11 +342,14 @@ public static class AgentEndpoints
             Detail = detail,
         };
 
+    // Each line is tagged with the run that is active when it arrives. The agent sends what it logged before a report
+    // that ends the run ahead of that report.
     private static async Task<Results<NoContent, ForbidHttpResult, ValidationProblem>> AppendLogAsync(
         Guid id,
         AgentLogBatch batch,
         ClaimsPrincipal user,
         DdtDbContext database,
+        LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -364,24 +367,35 @@ public static class AgentEndpoints
         }
 
         DateTimeOffset received = timeProvider.GetUtcNow();
+        TimeSpan skew = MachineLogClock.Skew(batch.SentUtc, received);
+        Guid? runId = await database.Machines
+            .Where(m => m.Id == id)
+            .Select(m => m.ActiveDeploymentId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        List<MachineLogLine> added = [];
 
         foreach (AgentLogLine line in batch.Lines)
         {
             // PostgreSQL text cannot hold a NUL, and a batch it refuses would be resent forever.
             string message = (line.Message ?? string.Empty).Replace("\0", string.Empty, StringComparison.Ordinal);
 
-            database.MachineLogLines.Add(new MachineLogLine
+            added.Add(new MachineLogLine
             {
                 MachineId = id,
-                TimestampUtc = line.TimestampUtc,
+                TimestampUtc = MachineLogClock.Corrected(line.TimestampUtc, skew, received),
+                AgentTimestampUtc = line.TimestampUtc.ToUniversalTime(),
                 ReceivedUtc = received,
                 Level = Enum.IsDefined(line.Level) ? line.Level : AgentLogLevel.Information,
                 Message = message.Length <= MachineLogLimits.MaxMessageLength
                     ? message
                     : message[..MachineLogLimits.MaxMessageLength],
+                DeploymentId = runId,
+                StepId = runId is null ? null : line.StepId,
             });
         }
 
+        database.MachineLogLines.AddRange(added);
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Keep the newest lines. The oldest are the least useful once a machine has logged this much.
@@ -399,6 +413,11 @@ public static class AgentEndpoints
                 .Where(l => l.MachineId == id && l.Id <= oldestKept)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
+        }
+
+        if (added.Count > 0)
+        {
+            live.MachineLogAppended(id, added.Max(l => l.Id));
         }
 
         return TypedResults.NoContent();

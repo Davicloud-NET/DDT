@@ -54,6 +54,17 @@ public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions
             return DeploymentDecision.Conflict($"The run is {Word(run.State)} and takes no further reports. {AskAgain}");
         }
 
+        // The service in Windows cannot take the run back to the Windows PE phase. Windows PE registers again before it
+        // does, as when the machine started it instead of the installed Windows and it hands the run over again. A
+        // failure still ends the run, whatever phase it names.
+        if (report.State != DeploymentState.Failed
+            && report.Phase == SequencePhase.WindowsPE
+            && machine.AgentEnvironment == AgentEnvironment.Windows)
+        {
+            return DeploymentDecision.Conflict(
+                $"This machine registered from Windows, so its run cannot be in the Windows PE phase. An agent in Windows PE registers before it reports. {AskAgain}");
+        }
+
         List<DeploymentStep> steps = await database.DeploymentSteps
             .Where(s => s.DeploymentId == run.Id)
             .OrderBy(s => s.Index)

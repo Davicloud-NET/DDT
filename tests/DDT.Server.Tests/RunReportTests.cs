@@ -23,13 +23,14 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 {
     private static readonly AgentLogBatch s_oneLine = new([new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, "x")]);
 
-    // A machine with the Minimal sequence assigned on the web, as its agent finds it at its next poll.
-    private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync()
+    // A machine with the Minimal sequence and the steps after it assigned on the web, as its agent finds it at its next
+    // poll.
+    private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync(params SequenceStep[] after)
     {
         SignedInClient administrator = await application.AdministratorAsync();
         DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
-        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Minimal(image.Id));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition([.. SequenceRequests.Minimal(image.Id).Steps, .. after]));
 
         await administrator.AssignedAsync(machine.Id, sequence.Id);
 
@@ -433,9 +434,108 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         Assert.Null((await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, service.Token!))).Run);
 
+        // Windows PE registers again, starts the run and hands it over.
+        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(machine.Registration with { ResumeToken = machine.ResumeToken }));
         await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Running)));
 
-        Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, service.Token!))).Run?.Id);
+        AgentRegistrationResult again = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
+
+        Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, again.Token!))).Run?.Id);
+    }
+
+    // Windows PE started after the run was handed over to Windows: the hand-over was interrupted, or the firmware
+    // started from the network first. The agent in Windows PE continues the run with its run token and does the
+    // hand-over again, with the reports SequenceRunner sends for it: the phase goes back to Windows PE until the state
+    // is staged again, then on to Windows.
+    [Fact]
+    public async Task ARunHandedOverAgainGoesBackToWindowsPEAndOnToWindows()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(
+            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file" },
+            new RunScriptStep { Id = Guid.NewGuid(), Name = "In Windows", Phase = SequencePhase.Windows, Script = "hostname" });
+        using DeployingMachine _ = machine;
+        StepRunState[] inWindowsPE = [.. run.Sequence.Steps.Take(3).Select(s => Step(s, StepState.Done))];
+
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, activity: RunActivity.HandingOver));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.HandingOver));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+
+        AgentRegistrationResult continued = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await machine.Agent.RegisterAsync(machine.Registration with { RunToken = machine.RunToken }));
+
+        Assert.Equal(run.Id, continued.RunId);
+        Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, continued.Token!))).Run?.Id);
+
+        // The first beat can still carry the state as the agent found it on the disk.
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, activity: RunActivity.HandingOver));
+
+        DeploymentSummary goingBack = (await ViewAsync(run.Id)).Summary;
+        Assert.Equal((DeploymentState.Running, SequencePhase.WindowsPE, RunActivity.HandingOver), (goingBack.State, goingBack.Phase, goingBack.Activity));
+
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.HandingOver));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+
+        DeploymentView handedOver = await ViewAsync(run.Id);
+        Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (handedOver.Summary.State, handedOver.Summary.Phase, handedOver.Summary.Activity));
+        Assert.Equal([StepState.Done, StepState.Done, StepState.Done, StepState.Pending], handedOver.Steps.Select(s => s.State));
+        Assert.Equal(MachineState.Deploying, (await application.MachineAsync(machine.Id)).State);
+
+        // The service in Windows goes on with the run.
+        AgentRegistrationResult service = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
+
+        Assert.Equal(run.Id, service.RunId);
+
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Running)], phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Done)], phase: SequencePhase.Windows));
+
+        Assert.Equal(DeploymentState.Done, (await StoredAsync(run.Id)).State);
+    }
+
+    // Windows PE registers before it takes the run back to its phase. The machine can start it at any restart in the
+    // Windows phase, so a Windows step that is done already does not keep it out.
+    [Fact]
+    public async Task TheServiceInWindowsCannotTakeTheRunBackToWindowsPE()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(
+            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file" },
+            new RunScriptStep { Id = Guid.NewGuid(), Name = "In Windows", Phase = SequencePhase.Windows, Script = "hostname", RebootAfter = true },
+            new RunScriptStep { Id = Guid.NewGuid(), Name = "After the restart", Phase = SequencePhase.Windows, Script = "hostname" });
+        using DeployingMachine _ = machine;
+        StepRunState[] inWindowsPE = [.. run.Sequence.Steps.Take(3).Select(s => Step(s, StepState.Done))];
+        StepRunState[] inWindows = [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Done)];
+
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindows, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+
+        HttpResponseMessage back = await machine.ReportAsync(run.Id, Report(DeploymentState.Running, inWindows));
+
+        Assert.Equal(HttpStatusCode.Conflict, back.StatusCode);
+        Assert.Equal(
+            "This machine registered from Windows, so its run cannot be in the Windows PE phase. An agent in Windows PE registers before it reports. Ask the server for the current run.",
+            await TestDatabase.TitleAsync(back));
+        Assert.Equal(HttpStatusCode.Conflict, (await machine.ReportAsync(run.Id, Report(DeploymentState.Done, inWindows))).StatusCode);
+        Assert.Equal(SequencePhase.Windows, (await ViewAsync(run.Id)).Summary.Phase);
+
+        // The machine started Windows PE instead of the installed Windows after the restart.
+        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(machine.Registration with { RunToken = machine.RunToken }));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindows));
+
+        Assert.Equal(SequencePhase.WindowsPE, (await ViewAsync(run.Id)).Summary.Phase);
+
+        // A failure ends the run whatever phase it names: the agent has stopped anyway.
+        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, inWindows, error: "The service could not read the run's state."));
+
+        Assert.Equal(DeploymentState.Failed, (await StoredAsync(run.Id)).State);
     }
 
     // The settings the run needs went away with a restart of the server between the assignment and the start. The run

@@ -4,6 +4,7 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;
 
@@ -77,6 +78,31 @@ internal static class TestAgents
         File.WriteAllText(InjectDriversStepRunner.DismIn(system), string.Empty);
 
         return system;
+    }
+
+    // The service in the Windows on tools.Volumes.Windows, with the fake's setup and removal.
+    public static WindowsPhaseLoop WindowsLoop(
+        IAgentServer server,
+        FakeDeploymentTools tools,
+        SequenceRunner runner,
+        AgentLog log,
+        TimeProvider timeProvider,
+        bool dryRun = false)
+    {
+        ArgumentNullException.ThrowIfNull(tools);
+
+        return new WindowsPhaseLoop(
+            server,
+            new DryRunMachineIdentityReader(1),
+            runner,
+            tools,
+            tools,
+            log,
+            timeProvider,
+            Timeout.InfiniteTimeSpan,
+            tools.Volumes.Windows,
+            Version,
+            dryRun);
     }
 
     public static AgentLoop Loop(

@@ -19,6 +19,9 @@ namespace DDT.Agent.Sequences;
 // agent: every failure is reported, because an agent that crashes is replaced by the boot image's. In a dry run,
 // workDirectory is the dry run's root, which stands in for the disk and is deleted when the run ends. systemDirectory
 // is where Windows PE keeps its tools.
+// The service in the installed Windows goes on with the run through GoOnInWindowsAsync, with the same steps, reports
+// and failure handling. The engine never runs a Windows PE step there, as the phases come in order, so the disk, image
+// and boot tools are only there for Windows PE.
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
@@ -48,6 +51,10 @@ public sealed class SequenceRunner(
         "The machine keeps starting Windows PE instead of the installed Windows, so the run cannot go on there. Set its " +
         "firmware to start Windows Boot Manager first, then run the sequence again.";
 
+    public const string WindowsPEAfterWindowsMessage =
+        "A step that runs in Windows PE follows the steps in the installed Windows, and the run cannot go back to Windows PE. " +
+        "Move the step before the first step in Windows, then run the sequence again.";
+
     // 2 GB more keeps the downloads and the applied image from filling the disk to the last byte.
     private const long SpareBytes = 2048L * 1024 * 1024;
     private const long Megabyte = 1024L * 1024;
@@ -61,10 +68,39 @@ public sealed class SequenceRunner(
     // Whether this run put Windows Boot Manager first, which a run that does not finish puts back.
     private bool _windowsFirst;
 
+    // Where the run goes on: in Windows PE, or in the installed Windows.
+    private SequencePhase _phase;
+
     // confirmedDisk is the disk the technician confirmed with ERASE in this process, if any. Disk numbers can change
     // when the machine starts again, so a run chosen at the machine only erases that same disk. resumed is the run's
     // state found on the disk, for a run that goes on after a restart.
-    public async Task<RunResult> RunAsync(
+    public Task<RunResult> RunAsync(
+        Guid machineId,
+        AgentRun run,
+        LocalRun? resumed,
+        LocalDisk? confirmedDisk,
+        DeploymentTokens tokens,
+        MachineIdentity identity,
+        CancellationToken cancellationToken) =>
+        RunAsync(SequencePhase.WindowsPE, machineId, run, resumed, confirmedDisk, tokens, identity, cancellationToken);
+
+    // resumed is the run as the hand-over left it in the running Windows, whose volume it names. The run ends with its
+    // Done report and no restart, as the agent still has to remove itself.
+    public Task<RunResult> GoOnInWindowsAsync(
+        Guid machineId,
+        AgentRun run,
+        LocalRun resumed,
+        DeploymentTokens tokens,
+        MachineIdentity identity,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(resumed);
+
+        return RunAsync(SequencePhase.Windows, machineId, run, resumed, null, tokens, identity, cancellationToken);
+    }
+
+    private async Task<RunResult> RunAsync(
+        SequencePhase phase,
         Guid machineId,
         AgentRun run,
         LocalRun? resumed,
@@ -78,6 +114,7 @@ public sealed class SequenceRunner(
         ArgumentNullException.ThrowIfNull(identity);
 
         _windowsFirst = false;
+        _phase = phase;
 
         RunSession session = new(machineId, run, tokens);
         FileRunStateStore? store = null;
@@ -107,7 +144,8 @@ public sealed class SequenceRunner(
         RunResult result = await RunCoreAsync(session, resumed, confirmedDisk, store, heartbeat, state, machine, cancellationToken)
             .ConfigureAwait(false);
 
-        if (dryRun && result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
+        // In Windows the agent's removal deletes the dry run's root.
+        if (dryRun && phase == SequencePhase.WindowsPE && result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
         {
             Leftovers.Delete(workDirectory, log);
         }
@@ -216,7 +254,7 @@ public sealed class SequenceRunner(
 
         try
         {
-            SequenceRunResult result = state.Phase == SequencePhase.Windows
+            SequenceRunResult result = state.Phase == SequencePhase.Windows && _phase == SequencePhase.WindowsPE
                 ? await HandOverAgainAsync(store, state).ConfigureAwait(false)
                 : await engine.RunAsync(state, machine, steps.Token).ConfigureAwait(false);
             state = result.State;
@@ -226,13 +264,15 @@ public sealed class SequenceRunner(
 
             switch (outcome)
             {
-                case SequenceOutcome.Completed when WindowsApplied(state):
+                case SequenceOutcome.Completed when _phase == SequencePhase.WindowsPE && WindowsApplied(state):
                     heartbeat.Activity = RunActivity.Finishing;
                     await MakeBootableAsync(session.RequireVolumes(), null, steps.Token).ConfigureAwait(false);
                     break;
                 case SequenceOutcome.Completed:
                     heartbeat.Activity = RunActivity.Finishing;
                     break;
+                case SequenceOutcome.PhaseChangeRequired when _phase == SequencePhase.Windows:
+                    throw new DeploymentStepException(WindowsPEAfterWindowsMessage);
                 case SequenceOutcome.PhaseChangeRequired:
                     heartbeat.Activity = RunActivity.HandingOver;
                     SequenceState handedOver = state;
@@ -272,7 +312,7 @@ public sealed class SequenceRunner(
         {
             log.Warning("The server no longer accepts this machine's token. The machine restarts as the run asked, and the run goes on after the restart if the server still runs it.");
 
-            return await RebootAsync(RestartInto.WindowsPE, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
+            return await RebootAsync(SamePhase, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -289,7 +329,7 @@ public sealed class SequenceRunner(
         return outcome switch
         {
             SequenceOutcome.Completed => await FinishAsync(session, store, heartbeat, state, cancellationToken).ConfigureAwait(false),
-            SequenceOutcome.RebootRequired => await RestartAsync(heartbeat, RestartInto.WindowsPE, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.RebootRequired => await RestartAsync(heartbeat, SamePhase, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.PhaseChangeRequired => await RestartAsync(heartbeat, RestartInto.Windows, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
             _ => await FailAsync(session, store, heartbeat, state, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
@@ -320,6 +360,9 @@ public sealed class SequenceRunner(
 
         return new SequenceRunResult(SequenceOutcome.PhaseChangeRequired, state, null);
     }
+
+    // A restart the run asks for leads back to where it runs now.
+    private RestartInto SamePhase => _phase == SequencePhase.Windows ? RestartInto.Windows : RestartInto.WindowsPE;
 
     private static bool WindowsApplied(SequenceState state) =>
         state.Variables.TryGetValue(RunVariables.WindowsApplied, out string? applied) && applied == RunVariables.Set;
@@ -459,10 +502,15 @@ public sealed class SequenceRunner(
     }
 
     // Windows PE lettered the run's Windows volume as it chose, and the other partitions not at all. Before Partition
-    // finished, the state has no partition ids, and the engine fails the interrupted Partition.
+    // finished, the state has no partition ids, and the engine fails the interrupted Partition. The installed Windows
+    // runs from the run's Windows volume, and its steps need no other.
     private async Task ResumeAsync(RunSession session, LocalRun resumed, FileRunStateStore store, CancellationToken cancellationToken)
     {
-        if (RunVariables.DiskIds(resumed.State.Variables) is { } ids)
+        if (_phase == SequencePhase.Windows)
+        {
+            session.RunningWindows = resumed.WindowsRoot;
+        }
+        else if (RunVariables.DiskIds(resumed.State.Variables) is { } ids)
         {
             session.Volumes = await partitioner.FindAsync(ids, resumed.WindowsRoot, cancellationToken).ConfigureAwait(false);
         }
@@ -502,7 +550,8 @@ public sealed class SequenceRunner(
     }
 
     // The order matters: the log goes while the machine may still send it, and the Done report is the last call the
-    // server gets. The restart follows whatever the Done report answers: the run is over either way.
+    // server gets. The restart follows whatever the Done report answers: the run is over either way. In Windows the run
+    // ends without a restart, and the agent's removal deletes the rest of the run's directory, which holds the agent.
     private async Task<RunResult> FinishAsync(
         RunSession session,
         FileRunStateStore store,
@@ -510,12 +559,13 @@ public sealed class SequenceRunner(
         SequenceState state,
         CancellationToken cancellationToken)
     {
-        log.Information("The run is done. Sending the last log lines, then restarting.");
+        bool inWindows = _phase == SequencePhase.Windows;
+        log.Information(inWindows ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
 
         // The token first, so nothing left on the disk can act as the machine.
         store.Files?.Discard();
 
-        if (session.RunDirectory is { } directory)
+        if (!inWindows && session.RunDirectory is { } directory)
         {
             Leftovers.Delete(directory, log);
         }
@@ -550,7 +600,13 @@ public sealed class SequenceRunner(
         }
         catch (Exception exception)
         {
-            log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). The machine restarts anyway.");
+            log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). " +
+                (inWindows ? "The agent removes itself anyway." : "The machine restarts anyway."));
+        }
+
+        if (inWindows)
+        {
+            return new RunResult(RunOutcome.Finished);
         }
 
         return await RebootAsync(RestartInto.Windows, RunOutcome.Finished, "Restart it by hand; the run is done.", cancellationToken)
@@ -558,15 +614,17 @@ public sealed class SequenceRunner(
     }
 
     // The run's state and token are on the disk, and the rest of the run follows the next start of Windows PE, or of the
-    // installed Windows after the hand-over. The registration after a restart into Windows PE decides whether the run
-    // goes on, but the installed Windows would go on with it and use its answer file, so a refused token keeps it from
-    // starting.
+    // installed Windows. The registration after the restart decides whether the run goes on, but after the hand-over
+    // the installed Windows would go on with it and use its answer file, so a refused token keeps it from starting.
     private async Task<RunResult> RestartAsync(RunHeartbeat heartbeat, RestartInto into, CancellationToken cancellationToken)
     {
+        bool handingOver = _phase == SequencePhase.WindowsPE && into == RestartInto.Windows;
         heartbeat.Activity = RunActivity.Restarting;
-        log.Information(into == RestartInto.WindowsPE
-            ? "The machine restarts into Windows PE, and the run goes on after the restart."
-            : "The machine restarts into the installed Windows, where the agent goes on with the run.");
+        log.Information(_phase == SequencePhase.Windows
+            ? "Windows restarts, and the run goes on after the restart."
+            : handingOver
+                ? "The machine restarts into the installed Windows, where the agent goes on with the run."
+                : "The machine restarts into Windows PE, and the run goes on after the restart.");
 
         try
         {
@@ -581,7 +639,7 @@ public sealed class SequenceRunner(
         {
             return new RunResult(RunOutcome.Stopped);
         }
-        catch (AgentTokenRejectedException) when (into == RestartInto.Windows)
+        catch (AgentTokenRejectedException) when (handingOver)
         {
             return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
         }
@@ -590,7 +648,7 @@ public sealed class SequenceRunner(
             log.Warning($"The server could not be told of the restart ({LogText.OneLine(exception)}). The machine restarts anyway.");
         }
 
-        if (!await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false) && into == RestartInto.Windows)
+        if (!await FlushAllAsync(heartbeat, cancellationToken).ConfigureAwait(false) && handingOver)
         {
             return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
         }

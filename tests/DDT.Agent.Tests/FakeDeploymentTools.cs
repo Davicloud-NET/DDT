@@ -3,17 +3,19 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Deployment;
+using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and records each call in one
-// journal so a test can check their order. FailAt names the call that throws Failure: list, prepare, partition,
-// apply, bcd, firmware, reboot, find, or one passed to Note. The volumes are directories in a temporary folder, created by the partitioning,
-// that Dispose removes.
-internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IDisposable
+// Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
+// setup and the agent's removal, and records each call in one journal so a test can check their order. FailAt names
+// the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find, remove, or one passed to
+// Note. The volumes are directories in a temporary folder, created by the partitioning, that Dispose removes.
+internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IAgentRemoval, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
+    private readonly Queue<string> _setupPending = new();
 
     public FakeDeploymentTools(params LocalDisk[] disks)
     {
@@ -166,6 +168,40 @@ internal sealed class FakeDeploymentTools : IDiskPartitioner, IImageApplier, IBc
             WindowsPartitionId = ids.Windows,
             RecoveryPartitionId = ids.Recovery,
         });
+    }
+
+    // What setup is still doing at each of the next looks, after which it has finished.
+    public void SetupRuns(params string[] pending)
+    {
+        lock (_lock)
+        {
+            foreach (string step in pending)
+            {
+                _setupPending.Enqueue(step);
+            }
+        }
+    }
+
+    // Each look goes into the journal as setup, with what setup was still doing.
+    public string? Pending()
+    {
+        string? pending;
+
+        lock (_lock)
+        {
+            _setupPending.TryDequeue(out pending);
+        }
+
+        Record("setup", pending is null ? " finished" : $" {pending}");
+
+        return pending;
+    }
+
+    public Task RemoveAsync(CancellationToken cancellationToken)
+    {
+        Record("remove");
+
+        return Task.CompletedTask;
     }
 
     // Another fake's call, such as a tool run, in the same journal, so a test can check the order of both.

@@ -6,6 +6,22 @@ using System.Text;
 using DDT.Agent;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsPhase;
+
+// The service control manager gives a service 30 seconds to connect, so nothing comes before this.
+if (args.Contains(WindowsServiceHost.Argument))
+{
+    if (WindowsServiceHost.TryRun(WindowsPhaseService.RunAsync, out int serviceExitCode))
+    {
+        return serviceExitCode;
+    }
+
+    Console.Error.WriteLine(
+        $"{WindowsServiceHost.Argument} is only for the {OfflineServiceRegistration.ServiceName} service, which Windows starts " +
+        $"after the hand-over (error {serviceExitCode}).");
+
+    return AgentExitCodes.ConfigurationError;
+}
 
 if (args.Contains(AgentLegalNotices.LicensesArgument))
 {

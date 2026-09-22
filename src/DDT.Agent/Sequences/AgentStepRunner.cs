@@ -15,6 +15,7 @@ public sealed class AgentStepRunner(
     ApplyImageStepRunner applyImage,
     InjectDriversStepRunner injectDrivers,
     WriteUnattendStepRunner writeUnattend,
+    JoinDomainStepRunner joinDomain,
     RunScriptStepRunner runScript,
     Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
@@ -48,7 +49,8 @@ public sealed class AgentStepRunner(
                     WriteUnattendStep writeUnattendStep => await writeUnattend.RunAsync(writeUnattendStep, context, cancellationToken).ConfigureAwait(false),
                     RunScriptStep runScriptStep => await runScript.RunAsync(runScriptStep, context, cancellationToken).ConfigureAwait(false),
                     RebootStep => StepResult.RebootRequired(),
-                    JoinDomainStep => StepResult.Failed(JoinDomainInWindowsPE),
+                    JoinDomainStep when context.Phase == SequencePhase.WindowsPE => StepResult.Failed(JoinDomainInWindowsPE),
+                    JoinDomainStep joinDomainStep => await joinDomain.RunAsync(joinDomainStep, context, cancellationToken).ConfigureAwait(false),
                     _ => StepResult.Failed(UnknownKind),
                 };
             }

@@ -521,6 +521,37 @@ public sealed class WindowsPhaseLoopTests : IDisposable
     }
 
     [Fact]
+    public async Task JoinsTheDomainWithTheAccountOfTheRunningStepThenRestartsWindows()
+    {
+        AgentRun run = Run(TestRuns.Join, TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunCredentials(_ => TestRuns.JoinAccount);
+        ManualTimeProvider time = new();
+        StringWriter console = new();
+
+        Task<int> running = RunAsync(server, time, new AgentLog(time, console));
+        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
+        await server.Stop.CancelAsync();
+
+        Assert.Equal(AgentExitCodes.Restarting, await running);
+        Assert.Equal(["setup finished", "join corp.example.test", "restart due", "reboot"], _tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+
+        // The server hands out the account only for the step it has seen running.
+        List<string> calls = server.Calls;
+        int fetch = calls.IndexOf($"run-credentials {TestRuns.Join.Id} session-1");
+        int reportsBefore = calls.Take(fetch).Count(call => call.StartsWith("run-report", StringComparison.Ordinal));
+        Assert.Contains(new StepRunState(TestRuns.Join.Id, StepState.Running, null), server.RunReports[reportsBefore - 1].Steps);
+
+        Assert.DoesNotContain(TestRuns.JoinAccount.Password, console.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(server.SentLines, line => line.Message.Contains(TestRuns.JoinAccount.Password, StringComparison.Ordinal));
+        Assert.All(server.RunReports, report => Assert.DoesNotContain(TestRuns.JoinAccount.Password, report.Error ?? string.Empty, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ADryRunReturnsAtTheRestart()
     {
         AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot);

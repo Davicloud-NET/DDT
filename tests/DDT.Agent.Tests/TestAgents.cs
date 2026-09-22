@@ -30,7 +30,8 @@ internal static class TestAgents
         IRebooter? rebooter = null,
         string? systemDirectory = null,
         bool dryRunHandOver = false,
-        bool dryRun = true)
+        bool dryRun = true,
+        IDomainJoiner? joiner = null)
     {
         toolRunner ??= new RecordingToolRunner();
 
@@ -41,6 +42,7 @@ internal static class TestAgents
             bcdWriter ?? tools,
             rebooter ?? tools,
             toolRunner,
+            joiner ?? tools,
             HandOver(tools, toolRunner, log, dryRunHandOver),
             log,
             timeProvider,

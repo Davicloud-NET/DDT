@@ -4,20 +4,23 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.WindowsPhase;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
 // Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
-// setup, the due restart and the agent's removal, and records each call in one journal so a test can check their
-// order. FailAt names the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find,
-// remove, or one passed to Note. The volumes are directories in a temporary folder, created by the partitioning, that
-// Dispose removes.
+// setup, the domain join, the due restart and the agent's removal, and records each call in one journal so a test can
+// check their order. FailAt names the call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot,
+// find, join, remove, or one passed to Note. The volumes are directories in a temporary folder, created by the
+// partitioning, that Dispose removes.
 internal sealed class FakeDeploymentTools
-    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IRestartMarker, IAgentRemoval, IDisposable
+    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
     private readonly Queue<string> _setupPending = new();
+    private readonly Queue<int> _joinAnswers = new();
+    private AgentJoinDomainCredentials? _joinedWith;
 
     public FakeDeploymentTools(params LocalDisk[] disks)
     {
@@ -197,6 +200,47 @@ internal sealed class FakeDeploymentTools
         Record("setup", pending is null ? " finished" : $" {pending}");
 
         return pending;
+    }
+
+    // The account of the last join, which the journal never names.
+    public AgentJoinDomainCredentials? JoinedWith
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _joinedWith;
+            }
+        }
+    }
+
+    // What NetJoinDomain answers to each of the next joins, after which a join works.
+    public void JoinAnswers(params int[] codes)
+    {
+        lock (_lock)
+        {
+            foreach (int code in codes)
+            {
+                _joinAnswers.Enqueue(code);
+            }
+        }
+    }
+
+    public Task<int> JoinAsync(AgentJoinDomainCredentials credentials, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(credentials);
+
+        int code;
+
+        lock (_lock)
+        {
+            _joinedWith = credentials;
+            code = _joinAnswers.TryDequeue(out int answer) ? answer : 0;
+        }
+
+        Record("join", $" {credentials.Domain}");
+
+        return Task.FromResult(code);
     }
 
     // Set until the test says Windows restarted, as the restart itself would.

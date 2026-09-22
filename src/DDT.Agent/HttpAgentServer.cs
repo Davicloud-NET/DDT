@@ -217,6 +217,21 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        Guid stepId,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.RunStepCredentials(machineId, runId, stepId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentJoinDomainCredentials, cancellationToken).ConfigureAwait(false);
+    }
+
     // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
     // reason. Only the headers are read, in case a server ignores the range and sends the whole file.
     private async Task<long?> HeadAsync(string route, string token, CancellationToken cancellationToken)

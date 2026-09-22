@@ -62,6 +62,7 @@ public static class WindowsPhaseService
             new BcdbootWriter(tools, new UefiVariables(), log),
             rebooter,
             tools,
+            new NetJoinDomainJoiner(),
             new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
             log,
             TimeProvider.System,

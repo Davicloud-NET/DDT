@@ -44,4 +44,8 @@ public interface IAgentServer
     // The answer file of a WriteUnattend step, which the server renders only while the step is running. It holds
     // passwords.
     Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
+
+    // The domain and the account that joins the machine to it, for a JoinDomain step, which the server hands out only
+    // while the step is running, and only to the agent in the installed Windows. It holds the account's password.
+    Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 }

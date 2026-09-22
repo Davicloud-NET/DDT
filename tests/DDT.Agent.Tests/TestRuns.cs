@@ -26,6 +26,12 @@ internal static class TestRuns
 
     public static RebootStep Reboot { get; } = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b004"), Name = "Restart" };
 
+    public static JoinDomainStep Join { get; } = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b006"), Name = "Join the domain" };
+
+    // What the server hands out for Join. The password must never appear in a log or an error.
+    public static AgentJoinDomainCredentials JoinAccount { get; } =
+        new("corp.example.test", "OU=Workstations,DC=corp,DC=example,DC=test", @"CORP\ddt-join", "Pa55-w0rd-never-logged");
+
     public static IReadOnlyList<SequenceStep> InstallWindows { get; } = [Partition, Apply, Unattend];
 
     // A cmd script in Windows PE whose id ends in number.

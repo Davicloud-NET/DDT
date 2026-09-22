@@ -289,6 +289,29 @@ public sealed class HttpAgentServerTests
         Assert.Equal(TestImage.Unattend, unattend);
     }
 
+    [Fact]
+    public async Task FetchesTheJoinAccountOfARunningStep()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = Encoding.UTF8.GetBytes(
+            """{"domain":"corp.example.test","organizationalUnit":"OU=Workstations,DC=corp,DC=example,DC=test","userName":"CORP\\ddt-join","password":"Pa55-w0rd-never-logged"}""");
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentJoinDomainCredentials credentials = await server.GetRunJoinCredentialsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
+
+        string request = await serving;
+        Assert.StartsWith(
+            $"GET /api/agents/{s_machineId:D}/runs/{s_runId:D}/steps/{s_stepId:D}/credentials HTTP/1.1",
+            request,
+            StringComparison.Ordinal);
+        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
+        Assert.Equal(TestRuns.JoinAccount, credentials);
+    }
+
     private static string Json(byte[] body) =>
         $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\n";
 

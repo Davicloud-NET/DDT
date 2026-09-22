@@ -73,12 +73,14 @@ internal sealed class StepRunnerFixture : IDisposable
 
     public WriteUnattendStepRunner WriteUnattend => new(Server, Session, ReportRunningAsync, Log, Time);
 
+    public JoinDomainStepRunner JoinDomain => new(Tools, Server, Session, ReportRunningAsync, Log, Time);
+
     public RunScriptStepRunner RunScript => new(ToolRunner, Downloads, Session, Log, WorkDirectory);
 
     // Every 401 a step saw, which the heartbeat would take as the end of the run.
     public List<AgentTokenRejectedException> TokenRejections { get; } = [];
 
-    public AgentStepRunner Steps => new(Partition, ApplyImage, InjectDrivers, WriteUnattend, RunScript, TokenRejections.Add, Log, Time);
+    public AgentStepRunner Steps => new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, TokenRejections.Add, Log, Time);
 
     public StepContext Context(SequencePhase phase = SequencePhase.WindowsPE) =>
         new(

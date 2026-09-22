@@ -46,7 +46,7 @@ public sealed class RecordingLoggerProvider : ILoggerProvider
         {
             ArgumentNullException.ThrowIfNull(formatter);
 
-            entries.Enqueue(new LogEntry(eventId, logLevel, formatter(state, exception)));
+            entries.Enqueue(new LogEntry(eventId, logLevel, formatter(state, exception), exception?.ToString()));
         }
     }
 }

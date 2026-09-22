@@ -241,6 +241,33 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         Assert.Empty(await SecretReadsAsync(run.Id));
     }
 
+    // No password reaches the log at any point of a run, neither in the clear nor as the answer file encodes it.
+    [Fact]
+    public async Task NoPasswordIsEverLogged()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        string[] secrets =
+        [
+            DomainDeploymentApplication.AdministratorPassword,
+            Convert.ToBase64String(Encoding.Unicode.GetBytes(DomainDeploymentApplication.AdministratorPassword + "Password")),
+            DomainDeploymentApplication.JoinPassword,
+        ];
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 2));
+        (await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id)).EnsureSuccessStatusCode();
+        await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
+        (await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id)).EnsureSuccessStatusCode();
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))], phase: SequencePhase.Windows));
+
+        Assert.Contains(application.Log.Entries, entry => entry.Message.Contains(run.Id.ToString("D"), StringComparison.Ordinal));
+        Assert.All(application.Log.Entries, entry => Assert.All(secrets, secret =>
+        {
+            Assert.DoesNotContain(secret, entry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, entry.Exception ?? string.Empty, StringComparison.Ordinal);
+        }));
+    }
+
     // The account is bound to the domain the run started with, so a domain configured since gets nothing.
     [Fact]
     public async Task AJoinForAnotherDomainGetsNoAccount()

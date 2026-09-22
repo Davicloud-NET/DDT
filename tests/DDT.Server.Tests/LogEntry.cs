@@ -6,5 +6,5 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Tests;
 
-// One message a host logged, as RecordingLoggerProvider keeps it.
-public sealed record LogEntry(EventId EventId, LogLevel Level, string Message);
+// One message a host logged, with the exception it came with, as RecordingLoggerProvider keeps it.
+public sealed record LogEntry(EventId EventId, LogLevel Level, string Message, string? Exception = null);

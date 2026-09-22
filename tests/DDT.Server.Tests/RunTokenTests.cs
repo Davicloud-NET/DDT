@@ -79,6 +79,27 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
             (await AuditAsync(run.Id)).Count(a => a == $"{AuditActions.DeploymentResumed} {machine.Agent.RemoteAddress} Continued {run.SequenceName} ({run.Id:D}) from WindowsPE with its run token."));
     }
 
+    // An agent that kept its resume token continues the run with it just as well. It is told so, or the service in
+    // Windows would take the run for over and remove itself while the run stays running.
+    [Fact]
+    public async Task TheResumeTokenContinuesARunningRunAsTheRunTokenDoes()
+    {
+        (DeployingMachine machine, AgentRun run) = await RunningAsync(application);
+        using DeployingMachine _ = machine;
+        int generation = (await application.MachineAsync(machine.Id)).TokenGeneration;
+
+        AgentRegistrationResult service = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { ResumeToken = machine.ResumeToken, Environment = AgentEnvironment.Windows }));
+
+        Assert.Equal(MachineState.Deploying, service.State);
+        Assert.Equal(run.Id, service.RunId);
+        Assert.NotNull(service.RunToken);
+        Assert.Equal(generation, (await application.MachineAsync(machine.Id)).TokenGeneration);
+        Assert.Contains(
+            $"{AuditActions.DeploymentResumed} {machine.Agent.RemoteAddress} Continued {run.SequenceName} ({run.Id:D}) from Windows with its resume token.",
+            await AuditAsync(run.Id));
+    }
+
     [Fact]
     public async Task EveryAnswerWhileTheRunRunsCarriesARunToken()
     {

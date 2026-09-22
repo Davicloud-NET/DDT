@@ -75,7 +75,10 @@ public sealed partial class MachineRegistrar(
         Deployment? active = machine is null ? null : await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
         DeploymentState? before = active?.State;
         bool resumes = machine is not null && Resumes(registration, machine);
-        Deployment? continued = machine is not null && ContinuesRun(registration, machine, active) ? active : null;
+        bool byRunToken = machine is not null && ContinuesRun(registration, machine, active);
+
+        // A resume keeps the machine's run as well, so it is answered as one: an agent told of no run takes it for over.
+        Deployment? continued = byRunToken || (resumes && active is { State: DeploymentState.Running }) ? active : null;
 
         // The service in Windows only ever continues a run. Starting over would make the machine Pending, and an
         // approval would then hand Windows PE steps to a running Windows. It changes nothing, and removes itself.
@@ -118,7 +121,7 @@ public sealed partial class MachineRegistrar(
                 AuditActions.DeploymentResumed,
                 machine,
                 address,
-                $"Continued {continued.Title} ({continued.Id:D}) from {registration.Environment} with its run token.",
+                $"Continued {continued.Title} ({continued.Id:D}) from {registration.Environment} with its {(byRunToken ? "run" : "resume")} token.",
                 continued.Id));
             LogContinued(machine.Id, continued.Id, address ?? "unknown", registration.Environment);
         }
@@ -127,7 +130,7 @@ public sealed partial class MachineRegistrar(
             await StartOverAsync(machine, active, remoteAddress, address, now, registration.RunToken is not null, cancellationToken).ConfigureAwait(false);
         }
 
-        if (machine.State != MachineState.Rejected && registration.RunToken is not null && continued is null)
+        if (machine.State != MachineState.Rejected && registration.RunToken is not null && !byRunToken)
         {
             database.AuditEvents.Add(Audit(
                 now,

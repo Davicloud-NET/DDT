@@ -53,9 +53,11 @@ Boot flow:
    HTTPS using its MAC addresses and SMBIOS UUID, receives a task sequence, executes it, streams
    log lines and progress, and survives reboots by persisting state to the local disk. Everything
    after the boot files, images and task sequences included, travels over HTTPS.
-4. Machines already running Windows skip PXE entirely: the agent stages WinPE on a local partition,
-   adds a one-time BCD entry and reboots. This is the default re-imaging path. PXE is for bare
-   metal.
+4. Steps that need the installed Windows run there after Windows setup, in the same agent running
+   as a temporary service that removes itself when the run is over.
+
+A machine that already runs Windows is re-imaged by netbooting it as well. Staging Windows PE on a
+local partition from a running Windows, without PXE, is left for later.
 
 ## Repository layout
 
@@ -425,7 +427,7 @@ Because the tunnel ends on the gateway, remote traffic reaches DDT on its ordina
 | Transport | Carries |
 |---|---|
 | TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all, about 460 MB with PowerShell in Windows PE |
-| HTTPS | Everything the agent does: registration, its own updates, task sequences, images, logs |
+| HTTPS | Everything the agent does: registration, its own updates, task sequences, images, packages, logs |
 | Plain HTTP, port 8080 | The same boot files, for UEFI HTTP Boot clients, which cannot validate a private CA |
 
 The boot manager downloads `boot.wim` over TFTP itself, so TFTP speed decides how long a netboot
@@ -553,14 +555,15 @@ such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on 
 `DDT.Agent` is a single NativeAOT executable, because Windows PE has no .NET runtime. It reads the
 machine's SMBIOS UUID, manufacturer, model and serial number straight from the firmware table, so it
 does not depend on WMI, which an image built with `-SkipPowerShell` lacks, and it reports every MAC
-address it finds.
+address it finds. The same executable goes on with a run in the installed Windows as the temporary
+`DdtSequence` service, see [In the installed Windows](#in-the-installed-windows).
 
 ```bash
 .\build\Publish-Agent.ps1
 ```
 
 Publishing needs the Visual C++ build tools. The result is `artifacts\agent\ddt-agent.exe`, about
-9 MB. It carries wimlib's `libwim-15.dll` inside itself and writes it next to itself before it
+11 MB. It carries wimlib's `libwim-15.dll` inside itself and writes it next to itself before it
 applies an image, so the update below also updates wimlib, unless you supply your own as described
 under [Using your own libwim](#using-your-own-libwim). See
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
@@ -620,7 +623,7 @@ embedded DLL comes from.
    authorizes the machine there and then. An operator or administrator can also approve it on the
    Machines page instead, which is how an account that only signs in through OpenID Connect
    authorizes a machine: it has no password to type.
-4. On its next poll the agent receives a session token, the credential it needs to deploy an image.
+4. On its next poll the agent receives a session token, the credential it needs to run a sequence.
    Only then does it send what it has printed, including the lines from before, to
    `POST /api/agents/{id}/log`. A pending machine cannot write to the log, because anyone
    can get its kind of token by registering.
@@ -645,20 +648,23 @@ Registering a known machine again starts it over at `Pending` and invalidates ev
 because anyone who reaches the server can present its UUID and MAC. The exception is the agent
 already holding the machine: every answer includes a resume token, valid for 24 hours, and an agent
 that has to register again after an outage presents it and keeps its approval. A machine that
-rebooted has lost that token and starts over, unless zero touch applies (see
-[Deploying a machine](#deploying-a-machine)). A rejected machine stays rejected, and its agent stops.
+restarts during a run, once its disk is partitioned, goes on with the run through the run token it
+keeps on that disk, see [In Windows PE](#in-windows-pe). Any other machine that rebooted has lost
+its resume token and starts over, unless zero touch applies (see
+[Deploying a machine](#deploying-a-machine)). A rejected machine stays rejected, and its agent
+stops.
 To take a rejection back, an operator removes the machine on the Machines page, and it registers as
 a new machine at its next netboot.
 
-Registration is limited to 120 requests a minute per address, polling, logging and deployment
-reports to 60 a minute per machine, and image requests to 30 a minute per machine. The machine limits
-count the machine whose token a request carries, so one machine cannot use up another's. The server
-keeps the newest 10,000 log lines of each machine. At most 100 machines
+Registration is limited to 120 requests a minute per address, polling, logging and run reports to
+60 a minute per machine, and requests for images and packages to 30 a minute per machine. The
+machine limits count the machine whose token a request carries, so one machine cannot use up
+another's. The server keeps the newest 50,000 log lines of each machine. At most 100 machines
 nobody has approved may wait per address, `DDT:Machines:MaxWaitingPerAddress`, and 10,000 in all,
 `DDT:Machines:MaxWaiting`; a new machine beyond that is refused until some are approved or removed.
 An operator can remove a waiting machine nobody ever approved, or every such machine from one
 address, on the Machines page. Such machines also disappear once they have not been seen for a day.
-A machine that was approved once, or that has an image assigned, is never removed this way, so its
+A machine that was approved once, or that has a sequence assigned, is never removed this way, so its
 log survives it booting again.
 
 The agent trusts only the root certificate in `agent.json`, which for DDT's own certificate is
@@ -692,10 +698,15 @@ artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152
 
 `--dry-run` stands in for a fake machine with a stable identity per `--dry-run-id`, so several
 runs with different ids look like several machines on the Machines page. It reports one fake disk and
-runs a deployment without partitioning, applying or restarting anything: it logs the commands it
-would run, but it really downloads the image and fetches the answer file, into
-`%TEMP%\ddt-dry-run-{id}`, which it deletes when the run ends. Leave room there for the image. Every
-setting in `agent.json` except the keyboard layout name can also be given as an argument.
+runs the whole sequence, both phases, in this one process, without changing anything on the
+computer: partitioning, `bcdboot`, `reg`, `dism`, scripts, the domain join, `shutdown` and `sc` only
+log what they would do, and a restart starts the agent over within the process. It really downloads
+the images and packages, fetches the answer file and the join account, whose password it never
+logs, and stages the agent for the Windows phase, all into `%TEMP%\ddt-dry-run-{id}`, which it
+deletes when the run ends. Leave room there for the image. The Windows phase starts from the
+`agent.json` the hand-over staged, and takes Windows setup as finished at once. A dry run stopped
+with Ctrl+C goes on when it is started again with the same `--dry-run-id`. Every setting in
+`agent.json` except the keyboard layout name can also be given as an argument.
 
 ## Images
 
@@ -789,8 +800,8 @@ describes.
 | Partition the disk | Windows PE | Erases the disk and partitions it with one `diskpart` script: EFI system partition, 16 MB MSR, Windows, and a recovery partition at the end. The EFI system partition is 260 to 4096 MB, 300 by default, and the recovery partition 300 to 65536 MB, 1024 by default. |
 | Apply image | Windows PE | Downloads the chosen image from the library to the Windows partition, resuming after a dropped connection, checks its size and SHA-256, applies it with wimlib and deletes the download. It gives up when the download has not grown for 15 minutes. |
 | Inject drivers | Windows PE | Adds the drivers of every driver package that matches the machine's model to the applied Windows with `dism /Add-Driver /Recurse`. Without such a package the step does nothing, or fails with "Fail when no driver package matches the model" on. |
-| Write the answer file | Windows PE | Writes the answer file for Windows setup, see [Deploying a machine](#deploying-a-machine). Time zone, language and region, and keyboard left empty take the `DDT:Deployment` defaults. "Add the local administrator" adds the account configured there. |
-| Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect. |
+| Write the answer file | Windows PE | Writes the answer file for Windows setup, see [What Windows shows at its first start](#what-windows-shows-at-its-first-start). Time zone, language and region, and keyboard left empty take the `DDT:Deployment` defaults. "Add the local administrator" adds the account configured there. |
+| Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect, see [Joining a domain](#joining-a-domain). |
 | Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
 | Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
 
@@ -812,9 +823,9 @@ Partition the disk, `DDT_WINDOWS` is the root of the Windows partition, usually 
 that changes the applied Windows offline.
 
 **Phases.** A sequence runs in Windows PE first. When it has steps in Windows, a Join the domain or
-a Run script step set to Windows, the agent hands the run over to the installed Windows once the
-Windows PE steps are done, and the rest runs there after Windows setup. A sequence without such
-steps ends in Windows PE, and the machine restarts into Windows setup.
+a Run script step set to Windows, the agent [hands the run over](#the-hand-over-to-windows) to the
+installed Windows once the Windows PE steps are done, and the rest runs there after Windows setup. A
+sequence without such steps ends in Windows PE, and the machine restarts into Windows setup.
 
 **Conditions.** A step with conditions runs only when all of them hold, and is skipped otherwise.
 A condition compares one of the machine's values, Manufacturer, Model, Serial number, SMBIOS UUID,
@@ -897,111 +908,238 @@ A rule's sequence runs only in two ways:
 - **Suggested at the machine.** The technician signed in at the machine sees the rule's sequence
   first, marked as suggested, and still chooses it, confirming with `ERASE` when it erases a disk.
 
-A rule's run never counts as zero touch, and like a choice at the machine it is cancelled when the
-machine starts again before the run began. A new rule starts nothing by itself.
+A rule's run never counts as zero touch, and [Deploying a machine](#deploying-a-machine) says when
+it is cancelled. A new rule starts nothing by itself.
 
 ## Deploying a machine
 
-A deployment installs one image from the library on one machine. It starts in one of three ways.
+A deployment, or run, runs one [task sequence](#task-sequences) on one machine. It starts in one of
+these ways.
 
 - **At the machine.** Once someone signed in at it (see
-  [Registration and authorization](#registration-and-authorization)), the agent lists the x64 images.
-  The technician types the image number, the disk number when there is more than one disk, a computer
-  name when a domain is configured and the machine has none, and then `ERASE`. Anything else goes back
-  to the list.
-- **On the Machines page.** An operator or administrator assigns an image, optionally with a computer
-  name, which is required when a domain is configured. The dialog names the disks the machine reported
-  and says what the assignment does. A machine waiting at its prompt, seen in the last 90 seconds, is
-  authorized by the assignment, unless `DDT:Machines:RequireWebApproval` is on, in which case only a
-  machine someone already signed in at is. Any other machine stays `Pending` with the image assigned,
-  and deploys as soon as someone signs in at it. Assigning is refused for a machine that reported more
-  than one disk DDT could install on: sign in at it and choose the disk there.
+  [Registration and authorization](#registration-and-authorization)), the agent lists the sequences
+  that can run, those a rule suggests first, and leaves out those that erase a disk when the machine
+  has no disk DDT could install on. The technician types the sequence's number, and then answers
+  only what that sequence needs: the disk number when it erases a disk and there is more than one,
+  a computer name when it joins a domain, and last `ERASE` when it erases a disk. Anything but
+  `ERASE` there goes back to the list. A sequence with nothing more to ask starts once its number is
+  typed.
+- **On the Machines page.** An operator or administrator assigns a sequence, optionally with a
+  computer name, which is required when the sequence joins a domain and the machine has no name yet.
+  The dialog names the disks the machine reported and says what the assignment does. A machine
+  waiting at its prompt, seen in the last 90 seconds, is authorized by the assignment, unless
+  `DDT:Machines:RequireWebApproval` is on, in which case only a machine someone already signed in at
+  is. Any other machine stays `Pending` with the sequence assigned, and runs it as soon as someone
+  signs in at it. Assigning a sequence that erases a disk is refused for a machine that reported
+  more than one disk DDT could install on: sign in at it and choose the disk there.
+- **By an approval** of the sequence a rule chooses, as [Rules](#rules) describes.
 - **Zero touch.** `DDT:Machines:ZeroTouchNetworks` lists networks, for example `10.20.0.0/16`, and is
-  empty by default. A machine with an image assigned on the page that netboots from one of them is
-  authorized by that assignment and deploys with nobody at it. Zero touch is off while
+  empty by default. A machine with a sequence assigned on the page that netboots from one of them is
+  authorized by that assignment and runs it with nobody at it. Zero touch is off while
   `DDT:Machines:RequireWebApproval` is on. It matches the address the registration comes from. Behind
   a reverse proxy that is the proxy's address, unless the proxy is listed in `DDT:ForwardedHeaders`
   (see [TLS is required](#tls-is-required)); then it is the address the proxy reports. List only
   proxies there. No network in `DDT:Machines:ZeroTouchNetworks` may contain a proxy's address or
   overlap a listed proxy network, see [Security model](#security-model).
 
-A deployment that has not started can be cancelled, and a running one stopped. Stopping marks it
-failed and makes the machine start over as `Pending`; its disk is left half written. Rejecting a
-machine also ends its deployment. An image chosen at a machine is dropped if the machine netboots again
-before it started.
+When a sequence is assigned, chosen or approved, the run keeps a copy of it and fixes the files it
+downloads: its image, the driver packages that match the machine's model at that moment, and its
+files packages. Editing the sequence or uploading a package later never changes the run; assign the
+sequence again for that. The `DDT:Deployment` values without passwords are taken when the run
+starts, and the passwords are read when a step fetches them. A run whose sequence needs a password
+that is no longer configured fails as it starts, before the disk is touched.
 
-What the agent does, with progress and each step's duration shown live on the Machines page:
-
-1. It checks, before it touches the disk, that the disk is there, that it holds 1.5 GB of partitions
-   plus the download plus the installed size plus 2 GB, that it can load wimlib and that the server
-   has the image. A failure here leaves the disk as it was.
-2. It erases the disk and partitions it with one `diskpart` script: EFI 300 MB, MSR 16 MB, Windows,
-   and a 1 GB recovery partition at the end.
-3. It downloads the image to `W:\DDT`, resuming after a dropped connection, and checks its size and
-   SHA-256. It gives up when the download has not grown for 15 minutes.
-4. It applies the image with wimlib.
-5. It makes the disk bootable with the applied image's own `bcdboot` and sets up the recovery
-   environment with its `reagentc`.
-6. It writes `W:\Windows\Panther\unattend.xml`, adds a line to `SetupComplete.cmd` that deletes it
-   once setup finished, and makes sure Windows Boot Manager on the new disk is the first UEFI boot
-   entry, writing the boot variables itself where `bcdboot` has not already done so. A machine that
-   starts from the network first then starts Windows next. The
-   entry the previous deployment of this disk left is reused, so re-imaging does not pile up entries.
-   If the firmware refuses, the deployment still finishes with a warning, and the machine's boot
-   order has to be set by hand. A deployment that fails or is stopped after this step deletes the
-   answer file and puts the boot order back as it was.
-7. It sends its last log lines, reports the deployment done and restarts.
-
-A deployment interrupted by a restart is not resumed: it fails, and the image is assigned or picked
-again. A machine whose deployment is done and that netboots again becomes `Pending`, and nothing is
-installed on it without a sign in or a new assignment.
+A run that has not started can be cancelled on the Machines page, and a running one stopped. In
+Windows PE, stopping marks the run failed and makes the machine start over as `Pending`, and its
+disk is left half written. In the installed Windows, the agent learns of the stop at its next
+contact with the server, within about ten seconds while it runs, ends the running step, script
+included, and removes itself; Windows stays as far as the run got. Rejecting a machine also ends its
+run. A sequence chosen at the machine, or run by an approval of a rule's choice, is cancelled when
+the machine starts again before the run began; a web assignment stays for the next sign-in or a zero
+touch netboot. A machine whose run is done and that netboots again becomes `Pending`, and nothing
+runs on it without a sign-in or a new assignment.
 
 DDT installs only on internal disks: not on removable media, USB, FireWire, iSCSI, file-backed virtual
 disks or Storage Spaces, and not on disks under 30 GB. When a PC shows no disk at all, its storage is
 most likely set to RAID or Intel VMD/RST in the firmware setup, for which Windows PE has no driver;
 switch it to AHCI.
 
+### Watching a run
+
+The Machines page shows how far each run is, and a machine's name opens its page. That page says
+what chooses the machine's sequence and why, and shows the run: each step with its state, start and
+end on the server's clock, duration, progress and error, or the conditions it was skipped for; a
+timeline from the machine's registration through each restart, with how long the machine was away,
+and the hand-over to the end; the machine's earlier runs, one of which `?run=` pins; and the log.
+While the machine restarts, and after the hand-over until the service in the installed Windows
+starts, the agent does not report, and the page shows the last contact. Once the service runs, it
+reports while it waits for Windows setup to finish. A run whose machine never comes back stays
+running until the machine registers again or someone stops it. The same data is at
+`GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`.
+
+The log panel shows the newest 500 lines of the run, or of the machine with its registration and
+sign-in lines, and adds each line the agent sends as it arrives. It follows the newest line until
+you scroll up, then pauses and counts what arrives, until Jump to the newest. Load older lines reads
+500 more at a time, back to the start of what the server keeps, the newest 50,000 lines of each
+machine; the page holds at most 20,000. Lines can be filtered by level and text, and a step's log
+button shows only that step's lines. Without the live connection the panel reads new lines every 5
+seconds. `GET /api/machines/{id}/log` takes `before`, `after`, `limit`, at most 1000, and
+`deploymentId`.
+
+**Clock correction.** The Windows PE clock can be hours off. Every batch of log lines carries the
+time the agent sent it by its own clock, and the server moves each line in the batch by the
+difference to its own clock when the batch arrives. A difference under 2 seconds counts as network
+delay and is ignored, and no line is put after the moment it arrived. The page shows the corrected
+time. Where the agent's own time differs from it by more than 2 seconds, the time's tooltip says
+what the agent's clock said and how far it was behind or ahead of the server. Step times are always
+the server's own.
+
+### In Windows PE
+
+Before it touches the disk, the agent checks the run: the sequence again, that the server sent every
+image, that `dism.exe` is there for Inject drivers and `powershell.exe` for a PowerShell script in
+Windows PE, that it can load wimlib, and that the server has each image at its size. For a sequence
+that erases a disk, it checks that the disk is there and holds the partitions, each image's download
+and installed size, each package twice, for the download and unpacked, and 2 GB to spare. A failure
+here leaves the disk as it was. Then it runs the steps, and reports each one live.
+
+Partition the disk creates `DDT` on the new Windows partition, `W:\DDT` in Windows PE and `C:\DDT`
+in the installed Windows, which only SYSTEM can open. When `W:` is taken in Windows PE, the Windows
+partition gets the highest free letter instead, which scripts find in `DDT_WINDOWS`. From then on
+the run lives in `DDT`:
+
+| Path | Contents |
+|---|---|
+| `run\state.json` | The run's frozen sequence, its phase, the next step, each step's state and the partitions' ids, written before and after every step. |
+| `run\token` | The run token, see [Security model](#security-model). |
+| `run\final-report.json` | In the installed Windows only: how the run ended, until the server has it. |
+| `cache`, `packages`, `scripts`, `scratch` | Downloads, unpacked packages, scripts and DISM's scratch space. |
+| `logs` | DISM's logs, and in the installed Windows the agent's `agent.log`. |
+| `agent` | From the hand-over on: `ddt-agent.exe` and its `agent.json`. |
+
+A restart in Windows PE first sets the firmware's `BootNext` to the entry this start came from, so
+the machine starts from the network again whatever its boot order says, then runs `wpeutil reboot`.
+When the firmware made that entry only for a one-time boot menu, the agent warns and restarts
+plainly; the disk has no boot loader yet, so the firmware normally falls through to the network.
+After the restart the agent finds the run's state on the disk, registers with the run token, gives
+the partitions their letters again by their ids and goes on with the next step.
+
+When the Windows PE steps are done, the agent makes the disk bootable, in Microsoft's order after
+applying an image: the applied image's own `bcdboot`, its recovery environment with its `reagentc`,
+and last Windows Boot Manager as the first UEFI boot entry, writing the boot variables itself where
+`bcdboot` has not already done so. The entry the previous deployment of this disk left is reused, so
+re-imaging does not pile up entries. If the firmware refuses, the run goes on with a warning, and
+the machine's boot order has to be set by hand. A sequence without steps in Windows then ends: the
+agent deletes `W:\DDT`, token first, sends its last log lines, reports the run done and restarts
+into Windows setup. A run that fails or is stopped in Windows PE deletes the answer file if its step
+had started, puts the boot order back as it was and deletes `W:\DDT\run`, token first. The rest of
+`W:\DDT`, such as the scripts and DISM's logs, stays on the half-written disk until the disk is
+partitioned again.
+
+### The hand-over to Windows
+
+A sequence with steps in Windows hands the run over before the disk is made bootable:
+
+1. The agent copies itself, which may be a newer agent than the boot image's, to
+   `W:\DDT\agent\ddt-agent.exe`, with an `agent.json` that holds only the server's URL and root
+   certificate.
+2. It registers the `DdtSequence` service in the applied Windows offline, through `reg load` of its
+   SYSTEM hive: started automatically as LocalSystem with
+   `"%SystemDrive%\DDT\agent\ddt-agent.exe" --service`, and started again 60 seconds after a crash.
+   This does not depend on `SetupComplete.cmd`, which Windows skips with an OEM product key.
+3. It saves the run's state as being in Windows, with the run token.
+
+Then it makes the disk bootable as above and restarts into Windows setup. When Windows PE starts
+again instead, because the hand-over was interrupted or the firmware starts from the network first,
+the agent hands the run over again, three times at most. The next return fails the run, and the
+machine's firmware has to be set to start Windows Boot Manager first.
+
+### In the installed Windows
+
+Windows setup runs first, with the answer file. When the service starts, it registers with the run
+token, and while setup or the out-of-box experience still runs, it reports that it waits for Windows
+setup, which the Machines page shows. It checks again every 15 seconds, with no time limit, because
+someone may be finishing the out-of-box experience by hand, and logs a warning every 30 minutes.
+Then it deletes `C:\Windows\Panther\unattend.xml` and runs the remaining steps. It logs to the
+server and to `C:\DDT\logs\agent.log`, whose lines carry the time in UTC, without the date.
+
+- **Restarts** use `shutdown /r`. Before it tells the server, the agent records the due restart in
+  the volatile registry key `HKLM\SYSTEM\CurrentControlSet\Services\DdtSequence\RestartDue`, which a
+  restart clears. A service that starts and still finds the key, because the restart never
+  happened, restarts Windows before it goes on. When Windows has not restarted 5 minutes after it
+  was asked to, the agent asks again.
+- **Join the domain** reports the step as running, fetches the join account and joins with
+  `NetJoinDomain`, creating the computer account when there is none. While no domain controller
+  answers, as happens while the network comes up, it tries again for 5 minutes. Known error codes
+  become sentences, the refusal to reuse a computer account under KB5020276 among them. Then it
+  restarts Windows for the join to take effect. The password is never logged.
+- **The end of the run.** The agent writes how the run ended to `C:\DDT\run\final-report.json`, next
+  to the token, and sends it. If the server cannot be reached, the service keeps trying until it
+  can; if the service is stopped first, its next start sends it. Only once the server has it are the
+  run's files deleted, token first.
+
+Then the agent removes itself: it deletes the rest of `C:\DDT` except itself and its own log, runs
+`sc delete DdtSequence`, which removes the service once its process ends, and marks what is still in
+use, the agent, its `agent.json`, `agent.log`, anything a step's process still holds and the
+folders, for deletion when Windows next starts. After a finished run it restarts Windows once more,
+without warning a signed-in user, and nothing of DDT is left. After a failed or stopped run it does
+not restart: the service is gone, but `C:\DDT` with the agent stays until Windows next restarts. A
+service whose run the server no longer runs changes nothing on the server and removes itself the
+same way.
+
 ### What Windows shows at its first start
 
-The answer file comes from `DDT:Deployment`, which the server checks at startup. It lists every
-problem at once, and a misspelled key stops it:
+A Write the answer file step writes `W:\Windows\Panther\unattend.xml` from `DDT:Deployment`, which
+the server checks at startup. It lists every problem at once, and a misspelled key stops it:
 
 | Setting | Meaning |
 |---|---|
-| `TimeZone` | A Windows time zone id such as `W. Europe Standard Time`. Empty: Windows picks one from the locale. |
-| `Locale` | Formats and system locale, such as `de-DE`. Empty: the image's language. |
-| `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. |
-| `LocalAdministrator:Name`, `LocalAdministrator:Password` | A local administrator created on every machine. The name defaults to `Admin`. |
-| `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | An Active Directory domain to join, the OU as a distinguished name, and the join account as `DOMAIN\user` or `user@domain`. |
+| `TimeZone` | A Windows time zone id such as `W. Europe Standard Time`. Empty: Windows picks one from the locale. A step can set its own. |
+| `Locale` | Formats and system locale, such as `de-DE`. Empty: the image's language. A step can set its own. |
+| `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. A step can set its own. |
+| `LocalAdministrator:Name`, `LocalAdministrator:Password` | The local administrator a step with "Add the local administrator" creates. The name defaults to `Admin`. |
+| `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | The Active Directory domain a Join the domain step joins, the OU as a distinguished name, which a step can override, and the join account as `DOMAIN\user` or `user@domain`. |
 
-Without a local administrator password, Windows setup skips the Microsoft account screens and asks the
-person at the PC to create a local account. With one, setup creates the administrator, lifts the
+Without the local administrator, Windows setup skips the Microsoft account screens and asks the
+person at the PC to create a local account. With it, setup creates the administrator, lifts the
 maximum password age for local accounts so the password does not expire after 42 days, and skips
-the account pages. A domain requires the local
-administrator, because without any account setup would stop at the account page on every domain PC.
-The computer name is the one assigned to the machine, or one Windows makes up.
+the account pages. Configuring `Domain:Name` therefore requires `LocalAdministrator:Password`,
+because without any account setup would stop at the account page on every domain PC. A sequence
+that joins the domain still has to add the administrator in its Write the answer file step: without
+that, it only gets the warning described under [Task sequences](#task-sequences), and its run waits
+at the account page. The computer name is the one assigned to the machine, or one Windows makes up.
 
-The domain join happens at the first start of Windows, after DDT has shown the deployment as done, and
-DDT does not see whether it worked. When a PC ends up in a workgroup, look at
-`C:\Windows\debug\NetSetup.log` and `C:\Windows\Panther\UnattendGC\setupact.log`. Use a dedicated join
-account that may only create, and to re-image also reset, computer objects in that OU, deny it
-interactive sign in, and never use a domain administrator: every machine DDT deploys can read its
-password. Re-imaging a PC under its old name only works if that account created the computer object,
-or if its owner is allowed by the policy "Domain controller: Allow computer account re-use during
-domain join" (KB5020276). A plain domain user without that delegation stops after its quota of joins,
-10 by default. Home editions cannot join a domain.
+The answer file holds the local administrator's password. Setup masks it after each pass, the
+service deletes the file before the first step in Windows, and a line the step adds to
+`SetupComplete.cmd` deletes it once setup finished. Windows does not run `SetupComplete.cmd` when
+the machine uses an OEM product key, except on Enterprise editions, so after a sequence without
+steps in Windows the file can stay there.
 
-The answer file holds these passwords. Setup masks them in it after each pass and `SetupComplete.cmd`
-deletes it, but Windows does not run `SetupComplete.cmd` when the machine uses an OEM product key,
-except on Enterprise editions.
+### Joining a domain
+
+A Join the domain step joins the domain from the installed Windows, and the run shows whether it
+worked; `C:\Windows\debug\NetSetup.log` has the details. Use a dedicated join account that may only
+create, and to re-image also reset, computer objects in that OU, deny it interactive sign in, and
+never use a domain administrator: every operator can obtain its password, see
+[Security model](#security-model). Re-imaging a PC under its old name only works if that account
+created the computer object, or if its owner is allowed by the policy "Domain controller: Allow
+computer account re-use during domain join" (KB5020276). A plain domain user without that delegation
+stops after its quota of joins, 10 by default. Home editions cannot join a domain.
 
 ### When a deployment goes wrong
 
 - Everything the agent runs and everything it prints goes to the machine's log on the server.
   In Windows PE, `X:\DDT\partition.txt` is the `diskpart` script and `X:\DDT\wimlib.log` wimlib's own
-  messages.
+  messages. In the installed Windows, `C:\DDT\logs\agent.log` holds the agent's lines until it
+  removes itself. `C:\DDT` is open only to SYSTEM, so a local administrator reads the file from a
+  command prompt that runs as SYSTEM, or takes ownership of the folder and grants themselves access
+  first.
 - During Windows setup, Shift+F10 opens a command prompt. Setup writes `C:\Windows\Panther\setupact.log`
   and `setuperr.log`, and `C:\Windows\Panther\UnattendGC\setupact.log` for the answer file.
+- A run that waits for Windows setup for a long time most likely waits at the out-of-box experience
+  for someone to create an account: no Write the answer file step adds the local administrator.
+- A run that makes no contact after the hand-over may have its agent blocked in Windows, see
+  [Security model](#security-model).
 - A PC that netboots again straight after its deployment did not take the new boot entry. The machine
   log shows the firmware boot entries as `bcdedit /enum firmware` listed them after the agent wrote
   them, and any warning from writing them.

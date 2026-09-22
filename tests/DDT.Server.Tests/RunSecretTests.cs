@@ -13,6 +13,8 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 using static DDT.Server.Tests.TestReports;
 
@@ -23,8 +25,12 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
 {
     private static readonly XNamespace s_unattend = "urn:schemas-microsoft-com:unattend";
 
-    // Partition, apply, the answer file and the join, as the Install Windows template makes it with a domain.
-    private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync(WriteUnattendStep? unattend = null, JoinDomainStep? join = null)
+    // Partition, apply, the answer file and the join, as the Install Windows template makes it with a domain. A script
+    // given runs in between.
+    private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync(
+        WriteUnattendStep? unattend = null,
+        JoinDomainStep? join = null,
+        RunScriptStep? script = null)
     {
         SignedInClient administrator = await application.AdministratorAsync();
         DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
@@ -33,6 +39,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         [
             .. SequenceRequests.Minimal(imageId).Steps,
             unattend ?? new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", LocalAdministrator = true },
+            .. script is null ? Array.Empty<SequenceStep>() : [script],
             join ?? new JoinDomainStep { Id = Guid.NewGuid(), Name = "Join", RebootAfter = true },
         ]));
 
@@ -46,6 +53,13 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
             DeploymentState.Running,
             [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))],
             phase: phase);
+
+    // The service in Windows, as it registers with the run token the agent in Windows PE handed over.
+    private static async Task<string> ServiceTokenAsync(DeployingMachine machine) =>
+        (await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }))).Token!;
+
+    private DeploymentOptions Settings => application.Services.GetRequiredService<IOptions<DeploymentOptions>>().Value;
 
     private Task<List<string?>> SecretReadsAsync(Guid runId)
     {
@@ -172,6 +186,59 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
 
         // The answer file step is over, and a step that joins nothing gets no account.
         Assert.Equal(HttpStatusCode.Conflict, (await machine.Agent.RunCredentialsAsync(machine.Id, service.Token!, run.Id, run.Sequence.Steps[2].Id)).StatusCode);
+    }
+
+    // Only the join gets the account, not any other step that runs in Windows.
+    [Fact]
+    public async Task AScriptInWindowsGetsNoJoinAccount()
+    {
+        RunScriptStep script = (RunScriptStep)SequenceRequests.ScriptOnly().Steps[0] with { Phase = SequencePhase.Windows };
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(script: script);
+        using DeployingMachine _ = machine;
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
+        HttpResponseMessage refused = await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, script.Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal("That step joins no domain.", await TestDatabase.TitleAsync(refused));
+        Assert.Empty(await SecretReadsAsync(run.Id));
+    }
+
+    // The settings can lose a secret with a restart of the server while the run goes on. The step then gets nothing.
+    [Fact]
+    public async Task ASecretGoneFromTheSettingsIsNotServed()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        string? administratorPassword = Settings.LocalAdministrator.Password;
+        string? joinPassword = Settings.Domain.Password;
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 2));
+
+        try
+        {
+            Settings.LocalAdministrator.Password = string.Empty;
+            HttpResponseMessage noAnswerFile = await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id);
+
+            Assert.Equal(HttpStatusCode.Conflict, noAnswerFile.StatusCode);
+            Assert.Equal(
+                "The step adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more.",
+                await TestDatabase.TitleAsync(noAnswerFile));
+
+            await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
+            Settings.Domain.Password = string.Empty;
+            HttpResponseMessage noAccount = await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id);
+
+            Assert.Equal(HttpStatusCode.Conflict, noAccount.StatusCode);
+            Assert.Equal("DDT:Deployment:Domain no longer names an account to join the domain with.", await TestDatabase.TitleAsync(noAccount));
+        }
+        finally
+        {
+            Settings.LocalAdministrator.Password = administratorPassword;
+            Settings.Domain.Password = joinPassword;
+        }
+
+        Assert.Empty(await SecretReadsAsync(run.Id));
     }
 
     // The account is bound to the domain the run started with, so a domain configured since gets nothing.

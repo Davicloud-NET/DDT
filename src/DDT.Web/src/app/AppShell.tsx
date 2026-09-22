@@ -18,6 +18,7 @@ const navigation = [
   { to: "/", label: "Machines" },
   { to: "/sequences", label: "Sequences" },
   { to: "/packages", label: "Packages" },
+  { to: "/rules", label: "Rules" },
   { to: "/images", label: "Images" },
   { to: "/account", label: "Account" },
 ] as const;

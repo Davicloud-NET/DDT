@@ -148,6 +148,21 @@ describe("the navigation", () => {
     expect(screen.getByRole("link", { name: "Images" })).not.toHaveAttribute("aria-current");
   });
 
+  it("lists every section in order", async () => {
+    open("/", administrator);
+
+    const sections = await screen.findByRole("navigation", { name: "Sections" });
+
+    expect(Array.from(sections.querySelectorAll("a")).map((link) => link.textContent)).toEqual([
+      "Machines",
+      "Sequences",
+      "Packages",
+      "Rules",
+      "Images",
+      "Account",
+    ]);
+  });
+
   it("marks Sequences in a sequence's editor", async () => {
     open("/sequences/0193a4b2-0000-7000-8000-0000000000e1", administrator);
 

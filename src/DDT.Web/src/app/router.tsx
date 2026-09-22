@@ -18,6 +18,7 @@ import { ImagesPage } from "@/pages/ImagesPage";
 import { MachineDetailPage } from "@/pages/MachineDetailPage";
 import { MachinesPage } from "@/pages/MachinesPage";
 import { PackagesPage } from "@/pages/PackagesPage";
+import { RulesPage } from "@/pages/RulesPage";
 import { SequenceEditorPage } from "@/pages/SequenceEditorPage";
 import { SequencesPage } from "@/pages/SequencesPage";
 import { SignInPage } from "@/pages/SignInPage";
@@ -98,6 +99,12 @@ const packagesRoute = createRoute({
   component: PackagesPage,
 });
 
+const rulesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/rules",
+  component: RulesPage,
+});
+
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/images",
@@ -119,6 +126,7 @@ const routeTree = rootRoute.addChildren([
     sequencesRoute,
     sequenceRoute,
     packagesRoute,
+    rulesRoute,
     imagesRoute,
     accountRoute,
   ]),

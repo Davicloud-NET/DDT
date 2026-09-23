@@ -730,13 +730,15 @@ artifacts\agent\ddt-agent.exe --dry-run --server https://localhost:7152
 runs with different ids look like several machines on the Machines page. It reports one fake disk and
 runs the whole sequence, both phases, in this one process, without changing anything on the
 computer: partitioning, `bcdboot`, `reg`, `dism`, scripts, the domain join, `shutdown` and `sc` only
-log what they would do, and a restart starts the agent over within the process. It really downloads
-the images and packages, fetches the answer file and the join account, whose password it never
-logs, and stages the agent for the Windows phase, all into `%TEMP%\ddt-dry-run-{id}`, which it
-deletes when the run ends. Leave room there for the image. The Windows phase starts from the
-`agent.json` the hand-over staged, and takes Windows setup as finished at once. A dry run stopped
-with Ctrl+C goes on when it is started again with the same `--dry-run-id`. Every setting in
-`agent.json` except the keyboard layout name can also be given as an argument.
+log what they would do, and a restart starts the agent over within the process. Its restarts
+therefore always happen, so it records none in `X:\DDT\restart-due` and only logs where Windows PE
+would record one. It really downloads the images and packages, fetches the answer file and the join
+account, whose password it never logs, and stages the agent for the Windows phase, all into
+`%TEMP%\ddt-dry-run-{id}`, which it deletes when the run ends. Leave room there for the image. The
+Windows phase starts from the `agent.json` the hand-over staged, and takes Windows setup as
+finished at once. A dry run stopped with Ctrl+C goes on when it is started again with the same
+`--dry-run-id`. Every setting in `agent.json` except the keyboard layout name can also be given as
+an argument.
 
 ## Images
 
@@ -1053,17 +1055,33 @@ plainly; the disk has no boot loader yet, so the firmware normally falls through
 After the restart the agent finds the run's state on the disk, registers with the run token, gives
 the partitions their letters again by their ids and goes on with the next step.
 
+That state already goes on after the step that asked for the restart, so the agent records the due
+restart in `X:\DDT\restart-due` as soon as the step asks for it. `X:` is Windows PE's RAM disk,
+built anew from `boot.wim` at every start, so the restart clears the file, as a restart of
+Windows clears the registry key the service uses
+[in the installed Windows](#in-the-installed-windows). An agent that is stopped before the restart,
+or started again by hand after `wpeutil` failed, finds the file at its next start and makes the
+same restart, setting `BootNext` again, instead of registering, and says so once. A start that was
+stopped already, for example with Ctrl+C during the update check, leaves the restart due.
+
 When the Windows PE steps are done, the agent makes the disk bootable, in Microsoft's order after
 applying an image: the applied image's own `bcdboot`, its recovery environment with its `reagentc`,
 and last Windows Boot Manager as the first UEFI boot entry, writing the boot variables itself where
 `bcdboot` has not already done so. The entry the previous deployment of this disk left is reused, so
 re-imaging does not pile up entries. If the firmware refuses, the run goes on with a warning, and
-the machine's boot order has to be set by hand. A sequence without steps in Windows then ends: the
-agent deletes `W:\DDT`, token first, sends its last log lines, reports the run done and restarts
-into Windows setup. A run that fails or is stopped in Windows PE deletes the answer file if its step
-had started, puts the boot order back as it was and deletes `W:\DDT\run`, token first. The rest of
-`W:\DDT`, such as the scripts and DISM's logs, stays on the half-written disk until the disk is
-partitioned again.
+the machine's boot order has to be set by hand. From then on `X:\DDT\restart-due` says that the
+restart leads into the installed Windows, for as long as the run keeps Windows Boot Manager first,
+so an agent started again before that restart restarts into Windows instead of registering. A
+sequence without steps in Windows then ends: the agent deletes `W:\DDT`, token first, sends its last
+log lines, reports the run done and restarts into Windows setup. A run that fails or is stopped in
+Windows PE deletes the answer file if its step had started, puts the boot order back as it was and
+deletes `W:\DDT\run`, token first. The rest of `W:\DDT`, such as the scripts and DISM's logs, stays
+on the half-written disk until the disk is partitioned again.
+
+A failed run, a token refused while the run hands over to Windows or before its Done report is
+sent, or a boot order put back after a stop owes no restart, and `X:\DDT\restart-due` goes. A
+restart step still restarts after a refused token, and so does a finished run whose Done report was
+refused.
 
 ### The hand-over to Windows
 
@@ -1078,10 +1096,13 @@ A sequence with steps in Windows hands the run over before the disk is made boot
    This does not depend on `SetupComplete.cmd`, which Windows skips with an OEM product key.
 3. It saves the run's state as being in Windows, with the run token.
 
-Then it makes the disk bootable as above and restarts into Windows setup. When Windows PE starts
-again instead, because the hand-over was interrupted or the firmware starts from the network first,
-the agent hands the run over again, three times at most. The next return fails the run, and the
-machine's firmware has to be set to start Windows Boot Manager first.
+Then it makes the disk bootable as above, tells the server of the restart and restarts into Windows
+setup. An agent stopped before it tells the server puts the boot order back, and its next start
+hands the run over again. One stopped while or after it tells the server, or whose `wpeutil`
+failed, restarts into Windows at its next start, through `X:\DDT\restart-due`, without handing over
+again. When Windows PE starts again instead, because the hand-over was interrupted or the firmware
+starts from the network first, the agent hands the run over again, three times at most. The next
+return fails the run, and the machine's firmware has to be set to start Windows Boot Manager first.
 
 ### In the installed Windows
 

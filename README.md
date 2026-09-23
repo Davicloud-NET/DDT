@@ -841,7 +841,8 @@ after the step failed, which stays marked as failed. "Restart after this step" r
 after the step succeeded and goes on with the next one; a script asks for the same with a restart
 exit code. A script must not restart the machine itself: a step that was running when the machine
 restarted, lost power or the agent stopped is never run again. It fails as interrupted, and "Go on
-when this step fails" applies to it as to any failure.
+when this step fails" applies to it as to any failure. The machine's log shows it as an error in the
+step's log, which also says when the run goes on because that switch is on.
 
 **Scripts.** The agent writes a script to a file and runs it with `cmd.exe /d /c`, or with Windows
 PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`, see
@@ -863,7 +864,10 @@ A condition compares one of the machine's values, Manufacturer, Model, Serial nu
 MAC address, Computer name (the name assigned to the machine) or Phase (`WindowsPE` or `Windows`),
 with equals, does not equal, starts with or contains, ignoring case. MAC addresses are compared
 without their separators, and a machine with several holds a condition when any of its addresses
-does, or for does not equal, when none equals.
+does, or for does not equal, when none equals. The machine's log names a skipped step with the
+conditions that did not hold and what the machine reported, such as
+`Model starts with "OptiPlex", and the machine reports "Latitude 5440"`. The step never ran, so that
+line is the run's, not the step's.
 
 **What makes a sequence runnable.** A sequence is saved with problems, as a draft, but one with a
 problem cannot be assigned, chosen at a machine or run by a rule. The editor shows each problem at
@@ -1013,9 +1017,10 @@ sign-in lines, and adds each line the agent sends as it arrives. It follows the 
 you scroll up, then pauses and counts what arrives, until Jump to the newest. Load older lines reads
 500 more at a time, back to the start of what the server keeps, the newest 50,000 lines of each
 machine; the page holds at most 20,000. Lines can be filtered by level and text, and a step's log
-button shows only that step's lines. Without the live connection the panel reads new lines every 5
-seconds. `GET /api/machines/{id}/log` takes `before`, `after`, `limit`, at most 1000, and
-`deploymentId`.
+button shows only that step's lines; a skipped step has none. The line for a skipped or an
+interrupted step, see [Task sequences](#task-sequences), appears once, however often the run went on
+after a restart or a stop. Without the live connection the panel reads new lines every 5 seconds.
+`GET /api/machines/{id}/log` takes `before`, `after`, `limit`, at most 1000, and `deploymentId`.
 
 **Clock correction.** The Windows PE clock can be hours off. Every batch of log lines carries the
 time the agent sent it by its own clock, and the server moves each line in the batch by the

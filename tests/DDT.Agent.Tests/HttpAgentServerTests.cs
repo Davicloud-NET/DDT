@@ -55,7 +55,73 @@ public sealed class HttpAgentServerTests
         Task serving = AnswerLateAsync(listener, "application/json", """{"sha256":"00","size":1}"""u8.ToArray(), cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() => server.GetReleaseAsync(cancellationToken));
+        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.GetReleaseAsync(cancellationToken));
+        await serving;
+
+        Assert.Equal("the server did not answer within 0.2 s", timeout.Message);
+    }
+
+    // The connect timeout covers the TLS handshake, which a listener that never accepts leaves unanswered. The request
+    // timeout is far away, so only the connect timeout can end the request.
+    [Fact]
+    public async Task SaysWhenTheServerDidNotAcceptTheConnection()
+    {
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using HttpAgentServer server = new(new Uri($"https://127.0.0.1:{port}/"), null, connectTimeout: TimeSpan.FromMilliseconds(300));
+
+        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.GetReleaseAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal($"the server at 127.0.0.1:{port} did not accept a connection within 0.3 s", timeout.Message);
+    }
+
+    // A stop, such as Ctrl+C, is never reported as a timeout.
+    [Fact]
+    public async Task AStopWhileWaitingForTheServerStaysACancellation()
+    {
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        stop.CancelAfter(s_requestTimeout);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.GetReleaseAsync(stop.Token));
+    }
+
+    [Fact]
+    public async Task ADownloadThatStallsGivesUpAtItsDeadline()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task serving = StallAsync(listener, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, downloadTimeout: TimeSpan.FromMilliseconds(300));
+        using MemoryStream destination = new();
+
+        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.DownloadReleaseAsync(destination, cancellationToken));
+        await serving;
+
+        Assert.Equal("the download did not finish within 0.3 s", timeout.Message);
+    }
+
+    // The download's own deadline is minutes away, so only the stop can end it.
+    [Fact]
+    public async Task AStopDuringADownloadStaysACancellation()
+    {
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Task serving = StallAsync(listener, TestContext.Current.CancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null);
+        using MemoryStream destination = new();
+        stop.CancelAfter(s_requestTimeout);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.DownloadReleaseAsync(destination, stop.Token));
         await serving;
     }
 
@@ -345,6 +411,34 @@ public sealed class HttpAgentServerTests
         catch (IOException)
         {
             // The client gave up waiting and closed the connection.
+        }
+    }
+
+    // Answers with the headers and the first bytes of a release, then sends nothing more.
+    private static async Task StallAsync(TcpListener listener, CancellationToken cancellationToken)
+    {
+        using TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
+        NetworkStream stream = client.GetStream();
+        byte[] buffer = new byte[4096];
+        int read = 0;
+
+        while (!Encoding.ASCII.GetString(buffer, 0, read).Contains("\r\n\r\n", StringComparison.Ordinal))
+        {
+            int received = await stream.ReadAsync(buffer.AsMemory(read), cancellationToken);
+            Assert.NotEqual(0, received);
+            read += received;
+        }
+
+        await stream.WriteAsync((byte[])[.. "HTTP/1.1 200 OK\r\nContent-Length: 4096\r\n\r\n"u8, .. new byte[16]], cancellationToken);
+
+        try
+        {
+            // Until the client gives up and closes the connection.
+            Assert.Equal(0, await stream.ReadAsync(buffer, cancellationToken));
+        }
+        catch (IOException)
+        {
+            // It reset the connection instead.
         }
     }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -16,11 +17,14 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 {
     private const int MaxErrorDetailLength = 300;
 
+    private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan s_connectTimeout = TimeSpan.FromSeconds(10);
 
-    private readonly SocketsHttpHandler _handler;
     private readonly HttpClient _client;
-    private readonly HttpClient _downloadClient;
+    private readonly Uri _serverUrl;
+    private readonly TimeSpan _requestTimeout;
+    private readonly TimeSpan _connectTimeout;
+    private readonly TimeSpan _downloadTimeout;
 
     // What DDT names its roots, so a refused certificate from one can be told apart from an administrator's.
     private const string DdtRootSubjectPrefix = "CN=DDT root ";
@@ -30,20 +34,27 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private int _certificateErrors;
     private string? _certificateIssuer;
 
-    public HttpAgentServer(Uri serverUrl, X509Certificate2? rootCertificate)
-        : this(serverUrl, rootCertificate, TimeSpan.FromSeconds(30))
-    {
-    }
-
-    public HttpAgentServer(Uri serverUrl, X509Certificate2? rootCertificate, TimeSpan requestTimeout)
+    // The agent keeps the default timeouts; only tests shorten them.
+    public HttpAgentServer(
+        Uri serverUrl,
+        X509Certificate2? rootCertificate,
+        TimeSpan? requestTimeout = null,
+        TimeSpan? connectTimeout = null,
+        TimeSpan? downloadTimeout = null)
     {
         ArgumentNullException.ThrowIfNull(serverUrl);
 
-        // No proxy: Windows PE has none, and looking for one loads WinHTTP for nothing.
+        _serverUrl = serverUrl;
+        _requestTimeout = requestTimeout ?? s_requestTimeout;
+        _connectTimeout = connectTimeout ?? s_connectTimeout;
+        _downloadTimeout = downloadTimeout ?? AgentLimits.DownloadTimeout;
+
+        // No proxy: Windows PE has none, and looking for one loads WinHTTP for nothing. The connect timeout covers
+        // the TLS handshake too.
         SocketsHttpHandler handler = new()
         {
             UseProxy = false,
-            ConnectTimeout = s_connectTimeout,
+            ConnectTimeout = _connectTimeout,
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
         };
 
@@ -69,12 +80,9 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             };
         }
 
-        _handler = handler;
-        _client = new HttpClient(handler, disposeHandler: false) { BaseAddress = serverUrl, Timeout = requestTimeout };
-
-        // A download can wait in the server's queue behind a whole lab for longer than a request may take,
-        // so only its own deadline bounds it.
-        _downloadClient = new HttpClient(handler, disposeHandler: false) { BaseAddress = serverUrl, Timeout = Timeout.InfiniteTimeSpan };
+        // Each request gets its deadline in SendAsync instead: HttpClient's own timeout fails a request the same way the
+        // connect timeout does, and the log has to say which of the two it was.
+        _client = new HttpClient(handler) { BaseAddress = serverUrl, Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public async Task<AgentRegistrationResult> RegisterAsync(AgentRegistration registration, CancellationToken cancellationToken)
@@ -141,15 +149,28 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
     }
 
+    // A download can wait in the server's queue behind a whole lab for longer than a request may take, so only its own
+    // deadline bounds it.
     public async Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken)
     {
         using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(AgentLimits.DownloadTimeout);
+        deadline.CancelAfter(_downloadTimeout);
 
-        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ReleaseBinary);
-        using HttpResponseMessage response = await SendAsync(_downloadClient, request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ReleaseBinary);
+            using HttpResponseMessage response = await SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                Timeout.InfiniteTimeSpan,
+                deadline.Token).ConfigureAwait(false);
 
-        await response.Content.CopyToAsync(destination, deadline.Token).ConfigureAwait(false);
+            await response.Content.CopyToAsync(destination, deadline.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"the download did not finish within {Duration(_downloadTimeout)}", exception);
+        }
     }
 
     public async Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken)
@@ -240,7 +261,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Range = new RangeHeaderValue(0, 0);
 
-        using HttpResponseMessage response = await SendAsync(_client, request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, _requestTimeout, cancellationToken)
             .ConfigureAwait(false);
 
         return response.StatusCode == HttpStatusCode.PartialContent
@@ -248,8 +269,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             : response.Content.Headers.ContentLength;
     }
 
-    // Through the download client: an image takes far longer than a request may, and a stalled read is caught by
-    // the caller instead.
+    // Without a deadline: an image takes far longer than a request may, and a stalled read is caught by the caller
+    // instead.
     private async Task<AgentImageStream> OpenAsync(string route, string token, long offset, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -262,7 +283,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             request.Headers.Range = new RangeHeaderValue(offset, null);
         }
 
-        HttpResponseMessage response = await SendAsync(_downloadClient, request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+        HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, Timeout.InfiniteTimeSpan, cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -291,32 +312,46 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        _client.Dispose();
-        _downloadClient.Dispose();
-        _handler.Dispose();
-    }
+    public void Dispose() => _client.Dispose();
 
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-        SendAsync(_client, request, HttpCompletionOption.ResponseContentRead, cancellationToken);
+        SendAsync(request, HttpCompletionOption.ResponseContentRead, _requestTimeout, cancellationToken);
 
+    // A timeout becomes a TimeoutException that says which one it was. A cancelled token stays a cancellation.
     private async Task<HttpResponseMessage> SendAsync(
-        HttpClient client,
         HttpRequestMessage request,
         HttpCompletionOption completion,
+        TimeSpan timeout,
         CancellationToken cancellationToken)
     {
         HttpResponseMessage response;
 
-        try
+        using (CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
-            response = await client.SendAsync(request, completion, cancellationToken).ConfigureAwait(false);
-        }
-        catch (HttpRequestException exception) when (exception.HttpRequestError == HttpRequestError.SecureConnectionError
-            && CertificateProblem(request.RequestUri) is { } problem)
-        {
-            throw new HttpRequestException(HttpRequestError.SecureConnectionError, problem, exception);
+            deadline.CancelAfter(timeout);
+
+            try
+            {
+                response = await _client.SendAsync(request, completion, deadline.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException($"the server did not answer within {Duration(timeout)}", exception);
+            }
+            catch (OperationCanceledException exception) when (exception.InnerException is TimeoutException
+                && !cancellationToken.IsCancellationRequested)
+            {
+                // SocketsHttpHandler's connect timeout, which ends the request as a cancellation with a TimeoutException in
+                // it. The address is named, as a mistyped one is the likeliest cause.
+                throw new TimeoutException(
+                    $"the server at {_serverUrl.Host}:{_serverUrl.Port} did not accept a connection within {Duration(_connectTimeout)}",
+                    exception);
+            }
+            catch (HttpRequestException exception) when (exception.HttpRequestError == HttpRequestError.SecureConnectionError
+                && CertificateProblem(request.RequestUri) is { } problem)
+            {
+                throw new HttpRequestException(HttpRequestError.SecureConnectionError, problem, exception);
+            }
         }
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -380,6 +415,10 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
         return null;
     }
+
+    private static string Duration(TimeSpan timeout) => timeout < TimeSpan.FromMinutes(1)
+        ? string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalSeconds:0.#} s")
+        : string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalMinutes:0.#} minutes");
 
     private static string? ProblemTitle(string body)
     {

@@ -774,6 +774,61 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.Equal([StepState.Done, StepState.Done, StepState.Done], server.RunReports[reportsBefore].Steps.Take(3).Select(step => step.State));
     }
 
+    // The steps the engine settles without running them reach the machine's log once each: the first start skips one
+    // and is stopped in the next, and the start after it fails that step as interrupted. With Continue on error the run
+    // goes on to its restart, and the start after that one finishes it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LogsASkippedAndAnInterruptedStepOnceAcrossRestarts(bool continueOnError)
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        RunScriptStep skipped = TestRuns.Script(1) with
+        {
+            Conditions = [new StepCondition(MachineVariableNames.Model, ConditionOperator.StartsWith, "OptiPlex")],
+        };
+        AgentRun run = TestRuns.Run([TestRuns.Partition, skipped, TestRuns.Script(2) with { ContinueOnError = continueOnError }, TestRuns.Reboot, TestRuns.Script(3)]);
+        ScriptedAgentServer first = new();
+        _toolRunner.AnswerExitCode = (_, arguments, _) =>
+        {
+            if (arguments.Any(argument => argument.EndsWith("c002.cmd", StringComparison.Ordinal)))
+            {
+                first.Stop.Cancel();
+                first.Stop.Token.ThrowIfCancellationRequested();
+            }
+
+            return 0;
+        };
+        const string skipLine = "INFO  Step Script 1 was skipped, because this condition did not hold: Model starts with \"OptiPlex\", and the machine reports \"Dry run\".";
+        string interrupted = $"ERROR Step Script 2 failed: {SequenceEngine.InterruptedError}" +
+            (continueOnError ? " The run goes on, because Continue on error is on for this step." : string.Empty);
+
+        StringWriter firstConsole = new();
+        Assert.Equal(RunOutcome.Stopped, (await RunAsync(first, run, log: new AgentLog(new ImmediateTimeProvider(), firstConsole))).Outcome);
+
+        StringWriter secondConsole = new();
+        LocalRun? found = await LocalRun.LoadAsync(Windows, Log(), cancellationToken);
+        RunResult second = await RunAsync(new ScriptedAgentServer(), run with { State = DeploymentState.Running }, found, log: new AgentLog(new ImmediateTimeProvider(), secondConsole));
+
+        Assert.Equal(continueOnError ? RunOutcome.Restarting : RunOutcome.Failed, second.Outcome);
+        Assert.Single(Lines(firstConsole), line => line == skipLine);
+        Assert.DoesNotContain(Lines(firstConsole), line => line.StartsWith("ERROR", StringComparison.Ordinal));
+        Assert.DoesNotContain(skipLine, Lines(secondConsole));
+        Assert.Single(Lines(secondConsole), line => line == interrupted);
+        Assert.Equal(!continueOnError, Lines(secondConsole).Contains($"ERROR The run failed: {SequenceEngine.InterruptedError}"));
+
+        if (continueOnError)
+        {
+            StringWriter thirdConsole = new();
+            found = await LocalRun.LoadAsync(Windows, Log(), cancellationToken);
+            RunResult third = await RunAsync(new ScriptedAgentServer(), run with { State = DeploymentState.Running }, found, log: new AgentLog(new ImmediateTimeProvider(), thirdConsole));
+
+            Assert.Equal(RunOutcome.Finished, third.Outcome);
+            Assert.DoesNotContain(Lines(thirdConsole), line => line == skipLine || line == interrupted);
+            Assert.Single(_toolRunner.Calls, call => call.EndsWith("c003.cmd", StringComparison.Ordinal));
+        }
+    }
+
     // The engine asked for the restart, but the server ended the run before it, so no restart is due any more.
     [Fact]
     public async Task ARunThatFailsAfterItsRestartStepOwesNoRestart()
@@ -1109,6 +1164,10 @@ public sealed class SequenceRunnerTests : IDisposable
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
 
     private RestartInto? RestartDue() => TestAgents.RestartMarker(_tools, Log()).Due;
+
+    // A console's lines without their time.
+    private static string[] Lines(StringWriter console) =>
+        [.. console.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(line => line[9..])];
 
     private Task<SequenceState?> LoadStateAsync() => RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken);
 

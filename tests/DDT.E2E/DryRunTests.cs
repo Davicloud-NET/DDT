@@ -147,6 +147,13 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
 
         MachineLogEntry[] lines = await CheckLogAsync(machine.Id, assigned.Id, apply.Id, firstPush, cancellationToken);
 
+        // The skipped step is named once in the machine's log, although the run went on after several restarts. It never
+        // ran, so the line is the run's rather than the step's.
+        MachineLogEntry skip = Assert.Single(lines, line => line.Message.StartsWith($"Step {skipped.Name} was skipped", StringComparison.Ordinal));
+        Assert.Equal(
+            ($"Step {skipped.Name} was skipped, because this condition did not hold: Model is \"Another model\", and the machine reports \"Dry run\".", (Guid?)null),
+            (skip.Message, skip.StepId));
+
         lab.AssertClean(
             [agent],
             ["Step Fails, and the run goes on failed after"],
@@ -236,8 +243,9 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
             [(StepState.Done, null), (StepState.Failed, InterruptedError), (StepState.Pending, (string?)null)],
             run.Steps.Select(step => (step.State, step.Error)));
 
-        // The step failed without running again, and the run's disk went with the failure.
+        // The step failed without running again, which the log says once, and the run's disk went with the failure.
         Assert.Equal(0, second.Output.Count("Downloading"));
+        Assert.Equal(1, second.Output.Count($"Step {apply.Name} failed: {InterruptedError}"));
         await Eventually.WaitAsync(
             "The removal of the dry run's disk",
             TimeSpan.FromMinutes(1),
@@ -248,7 +256,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
         Assert.Equal(["WindowsPE"], audit.Where(entry => entry.Action == "deployment.resumed").Select(ResumedIn));
 
-        lab.AssertClean([first, second], [$"The run failed: {InterruptedError}"]);
+        lab.AssertClean([first, second], [$"Step {apply.Name} failed: {InterruptedError}", $"The run failed: {InterruptedError}"]);
     }
 
     [Fact(Timeout = 600_000)]

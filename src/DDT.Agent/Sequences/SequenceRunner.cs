@@ -166,6 +166,17 @@ public sealed class SequenceRunner(
         _recordRestart = recordRestart;
 
         RunSession session = new(machineId, run, tokens);
+        SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
+
+        MachineVariables machine = new(
+            identity.Manufacturer,
+            identity.Model,
+            identity.SerialNumber,
+            identity.SmbiosUuid,
+            identity.MacAddresses,
+            run.ComputerName,
+            SequencePhase.WindowsPE);
+
         FileRunStateStore? store = null;
         RunHeartbeat heartbeat = new(
             server,
@@ -176,19 +187,16 @@ public sealed class SequenceRunner(
             call => store?.SaveTokenAsync(call) ?? Task.CompletedTask,
             heartbeatInterval,
             timeProvider);
-        store = new FileRunStateStore(tokens, heartbeat.Update);
+        StepStateLog stepStates = new(log, state, machine);
+        store = new FileRunStateStore(
+            tokens,
+            saved =>
+            {
+                stepStates.Saved(saved);
+                heartbeat.Update(saved);
+            });
 
-        SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
         heartbeat.Update(state);
-
-        MachineVariables machine = new(
-            identity.Manufacturer,
-            identity.Model,
-            identity.SerialNumber,
-            identity.SmbiosUuid,
-            identity.MacAddresses,
-            run.ComputerName,
-            SequencePhase.WindowsPE);
 
         RunResult result = await RunCoreAsync(session, resumed, confirmedDisk, store, heartbeat, state, machine, cancellationToken)
             .ConfigureAwait(false);

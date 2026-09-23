@@ -1116,7 +1116,9 @@ token, and while setup or the out-of-box experience still runs, it reports that 
 setup, which the Machines page shows. It checks again every 15 seconds, with no time limit, because
 someone may be finishing the out-of-box experience by hand, and logs a warning every 30 minutes.
 Then it deletes `C:\Windows\Panther\unattend.xml` and runs the remaining steps. It logs to the
-server and to `C:\DDT\logs\agent.log`, whose lines carry the time in UTC, without the date.
+server and to `C:\DDT\logs\agent.log`, whose lines start with the date and the time in UTC, such as
+`2026-09-23 14:03:12 UTC INFO  ...`. The agent's console in Windows PE shows only the time, also in
+UTC, by a clock that can be hours off, see [Watching a run](#watching-a-run).
 
 - **Restarts** use `shutdown /r`. Before it tells the server, the agent records the due restart in
   the volatile registry key `HKLM\SYSTEM\CurrentControlSet\Services\DdtSequence\RestartDue`, which a

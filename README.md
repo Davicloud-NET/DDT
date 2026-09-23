@@ -1377,21 +1377,52 @@ Task sequences (M5), which replace M4's fixed list of deployment steps, are buil
 their editor, packages, rules, runs in Windows PE and in the installed Windows, the machine page
 with its live log and clock correction, DDT's own root certificate with renewal, and PowerShell in
 the boot image. They are tested with fakes, and end to end in `DDT.E2E`, where the real host runs
-whole sequences with the published agent in dry runs through both phases; not yet on a machine. The
-maintainer's run on the Hyper-V test machine is still to come, and checks:
+whole sequences with the published agent in dry runs through both phases. On 2026-09-22 they ran,
+with master at commit `8b0d080`, on the Hyper-V Generation 2 test machine against a development
+host:
 
-- the certificate switch with its one boot image rebuild, with the size of `boot.wim` and the
-  netboot time before and after PowerShell and at TFTP windows of 4, 8 and 16, and a forced renewal
-  that needs no rebuild;
-- a sequence with Partition the disk, a PowerShell and a cmd script in Windows PE, a restart in
-  Windows PE and the resume after it, Apply image, a driver package made from one inbox driver
-  folder, the answer file, the hand-over, a PowerShell script in Windows, a restart in Windows, and
-  the end of the run, after which there is no `DdtSequence` service and no `C:\DDT`, and Windows
-  Boot Manager comes first;
-- an edit conflict between two administrators, a model rule, and power lost during Apply image.
+- At its first start the host moved the store's old self-signed certificate to DDT's own root,
+  after its SQLite database had been deleted for the new schema. The boot image was built once more
+  with `-RootCertificatePath` set to `ddt-root.pem`, and the agent trusted the server through the
+  pinned root in Windows PE and in the installed Windows.
+- `boot.wim` with the PowerShell components measured 496,342,317 bytes, against 347,838,990 bytes
+  for the build before without them, or 473.3 MB against 331.7 MB in the script's megabytes of
+  1,048,576 bytes: about 142 MB more, where about 120 MB had been estimated.
+- The machine was authorized by a sign in at its console, and the run was assigned on the web. Its
+  sequence of seven steps took six minutes and finished without a step error: Partition the
+  disk; two scripts in Windows PE, the second restarting Windows PE; Apply image, in 2 minutes 46
+  seconds; Inject drivers, with a driver package for the model `Virtual*` made from the inbox
+  `wnetvsc.inf` driver folder; Write the answer file, with the configured local administrator and a
+  time zone; the hand-over; and a PowerShell script in Windows with a restart after it.
+- The restart in Windows PE netbooted the machine again through `BootNext`, and the agent found the
+  run on the disk and went on without partitioning again.
+- The `DdtSequence` service that the hand-over registered offline started in the installed Windows,
+  so its quoted path with `%SystemDrive%` works. It reported while it waited through setup's restart
+  and the out-of-box experience, ran the script, restarted Windows as the step asked, came back and
+  finished the run.
+- The machine's log had two warnings: a mistyped password at the sign in, and the update check
+  after the Windows PE restart, which said only "The operation was canceled.". The agent now says
+  which limit ran out and names the server's address, see
+  [When a deployment goes wrong](#when-a-deployment-goes-wrong).
 
-The domain join is covered only by unit tests and the dry run, because the test network has no
-Active Directory.
+Not checked on a machine yet:
+
+- what changed after that run: the restart that Windows PE records in `X:\DDT\restart-due` and the
+  check for it at every start of the agent, the agent's separate connect and request timeouts and
+  its messages when it cannot reach the server, the log lines for skipped and interrupted steps,
+  and the dates in `agent.log`;
+- that after the last restart there is no `DdtSequence` service and no `C:\DDT`, and Windows Boot
+  Manager comes first;
+- a forced certificate renewal without a new boot image;
+- the netboot time of the image with PowerShell at TFTP windows of 4, 8 and 16, and of the lean
+  one at 8 and 16;
+- a model rule;
+- two administrators editing one sequence;
+- power lost during Apply image.
+
+The domain join is covered only by unit tests and the dry run. Its test on a machine waits until the
+test domain's permissions are set up. Letting the operator or the technician type the join
+credentials for a run is planned after M5.
 
 Later milestones, in order: M6 Linux raw disk images; M6.5 the real UI, as the web UI and the
 agent's console in Windows PE are concept UIs until then; M7 the task sequence flow builder.

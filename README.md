@@ -613,10 +613,11 @@ The boot image carries an agent, but that agent first asks the server for the cu
 server offers a different file, the agent downloads it over the same verified connection, checks its
 SHA-256 against what the server announced and runs it in its place. Put the published agent at
 `DDT:Agent:BinaryPath`, by default `agent/ddt-agent.exe` in the store, and every machine runs it from
-its next boot. A download that fails, or an agent that cannot start, leaves the machine on the agent
-from the boot image. The check happens once, before the machine registers, and only in an agent
-built with `dotnet publish`, never in a dry run; `--no-update` turns it off. What the agent from the
-boot image printed before it switched stays on the console and does not reach the machine's log.
+its next boot. A download that fails, including one that has not finished after 5 minutes, or an
+agent that cannot start, leaves the machine on the agent from the boot image. The check happens
+once, before the machine registers, and only in an agent built with `dotnet publish`, never in a
+dry run; `--no-update` turns it off. What the agent from the boot image printed before it switched
+stays on the console and does not reach the machine's log.
 
 So a boot image only has to be built again for Windows PE itself, including its PowerShell
 components, drivers, the keyboard layout, the server's URL or a new root. A renewed server
@@ -1162,6 +1163,17 @@ stops after its quota of joins, 10 by default. Home editions cannot join a domai
   removes itself. `C:\DDT` is open only to SYSTEM, so a local administrator reads the file from a
   command prompt that runs as SYSTEM, or takes ownership of the folder and grants themselves access
   first.
+- When the agent cannot reach the server, its warning or error says why. Where the connection itself
+  failed, it names the address it tried, so a mistyped `-ServerUrl` in the boot image shows there.
+  For a server at `ddt.example:8443`:
+  - "the server at ddt.example:8443 did not accept a connection within 10 s", which includes a TLS
+    handshake that never finished;
+  - "the server did not answer within 30 s", once the connection was made;
+  - "the connection to ddt.example:8443 was refused, so nothing listens on that port";
+  - "this machine has no network route to ddt.example";
+  - "the name ddt.example cannot be found in DNS";
+  - for a certificate the agent does not trust, what to change, see
+    [Registration and authorization](#registration-and-authorization).
 - During Windows setup, Shift+F10 opens a command prompt. Setup writes `C:\Windows\Panther\setupact.log`
   and `setuperr.log`, and `C:\Windows\Panther\UnattendGC\setupact.log` for the answer file.
 - A run that waits for Windows setup for a long time most likely waits at the out-of-box experience

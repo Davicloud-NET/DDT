@@ -81,7 +81,7 @@ export function RunStepRow({
           {step.error ?? "The step failed without saying why."}
           {planned?.continueOnError === true && wentOn && (
             <div className={styles.secondary}>
-              The run continued, because Continue on error is on for this step.
+              The run continued, because "Go on when this step fails" is on for this step.
             </div>
           )}
         </div>

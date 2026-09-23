@@ -362,7 +362,9 @@ describe("MachineDetailPage", () => {
     const failed = within(stepRow("Optional tool"));
     expect(failed.getByText("The script ended with exit code 3.")).toBeInTheDocument();
     expect(
-      failed.getByText("The run continued, because Continue on error is on for this step."),
+      failed.getByText(
+        'The run continued, because "Go on when this step fails" is on for this step.',
+      ),
     ).toBeInTheDocument();
 
     const running = within(stepRow("Apply Windows 11"));
@@ -427,7 +429,9 @@ describe("MachineDetailPage", () => {
     const failed = within(stepRow("Optional tool"));
     expect(failed.getByText("Stopped by operator.")).toBeInTheDocument();
     expect(
-      failed.queryByText("The run continued, because Continue on error is on for this step."),
+      failed.queryByText(
+        'The run continued, because "Go on when this step fails" is on for this step.',
+      ),
     ).not.toBeInTheDocument();
   });
 

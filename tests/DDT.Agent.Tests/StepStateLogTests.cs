@@ -87,7 +87,7 @@ public sealed class StepStateLogTests
         Assert.Equal(
             [
                 "ERROR Step Install a tool failed: The machine restarted or the agent stopped while this step ran." +
-                    (continueOnError ? " The run goes on, because Continue on error is on for this step." : string.Empty),
+                    (continueOnError ? " The run goes on, because \"Go on when this step fails\" is on for this step." : string.Empty),
             ],
             Lines());
     }

@@ -52,7 +52,9 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             }
             else if (now is { State: StepState.Failed, Error: SequenceEngine.InterruptedError })
             {
-                string goesOn = step.ContinueOnError ? " The run goes on, because Continue on error is on for this step." : string.Empty;
+                string goesOn = step.ContinueOnError
+                    ? " The run goes on, because \"Go on when this step fails\" is on for this step."
+                    : string.Empty;
                 Write(step.Id, $"Step {step.Name} failed: {SequenceEngine.InterruptedError}{goesOn}", failed: true);
             }
         }

@@ -801,7 +801,7 @@ public sealed class SequenceRunnerTests : IDisposable
         };
         const string skipLine = "INFO  Step Script 1 was skipped, because this condition did not hold: Model starts with \"OptiPlex\", and the machine reports \"Dry run\".";
         string interrupted = $"ERROR Step Script 2 failed: {SequenceEngine.InterruptedError}" +
-            (continueOnError ? " The run goes on, because Continue on error is on for this step." : string.Empty);
+            (continueOnError ? " The run goes on, because \"Go on when this step fails\" is on for this step." : string.Empty);
 
         StringWriter firstConsole = new();
         Assert.Equal(RunOutcome.Stopped, (await RunAsync(first, run, log: new AgentLog(new ImmediateTimeProvider(), firstConsole))).Outcome);

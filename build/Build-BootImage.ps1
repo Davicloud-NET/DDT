@@ -17,10 +17,10 @@ boot managers. Nothing here is signed by DDT: Secure Boot sees only Microsoft's 
 It also adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
 with their en-us language packages, so task sequences can run PowerShell scripts in Windows PE.
-Components cannot be added to a running Windows PE, so they have to be in the image. By the size of
-their packages they make boot.wim, which a PXE netboot fetches over TFTP, about 120 MB larger;
--SkipPowerShell leaves them out. Either way boot.wim is exported at the end, which drops what
-servicing left behind in it, and its size is printed.
+Components cannot be added to a running Windows PE, so they have to be in the image. They make
+boot.wim, which a PXE netboot fetches over TFTP, about 140 MB larger: 473 MB against 332 MB on the
+test machine. -SkipPowerShell leaves them out. Either way boot.wim is exported at the end, which
+drops what servicing left behind in it, and its size is printed, in megabytes of 1,048,576 bytes.
 
 Output layout, relative to -Destination, which is what DDT:Pxe:BootDirectory should contain:
 

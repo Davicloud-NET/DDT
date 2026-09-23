@@ -49,7 +49,8 @@ Boot flow:
    options 66 and 67, or the `pxe` role answers as ProxyDHCP with the boot server and file. Option
    93 carries the client architecture and selects the boot file.
 2. The firmware loads `bootmgfw.efi` over TFTP, and the boot manager reads `BCD`, `boot.sdi` and
-   `boot.wim` (about 340 MB) over TFTP as well. That is everything TFTP carries.
+   `boot.wim` (about 475 MB, or 330 MB built without PowerShell) over TFTP as well. That is
+   everything TFTP carries.
 3. WinPE starts, `startnet.cmd` launches `DDT.Agent`, which registers with the `web` role over
    HTTPS using its MAC addresses and SMBIOS UUID, receives a task sequence, executes it, streams
    log lines and progress, and survives reboots by persisting state to the local disk. Everything
@@ -453,17 +454,17 @@ Because the tunnel ends on the gateway, remote traffic reaches DDT on its ordina
 
 | Transport | Carries |
 |---|---|
-| TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all, about 460 MB with PowerShell in Windows PE |
+| TFTP | Only the netboot chain: `bootmgfw.efi`, `BCD`, `boot.sdi` and `boot.wim`, about 340 MB in all, about 480 MB with PowerShell in Windows PE |
 | HTTPS | Everything the agent does: registration, its own updates, task sequences, images, packages, logs |
 | Plain HTTP, port 8080 | The same boot files, for UEFI HTTP Boot clients, which cannot validate a private CA |
 
 The boot manager downloads `boot.wim` over TFTP itself, so TFTP speed decides how long a netboot
 takes. At a window of 4 and a round trip time of 5 to 10 ms, expect roughly 5 to 10 minutes for the
-image without PowerShell, and about a third longer with it. The plain HTTP listener serves the same
-files to firmware that offers UEFI HTTP Boot, which fetches the boot manager over HTTP. Whether the
-Windows boot manager started that way then reads `BCD`, `boot.sdi` and `boot.wim` over HTTP rather
-than TFTP has not been verified: no firmware with an HTTP Boot device has booted from DDT yet, and
-the `BCD` that `Build-BootImage.ps1` writes carries only TFTP settings for `boot.wim`.
+image without PowerShell, and about 40 percent longer with it. The plain HTTP listener serves the
+same files to firmware that offers UEFI HTTP Boot, which fetches the boot manager over HTTP. Whether
+the Windows boot manager started that way then reads `BCD`, `boot.sdi` and `boot.wim` over HTTP
+rather than TFTP has not been verified: no firmware with an HTTP Boot device has booted from DDT
+yet, and the `BCD` that `Build-BootImage.ps1` writes carries only TFTP settings for `boot.wim`.
 
 ### Which interfaces are served
 
@@ -526,14 +527,15 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 The script adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
 with their en-us language packages, so task sequence steps can run PowerShell scripts in Windows PE.
-Components cannot be added to a running Windows PE, so they have to be in `boot.wim`: by the size of
-their packages they take it from about 330 MB to about 450 MB. The script prints the real size at
-the end; the sizes and netboot times of both images are to be measured on the test machine.
-`-SkipPowerShell` builds the lean image for sites where netboot time matters more. On it the agent
-refuses a run with a PowerShell script in Windows PE before it touches the disk, and says to build
-the image without `-SkipPowerShell`. Either way the script exports `boot.wim`
-at the end, which drops what servicing left behind in the file. A build needs an elevated prompt,
-the Windows ADK and its Windows PE add-on.
+Components cannot be added to a running Windows PE, so they have to be in `boot.wim`. On the test
+machine they took it from 347,838,990 to 496,342,317 bytes. The script prints the size at the end,
+in megabytes of 1,048,576 bytes, which makes 331.7 MB and 473.3 MB, about 142 MB more. How much
+longer the larger image takes to netboot has not been measured yet. `-SkipPowerShell` builds the
+lean image for sites where netboot time matters more. On it the agent refuses a run with a
+PowerShell script in Windows PE before it touches the disk, and says to build the image without
+`-SkipPowerShell`. Either way the script exports `boot.wim` at the end, which drops what servicing
+left behind in the file. A build needs an elevated prompt, the Windows ADK and its Windows PE
+add-on.
 
 Both boot manager paths are stable, because a site DHCP server picks one by name. Neither file is
 dual signed. The 2011 one is the default: firmware ignores certificate expiry, and most machines

@@ -89,6 +89,22 @@ public sealed class AgentLogTests
         Assert.Equal($"User name: 00:00:00 WARN  Cannot reach the server.{Environment.NewLine}", console.ToString());
     }
 
+    // agent.log in the installed Windows is read days later, beside setupact.log and the event log.
+    [Fact]
+    public void DatesTheLinesOfAFileAndKeepsTheConsoleShort()
+    {
+        ManualTimeProvider time = new();
+        time.Advance(new TimeSpan(265, 14, 3, 12));
+        using StringWriter file = new();
+        using StringWriter console = new();
+
+        new AgentLog(time, file, datedLines: true).Information("The run is done.");
+        new AgentLog(time, console).Information("The run is done.");
+
+        Assert.Equal($"2026-09-23 14:03:12 UTC INFO  The run is done.{Environment.NewLine}", file.ToString());
+        Assert.Equal($"14:03:12 INFO  The run is done.{Environment.NewLine}", console.ToString());
+    }
+
     [Fact]
     public async Task SendsItsClockWithEachBatch()
     {

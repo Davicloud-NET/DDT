@@ -8,10 +8,14 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent;
 
 // Writes to the console immediately, because in Windows PE the console is all an operator at the
-// machine has, and queues the same lines for the server until they are delivered.
-public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
+// machine has, and queues the same lines for the server until they are delivered. Dated lines are for a file, which
+// someone reads days later beside Windows' own logs; the console, read as the lines appear, keeps only the time.
+// Both are in UTC.
+public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool datedLines = false)
 {
     private const int MaxQueuedLines = 2000;
+
+    private readonly string _timeFormat = datedLines ? "yyyy-MM-dd HH:mm:ss 'UTC'" : "HH:mm:ss";
 
     private readonly Lock _lock = new();
     private readonly List<(long Sequence, AgentLogLine Line)> _pending = [];
@@ -132,7 +136,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console)
     private void Write(AgentLogLevel level, string message)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
-        string text = string.Create(CultureInfo.InvariantCulture, $"{now:HH:mm:ss} {LevelLabel(level)} {message}");
+        string text = $"{now.ToString(_timeFormat, CultureInfo.InvariantCulture)} {LevelLabel(level)} {message}";
 
         lock (_lock)
         {

@@ -27,7 +27,7 @@ public static class WindowsPhaseService
 
         await using (writer.ConfigureAwait(false))
         {
-            AgentLog log = new(TimeProvider.System, writer);
+            AgentLog log = new(TimeProvider.System, writer, datedLines: true);
 
             try
             {

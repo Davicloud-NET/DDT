@@ -106,8 +106,8 @@ if (options.DryRun)
     return await machine.RunAsync(stop.Token).ConfigureAwait(false);
 }
 
-// The agent's directory is X:\DDT in Windows PE. What it stages into Windows needs to reach the server, and nothing
-// else.
+// The agent's directory is X:\DDT in Windows PE, on the RAM disk that every restart builds anew. What it stages into
+// Windows needs to reach the server, and nothing else.
 ToolRunner tools = new(log, TimeProvider.System);
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
@@ -118,6 +118,7 @@ SequenceRunner runner = new(
     new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
     new BcdbootWriter(tools, firmware, log),
     new WindowsPERebooter(tools, firmware, log),
+    new WindowsPERestartMarker(AppContext.BaseDirectory, log, dryRun: false),
     tools,
     new NetJoinDomainJoiner(),
     new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),

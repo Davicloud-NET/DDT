@@ -13,7 +13,8 @@ using DDT.Contracts.Sequences;
 namespace DDT.Agent;
 
 // Registers the machine, waits until it may run a task sequence, runs it, and after a restart in the middle of a run
-// goes on with the run whose state it finds on the disk, as long as the server still runs it.
+// goes on with the run whose state it finds on the disk, as long as the server still runs it. A start that finds a
+// restart still due makes that restart first, without registering.
 public sealed class AgentLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
@@ -52,6 +53,11 @@ public sealed class AgentLoop(
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         log.Information($"DDT agent {agentVersion}");
+
+        if (await runner.RestartIfDueAsync(cancellationToken).ConfigureAwait(false) is { } restarted)
+        {
+            return restarted == RunOutcome.Restarting ? AgentExitCodes.Restarting : AgentExitCodes.Stopped;
+        }
 
         if (!prompt.IsAvailable)
         {

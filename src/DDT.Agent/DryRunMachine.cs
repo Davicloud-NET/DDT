@@ -118,6 +118,7 @@ public sealed class DryRunMachine(
             new DryRunImageApplier(log),
             new DryRunBcdWriter(log),
             rebooter,
+            new WindowsPERestartMarker(workDirectory, log, dryRun: true),
             tools,
             new DryRunDomainJoiner(log),
             new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), agentPath, staged, log, dryRun: true),

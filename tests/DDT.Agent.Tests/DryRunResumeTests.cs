@@ -127,6 +127,9 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.Equal(AgentExitCodes.Restarting, first);
         Assert.True(File.Exists(RunFiles.StatePathIn(Path.Combine(_root, "W"))));
 
+        // Its end was the restart, so the next start does not restart again.
+        Assert.False(File.Exists(Path.Combine(_root, WindowsPERestartMarker.FileName)));
+
         _server.OnRegister(registration => Registered() with { RunId = s_runId, RunToken = registration.RunToken })
             .OnNext(_ => Next("session-3", s_run with { DiskNumber = null }));
 
@@ -141,6 +144,7 @@ public sealed class DryRunResumeTests : IDisposable
         string[] before = [.. firstConsole.ToString().Split(Environment.NewLine).Select(line => line.Length > 15 ? line[15..] : line)];
         string[] after = [.. secondConsole.ToString().Split(Environment.NewLine).Select(line => line.Length > 15 ? line[15..] : line)];
         Assert.Contains(before, line => line.Contains("BootNext would be set to BootCurrent", StringComparison.Ordinal));
+        Assert.Contains(before, line => line.StartsWith(@"Dry run: in Windows PE the due restart would be recorded in X:\DDT\restart-due", StringComparison.Ordinal));
         Assert.DoesNotContain(after, line => line.StartsWith("Dry run: diskpart is not run. It would get this script", StringComparison.Ordinal));
         Assert.Contains(after, line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("a4.cmd", StringComparison.Ordinal));
     }
@@ -161,6 +165,7 @@ public sealed class DryRunResumeTests : IDisposable
             new DryRunImageApplier(log),
             new DryRunBcdWriter(log),
             new DryRunRebooter(log),
+            new WindowsPERestartMarker(_root, log, dryRun: true),
             tools,
             new DryRunDomainJoiner(log),
             new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),

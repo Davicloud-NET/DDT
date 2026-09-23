@@ -63,6 +63,7 @@ public static class WindowsPhaseService
             new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(directory, "logs", "wimlib.log")),
             new BcdbootWriter(tools, new UefiVariables(), log),
             rebooter,
+            new WindowsPERestartMarker(directory, log, dryRun: false),
             tools,
             new NetJoinDomainJoiner(),
             new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),

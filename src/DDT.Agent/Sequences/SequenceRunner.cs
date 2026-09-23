@@ -19,15 +19,20 @@ namespace DDT.Agent.Sequences;
 // agent: every failure is reported, because an agent that crashes is replaced by the boot image's. In a dry run,
 // workDirectory is the dry run's root, which stands in for the disk and is deleted when the run ends. systemDirectory
 // is where Windows PE keeps its tools.
+// restartMarker keeps a restart that leaves Windows PE from the moment it is due until the restart: a restart the engine
+// asks for as soon as it does, as the state already goes on after the step, and a restart into the installed Windows
+// for as long as this run keeps Windows Boot Manager first. An agent that stopped short of such a restart, or whose
+// restart failed, makes it at its next start through RestartIfDueAsync.
 // The service in the installed Windows goes on with the run through GoOnInWindowsAsync, with the same steps, reports
 // and failure handling. The engine never runs a Windows PE step there, as the phases come in order, so the disk, image
-// and boot tools are only there for Windows PE.
+// and boot tools and the restart marker are only there for Windows PE.
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
     IImageApplier applier,
     IBcdWriter bcdWriter,
     IRebooter rebooter,
+    WindowsPERestartMarker restartMarker,
     IToolRunner tools,
     IDomainJoiner joiner,
     WindowsHandOver handOver,
@@ -72,8 +77,8 @@ public sealed class SequenceRunner(
     // Where the run goes on: in Windows PE, or in the installed Windows.
     private SequencePhase _phase;
 
-    // Records in Windows that the run restarts it; null in Windows PE.
-    private Action? _recordRestart;
+    // Records that the run restarts the machine back to where it runs now.
+    private Action _recordRestart = () => { };
 
     // confirmedDisk is the disk the technician confirmed with ERASE in this process, if any. Disk numbers can change
     // when the machine starts again, so a run chosen at the machine only erases that same disk. resumed is the run's
@@ -86,7 +91,41 @@ public sealed class SequenceRunner(
         DeploymentTokens tokens,
         MachineIdentity identity,
         CancellationToken cancellationToken) =>
-        RunAsync(SequencePhase.WindowsPE, null, machineId, run, resumed, confirmedDisk, tokens, identity, cancellationToken);
+        RunAsync(
+            SequencePhase.WindowsPE,
+            () => restartMarker.Set(RestartInto.WindowsPE),
+            machineId,
+            run,
+            resumed,
+            confirmedDisk,
+            tokens,
+            identity,
+            cancellationToken);
+
+    // A restart that Windows PE recorded but that did not happen, as the agent was stopped before it or wpeutil failed,
+    // comes before anything else at the next start, the same way: the run's state already goes on after it. Returns
+    // how the restart ended, or null when none is due. A start that was stopped already, for example with Ctrl+C
+    // during the update check, leaves it due.
+    public async Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken)
+    {
+        if (restartMarker.Due is not { } into)
+        {
+            return null;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return RunOutcome.Stopped;
+        }
+
+        log.Warning(into == RestartInto.WindowsPE
+            ? "The machine was to restart into Windows PE for the run but has not restarted since. Restarting it now."
+            : "The machine was to start the installed Windows but has not restarted since. Restarting it now.");
+
+        RunResult result = await RebootAsync(into, RunOutcome.Restarting, "Restart it by hand.", cancellationToken).ConfigureAwait(false);
+
+        return result.Outcome;
+    }
 
     // resumed is the run as the hand-over left it in the running Windows, whose volume it names. The run ends with its
     // Done report and no restart, as the agent still has to remove itself. recordRestart is called as soon as the run
@@ -109,7 +148,7 @@ public sealed class SequenceRunner(
 
     private async Task<RunResult> RunAsync(
         SequencePhase phase,
-        Action? recordRestart,
+        Action recordRestart,
         Guid machineId,
         AgentRun run,
         LocalRun? resumed,
@@ -280,7 +319,7 @@ public sealed class SequenceRunner(
 
             if (restartDue)
             {
-                _recordRestart?.Invoke();
+                _recordRestart();
             }
 
             switch (outcome)
@@ -569,6 +608,7 @@ public sealed class SequenceRunner(
         await bcdWriter.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
         _windowsFirst = true;
         await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
+        restartMarker.Set(RestartInto.Windows);
     }
 
     // The order matters: the log goes while the machine may still send it, and the Done report is the last call the
@@ -808,7 +848,7 @@ public sealed class SequenceRunner(
 
     // The answer file holds passwords, and a machine whose run did not finish keeps its disk until it runs again: it
     // must start from the network, not into a Windows without its answer file. The boot order goes back even after a
-    // stop.
+    // stop. A restart back into Windows PE that the run asked for is not due either.
     private async Task UndoAsync(RunSession session, SequenceState state)
     {
         if (session.Volumes is { } volumes)
@@ -816,14 +856,22 @@ public sealed class SequenceRunner(
             LocalRun.DeleteAnswerFile(state, volumes.Windows, log);
         }
 
+        if (_phase == SequencePhase.WindowsPE)
+        {
+            restartMarker.Clear();
+        }
+
         await RestoreBootOrderAsync().ConfigureAwait(false);
     }
 
+    // With the boot order back, a restart would start the network, not the installed Windows, so no restart into it is
+    // due any more.
     private async Task RestoreBootOrderAsync()
     {
         if (_windowsFirst)
         {
             _windowsFirst = false;
+            restartMarker.Clear();
             await bcdWriter.RestoreBootOrderAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }

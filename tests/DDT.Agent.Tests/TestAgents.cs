@@ -16,9 +16,9 @@ internal static class TestAgents
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
     // Without a heartbeat interval, beats happen only when the run changes, so a run stays sequential on
-    // ImmediateTimeProvider. Everything on the disk is under tools.Root: the volumes, Windows PE's own directory X,
-    // and System32, where Windows PE's tools are, unless systemDirectory says otherwise. As in a dry run, unless dryRun
-    // is false, the run's directory stays open to the account the tests run as.
+    // ImmediateTimeProvider. Everything on the disk is under tools.Root: the volumes, Windows PE's own directory X, and
+    // System32, where Windows PE's tools are, unless systemDirectory says otherwise. As in a dry run, unless dryRun is
+    // false, the run's directory stays open to the account the tests run as, but the restart marker is a real file.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -41,6 +41,7 @@ internal static class TestAgents
             tools,
             bcdWriter ?? tools,
             rebooter ?? tools,
+            RestartMarker(tools, log),
             toolRunner,
             joiner ?? tools,
             HandOver(tools, toolRunner, log, dryRunHandOver),
@@ -50,6 +51,15 @@ internal static class TestAgents
             Path.Combine(tools.Root, "X"),
             systemDirectory ?? SystemDirectory(tools),
             dryRun);
+    }
+
+    // The runner's. Windows PE keeps it in its own directory; here it has a directory of its own, because the tests'
+    // runs are dry runs, which delete X when they end and would take the marker along.
+    public static WindowsPERestartMarker RestartMarker(FakeDeploymentTools tools, AgentLog log)
+    {
+        ArgumentNullException.ThrowIfNull(tools);
+
+        return new WindowsPERestartMarker(Path.Combine(tools.Root, "RAM disk"), log, dryRun: false);
     }
 
     // Stages AgentSource(tools) with Configuration.

@@ -59,6 +59,7 @@ public sealed class SequenceRunnerTests : IDisposable
 
         Assert.Equal(new RunResult(RunOutcome.Finished), result);
         Assert.Equal(["list", "prepare", "partition 0", "apply 1", "bcd", "firmware after the answer file", "reboot"], _tools.Calls);
+        Assert.Equal(RestartInto.Windows, RestartDue());
         Assert.True(_tools.ImageWasThereToApply);
         Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
         Assert.Equal([$"head-file {_image.Sha256} session-0", "run-report Running session-0"], server.Calls.Take(2));
@@ -597,9 +598,11 @@ public sealed class SequenceRunnerTests : IDisposable
 
         RunResult result = await RunAsync(server);
 
-        // The run goes on after a start from the network, so its state and answer file stay.
+        // The run goes on after a start from the network, so its state and answer file stay, and no restart into the
+        // installed Windows is due.
         Assert.Equal(new RunResult(RunOutcome.Stopped), result);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.True(File.Exists(StatePath));
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
@@ -623,6 +626,7 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.True(File.Exists(StatePath));
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
@@ -645,6 +649,7 @@ public sealed class SequenceRunnerTests : IDisposable
 
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
         Assert.False(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.False(File.Exists(StatePath));
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
@@ -748,6 +753,7 @@ public sealed class SequenceRunnerTests : IDisposable
 
         Assert.Equal(RunOutcome.Restarting, first.Outcome);
         Assert.Equal(["list", "prepare", "partition 0"], _tools.Calls);
+        Assert.Equal(RestartInto.WindowsPE, RestartDue());
         Assert.Equal(["BootNext"], firmware.Writes);
         Assert.EndsWith("wpeutil.exe reboot", _toolRunner.Calls[^1], StringComparison.Ordinal);
         Assert.Equal(RunActivity.Restarting, server.RunReports[^1].Activity);
@@ -766,6 +772,67 @@ public sealed class SequenceRunnerTests : IDisposable
             _tools.Calls);
         Assert.Single(_toolRunner.Calls, call => call.EndsWith("c001.cmd", StringComparison.Ordinal));
         Assert.Equal([StepState.Done, StepState.Done, StepState.Done], server.RunReports[reportsBefore].Steps.Take(3).Select(step => step.State));
+    }
+
+    // The engine asked for the restart, but the server ended the run before it, so no restart is due any more.
+    [Fact]
+    public async Task ARunThatFailsAfterItsRestartStepOwesNoRestart()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        OnFirstBeatOnceTheRestartIsDue(server, () => throw new AgentRequestException("409", "This run is no longer running.", HttpStatusCode.Conflict));
+
+        RunResult result = await RunAsync(server, TestRuns.Run([TestRuns.Partition, TestRuns.Reboot, TestRuns.Apply, TestRuns.Unattend], _image));
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Equal((DeploymentState.Failed, "This run is no longer running."), (server.RunReports[^1].State, server.RunReports[^1].Error));
+        Assert.Equal(["list", "prepare", "partition 0"], _tools.Calls);
+        Assert.Null(RestartDue());
+    }
+
+    // Ctrl+C once the engine asked for the restart, while the heartbeat waits for a beat on its way: the run stops
+    // before it tells the server of the restart, and the restart stays due for the next start.
+    [Fact]
+    public async Task AStopRightAfterTheRestartStepKeepsTheRestartDue()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        OnFirstBeatOnceTheRestartIsDue(server, server.Stop.Cancel);
+
+        RunResult result = await RunAsync(server, TestRuns.Run([TestRuns.Partition, TestRuns.Reboot, TestRuns.Apply, TestRuns.Unattend], _image));
+
+        Assert.Equal(new RunResult(RunOutcome.Stopped), result);
+        Assert.Equal(["list", "prepare", "partition 0"], _tools.Calls);
+        Assert.DoesNotContain(server.RunReports, report => report.Activity == RunActivity.Restarting);
+        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+    }
+
+    // The run asked for the restart, so the machine restarts all the same, and should that fail, the next start does.
+    [Fact]
+    public async Task ARefusedTokenOnABeatRightAfterTheRestartStepKeepsTheRestartDue()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        OnFirstBeatOnceTheRestartIsDue(server, () => throw new AgentTokenRejectedException());
+
+        RunResult result = await RunAsync(server, TestRuns.Run([TestRuns.Partition, TestRuns.Reboot, TestRuns.Apply, TestRuns.Unattend], _image));
+
+        Assert.Equal(RunOutcome.Restarting, result.Outcome);
+        Assert.Equal(["list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
+        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+    }
+
+    [Fact]
+    public async Task ARefusedTokenOnTheRestartReportKeepsTheRestartDue()
+    {
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        server.AnswerRunReports = (report, token) => report.Activity == RunActivity.Restarting
+            ? throw new AgentTokenRejectedException()
+            : new AgentRunReportResult(token, "resume", "run-token-1");
+        _tools.FailAt = "reboot";
+
+        RunResult result = await RunAsync(server, TestRuns.Run([TestRuns.Partition, TestRuns.Reboot, TestRuns.Apply, TestRuns.Unattend], _image));
+
+        Assert.Equal(RunOutcome.Restarting, result.Outcome);
+        Assert.Equal(["list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
+        Assert.Equal(RestartInto.WindowsPE, RestartDue());
     }
 
     [Fact]
@@ -829,6 +896,7 @@ public sealed class SequenceRunnerTests : IDisposable
 
         // Windows setup still needs the answer file.
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
+        Assert.Equal(RestartInto.Windows, RestartDue());
 
         AgentRunReport last = server.RunReports[^1];
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (last.State, last.Phase, last.Activity));
@@ -980,6 +1048,7 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
         Assert.Equal(SequencePhase.Windows, (await LoadStateAsync())?.Phase);
     }
@@ -1018,7 +1087,28 @@ public sealed class SequenceRunnerTests : IDisposable
     // Goes on in Windows after the answer file.
     private AgentRun InWindows() => TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image);
 
+    // The first beat stays on its way until the engine has asked for the restart and the runner recorded it, then runs
+    // act, which may also refuse the beat.
+    private void OnFirstBeatOnceTheRestartIsDue(ScriptedAgentServer server, Action act)
+    {
+        string marker = TestAgents.RestartMarker(_tools, Log()).FilePath;
+        int beats = 0;
+
+        server.AnswerRunReports = (report, token) =>
+        {
+            if (report.Activity != RunActivity.Preparing && Interlocked.Increment(ref beats) == 1)
+            {
+                Assert.True(SpinWait.SpinUntil(() => File.Exists(marker), TimeSpan.FromSeconds(10)));
+                act();
+            }
+
+            return new AgentRunReportResult(token, "resume", "run-token-1");
+        };
+    }
+
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
+
+    private RestartInto? RestartDue() => TestAgents.RestartMarker(_tools, Log()).Due;
 
     private Task<SequenceState?> LoadStateAsync() => RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken);
 

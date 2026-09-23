@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using Xunit;
@@ -133,6 +134,41 @@ public sealed class AgentUpdateTests : IDisposable
         (AgentUpdate update, _) = Create(server, new ScriptedRelauncher(() => throw new Win32Exception(193)));
 
         Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
+    }
+
+    // As in Windows PE right after a restart, before the network is up: the connection is not accepted in time. A
+    // listener that never accepts leaves the TLS handshake unanswered, which the connect timeout covers.
+    [Fact]
+    public async Task SaysThatTheServerDidNotAcceptTheConnectionInTime()
+    {
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using HttpAgentServer server = new(new Uri($"https://127.0.0.1:{port}/"), null, connectTimeout: TimeSpan.FromMilliseconds(300));
+        ManualTimeProvider time = new();
+        using StringWriter console = new();
+        AgentUpdate update = new(server, new ScriptedRelauncher(() => 0), new AgentLog(time, console), time, CurrentSha256, _directory, []);
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        using CancellationTokenSource limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        limit.CancelAfter(TimeSpan.FromSeconds(10));
+
+        Task<int?> running = update.RunAsync(stop.Token);
+
+        // The retry's delay only runs out when the test moves the time, so the agent waits there after one attempt,
+        // unless it gave up at once.
+        while (time.PendingTimers == 0 && !running.IsCompleted)
+        {
+            await Task.Delay(10, limit.Token);
+        }
+
+        await stop.CancelAsync();
+
+        Assert.Null(await running);
+        Assert.Contains(
+            $"WARN  Cannot reach the server to ask for the current agent (the server at 127.0.0.1:{port} did not accept a connection within 0.3 s).",
+            console.ToString(),
+            StringComparison.Ordinal);
     }
 
     [Fact]

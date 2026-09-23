@@ -317,7 +317,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
         SendAsync(request, HttpCompletionOption.ResponseContentRead, _requestTimeout, cancellationToken);
 
-    // A timeout becomes a TimeoutException that says which one it was. A cancelled token stays a cancellation.
+    // A timeout becomes a TimeoutException that says which one it was, and a connection that failed says why. A cancelled
+    // token stays a cancellation.
     private async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         HttpCompletionOption completion,
@@ -351,6 +352,10 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
                 && CertificateProblem(request.RequestUri) is { } problem)
             {
                 throw new HttpRequestException(HttpRequestError.SecureConnectionError, problem, exception);
+            }
+            catch (HttpRequestException exception) when (ConnectionFailure.Describe(exception, _serverUrl) is { } cause)
+            {
+                throw new HttpRequestException(exception.HttpRequestError, cause, exception);
             }
         }
 

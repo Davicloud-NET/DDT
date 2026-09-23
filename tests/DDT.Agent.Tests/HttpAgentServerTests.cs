@@ -77,6 +77,22 @@ public sealed class HttpAgentServerTests
         Assert.Equal($"the server at 127.0.0.1:{port} did not accept a connection within 0.3 s", timeout.Message);
     }
 
+    // ConnectionFailure's words rely on how SocketsHttpHandler reports this, which a real connection shows.
+    [Fact]
+    public async Task SaysWhenNothingListensOnTheServersPort()
+    {
+        using TcpListener closed = new(IPAddress.Loopback, 0);
+        closed.Start();
+        int port = ((IPEndPoint)closed.LocalEndpoint).Port;
+        closed.Stop();
+
+        using HttpAgentServer server = new(new Uri($"http://127.0.0.1:{port}/"), null);
+
+        HttpRequestException refused = await Assert.ThrowsAsync<HttpRequestException>(() => server.GetReleaseAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal($"the connection to 127.0.0.1:{port} was refused, so nothing listens on that port", refused.Message);
+    }
+
     // A stop, such as Ctrl+C, is never reported as a timeout.
     [Fact]
     public async Task AStopWhileWaitingForTheServerStaysACancellation()

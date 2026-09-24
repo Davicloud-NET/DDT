@@ -176,6 +176,21 @@ public sealed class RunScriptStepRunnerTests
         Assert.Contains(await run.SentLinesAsync(), line => line.Message == "Grüße aus dem Skript");
     }
 
+    // The real tree, which writes into a pipe in the ANSI code page even after chcp 65001.
+    [Fact]
+    public async Task LogsWhatTheRealTreePrintsWithItsUmlauts()
+    {
+        using StepRunnerFixture run = new([s_cmd]);
+        string folder = Path.Combine(run.WorkDirectory, "tree", "für");
+        Directory.CreateDirectory(folder);
+        RunScriptStep step = s_cmd with { Script = $"tree \"{Path.GetDirectoryName(folder)}\"" };
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+
+        await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Contains(await run.SentLinesAsync(), line => line.Message.EndsWith("für", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void ALauncherKeepsThePercentSignsOfAPath()
     {
@@ -190,9 +205,9 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_powerShell with
         {
-            // The raw bytes are "für" in the OEM code page, as tree writes it whatever the console's code page is.
+            // The raw bytes are "für" in the ANSI code page, as tree writes it into a pipe whatever the console's code page is.
             Script = "Write-Output \"step $env:DDT_STEP_ID\"\nWrite-Output 'Grüße für Ä'\ncmd /d /c echo Größe\n" +
-                "[Console]::Out.Flush(); $raw = [Console]::OpenStandardOutput(); $raw.Write([byte[]](0x66, 0x81, 0x72, 13, 10), 0, 5); $raw.Flush()\n" +
+                "[Console]::Out.Flush(); $raw = [Console]::OpenStandardOutput(); $raw.Write([byte[]](0x66, 0xFC, 0x72, 13, 10), 0, 5); $raw.Flush()\n" +
                 "[Console]::Error.WriteLine('Fehler: öß')\nexit 7",
             SuccessExitCodes = [7],
         };

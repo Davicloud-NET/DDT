@@ -9,12 +9,12 @@ using System.Text.Unicode;
 namespace DDT.Agent.Deployment;
 
 // What a tool prints, line by line. A script's own output arrives as UTF-8 after chcp 65001, but older console programs,
-// such as tree, write in the OEM code page whatever the console's is, and one script may run both. So each line is read
-// as UTF-8 when it is valid UTF-8, and in the OEM code page when it is not; plain ASCII reads the same either way. A
-// carriage return alone ends a line too, as progress bars use it.
+// such as tree, write in the ANSI code page when their output goes to a pipe, whatever the console's is, and one script
+// may run both. So each line is read as UTF-8 when it is valid UTF-8, and in the ANSI code page when it is not; plain
+// ASCII reads the same either way. A carriage return alone ends a line too, as progress bars use it.
 public static partial class ToolOutput
 {
-    private const uint OemCodePage = 1;
+    private const uint AnsiCodePage = 0;
 
     public static async Task ForwardAsync(Stream stream, Action<string> write)
     {
@@ -44,7 +44,7 @@ public static partial class ToolOutput
     }
 
     public static string Decode(ReadOnlySpan<byte> bytes) =>
-        Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Oem(bytes);
+        Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Ansi(bytes);
 
     private static void Emit(MemoryStream line, Action<string> write)
     {
@@ -62,11 +62,11 @@ public static partial class ToolOutput
         }
     }
 
-    private static unsafe string Oem(ReadOnlySpan<byte> bytes)
+    private static unsafe string Ansi(ReadOnlySpan<byte> bytes)
     {
         fixed (byte* input = bytes)
         {
-            int length = MultiByteToWideChar(OemCodePage, 0, input, bytes.Length, null, 0);
+            int length = MultiByteToWideChar(AnsiCodePage, 0, input, bytes.Length, null, 0);
 
             if (length <= 0)
             {
@@ -77,7 +77,7 @@ public static partial class ToolOutput
 
             fixed (char* output = text)
             {
-                return new string(output, 0, MultiByteToWideChar(OemCodePage, 0, input, bytes.Length, output, length));
+                return new string(output, 0, MultiByteToWideChar(AnsiCodePage, 0, input, bytes.Length, output, length));
             }
         }
     }

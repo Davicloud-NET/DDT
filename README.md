@@ -851,8 +851,8 @@ PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
 [Security model](#security-model) for a Group Policy that overrides the execution policy. Either way
 the console is switched to UTF-8 first (`chcp 65001`, for PowerShell from a `.cmd` file next to the
 script). The agent reads each line of output as UTF-8, and a line that is not valid UTF-8 in the
-OEM code page, as older console programs such as `tree` write in it whatever the console's code page
-is, so umlauts and accents reach the machine's log either way. A script
+ANSI code page, as older console programs such as `tree` write in it into a pipe whatever the
+console's code page is, so umlauts and accents reach the machine's log either way. A script
 finds the phase, `WindowsPE` or `Windows`, in `DDT_PHASE`, and the run's and the step's ids in
 `DDT_RUN_ID` and `DDT_STEP_ID`. With a files package, `DDT_PACKAGE` names the folder the package
 is unpacked to, which is the script's working directory and is deleted when the script ends.
@@ -1431,7 +1431,6 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
 - With the host running, `ddt.pem` and `ddt-key.pem` were deleted. Within its five-minute check the
   host issued a new certificate from the same root and served it without a restart, and the boot
   image from 2026-09-22 netbooted, trusted it, switched to the new agent and registered.
-- `boot.wim` with the PowerShell components took 13.2 s over TFTP at a window of 4.
 - The power was cut at 27 % of Apply image. After the next netboot the agent found the run on the
   disk, gave the system and recovery partitions their letters again and failed the step as
   interrupted, without running it again; the machine log says so for that step. The clock of
@@ -1439,28 +1438,42 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
 - A second run of the seven steps took 4 minutes 42 seconds, Apply image 1 minute 50 seconds.
   After the last restart the `DdtSequence` service and `C:\DDT` were gone, and Windows Boot Manager
   came first in the firmware's boot order.
-- The first registration after the power came back warned that the server "did not accept a
-  connection within 10 s", and the next one, 2 s later, succeeded: the network of Windows PE was
-  not up yet.
 - The run's PowerShell script printed a German umlaut as a replacement character. PowerShell steps
   now start from a `.cmd` file that switches the console to UTF-8 first.
-- A third run, with master at `1449f80`, added a PowerShell script that sends the queries for `davicloud.local` to its domain
-  controller (`Add-DnsClientNrptRule`), and a Join the domain step. The machine joined the test
-  domain within a second and restarted, and the run finished. The join password was in no log line,
-  step error or audit record. Before it, "Check the join account" followed the domain live: can
-  join within the quota, cannot with the quota set to 0, can with the right to create computer
-  objects in the Computers container. That run still showed the umlaut of `tree` as a replacement
-  character: `tree` writes in the OEM code page whatever the console's is, so the agent now reads a
-  line that is not valid UTF-8 in the OEM code page.
+- A third run, with master at `1449f80`, added a PowerShell script that sends the queries for
+  `davicloud.local` to its domain controller (`Add-DnsClientNrptRule`), and a Join the domain step.
+  The machine joined the test domain within a second and restarted, and the run finished. The join
+  password was in no log line, step error or audit record. Before it, "Check the join account"
+  followed the domain live: can join within the quota, cannot with the quota set to 0, can with the
+  right to create computer objects in the Computers container.
+- `boot.wim` over TFTP on the local virtual switch, each boot to the agent's prompt, with no
+  retransmission and no failed boot:
+
+  | Window | With PowerShell, 496 MB | Without, 344 MB |
+  |---|---|---|
+  | 4 | 13.2 s | 8.4 s, 8.7 s, once 21.1 s |
+  | 8 | 10.1 s, 10.1 s | 6.9 s, 7.1 s |
+  | 16 | 7.9 s, 8.0 s | 5.3 s, 5.4 s |
+
+- A fourth run, with master at `e486d44`, stopped the host while the hand-over told it of the
+  restart into Windows, and the agent was stopped with Ctrl+C while it tried again. Started again
+  by hand, the agent found `X:\DDT\restart-due`, restarted into the installed Windows without
+  registering, and the run went on there and finished, joining the domain again under the same
+  computer name. The warning the agent printed about the due restart reaches only the console: the
+  agent restarts before it registers, so the server never gets it.
+- The third and fourth runs still showed the umlaut of `tree` wrongly. `tree` writes into a pipe in
+  the ANSI code page whatever the console's is, so the agent now reads a line that is not valid
+  UTF-8 in the ANSI code page.
+- The first contact with the server after a netboot often failed with "did not accept a connection
+  within 10 s", once in a row after the power came back, and up to three times after a netboot, for
+  up to 26 s before the agent registered. Name lookups in Windows PE took 0.1 s once it had
+  started, so the cause is not DNS; it is not known yet. The agent keeps trying and gets through.
 
 Not checked on a machine yet:
 
-- what changed after these runs: the output of `tree` read in the OEM code page, and the texts for
+- what changed after these runs: the output of `tree` read in the ANSI code page, and the texts for
   an organizational unit the domain join cannot use;
-- the restart that Windows PE records in `X:\DDT\restart-due`, taken when Windows PE starts with a
-  restart still due, the log line for a skipped step, and the dates in `agent.log`;
-- the netboot time of the image with PowerShell at TFTP windows of 8 and 16, and of the lean one at
-  4, 8 and 16, which need boot images built with `-TftpWindowSize` and `-SkipPowerShell`;
+- the log line for a skipped step, and the dates in `agent.log`;
 - a model rule;
 - two administrators editing one sequence.
 

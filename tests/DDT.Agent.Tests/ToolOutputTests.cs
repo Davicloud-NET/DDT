@@ -19,10 +19,11 @@ public sealed class ToolOutputTests
     }
 
     [Fact]
-    public async Task ReadsUtf8AndOemLinesOfOneOutputEachInTheirOwnEncoding()
+    public async Task ReadsUtf8AndAnsiLinesOfOneOutputEachInTheirOwnEncoding()
     {
-        // "für" as tree writes it in code page 437 or 850, both of which put ü at 0x81, after a UTF-8 line.
-        byte[] output = [.. Encoding.UTF8.GetBytes("Grüße aus dem Skript\r\n"), 0x66, 0x81, 0x72, (byte)'\r', (byte)'\n'];
+        // "für" as tree writes it into a pipe, in the ANSI code page 1252 of Windows PE and of a German or English Windows,
+        // after a UTF-8 line.
+        byte[] output = [.. Encoding.UTF8.GetBytes("Grüße aus dem Skript\r\n"), 0x66, 0xFC, 0x72, (byte)'\r', (byte)'\n'];
 
         Assert.Equal(["Grüße aus dem Skript", "für"], await LinesOfAsync(output));
     }

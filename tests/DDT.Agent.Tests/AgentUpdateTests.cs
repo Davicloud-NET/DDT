@@ -166,9 +166,10 @@ public sealed class AgentUpdateTests : IDisposable
 
         Assert.Null(await running);
         Assert.Contains(
-            $"WARN  Cannot reach the server to ask for the current agent (the server at 127.0.0.1:{port} did not accept a connection within 0.3 s).",
+            $"WARN  Cannot reach the server to ask for the current agent (the server at 127.0.0.1:{port} accepted a connection at 127.0.0.1:{port} after ",
             console.ToString(),
             StringComparison.Ordinal);
+        Assert.Contains("but the TLS handshake did not finish within 0.3 s).", console.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -61,10 +61,10 @@ public sealed class HttpAgentServerTests
         Assert.Equal("the server did not answer within 0.2 s", timeout.Message);
     }
 
-    // The connect timeout covers the TLS handshake, which a listener that never accepts leaves unanswered. The request
-    // timeout is far away, so only the connect timeout can end the request.
+    // The connect timeout covers the TLS handshake, which a listener that never accepts leaves unanswered once the kernel
+    // has taken the TCP connection. The request timeout is far away, so only the connect timeout can end the request.
     [Fact]
-    public async Task SaysWhenTheServerDidNotAcceptTheConnection()
+    public async Task SaysWhenTheServerTookTheConnectionButNotTheTlsHandshake()
     {
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
@@ -74,7 +74,9 @@ public sealed class HttpAgentServerTests
 
         TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.GetReleaseAsync(TestContext.Current.CancellationToken));
 
-        Assert.Equal($"the server at 127.0.0.1:{port} did not accept a connection within 0.3 s", timeout.Message);
+        Assert.Matches(
+            $@"^the server at 127\.0\.0\.1:{port} accepted a connection at 127\.0\.0\.1:{port} after 0\.\d s, but the TLS handshake did not finish within 0\.3 s$",
+            timeout.Message);
     }
 
     // ConnectionFailure's words rely on how SocketsHttpHandler reports this, which a real connection shows.

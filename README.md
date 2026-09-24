@@ -1221,8 +1221,14 @@ joining does not depend on it. When the server's DNS does not know the domain, s
 - When the agent cannot reach the server, its warning or error says why. Where the connection itself
   failed, it names the address it tried, so a mistyped `-ServerUrl` in the boot image shows there.
   For a server at `ddt.example:8443`:
-  - "the server at ddt.example:8443 did not accept a connection within 10 s", which includes a TLS
-    handshake that never finished;
+  - "the server at ddt.example:8443 did not accept a connection within 10 s (tried 10.0.0.5, name
+    lookup 0.0 s)", when no TCP connection came about: a wrong address, a firewall that drops the
+    packets, or a route that loses them;
+  - "the server at ddt.example:8443 accepted a connection at 10.0.0.5:8443 after 0.1 s, but the TLS
+    handshake did not finish within 10 s", when something listens there that does not complete TLS,
+    such as an overloaded server or a proxy that holds the connection;
+  - "the name of the server at ddt.example:8443 could not be looked up within 10 s", when the DNS
+    server does not answer;
   - "the server did not answer within 30 s", once the connection was made;
   - "the connection to ddt.example:8443 was refused, so nothing listens on that port";
   - "this machine has no network route to ddt.example";
@@ -1472,9 +1478,16 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
   the ANSI code page whatever the console's is, so the agent now reads a line that is not valid
   UTF-8 in the ANSI code page. A fifth run, with master at `12cfbcb`, logged it correctly: "für".
 - The first contact with the server after a netboot often failed with "did not accept a connection
-  within 10 s", once in a row after the power came back, and up to three times after a netboot, for
-  up to 26 s before the agent registered. Name lookups in Windows PE took 0.1 s once it had
-  started, so the cause is not DNS; it is not known yet. The agent keeps trying and gets through.
+  within 10 s", up to three times in a row, for up to 40 s. The agent now says which stage ran out:
+  the name lookup took 0.0 s, and the TCP connection to the right address was not accepted. The
+  server still held the connections of the machine's previous start as established, because a
+  restart or reset never closes them, and Windows PE hands out the same client ports at every
+  start, from 49668 on. A new connection from such a port collided with the old one until the
+  server timed it out. The agent now connects from a port drawn at random from the dynamic range,
+  49152 to 65535, and the agent from the boot image closes its connections before it starts a
+  newer agent. In five netboots after that, the newer agent registered at once every time; the
+  agent in the boot image, built before the fix, still missed its first update check twice, for
+  2 s each.
 
 Not checked on a machine yet:
 

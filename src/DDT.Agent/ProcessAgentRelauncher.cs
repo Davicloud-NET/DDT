@@ -6,11 +6,14 @@ using System.Diagnostics;
 
 namespace DDT.Agent;
 
-public sealed class ProcessAgentRelauncher : IAgentRelauncher
+// beforeStart closes what this agent holds open while the new one runs, such as its connections to the server.
+public sealed class ProcessAgentRelauncher(Action? beforeStart = null) : IAgentRelauncher
 {
     public async Task<int> RunAsync(string path, IReadOnlyList<string> arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);
+
+        beforeStart?.Invoke();
 
         // Without shell execution and redirection the new agent shares this console, so it can ask for a
         // sign in. startnet.cmd waits on this process, which in turn waits on the new one.

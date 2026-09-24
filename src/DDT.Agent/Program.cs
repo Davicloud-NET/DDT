@@ -77,7 +77,7 @@ if (options.DryRun || !AgentBuild.IsPublished)
 else if (!options.NoUpdate)
 {
     string current = await AgentUpdate.Sha256Async(Environment.ProcessPath!, stop.Token).ConfigureAwait(false);
-    AgentUpdate update = new(server, new ProcessAgentRelauncher(), log, TimeProvider.System, current, AppContext.BaseDirectory, args);
+    AgentUpdate update = new(server, new ProcessAgentRelauncher(server.CloseConnections), log, TimeProvider.System, current, AppContext.BaseDirectory, args);
 
     if (await update.RunAsync(stop.Token).ConfigureAwait(false) is { } exitCode)
     {

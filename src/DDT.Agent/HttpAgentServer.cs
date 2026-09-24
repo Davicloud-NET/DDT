@@ -20,8 +20,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan s_connectTimeout = TimeSpan.FromSeconds(10);
 
-    private readonly HttpClient _client;
     private readonly Uri _serverUrl;
+    private readonly X509Certificate2? _rootCertificate;
     private readonly TimeSpan _requestTimeout;
     private readonly TimeSpan _connectTimeout;
     private readonly TimeSpan _downloadTimeout;
@@ -34,6 +34,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private int _certificateErrors;
     private string? _certificateIssuer;
 
+    private HttpClient _client;
+
     // The agent keeps the default timeouts; only tests shorten them.
     public HttpAgentServer(
         Uri serverUrl,
@@ -45,17 +47,30 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         ArgumentNullException.ThrowIfNull(serverUrl);
 
         _serverUrl = serverUrl;
+        _rootCertificate = rootCertificate;
         _requestTimeout = requestTimeout ?? s_requestTimeout;
         _connectTimeout = connectTimeout ?? s_connectTimeout;
         _downloadTimeout = downloadTimeout ?? AgentLimits.DownloadTimeout;
+        _client = NewClient();
+    }
+
+    // Closes the connections this agent keeps open to the server, before it starts a newer agent and waits for it. A
+    // restart of the machine would otherwise leave them open on the server, where the next start of Windows PE, which
+    // uses the same client ports, would collide with them. Later requests open new connections.
+    public void CloseConnections() => Interlocked.Exchange(ref _client, NewClient()).Dispose();
+
+    private HttpClient NewClient()
+    {
+        X509Certificate2? rootCertificate = _rootCertificate;
 
         // No proxy: Windows PE has none, and looking for one loads WinHTTP for nothing. The connect timeout covers
-        // the TLS handshake too.
+        // the name lookup and the TLS handshake too, and ServerConnection notes which of them it ran out in.
         SocketsHttpHandler handler = new()
         {
             UseProxy = false,
             ConnectTimeout = _connectTimeout,
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            ConnectCallback = ServerConnection.ConnectAsync,
         };
 
         // Trust exactly DDT's root and nothing in the machine store. Revocation is not checked and missing
@@ -82,7 +97,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
         // Each request gets its deadline in SendAsync instead: HttpClient's own timeout fails a request the same way the
         // connect timeout does, and the log has to say which of the two it was.
-        _client = new HttpClient(handler) { BaseAddress = serverUrl, Timeout = Timeout.InfiniteTimeSpan };
+        return new HttpClient(handler) { BaseAddress = _serverUrl, Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public async Task<AgentRegistrationResult> RegisterAsync(AgentRegistration registration, CancellationToken cancellationToken)
@@ -343,9 +358,12 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
                 && !cancellationToken.IsCancellationRequested)
             {
                 // SocketsHttpHandler's connect timeout, which ends the request as a cancellation with a TimeoutException in
-                // it. The address is named, as a mistyped one is the likeliest cause.
+                // it. The address is named, as a mistyped one is the likeliest cause, and so is how far the connection got.
+                string server = $"{_serverUrl.Host}:{_serverUrl.Port}";
+                string limit = Duration(_connectTimeout);
+
                 throw new TimeoutException(
-                    $"the server at {_serverUrl.Host}:{_serverUrl.Port} did not accept a connection within {Duration(_connectTimeout)}",
+                    ServerConnection.DescribeTimeout(request, server, limit) ?? $"the server at {server} did not accept a connection within {limit}",
                     exception);
             }
             catch (HttpRequestException exception) when (exception.HttpRequestError == HttpRequestError.SecureConnectionError

@@ -1470,7 +1470,7 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
   agent restarts before it registers, so the server never gets it.
 - The third and fourth runs still showed the umlaut of `tree` wrongly. `tree` writes into a pipe in
   the ANSI code page whatever the console's is, so the agent now reads a line that is not valid
-  UTF-8 in the ANSI code page.
+  UTF-8 in the ANSI code page. A fifth run, with master at `12cfbcb`, logged it correctly: "für".
 - The first contact with the server after a netboot often failed with "did not accept a connection
   within 10 s", once in a row after the power came back, and up to three times after a netboot, for
   up to 26 s before the agent registered. Name lookups in Windows PE took 0.1 s once it had
@@ -1478,8 +1478,7 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
 
 Not checked on a machine yet:
 
-- what changed after these runs: the output of `tree` read in the ANSI code page, and the texts for
-  an organizational unit the domain join cannot use;
+- the texts for an organizational unit the domain join cannot use;
 - the log line for a skipped step, and the dates in `agent.log`;
 - a model rule;
 - two administrators editing one sequence.

@@ -1157,7 +1157,7 @@ the server checks at startup. It lists every problem at once, and a misspelled k
 | `Locale` | Formats and system locale, such as `de-DE`. Empty: the image's language. A step can set its own. |
 | `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. A step can set its own. |
 | `LocalAdministrator:Name`, `LocalAdministrator:Password` | The local administrator a step with "Add the local administrator" creates. The name defaults to `Admin`. |
-| `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | The Active Directory domain a Join the domain step joins, the OU as a distinguished name, which a step can override, and the join account as `DOMAIN\user` or `user@domain`. |
+| `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | The Active Directory domain a Join the domain step joins, the OU as a distinguished name, which a step can override (empty for the default Computers container, which cannot be named), and the join account as `DOMAIN\user` or `user@domain`. |
 
 Without the local administrator, Windows setup skips the Microsoft account screens and asks the
 person at the PC to create a local account. With it, setup creates the administrator, lifts the

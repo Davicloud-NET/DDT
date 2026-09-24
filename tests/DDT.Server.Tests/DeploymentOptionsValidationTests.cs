@@ -75,7 +75,8 @@ public sealed class DeploymentOptionsValidationTests
 
     [Theory]
     [InlineData("OU=Workstations,DC=corp,DC=example", true)]
-    [InlineData("CN=Computers,DC=corp,DC=example", true)]
+    [InlineData("CN=Computers,DC=corp,DC=example", false)]
+    [InlineData("OU=Computers,DC=corp,DC=example", true)]
     [InlineData("ou=Workstations,dc=corp,dc=example", true)]
     [InlineData("LDAP://OU=Workstations,DC=corp,DC=example", false)]
     [InlineData("Workstations", false)]

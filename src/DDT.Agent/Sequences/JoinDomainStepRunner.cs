@@ -55,7 +55,7 @@ public sealed class JoinDomainStepRunner(
                 return StepResult.RebootRequired();
             }
 
-            string problem = DomainJoinErrors.Describe(code, credentials.Domain);
+            string problem = DomainJoinErrors.Describe(code, credentials.Domain, credentials.OrganizationalUnit);
             TimeSpan delay = AgentLimits.RetryDelay(failures);
 
             if (!DomainJoinErrors.IsTransient(code) || timeProvider.GetElapsedTime(started) + delay > RetryFor)

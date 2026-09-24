@@ -103,10 +103,35 @@ public sealed class JoinDomainStepRunnerTests : IDisposable
         Assert.Contains($"error {code}", message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(DomainJoinErrors.FileNotFound, "corp.example.test has no organizational unit OU=Gone,DC=corp,DC=example,DC=test")]
+    [InlineData(DomainJoinErrors.InvalidParameter, "cannot put the computer account in OU=Gone,DC=corp,DC=example,DC=test")]
+    public void NamesTheOrganizationalUnitTheDomainRefused(int code, string says)
+    {
+        string message = DomainJoinErrors.Describe(code, Domain, "OU=Gone,DC=corp,DC=example,DC=test");
+
+        Assert.Contains(says, message, StringComparison.Ordinal);
+        Assert.Contains($"error {code}", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("organizational unit", DomainJoinErrors.Describe(code, Domain), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AWrongOrganizationalUnitFailsTheStepAtOnce()
+    {
+        _run.Server.OnRunCredentials(_ => TestRuns.JoinAccount);
+        _run.Tools.JoinAnswers(DomainJoinErrors.FileNotFound);
+
+        StepResult result = await _run.JoinDomain.RunAsync(TestRuns.Join, InWindows, TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepOutcome.Failed, result.Outcome);
+        Assert.Contains("has no organizational unit OU=Workstations,DC=corp,DC=example,DC=test", result.Error, StringComparison.Ordinal);
+        Assert.Single(_run.Tools.Calls);
+    }
+
     [Fact]
     public void OnlyAnswersAboutReachingTheDomainAreTriedAgain()
     {
-        int[] transient = [.. new[] { 5, 53, 1231, 1311, 1326, 1355, 1398, 1722, 2224, 2691, 2732, 8557 }.Where(DomainJoinErrors.IsTransient)];
+        int[] transient = [.. new[] { 2, 5, 53, 87, 1231, 1311, 1326, 1355, 1398, 1722, 2224, 2691, 2732, 8557 }.Where(DomainJoinErrors.IsTransient)];
 
         Assert.Equal([53, 1231, 1311, 1355, 1722], transient);
     }

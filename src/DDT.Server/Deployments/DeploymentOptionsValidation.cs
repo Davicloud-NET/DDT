@@ -103,6 +103,12 @@ public static class DeploymentOptionsValidation
             return $"Must be a distinguished name without the LDAP:// prefix, such as {example}.";
         }
 
+        // The join can only name an organizational unit, and new computers land in the Computers container anyway.
+        if (value.StartsWith("CN=Computers,", StringComparison.OrdinalIgnoreCase))
+        {
+            return "The default Computers container is no organizational unit and cannot be named. Leave this empty to use it.";
+        }
+
         bool distinguishedName =
             (value.StartsWith("OU=", StringComparison.OrdinalIgnoreCase) || value.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
             && value.Contains("DC=", StringComparison.OrdinalIgnoreCase);

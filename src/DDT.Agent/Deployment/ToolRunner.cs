@@ -29,12 +29,12 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         using Process process = Start(StartInfo(fileName, arguments), tool);
 
         List<string> lines = [];
-        Task output = ForwardAsync(process.StandardOutput, line =>
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, line =>
         {
             lines.Add(line);
             log.Information(line);
         });
-        Task errors = ForwardAsync(process.StandardError, log.Warning);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, log.Warning);
 
         try
         {
@@ -80,10 +80,6 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
 
         ProcessStartInfo start = StartInfo(fileName, arguments);
 
-        // Script steps switch cmd to code page 65001 first, so what they print arrives as UTF-8.
-        start.StandardOutputEncoding = Encoding.UTF8;
-        start.StandardErrorEncoding = Encoding.UTF8;
-
         if (options.WorkingDirectory is { } directory)
         {
             start.WorkingDirectory = directory;
@@ -100,8 +96,8 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         long started = timeProvider.GetTimestamp();
         using Process process = Start(start, tool);
 
-        Task output = ForwardAsync(process.StandardOutput, log.Information);
-        Task errors = ForwardAsync(process.StandardError, log.Warning);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, log.Information);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, log.Warning);
 
         try
         {
@@ -206,15 +202,4 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
 
     private static string Quote(string argument) =>
         argument.Length == 0 || argument.Contains(' ', StringComparison.Ordinal) ? $"\"{argument}\"" : argument;
-
-    private static async Task ForwardAsync(StreamReader reader, Action<string> write)
-    {
-        while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
-        {
-            if (!string.IsNullOrWhiteSpace(line))
-            {
-                write(line.TrimEnd());
-            }
-        }
-    }
 }

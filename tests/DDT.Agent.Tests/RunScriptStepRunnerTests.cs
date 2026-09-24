@@ -190,7 +190,10 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_powerShell with
         {
-            Script = "Write-Output \"step $env:DDT_STEP_ID\"\nWrite-Output 'Grüße für Ä'\ncmd /d /c echo Größe\n[Console]::Error.WriteLine('Fehler: öß')\nexit 7",
+            // The raw bytes are "für" in the OEM code page, as tree writes it whatever the console's code page is.
+            Script = "Write-Output \"step $env:DDT_STEP_ID\"\nWrite-Output 'Grüße für Ä'\ncmd /d /c echo Größe\n" +
+                "[Console]::Out.Flush(); $raw = [Console]::OpenStandardOutput(); $raw.Write([byte[]](0x66, 0x81, 0x72, 13, 10), 0, 5); $raw.Flush()\n" +
+                "[Console]::Error.WriteLine('Fehler: öß')\nexit 7",
             SuccessExitCodes = [7],
         };
         using StepRunnerFixture run = new([step]);
@@ -203,6 +206,7 @@ public sealed class RunScriptStepRunnerTests
         Assert.Contains(lines, line => line.Message == $"step {step.Id:D}");
         Assert.Contains(lines, line => line.Message == "Grüße für Ä");
         Assert.Contains(lines, line => line.Message == "Größe");
+        Assert.Contains(lines, line => line.Message == "für");
         Assert.Contains(lines, line => line.Message == "Fehler: öß");
     }
 }

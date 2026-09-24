@@ -850,9 +850,9 @@ step's log, which also says when the run goes on because that switch is on.
 PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`, see
 [Security model](#security-model) for a Group Policy that overrides the execution policy. Either way
 the console is switched to UTF-8 first (`chcp 65001`, for PowerShell from a `.cmd` file next to the
-script), so what a script and the programs it starts print reaches the machine's log with its
-umlauts and accents. A script that changes the console's code page itself gets its own output read
-as UTF-8 regardless. A script
+script). The agent reads each line of output as UTF-8, and a line that is not valid UTF-8 in the
+OEM code page, as older console programs such as `tree` write in it whatever the console's code page
+is, so umlauts and accents reach the machine's log either way. A script
 finds the phase, `WindowsPE` or `Windows`, in `DDT_PHASE`, and the run's and the step's ids in
 `DDT_RUN_ID` and `DDT_STEP_ID`. With a files package, `DDT_PACKAGE` names the folder the package
 is unpacked to, which is the script's working directory and is deleted when the script ends.
@@ -1444,11 +1444,19 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
   not up yet.
 - The run's PowerShell script printed a German umlaut as a replacement character. PowerShell steps
   now start from a `.cmd` file that switches the console to UTF-8 first.
+- A third run, with master at `1449f80`, added a PowerShell script that sends the queries for `davicloud.local` to its domain
+  controller (`Add-DnsClientNrptRule`), and a Join the domain step. The machine joined the test
+  domain within a second and restarted, and the run finished. The join password was in no log line,
+  step error or audit record. Before it, "Check the join account" followed the domain live: can
+  join within the quota, cannot with the quota set to 0, can with the right to create computer
+  objects in the Computers container. That run still showed the umlaut of `tree` as a replacement
+  character: `tree` writes in the OEM code page whatever the console's is, so the agent now reads a
+  line that is not valid UTF-8 in the OEM code page.
 
 Not checked on a machine yet:
 
-- what changed after these runs: the UTF-8 output of PowerShell steps, and the texts for an
-  organizational unit the domain join cannot use;
+- what changed after these runs: the output of `tree` read in the OEM code page, and the texts for
+  an organizational unit the domain join cannot use;
 - the restart that Windows PE records in `X:\DDT\restart-due`, taken when Windows PE starts with a
   restart still due, the log line for a skipped step, and the dates in `agent.log`;
 - the netboot time of the image with PowerShell at TFTP windows of 8 and 16, and of the lean one at
@@ -1456,9 +1464,7 @@ Not checked on a machine yet:
 - a model rule;
 - two administrators editing one sequence.
 
-The domain join is covered only by unit tests and the dry run. Its test on a machine waits until the
-test domain's permissions are set up. Letting the operator or the technician type the join
-credentials for a run is planned after M5.
+Letting the operator or the technician type the join credentials for a run is planned after M5.
 
 Later milestones, in order: M6 Linux raw disk images; M6.5 the real UI, as the web UI and the
 agent's console in Windows PE are concept UIs until then; M7 the task sequence flow builder.

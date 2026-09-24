@@ -1519,7 +1519,7 @@ For users this means: running DDT inside your organisation, changed or not, brin
 Distributing DDT or a fork of it to others, as source, as a container image, as an agent or in a
 boot image, means passing on its source code and its notices: LICENSE, NOTICE,
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and `licenses/`. DDT's source code is at
-https://github.com/Davide244/DDT.
+https://github.com/Davicloud-NET/DDT.
 
 The web UI has an About page with DDT's legal notices. The sign-in page links to it, and so does
 the navigation once signed in, so it can be read without signing in. The server publishes LICENSE,

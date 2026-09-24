@@ -22,7 +22,7 @@ const about: AboutInfo = {
   version: "1.0.0+0f1e2d3c",
   attribution: "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.",
   license: "GPL-3.0-or-later",
-  sourceUrl: "https://github.com/Davide244/DDT",
+  sourceUrl: "https://github.com/Davicloud-NET/DDT",
   legalDocuments: [
     "LICENSE",
     "NOTICE",
@@ -102,9 +102,9 @@ describe("AboutPage", () => {
       "href",
       "/api/about/legal/THIRD-PARTY-NOTICES.md",
     );
-    expect(link("https://github.com/Davide244/DDT")).toHaveAttribute(
+    expect(link("https://github.com/Davicloud-NET/DDT")).toHaveAttribute(
       "href",
-      "https://github.com/Davide244/DDT",
+      "https://github.com/Davicloud-NET/DDT",
     );
 
     for (const web of screen.getAllByRole("link", { name: webLicences })) {

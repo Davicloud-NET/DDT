@@ -18,7 +18,7 @@ export interface AboutInfo {
 
 export const ATTRIBUTION = "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.";
 
-export const SOURCE_URL = "https://github.com/Davide244/DDT";
+export const SOURCE_URL = "https://github.com/Davicloud-NET/DDT";
 
 // The server's answer changes only with a new version, which means a restart.
 export const aboutQuery = queryOptions({

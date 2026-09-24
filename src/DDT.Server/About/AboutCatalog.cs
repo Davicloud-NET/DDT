@@ -14,7 +14,7 @@ public sealed class AboutCatalog
     public const string Product = "DDT";
     public const string Attribution = "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.";
     public const string License = "GPL-3.0-or-later";
-    public const string SourceUrl = "https://github.com/Davide244/DDT";
+    public const string SourceUrl = "https://github.com/Davicloud-NET/DDT";
 
     private readonly Dictionary<string, string> _documents;
 

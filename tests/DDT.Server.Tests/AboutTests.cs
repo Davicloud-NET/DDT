@@ -32,7 +32,7 @@ public sealed class AboutTests(DdtApplication application) : IClassFixture<DdtAp
             root.GetProperty("version").GetString());
         Assert.Equal("DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.", root.GetProperty("attribution").GetString());
         Assert.Equal("GPL-3.0-or-later", root.GetProperty("license").GetString());
-        Assert.Equal("https://github.com/Davide244/DDT", root.GetProperty("sourceUrl").GetString());
+        Assert.Equal("https://github.com/Davicloud-NET/DDT", root.GetProperty("sourceUrl").GetString());
         Assert.Equal(LegalFilesInRepository(), root.GetProperty("legalDocuments").EnumerateArray().Select(name => name.GetString()));
     }
 

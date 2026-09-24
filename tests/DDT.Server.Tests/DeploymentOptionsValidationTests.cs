@@ -87,6 +87,20 @@ public sealed class DeploymentOptionsValidationTests
     }
 
     [Theory]
+    [InlineData("dc1.corp.example", true)]
+    [InlineData("10.0.100.200", true)]
+    [InlineData(" dc1 ", true)]
+    [InlineData("ldap://dc1.corp.example", false)]
+    [InlineData("dc1.corp.example:636", false)]
+    public void TheControllerIsAHostNameOrAnAddress(string controller, bool valid)
+    {
+        DeploymentOptions options = Domain();
+        options.Domain.Controller = controller;
+
+        Assert.Equal(valid, DeploymentOptionsValidation.FindProblems(options).Count == 0);
+    }
+
+    [Theory]
     [InlineData("Admin", true)]
     [InlineData("Local Admin", true)]
     [InlineData("", false)]

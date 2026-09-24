@@ -5,6 +5,7 @@
 import { FormField } from "../FormField";
 import { fieldMessages } from "../problems";
 import type { JoinDomainStep } from "../sequences";
+import { DomainJoinCheck } from "./DomainJoinCheck";
 import { orNull, type KindFieldsProps } from "./kindFields";
 
 import styles from "../form.module.scss";
@@ -46,6 +47,9 @@ export function JoinDomainFields({
           />
         )}
       </FormField>
+      {catalog.domainConfigured === true && (
+        <DomainJoinCheck organizationalUnit={step.organizationalUnit ?? null} />
+      )}
     </>
   );
 }

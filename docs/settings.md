@@ -155,6 +155,11 @@ has no domain field, because the join password is bound to Domain:Name (rule 6 i
 | Domain:OrganizationalUnit | DN | unset | | live | Admin |
 | Domain:UserName | DOMAIN\user or user@domain | unset | | live | Admin |
 | Domain:Password | text | unset | yes | live | Admin |
+| Domain:Controller | host name or address | unset: the domain's name | | live | Admin |
+
+Domain:Controller is used only by the join account check on the page (POST
+/api/deployments/domain-check), which reads the section at every check, so the page can offer the
+check next to the fields it tests.
 
 ### Machines and zero touch (section `machines`, keys under DDT:Machines)
 

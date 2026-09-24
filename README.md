@@ -1162,6 +1162,7 @@ the server checks at startup. It lists every problem at once, and a misspelled k
 | `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. A step can set its own. |
 | `LocalAdministrator:Name`, `LocalAdministrator:Password` | The local administrator a step with "Add the local administrator" creates. The name defaults to `Admin`. |
 | `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | The Active Directory domain a Join the domain step joins, the OU as a distinguished name, which a step can override (empty for the default Computers container, which cannot be named), and the join account as `DOMAIN\user` or `user@domain`. |
+| `Domain:Controller` | The domain controller DDT asks when an administrator checks the join account, as a host name or an address. Unset, DDT asks the domain's name, which works when the server's DNS knows the domain. The machines never use it. |
 
 Without the local administrator, Windows setup skips the Microsoft account screens and asks the
 person at the PC to create a local account. With it, setup creates the administrator, lifts the
@@ -1188,6 +1189,22 @@ never use a domain administrator: every operator can obtain its password, see
 created the computer object, or if its owner is allowed by the policy "Domain controller: Allow
 computer account re-use during domain join" (KB5020276). A plain domain user without that delegation
 stops after its quota of joins, 10 by default. Home editions cannot join a domain.
+
+**Checking the join account.** On a Join the domain step, "Check the join account" lets an
+administrator ask the domain before a machine does. The server signs in to a domain controller as
+the join account and reports, step by step: whether the controller accepted the account and why not
+(wrong password, disabled, locked out, expired), whether it serves the configured domain, whether
+the step's organizational unit exists, and whether the account may create computer objects in it.
+Without that right, and only for the default Computers container, it counts the joins left in the
+domain's `ms-DS-MachineAccountQuota`. It cannot see the "Add workstations to domain" user right, nor
+whether the account may take over an existing computer account when a PC is re-imaged. Every check
+is audited, and it reads the settings as they are at that moment.
+
+The server keeps the password secret during the check: over LDAPS when the controller has a
+certificate the server trusts, and otherwise, only on a Windows server, over LDAP signed and sealed
+with Kerberos or NTLM. On Linux a controller without LDAPS cannot be checked, and the check says so;
+joining does not depend on it. When the server's DNS does not know the domain, set
+`DDT:Deployment:Domain:Controller`.
 
 ### When a deployment goes wrong
 

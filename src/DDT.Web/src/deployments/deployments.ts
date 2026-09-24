@@ -169,6 +169,30 @@ export function isSilentActivity(activity: RunActivity | null): boolean {
   );
 }
 
+export type DomainJoinFindingLevel = "Passed" | "Warning" | "Problem";
+
+export interface DomainJoinFinding {
+  level: DomainJoinFindingLevel;
+  text: string;
+}
+
+// What the domain said about the join account, in the order it was asked. Container is the organizational unit or
+// the default Computers container, null when the check stopped before it.
+export interface DomainJoinCheckView {
+  canJoin: boolean;
+  domain: string | null;
+  userName: string | null;
+  controller: string | null;
+  container: string | null;
+  findings: DomainJoinFinding[];
+  checkedUtc: string;
+}
+
+// Signs in to the domain as the join account, so only administrators may. Null takes the configured default unit.
+export function checkDomainJoin(organizationalUnit: string | null): Promise<DomainJoinCheckView> {
+  return apiPost<DomainJoinCheckView>("/api/deployments/domain-check", { organizationalUnit });
+}
+
 // The settings come from the server's configuration and change only with a restart. The clock offset is
 // measured again with every answer.
 export const deploymentOptionsQuery = queryOptions({

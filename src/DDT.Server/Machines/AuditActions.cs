@@ -23,6 +23,7 @@ public static class AuditActions
     public const string DeploymentResumed = "deployment.resumed";
     public const string DeploymentRunTokenRefused = "deployment.run-token-refused";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
+    public const string DomainJoinChecked = "domain.join-checked";
     public const string SequenceCreated = "sequence.created";
     public const string SequenceChanged = "sequence.changed";
     public const string SequenceDeleted = "sequence.deleted";

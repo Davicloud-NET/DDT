@@ -15,5 +15,11 @@ public sealed class DomainOptions
     // DOMAIN\user or user@suffix, passed to the join whole.
     public string? UserName { get; set; }
 
+    // Secret.
     public string? Password { get; set; }
+
+    // The domain controller the server asks when an administrator checks the join account, as a host name or an
+    // address. Unset, the server asks the domain's name, which the DNS of an Active Directory domain resolves to its
+    // controllers. The machines find their controller themselves and never use this.
+    public string? Controller { get; set; }
 }

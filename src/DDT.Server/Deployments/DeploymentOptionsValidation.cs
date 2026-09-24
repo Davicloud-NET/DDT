@@ -75,6 +75,14 @@ public static class DeploymentOptionsValidation
             problems.Add(new("Domain:OrganizationalUnit", problem));
         }
 
+        if (!string.IsNullOrWhiteSpace(domain.Controller) && Uri.CheckHostName(domain.Controller.Trim()) == UriHostNameType.Unknown)
+        {
+            problems.Add(new(
+                "Domain:Controller",
+                $"'{domain.Controller}' is not a host name or an address. Name the domain controller alone, such as " +
+                "dc1.corp.example or 10.0.0.10, without a scheme or a port."));
+        }
+
         return problems;
     }
 

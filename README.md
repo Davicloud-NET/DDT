@@ -848,7 +848,11 @@ step's log, which also says when the run goes on because that switch is on.
 
 **Scripts.** The agent writes a script to a file and runs it with `cmd.exe /d /c`, or with Windows
 PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`, see
-[Security model](#security-model) for a Group Policy that overrides the execution policy. A script
+[Security model](#security-model) for a Group Policy that overrides the execution policy. Either way
+the console is switched to UTF-8 first (`chcp 65001`, for PowerShell from a `.cmd` file next to the
+script), so what a script and the programs it starts print reaches the machine's log with its
+umlauts and accents. A script that changes the console's code page itself gets its own output read
+as UTF-8 regardless. A script
 finds the phase, `WindowsPE` or `Windows`, in `DDT_PHASE`, and the run's and the step's ids in
 `DDT_RUN_ID` and `DDT_STEP_ID`. With a files package, `DDT_PACKAGE` names the folder the package
 is unpacked to, which is the script's working directory and is deleted when the script ends.

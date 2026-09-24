@@ -69,20 +69,22 @@ public sealed class RunScriptStepRunnerTests
     }
 
     [Fact]
-    public async Task RunsAPowerShellScriptWithAByteOrderMarkOnThePartitionedDisk()
+    public async Task RunsAPowerShellScriptWithAByteOrderMarkOnThePartitionedDiskFromACmdFileThatSwitchesToUtf8()
     {
         using StepRunnerFixture run = new([s_powerShell]);
         TargetVolumes volumes = run.Partitioned();
         string scripts = Path.Combine(volumes.Windows, "DDT", "scripts");
         string file = Path.Combine(scripts, $"{s_powerShell.Id:D}.ps1");
+        string launcher = Path.Combine(scripts, $"{s_powerShell.Id:D}.cmd");
 
         await run.RunScript.RunAsync(s_powerShell, run.Context(), TestContext.Current.CancellationToken);
 
-        Assert.Equal(
-            [RecordingToolRunner.CommandLine(RunScriptStepRunner.PowerShellPath, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", file)],
-            run.ToolRunner.Calls);
+        Assert.Equal([RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", launcher)], run.ToolRunner.Calls);
         byte[] written = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
         Assert.Equal([.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes("Write-Output 'Grüße'\r\n")], written);
+        Assert.Equal(
+            $"@chcp 65001 >nul\r\n@\"{RunScriptStepRunner.PowerShellPath}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{file}\"\r\n",
+            await File.ReadAllTextAsync(launcher, TestContext.Current.CancellationToken));
 
         // Offline changes to the applied Windows need its letter.
         Assert.Equal(volumes.Windows, Assert.Single(run.ToolRunner.Options).Environment!["DDT_WINDOWS"]);
@@ -175,15 +177,32 @@ public sealed class RunScriptStepRunnerTests
     }
 
     [Fact]
+    public void ALauncherKeepsThePercentSignsOfAPath()
+    {
+        string launcher = Encoding.UTF8.GetString(RunScriptStepRunner.PowerShellLauncher(@"C:\Windows\powershell.exe", @"C:\100% sure\a.ps1"));
+
+        Assert.Contains("-File \"C:\\100%% sure\\a.ps1\"", launcher, StringComparison.Ordinal);
+    }
+
+    // The real PowerShell: what it and a console program it starts print arrives intact, and its exit code decides.
+    [Fact]
     public async Task RunsARealPowerShellScript()
     {
-        RunScriptStep step = s_powerShell with { Script = "Write-Output \"step $env:DDT_STEP_ID\"\nexit 7", SuccessExitCodes = [7] };
+        RunScriptStep step = s_powerShell with
+        {
+            Script = "Write-Output \"step $env:DDT_STEP_ID\"\nWrite-Output 'Grüße für Ä'\ncmd /d /c echo Größe\n[Console]::Error.WriteLine('Fehler: öß')\nexit 7",
+            SuccessExitCodes = [7],
+        };
         using StepRunnerFixture run = new([step]);
         RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
         Assert.Equal(StepOutcome.Done, result.Outcome);
-        Assert.Contains(await run.SentLinesAsync(), line => line.Message == $"step {step.Id:D}");
+        List<AgentLogLine> lines = await run.SentLinesAsync();
+        Assert.Contains(lines, line => line.Message == $"step {step.Id:D}");
+        Assert.Contains(lines, line => line.Message == "Grüße für Ä");
+        Assert.Contains(lines, line => line.Message == "Größe");
+        Assert.Contains(lines, line => line.Message == "Fehler: öß");
     }
 }

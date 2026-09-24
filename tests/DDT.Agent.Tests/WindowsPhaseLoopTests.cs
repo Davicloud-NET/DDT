@@ -62,7 +62,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         int exitCode = await RunAsync(server);
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
-        Assert.Equal(["setup finished", "run cmd.exe", "run powershell.exe", "done report", "remove", "reboot"], _tools.Calls);
+        Assert.Equal(["setup finished", "run cmd.exe", "run cmd.exe", "done report", "remove", "reboot"], _tools.Calls);
 
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.Equal(
@@ -74,8 +74,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.Equal(
             [
                 RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", Path.Combine(scripts, $"{cmd.Id:D}.cmd")),
-                RecordingToolRunner.CommandLine(
-                    RunScriptStepRunner.PowerShellPath, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(scripts, $"{powerShell.Id:D}.ps1")),
+                RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", Path.Combine(scripts, $"{powerShell.Id:D}.cmd")),
             ],
             _toolRunner.Calls);
         Assert.StartsWith(Environment.SystemDirectory, RunScriptStepRunner.CmdPath, StringComparison.OrdinalIgnoreCase);

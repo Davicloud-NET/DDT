@@ -44,6 +44,14 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
             : Encoding.UTF8.GetBytes($"@chcp 65001 >nul\r\n{text}");
     }
 
+    // Windows PowerShell and the programs a script starts write in the console's code page, which is not UTF-8, so a
+    // PowerShell script starts from a cmd file that switches the console to UTF-8 first, as a cmd script does itself.
+    // PowerShell's exit code is the file's. cmd would expand a % in a path.
+    public static byte[] PowerShellLauncher(string powerShell, string script) => Encoding.UTF8.GetBytes(
+        $"@chcp 65001 >nul\r\n@\"{Escape(powerShell)}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Escape(script)}\"\r\n");
+
+    private static string Escape(string path) => path.Replace("%", "%%", StringComparison.Ordinal);
+
     public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -61,6 +69,13 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         string file = Path.Combine(scripts, step.Id.ToString("D") + (powerShell ? ".ps1" : ".cmd"));
         Directory.CreateDirectory(scripts);
         await File.WriteAllBytesAsync(file, ScriptFile(step), cancellationToken).ConfigureAwait(false);
+        string launcher = file;
+
+        if (powerShell)
+        {
+            launcher = Path.ChangeExtension(file, ".cmd");
+            await File.WriteAllBytesAsync(launcher, PowerShellLauncher(PowerShellPath, file), cancellationToken).ConfigureAwait(false);
+        }
 
         string? package = null;
 
@@ -98,16 +113,12 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
             environment["DDT_WINDOWS"] = volumes.Windows;
         }
 
-        string program = powerShell ? PowerShellPath : CmdPath;
-        string[] arguments = powerShell
-            ? ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", file]
-            : ["/d", "/c", file];
         ToolRunOptions options = new(package ?? scripts, environment, TimeSpan.FromMinutes(step.TimeoutMinutes));
         int exitCode;
 
         try
         {
-            exitCode = await tools.RunForExitCodeAsync(program, arguments, options, cancellationToken).ConfigureAwait(false);
+            exitCode = await tools.RunForExitCodeAsync(CmdPath, ["/d", "/c", launcher], options, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

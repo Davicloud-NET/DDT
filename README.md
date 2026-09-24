@@ -1409,20 +1409,35 @@ host:
   which limit ran out and names the server's address, see
   [When a deployment goes wrong](#when-a-deployment-goes-wrong).
 
+On 2026-09-24, with master at commit `b367f52`, the same machine and boot image checked more:
+
+- With the host running, `ddt.pem` and `ddt-key.pem` were deleted. Within its five-minute check the
+  host issued a new certificate from the same root and served it without a restart, and the boot
+  image from 2026-09-22 netbooted, trusted it, switched to the new agent and registered.
+- `boot.wim` with the PowerShell components took 13.2 s over TFTP at a window of 4.
+- The power was cut at 27 % of Apply image. After the next netboot the agent found the run on the
+  disk, gave the system and recovery partitions their letters again and failed the step as
+  interrupted, without running it again; the machine log says so for that step. The clock of
+  Windows PE was 10 hours ahead, and the log showed the corrected times.
+- A second run of the seven steps took 4 minutes 42 seconds, Apply image 1 minute 50 seconds.
+  After the last restart the `DdtSequence` service and `C:\DDT` were gone, and Windows Boot Manager
+  came first in the firmware's boot order.
+- The first registration after the power came back warned that the server "did not accept a
+  connection within 10 s", and the next one, 2 s later, succeeded: the network of Windows PE was
+  not up yet.
+- The run's PowerShell script printed a German umlaut as a replacement character. PowerShell steps
+  now start from a `.cmd` file that switches the console to UTF-8 first.
+
 Not checked on a machine yet:
 
-- what changed after that run: the restart that Windows PE records in `X:\DDT\restart-due` and the
-  check for it at every start of the agent, the agent's separate connect and request timeouts and
-  its messages when it cannot reach the server, the log lines for skipped and interrupted steps,
-  and the dates in `agent.log`;
-- that after the last restart there is no `DdtSequence` service and no `C:\DDT`, and Windows Boot
-  Manager comes first;
-- a forced certificate renewal without a new boot image;
-- the netboot time of the image with PowerShell at TFTP windows of 4, 8 and 16, and of the lean
-  one at 8 and 16;
+- what changed after these runs: the UTF-8 output of PowerShell steps, and the texts for an
+  organizational unit the domain join cannot use;
+- the restart that Windows PE records in `X:\DDT\restart-due`, taken when Windows PE starts with a
+  restart still due, the log line for a skipped step, and the dates in `agent.log`;
+- the netboot time of the image with PowerShell at TFTP windows of 8 and 16, and of the lean one at
+  4, 8 and 16, which need boot images built with `-TftpWindowSize` and `-SkipPowerShell`;
 - a model rule;
-- two administrators editing one sequence;
-- power lost during Apply image.
+- two administrators editing one sequence.
 
 The domain join is covered only by unit tests and the dry run. Its test on a machine waits until the
 test domain's permissions are set up. Letting the operator or the technician type the join

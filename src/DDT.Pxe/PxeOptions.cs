@@ -28,8 +28,10 @@ public sealed class PxeOptions
     // DDT but the client never receives data, because a stateful firewall drops the reply.
     public bool TftpSinglePort { get; set; }
 
-    // Only 4 has Microsoft backing for bootmgr. DDT writes the BCD, so larger windows can be measured.
-    public int TftpMaxWindowSize { get; set; } = 4;
+    // The largest window a boot manager gets, whatever its BCD asks for. Only 4 has Microsoft backing, but DDT writes the
+    // BCD, and 16 measured reliable and about 40 percent faster than 4 (README, Status). A site whose link loses packets
+    // under a large window lowers this without building its boot images again.
+    public int TftpMaxWindowSize { get; set; } = 16;
 
     // Comma separated rather than a list, for the same reason as DDT:Roles.
     public string AuthorisedRelayAgents { get; set; } = string.Empty;

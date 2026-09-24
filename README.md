@@ -459,8 +459,9 @@ Because the tunnel ends on the gateway, remote traffic reaches DDT on its ordina
 | Plain HTTP, port 8080 | The same boot files, for UEFI HTTP Boot clients, which cannot validate a private CA |
 
 The boot manager downloads `boot.wim` over TFTP itself, so TFTP speed decides how long a netboot
-takes. At a window of 4 and a round trip time of 5 to 10 ms, expect roughly 5 to 10 minutes for the
-image without PowerShell, and about 40 percent longer with it. The plain HTTP listener serves the
+takes. At the default window of 16 and a round trip time of 5 to 10 ms, expect roughly 1.5 to 3
+minutes for the image without PowerShell, and about 40 percent longer with it; on a local switch it
+takes seconds. The plain HTTP listener serves the
 same files to firmware that offers UEFI HTTP Boot, which fetches the boot manager over HTTP. Whether
 the Windows boot manager started that way then reads `BCD`, `boot.sdi` and `boot.wim` over HTTP
 rather than TFTP has not been verified: no firmware with an HTTP Boot device has booted from DDT
@@ -555,10 +556,13 @@ such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on 
 - **Block size** is capped at 1380. The block is payload only: a data packet adds 32 octets of TFTP,
   UDP and IP headers, so 1400 would make 1432 and fragment inside WireGuard's 1420 MTU. 1380 also
   fits a tunnel over PPPoE.
-- **Window size** is capped by `DDT:Pxe:TftpMaxWindowSize`, default 4, the only value with Microsoft
-  backing for the boot manager. DDT writes the BCD, so 8 or 16 can be measured by raising this and
-  `Build-BootImage.ps1 -TftpWindowSize` together. A window of 16 would cut `boot.wim` to about a
-  quarter of the time.
+- **Window size** is what the boot manager asks for in the BCD, `Build-BootImage.ps1
+  -TftpWindowSize`, capped by `DDT:Pxe:TftpMaxWindowSize`. Both default to 16. Only 4 has
+  Microsoft backing for the boot manager, but on the test machine 16 was reliable and loaded
+  `boot.wim` about 40 percent faster than 4 (see [Status](#status)). A site whose link loses packets
+  under a large window lowers `DDT:Pxe:TftpMaxWindowSize`, to 8 or 4, without building its boot
+  images again. Boot images built before this default ask for 4, and keep getting 4 until they are
+  built again.
 - **Single port mode**, `DDT:Pxe:TftpSinglePort`, is off by default: each transfer answers from a
   fresh port, which lets the kernel drop strays and keeps a duplicated request from producing two
   interleaved streams. Turn it on when the log shows a read request arriving at DDT but the client
@@ -1454,6 +1458,9 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
   | 4 | 13.2 s | 8.4 s, 8.7 s, once 21.1 s |
   | 8 | 10.1 s, 10.1 s | 6.9 s, 7.1 s |
   | 16 | 7.9 s, 8.0 s | 5.3 s, 5.4 s |
+
+  16 is therefore the default window since then, for `Build-BootImage.ps1` and for
+  `DDT:Pxe:TftpMaxWindowSize`.
 
 - A fourth run, with master at `e486d44`, stopped the host while the hand-over told it of the
   restart into Windows, and the agent was stopped with Ctrl+C while it tried again. Started again

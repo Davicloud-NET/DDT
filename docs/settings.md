@@ -183,7 +183,7 @@ in progress (TftpListener.cs:72-80), and the page says so.
 | EnableProxyDhcp | bool | true | | restart: PXE | Admin |
 | EnableTftp | bool | true | | restart: PXE | Admin |
 | TftpSinglePort | bool | false | | restart: PXE | Admin |
-| TftpMaxWindowSize | integer, 1 to 64 | 4 | | restart: PXE | Admin |
+| TftpMaxWindowSize | integer, 1 to 64 | 16 | | restart: PXE | Admin |
 | MaxConcurrentTftpTransfers | integer, at least 1 | 128 | | restart: PXE | Admin |
 | AuthorisedRelayAgents | IPv4 addresses | empty | | restart: PXE | Admin |
 | BootTargets:{arch}:Method | Tftp or Http | no targets | | restart: PXE | Admin |

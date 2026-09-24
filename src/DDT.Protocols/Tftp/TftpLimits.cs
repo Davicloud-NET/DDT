@@ -15,11 +15,11 @@ public readonly record struct TftpLimits(
     // of IP, so a 1400 octet block is a 1432 octet packet and fragments inside WireGuard's default
     // 1420 MTU, which is how DDT's remote sites are joined. 1388 fits 1420; 1380 also fits a tunnel
     // over a PPPoE underlay, where the MTU is 1412. Four is the only window size with Microsoft
-    // backing for bootmgr.
+    // backing for bootmgr, but 16 measured reliable and faster, so DDT offers up to 16.
     //
     // Three retries at a doubling delay capped at four seconds abandons a silent client eleven
     // seconds after the last acknowledgement. That has to land clearly inside the fifteen to twenty
     // four seconds EDK2 waits before giving up on the server, so DDT frees the session first rather
     // than holding it open for a machine that has already moved on.
-    public static TftpLimits Default => new(1380, 4, 3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(4));
+    public static TftpLimits Default => new(1380, 16, 3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(4));
 }

@@ -65,8 +65,9 @@ Written to the BCD as ramdisktftpblocksize, the block size bootmgr requests for 
 never serves more than its own cap of 1380, which fits a WireGuard tunnel.
 
 .PARAMETER TftpWindowSize
-Written to the BCD as ramdisktftpwindowsize. Only 4 has Microsoft backing. DDT caps the window at
-DDT:Pxe:TftpMaxWindowSize, so raise both together when measuring 8 or 16.
+Written to the BCD as ramdisktftpwindowsize, the window bootmgr asks for. Only 4 has Microsoft
+backing, but 16 measured reliable and faster. DDT caps the window at DDT:Pxe:TftpMaxWindowSize,
+16 by default, so a site that needs a smaller window lowers that instead of building again.
 
 .PARAMETER WimLibraryPath
 A libwim-15.dll of your own, for example one built from modified wimlib source, as wimlib's licence,
@@ -98,7 +99,7 @@ param(
     [int] $TftpBlockSize = 1380,
 
     [ValidateRange(1, 64)]
-    [int] $TftpWindowSize = 4,
+    [int] $TftpWindowSize = 16,
 
     [string] $WimLibraryPath,
 

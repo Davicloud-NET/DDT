@@ -43,6 +43,15 @@ public sealed class CloudInitTests
         Assert.Equal("model: \"OptiPlex \\\"7010\\\" \\\\ tower\" serial: \"ABC\\x09123\"", rendered);
     }
 
+    // Firmware strings are read as Latin-1, so bytes 0x80 to 0x9F become C1 control characters, which YAML refuses raw.
+    [Fact]
+    public void EscapesTheC1ControlCharactersToo()
+    {
+        Dictionary<string, string?> values = new() { [MachineVariableNames.Model] = "A\u0085B\u009FC D" };
+
+        Assert.Equal("model: \"A\\x85B\\x9fC D\"", CloudInitTemplate.Render("model: \"{{Model}}\"", values));
+    }
+
     [Fact]
     public void LeavesJinjaAndUnknownNamesAsTheyAre()
     {

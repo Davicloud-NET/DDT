@@ -83,9 +83,8 @@ public sealed class FatVolume
         long totalSectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19)) is ushort small and not 0
             ? small
             : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(32));
-        long fatSectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22)) is ushort fat16 and not 0
-            ? fat16
-            : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(36));
+        ushort fatSectors16 = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22));
+        long fatSectors = fatSectors16 != 0 ? fatSectors16 : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(36));
 
         if (bytesPerSector is not (512 or 1024 or 2048 or 4096)
             || sectorsPerCluster is 0 or > 128
@@ -106,13 +105,29 @@ public sealed class FatVolume
             throw new InvalidDataException("The partition's FAT file system is damaged.");
         }
 
-        uint clusterCount = (uint)((totalSectors - firstData) / sectorsPerCluster);
-        FatType type = clusterCount <= MaxFatClusters12 ? FatType.Fat12 : clusterCount <= MaxFatClusters16 ? FatType.Fat16 : FatType.Fat32;
+        long clusters = (totalSectors - firstData) / sectorsPerCluster;
+
+        if (clusters > uint.MaxValue - 2)
+        {
+            throw new InvalidDataException("The partition's FAT file system is damaged or larger than DDT reads.");
+        }
+
+        uint clusterCount = (uint)clusters;
+
+        // As Linux and EDK2 do: a volume without a 16-bit FAT size is FAT32 whatever its cluster count, as mkfs.fat -F 32
+        // makes on a small partition. Otherwise the cluster count decides between FAT12 and FAT16.
+        FatType type = fatSectors16 == 0 ? FatType.Fat32 : clusterCount <= MaxFatClusters12 ? FatType.Fat12 : FatType.Fat16;
+
+        if (type == FatType.Fat16 && clusterCount > MaxFatClusters16)
+        {
+            throw new InvalidDataException("The partition's FAT file system is damaged.");
+        }
+
         long fatBytesNeeded = type switch
         {
-            FatType.Fat12 => ((clusterCount + 2) * 3 + 1) / 2,
-            FatType.Fat16 => (clusterCount + 2) * 2,
-            _ => (clusterCount + 2) * 4,
+            FatType.Fat12 => ((((long)clusterCount + 2) * 3) + 1) / 2,
+            FatType.Fat16 => ((long)clusterCount + 2) * 2,
+            _ => ((long)clusterCount + 2) * 4,
         };
 
         if (fatBytesNeeded > fatSectors * bytesPerSector || fatBytesNeeded > MaxFatBytes)
@@ -314,7 +329,7 @@ public sealed class FatVolume
                     checksum = entry[13];
                 }
 
-                if (longName is null || order != expected || entry[13] != checksum)
+                if (longName is null || order == 0 || order != expected || entry[13] != checksum)
                 {
                     longName = null;
 

@@ -60,7 +60,8 @@ public static partial class CloudInitTemplate
         return rendered.ReplaceLineEndings("\n");
     }
 
-    // What YAML needs escaped in a double-quoted string: the backslash, the quote and control characters.
+    // What YAML needs escaped in a double-quoted string: the backslash, the quote and control characters, the C1 ones
+    // too, which firmware strings read as Latin-1 can hold and YAML parsers refuse unescaped.
     private static string Escape(string value)
     {
         StringBuilder escaped = new(value.Length);
@@ -75,7 +76,7 @@ public static partial class CloudInitTemplate
                 case '"':
                     escaped.Append("\\\"");
                     break;
-                case < ' ' or '\u007F':
+                case < ' ' or (>= '\u007F' and <= '\u009F'):
                     escaped.Append(CultureInfo.InvariantCulture, $"\\x{(int)character:x2}");
                     break;
                 default:

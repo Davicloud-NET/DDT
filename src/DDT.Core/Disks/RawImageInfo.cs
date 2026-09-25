@@ -5,13 +5,15 @@
 namespace DDT.Core.Disks;
 
 // What a raw disk image holds that DDT needs before it stores the image: its partition table, its EFI system
-// partition, and the files there that firmware starts. BootProblem says why no boot file could be read, if so.
+// partition, and the files there that firmware starts. BootProblem says why a boot file could not be read, if so, and
+// UnreadableBootFiles names the files that were there but could not be read.
 public sealed record RawImageInfo(
     long SizeBytes,
     GptLayout Table,
     GptPartition? SystemPartition,
     IReadOnlyList<RawImageBootFile> BootFiles,
-    string? BootProblem)
+    string? BootProblem,
+    IReadOnlyList<string>? UnreadableBootFiles = null)
 {
     // The smallest disk the image can be written to: all of it, in whole sectors, and after its last partition room
     // for the backup table DDT writes at the disk's end.

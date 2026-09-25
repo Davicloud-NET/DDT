@@ -111,6 +111,46 @@ public sealed class FatVolumeTests
         Assert.Equal("grubx64.efi", Assert.Single(Open(built).List("")).Name);
     }
 
+    // Linux and EDK2 take a volume whose 16-bit FAT size is 0 as FAT32 whatever its cluster count, as mkfs.fat -F 32
+    // makes on a small partition. The builder never makes one, so this one is cut short to 30,000 clusters.
+    [Fact]
+    public void ReadsAFat32VolumeWithFewClustersAsFat32()
+    {
+        byte[] volume = EspBuilder(40 * 1024 * 1024, FatType.Fat32).Build();
+        int sectorsPerCluster = volume[13];
+        int reserved = BinaryPrimitives.ReadUInt16LittleEndian(volume.AsSpan(14));
+        uint fatSectors = BinaryPrimitives.ReadUInt32LittleEndian(volume.AsSpan(36));
+        long firstData = reserved + (volume[16] * (long)fatSectors);
+        BinaryPrimitives.WriteUInt32LittleEndian(volume.AsSpan(32), (uint)(firstData + (30_000L * sectorsPerCluster)));
+
+        FatVolume read = Open(volume);
+
+        Assert.Equal(FatType.Fat32, read.Type);
+        Assert.Equal(s_loader, read.ReadFile(read.Find(@"EFI\BOOT\BOOTX64.EFI")!, MaxBytes));
+    }
+
+    // A long name part numbered 0 after a complete long name, with its checksum: a damaged or hostile directory.
+    [Fact]
+    public void ReadsADirectoryWithALongNamePartNumberedZero()
+    {
+        FatVolumeBuilder builder = new(1024 * 1024, "ESP", 1, s_timestamp);
+        builder.AddFile("a b.txt", [1, 2, 3]);
+        byte[] volume = builder.Build();
+        int reserved = BinaryPrimitives.ReadUInt16LittleEndian(volume.AsSpan(14));
+        int fatSectors = BinaryPrimitives.ReadUInt16LittleEndian(volume.AsSpan(22));
+        int root = (reserved + (volume[16] * fatSectors)) * 512;
+        int longPart = Enumerable.Range(0, 16).Select(index => root + (index * 32)).First(entry => volume[entry + 11] == 0x0F);
+
+        // The short entry moves down one place, and a copy of the long name part numbered 0 takes its place.
+        volume.AsSpan(longPart + 32, 32).CopyTo(volume.AsSpan(longPart + 64, 32));
+        volume.AsSpan(longPart, 32).CopyTo(volume.AsSpan(longPart + 32, 32));
+        volume[longPart + 32] = 0x20;
+
+        FatVolume read = Open(volume);
+
+        Assert.Single(read.List(""), entry => !entry.IsDirectory);
+    }
+
     [Fact]
     public void RefusesAChainThatLoops()
     {

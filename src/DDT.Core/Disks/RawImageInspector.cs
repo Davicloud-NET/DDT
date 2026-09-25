@@ -58,6 +58,7 @@ public static class RawImageInspector
         }
 
         List<RawImageBootFile> files = [];
+        List<string> unreadable = [];
         string? problem = null;
 
         try
@@ -70,6 +71,7 @@ public static class RawImageInspector
                 }
                 catch (InvalidDataException exception)
                 {
+                    unreadable.Add(path);
                     problem ??= $"{path} cannot be read: {exception.Message}";
                 }
             }
@@ -79,7 +81,7 @@ public static class RawImageInspector
             problem ??= $"The image's EFI system partition cannot be read: {exception.Message}";
         }
 
-        return new RawImageInfo(length, table, system, files, problem);
+        return new RawImageInfo(length, table, system, files, problem, unreadable);
     }
 
     // BOOT*.EFI in \EFI\BOOT first, then shim*.efi in every directory of \EFI.

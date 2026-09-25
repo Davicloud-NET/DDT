@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-namespace DDT.Server.Packages;
+namespace DDT.Core;
 
-// The CRC-32 a zip stores for each entry, as zlib computes it. The framework keeps its own internal.
-internal static class ZipCrc32
+// CRC-32 as zlib computes it, which zip entries and GUID partition tables store. The framework keeps its own internal.
+public static class Crc32
 {
     private const uint Polynomial = 0xEDB88320;
 

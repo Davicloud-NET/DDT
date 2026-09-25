@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Globalization;
 using System.IO.Compression;
 using DDT.Contracts.Packages;
+using DDT.Core;
 
 namespace DDT.Server.Packages;
 
@@ -139,7 +140,7 @@ public static class PackageArchiveCheck
                     while ((count = data.Read(buffer, 0, BufferBytes)) > 0)
                     {
                         actual += count;
-                        crc = ZipCrc32.Append(crc, buffer.AsSpan(0, count));
+                        crc = Crc32.Append(crc, buffer.AsSpan(0, count));
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }

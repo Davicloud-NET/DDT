@@ -38,7 +38,8 @@ public static class SecureBootGate
             true when allowed =>
                 $"{image.Name} {Why(image)}, and this machine has Secure Boot on. The run was allowed to write it: the machine starts it " +
                 "once Secure Boot is turned off in the firmware setup, or your own key is enrolled.",
-            null => $"{image.Name} {Why(image)}, and Windows PE does not say whether Secure Boot is on. If it is, the machine will not start the image.",
+            null => $"{image.Name} {Why(image)}, and Windows PE does not say whether Secure Boot is on. If it is, the machine " +
+                $"{(image.BootCapability == ImageBootCapability.NotSigned ? "will not" : "may not")} start the image.",
             _ => null,
         };
     }

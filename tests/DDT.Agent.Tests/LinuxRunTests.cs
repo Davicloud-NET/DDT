@@ -140,9 +140,28 @@ public sealed class LinuxRunTests : IDisposable
     }
 
     [Fact]
-    public async Task AFailedSeedLeavesTheBootOrderAndOwesNoRestart()
+    public async Task RefusesASeedWithAValueTheMachineLacksBeforeTheDiskIsTouched()
     {
         WriteCloudInitSeedStep unnamed = s_seed with { MetaData = "hostname: \"{{ComputerName}}\"" };
+        AgentRun run = Run(steps: [s_write, unnamed]) with { ComputerName = null };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(run);
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_disks.Disks);
+        Assert.StartsWith("The machine has no value for {{ComputerName}}. Assign the sequence with a computer name", server.RunReports[^1].Error, StringComparison.Ordinal);
+    }
+
+    // A seed step with conditions is left to its step, which fails after the image was written.
+    [Fact]
+    public async Task AFailedSeedLeavesTheBootOrderAndOwesNoRestart()
+    {
+        WriteCloudInitSeedStep unnamed = s_seed with
+        {
+            MetaData = "hostname: \"{{ComputerName}}\"",
+            Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "WindowsPE")],
+        };
         AgentRun run = Run(steps: [s_write, unnamed]) with { ComputerName = null };
 
         (RunResult result, ScriptedAgentServer server, _) = await RunAsync(run);

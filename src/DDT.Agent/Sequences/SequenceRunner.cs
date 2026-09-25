@@ -234,7 +234,7 @@ public sealed class SequenceRunner(
             if (resumed is null)
             {
                 log.Information($"The run of {run.SequenceName} begins: {(count == 1 ? "1 step" : $"{count} steps")}.");
-                await PreflightAsync(session, confirmedDisk, cancellationToken).ConfigureAwait(false);
+                await PreflightAsync(session, confirmedDisk, machine, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -448,7 +448,7 @@ public sealed class SequenceRunner(
     private static bool RawImageWritten(SequenceState state) =>
         state.Variables.TryGetValue(RunVariables.RawImageWritten, out string? written) && written == RunVariables.Set;
 
-    private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
+    private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, MachineVariables machine, CancellationToken cancellationToken)
     {
         AgentRun run = session.Run;
 
@@ -479,6 +479,13 @@ public sealed class SequenceRunner(
             if (SecureBootGate.Warning(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } warning)
             {
                 log.Warning(warning);
+            }
+
+            // A seed step that runs whatever happens has to have every value it uses, which is known now. One with
+            // conditions, or that lets the run go on when it fails, is left to its step.
+            foreach (WriteCloudInitSeedStep seed in steps.OfType<WriteCloudInitSeedStep>().Where(seed => seed.Conditions.Count == 0 && !seed.ContinueOnError))
+            {
+                WriteCloudInitSeedStepRunner.Render(seed, run.ComputerName, machine);
             }
         }
 

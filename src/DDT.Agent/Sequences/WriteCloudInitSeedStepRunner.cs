@@ -31,7 +31,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }
 
         LocalDisk disk = session.Disk ?? throw new DeploymentStepException(NoImageMessage);
-        (string metaData, string userData, string? networkConfig) = Render(step, context);
+        (string metaData, string userData, string? networkConfig) = Render(step, session.Run.ComputerName, context.Machine);
 
         using IRawDisk raw = disks.Open(disk);
         byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
@@ -88,12 +88,19 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }));
     }
 
-    private (string MetaData, string UserData, string? NetworkConfig) Render(WriteCloudInitSeedStep step, StepContext context)
+    // The seed's files with the machine's values filled in. The preflight renders them too, so a value the machine lacks
+    // stops the run before the disk is erased.
+    public static (string MetaData, string UserData, string? NetworkConfig) Render(
+        WriteCloudInitSeedStep step,
+        string? computerName,
+        MachineVariables machine)
     {
-        MachineVariables machine = context.Machine;
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(machine);
+
         Dictionary<string, string?> values = new(StringComparer.Ordinal)
         {
-            [MachineVariableNames.ComputerName] = session.Run.ComputerName,
+            [MachineVariableNames.ComputerName] = computerName,
             [MachineVariableNames.Manufacturer] = machine.Manufacturer,
             [MachineVariableNames.Model] = machine.Model,
             [MachineVariableNames.SerialNumber] = machine.SerialNumber,
@@ -110,9 +117,11 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }
         catch (InvalidOperationException exception)
         {
-            throw new DeploymentStepException(
-                $"{exception.Message} Assign the sequence with a computer name, or leave the placeholder out of the seed.",
-                exception);
+            string remedy = exception.Message.Contains($"{{{{{MachineVariableNames.ComputerName}}}}}", StringComparison.Ordinal)
+                ? "Assign the sequence with a computer name, or leave the placeholder out of the seed."
+                : "The machine's firmware does not report it. Leave the placeholder out of the seed.";
+
+            throw new DeploymentStepException($"{exception.Message} {remedy}", exception);
         }
     }
 

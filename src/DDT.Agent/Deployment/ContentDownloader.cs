@@ -229,6 +229,10 @@ public sealed class ContentDownloader(
                 }
 
                 int usable = (int)Math.Min(read, sizeBytes - offset);
+
+                // The stall counts only the wait for the server. Writing to the sink can take long by itself: a raw disk
+                // image's zstd turns a few kilobytes of zeros into gigabytes to write.
+                stall.CancelAfter(Timeout.InfiniteTimeSpan);
                 await sink.WriteAsync(buffer.AsMemory(0, usable), cancellationToken).ConfigureAwait(false);
                 hash.AppendData(buffer, 0, usable);
                 offset += usable;

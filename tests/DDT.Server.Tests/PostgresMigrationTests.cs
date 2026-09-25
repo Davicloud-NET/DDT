@@ -3,9 +3,11 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
+using DDT.Server.Images;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,7 @@ namespace DDT.Server.Tests;
 public sealed class PostgresMigrationTests
 {
     private const string ImageDeployments = "20260919150434_ImageLibrary";
+    private const string TaskSequences = "20260922110344_TaskSequences";
 
     private static DdtDbContext Context(string connectionString)
     {
@@ -133,6 +136,83 @@ public sealed class PostgresMigrationTests
         Assert.Equal(earlier, line.AgentTimestampUtc);
         Assert.Equal(earlier, line.TimestampUtc);
         Assert.Null(line.DeploymentId);
+    }
+
+    // Raw disk images only add columns: what a database held before keeps its values, and the new ones say nothing.
+    [Fact]
+    public async Task KeepsWhatATaskSequenceDatabaseHeldWhenItAddsRawDiskImages()
+    {
+        PostgreSqlContainer? started = await TestPostgres.StartAsync();
+        Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
+
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        await using PostgreSqlContainer container = started;
+        await using DdtDbContext database = Context(container.GetConnectionString());
+        await database.GetService<IMigrator>().MigrateAsync(TaskSequences, cancellationToken: cancellationToken);
+
+        Guid machine = Guid.NewGuid();
+        Guid image = Guid.NewGuid();
+        Guid run = Guid.NewGuid();
+        Guid step = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 9, 24, 8, 0, 0, TimeSpan.Zero);
+
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."Machines" ("Id", "SmbiosUuid", "PrimaryMac", "MacAddresses", "State", "TokenGeneration", "SequenceVersion", "FirstSeenUtc", "LastSeenUtc")
+            VALUES ({machine}, 'uuid-1', '020000000001', '020000000001', 'Done', 1, 1, {now}, {now})
+            """,
+            cancellationToken);
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."Images" ("Id", "Name", "Kind", "Sha256", "SizeBytes", "WimIndex", "InstalledBytes", "UploadedUtc")
+            VALUES ({image}, 'Windows 11 Pro', 'Wim', 'aa', 1, 6, 4, {now})
+            """,
+            cancellationToken);
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."Deployments" ("Id", "MachineId", "Title", "State", "Source", "Percent", "StepCount", "CreatedUtc", "UpdatedUtc")
+            VALUES ({run}, {machine}, 'Install Windows', 'Done', 'Web', 100, 1, {now}, {now})
+            """,
+            cancellationToken);
+        await database.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO ddt."DeploymentArtifacts" ("DeploymentId", "StepId", "Kind", "SourceId", "Name", "Sha256", "SizeBytes", "ExpandedBytes", "WimIndex")
+            VALUES ({run}, {step}, 'Image', {image}, 'Windows 11 Pro', 'aa', 1, 4, 6)
+            """,
+            cancellationToken);
+
+        await database.Database.MigrateAsync(cancellationToken);
+        database.ChangeTracker.Clear();
+
+        Assert.Null((await database.Machines.AsNoTracking().SingleAsync(m => m.Id == machine, cancellationToken)).SecureBootEnabled);
+        Image windows = await database.Images.AsNoTracking().SingleAsync(i => i.Id == image, cancellationToken);
+        Assert.Equal(
+            (ImageKind.Wim, "Windows 11 Pro", (ImageBootCapability?)null, (string?)null, (string?)null),
+            (windows.Kind, windows.Name, windows.BootCapability, windows.BootDetail, windows.SourceSha256));
+        Deployment deployment = await database.Deployments.AsNoTracking().SingleAsync(d => d.Id == run, cancellationToken);
+        Assert.Equal((DeploymentState.Done, false), (deployment.State, deployment.AllowSecureBootMismatch));
+        DeploymentArtifact artifact = await database.DeploymentArtifacts.AsNoTracking().SingleAsync(a => a.DeploymentId == run, cancellationToken);
+        Assert.Equal((image, (ImageBootCapability?)null), (artifact.SourceId, artifact.BootCapability));
+
+        // A raw disk image is found by the SHA-256 of its disk, as a second upload of that disk is.
+        database.Images.Add(new Image
+        {
+            Id = Guid.NewGuid(),
+            Name = "noble-server-cloudimg-amd64",
+            Kind = ImageKind.RawDisk,
+            Sha256 = "bb",
+            SizeBytes = 1,
+            InstalledBytes = 4,
+            UploadedUtc = now,
+            BootCapability = ImageBootCapability.NotSigned,
+            BootDetail = @"\EFI\BOOT\BOOTX64.EFI carries no signature.",
+            SourceSha256 = "cc",
+        });
+        await database.SaveChangesAsync(cancellationToken);
+        database.ChangeTracker.Clear();
+
+        Image raw = await database.Images.AsNoTracking().SingleAsync(i => i.SourceSha256 == "cc", cancellationToken);
+        Assert.Equal((ImageKind.RawDisk, ImageBootCapability.NotSigned), (raw.Kind, raw.BootCapability));
     }
 
     private static (MachineState, int, Guid?, Guid?) Facts(Machine machine) =>

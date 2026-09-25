@@ -5,4 +5,5 @@
 namespace DDT.Contracts.Agents;
 
 // The technician's pick at the machine. DiskNumber is set only for a sequence that erases a disk.
-public sealed record AgentRunRequest(Guid SequenceId, int? DiskNumber, string? ComputerName);
+// AllowSecureBootMismatch is set when the technician confirmed writing an image that is not signed for Secure Boot.
+public sealed record AgentRunRequest(Guid SequenceId, int? DiskNumber, string? ComputerName, bool AllowSecureBootMismatch = false);

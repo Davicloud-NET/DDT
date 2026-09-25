@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Images;
+
 namespace DDT.Contracts.Sequences;
 
-// A sequence with ProblemCount above zero is kept as a draft and cannot run. The three facts let a dialog state what
-// running it does without loading the whole document.
+// A sequence with ProblemCount above zero is kept as a draft and cannot run. The facts let a dialog state what running
+// it does without loading the whole document, including the raw disk image it writes, if any.
 public sealed record SequenceSummary(
     Guid Id,
     string Name,
@@ -18,4 +20,6 @@ public sealed record SequenceSummary(
     bool NeedsComputerName,
     bool ContinuesInWindows,
     DateTimeOffset UpdatedUtc,
-    string? UpdatedBy);
+    string? UpdatedBy,
+    string? RawImageName = null,
+    ImageBootCapability? RawImageBootCapability = null);

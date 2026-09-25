@@ -9,11 +9,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Sequences;
 
-// The stored form of a definition is exactly the contract document, written by DdtJsonContext.
+// The stored form of a definition is exactly the contract document, written by DdtJsonContext, with the lowest version
+// its kinds need, so agents that do not know newer kinds still get it.
 public static class SequenceDocuments
 {
     public static string Write(SequenceDefinition definition) =>
-        JsonSerializer.Serialize(definition, DdtJsonContext.Default.SequenceDefinition);
+        JsonSerializer.Serialize(definition.Normalised(), DdtJsonContext.Default.SequenceDefinition);
 
     public static SequenceDefinition Read(string definition) =>
         JsonSerializer.Deserialize(definition, DdtJsonContext.Default.SequenceDefinition)

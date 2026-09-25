@@ -163,11 +163,11 @@ public sealed class SequenceEngineTests
         Assert.All(windows.Runs, run => Assert.Equal(SequencePhase.Windows, run.Context.Machine.Phase));
     }
 
-    // M6 adds kinds such as a raw image write: the agent's runner handles them, and the engine stays as it is.
+    // A later kind needs only the agent's runner for it, and the engine stays as it is, as M6's raw image steps did.
     [Fact]
     public async Task RunsAKindItDoesNotKnowAndCompletesWithoutWindows()
     {
-        WriteRawImageStep raw = new() { Id = Guid.NewGuid(), Name = "Write the raw image" };
+        FutureStep raw = new() { Id = Guid.NewGuid(), Name = "Write the raw image" };
         RunScriptStep seed = Script(SequencePhase.WindowsPE);
         ScriptedStepRunner runner = new ScriptedStepRunner().On(raw, StepResult.Done(Outputs(("ddt.raw-written", "1"))));
         MemoryStateStore store = new();

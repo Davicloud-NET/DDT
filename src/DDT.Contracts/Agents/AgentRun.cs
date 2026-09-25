@@ -9,7 +9,8 @@ namespace DDT.Contracts.Agents;
 
 // A run as the agent receives it: the sequence frozen when it was assigned and the files its steps use, never
 // secrets. State is Assigned or Running. DiskNumber is the disk chosen at the machine; a run assigned on the web has
-// none. ComputerName is the name assigned to the machine, which conditions can test.
+// none. ComputerName is the name assigned to the machine, which conditions can test. AllowSecureBootMismatch lets a
+// raw disk image that is not signed for Secure Boot be written although the machine has Secure Boot on.
 public sealed record AgentRun(
     Guid Id,
     DeploymentState State,
@@ -18,4 +19,5 @@ public sealed record AgentRun(
     IReadOnlyList<AgentRunImage> Images,
     IReadOnlyList<AgentRunPackage> Packages,
     int? DiskNumber,
-    string? ComputerName);
+    string? ComputerName,
+    bool AllowSecureBootMismatch = false);

@@ -7,4 +7,7 @@ namespace DDT.Contracts.Images;
 public enum ImageKind
 {
     Wim,
+
+    // A whole disk, such as a Linux distribution's cloud image, stored compressed with zstd.
+    RawDisk,
 }

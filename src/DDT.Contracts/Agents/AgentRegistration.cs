@@ -9,6 +9,7 @@ namespace DDT.Contracts.Agents;
 // only the disks the agent could install on. RunToken is the one the agent kept on disk for its run, to resume the
 // run after a restart. SequenceVersion is the highest SequenceDefinition.Version the agent runs, 0 for an agent from
 // before task sequences: an agent throws on a step kind it does not know, so the server hands it no newer run.
+// SecureBootEnabled is what the firmware says, null when the agent cannot tell or is older than raw disk images.
 public sealed record AgentRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -21,4 +22,5 @@ public sealed record AgentRegistration(
     IReadOnlyList<AgentDisk>? Disks = null,
     string? RunToken = null,
     int SequenceVersion = 0,
-    AgentEnvironment Environment = AgentEnvironment.WindowsPE);
+    AgentEnvironment Environment = AgentEnvironment.WindowsPE,
+    bool? SecureBootEnabled = null);

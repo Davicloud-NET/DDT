@@ -19,6 +19,8 @@ const kindLabels: Record<StepKind, string> = {
   joinDomain: "Join the domain",
   runScript: "Run script",
   reboot: "Restart",
+  writeRawImage: "Write raw disk image",
+  writeCloudInitSeed: "Write the cloud-init seed",
 };
 
 // In the order a sequence usually has them.
@@ -36,6 +38,20 @@ export function isStepKind(kind: string): kind is StepKind {
 export function phaseLabel(phase: SequencePhase): string {
   return phase === "WindowsPE" ? "Windows PE" : "Windows";
 }
+
+// cloud-init's instance id, which runs its first-boot modules once per value, and the machine's name.
+export const defaultMetaData =
+  'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';
+
+// The placeholders the server fills in the seed files, as {{Name}}.
+export const seedPlaceholders = [
+  "ComputerName",
+  "Manufacturer",
+  "Model",
+  "SerialNumber",
+  "SmbiosUuid",
+  "MacAddress",
+] as const;
 
 // Guid.Empty, which the server reads as "no image chosen yet".
 export const EMPTY_ID = "00000000-0000-0000-0000-000000000000";
@@ -151,5 +167,15 @@ export function newStep(kind: StepKind, id: string): SequenceStep {
       };
     case "reboot":
       return { ...common, kind };
+    case "writeRawImage":
+      return { ...common, kind, imageId: EMPTY_ID };
+    case "writeCloudInitSeed":
+      return {
+        ...common,
+        kind,
+        metaData: defaultMetaData,
+        userData: "#cloud-config\n",
+        networkConfig: null,
+      };
   }
 }

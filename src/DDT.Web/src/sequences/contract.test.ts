@@ -67,7 +67,8 @@ describe("the sequence mirror", () => {
     );
     expect(Object.keys(fixture.definition).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
-    expect(fixture.definition.version).toBe(SEQUENCE_VERSION);
+    // The server stores a sequence with the lowest version its kinds need: 1 for Windows alone.
+    expect(fixture.definition.version).toBe(1);
     expect(everyStep.version).toBe(SEQUENCE_VERSION);
   });
 

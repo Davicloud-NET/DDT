@@ -25,4 +25,5 @@ public sealed record MachineSummary(
     bool EverApproved,
     string? Disks = null,
     int? EligibleDiskCount = null,
-    DeploymentSummary? Deployment = null);
+    DeploymentSummary? Deployment = null,
+    bool? SecureBootEnabled = null);

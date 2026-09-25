@@ -47,6 +47,9 @@ function image(overrides: Partial<ImageSummary>): ImageSummary {
     originalFileName: "install.wim",
     uploadedUtc: "2026-09-15T10:00:00Z",
     uploadedBy: "admin",
+    bootCapability: null,
+    bootDetail: null,
+    sourceSha256: null,
     ...overrides,
   };
 }

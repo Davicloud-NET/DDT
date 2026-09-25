@@ -250,12 +250,12 @@ public sealed class HttpAgentServerTests
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        AgentRun started = await server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 1, "PC-042"), cancellationToken);
+        AgentRun started = await server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 1, "PC-042", AllowSecureBootMismatch: true), cancellationToken);
 
         string request = await serving;
         Assert.StartsWith($"POST /api/agents/{s_machineId:D}/runs HTTP/1.1", request, StringComparison.Ordinal);
         Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
-        Assert.Contains($$"""{"sequenceId":"{{s_stepId:D}}","diskNumber":1,"computerName":"PC-042"}""", request, StringComparison.Ordinal);
+        Assert.Contains($$"""{"sequenceId":"{{s_stepId:D}}","diskNumber":1,"computerName":"PC-042","allowSecureBootMismatch":true}""", request, StringComparison.Ordinal);
         Assert.Equal(s_runId, started.Id);
         Assert.IsType<RebootStep>(Assert.Single(started.Sequence.Steps));
     }

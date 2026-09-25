@@ -34,7 +34,7 @@ public static class SequenceTemplates
                 "Install Windows",
                 "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file"
                     + (domainConfigured ? ", then joins the domain in Windows." : "."),
-                new SequenceDefinition(SequenceDefinition.CurrentVersion, steps)),
+                new SequenceDefinition(SequenceDefinition.CurrentVersion, steps).Normalised()),
         ];
     }
 }

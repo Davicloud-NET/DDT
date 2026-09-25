@@ -10,6 +10,8 @@ import type { KindFieldsProps } from "./kindFields";
 import { PartitionFields } from "./PartitionFields";
 import { RebootFields } from "./RebootFields";
 import { RunScriptFields } from "./RunScriptFields";
+import { WriteCloudInitSeedFields } from "./WriteCloudInitSeedFields";
+import { WriteRawImageFields } from "./WriteRawImageFields";
 import { WriteUnattendFields } from "./WriteUnattendFields";
 
 // The fields of the step's own kind.
@@ -29,5 +31,9 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <RunScriptFields step={step} {...rest} />;
     case "reboot":
       return <RebootFields step={step} {...rest} />;
+    case "writeRawImage":
+      return <WriteRawImageFields step={step} {...rest} />;
+    case "writeCloudInitSeed":
+      return <WriteCloudInitSeedFields step={step} {...rest} />;
   }
 }

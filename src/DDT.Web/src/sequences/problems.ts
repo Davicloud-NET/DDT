@@ -30,6 +30,8 @@ const kindFields: Record<StepKind, readonly string[]> = {
     "rebootExitCodes",
   ],
   reboot: [],
+  writeRawImage: ["imageId"],
+  writeCloudInitSeed: ["metaData", "userData", "networkConfig"],
 };
 
 const commonFields = ["name", "conditions", "continueOnError", "rebootAfter"];

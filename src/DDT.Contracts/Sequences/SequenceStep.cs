@@ -15,6 +15,8 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(JoinDomainStep), "joinDomain")]
 [JsonDerivedType(typeof(RunScriptStep), "runScript")]
 [JsonDerivedType(typeof(RebootStep), "reboot")]
+[JsonDerivedType(typeof(WriteRawImageStep), "writeRawImage")]
+[JsonDerivedType(typeof(WriteCloudInitSeedStep), "writeCloudInitSeed")]
 public abstract record SequenceStep
 {
     // Stable across edits: run state, reports and problems name a step by it.
@@ -36,4 +38,8 @@ public abstract record SequenceStep
 
     [JsonIgnore]
     public virtual bool ErasesDisk => false;
+
+    // The lowest SequenceDefinition.Version whose agents run this kind.
+    [JsonIgnore]
+    public virtual int MinimumVersion => 1;
 }

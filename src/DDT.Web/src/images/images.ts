@@ -6,8 +6,13 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet } from "@/lib/api";
 
-export type ImageKind = "Wim";
+// A Windows image from a WIM, or a whole disk such as a Linux cloud image.
+export type ImageKind = "Wim" | "RawDisk";
 
+// Whether a raw disk image starts on a stock PC with Secure Boot on.
+export type ImageBootCapability = "SecureBootOk" | "NotSigned" | "Unknown";
+
+// For a raw disk image, sizeBytes is the stored, compressed file, installedBytes the disk it holds, and wimIndex 0.
 export interface ImageSummary {
   id: string;
   name: string;
@@ -16,7 +21,7 @@ export interface ImageSummary {
   sizeBytes: number;
   wimIndex: number;
   edition: string | null;
-  // "x86", "x64", "arm64", or null when the WIM does not say.
+  // "x86", "x64", "arm64", or null when the image does not say.
   architecture: string | null;
   version: string | null;
   language: string | null;
@@ -24,6 +29,10 @@ export interface ImageSummary {
   originalFileName: string | null;
   uploadedUtc: string;
   uploadedBy: string | null;
+  // Raw disk images only: the capability, the sentence that explains it, and the uncompressed disk's SHA-256.
+  bootCapability: ImageBootCapability | null;
+  bootDetail: string | null;
+  sourceSha256: string | null;
 }
 
 // What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files.
@@ -60,9 +69,20 @@ export const uploadsQuery = queryOptions({
   queryFn: () => apiGet<ImageUploadSession[]>("/api/images/uploads"),
 });
 
-// The agent runs in x64 Windows PE and applies the image's own boot files, so only x64 images deploy.
+// The agent runs in x64 Windows PE and applies a Windows image's own boot files, so only x64 Windows images
+// deploy. A raw disk image deploys unless its boot file is for another processor: one whose boot file could not be
+// read may still start.
 export function isDeployable(image: ImageSummary): boolean {
-  return image.architecture === "x64";
+  return image.architecture === "x64" || (image.kind === "RawDisk" && image.architecture === null);
+}
+
+// The warning for a raw disk image that will not start with Secure Boot on; null for every other image.
+export function secureBootWarning(image: ImageSummary): string | null {
+  if (image.kind !== "RawDisk" || image.bootCapability === "SecureBootOk") {
+    return null;
+  }
+
+  return "This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.";
 }
 
 export function deleteImage(id: string): Promise<void> {

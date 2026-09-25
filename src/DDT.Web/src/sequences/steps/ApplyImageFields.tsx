@@ -28,7 +28,8 @@ export function ApplyImageFields({
   catalog,
   onChange,
 }: KindFieldsProps<ApplyImageStep>) {
-  const chosen = catalog.images.some((image) => image.id === step.imageId);
+  const windowsImages = catalog.images.filter((image) => image.kind === "Wim");
+  const chosen = windowsImages.some((image) => image.id === step.imageId);
 
   return (
     <>
@@ -49,7 +50,7 @@ export function ApplyImageFields({
             {step.imageId !== EMPTY_ID && !chosen && (
               <option value={step.imageId}>Image deleted</option>
             )}
-            {catalog.images.map((image) => (
+            {windowsImages.map((image) => (
               <option key={image.id} value={image.id} disabled={!isDeployable(image)}>
                 {imageLabel(image)}
               </option>
@@ -57,9 +58,9 @@ export function ApplyImageFields({
           </select>
         )}
       </FormField>
-      {catalog.images.length === 0 && (
+      {windowsImages.length === 0 && (
         <p className={styles.hint}>
-          The library has no images yet. Upload a WIM file on the{" "}
+          The library has no Windows images yet. Upload a WIM file on the{" "}
           <Link to="/images">Images page</Link>.
         </p>
       )}

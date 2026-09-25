@@ -17,11 +17,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CurrentUser } from "@/auth/auth";
 import type { MachineSummary } from "@/machines/machines";
 import type { AssignmentRuleView } from "@/rules/rules";
-import type {
-  CreateSequenceRequest,
-  SequenceSummary,
-  SequenceTemplate,
-  SequenceView,
+import {
+  SEQUENCE_VERSION,
+  type CreateSequenceRequest,
+  type SequenceSummary,
+  type SequenceTemplate,
+  type SequenceView,
 } from "@/sequences/sequences";
 import { deploymentSummary, machineSummary } from "@/test/builders";
 
@@ -330,7 +331,7 @@ describe("SequencesPage", () => {
     expect(created).toEqual({
       name: "New sequence",
       description: null,
-      definition: { version: 1, steps: [] },
+      definition: { version: SEQUENCE_VERSION, steps: [] },
     });
   });
 

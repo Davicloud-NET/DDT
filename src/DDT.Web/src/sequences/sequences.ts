@@ -79,6 +79,19 @@ export interface RebootStep extends StepBase {
   kind: "reboot";
 }
 
+export interface WriteRawImageStep extends StepBase {
+  kind: "writeRawImage";
+  imageId: string;
+}
+
+// The seed files may use placeholders such as {{ComputerName}}. networkConfig is left out when null.
+export interface WriteCloudInitSeedStep extends StepBase {
+  kind: "writeCloudInitSeed";
+  metaData: string;
+  userData: string;
+  networkConfig: string | null;
+}
+
 // The kind values are stored in sequences and run snapshots, so they never change.
 export type SequenceStep =
   | PartitionStep
@@ -87,7 +100,9 @@ export type SequenceStep =
   | WriteUnattendStep
   | JoinDomainStep
   | RunScriptStep
-  | RebootStep;
+  | RebootStep
+  | WriteRawImageStep
+  | WriteCloudInitSeedStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -115,7 +130,8 @@ export interface SequenceSummary {
 }
 
 // SequenceDefinition.CurrentVersion: the document schema this page writes.
-export const SEQUENCE_VERSION = 1;
+// The highest version this page knows. The server stores each sequence with the lowest version its kinds need.
+export const SEQUENCE_VERSION = 2;
 
 // stepId is null for a problem of the whole sequence. field is the camelCase name within the step, such as
 // "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not.

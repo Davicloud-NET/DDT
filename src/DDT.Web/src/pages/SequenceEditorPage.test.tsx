@@ -15,12 +15,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { ImageSummary } from "@/images/images";
-import type {
-  RunScriptStep,
-  SaveSequenceRequest,
-  SequenceProblem,
-  SequenceStep,
-  SequenceView,
+import {
+  SEQUENCE_VERSION,
+  type RunScriptStep,
+  type SaveSequenceRequest,
+  type SequenceProblem,
+  type SequenceStep,
+  type SequenceView,
 } from "@/sequences/sequences";
 import { EMPTY_ID, newStep } from "@/sequences/steps";
 
@@ -54,6 +55,9 @@ const image: ImageSummary = {
   originalFileName: "install.wim",
   uploadedUtc: "2026-09-15T10:00:00Z",
   uploadedBy: "admin",
+  bootCapability: null,
+  bootDetail: null,
+  sourceSha256: null,
 };
 
 const steps: SequenceStep[] = [
@@ -272,7 +276,8 @@ describe("SequenceEditorPage", () => {
       revision: 3,
       name: "Lab PCs",
       description: "For room 4",
-      definition: { version: 1 },
+      // The page sends the highest version it knows; the server stores the lowest the steps need.
+      definition: { version: SEQUENCE_VERSION },
     });
     expect(saves[0]?.definition.steps[1]).toMatchObject({ kind: "applyImage", imageId: image.id });
     expect(await screen.findByText(/^All changes saved at /)).toBeInTheDocument();

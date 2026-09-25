@@ -33,14 +33,106 @@ public sealed class SequenceValidatorTests
         Assert.Empty(Validate(Partition(), Script(SequencePhase.WindowsPE) with { Interpreter = ScriptInterpreter.PowerShell }));
     }
 
-    [Fact]
-    public void RefusesAnotherVersion()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(SequenceDefinition.CurrentVersion + 1)]
+    public void RefusesAVersionThisDdtDoesNotRun(int version)
     {
-        IReadOnlyList<SequenceProblem> problems = SequenceValidator.Validate(new SequenceDefinition(2, [Partition()]));
+        IReadOnlyList<SequenceProblem> problems = SequenceValidator.Validate(new SequenceDefinition(version, [Partition()]));
 
         SequenceProblem problem = Assert.Single(problems);
         Assert.Null(problem.StepId);
         Assert.Equal("version", problem.Field);
+    }
+
+    [Fact]
+    public void RefusesAVersionBelowWhatItsStepsNeed()
+    {
+        SequenceDefinition definition = new(1, [WriteRawImage(), WriteSeed()]);
+
+        Assert.Equal(2, definition.RequiredVersion());
+        Assert.Equal("version", Assert.Single(SequenceValidator.Validate(definition)).Field);
+        Assert.Empty(SequenceValidator.Validate(definition.Normalised()));
+        Assert.Empty(SequenceValidator.Validate(new SequenceDefinition(2, [Partition()])));
+        Assert.Equal(1, new SequenceDefinition(2, [Partition(), ApplyImage()]).Normalised().Version);
+    }
+
+    [Fact]
+    public void AcceptsARawImageWithItsSeedAndScriptsAroundThem()
+    {
+        RunScriptStep before = Script(SequencePhase.WindowsPE) with { RebootExitCodes = [] };
+        RunScriptStep after = Script(SequencePhase.WindowsPE) with { RebootExitCodes = [] };
+
+        Assert.Empty(Validate(before, WriteRawImage(), WriteSeed(), after));
+        Assert.Empty(Validate(WriteRawImage()));
+    }
+
+    [Fact]
+    public void RefusesStepsOfAWindowsInstallationBesideARawImage()
+    {
+        foreach (SequenceStep windows in new SequenceStep[] { Partition(), ApplyImage(), InjectDrivers(), WriteUnattend(), JoinDomain() })
+        {
+            AssertOnlyProblem(Validate(WriteRawImage(), windows), windows, null);
+        }
+
+        RunScriptStep inWindows = Script(SequencePhase.Windows);
+        AssertOnlyProblem(Validate(WriteRawImage(), inWindows), inWindows, "phase");
+    }
+
+    [Fact]
+    public void WritesOneRawImageEveryTime()
+    {
+        WriteRawImageStep again = WriteRawImage();
+        WriteRawImageStep conditional = WriteRawImage() with
+        {
+            Conditions = [new StepCondition(MachineVariableNames.Model, ConditionOperator.Equals, "Latitude 5440")],
+        };
+        WriteRawImageStep continuing = WriteRawImage() with { ContinueOnError = true };
+
+        AssertOnlyProblem(Validate(WriteRawImage(), again), again, null);
+        AssertOnlyProblem(Validate(conditional), conditional, "conditions");
+        AssertOnlyProblem(Validate(continuing), continuing, "continueOnError");
+    }
+
+    [Fact]
+    public void WritesTheSeedOnceAfterTheRawImage()
+    {
+        WriteCloudInitSeedStep early = WriteSeed();
+        WriteCloudInitSeedStep again = WriteSeed();
+
+        AssertOnlyProblem(Validate(early, WriteRawImage()), early, null);
+        AssertOnlyProblem(Validate(WriteRawImage(), WriteSeed(), again), again, null);
+        Assert.Empty(Validate(WriteRawImage(), WriteSeed() with { ContinueOnError = true }));
+    }
+
+    [Fact]
+    public void RefusesRestartsAndPackagesWhenARawImageIsWritten()
+    {
+        RebootStep reboot = Reboot();
+        RunScriptStep restartAfter = Script(SequencePhase.WindowsPE) with { RebootExitCodes = [], RebootAfter = true };
+        RunScriptStep restartCodes = Script(SequencePhase.WindowsPE);
+        RunScriptStep package = Script(SequencePhase.WindowsPE) with { RebootExitCodes = [], PackageId = Guid.NewGuid() };
+        WriteRawImageStep restartingWrite = WriteRawImage() with { RebootAfter = true };
+
+        AssertOnlyProblem(Validate(WriteRawImage(), reboot), reboot, null);
+        AssertOnlyProblem(Validate(WriteRawImage(), restartAfter), restartAfter, "rebootAfter");
+        AssertOnlyProblem(Validate(WriteRawImage(), restartCodes), restartCodes, "rebootExitCodes");
+        AssertOnlyProblem(Validate(WriteRawImage(), package), package, "packageId");
+        AssertOnlyProblem(Validate(restartingWrite), restartingWrite, "rebootAfter");
+        Assert.Contains("raw disk image", Assert.Single(Validate(WriteRawImage(), reboot)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LimitsTheSeedFiles()
+    {
+        string large = new('x', SequenceValidator.MaxSeedFileBytes + 1);
+        WriteCloudInitSeedStep missing = WriteSeed() with { MetaData = null!, UserData = null! };
+        WriteCloudInitSeedStep tooLarge = WriteSeed() with { NetworkConfig = large };
+
+        Assert.Equal(["metaData", "userData"], Validate(WriteRawImage(), missing).Select(problem => problem.Field));
+        AssertOnlyProblem(Validate(WriteRawImage(), tooLarge), tooLarge, "networkConfig");
+        Assert.Empty(Validate(WriteRawImage(), WriteSeed() with { MetaData = "", UserData = "", NetworkConfig = null }));
+        Assert.Empty(Validate(WriteRawImage(), WriteSeed() with { UserData = large[1..] }));
     }
 
     [Fact]
@@ -166,9 +258,9 @@ public sealed class SequenceValidatorTests
     [Fact]
     public void RefusesAnUnknownKind()
     {
-        WriteRawImageStep raw = new() { Id = Guid.NewGuid(), Name = "Write the raw image" };
+        FutureStep future = new() { Id = Guid.NewGuid(), Name = "A later kind" };
 
-        AssertOnlyProblem(Validate(Partition(), raw), raw, "kind");
+        AssertOnlyProblem(Validate(Partition(), future), future, "kind");
     }
 
     [Fact]
@@ -423,4 +515,9 @@ public sealed class SequenceValidatorTests
         new() { Id = Guid.NewGuid(), Name = "Run a script", Phase = phase, Script = "exit /b 0" };
 
     private static RebootStep Reboot() => new() { Id = Guid.NewGuid(), Name = "Restart" };
+
+    private static WriteRawImageStep WriteRawImage() => new() { Id = Guid.NewGuid(), Name = "Write the raw image", ImageId = Guid.NewGuid() };
+
+    private static WriteCloudInitSeedStep WriteSeed() =>
+        new() { Id = Guid.NewGuid(), Name = "Write the seed", MetaData = "instance-id: a", UserData = "#cloud-config" };
 }

@@ -7,7 +7,8 @@ using DDT.Contracts.Sequences;
 namespace DDT.Contracts.Deployments;
 
 // A run with the definition it was given, frozen when it was assigned, its steps and its files. Definition is null
-// for a deployment from before task sequences.
+// for a deployment from before task sequences. AllowSecureBootMismatch says whoever started the run let an image that
+// is not signed for Secure Boot be written on a machine with Secure Boot on.
 public sealed record DeploymentView(
     DeploymentSummary Summary,
     Guid MachineId,
@@ -15,4 +16,5 @@ public sealed record DeploymentView(
     Guid? RuleId,
     SequenceDefinition? Definition,
     IReadOnlyList<DeploymentStepView> Steps,
-    IReadOnlyList<DeploymentArtifactView> Artifacts);
+    IReadOnlyList<DeploymentArtifactView> Artifacts,
+    bool AllowSecureBootMismatch = false);

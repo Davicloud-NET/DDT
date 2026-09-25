@@ -17,6 +17,7 @@ public static class SequenceValidator
     public const int MaxScriptBytes = 64 * 1024;
     public const int MaxTimeoutMinutes = 24 * 60;
     public const int MaxExitCodes = 16;
+    public const int MaxSeedFileBytes = 64 * 1024;
 
     // Microsoft's minimums: 260 MB for the system partition on 4K native disks, 300 MB for a recovery partition.
     // The upper limits only catch typing errors, which would otherwise fail after the disk was cleaned.
@@ -29,18 +30,35 @@ public static class SequenceValidator
     private const string RestartBeforePartition =
         "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.";
 
+    // A raw disk image leaves no partition DDT could keep the run's state or unpack a package on.
+    private const string RestartWithRawImage =
+        "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.";
+
+    private const string PackageWithRawImage =
+        "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one.";
+
+    private const string WindowsWithRawImage =
+        "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.";
+
     public static IReadOnlyList<SequenceProblem> Validate(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
         List<SequenceProblem> problems = [];
 
-        if (definition.Version != SequenceDefinition.CurrentVersion)
+        if (definition.Version is < 1 or > SequenceDefinition.CurrentVersion)
         {
             problems.Add(new SequenceProblem(
                 null,
                 "version",
-                $"This version of DDT runs sequences of version {SequenceDefinition.CurrentVersion}, not {definition.Version}."));
+                $"This version of DDT runs sequences of version 1 to {SequenceDefinition.CurrentVersion}, not {definition.Version}."));
+        }
+        else if (definition.Version < definition.RequiredVersion())
+        {
+            problems.Add(new SequenceProblem(
+                null,
+                "version",
+                $"The sequence has steps of version {definition.RequiredVersion()}, but says it is of version {definition.Version}."));
         }
 
         IReadOnlyList<SequenceStep?> steps = definition.Steps ?? [];
@@ -64,6 +82,10 @@ public static class SequenceValidator
         bool inWindows = false;
         bool unattendWritten = false;
         bool domainJoined = false;
+        bool writesRawImage = steps.Any(step => step is WriteRawImageStep);
+        bool rawImageWritten = false;
+        bool seedWritten = false;
+        string noRestart = writesRawImage ? RestartWithRawImage : RestartBeforePartition;
 
         for (int index = 0; index < steps.Count; index++)
         {
@@ -99,7 +121,7 @@ public static class SequenceValidator
                 Add(phaseField, "Steps in Windows PE come first, and an earlier step already runs in Windows.");
             }
 
-            if (step.RequiredPhase == SequencePhase.Windows && !imageAppliedEveryTime)
+            if (step.RequiredPhase == SequencePhase.Windows && !imageAppliedEveryTime && !writesRawImage)
             {
                 Add(phaseField, "A step in Windows needs an earlier step that applies the image without conditions.");
             }
@@ -110,7 +132,17 @@ public static class SequenceValidator
             }
             else if (step.RebootAfter && phase == SequencePhase.WindowsPE && !partitioned && step is not PartitionStep)
             {
-                Add("rebootAfter", RestartBeforePartition);
+                Add("rebootAfter", noRestart);
+            }
+
+            // The rules of a Windows installation would only repeat what is wrong in other words.
+            if (writesRawImage && (step is PartitionStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
+                || step.RequiredPhase == SequencePhase.Windows))
+            {
+                Add(step is RunScriptStep ? "phase" : null, WindowsWithRawImage);
+                inWindows |= phase == SequencePhase.Windows;
+
+                continue;
             }
 
             switch (step)
@@ -163,14 +195,37 @@ public static class SequenceValidator
                     domainJoined = true;
                     break;
                 case RunScriptStep script:
-                    CheckScript(script, phase == SequencePhase.WindowsPE && !partitioned, Add);
+                    CheckScript(script, phase == SequencePhase.WindowsPE && !partitioned, writesRawImage, Add);
                     break;
                 case RebootStep:
                     if (phase == SequencePhase.WindowsPE && !partitioned)
                     {
-                        Add(null, RestartBeforePartition);
+                        Add(null, noRestart);
                     }
 
+                    break;
+                case WriteRawImageStep:
+                    if (rawImageWritten)
+                    {
+                        Add(null, "A sequence can write only one raw disk image.");
+                    }
+
+                    CheckRunsEveryTime(step, "writing the raw disk image", Add);
+                    rawImageWritten = true;
+                    break;
+                case WriteCloudInitSeedStep seed:
+                    if (!rawImageWritten)
+                    {
+                        Add(null, "The cloud-init seed can be written only after a step that writes a raw disk image.");
+                    }
+
+                    if (seedWritten)
+                    {
+                        Add(null, "A sequence can write the cloud-init seed only once.");
+                    }
+
+                    CheckSeed(seed, Add);
+                    seedWritten = true;
                     break;
                 default:
                     Add("kind", "This version of DDT does not know this kind of step.");
@@ -291,7 +346,27 @@ public static class SequenceValidator
         }
     }
 
-    private static void CheckScript(RunScriptStep script, bool beforePartitionInWindowsPE, Action<string?, string> add)
+    private static void CheckSeed(WriteCloudInitSeedStep seed, Action<string?, string> add)
+    {
+        foreach ((string field, string file, string? text, bool required) in new[]
+        {
+            ("metaData", "meta-data", seed.MetaData, true),
+            ("userData", "user-data", seed.UserData, true),
+            ("networkConfig", "network-config", seed.NetworkConfig, false),
+        })
+        {
+            if (text is null && required)
+            {
+                add(field, $"The {file} file is missing. It can be empty.");
+            }
+            else if (text is not null && Encoding.UTF8.GetByteCount(text) > MaxSeedFileBytes)
+            {
+                add(field, $"The {file} file can have at most {MaxSeedFileBytes / 1024} KiB.");
+            }
+        }
+    }
+
+    private static void CheckScript(RunScriptStep script, bool beforePartitionInWindowsPE, bool writesRawImage, Action<string?, string> add)
     {
         if (!Enum.IsDefined(script.Phase))
         {
@@ -335,12 +410,16 @@ public static class SequenceValidator
 
         if (beforePartitionInWindowsPE && script.PackageId is not null)
         {
-            add("packageId", "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put.");
+            add(
+                "packageId",
+                writesRawImage
+                    ? PackageWithRawImage
+                    : "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put.");
         }
 
         if (beforePartitionInWindowsPE && script.RebootExitCodes is { Count: > 0 })
         {
-            add("rebootExitCodes", RestartBeforePartition);
+            add("rebootExitCodes", writesRawImage ? RestartWithRawImage : RestartBeforePartition);
         }
     }
 }

@@ -85,7 +85,9 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         Assert.Equal(name, view.Name);
         Assert.Equal("For the lab.", view.Description);
         Assert.Equal(1, view.Revision);
-        Assert.Equal(SequenceRequests.Json(definition), SequenceRequests.Json(view.Definition));
+        // Stored with the lowest version its kinds need, so agents from before raw disk images still run it.
+        Assert.Equal(SequenceDefinition.CurrentVersion, definition.Version);
+        Assert.Equal(SequenceRequests.Json(definition with { Version = 1 }), SequenceRequests.Json(view.Definition));
         Assert.Equal(new[] { SequencePhase.WindowsPE, SequencePhase.WindowsPE }, view.StepPhases);
         Assert.StartsWith("administrator-", view.UpdatedBy, StringComparison.Ordinal);
 

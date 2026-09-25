@@ -53,6 +53,12 @@ public sealed class SequenceWireFormatTests
         ["reboot"] = (
             new RebootStep { Id = s_id, Name = "Restart" },
             $$"""{"kind":"reboot","id":"{{Id}}","name":"Restart","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
+        ["writeRawImage"] = (
+            new WriteRawImageStep { Id = s_id, Name = "Write", ImageId = s_other },
+            $$"""{"kind":"writeRawImage","imageId":"{{Other}}","id":"{{Id}}","name":"Write","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
+        ["writeCloudInitSeed"] = (
+            new WriteCloudInitSeedStep { Id = s_id, Name = "Seed", MetaData = "instance-id: a", UserData = "#cloud-config" },
+            $$"""{"kind":"writeCloudInitSeed","metaData":"instance-id: a","userData":"#cloud-config","networkConfig":null,"id":"{{Id}}","name":"Seed","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
     };
 
     public static TheoryData<string> Kinds => [.. s_kinds.Keys];
@@ -111,7 +117,7 @@ public sealed class SequenceWireFormatTests
     [Fact]
     public void WritesADefinitionWithItsVersionAndSteps()
     {
-        SequenceDefinition definition = new(SequenceDefinition.CurrentVersion, [new RebootStep { Id = s_id, Name = "Restart" }]);
+        SequenceDefinition definition = new(1, [new RebootStep { Id = s_id, Name = "Restart" }]);
 
         Assert.Equal(
             $$"""{"version":1,"steps":[{"kind":"reboot","id":"{{Id}}","name":"Restart","conditions":[],"continueOnError":false,"rebootAfter":false}]}""",
@@ -124,7 +130,7 @@ public sealed class SequenceWireFormatTests
         SequenceState state = new(
             SequenceState.CurrentFormat,
             s_other,
-            new SequenceDefinition(SequenceDefinition.CurrentVersion, [new RebootStep { Id = s_id, Name = "Restart" }]),
+            new SequenceDefinition(1, [new RebootStep { Id = s_id, Name = "Restart" }]),
             SequencePhase.WindowsPE,
             1,
             [new StepRunState(s_id, StepState.Failed, "It broke.")],

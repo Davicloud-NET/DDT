@@ -84,12 +84,22 @@ public sealed class SequenceFixtureTests
             }
         }
 
+        steps.Add(new WriteRawImageStep { Id = StepId(steps.Count), Name = "Write raw", ImageId = s_imageId });
+        steps.Add(new WriteCloudInitSeedStep
+        {
+            Id = StepId(steps.Count),
+            Name = "Seed",
+            MetaData = "instance-id: \"{{SmbiosUuid}}\"\n",
+            UserData = "#cloud-config\nhostname: \"{{ComputerName}}\"\n",
+            NetworkConfig = "version: 2\n",
+        });
+
         // A kind added later must be added here too.
         string[] kinds = [.. typeof(SequenceStep).GetCustomAttributes<JsonDerivedTypeAttribute>().Select(kind => kind.DerivedType.Name).Order(StringComparer.Ordinal)];
         string[] built = [.. steps.Select(step => step.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
         Assert.Equal(kinds, built);
 
-        await MatchFixtureAsync("every-step.sequence.json", new SequenceDefinition(SequenceDefinition.CurrentVersion, steps), "the steps built here");
+        await MatchFixtureAsync("every-step.sequence.json", new SequenceDefinition(1, steps).Normalised(), "the steps built here");
     }
 
     private static async Task MatchFixtureAsync<T>(string name, T value, string source)

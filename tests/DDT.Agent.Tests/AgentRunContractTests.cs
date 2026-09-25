@@ -46,10 +46,11 @@ public sealed class AgentRunContractTests
             "1.0",
             RunToken: "run-token",
             SequenceVersion: SequenceDefinition.CurrentVersion,
-            Environment: AgentEnvironment.Windows);
+            Environment: AgentEnvironment.Windows,
+            SecureBootEnabled: true);
 
         Assert.EndsWith(
-            ""","runToken":"run-token","sequenceVersion":1,"environment":"Windows"}""",
+            ""","runToken":"run-token","sequenceVersion":2,"environment":"Windows","secureBootEnabled":true}""",
             JsonSerializer.Serialize(registration, AgentJsonContext.Default.AgentRegistration),
             StringComparison.Ordinal);
     }

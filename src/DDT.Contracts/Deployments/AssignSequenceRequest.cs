@@ -4,4 +4,6 @@
 
 namespace DDT.Contracts.Deployments;
 
-public sealed record AssignSequenceRequest(Guid SequenceId, string? ComputerName);
+// AllowSecureBootMismatch lets a raw disk image that is not signed for Secure Boot be written although the machine has
+// Secure Boot on.
+public sealed record AssignSequenceRequest(Guid SequenceId, string? ComputerName, bool AllowSecureBootMismatch = false);

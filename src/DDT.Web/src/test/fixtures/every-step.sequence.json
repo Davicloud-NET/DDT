@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "steps": [
     {
       "kind": "partition",
@@ -159,6 +159,26 @@
       ],
       "id": "00000000-0000-4000-8000-000000000010",
       "name": "Script Windows PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "writeRawImage",
+      "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Write raw",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "writeCloudInitSeed",
+      "metaData": "instance-id: \"{{SmbiosUuid}}\"\n",
+      "userData": "#cloud-config\nhostname: \"{{ComputerName}}\"\n",
+      "networkConfig": "version: 2\n",
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Seed",
       "conditions": [],
       "continueOnError": false,
       "rebootAfter": false

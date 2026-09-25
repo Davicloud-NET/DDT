@@ -34,6 +34,7 @@ public static class MachineSummaries
             machine.FirstApprovedUtc is not null,
             machine.Disks,
             machine.EligibleDiskCount,
-            deployment is null ? null : DeploymentSummaries.From(deployment));
+            deployment is null ? null : DeploymentSummaries.From(deployment),
+            machine.SecureBootEnabled);
     }
 }

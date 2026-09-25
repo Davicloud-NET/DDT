@@ -94,6 +94,27 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         Assert.Equal("Virtual Machine", machine.Model);
     }
 
+    // A machine's Secure Boot state is what its agent says last, unknown for an agent older than raw disk images.
+    [Fact]
+    public async Task ShowsTheSecureBootStateTheAgentReportsLast()
+    {
+        SignedInClient admin = await _application.AdministratorAsync();
+        using AgentClient agent = Agent();
+        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac()) with { SecureBootEnabled = true };
+
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        Assert.True((await MachineAsync(admin, registered.MachineId)).SecureBootEnabled);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { SecureBootEnabled = false }, registered.ResumeToken));
+        Assert.False((await MachineAsync(admin, registered.MachineId)).SecureBootEnabled);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { SecureBootEnabled = null }, registered.ResumeToken));
+        Assert.Null((await MachineAsync(admin, registered.MachineId)).SecureBootEnabled);
+    }
+
+    private static async Task<MachineSummary> MachineAsync(SignedInClient admin, Guid machineId) =>
+        Assert.Single(await ReadAsync<IReadOnlyList<MachineSummary>>(await admin.GetAsync("/api/machines")), m => m.Id == machineId);
+
     [Fact]
     public async Task IssuesASessionTokenOnceApproved()
     {

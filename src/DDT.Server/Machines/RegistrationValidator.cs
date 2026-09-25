@@ -92,7 +92,8 @@ public static class RegistrationValidator
             disks?.Length,
             registration.RunToken,
             Math.Max(registration.SequenceVersion, 0),
-            registration.Environment);
+            registration.Environment,
+            registration.SecureBootEnabled);
         error = string.Empty;
 
         return true;

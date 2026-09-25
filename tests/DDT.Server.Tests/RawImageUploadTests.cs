@@ -61,6 +61,25 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         }
     }
 
+    // A cause on the server keeps the upload: completed again, it answers the same until the cause is gone, and it can
+    // be discarded.
+    private async Task AssertKeptAsync(byte[] file, string fileName, string reason)
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        ImageUploadSession session = await administrator.UploadAsync(file, ChunkBytes, fileName);
+
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            HttpResponseMessage kept = await administrator.CompleteUploadAsync(session.Id);
+
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, kept.StatusCode);
+            Assert.Equal(reason, (await kept.Content.ReadFromJsonAsync<ProblemDetails>(TestJson.Options))?.Title);
+            Assert.True(File.Exists(Store.PartPath(session.Id)), $"The upload of {fileName} is gone.");
+        }
+
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/images/uploads/{session.Id:D}")).StatusCode);
+    }
+
     [Fact]
     public async Task AddsACloudImageSignedForSecureBootCompressedWithZstd()
     {
@@ -76,7 +95,7 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         Assert.Equal(disk.Length, image.InstalledBytes);
         Assert.Equal(ImageBootCapability.SecureBootOk, image.BootCapability);
         Assert.Equal(
-            @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which stock PCs trust.",
+            @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do.",
             image.BootDetail);
         Assert.Equal(TestDisk.Sha256(disk), image.SourceSha256);
 
@@ -157,6 +176,21 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
     }
 
     [Fact]
+    public async Task PutsBackAStoredDiskThatWentMissingWhenTheSameDiskIsUploadedAgain()
+    {
+        byte[] disk = TestDisk.Create(new Dictionary<string, byte[]>(), seed: 19);
+        ImageSummary added = await AddedAsync(disk, $"lost-{Guid.NewGuid():N}.img");
+        File.Delete(Store.ObjectPath(added.Sha256));
+
+        HttpResponseMessage again = await UploadAsync(TestDisk.Gzip(disk), "lost-again.img.gz");
+
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        ImageSummary existing = Assert.Single(await RegisteredMachine.ReadAsync<IReadOnlyList<ImageSummary>>(again));
+        Assert.Equal(added.Id, existing.Id);
+        Assert.True(File.Exists(Store.ObjectPath(existing.Sha256)), "The stored disk was not put back.");
+    }
+
+    [Fact]
     public async Task RefusesFilesThatAreNoDiskImageDdtCanUse()
     {
         byte[] disk = TestDisk.Create(new Dictionary<string, byte[]>(), seed: 18);
@@ -165,6 +199,10 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         byte[] vhdx = [.. "vhdxfile"u8, .. new byte[4096]];
 
         await AssertRefusedAsync(noise, "noise.img", RawImageImporter.NotAnImageMessage);
+        await AssertRefusedAsync(
+            [.. "WLPWM\0\0\0"u8, .. new byte[4096]],
+            "pipable.wim",
+            "Pipable WIM files are not supported. Export the image into a regular WIM first.");
         await AssertRefusedAsync(TestDisk.ForFourKilobyteSectors(disk), "4k.img", GptLayout.FourKilobyteSectorsMessage);
         await AssertRefusedAsync(
             vhdx,
@@ -187,21 +225,21 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
     {
         application.Tools.Clear();
 
-        await AssertRefusedAsync(
+        await AssertKeptAsync(
             Qcow2(backingFile: 0),
             "noble.qcow2",
-            "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there, or convert the file with " +
-            "qemu-img convert -O raw <file> disk.raw and upload disk.raw.");
+            "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload " +
+            "again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw.");
         await AssertRefusedAsync(
             Qcow2(backingFile: 512),
             "layer.qcow2",
             "The qcow2 image depends on a backing file. Make a standalone image with qemu-img convert -O qcow2 <file> standalone.qcow2 " +
             "and upload that.");
-        await AssertRefusedAsync(
+        await AssertKeptAsync(
             [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00, .. new byte[1000]],
             "disk.raw.xz",
-            "This file is compressed with xz, which is not installed on the server. Install xz there, or unpack the file with xz -d " +
-            "and upload the disk image it holds.");
+            "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, " +
+            "or unpack the file with xz -d and upload the disk image it holds.");
     }
 
     [Fact]

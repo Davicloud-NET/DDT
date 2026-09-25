@@ -41,7 +41,8 @@ public sealed class DeployingMachine : IDisposable
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
         string? remoteAddress = null,
-        bool? secureBootEnabled = null)
+        bool? secureBootEnabled = null,
+        int? sequenceVersion = null)
     {
         ArgumentNullException.ThrowIfNull(application);
 
@@ -54,6 +55,11 @@ public sealed class DeployingMachine : IDisposable
             SecureBootEnabled = secureBootEnabled,
         };
 
+        if (sequenceVersion is { } version)
+        {
+            registration = registration with { SequenceVersion = version };
+        }
+
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await agent.RegisterAsync(registration));
 
@@ -65,9 +71,10 @@ public sealed class DeployingMachine : IDisposable
         DdtApplication application,
         string userName,
         IReadOnlyList<AgentDisk>? disks = null,
-        bool? secureBootEnabled = null)
+        bool? secureBootEnabled = null,
+        int? sequenceVersion = null)
     {
-        DeployingMachine machine = await RegisterAsync(application, disks, secureBootEnabled: secureBootEnabled);
+        DeployingMachine machine = await RegisterAsync(application, disks, secureBootEnabled: secureBootEnabled, sequenceVersion: sequenceVersion);
 
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
             await machine.Agent.SignInAsync(machine.Id, machine.Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));

@@ -12,6 +12,10 @@ public enum UploadCompletionStatus
     Busy,
     Incomplete,
     Refused,
+
+    // Not added for a cause on the server, such as a missing conversion tool or a full volume. The upload stays, to be
+    // completed again once that is fixed, or discarded.
+    Kept,
     Failed,
     Stopping,
 }

@@ -296,7 +296,8 @@ public sealed partial class ImageUploadCompleter(
         }
     }
 
-    // A WIM starts with its magic; any other image upload is a disk image, or refused as neither.
+    // A WIM starts with its magic, a pipable one with its own, which the WIM reader refuses by name. Any other image
+    // upload is a disk image, or refused as neither.
     private static async Task<bool> IsWimAsync(string part, CancellationToken cancellationToken)
     {
         byte[] magic = new byte[8];
@@ -304,7 +305,7 @@ public sealed partial class ImageUploadCompleter(
         await using FileStream file = new(part, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0, useAsync: true);
 
         return await file.ReadAtLeastAsync(magic, magic.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) == magic.Length
-            && magic.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x4D, 0x53, 0x57, 0x49, 0x4D, 0x00, 0x00, 0x00]);
+            && (magic.AsSpan().SequenceEqual("MSWIM\0\0\0"u8) || magic.AsSpan().SequenceEqual("WLPWM\0\0\0"u8));
     }
 
     // The conversion runs before the library lock is taken: it takes minutes for a large image, and nothing it makes is
@@ -321,6 +322,13 @@ public sealed partial class ImageUploadCompleter(
 
         if (import.Refusal is { } refusal)
         {
+            if (import.Retryable)
+            {
+                LogUploadKept(upload.Id, upload.FileName, refusal);
+
+                return new UploadCompletion(UploadCompletionStatus.Kept, [], Refusal: refusal);
+            }
+
             return await RefuseAsync(database, upload, refusal, cancellationToken).ConfigureAwait(false);
         }
 
@@ -343,13 +351,32 @@ public sealed partial class ImageUploadCompleter(
                     $"{upload.FileName} holds the disk of {same.Name}, SHA-256 {import.SourceSha256}, so no entry was added."));
                 upload.CompletedSha256 = same.Sha256;
                 upload.UpdatedUtc = now;
-                await database.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
-                File.Delete(import.CompressedPath);
+
+                if (File.Exists(store.ObjectPath(same.Sha256)))
+                {
+                    await database.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                    File.Delete(import.CompressedPath);
+                }
+                else
+                {
+                    // The stored disk went missing under its row, and this upload puts it back. A copy compressed
+                    // differently, as by another version of DDT, becomes the image's file.
+                    if (import.Sha256 != same.Sha256)
+                    {
+                        Image stored = await database.Images.FirstAsync(i => i.Id == same.Id, CancellationToken.None).ConfigureAwait(false);
+                        stored.Sha256 = import.Sha256;
+                        stored.SizeBytes = import.SizeBytes;
+                        upload.CompletedSha256 = import.Sha256;
+                    }
+
+                    await SaveWithFileAsync(database, import.CompressedPath, upload.CompletedSha256).ConfigureAwait(false);
+                }
+
                 File.Delete(store.PartPath(upload.Id));
 
                 return new UploadCompletion(
                     UploadCompletionStatus.Existing,
-                    await ImagesOfAsync(database, same.Sha256, CancellationToken.None).ConfigureAwait(false));
+                    await ImagesOfAsync(database, upload.CompletedSha256, CancellationToken.None).ConfigureAwait(false));
             }
 
             Image image = NewRawImage(upload, import, boot, now, userId, userName);
@@ -664,6 +691,9 @@ public sealed partial class ImageUploadCompleter(
 
     [LoggerMessage(EventId = 902, Level = LogLevel.Information, Message = "Refused upload {UploadId} ({FileName}): {Reason}")]
     private partial void LogUploadRefused(Guid uploadId, string fileName, string reason);
+
+    [LoggerMessage(EventId = 918, Level = LogLevel.Warning, Message = "Kept upload {UploadId} ({FileName}) for another attempt: {Reason}")]
+    private partial void LogUploadKept(Guid uploadId, string fileName, string reason);
 
     [LoggerMessage(EventId = 903, Level = LogLevel.Error, Message = "Could not complete upload {UploadId}")]
     private partial void LogCompletionFailed(Guid uploadId, Exception exception);

@@ -208,6 +208,12 @@ public static class ImageUploadEndpoints
                     StatusCodes.Status409Conflict);
             case UploadCompletionStatus.Refused:
                 return Refusal(completion.Refusal!, StatusCodes.Status422UnprocessableEntity);
+            case UploadCompletionStatus.Kept:
+                return Refusal(
+                    completion.Refusal!,
+                    completion.Refusal == RawImageImporter.OutOfSpaceMessage
+                        ? StatusCodes.Status507InsufficientStorage
+                        : StatusCodes.Status422UnprocessableEntity);
             case UploadCompletionStatus.Failed:
                 return Refusal(
                     "The upload could not be added to the library. Look at the server log, then complete the upload again.",

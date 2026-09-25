@@ -138,6 +138,13 @@ public sealed class PeImage
             sections.Add((offset, length));
         }
 
+        // The sections of a real program lie side by side. Ones that overlap would make the hash read the file many
+        // times over, which a hostile image could use to keep the server busy for hours.
+        if (sections.Sum(section => (long)section.Length) > span.Length)
+        {
+            return null;
+        }
+
         sections.Sort((left, right) => left.Offset.CompareTo(right.Offset));
 
         return new PeImage(file, machine, optional + 64, certificateEntry, sizeOfHeaders, sections, tableOffset, tableLength);

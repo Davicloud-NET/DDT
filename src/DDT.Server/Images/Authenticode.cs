@@ -11,8 +11,9 @@ namespace DDT.Server.Images;
 
 // Checks the Authenticode signatures of an EFI program as UEFI firmware does in Secure Boot: each WIN_CERTIFICATE on
 // its own, its signature over the file's hash, and a certificate in the firmware's db somewhere up the signer's chain.
-// Like firmware, it ignores validity periods, key usages and revocation, and a certificate in trusted is an anchor
-// whether or not it signed itself.
+// Like firmware, it ignores validity periods and key usages, and a certificate in trusted is an anchor whether or not
+// it signed itself. Unlike firmware, it reads no revocation list, neither dbx nor SBAT, so a revoked file counts as
+// trusted here.
 public static class Authenticode
 {
     private const string IndirectDataContentType = "1.3.6.1.4.1.311.2.1.4";

@@ -108,7 +108,8 @@ public sealed class DeploymentService(
                 || await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false));
     }
 
-    // The sequences a technician at the machine can choose: only those that can run, with what each needs.
+    // The sequences a technician at the machine can choose: only those that can run, on this agent too, with what each
+    // needs.
     public async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -122,7 +123,7 @@ public sealed class DeploymentService(
         {
             SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
 
-            if (SequenceChecks.Check(definition, references).Problems.Count > 0)
+            if (definition.RequiredVersion() > machine.SequenceVersion || SequenceChecks.Check(definition, references).Problems.Count > 0)
             {
                 continue;
             }
@@ -394,6 +395,14 @@ public sealed class DeploymentService(
         if (problem is not null)
         {
             return DeploymentDecision.Conflict(problem);
+        }
+
+        // The agent lists only what it can run, so this is a sequence changed after the list was shown.
+        if (definition.RequiredVersion() > machine.SequenceVersion)
+        {
+            return DeploymentDecision.Conflict(
+                $"{sequence.Name} needs a newer agent than this machine runs. Start the machine from the network again, so it gets the " +
+                "server's agent, and choose it then.");
         }
 
         bool erases = Erases(definition);
@@ -732,13 +741,13 @@ public sealed class DeploymentService(
         }
 
         return machine.SecureBootEnabled == true
-            ? (false, $"{image.Name} will not start with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.")
+            ? (false, $"{image.Name} {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.")
             : (false, null);
     }
 
     private static string MismatchNote(SequenceDefinition definition, SequenceReferences references, bool allowed) =>
         allowed && SequenceChecks.RawImage(definition, references) is { } image
-            ? $" It may write {image.Name} although it will not start with Secure Boot on."
+            ? $" It may write {image.Name} although it {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on."
             : "";
 
     // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.

@@ -8,7 +8,7 @@ namespace DDT.Contracts.Images;
 // system partition.
 public enum ImageBootCapability
 {
-    // Signed under Microsoft's UEFI CA, 2011 or 2023, which stock PCs trust.
+    // Signed under Microsoft's UEFI CA, 2011 or 2023, which PCs trust unless their firmware turns it off.
     SecureBootOk,
 
     // Not signed, or signed only by a key stock PCs do not trust.

@@ -57,7 +57,7 @@ public static class SequenceChecks
                     if (references.Images.TryGetValue(raw.ImageId, out Image? written)
                         && written is { Kind: ImageKind.RawDisk, BootCapability: not ImageBootCapability.SecureBootOk })
                     {
-                        Warn("imageId", $"{written.Name} will not start with Secure Boot on. {written.BootDetail} {SecureBootAdvice}");
+                        Warn("imageId", $"{written.Name} {BootCapabilities.NotStarting(written.BootCapability)} with Secure Boot on. {written.BootDetail} {SecureBootAdvice}");
                     }
 
                     break;

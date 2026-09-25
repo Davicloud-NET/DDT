@@ -59,6 +59,20 @@ public sealed class AuthenticodeTests
         Assert.Equal(AuthenticodeStatus.Unreadable, Authenticode.Check(TestPe.Create()[..300], UefiCertificateAuthorities.Microsoft).Status);
     }
 
+    // Sections that overlap would make the hash read the file many times over.
+    [Fact]
+    public void RefusesSectionsLongerTogetherThanTheFile()
+    {
+        byte[] file = TestPe.Create();
+        int secondSection = 0x40 + 24 + 240 + 40;
+        BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(0x40 + 6), 2);
+        BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(secondSection + 16), 0x400);
+        BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(secondSection + 20), 0);
+
+        Assert.Null(PeImage.Read(file));
+        Assert.NotNull(PeImage.Read(TestPe.Create()));
+    }
+
     [Fact]
     public void SaysWhenASignatureCannotBeRead()
     {

@@ -174,7 +174,7 @@ public class DdtApplication : WebApplicationFactory<Program>
         image.InstalledBytes = installedBytes;
         image.BootCapability = capability;
         image.BootDetail = capability == ImageBootCapability.SecureBootOk
-            ? @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which stock PCs trust."
+            ? @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do."
             : @"\EFI\BOOT\BOOTX64.EFI carries no signature.";
         image.SourceSha256 = Convert.ToHexStringLower(SHA256.HashData([.. content, 1]));
         await database.SaveChangesAsync(TestContext.Current.CancellationToken);

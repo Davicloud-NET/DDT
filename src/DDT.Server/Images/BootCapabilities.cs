@@ -13,6 +13,11 @@ namespace DDT.Server.Images;
 // fallback file that is not signed.
 public static class BootCapabilities
 {
+    // For a sentence such as "noble will not start with Secure Boot on": an image whose boot file is not signed for it will
+    // not, and one DDT could not judge may not.
+    public static string NotStarting(ImageBootCapability? capability) =>
+        capability == ImageBootCapability.Unknown ? "may not start" : "will not start";
+
     public const string FallbackPath = @"\EFI\BOOT\BOOTX64.EFI";
 
     private static readonly Dictionary<string, string> s_otherFallbacks = new(StringComparer.OrdinalIgnoreCase)
@@ -30,7 +35,10 @@ public static class BootCapabilities
 
         if (fallback is null)
         {
-            if (info.BootFiles.FirstOrDefault(file => s_otherFallbacks.ContainsKey(file.Path)) is { } other)
+            // A BOOTX64.EFI that is there but cannot be read, such as one too large, says nothing of the processor.
+            bool fallbackUnreadable = info.UnreadableBootFiles?.Any(path => string.Equals(path, FallbackPath, StringComparison.OrdinalIgnoreCase)) == true;
+
+            if (!fallbackUnreadable && info.BootFiles.FirstOrDefault(file => s_otherFallbacks.ContainsKey(file.Path)) is { } other)
             {
                 return new BootAssessment(
                     ImageBootCapability.Unknown,
@@ -59,7 +67,7 @@ public static class BootCapabilities
         {
             AuthenticodeStatus.Trusted => new BootAssessment(
                 ImageBootCapability.SecureBootOk,
-                $"{FallbackPath} is signed by {result.Signer} under Microsoft's UEFI CA, which stock PCs trust.",
+                $"{FallbackPath} is signed by {result.Signer} under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do.",
                 architecture),
             AuthenticodeStatus.SignedByOthers => new BootAssessment(
                 ImageBootCapability.NotSigned,

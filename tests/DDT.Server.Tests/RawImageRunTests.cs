@@ -91,6 +91,27 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     }
 
     [Fact]
+    public async Task AnAgentOlderThanRawDisksIsNotOfferedSuchASequenceAtTheMachine()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(
+            application,
+            operatorName,
+            [DeployingMachine.Disk(0)],
+            sequenceVersion: 1);
+        SequenceView sequence = await LinuxAsync(await DiskImageAsync());
+
+        IReadOnlyList<AgentSequenceChoice> choices =
+            await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(await machine.Agent.SequencesAsync(machine.Id, machine.Token));
+        HttpResponseMessage picked = await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(sequence.Id, 0, "LINUX-03"));
+
+        Assert.DoesNotContain(choices, choice => choice.Id == sequence.Id);
+        Assert.Equal(HttpStatusCode.Conflict, picked.StatusCode);
+        ProblemDetails? refusal = await picked.Content.ReadFromJsonAsync<ProblemDetails>(TestJson.Options, TestContext.Current.CancellationToken);
+        Assert.StartsWith($"{sequence.Name} needs a newer agent than this machine runs.", refusal?.Title, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CountsTheDiskAndTheSeedButNotTheDownloadAtTheMachine()
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
@@ -168,7 +189,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         Assert.True(picked.AllowSecureBootMismatch);
         Assert.Equal(ImageBootCapability.Unknown, Assert.Single(picked.Images).BootCapability);
         Assert.EndsWith(
-            $"chosen at the machine. It may write {image.Name} although it will not start with Secure Boot on.",
+            $"chosen at the machine. It may write {image.Name} although it may not start with Secure Boot on.",
             Assert.Single(await AuditAsync(picked.Id)),
             StringComparison.Ordinal);
     }

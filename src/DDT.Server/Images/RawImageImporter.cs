@@ -90,9 +90,9 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
             if (format != DiskImageFormat.Raw)
             {
-                if (await ExpandAsync(uploadId, format, head, part, raw, cancellationToken).ConfigureAwait(false) is { } refusal)
+                if (await ExpandAsync(uploadId, format, head, part, raw, cancellationToken).ConfigureAwait(false) is { } refused)
                 {
-                    return new RawImport(refusal);
+                    return refused;
                 }
 
                 source = raw;
@@ -122,11 +122,11 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
         catch (Exception exception) when (IsDiskFull(exception))
         {
-            return new RawImport(OutOfSpaceMessage);
+            return new RawImport(OutOfSpaceMessage, Retryable: true);
         }
         catch (ConversionFailedException exception)
         {
-            return new RawImport($"The image could not be converted. {exception.Message}");
+            return new RawImport($"The image could not be converted. {exception.Message}", Retryable: true);
         }
         catch (Exception exception) when (exception is InvalidDataException or ZstdException or EndOfStreamException)
         {
@@ -152,7 +152,7 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
     };
 
     // Writes the raw disk to raw, or says why it cannot.
-    private async Task<string?> ExpandAsync(
+    private async Task<RawImport?> ExpandAsync(
         Guid uploadId,
         DiskImageFormat format,
         byte[] head,
@@ -178,8 +178,10 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             case DiskImageFormat.Xz:
                 if (tools.Find(ConversionTools.Xz) is not { } xz)
                 {
-                    return "This file is compressed with xz, which is not installed on the server. Install xz there, or unpack " +
-                        "the file with xz -d and upload the disk image it holds.";
+                    return new RawImport(
+                        "This file is compressed with xz, which is not installed on the server. Install xz there and complete the " +
+                        "upload again, or unpack the file with xz -d and upload the disk image it holds.",
+                        Retryable: true);
                 }
 
                 LogConverting(uploadId, format, xz);
@@ -190,13 +192,15 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             case DiskImageFormat.Qcow2:
                 if (Qcow2Problem(head) is { } problem)
                 {
-                    return problem;
+                    return new RawImport(problem);
                 }
 
                 if (tools.Find(ConversionTools.QemuImg) is not { } qemuImg)
                 {
-                    return "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there, or " +
-                        "convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw.";
+                    return new RawImport(
+                        "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete " +
+                        "the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw.",
+                        Retryable: true);
                 }
 
                 LogConverting(uploadId, format, qemuImg);

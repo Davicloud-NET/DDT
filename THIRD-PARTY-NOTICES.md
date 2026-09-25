@@ -38,10 +38,11 @@ Contributors, with the same permission text.
   `Microsoft.AspNetCore.Identity.EntityFrameworkCore`. The code by others in them is listed in
   [licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT](licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT),
   the notices file both packages carry, taken from version 10.0.12.
-- .NET runtime libraries: `System.DirectoryServices.Protocols`, `Microsoft.Bcl.Cryptography` and
+- .NET runtime libraries: `System.DirectoryServices.Protocols`,
+  `System.Security.Cryptography.Pkcs`, `Microsoft.Bcl.Cryptography` and
   `Microsoft.Extensions.DependencyModel`. The code by others in them is listed in
   [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT), the
-  notices file of the .NET runtime, which all three packages carry. For
+  notices file of the .NET runtime, which all four packages carry. For
   `System.DirectoryServices.Protocols` it includes the notice for ldap4net.
 - Entity Framework Core: `Microsoft.EntityFrameworkCore`,
   `Microsoft.EntityFrameworkCore.Abstractions`, `Microsoft.EntityFrameworkCore.Relational`,

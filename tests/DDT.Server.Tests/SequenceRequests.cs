@@ -26,6 +26,17 @@ internal static class SequenceRequests
         new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" },
         new ApplyImageStep { Id = Guid.NewGuid(), Name = "Apply", ImageId = imageId });
 
+    // Writes the raw disk image and a seed that names the machine, as the Install Linux template does.
+    public static SequenceDefinition Linux(Guid imageId) => Definition(
+        new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write the disk", ImageId = imageId },
+        new WriteCloudInitSeedStep
+        {
+            Id = Guid.NewGuid(),
+            Name = "Seed",
+            MetaData = Server.Sequences.SequenceTemplates.LinuxMetaData,
+            UserData = Server.Sequences.SequenceTemplates.LinuxUserData,
+        });
+
     // Erases nothing and needs no library: one cmd script in Windows PE.
     public static SequenceDefinition ScriptOnly() => Definition(
         new RunScriptStep

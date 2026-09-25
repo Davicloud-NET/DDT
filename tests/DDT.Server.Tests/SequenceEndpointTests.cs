@@ -364,11 +364,13 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         SignedInClient administrator = await application.AdministratorAsync();
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
 
-        SequenceTemplate template = Assert.Single(await ReadAsync<IReadOnlyList<SequenceTemplate>>(
-            await administrator.GetAsync($"{SequenceRequests.Sequences}/templates?imageId={image.Id}")));
-        SequenceTemplate again = Assert.Single(await ReadAsync<IReadOnlyList<SequenceTemplate>>(
-            await administrator.GetAsync($"{SequenceRequests.Sequences}/templates")));
+        IReadOnlyList<SequenceTemplate> templates = await ReadAsync<IReadOnlyList<SequenceTemplate>>(
+            await administrator.GetAsync($"{SequenceRequests.Sequences}/templates?imageId={image.Id}"));
+        SequenceTemplate template = templates[0];
+        SequenceTemplate again = (await ReadAsync<IReadOnlyList<SequenceTemplate>>(
+            await administrator.GetAsync($"{SequenceRequests.Sequences}/templates")))[0];
 
+        Assert.Equal(["install-windows", "install-linux"], templates.Select(t => t.Key));
         Assert.Equal("install-windows", template.Key);
         Assert.Equal("Install Windows", template.Name);
         Assert.Collection(

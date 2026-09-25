@@ -67,9 +67,11 @@ public sealed class SequenceCatalog(DdtDbContext database, IOptions<DeploymentOp
             validation.Problems.Count,
             validation.Warnings.Count,
             definition.Steps.Any(step => step.ErasesDisk),
-            definition.Steps.Any(step => step is JoinDomainStep),
+            SequenceChecks.ComputerNameUse(definition) is not null,
             SequenceChecks.Phases(definition).Contains(SequencePhase.Windows),
             sequence.UpdatedUtc,
-            sequence.UpdatedByName);
+            sequence.UpdatedByName,
+            SequenceChecks.RawImage(definition, references)?.Name,
+            SequenceChecks.RawImage(definition, references)?.BootCapability);
     }
 }

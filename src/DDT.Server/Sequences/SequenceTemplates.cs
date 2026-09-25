@@ -9,9 +9,20 @@ namespace DDT.Server.Sequences;
 public static class SequenceTemplates
 {
     public const string InstallWindowsKey = "install-windows";
+    public const string InstallLinuxKey = "install-linux";
 
-    // What DDT did before task sequences. Without a domain the run ends in Windows PE and the machine restarts into
-    // Windows setup; with one it continues in Windows to join, and restarts once more for the join to take effect.
+    // cloud-init runs its first-boot modules once per instance id, and names the machine after local-hostname.
+    public const string LinuxMetaData = "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n";
+
+    // The image's default user, such as ubuntu or debian, gets the keys listed here.
+    public const string LinuxUserData =
+        "#cloud-config\n" +
+        "# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.\n" +
+        "ssh_authorized_keys: []\n";
+
+    // What DDT did before task sequences, and its Linux counterpart. Without a domain the Windows run ends in Windows
+    // PE and the machine restarts into Windows setup; with one it continues in Windows to join, and restarts once more
+    // for the join to take effect. imageId is the Windows image to apply, if one was chosen.
     public static IReadOnlyList<SequenceTemplate> All(bool domainConfigured, bool administratorConfigured, Guid imageId)
     {
         List<SequenceStep> steps =
@@ -35,6 +46,22 @@ public static class SequenceTemplates
                 "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file"
                     + (domainConfigured ? ", then joins the domain in Windows." : "."),
                 new SequenceDefinition(SequenceDefinition.CurrentVersion, steps).Normalised()),
+            new SequenceTemplate(
+                InstallLinuxKey,
+                "Install Linux",
+                "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.",
+                new SequenceDefinition(
+                    SequenceDefinition.CurrentVersion,
+                    [
+                        new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write the disk image", ImageId = Guid.Empty },
+                        new WriteCloudInitSeedStep
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = "Write the cloud-init seed",
+                            MetaData = LinuxMetaData,
+                            UserData = LinuxUserData,
+                        },
+                    ]).Normalised()),
         ];
     }
 }

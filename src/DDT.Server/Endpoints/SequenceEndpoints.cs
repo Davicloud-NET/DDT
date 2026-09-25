@@ -105,7 +105,8 @@ public static class SequenceEndpoints
 
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
 
-        return TypedResults.Ok(SequenceChecks.Check(definition!, references));
+        // Checked as it would be stored, with the lowest version its kinds need.
+        return TypedResults.Ok(SequenceChecks.Check(definition!.Normalised(), references));
     }
 
     private static async Task<Results<Created<SequenceView>, ValidationProblem, ProblemHttpResult>> CreateAsync(

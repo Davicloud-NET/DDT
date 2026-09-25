@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using DDT.Contracts.Images;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using DDT.Core.Unattend;
 using DDT.Server.Deployments;
@@ -17,6 +19,10 @@ namespace DDT.Server.Sequences;
 // which the agent cannot check because it runs without globalization data.
 public static class SequenceChecks
 {
+    private const string SecureBootAdvice =
+        "Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks " +
+        "to allow it.";
+
     private const string NoAdministrator =
         "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then " +
         "stops at the account page, and the sequence waits there until someone finishes it.";
@@ -38,10 +44,25 @@ public static class SequenceChecks
 
             void Add(string? field, string message) => problems.Add(new SequenceProblem(stepId, field, message));
 
+            void Warn(string? field, string message) => warnings.Add(new SequenceProblem(stepId, field, message));
+
             switch (step)
             {
                 case ApplyImageStep apply:
-                    CheckImage(apply.ImageId, references, Add);
+                    CheckImage(apply.ImageId, ImageKind.Wim, references, Add);
+                    break;
+                case WriteRawImageStep raw:
+                    CheckImage(raw.ImageId, ImageKind.RawDisk, references, Add);
+
+                    if (references.Images.TryGetValue(raw.ImageId, out Image? written)
+                        && written is { Kind: ImageKind.RawDisk, BootCapability: not ImageBootCapability.SecureBootOk })
+                    {
+                        Warn("imageId", $"{written.Name} will not start with Secure Boot on. {written.BootDetail} {SecureBootAdvice}");
+                    }
+
+                    break;
+                case WriteCloudInitSeedStep seed:
+                    CheckPlaceholders(seed, Warn);
                     break;
                 case WriteUnattendStep unattend:
                     CheckUnattend(unattend, references, Add);
@@ -73,21 +94,81 @@ public static class SequenceChecks
         return [.. definition.Steps.Select((_, index) => SequencePhases.Of(definition, index))];
     }
 
-    private static void CheckImage(Guid imageId, SequenceReferences references, Action<string?, string> add)
+    // Why a sequence needs a computer name, or null when it needs none: it joins the domain under it, or its cloud-init
+    // seed names the machine with it.
+    public static string? ComputerNameUse(SequenceDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
+        if (definition.Steps.Any(step => step is JoinDomainStep))
+        {
+            return "The sequence joins the machine to the domain under this name.";
+        }
+
+        return definition.Steps.OfType<WriteCloudInitSeedStep>().Any(seed => SeedTexts(seed)
+            .SelectMany(text => CloudInitTemplate.Placeholders(text.Text ?? ""))
+            .Any(placeholder => CloudInitTemplate.Known(placeholder) == MachineVariableNames.ComputerName))
+            ? "The sequence's cloud-init seed gives the machine this name."
+            : null;
+    }
+
+    // The raw disk image a sequence writes, if it writes one that is in the library.
+    public static Image? RawImage(SequenceDefinition definition, SequenceReferences references)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(references);
+
+        return definition.Steps.OfType<WriteRawImageStep>()
+            .Select(step => references.Images.GetValueOrDefault(step.ImageId))
+            .FirstOrDefault(image => image is { Kind: ImageKind.RawDisk });
+    }
+
+    private static void CheckImage(Guid imageId, ImageKind kind, SequenceReferences references, Action<string?, string> add)
     {
         if (imageId == Guid.Empty)
         {
-            add("imageId", "Choose the image to apply.");
+            add("imageId", kind == ImageKind.Wim ? "Choose the image to apply." : "Choose the raw disk image to write.");
         }
         else if (!references.Images.TryGetValue(imageId, out Image? image))
         {
             add("imageId", "The image is no longer in the library. Choose another image.");
+        }
+        else if (image.Kind != kind)
+        {
+            add(
+                "imageId",
+                kind == ImageKind.Wim
+                    ? $"{image.Name} is a raw disk image, which a Write raw disk image step writes. Choose a Windows image."
+                    : $"{image.Name} is a Windows image, which an Apply image step applies. Choose a raw disk image.");
         }
         else if (DeploymentService.NotDeployable(image) is { } reason)
         {
             add("imageId", reason);
         }
     }
+
+    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, Action<string?, string> warn)
+    {
+        string known = string.Join(", ", CloudInitTemplate.Names.Select(name => $"{{{{{name}}}}}"));
+
+        foreach ((string field, string? text) in SeedTexts(seed))
+        {
+            string[] unknown = [.. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder => CloudInitTemplate.Known(placeholder) is null)];
+
+            if (unknown.Length > 0)
+            {
+                string named = string.Join(", ", unknown.Select(name => $"{{{{{name}}}}}"));
+                warn(
+                    field,
+                    unknown.Length == 1
+                        ? $"{named} is not one of DDT's placeholders, so it stays as it is. DDT fills in {known}."
+                        : $"{named} are not DDT's placeholders, so they stay as they are. DDT fills in {known}.");
+            }
+        }
+    }
+
+    private static IEnumerable<(string Field, string? Text)> SeedTexts(WriteCloudInitSeedStep seed) =>
+        [("metaData", seed.MetaData), ("userData", seed.UserData), ("networkConfig", seed.NetworkConfig)];
 
     private static void CheckPackage(Guid packageId, SequenceReferences references, Action<string?, string> add)
     {

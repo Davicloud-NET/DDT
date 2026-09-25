@@ -152,6 +152,36 @@ public class DdtApplication : WebApplicationFactory<Program>
         return image;
     }
 
+    // A raw disk image straight into the library. content stands for the compressed disk, which no test here unpacks.
+    public async Task<Image> SeedRawImageAsync(
+        byte[] content,
+        ImageBootCapability capability = ImageBootCapability.SecureBootOk,
+        string? architecture = "x64",
+        string? name = null,
+        long installedBytes = 16L * 1024 * 1024)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        Image image = await SeedImageAsync(content, architecture, 0, name ?? $"Test disk {Convert.ToHexStringLower(SHA256.HashData(content))[..8]}");
+
+        using IServiceScope scope = Services.CreateScope();
+        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+        database.Images.Attach(image);
+        image.Kind = ImageKind.RawDisk;
+        image.Edition = null;
+        image.Version = null;
+        image.Language = null;
+        image.InstalledBytes = installedBytes;
+        image.BootCapability = capability;
+        image.BootDetail = capability == ImageBootCapability.SecureBootOk
+            ? @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which stock PCs trust."
+            : @"\EFI\BOOT\BOOTX64.EFI carries no signature.";
+        image.SourceSha256 = Convert.ToHexStringLower(SHA256.HashData([.. content, 1]));
+        await database.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        return image;
+    }
+
     public async Task<SignedInClient> SignInAsync(string role)
     {
         string userName = await CreateUserAsync(role);

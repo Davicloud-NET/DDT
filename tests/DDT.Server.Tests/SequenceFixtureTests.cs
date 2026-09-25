@@ -24,7 +24,9 @@ public sealed class SequenceFixtureTests
     [Fact]
     public async Task TheWebFixtureIsTheInstallWindowsTemplate()
     {
-        SequenceTemplate template = Assert.Single(SequenceTemplates.All(domainConfigured: true, administratorConfigured: true, s_imageId));
+        SequenceTemplate template = Assert.Single(
+            SequenceTemplates.All(domainConfigured: true, administratorConfigured: true, s_imageId),
+            template => template.Key == SequenceTemplates.InstallWindowsKey);
         SequenceTemplate fixedIds = template with
         {
             Definition = template.Definition with

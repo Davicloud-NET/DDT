@@ -134,9 +134,11 @@ public sealed class DeploymentService(
                 sequence.Name,
                 sequence.Description,
                 Erases(definition),
-                JoinsDomain(definition),
+                SequenceChecks.ComputerNameUse(definition) is not null,
                 RunSnapshots.RequiredBytes(definition, artifacts),
-                sequence.Id == suggested));
+                sequence.Id == suggested,
+                SequenceChecks.RawImage(definition, references)?.Name,
+                SequenceChecks.RawImage(definition, references)?.BootCapability));
         }
 
         return choices;
@@ -207,7 +209,7 @@ public sealed class DeploymentService(
                 $"{sequence.Name} erases a disk, and this machine has more than one. Sign in at it and choose the disk there.");
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName, JoinsDomain(definition)) is { } nameProblem)
+        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition)) is { } nameProblem)
         {
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
@@ -307,10 +309,12 @@ public sealed class DeploymentService(
                 $"{sequence.Name} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.");
         }
 
-        if (JoinsDomain(definition) && string.IsNullOrWhiteSpace(machine.AssignedName))
+        if (SequenceChecks.ComputerNameUse(definition) is not null && string.IsNullOrWhiteSpace(machine.AssignedName))
         {
+            string names = definition.Steps.Any(step => step is JoinDomainStep) ? "joins the domain" : "names the machine in its cloud-init seed";
+
             return DeploymentDecision.Conflict(
-                $"{sequence.Name} joins the domain, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.");
+                $"{sequence.Name} {names}, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.");
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
@@ -391,7 +395,7 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("diskNumber", "Choose one of the disks the agent listed.");
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName, JoinsDomain(definition)) is { } nameProblem)
+        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition)) is { } nameProblem)
         {
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
@@ -654,8 +658,6 @@ public sealed class DeploymentService(
 
     private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);
 
-    private static bool JoinsDomain(SequenceDefinition definition) => definition.Steps.Any(step => step is JoinDomainStep);
-
     // A sequence runs only without problems, which depend on the library and the settings of the moment.
     private async Task<(SequenceDefinition Definition, SequenceReferences References, string? Problem)> CheckAsync(
         TaskSequence sequence,
@@ -684,18 +686,16 @@ public sealed class DeploymentService(
                 : null;
     }
 
-    // A machine joins the domain under its name, so a sequence that joins one needs a name. Otherwise Setup makes
-    // one up.
-    private static string? ComputerNameProblem(Machine machine, string? computerName, bool joinsDomain)
+    // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.
+    // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none.
+    private static string? ComputerNameProblem(Machine machine, string? computerName, string? use)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
         {
             return ComputerNames.IsValid(computerName.Trim(), out string error) ? null : error;
         }
 
-        return joinsDomain && string.IsNullOrWhiteSpace(machine.AssignedName)
-            ? "Enter a computer name. The sequence joins the machine to the domain under this name."
-            : null;
+        return use is not null && string.IsNullOrWhiteSpace(machine.AssignedName) ? $"Enter a computer name. {use}" : null;
     }
 
     // Off: only a machine seen moments ago is at the prompt now; whoever holds the tokens of one seen earlier may

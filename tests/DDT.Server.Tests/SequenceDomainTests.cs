@@ -5,6 +5,7 @@
 using System.Security.Cryptography;
 using DDT.Contracts.Sequences;
 using DDT.Server.Images;
+using DDT.Server.Sequences;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -18,8 +19,10 @@ public sealed class SequenceDomainTests(DomainDeploymentApplication application)
         SignedInClient administrator = await application.AdministratorAsync();
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
 
-        SequenceTemplate template = Assert.Single(await RegisteredMachine.ReadAsync<IReadOnlyList<SequenceTemplate>>(
-            await administrator.GetAsync($"{SequenceRequests.Sequences}/templates?imageId={image.Id}")));
+        SequenceTemplate template = Assert.Single(
+            await RegisteredMachine.ReadAsync<IReadOnlyList<SequenceTemplate>>(
+                await administrator.GetAsync($"{SequenceRequests.Sequences}/templates?imageId={image.Id}")),
+            template => template.Key == SequenceTemplates.InstallWindowsKey);
 
         Assert.Equal(5, template.Definition.Steps.Count);
         Assert.True(Assert.IsType<WriteUnattendStep>(template.Definition.Steps[3]).LocalAdministrator);

@@ -8,16 +8,41 @@ import { useId, useState } from "react";
 import { currentUserQuery } from "@/auth/auth";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ImageUpload } from "@/images/ImageUpload";
-import { deleteImage, imagesQuery, isDeployable, type ImageSummary } from "@/images/images";
+import {
+  bootCapabilityLabel,
+  deleteImage,
+  imagesQuery,
+  isDeployable,
+  kindLabel,
+  secureBootWarning,
+  type ImageSummary,
+} from "@/images/images";
 import { formatBytes } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
 
 import styles from "./ImagesPage.module.scss";
 
+// A raw disk image is the whole file; a WIM holds several images by index.
+function source(image: ImageSummary): string {
+  const file = image.originalFileName ?? "Unknown file";
+
+  return image.kind === "RawDisk" ? file : `${file}, index ${String(image.wimIndex)}`;
+}
+
+function deleteConsequence(image: ImageSummary): string {
+  const removed = `${image.name} (${formatBytes(image.sizeBytes)}) is removed from the library and can no longer be assigned to a machine.`;
+
+  return image.kind === "RawDisk"
+    ? `${removed} Its compressed disk is deleted from the server.`
+    : `${removed} The WIM file is deleted from the server once no other image in the library comes from it.`;
+}
+
 function matches(image: ImageSummary, needle: string): boolean {
   return [
     image.name,
+    kindLabel(image.kind),
+    bootCapabilityLabel(image),
     image.edition,
     image.architecture,
     image.version,
@@ -67,8 +92,8 @@ export function ImagesPage() {
           <h2 className={styles.emptyTitle}>No images yet</h2>
           <p>
             {isAdministrator
-              ? "Upload a WIM file to add its Windows images to the library."
-              : "An administrator adds images by uploading WIM files here."}
+              ? "Upload a WIM file to add its Windows images to the library, or a disk image such as a Linux cloud image."
+              : "An administrator adds images by uploading WIM files or disk images here."}
           </p>
         </section>
       )}
@@ -81,7 +106,7 @@ export function ImagesPage() {
               id={filterId}
               type="search"
               value={filter}
-              placeholder="Name, edition, version, language or file"
+              placeholder="Name, kind, edition, version, language or file"
               onChange={(event) => {
                 setFilter(event.target.value);
               }}
@@ -95,65 +120,86 @@ export function ImagesPage() {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
+                  <th scope="col">Kind</th>
                   <th scope="col">Edition</th>
                   <th scope="col">Architecture</th>
                   <th scope="col">Version</th>
                   <th scope="col">Language</th>
                   <th scope="col">Size</th>
                   <th scope="col">Installed</th>
+                  <th scope="col">Secure Boot</th>
                   <th scope="col">Uploaded</th>
                   <th scope="col">SHA-256</th>
                   {isAdministrator && <th scope="col">Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {shown.map((image) => (
-                  <tr key={image.id}>
-                    <td>
-                      <div>{image.name}</div>
-                      <div className={styles.secondary}>
-                        {image.originalFileName ?? "Unknown file"}, index {image.wimIndex}
-                      </div>
-                    </td>
-                    <td>{image.edition}</td>
-                    <td>
-                      <div>{image.architecture ?? "Unknown"}</div>
-                      {!isDeployable(image) && (
-                        <div className={styles.notDeployable}>
-                          Not deployable: only x64 images can be installed.
-                        </div>
-                      )}
-                    </td>
-                    <td>{image.version}</td>
-                    <td>{image.language}</td>
-                    <td className={styles.number}>{formatBytes(image.sizeBytes)}</td>
-                    <td className={styles.number}>{formatBytes(image.installedBytes)}</td>
-                    <td title={new Date(image.uploadedUtc).toLocaleString()}>
-                      <div>{relativeTime(image.uploadedUtc, now)}</div>
-                      {image.uploadedBy !== null && (
-                        <div className={styles.secondary}>by {image.uploadedBy}</div>
-                      )}
-                    </td>
-                    <td className={styles.mono} title={image.sha256}>
-                      {image.sha256.slice(0, 12)}
-                    </td>
-                    {isAdministrator && (
+                {shown.map((image) => {
+                  const warning = secureBootWarning(image);
+
+                  return (
+                    <tr key={image.id}>
                       <td>
-                        <button
-                          type="button"
-                          className={styles.delete}
-                          aria-label={`Delete ${image.name}`}
-                          onClick={() => {
-                            remove.reset();
-                            setDeleteTarget(image);
-                          }}
-                        >
-                          Delete
-                        </button>
+                        <div>{image.name}</div>
+                        <div className={styles.secondary}>{source(image)}</div>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td>{kindLabel(image.kind)}</td>
+                      <td>{image.edition}</td>
+                      <td>
+                        <div>{image.architecture ?? "Unknown"}</div>
+                        {!isDeployable(image) && (
+                          <div className={styles.notDeployable}>
+                            Not deployable: only x64 images can be installed.
+                          </div>
+                        )}
+                      </td>
+                      <td>{image.version}</td>
+                      <td>{image.language}</td>
+                      <td className={styles.number}>{formatBytes(image.sizeBytes)}</td>
+                      <td
+                        className={styles.number}
+                        title={
+                          image.kind === "RawDisk"
+                            ? "The size of the disk the image holds"
+                            : undefined
+                        }
+                      >
+                        {formatBytes(image.installedBytes)}
+                      </td>
+                      <td className={styles.secureBoot}>
+                        <div>{bootCapabilityLabel(image)}</div>
+                        {image.kind === "RawDisk" && image.bootDetail !== null && (
+                          <div className={styles.secondary}>{image.bootDetail}</div>
+                        )}
+                        {warning !== null && <div className={styles.notDeployable}>{warning}</div>}
+                      </td>
+                      <td title={new Date(image.uploadedUtc).toLocaleString()}>
+                        <div>{relativeTime(image.uploadedUtc, now)}</div>
+                        {image.uploadedBy !== null && (
+                          <div className={styles.secondary}>by {image.uploadedBy}</div>
+                        )}
+                      </td>
+                      <td className={styles.mono} title={image.sha256}>
+                        {image.sha256.slice(0, 12)}
+                      </td>
+                      {isAdministrator && (
+                        <td>
+                          <button
+                            type="button"
+                            className={styles.delete}
+                            aria-label={`Delete ${image.name}`}
+                            onClick={() => {
+                              remove.reset();
+                              setDeleteTarget(image);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -169,7 +215,7 @@ export function ImagesPage() {
             }
           }}
           title={`Delete ${deleteTarget.name}?`}
-          consequence={`${deleteTarget.name} (${formatBytes(deleteTarget.sizeBytes)}) is removed from the library and can no longer be assigned to a machine. The WIM file is deleted from the server once no other image in the library comes from it.`}
+          consequence={deleteConsequence(deleteTarget)}
           confirmLabel="Delete image"
           busy={remove.isPending}
           error={remove.isError ? remove.error.message : null}

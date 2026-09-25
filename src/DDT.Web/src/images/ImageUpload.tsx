@@ -26,7 +26,8 @@ function describeResult(fileName: string, outcome: UploadOutcome, images: ImageS
   }
 }
 
-// A WIM or ESD file, each of whose x64 images becomes an entry in the library.
+// A WIM or ESD file, each of whose x64 images becomes an entry in the library, or a disk image, which becomes one.
+// The server reads raw, gzip and zstd itself, and xz and qcow2 with xz and qemu-img where they are installed.
 export function ImageUpload() {
   const queryClient = useQueryClient();
 
@@ -34,10 +35,10 @@ export function ImageUpload() {
     <UploadPanel<ImageSummary[]>
       kind="Image"
       kinds={imageKinds}
-      fileLabel="WIM or ESD file"
-      accept=".wim,.esd"
-      hint="Each x64 Windows image in the file becomes an entry in the library."
-      verifyingHint="The server checks the file and reads the images in it. This takes a few minutes for a large file."
+      fileLabel="WIM, ESD or disk image file"
+      accept=".wim,.esd,.img,.raw,.gz,.xz,.zst,.qcow2"
+      hint="Each x64 Windows image in a WIM or ESD file becomes an entry in the library. A disk image, such as a Linux cloud image, becomes one entry: raw, compressed with gzip, zstd or xz, or qcow2. Convert a VHDX, VMDK or VDI image to raw with qemu-img first."
+      verifyingHint="The server checks the file and reads the images in it, and compresses a disk image. This takes a few minutes for a large file."
       leaveWhileVerifying={(fileName) =>
         `The server goes on checking ${fileName} after you leave and adds its images to the library when it finishes. If it refuses the file, you do not see why.`
       }

@@ -83,6 +83,24 @@ public sealed class ImageLibraryTests(DdtApplication application) : IClassFixtur
     }
 
     [Fact]
+    public async Task DeletesARawDiskImageWithItsStoredDisk()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(64), name: "noble");
+
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{Images}/{image.Id}")).StatusCode);
+        Assert.False(File.Exists(Store.ObjectPath(image.Sha256)));
+
+        using IServiceScope scope = application.Services.CreateScope();
+        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+        string subject = image.Id.ToString("D");
+        AuditEvent deleted = await database.AuditEvents.SingleAsync(e => e.Action == AuditActions.ImageDeleted && e.SubjectId == subject, cancellationToken);
+
+        Assert.Equal($"noble, a raw disk image, SHA-256 {image.Sha256}.", deleted.Detail);
+    }
+
+    [Fact]
     public async Task RefusesToDeleteAnImageMachinesAreWaitingForOrInstalling()
     {
         SignedInClient administrator = await application.AdministratorAsync();

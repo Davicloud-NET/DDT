@@ -31,6 +31,8 @@ const administrator: CurrentUser = {
 
 const viewer: CurrentUser = { ...administrator, userName: "viewer", roles: ["Viewer"] };
 
+const fileLabel = "WIM, ESD or disk image file";
+
 function image(overrides: Partial<ImageSummary>): ImageSummary {
   return {
     id: "0193a4b2-0000-7000-8000-0000000000a1",
@@ -60,6 +62,22 @@ const armImage = image({
   architecture: "arm64",
   language: "de-DE",
   originalFileName: "arm.wim",
+});
+
+const rawImage = image({
+  id: "0193a4b2-0000-7000-8000-0000000000a3",
+  name: "noble-server-cloudimg-amd64",
+  kind: "RawDisk",
+  sizeBytes: 600 * 1024 ** 2,
+  wimIndex: 0,
+  edition: null,
+  version: null,
+  language: null,
+  installedBytes: 4 * 1024 ** 3,
+  originalFileName: "noble-server-cloudimg-amd64.img",
+  bootCapability: "NotSigned",
+  bootDetail: "\\EFI\\BOOT\\BOOTX64.EFI carries no signature.",
+  sourceSha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
 });
 
 interface Sent {
@@ -158,7 +176,7 @@ function row(text: string): HTMLElement {
 }
 
 function selectFile(file: File) {
-  fireEvent.change(screen.getByLabelText("WIM or ESD file"), { target: { files: [file] } });
+  fireEvent.change(screen.getByLabelText(fileLabel), { target: { files: [file] } });
 }
 
 function leaveForOtherPage() {
@@ -242,11 +260,56 @@ describe("ImagesPage", () => {
     expect(armRow.getByText(/Not deployable/)).toBeInTheDocument();
   });
 
+  it("names each image's kind and whether a raw disk image starts with Secure Boot on", async () => {
+    const signed = image({
+      ...rawImage,
+      id: "0193a4b2-0000-7000-8000-0000000000a4",
+      name: "debian-12-genericcloud-amd64",
+      originalFileName: "debian-12-genericcloud-amd64.raw",
+      bootCapability: "SecureBootOk",
+      bootDetail: "Signed under Microsoft's UEFI CA.",
+    });
+    serve(viewer, { "GET /api/images": () => json([image({}), rawImage, signed]) });
+
+    await screen.findByText("Windows 11 Pro");
+
+    const windowsRow = within(row("Windows 11 Pro"));
+    const rawRow = within(row("noble-server-cloudimg-amd64"));
+    const signedRow = within(row("debian-12-genericcloud-amd64"));
+
+    expect(windowsRow.getByText("Windows image")).toBeInTheDocument();
+    expect(windowsRow.queryByText(/Secure Boot/)).not.toBeInTheDocument();
+    expect(rawRow.getByText("Raw disk image")).toBeInTheDocument();
+    expect(rawRow.getByText("noble-server-cloudimg-amd64.img")).toBeInTheDocument();
+    expect(rawRow.getByText("600 MB")).toBeInTheDocument();
+    expect(rawRow.getByText("4 GB")).toHaveAttribute(
+      "title",
+      "The size of the disk the image holds",
+    );
+    expect(rawRow.getByText("Not signed")).toBeInTheDocument();
+    expect(rawRow.getByText("\\EFI\\BOOT\\BOOTX64.EFI carries no signature.")).toBeInTheDocument();
+    expect(
+      rawRow.getByText(/^This image will not start with Secure Boot on\./),
+    ).toBeInTheDocument();
+    expect(rawRow.queryByText(/Not deployable/)).not.toBeInTheDocument();
+    expect(signedRow.getByText("Signed")).toBeInTheDocument();
+    expect(signedRow.queryByText(/will not start/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filter"), { target: { value: "not signed" } });
+    expect(screen.queryByText("Windows 11 Pro")).not.toBeInTheDocument();
+    expect(screen.queryByText("debian-12-genericcloud-amd64")).not.toBeInTheDocument();
+    expect(screen.getByText("noble-server-cloudimg-amd64")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filter"), { target: { value: "raw disk" } });
+    expect(screen.getByText("debian-12-genericcloud-amd64")).toBeInTheDocument();
+    expect(screen.queryByText("Windows 11 Pro")).not.toBeInTheDocument();
+  });
+
   it("offers neither upload nor delete to viewers", async () => {
     serve(viewer, { "GET /api/images": () => json([image({})]) });
 
     expect(await screen.findByText("Windows 11 Pro")).toBeInTheDocument();
-    expect(screen.queryByLabelText("WIM or ESD file")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(fileLabel)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Delete/ })).not.toBeInTheDocument();
   });
 
@@ -329,7 +392,10 @@ describe("ImagesPage", () => {
     });
 
     await screen.findByText("No images yet");
-    expect(screen.getByLabelText("WIM or ESD file")).toHaveAttribute("accept", ".wim,.esd");
+    expect(screen.getByLabelText(fileLabel)).toHaveAttribute(
+      "accept",
+      ".wim,.esd,.img,.raw,.gz,.xz,.zst,.qcow2",
+    );
     selectFile(new File(["0123456789"], "boot.wim", { lastModified: 1_000 }));
 
     expect(await screen.findByText("Verifying boot.wim")).toBeInTheDocument();
@@ -338,7 +404,7 @@ describe("ImagesPage", () => {
       "100",
     );
     expect(screen.getByText(/^100% of 10 bytes, .* elapsed\.$/)).toBeInTheDocument();
-    expect(screen.getByLabelText("WIM or ESD file")).toBeDisabled();
+    expect(screen.getByLabelText(fileLabel)).toBeDisabled();
 
     // The server goes on checking whatever the page does, so there is nothing to stop.
     expect(screen.queryByRole("button", { name: "Stop upload" })).not.toBeInTheDocument();
@@ -585,6 +651,26 @@ describe("ImagesPage", () => {
       expect(screen.queryByText("Windows 11 Pro ARM")).not.toBeInTheDocument();
     });
     expect(requests.some((request) => request.method === "DELETE")).toBe(true);
+  });
+
+  it("says that deleting a raw disk image deletes its stored disk", async () => {
+    serve(administrator, {
+      "GET /api/images": () => json([rawImage]),
+      "GET /api/images/uploads": () => json([]),
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Delete noble-server-cloudimg-amd64" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Delete noble-server-cloudimg-amd64?",
+    });
+    expect(
+      within(dialog).getByText(
+        "noble-server-cloudimg-amd64 (600 MB) is removed from the library and can no longer be assigned to a machine. Its compressed disk is deleted from the server.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps the dialog open with the server's reason when an image cannot be deleted", async () => {

@@ -74,6 +74,11 @@
   font-size: var(--font-size-100);
 }
 
+.secureBoot {
+  min-width: 16ch;
+  max-width: 32ch;
+}
+
 .number {
   white-space: nowrap;
 }

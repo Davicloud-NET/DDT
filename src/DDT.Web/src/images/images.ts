@@ -76,6 +76,24 @@ export function isDeployable(image: ImageSummary): boolean {
   return image.architecture === "x64" || (image.kind === "RawDisk" && image.architecture === null);
 }
 
+export function kindLabel(kind: ImageKind): string {
+  return kind === "RawDisk" ? "Raw disk image" : "Windows image";
+}
+
+// What the Secure Boot column says of a raw disk image; null for a Windows image, whose boot files Microsoft signs.
+export function bootCapabilityLabel(image: ImageSummary): string | null {
+  switch (image.kind === "RawDisk" ? image.bootCapability : null) {
+    case "SecureBootOk":
+      return "Signed";
+    case "NotSigned":
+      return "Not signed";
+    case "Unknown":
+      return "Unknown";
+    case null:
+      return null;
+  }
+}
+
 // The warning for a raw disk image that will not start with Secure Boot on; null for every other image.
 export function secureBootWarning(image: ImageSummary): string | null {
   if (image.kind !== "RawDisk" || image.bootCapability === "SecureBootOk") {

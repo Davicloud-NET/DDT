@@ -91,7 +91,9 @@ public static class ImageEndpoints
                 ActorName = user.Identity?.Name,
                 SubjectId = image.Id.ToString("D"),
                 SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-                Detail = $"{image.Name}, index {image.WimIndex}, SHA-256 {image.Sha256}.",
+                Detail = image.Kind == ImageKind.RawDisk
+                    ? $"{image.Name}, a raw disk image, SHA-256 {image.Sha256}."
+                    : $"{image.Name}, index {image.WimIndex}, SHA-256 {image.Sha256}.",
             });
 
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

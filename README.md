@@ -75,7 +75,8 @@ THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its 
 licenses/                  licence texts of that software, one folder per component
 docs/settings.md           plan for moving admin settings from configuration to a settings page
 src/
-  DDT.Core/                domain model, image library, hashing, task sequences. No ASP.NET, no EF
+  DDT.Core/                domain model, image library, hashing, task sequences, GPT, FAT and
+                           cloud-init seeds. No ASP.NET, no EF
   DDT.Protocols/           DHCP/PXE codec and TFTP state machine. Pure, no sockets
   DDT.Contracts/           DTOs shared with the agent, source-generated JSON
   DDT.Pxe/                 hosted services that bind the UDP sockets and drive DDT.Protocols
@@ -746,15 +747,22 @@ finished at once. A dry run stopped with Ctrl+C goes on when it is started again
 `--dry-run-id`. Every setting in `agent.json` except the keyboard layout name can also be given as
 an argument.
 
+A sequence that writes a raw disk image writes it to `%TEMP%\ddt-dry-run-{id}-disk0.img`, a sparse
+file as large as the fake disk, 128 GB, which takes only what is written to it. The file outlasts
+the run, so the disk can be looked at afterwards, and the next run that cleans the disk deletes it.
+`--dry-run-secure-boot` makes the fake machine report that Secure Boot is on, to try the
+[Secure Boot check](#secure-boot-and-raw-disk-images).
+
 ## Images
 
-The Images page lists the library. An administrator uploads a WIM there, for example
-`sources\install.wim` from a Windows ISO, or an unencrypted ESD. The browser sends the file in 8 MiB
-chunks. If the page is reloaded or the connection drops, selecting the same file again continues where
+The Images page lists the library: Windows images from WIM files, and
+[raw disk images](#raw-disk-images) such as a distribution's cloud image. An administrator uploads a
+WIM there, for example `sources\install.wim` from a Windows ISO, or an unencrypted ESD, or a disk
+image. The browser sends the file in 8 MiB chunks. If the page is reloaded or the connection drops, selecting the same file again continues where
 the server left off: it recognises the file by name, size and last change.
 
-After the last chunk the server reads the image list from the file and computes its SHA-256. It
-refuses a file that is not a WIM, a split WIM (`.swm`), a pipable WIM, a WIM whose image list is
+After the last chunk the server reads the image list from a WIM and computes its SHA-256. It
+refuses a split WIM (`.swm`), a pipable WIM, a WIM whose image list is
 compressed, an encrypted ESD from Windows Update, and a WIM that holds no x64 Windows image. Every x64
 image in the file becomes its own entry in the library, named, versioned and sized from the file.
 
@@ -796,6 +804,52 @@ loopback here, so list it with `DDT__ForwardedHeaders__KnownProxies=127.0.0.1`.
 
 Checking a large file after its last chunk can take longer than a proxy waits. The server carries on
 and the page asks again.
+
+### Raw disk images
+
+A raw disk image is a whole disk, partition table and all, which a
+[Write raw disk image](#task-sequences) step writes over the machine's disk. Distributions publish
+their cloud images this way, such as Ubuntu's `noble-server-cloudimg-amd64.img` or Debian's
+`debian-12-genericcloud-amd64.raw`. The server tells the format from the file's first bytes, not
+its name:
+
+| Format | How the server reads it |
+|---|---|
+| raw | as it is |
+| gzip, zstd | unpacks it itself |
+| xz | with `xz`, when it is on the server's `PATH` |
+| qcow2 | with `qemu-img`, when it is on the server's `PATH` or, on Windows, in `C:\Program Files\qemu` |
+| VHDX, VMDK, VDI | refuses it, naming the command that converts it |
+
+The container image has `xz` and `qemu-img`. Without them the server refuses those files and says how
+to convert them by hand, for example `qemu-img convert -O raw noble-server-cloudimg-amd64.img
+disk.raw`. A qcow2 image that depends on a backing file, keeps its data in an external file or is
+encrypted is refused before `qemu-img` runs, because `qemu-img` would read that file from the
+server's own disk.
+
+The disk must have a GUID partition table made for disks with 512-byte sectors, which is what
+distributions publish, and a file that ends before its last partition is refused as incomplete. The
+server then reads the EFI system partition, and in it `\EFI\BOOT\BOOTX64.EFI`, the file the firmware
+starts from a disk that has no boot entry of its own. Its signature decides the Secure Boot column:
+
+- **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, which the firmware of stock
+  PCs trusts, as a distribution's shim is. The machine starts the image with Secure Boot on.
+- **Not signed**: the file has no signature, or one that does not lead to Microsoft's UEFI CA. The
+  machine starts the image only with Secure Boot off, or with your own key enrolled. The page says
+  why, for example that a distribution's own shim is elsewhere on the partition.
+- **Unknown**: the image has no EFI system partition, no `BOOTX64.EFI`, or a file DDT cannot read.
+
+The Architecture column comes from the same file, and an image whose boot file is for arm64 or x86
+machines only cannot be written. The check follows the signature and the certificate chain as the
+firmware does, but not the firmware's revocation list, so a file that Microsoft revoked still shows
+as signed.
+
+The server stores the disk compressed with zstd, and names it by that file's SHA-256. The Size column
+shows the stored file and the Installed column the disk it holds, which the machine's disk must be
+able to hold. Converting needs room on the store volume for the whole disk and its compressed copy
+beside the upload. The same disk uploaded again, in any of the formats, adds nothing, because the
+server also keeps the SHA-256 of the disk itself. An image is named after its file without the
+extensions of its formats, such as `noble-server-cloudimg-amd64`.
 
 ## Packages
 
@@ -841,6 +895,8 @@ sequences on the Sequences page. A deployment runs one sequence on one machine, 
 | Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect, see [Joining a domain](#joining-a-domain). |
 | Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
 | Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
+| Write raw disk image | Windows PE | Erases the disk and writes the chosen [raw disk image](#raw-disk-images) over it as it downloads, see [Deploying Linux](#deploying-linux). |
+| Write the cloud-init seed | Windows PE | Adds a 64 MB partition labelled `CIDATA` at the end of the disk with the `meta-data`, `user-data` and optionally `network-config` files the step holds, with the machine's values filled in, for cloud-init to find at the image's first start. |
 
 Every step has a name, conditions and two switches. "Go on when this step fails" lets the run go on
 after the step failed, which stays marked as failed. "Restart after this step" restarts the machine
@@ -867,7 +923,9 @@ that changes the applied Windows offline.
 **Phases.** A sequence runs in Windows PE first. When it has steps in Windows, a Join the domain or
 a Run script step set to Windows, the agent [hands the run over](#the-hand-over-to-windows) to the
 installed Windows once the Windows PE steps are done, and the rest runs there after Windows setup. A
-sequence without such steps ends in Windows PE, and the machine restarts into Windows setup.
+sequence without such steps ends in Windows PE, and the machine restarts into Windows setup. A
+sequence that writes a raw disk image runs in Windows PE only, and the machine restarts into the
+image.
 
 **Conditions.** A step with conditions runs only when all of them hold, and is skipped otherwise.
 A condition compares one of the machine's values, Manufacturer, Model, Serial number, SMBIOS UUID,
@@ -897,21 +955,33 @@ its step and field. The rules:
   Windows PE script with a files package also runs only after it.
 - A script has at most 64 KiB, 1 to 16 exit codes for success and at most 16 for a restart, and no
   code in both lists.
-- The image must be an x64 image in the library, and a script's package a files package in the
-  library. A time zone, language and region, and keyboard must be ones Windows knows. "Add the local
+- A sequence either installs Windows or writes a raw disk image. One that writes a raw disk image has
+  no Partition the disk, Apply image, Inject drivers, Write the answer file or Join the domain step,
+  and no step in Windows. It writes one image, whose step may have no conditions and not go on when
+  it fails, and at most one cloud-init seed after it. It keeps its state in memory, so Windows PE
+  cannot restart during it, and its scripts cannot have a package: the image leaves no partition to
+  keep the state on or unpack a package to. Each seed file has at most 64 KiB, and `meta-data` and
+  `user-data` must be there, though they can be empty.
+- The image of Apply image must be an x64 Windows image in the library, the image of Write raw disk
+  image a raw disk image in the library whose boot file is not for another processor, and a script's
+  package a files package in the library. A time zone, language and region, and keyboard must be ones Windows knows. "Add the local
   administrator" needs `DDT:Deployment:LocalAdministrator:Password`, and Join the domain needs
   `DDT:Deployment:Domain`.
 
-One finding is only a warning: a sequence that goes on in Windows without a Write the answer file
-step that adds the local administrator. Windows setup then stops at its account page, and the run
-waits there until someone finishes it. Deleting an image or a package, or changing a setting, can
+Three findings are only warnings. A sequence that goes on in Windows without a Write the answer file
+step that adds the local administrator: Windows setup then stops at its account page, and the run
+waits there until someone finishes it. A raw disk image that is not signed for Secure Boot, see
+[Secure Boot and raw disk images](#secure-boot-and-raw-disk-images). And a placeholder in a seed file
+that DDT does not know, which stays as it is. Deleting an image or a package, or changing a setting, can
 give a saved sequence a problem, which the page then shows.
 
 **Templates.** "New from the Install Windows template" makes a sequence with Partition the disk,
 Apply image, Inject drivers, and Write the answer file, which adds the local administrator when one
 is configured. With a domain configured, it ends with Join the domain. The template chooses no
-image, so the new sequence has a problem until you choose one in its Apply image step. "New empty
-sequence" starts without steps.
+image, so the new sequence has a problem until you choose one in its Apply image step. "New from the
+Install Linux template" makes Write raw disk image, again without an image, and Write the cloud-init
+seed, whose `meta-data` names the machine and whose `user-data` is a `#cloud-config` with an empty
+list of SSH keys for the image's default user. "New empty sequence" starts without steps.
 
 **Editing.** The editor saves by itself: 700 ms after typing stops, at least every 3 seconds while
 typing goes on, and at once for switches, choices and moves. Steps move with their Move buttons,
@@ -946,7 +1016,10 @@ A rule's sequence runs only in two ways:
   after a confirmation that names the sequence and whether it erases the disk. The approval carries
   the sequence the operator saw, and the server refuses it when the rules now choose another. When
   the sequence has a problem, erases a disk on a machine that reported more than one, or joins a
-  domain and the machine has no name yet, the approval only authorizes the machine. So does an
+  domain or names the machine in its cloud-init seed and the machine has no name yet, the approval
+  only authorizes the machine. When the sequence writes a raw disk image that may not start with
+  Secure Boot on, the confirmation says so, and for a machine that reported Secure Boot on it
+  approves only once the operator allows the image. So does an
   approval with someone signed in at the machine, who chooses there; with
   `DDT:Machines:RequireWebApproval` on, an approval therefore never runs a rule's sequence.
 - **Suggested at the machine.** The technician signed in at the machine sees the rule's sequence
@@ -965,17 +1038,22 @@ these ways.
   that can run, those a rule suggests first, and leaves out those that erase a disk when the machine
   has no disk DDT could install on. The technician types the sequence's number, and then answers
   only what that sequence needs: the disk number when it erases a disk and there is more than one,
-  a computer name when it joins a domain, and last `ERASE` when it erases a disk. Anything but
-  `ERASE` there goes back to the list. A sequence with nothing more to ask starts once its number is
+  a computer name when it joins a domain or names the machine in its cloud-init seed, and `ERASE`
+  when it erases a disk. Anything but `ERASE` there goes back to the list. On a machine with Secure
+  Boot on, a sequence that writes a raw disk image not signed for it asks last for `ANYWAY`, and
+  anything else goes back to the list too. A sequence with nothing more to ask starts once its number is
   typed.
 - **On the Machines page.** An operator or administrator assigns a sequence, optionally with a
-  computer name, which is required when the sequence joins a domain and the machine has no name yet.
+  computer name, which is required when the sequence joins a domain or names the machine in its
+  cloud-init seed and the machine has no name yet.
   The dialog names the disks the machine reported and says what the assignment does. A machine
   waiting at its prompt, seen in the last 90 seconds, is authorized by the assignment, unless
   `DDT:Machines:RequireWebApproval` is on, in which case only a machine someone already signed in at
   is. Any other machine stays `Pending` with the sequence assigned, and runs it as soon as someone
   signs in at it. Assigning a sequence that erases a disk is refused for a machine that reported
-  more than one disk DDT could install on: sign in at it and choose the disk there.
+  more than one disk DDT could install on: sign in at it and choose the disk there. For a raw disk
+  image that may not start with Secure Boot on, the dialog warns and offers to write it anyway,
+  which it requires for a machine that reported Secure Boot on.
 - **By an approval** of the sequence a rule chooses, as [Rules](#rules) describes.
 - **Zero touch.** `DDT:Machines:ZeroTouchNetworks` lists networks, for example `10.20.0.0/16`, and is
   empty by default. A machine with a sequence assigned on the page that netboots from one of them is
@@ -1210,6 +1288,69 @@ with Kerberos or NTLM. On Linux a controller without LDAPS cannot be checked, an
 joining does not depend on it. When the server's DNS does not know the domain, set
 `DDT:Deployment:Domain:Controller`.
 
+### Deploying Linux
+
+A sequence that writes a [raw disk image](#raw-disk-images), such as one from the Install Linux
+template, runs in Windows PE and ends there.
+
+Before it touches the disk, the agent checks that the disk has 512-byte sectors and holds the disk
+image, plus 66 MB for a seed, and whether the image may be written with the machine's Secure Boot,
+see below. A failure here leaves the disk as it was.
+
+Write raw disk image removes the partition table with `diskpart`'s `clean`, then downloads the
+compressed image and writes it straight to the physical disk as it arrives, 4 MiB at a time,
+decompressing it on the way. Nothing is stored in between, so the step takes as long as the slower of
+the download and the disk. A dropped connection resumes where it stopped, as for a Windows image. The
+first MiB, which holds the partition table, is written last, so a disk whose write was cut off holds
+no partition table. The image's backup table moves to the end of the disk, and the rest of the disk
+after the image's partitions stays free. A download that does not match its SHA-256 fails the step
+before the partition table is written.
+
+Write the cloud-init seed adds a partition labelled `CIDATA` at the end of the disk, 64 MB with FAT16,
+and writes the step's files into it. cloud-init's NoCloud source finds them at the image's first
+start. The seed's place leaves the free space right after the image's partitions, so cloud-init's
+`growpart` still grows the root partition into it. Before writing, the agent fills in these
+placeholders, whose names it matches ignoring case:
+
+| Placeholder | Value |
+|---|---|
+| `{{ComputerName}}` | the name assigned to the machine, or typed at it |
+| `{{Manufacturer}}`, `{{Model}}`, `{{SerialNumber}}` | as the machine's firmware reports them |
+| `{{SmbiosUuid}}` | the machine's SMBIOS UUID |
+| `{{MacAddress}}` | the primary MAC address, in lowercase with colons |
+
+A value is escaped for a YAML string in double quotes, so put the placeholder in double quotes, as in
+`hostname: "{{ComputerName}}"`. Anything else in double braces, such as cloud-init's own jinja
+templates, stays as it is. A placeholder the machine has no value for fails the step, and a sequence
+that uses `{{ComputerName}}` needs a computer name when it is assigned or chosen, as a domain join
+does. The template's `instance-id` is the SMBIOS UUID, which differs from machine to machine.
+
+At the end the agent adds a firmware boot entry for the image's `\EFI\BOOT\BOOTX64.EFI`, named after
+the image, puts it first in the boot order and restarts the machine into the image. As for Windows,
+it takes over an entry that pointed at the EFI system partition the run erased, rather than adding
+one more at every deployment. An image without an EFI system partition gets no entry, and the log
+says to set the boot order by hand. The run is done when the machine restarts: DDT does not run in
+the image, so the server hears nothing from the machine after that. A run that fails before its end,
+a failed seed included, adds no boot entry and does not restart the machine.
+
+#### Secure Boot and raw disk images
+
+The agent reads from Windows PE whether the firmware started it with Secure Boot on, and reports it
+when it registers. The Machines page shows it. An image that is not signed for Secure Boot does not
+start on a machine with Secure Boot on, so:
+
+- A machine that reported Secure Boot on gets such an image only when the run allows it: the operator
+  ticks the box to write the image anyway when assigning or approving, or the technician types
+  `ANYWAY` at the machine. The server refuses the run otherwise, and the audit row of the assignment says it was
+  allowed. The machine then starts the image once Secure Boot is turned off in its firmware setup, or
+  your own key is enrolled.
+- A machine that did not say gets the run, and the agent checks the firmware again before it erases
+  anything: with Secure Boot on and the image not allowed, the run fails there and leaves the disk
+  as it was.
+- A machine with Secure Boot off gets the image without a question.
+
+The image's name and the reason stand in each warning, and the run's page says when it was allowed.
+
 ### When a deployment goes wrong
 
 - Everything the agent runs and everything it prints goes to the machine's log on the server.
@@ -1298,6 +1439,14 @@ join account's password when a later Join the domain step fetches it. Only admin
 sequences, packages and rules, and every change is audited, but every signed-in user can read the
 scripts: never put a password in one. The zip checks keep a package from writing outside its folder
 on the machine; they say nothing about what it contains.
+
+**A raw disk image is code too.** It runs whatever its boot loader and its system run, with the
+machine to itself and with what the seed gives it. A signature under Microsoft's UEFI CA only says
+that the boot loader may start with Secure Boot on; it says nothing about the rest of the image.
+Upload images from their publisher, and check their checksums. The seed's files are part of the
+sequence, which every signed-in user can read, and a cloud-init seed on a disk can be read by anyone
+who holds the disk: put in public SSH keys, and passwords only hashed. Allowing an image that is not
+signed for Secure Boot is written to the audit table with the run.
 
 **Secrets are handed out just in time.** The run the agent receives holds no password. The agent
 fetches the answer file while its Write the answer file step runs, and the join account while its
@@ -1510,8 +1659,15 @@ Not checked on a machine yet:
 
 Letting the operator or the technician type the join credentials for a run is planned after M5.
 
-Later milestones, in order: M6 Linux raw disk images; M6.5 the real UI, as the web UI and the
-agent's console in Windows PE are concept UIs until then; M7 the task sequence flow builder.
+Linux raw disk images (M6) are built: the upload and conversion of raw, gzip, zstd, xz and qcow2
+images with the Secure Boot check of their boot file, the Write raw disk image and Write the
+cloud-init seed steps, the boot entry, and the Secure Boot state of each machine with the allowance
+for an image not signed for it. They are tested with fakes, on the Debian 12 cloud image, whose
+signed shim the server reads as signed, and end to end in `DDT.E2E` with a dry run. They have not
+run on a machine yet.
+
+Later milestones, in order: M6.5 the real UI, as the web UI and the agent's console in Windows PE are
+concept UIs until then; M7 the task sequence flow builder.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

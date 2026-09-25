@@ -100,7 +100,7 @@ public sealed class DryRunMachine(
         }
     }
 
-    private DryRunMachineIdentityReader Identity() => new(options.DryRunId);
+    private DryRunMachineIdentityReader Identity() => new(options.DryRunId, options.DryRunSecureBoot);
 
     // The hand-over really stages the agent into the directory that stands in for Windows.
     private SequenceRunner Runner(
@@ -115,6 +115,7 @@ public sealed class DryRunMachine(
         return new SequenceRunner(
             runServer,
             disks,
+            new FileRawDisks(root, log),
             new DryRunImageApplier(log),
             new DryRunBcdWriter(log),
             rebooter,

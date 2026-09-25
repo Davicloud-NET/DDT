@@ -74,6 +74,24 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal(SequenceDefinition.CurrentVersion, registration.SequenceVersion);
         Assert.Equal(AgentEnvironment.WindowsPE, registration.Environment);
         Assert.Null(registration.RunToken);
+        Assert.False(registration.SecureBootEnabled);
+    }
+
+    [Fact]
+    public async Task RegistersWithTheSecureBootStateTheFirmwareGives()
+    {
+        ScriptedAgentServer server = new ScriptedAgentServer().OnRegister(_ => Registered(MachineState.Rejected) with { Token = null });
+        ImmediateTimeProvider time = new();
+
+        await TestAgents.Loop(
+            server,
+            new ScriptedSignInPrompt { IsAvailable = false },
+            _tools,
+            new AgentLog(time, TextWriter.Null),
+            time,
+            new DryRunMachineIdentityReader(1, secureBootEnabled: true)).RunAsync(server.Stop.Token);
+
+        Assert.True(Assert.Single(server.Registrations).SecureBootEnabled);
     }
 
     [Fact]

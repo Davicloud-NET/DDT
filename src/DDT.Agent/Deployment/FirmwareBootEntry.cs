@@ -7,21 +7,33 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Puts a firmware boot entry for Windows Boot Manager on the new EFI system partition first in BootOrder. An entry
-// is recognised by the partition and file it starts, never by its description: one left by an earlier installation
-// carries the same description but points at a partition that no longer exists. diskpart gives every new partition a
-// new GUID, so the entry for an EFI system partition the deployment erased is reused rather than left behind, dead.
-public static class WindowsBootEntry
+// Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder: Windows Boot Manager
+// after a Windows image, the fallback file after a raw disk image. An entry is recognised by the partition and file it
+// starts, never by its description: one left by an earlier installation carries the same description but points at a
+// partition that no longer exists. diskpart gives every new partition a new GUID, so an entry for an EFI system
+// partition the deployment erased, whatever it started, is reused rather than left behind, dead.
+public static class FirmwareBootEntry
 {
-    public const string Description = "Windows Boot Manager";
-    public const string LoaderPath = @"\EFI\Microsoft\Boot\bootmgfw.efi";
+    public const string WindowsDescription = "Windows Boot Manager";
+    public const string WindowsLoaderPath = @"\EFI\Microsoft\Boot\bootmgfw.efi";
+
+    // What firmware starts from a disk without an entry of its own, and what a raw disk image is started from.
+    public const string FallbackLoaderPath = @"\EFI\BOOT\BOOTX64.EFI";
 
     private const string BootOrder = "BootOrder";
 
-    public static void MakeFirst(IUefiVariables variables, EspPartition esp, IReadOnlyCollection<Guid> erasedPartitionIds, AgentLog log)
+    public static void MakeFirst(
+        IUefiVariables variables,
+        EspPartition esp,
+        string loaderPath,
+        string description,
+        IReadOnlyCollection<Guid> erasedPartitionIds,
+        AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(variables);
         ArgumentNullException.ThrowIfNull(esp);
+        ArgumentException.ThrowIfNullOrEmpty(loaderPath);
+        ArgumentException.ThrowIfNullOrEmpty(description);
         ArgumentNullException.ThrowIfNull(erasedPartitionIds);
         ArgumentNullException.ThrowIfNull(log);
 
@@ -36,14 +48,14 @@ public static class WindowsBootEntry
                 continue;
             }
 
-            if (EfiLoadOption.PointsAt(option, esp.PartitionId, LoaderPath))
+            if (EfiLoadOption.PointsAt(option, esp.PartitionId, loaderPath))
             {
                 existing = number;
 
                 break;
             }
 
-            if (erased is null && erasedPartitionIds.Any(id => EfiLoadOption.PointsAt(option, id, LoaderPath)))
+            if (erased is null && erasedPartitionIds.Any(id => EfiLoadOption.PointsAt(option, id, path: null)))
             {
                 erased = number;
             }
@@ -57,12 +69,12 @@ public static class WindowsBootEntry
         }
         else if (erased is { } reused)
         {
-            variables.Write(OptionName(reused), EfiLoadOption.Build(Description, esp, LoaderPath));
+            variables.Write(OptionName(reused), EfiLoadOption.Build(description, esp, loaderPath));
             entry = reused;
         }
         else
         {
-            entry = Create(variables, esp);
+            entry = Create(variables, esp, loaderPath, description);
         }
 
         List<ushort> first = [entry, .. order.Where(number => number != entry).Distinct()];
@@ -78,22 +90,22 @@ public static class WindowsBootEntry
         if (existing is not null)
         {
             log.Information(moved
-                ? $"Firmware boot entry {name} already starts Windows Boot Manager on the new EFI system partition. It is now first in the boot order."
-                : $"Firmware boot entry {name} already starts Windows Boot Manager on the new EFI system partition and is first in the boot order.");
+                ? $"Firmware boot entry {name} already starts {description} on the new EFI system partition. It is now first in the boot order."
+                : $"Firmware boot entry {name} already starts {description} on the new EFI system partition and is first in the boot order.");
         }
         else if (erased is not null)
         {
             log.Information(
-                $"Firmware boot entry {name} started Windows Boot Manager on the EFI system partition this deployment erased. It now starts it on " +
+                $"Firmware boot entry {name} pointed at the EFI system partition this deployment erased. It now starts {description} on " +
                 "the new EFI system partition and is first in the boot order.");
         }
         else
         {
-            log.Information($"Added firmware boot entry {name} for Windows Boot Manager on the new EFI system partition and put it first in the boot order.");
+            log.Information($"Added firmware boot entry {name} for {description} on the new EFI system partition and put it first in the boot order.");
         }
     }
 
-    private static ushort Create(IUefiVariables variables, EspPartition esp)
+    private static ushort Create(IUefiVariables variables, EspPartition esp, string loaderPath, string description)
     {
         for (int number = 0; number <= ushort.MaxValue; number++)
         {
@@ -101,13 +113,13 @@ public static class WindowsBootEntry
 
             if (variables.Read(name) is null)
             {
-                variables.Write(name, EfiLoadOption.Build(Description, esp, LoaderPath));
+                variables.Write(name, EfiLoadOption.Build(description, esp, loaderPath));
 
                 return (ushort)number;
             }
         }
 
-        throw new DeploymentStepException("Every firmware boot entry number is in use, so no entry for Windows Boot Manager can be added.");
+        throw new DeploymentStepException($"Every firmware boot entry number is in use, so no entry for {description} can be added.");
     }
 
     private static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");

@@ -22,10 +22,13 @@ internal sealed class StepRunnerFixture : IDisposable
     public static readonly Guid MachineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
+    // secureBootEnabled is what the firmware says; allowSecureBootMismatch what the run was allowed.
     public StepRunnerFixture(
         IReadOnlyList<SequenceStep> steps,
         IReadOnlyList<AgentRunImage>? images = null,
-        IReadOnlyList<AgentRunPackage>? packages = null)
+        IReadOnlyList<AgentRunPackage>? packages = null,
+        bool? secureBootEnabled = null,
+        bool allowSecureBootMismatch = false)
     {
         AgentRun run = new(
             RunId,
@@ -35,10 +38,15 @@ internal sealed class StepRunnerFixture : IDisposable
             images ?? [],
             packages ?? [],
             null,
-            "PC-042");
+            "PC-042",
+            allowSecureBootMismatch);
 
         Log = new AgentLog(Time, TextWriter.Null);
-        Session = new RunSession(MachineId, run, new DeploymentTokens("session", "resume", RunToken)) { Disk = FakeDeploymentTools.Disk(0) };
+        Session = new RunSession(MachineId, run, new DeploymentTokens("session", "resume", RunToken))
+        {
+            Disk = FakeDeploymentTools.Disk(0),
+            SecureBootEnabled = secureBootEnabled,
+        };
         Store = new FileRunStateStore(Session.Tokens);
         Downloads = new RunDownloads(Server, Session, Log, Time, TimeSpan.FromSeconds(10));
         Directory.CreateDirectory(WorkDirectory);
@@ -77,17 +85,24 @@ internal sealed class StepRunnerFixture : IDisposable
 
     public RunScriptStepRunner RunScript => new(ToolRunner, Downloads, Session, Log, WorkDirectory);
 
+    public MemoryRawDisks RawDisks { get; } = new();
+
+    public WriteRawImageStepRunner WriteRawImage => new(Tools, RawDisks, Downloads, Session, Log);
+
+    public WriteCloudInitSeedStepRunner WriteCloudInitSeed => new(RawDisks, Session, Log, Time);
+
     // Every 401 a step saw, which the heartbeat would take as the end of the run.
     public List<AgentTokenRejectedException> TokenRejections { get; } = [];
 
-    public AgentStepRunner Steps => new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, TokenRejections.Add, Log, Time);
+    public AgentStepRunner Steps =>
+        new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed, TokenRejections.Add, Log, Time);
 
-    public StepContext Context(SequencePhase phase = SequencePhase.WindowsPE) =>
+    public StepContext Context(SequencePhase phase = SequencePhase.WindowsPE, IReadOnlyDictionary<string, string>? variables = null) =>
         new(
             RunId,
             phase,
             new MachineVariables("Dell Inc.", "Latitude 5440", "SN-1", "4c4c4544-0042-3510-8052-b4c04f4d3232", ["00155D010203"], "PC-042", phase),
-            new Dictionary<string, string>(),
+            variables ?? new Dictionary<string, string>(),
             Progress);
 
     // The disk as Partition leaves it: the three volumes and the run's directory.

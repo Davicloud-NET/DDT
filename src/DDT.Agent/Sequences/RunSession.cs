@@ -20,6 +20,9 @@ public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens to
 
     public LocalDisk? Disk { get; set; }
 
+    // What the firmware said at the start of the run.
+    public bool? SecureBootEnabled { get; init; }
+
     public TargetVolumes? Volumes { get; set; }
 
     // The root of the running Windows, such as C:\, while the run goes on in it.

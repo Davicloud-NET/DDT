@@ -20,7 +20,8 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
             macs,
             system?.Manufacturer,
             system?.ProductName,
-            system?.SerialNumber);
+            system?.SerialNumber,
+            SecureBootState.Read());
     }
 
     private static SmbiosSystemInformation? ReadSmbios()

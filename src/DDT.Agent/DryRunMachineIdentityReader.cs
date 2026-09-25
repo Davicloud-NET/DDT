@@ -9,7 +9,8 @@ namespace DDT.Agent;
 
 // A stable identity per dry run id, so several dry runs can stand in for several machines and a
 // repeated run is recognised as the same machine.
-public sealed class DryRunMachineIdentityReader(int dryRunId) : IMachineIdentityReader
+// secureBootEnabled is what the fake machine's firmware says.
+public sealed class DryRunMachineIdentityReader(int dryRunId, bool secureBootEnabled = false) : IMachineIdentityReader
 {
     public MachineIdentity Read()
     {
@@ -24,6 +25,7 @@ public sealed class DryRunMachineIdentityReader(int dryRunId) : IMachineIdentity
             [mac],
             "DDT",
             "Dry run",
-            $"DRYRUN-{dryRunId}");
+            $"DRYRUN-{dryRunId}",
+            secureBootEnabled);
     }
 }

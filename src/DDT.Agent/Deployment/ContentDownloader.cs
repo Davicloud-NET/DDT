@@ -7,10 +7,10 @@ using System.Security.Cryptography;
 
 namespace DDT.Agent.Deployment;
 
-// Downloads a file, such as an image or a package, into a part file and resumes it after any interruption: the bytes
-// already there are hashed again and the rest is asked for with a Range request. The file only gets its final name
-// once its length and SHA-256 match what the server announced. open asks the server for a file by token, SHA-256 and
-// offset.
+// Downloads a file, such as an image or a package, into a sink and resumes it after any interruption: the rest is asked
+// for with a Range request from where the sink is. A part file keeps what arrived across restarts of the agent, and
+// only gets its final name once its length and SHA-256 match what the server announced; a raw disk image goes onto the
+// disk as it arrives. open asks the server for a file by token, SHA-256 and offset.
 public sealed class ContentDownloader(
     Func<string, string, long, CancellationToken, Task<AgentImageStream>> open,
     DeploymentTokens tokens,
@@ -27,6 +27,9 @@ public sealed class ContentDownloader(
 
     private const int BufferSize = 1024 * 1024;
 
+    public static DeploymentStepException Mismatch(string name) => new(
+        $"The download of {name} does not match the SHA-256 the server announced. Start again; if it fails again, upload {name} again.");
+
     // name says what the file is in messages, such as "Windows 11 Pro" or "package Dell drivers".
     public async Task DownloadAsync(
         string name,
@@ -37,151 +40,139 @@ public sealed class ContentDownloader(
         IProgress<int> percent,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
-        ArgumentException.ThrowIfNullOrEmpty(sha256);
-        ArgumentNullException.ThrowIfNull(percent);
-
-        FileStream file = new(partPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 0, useAsync: true);
-        IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         bool matches;
+        FileDownloadSink part = new(partPath, sizeBytes);
 
-        try
+        await using (part.ConfigureAwait(false))
         {
-            if (file.Length > sizeBytes)
-            {
-                file.SetLength(0);
-            }
-
-            // The file's length is the one record of progress: every byte in it has been hashed, whatever
-            // interrupted the transfer.
-            await HashExistingAsync(file, hash, cancellationToken).ConfigureAwait(false);
-
-            if (file.Length > 0)
-            {
-                log.Information($"Resuming the download of {name} at {ByteSize.Format(file.Length)} of {ByteSize.Format(sizeBytes)}.");
-            }
-
-            ByteProgress progress = new(percent, sizeBytes);
-            progress.Report(file.Length);
-
-            int failures = 0;
-            bool waitedForToken = false;
-            long progressed = timeProvider.GetTimestamp();
-
-            while (file.Length < sizeBytes)
-            {
-                string token = tokens.Token;
-                long before = file.Length;
-                string? interruption = null;
-
-                try
-                {
-                    await ReceiveAsync(name, token, sha256, sizeBytes, file, hash, progress, cancellationToken).ConfigureAwait(false);
-                    waitedForToken = false;
-
-                    if (file.Length < sizeBytes)
-                    {
-                        interruption = "the connection ended early";
-                    }
-                }
-                catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                {
-                    log.Warning($"The server has less of {name} than was already downloaded. Starting the download over.");
-                    Restart(file, hash);
-                }
-                catch (AgentTokenRejectedException)
-                {
-                    // The heartbeat renews the token; one that expired while the download waited is replaced within a
-                    // beat. A second refusal, or no new token, means the machine lost its authorization.
-                    if (waitedForToken || await tokens.WaitForOtherThanAsync(token, tokenWait, timeProvider, cancellationToken).ConfigureAwait(false) is null)
-                    {
-                        throw;
-                    }
-
-                    waitedForToken = true;
-                }
-                catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
-                {
-                    throw new DeploymentStepException(ServerCallRules.Reason(exception, $"the download of {name}"), exception);
-                }
-                catch (Exception exception) when (exception is HttpRequestException or TimeoutException
-                    || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested))
-                {
-                    interruption = exception is OperationCanceledException
-                        ? $"nothing arrived for {StallTimeout.TotalSeconds:0} s"
-                        : exception.Message;
-                }
-
-                // Only a run of interruptions without progress backs off further and counts towards giving up.
-                if (file.Length > before)
-                {
-                    failures = 0;
-                    progressed = timeProvider.GetTimestamp();
-                }
-
-                if (interruption is not null)
-                {
-                    if (timeProvider.GetElapsedTime(progressed) >= GiveUpAfter)
-                    {
-                        throw new DeploymentStepException(
-                            $"The download of {name} made no progress for {GiveUpAfter.TotalMinutes:0} minutes (last: {interruption}).");
-                    }
-
-                    failures++;
-                    TimeSpan delay = AgentLimits.RetryDelay(failures);
-                    log.Warning(
-                        $"The download of {name} was interrupted at {ByteSize.Format(file.Length)} ({interruption}). " +
-                        $"Resuming in {delay.TotalSeconds:0} s.");
-                    await Task.Delay(delay, timeProvider, cancellationToken).ConfigureAwait(false);
-                }
-            }
-
-            matches = file.Length == sizeBytes
-                && string.Equals(Convert.ToHexStringLower(hash.GetHashAndReset()), sha256, StringComparison.OrdinalIgnoreCase);
-        }
-        finally
-        {
-            hash.Dispose();
-            await file.DisposeAsync().ConfigureAwait(false);
+            matches = await DownloadAsync(name, sha256, sizeBytes, part, percent, cancellationToken).ConfigureAwait(false);
         }
 
         if (!matches)
         {
             File.Delete(partPath);
 
-            throw new DeploymentStepException(
-                $"The download of {name} does not match the SHA-256 the server announced. Start again; if it fails again, upload {name} again.");
+            throw Mismatch(name);
         }
 
         File.Move(partPath, finalPath, overwrite: true);
     }
 
-    private static async Task HashExistingAsync(FileStream file, IncrementalHash hash, CancellationToken cancellationToken)
+    // True when all sizeBytes arrived and match sha256. The sink's length is the one record of progress: every byte it
+    // holds has been hashed, whatever interrupted the transfer.
+    public async Task<bool> DownloadAsync(
+        string name,
+        string sha256,
+        long sizeBytes,
+        IDownloadSink sink,
+        IProgress<int> percent,
+        CancellationToken cancellationToken)
     {
-        byte[] buffer = new byte[BufferSize];
-        file.Position = 0;
-        int read;
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentException.ThrowIfNullOrEmpty(sha256);
+        ArgumentNullException.ThrowIfNull(sink);
+        ArgumentNullException.ThrowIfNull(percent);
 
-        while ((read = await file.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        await sink.HashExistingAsync(hash, cancellationToken).ConfigureAwait(false);
+
+        if (sink.Length > 0)
         {
-            hash.AppendData(buffer, 0, read);
+            log.Information($"Resuming the download of {name} at {ByteSize.Format(sink.Length)} of {ByteSize.Format(sizeBytes)}.");
         }
+
+        ByteProgress progress = new(percent, sizeBytes);
+        progress.Report(sink.Length);
+
+        int failures = 0;
+        bool waitedForToken = false;
+        long progressed = timeProvider.GetTimestamp();
+
+        while (sink.Length < sizeBytes)
+        {
+            string token = tokens.Token;
+            long before = sink.Length;
+            string? interruption = null;
+
+            try
+            {
+                await ReceiveAsync(name, token, sha256, sizeBytes, sink, hash, progress, cancellationToken).ConfigureAwait(false);
+                waitedForToken = false;
+
+                if (sink.Length < sizeBytes)
+                {
+                    interruption = "the connection ended early";
+                }
+            }
+            catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+            {
+                log.Warning($"The server has less of {name} than was already downloaded. Starting the download over.");
+                Restart(sink, hash);
+            }
+            catch (AgentTokenRejectedException)
+            {
+                // The heartbeat renews the token; one that expired while the download waited is replaced within a
+                // beat. A second refusal, or no new token, means the machine lost its authorization.
+                if (waitedForToken || await tokens.WaitForOtherThanAsync(token, tokenWait, timeProvider, cancellationToken).ConfigureAwait(false) is null)
+                {
+                    throw;
+                }
+
+                waitedForToken = true;
+            }
+            catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
+            {
+                throw new DeploymentStepException(ServerCallRules.Reason(exception, $"the download of {name}"), exception);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TimeoutException
+                || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+            {
+                interruption = exception is OperationCanceledException
+                    ? $"nothing arrived for {StallTimeout.TotalSeconds:0} s"
+                    : exception.Message;
+            }
+
+            // Only a run of interruptions without progress backs off further and counts towards giving up.
+            if (sink.Length > before)
+            {
+                failures = 0;
+                progressed = timeProvider.GetTimestamp();
+            }
+
+            if (interruption is not null)
+            {
+                if (timeProvider.GetElapsedTime(progressed) >= GiveUpAfter)
+                {
+                    throw new DeploymentStepException(
+                        $"The download of {name} made no progress for {GiveUpAfter.TotalMinutes:0} minutes (last: {interruption}).");
+                }
+
+                failures++;
+                TimeSpan delay = AgentLimits.RetryDelay(failures);
+                log.Warning(
+                    $"The download of {name} was interrupted at {ByteSize.Format(sink.Length)} ({interruption}). " +
+                    $"Resuming in {delay.TotalSeconds:0} s.");
+                await Task.Delay(delay, timeProvider, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return sink.Length == sizeBytes
+            && string.Equals(Convert.ToHexStringLower(hash.GetHashAndReset()), sha256, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void Restart(FileStream file, IncrementalHash hash)
+    private static void Restart(IDownloadSink sink, IncrementalHash hash)
     {
-        file.SetLength(0);
+        sink.Restart();
         hash.GetHashAndReset();
     }
 
-    // One request, appending what arrives to the file, which may be less than the rest when the connection ends
-    // early.
+    // One request, appending what arrives to the sink, which may be less than the rest when the connection ends early.
     private async Task ReceiveAsync(
         string name,
         string token,
         string sha256,
         long sizeBytes,
-        FileStream file,
+        IDownloadSink sink,
         IncrementalHash hash,
         ByteProgress progress,
         CancellationToken cancellationToken)
@@ -189,7 +180,7 @@ public sealed class ContentDownloader(
         using CancellationTokenSource stall = new(Timeout.InfiniteTimeSpan, timeProvider);
         using CancellationTokenSource reading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, stall.Token);
 
-        long offset = file.Length;
+        long offset = sink.Length;
         stall.CancelAfter(StallTimeout);
         AgentImageStream content = await open(token, sha256, offset, reading.Token).ConfigureAwait(false);
 
@@ -199,7 +190,7 @@ public sealed class ContentDownloader(
             if (content.Offset == 0 && offset > 0)
             {
                 log.Warning($"The server sent all of {name} instead of the missing part. Starting the download over.");
-                Restart(file, hash);
+                Restart(sink, hash);
                 offset = 0;
                 progress.Report(0);
             }
@@ -216,7 +207,6 @@ public sealed class ContentDownloader(
             }
 
             byte[] buffer = new byte[BufferSize];
-            file.Position = offset;
 
             while (offset < sizeBytes)
             {
@@ -239,7 +229,7 @@ public sealed class ContentDownloader(
                 }
 
                 int usable = (int)Math.Min(read, sizeBytes - offset);
-                await file.WriteAsync(buffer.AsMemory(0, usable), cancellationToken).ConfigureAwait(false);
+                await sink.WriteAsync(buffer.AsMemory(0, usable), cancellationToken).ConfigureAwait(false);
                 hash.AppendData(buffer, 0, usable);
                 offset += usable;
                 progress.Report(offset);

@@ -4,10 +4,12 @@
 
 namespace DDT.Agent;
 
+// SecureBootEnabled is what the firmware says, null when Windows does not tell.
 public sealed record MachineIdentity(
     string SmbiosUuid,
     string PrimaryMac,
     IReadOnlyList<string> MacAddresses,
     string? Manufacturer,
     string? Model,
-    string? SerialNumber);
+    string? SerialNumber,
+    bool? SecureBootEnabled = null);

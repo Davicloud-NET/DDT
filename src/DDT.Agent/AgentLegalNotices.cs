@@ -40,6 +40,8 @@ public static class AgentLegalNotices
         "licenses/wimlib/COPYING.MIT",
         "licenses/wimlib/COPYING.libdivsufsort-lite",
         "licenses/wimlib/COPYING.MinGW-w64-runtime.txt",
+        "licenses/zstd/ZstdSharp-LICENSE",
+        "licenses/zstd/LICENSE",
     ];
 
     public static void WriteStartupNotices(TextWriter output)

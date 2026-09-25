@@ -17,6 +17,16 @@ public sealed class AgentOptionsTests
     }
 
     [Fact]
+    public void GivesTheDryRunsMachineSecureBootOnlyWhenAsked()
+    {
+        Assert.True(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run"], out AgentOptions? plain, out string error), error);
+        Assert.True(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run", "--dry-run-secure-boot"], out AgentOptions? secure, out error), error);
+
+        Assert.False(plain!.DryRunSecureBoot);
+        Assert.True(secure!.DryRunSecureBoot);
+    }
+
+    [Fact]
     public void ReadsAnAgentJsonWrittenWhileEnrollmentTokensExisted()
     {
         string path = Path.Combine(Path.GetTempPath(), $"agent-{Guid.NewGuid():N}.json");

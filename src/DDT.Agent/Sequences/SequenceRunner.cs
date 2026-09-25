@@ -7,6 +7,8 @@ using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
+using DDT.Core.Disks;
 using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
@@ -29,6 +31,7 @@ namespace DDT.Agent.Sequences;
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
+    IRawDisks rawDisks,
     IImageApplier applier,
     IBcdWriter bcdWriter,
     IRebooter rebooter,
@@ -70,6 +73,9 @@ public sealed class SequenceRunner(
 
     // How often Windows PE may start instead of the installed Windows and hand the run over again.
     private const int MaxWindowsPEReturns = 3;
+
+    // Firmware setup screens show a line of this much.
+    private const int MaxBootEntryName = 64;
 
     // Whether this run put Windows Boot Manager first, which a run that does not finish puts back.
     private bool _windowsFirst;
@@ -165,7 +171,7 @@ public sealed class SequenceRunner(
         _phase = phase;
         _recordRestart = recordRestart;
 
-        RunSession session = new(machineId, run, tokens);
+        RunSession session = new(machineId, run, tokens) { SecureBootEnabled = identity.SecureBootEnabled };
         SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
 
         MachineVariables machine = new(
@@ -336,6 +342,10 @@ public sealed class SequenceRunner(
                     heartbeat.Activity = RunActivity.Finishing;
                     await MakeBootableAsync(session.RequireVolumes(), null, steps.Token).ConfigureAwait(false);
                     break;
+                case SequenceOutcome.Completed when _phase == SequencePhase.WindowsPE && RawImageWritten(state):
+                    heartbeat.Activity = RunActivity.Finishing;
+                    await PutRawImageFirstAsync(session, state, steps.Token).ConfigureAwait(false);
+                    break;
                 case SequenceOutcome.Completed:
                     heartbeat.Activity = RunActivity.Finishing;
                     break;
@@ -435,6 +445,9 @@ public sealed class SequenceRunner(
     private static bool WindowsApplied(SequenceState state) =>
         state.Variables.TryGetValue(RunVariables.WindowsApplied, out string? applied) && applied == RunVariables.Set;
 
+    private static bool RawImageWritten(SequenceState state) =>
+        state.Variables.TryGetValue(RunVariables.RawImageWritten, out string? written) && written == RunVariables.Set;
+
     private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
     {
         AgentRun run = session.Run;
@@ -454,6 +467,21 @@ public sealed class SequenceRunner(
                 ?? throw new DeploymentStepException($"The server sent no image for step {step.Name}. Assign the sequence again."));
         }
 
+        AgentRunImage? rawImage = steps.OfType<WriteRawImageStep>().Select(step => WriteRawImageStepRunner.ImageOf(run, step)).FirstOrDefault();
+
+        if (rawImage is not null)
+        {
+            if (SecureBootGate.Refusal(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } refusal)
+            {
+                throw new DeploymentStepException(refusal);
+            }
+
+            if (SecureBootGate.Warning(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } warning)
+            {
+                log.Warning(warning);
+            }
+        }
+
         if (steps.OfType<InjectDriversStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))
         {
             throw new DeploymentStepException(InjectDriversStepRunner.NoDismMessage);
@@ -469,7 +497,23 @@ public sealed class SequenceRunner(
         {
             IReadOnlyList<LocalDisk> disks = await partitioner.ListDisksAsync(cancellationToken).ConfigureAwait(false);
             LocalDisk disk = SelectDisk(run.DiskNumber, confirmedDisk, disks);
-            CheckSize(run, disk, images, steps.OfType<PartitionStep>().FirstOrDefault());
+
+            if (rawImage is null)
+            {
+                CheckSize(run, disk, images, steps.OfType<PartitionStep>().FirstOrDefault());
+            }
+            else
+            {
+                CheckRawSize(run, disk, rawImage, steps.Any(step => step is WriteCloudInitSeedStep));
+
+                using IRawDisk raw = rawDisks.Open(disk);
+
+                if (raw.SectorSize != GptLayout.SectorSize)
+                {
+                    throw new DeploymentStepException($"Disk {disk.Number} {WriteRawImageStepRunner.FourKilobyteSectorsMessage}");
+                }
+            }
+
             session.Disk = disk;
         }
 
@@ -478,7 +522,7 @@ public sealed class SequenceRunner(
             applier.Prepare();
         }
 
-        foreach (AgentRunImage image in images)
+        foreach (AgentRunImage image in rawImage is null ? images : [.. images, rawImage])
         {
             long? length = await ServerCallRules.CallAsync(
                 call => server.HeadRunFileAsync(session.MachineId, session.Tokens.Token, run.Id, image.Sha256, call),
@@ -534,6 +578,23 @@ public sealed class SequenceRunner(
         throw new DeploymentStepException(
             $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)}: " +
             $"{string.Join(", ", parts)} and {ByteSize.Format(SpareBytes)} to spare. Run it on a larger disk.");
+    }
+
+    // A raw disk image is written as it downloads, so the disk needs room for the disk it holds and the seed, and no more.
+    private static void CheckRawSize(AgentRun run, LocalDisk disk, AgentRunImage image, bool seed)
+    {
+        long required = image.InstalledBytes + (seed ? CloudInitSeed.DiskBytes : 0);
+
+        if (disk.SizeBytes >= required)
+        {
+            return;
+        }
+
+        throw new DeploymentStepException(
+            $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)}: " +
+            $"{ByteSize.Format(image.InstalledBytes)} for the disk image" +
+            (seed ? $" and {ByteSize.Format(CloudInitSeed.DiskBytes)} for the cloud-init seed" : "") +
+            ". Run it on a larger disk.");
     }
 
     private static LocalDisk SelectDisk(int? diskNumber, LocalDisk? confirmedDisk, IReadOnlyList<LocalDisk> disks)
@@ -597,6 +658,8 @@ public sealed class SequenceRunner(
             new WriteUnattendStepRunner(server, session, heartbeat.ReportNowAsync, log, timeProvider),
             new JoinDomainStepRunner(joiner, server, session, heartbeat.ReportNowAsync, log, timeProvider),
             new RunScriptStepRunner(tools, downloads, session, log, workDirectory),
+            new WriteRawImageStepRunner(partitioner, rawDisks, downloads, session, log),
+            new WriteCloudInitSeedStepRunner(rawDisks, session, log, timeProvider),
             heartbeat.TokenRejected,
             log,
             timeProvider);
@@ -616,6 +679,34 @@ public sealed class SequenceRunner(
         await bcdWriter.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
         _windowsFirst = true;
         await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
+        restartMarker.Set(RestartInto.Windows);
+    }
+
+    // A raw disk image starts from its fallback file, which a boot entry named after the image puts first, the last change
+    // to the machine as for Windows. An image without an EFI system partition gets none.
+    private async Task PutRawImageFirstAsync(RunSession session, SequenceState state, CancellationToken cancellationToken)
+    {
+        if (RunVariables.RawSystemPartitionOf(state.Variables) is not { } esp)
+        {
+            log.Warning(
+                "The disk image has no EFI system partition, so the machine gets no boot entry for it and starts it only if its " +
+                "firmware tries the disk. Set its boot order to start the disk first.");
+
+            return;
+        }
+
+        string? name = session.Run.Sequence.Steps.OfType<WriteRawImageStep>()
+            .Select(step => session.Run.Images.FirstOrDefault(image => image.ImageId == step.ImageId)?.Name)
+            .FirstOrDefault(found => !string.IsNullOrWhiteSpace(found));
+        string description = name is null ? "Linux" : name.Length > MaxBootEntryName ? name[..MaxBootEntryName] : name;
+
+        _windowsFirst = true;
+        await bcdWriter.PutFirstAsync(
+            esp,
+            FirmwareBootEntry.FallbackLoaderPath,
+            description,
+            RunVariables.ErasedSystemPartitionIdsOf(state.Variables),
+            cancellationToken).ConfigureAwait(false);
         restartMarker.Set(RestartInto.Windows);
     }
 

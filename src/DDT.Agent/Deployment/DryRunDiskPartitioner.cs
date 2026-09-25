@@ -57,6 +57,22 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         return volumes;
     }
 
+    // The file that stands in for the disk goes, as the table on a real disk would.
+    public Task<IReadOnlyList<Guid>> CleanAsync(LocalDisk disk, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        File.Delete(FileRawDisks.PathFor(root, disk.Number));
+        log.Information($"Dry run: diskpart is not run. It would get this script for disk {disk.Number}:");
+
+        foreach (string line in DiskpartScript.Clean(disk.Number).Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            log.Information($"  {line}");
+        }
+
+        return Task.FromResult<IReadOnlyList<Guid>>([]);
+    }
+
     // The directories are where the partitioning left them; nothing gets a letter.
     public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
     {

@@ -80,11 +80,10 @@ public static class EfiLoadOption
     }
 
     // True when the option's device paths name the GPT partition partitionId and the file path on it, whatever the
-    // case of the path. Never throws: the option comes from the firmware and may hold anything.
-    public static bool PointsAt(ReadOnlySpan<byte> option, Guid partitionId, string path)
+    // case of the path, or any file when path is null. Never throws: the option comes from the firmware and may hold
+    // anything.
+    public static bool PointsAt(ReadOnlySpan<byte> option, Guid partitionId, string? path)
     {
-        ArgumentNullException.ThrowIfNull(path);
-
         if (option.Length < HeaderLength)
         {
             return false;
@@ -126,7 +125,7 @@ public static class EfiLoadOption
             list = list[length..];
         }
 
-        return onPartition && toPath;
+        return onPartition && (toPath || path is null);
     }
 
     private static void WriteNodeHeader(Span<byte> node, byte type, byte subType, int length)

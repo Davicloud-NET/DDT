@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-public sealed class WindowsBootEntryTests
+public sealed class FirmwareBootEntryTests
 {
     private static readonly EspPartition s_esp = new(1, 2048, 614400, Guid.Parse("5e2b1a3c-4d6f-4a8b-9c0d-1e2f3a4b5c6d"));
 
@@ -31,7 +31,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0004"] = [.. Windows(s_esp), .. "WINDOWS\0"u8];
         _variables.Values["BootOrder"] = Order(1, 2, 4);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Order(4, 1, 2), _variables.Values["BootOrder"]);
         Assert.Equal(["BootOrder"], _variables.Writes);
@@ -45,7 +45,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0002"] = Other("EFI SCSI Device");
         _variables.Values["BootOrder"] = Order(0, 2);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0003"]);
         Assert.Equal(Order(3, 0, 2), _variables.Values["BootOrder"]);
@@ -60,7 +60,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0001"] = Other("EFI Network");
         _variables.Values["BootOrder"] = Order(0, 1);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0002"]);
         Assert.Equal(Order(2, 0, 1), _variables.Values["BootOrder"]);
@@ -74,7 +74,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0001"] = Other("EFI Network");
         _variables.Values["BootOrder"] = Order(0, 1);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0000"]);
         Assert.False(_variables.Values.ContainsKey("Boot0002"));
@@ -89,7 +89,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0003"] = Windows(s_erasedEsp);
         _variables.Values["BootOrder"] = Order(1, 3);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0003"]);
         Assert.Equal(Order(3, 1), _variables.Values["BootOrder"]);
@@ -104,7 +104,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0005"] = Windows(s_esp);
         _variables.Values["BootOrder"] = Order(0, 5);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Same(erased, _variables.Values["Boot0000"]);
         Assert.Equal(Order(5, 0), _variables.Values["BootOrder"]);
@@ -119,7 +119,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0005"] = Windows(s_esp);
         _variables.Values["BootOrder"] = Order(1, 5, 2, 1, 7);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Order(5, 1, 2, 7), _variables.Values["BootOrder"]);
     }
@@ -127,7 +127,7 @@ public sealed class WindowsBootEntryTests
     [Fact]
     public void StartsABootOrderWhenTheFirmwareHasNone()
     {
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0000"]);
         Assert.Equal(Order(0), _variables.Values["BootOrder"]);
@@ -140,7 +140,7 @@ public sealed class WindowsBootEntryTests
         _variables.Values["Boot0001"] = Other("EFI Network");
         _variables.Values["BootOrder"] = Order(3, 1);
 
-        WindowsBootEntry.MakeFirst(_variables, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Empty(_variables.Writes);
     }
@@ -153,7 +153,7 @@ public sealed class WindowsBootEntryTests
         Dictionary<string, byte[]> before = new(_variables.Values);
         UndoableUefiVariables changes = new(_variables);
 
-        WindowsBootEntry.MakeFirst(changes, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(changes, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.True(changes.Undo());
         Assert.Equal(before, _variables.Values);
@@ -170,7 +170,7 @@ public sealed class WindowsBootEntryTests
         Dictionary<string, byte[]> before = new(_variables.Values);
         UndoableUefiVariables changes = new(_variables);
 
-        WindowsBootEntry.MakeFirst(changes, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(changes, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.Equal(Windows(s_esp), _variables.Values["Boot0001"]);
         Assert.True(changes.Undo());
@@ -183,14 +183,36 @@ public sealed class WindowsBootEntryTests
     {
         UndoableUefiVariables changes = new(_variables);
 
-        WindowsBootEntry.MakeFirst(changes, s_esp, s_erased, _log);
+        FirmwareBootEntry.MakeFirst(changes, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
 
         Assert.True(changes.Undo());
         Assert.Empty(_variables.Values);
         Assert.Equal(["BootOrder", "Boot0000"], _variables.Deletes);
     }
 
-    private static byte[] Windows(EspPartition esp) => EfiLoadOption.Build(WindowsBootEntry.Description, esp, WindowsBootEntry.LoaderPath);
+    [Fact]
+    public void AddsAnEntryForTheFallbackFileOfARawImage()
+    {
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.FallbackLoaderPath, "noble-server-cloudimg-amd64", s_erased, _log);
+
+        Assert.Equal(EfiLoadOption.Build("noble-server-cloudimg-amd64", s_esp, FirmwareBootEntry.FallbackLoaderPath), _variables.Values["Boot0000"]);
+        Assert.Equal(Order(0), _variables.Values["BootOrder"]);
+    }
+
+    // Windows over Linux, or Linux over Windows: the entry of the erased partition is dead whatever it started.
+    [Fact]
+    public void ReusesAnEntryOfTheErasedPartitionThatStartedAnotherLoader()
+    {
+        _variables.Values["Boot0001"] = EfiLoadOption.Build("ubuntu", s_erasedEsp, @"\EFI\ubuntu\shimx64.efi");
+        _variables.Values["BootOrder"] = Order(1);
+
+        FirmwareBootEntry.MakeFirst(_variables, s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased, _log);
+
+        Assert.Equal(Windows(s_esp), _variables.Values["Boot0001"]);
+        Assert.Equal(["Boot0001"], _variables.Writes);
+    }
+
+    private static byte[] Windows(EspPartition esp) => EfiLoadOption.Build(FirmwareBootEntry.WindowsDescription, esp, FirmwareBootEntry.WindowsLoaderPath);
 
     // Another disk's fallback loader, standing in for any entry that is not Windows Boot Manager on the new partition.
     private static byte[] Other(string description) => EfiLoadOption.Build(description, s_otherEsp, @"\EFI\Boot\bootx64.efi");

@@ -162,6 +162,7 @@ public sealed class DryRunResumeTests : IDisposable
         SequenceRunner runner = new(
             _server,
             disks,
+            new FileRawDisks(_root, log),
             new DryRunImageApplier(log),
             new DryRunBcdWriter(log),
             new DryRunRebooter(log),
@@ -207,6 +208,8 @@ public sealed class DryRunResumeTests : IDisposable
             new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
             new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
             new RunScriptStepRunner(tools, downloads, session, log, _root),
+            new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
+            new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
             _ => { },
             log,
             _time);

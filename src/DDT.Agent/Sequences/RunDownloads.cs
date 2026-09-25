@@ -33,19 +33,42 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
         string file = Path.Combine(directory, hash + extension);
         Directory.CreateDirectory(directory);
 
-        ContentDownloader downloader = new(
-            (token, content, offset, call) => server.OpenRunFileAsync(session.MachineId, token, session.Run.Id, content, offset, call),
-            session.Tokens,
-            log,
-            timeProvider,
-            tokenWait);
-
         log.Information($"Downloading {name} ({ByteSize.Format(sizeBytes)}).");
-        await downloader.DownloadAsync(name, hash, sizeBytes, Path.Combine(directory, hash + ".part"), file, percent, cancellationToken)
+        await Downloader().DownloadAsync(name, hash, sizeBytes, Path.Combine(directory, hash + ".part"), file, percent, cancellationToken)
             .ConfigureAwait(false);
 
         return file;
     }
+
+    // Into sink, which does something with the bytes as they come, such as write a raw disk image. Throws when they
+    // do not match the SHA-256 the server announced.
+    public async Task DownloadToAsync(
+        string name,
+        string sha256,
+        long sizeBytes,
+        IDownloadSink sink,
+        IProgress<int> percent,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sha256);
+
+        if (sha256.Length != 64 || !sha256.All(char.IsAsciiHexDigit))
+        {
+            throw new DeploymentStepException($"The server names {name} by \"{sha256}\", which is no SHA-256. Assign the sequence again.");
+        }
+
+        if (!await Downloader().DownloadAsync(name, sha256.ToLowerInvariant(), sizeBytes, sink, percent, cancellationToken).ConfigureAwait(false))
+        {
+            throw ContentDownloader.Mismatch(name);
+        }
+    }
+
+    private ContentDownloader Downloader() => new(
+        (token, content, offset, call) => server.OpenRunFileAsync(session.MachineId, token, session.Run.Id, content, offset, call),
+        session.Tokens,
+        log,
+        timeProvider,
+        tokenWait);
 
     // Downloads the package into cacheDirectory and unpacks it into target, which is replaced. The zip is deleted
     // either way.

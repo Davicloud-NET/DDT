@@ -14,7 +14,16 @@ public interface IBcdWriter
     // warning, because Windows is installed either way.
     Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken);
 
-    // Puts back the firmware boot entries and order that PutWindowsFirstAsync changed in this run, for a run that
-    // ends without finishing. Never throws: a failure is only a warning.
+    // Makes the firmware start loaderPath on the EFI system partition esp first, under description, as the fallback file
+    // of a raw disk image. A failure is only a warning.
+    Task PutFirstAsync(
+        EspPartition esp,
+        string loaderPath,
+        string description,
+        IReadOnlyCollection<Guid> erasedSystemPartitionIds,
+        CancellationToken cancellationToken);
+
+    // Puts back the firmware boot entries and order that PutWindowsFirstAsync or PutFirstAsync changed in this run, for
+    // a run that ends without finishing. Never throws: a failure is only a warning.
     Task RestoreBootOrderAsync(CancellationToken cancellationToken);
 }

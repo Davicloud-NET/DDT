@@ -11,9 +11,10 @@ DDT's built artefacts also contain software by others under their own licences. 
 for each artefact, with its copyright holders and licence, and [licenses/](licenses) holds the
 licence texts. The container image carries LICENSE, NOTICE, this file and `licenses/` in
 `/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
-file, `licenses/dotnet` and `licenses/wimlib`, and prints them with `ddt-agent --licenses`. The web
-bundle alone holds no licence files; its licences are in `licenses/web`, which the About page links
-to. Pass LICENSE, NOTICE, this file and `licenses/` on with any artefact you distribute.
+file, `licenses/dotnet`, `licenses/wimlib` and `licenses/zstd`, and prints them with
+`ddt-agent --licenses`. The web bundle alone holds no licence files; its licences are in
+`licenses/web`, which the About page links to. Pass LICENSE, NOTICE, this file and `licenses/` on
+with any artefact you distribute.
 
 `src/DDT.ServiceDefaults/Extensions.cs` is code from the .NET Aspire ServiceDefaults project
 template, Copyright (c) .NET Foundation and Contributors, under the MIT licence in
@@ -165,11 +166,13 @@ from `DDT.Agent`, `DDT.Core` and `DDT.Contracts`, it contains:
   with.
 - Startup code from the Microsoft Visual C++ runtime, which the linker adds. It is Microsoft's and
   comes with the Visual C++ build tools the agent is published with.
+- `ZstdSharp.Port` 0.8.8 and the Zstandard 1.5.7 code it is ported from, as described for the server
+  above, which the agent unpacks raw disk images with.
 - libwim, described next.
 
-The agent also carries LICENSE, NOTICE, this file and the texts in `licenses/dotnet` and
-`licenses/wimlib`. It prints its legal notices at start-up, and `ddt-agent --licenses` prints these
-texts.
+The agent also carries LICENSE, NOTICE, this file and the texts in `licenses/dotnet`,
+`licenses/wimlib` and `licenses/zstd`. It prints its legal notices at start-up, and
+`ddt-agent --licenses` prints these texts.
 
 ### wimlib (libwim)
 

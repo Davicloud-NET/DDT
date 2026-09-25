@@ -115,6 +115,7 @@ AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCerti
 SequenceRunner runner = new(
     server,
     disks,
+    new PhysicalDisks(),
     new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
     new BcdbootWriter(tools, firmware, log),
     new WindowsPERebooter(tools, firmware, log),

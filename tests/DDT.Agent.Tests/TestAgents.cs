@@ -31,13 +31,15 @@ internal static class TestAgents
         string? systemDirectory = null,
         bool dryRunHandOver = false,
         bool dryRun = true,
-        IDomainJoiner? joiner = null)
+        IDomainJoiner? joiner = null,
+        IRawDisks? rawDisks = null)
     {
         toolRunner ??= new RecordingToolRunner();
 
         return new SequenceRunner(
             server,
             tools,
+            rawDisks ?? new MemoryRawDisks(),
             tools,
             bcdWriter ?? tools,
             rebooter ?? tools,

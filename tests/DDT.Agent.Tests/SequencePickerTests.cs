@@ -5,6 +5,7 @@
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -152,6 +153,64 @@ public sealed class SequencePickerTests
         Assert.Equal(2, Lines(console).Count(line => line.EndsWith("Task sequences this machine can run:", StringComparison.Ordinal)));
     }
 
+    private static readonly AgentSequenceChoice s_linux = new(
+        Guid.Parse("0193a4b2-0000-7000-8000-00000000e003"),
+        "Install Linux",
+        null,
+        ErasesDisk: true,
+        NeedsComputerName: false,
+        RequiredBytes: 4L * 1024 * 1024 * 1024,
+        Suggested: false,
+        RawImageName: "custom-image",
+        RawImageBootCapability: ImageBootCapability.NotSigned);
+
+    [Fact]
+    public async Task AsksForAnywayBeforeWritingAnImageTheFirmwareWouldNotStart()
+    {
+        (SequencePicker picker, ScriptedSignInPrompt prompt, StringWriter console) = Create([s_linux], [FakeDeploymentTools.Disk(0)], true, "1", "ERASE", "ANYWAY");
+
+        AgentRunRequest? request = await AnswerAllAsync(picker);
+
+        Assert.Equal(new AgentRunRequest(s_linux.Id, 0, null, AllowSecureBootMismatch: true), request);
+        Assert.Equal(["Sequence number", "Type ERASE to continue", "Type ANYWAY to write it all the same"], prompt.Labels);
+        Assert.Contains(Lines(console), line => line.EndsWith("1. Install Linux (erases a disk, not for Secure Boot, needs 4 GB)", StringComparison.Ordinal));
+        Assert.Contains(
+            Lines(console),
+            line => line.EndsWith("custom-image will not start with Secure Boot on, and this machine has Secure Boot on. It starts only once Secure Boot is turned off in the firmware setup, or your own key is enrolled.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GoesBackToTheListWithoutAnyway()
+    {
+        (SequencePicker picker, ScriptedSignInPrompt prompt, _) = Create([s_linux], [FakeDeploymentTools.Disk(0)], true, "1", "ERASE", "yes", "1", "ERASE", "ANYWAY");
+
+        AgentRunRequest? request = await AnswerAllAsync(picker);
+
+        Assert.True(request?.AllowSecureBootMismatch);
+        Assert.Equal(6, prompt.Labels.Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(null)]
+    public async Task AsksNoAnywayWhereSecureBootIsNotOn(bool? secureBootEnabled)
+    {
+        (SequencePicker picker, ScriptedSignInPrompt prompt, _) = Create([s_linux], [FakeDeploymentTools.Disk(0)], secureBootEnabled, "1", "ERASE");
+
+        Assert.Equal(new AgentRunRequest(s_linux.Id, 0, null), await AnswerAllAsync(picker));
+        Assert.Equal(["Sequence number", "Type ERASE to continue"], prompt.Labels);
+    }
+
+    [Fact]
+    public async Task AsksNoAnywayForAnImageSignedForSecureBoot()
+    {
+        AgentSequenceChoice signed = s_linux with { RawImageBootCapability = ImageBootCapability.SecureBootOk };
+        (SequencePicker picker, ScriptedSignInPrompt prompt, _) = Create([signed], [FakeDeploymentTools.Disk(0)], true, "1", "ERASE");
+
+        Assert.Equal(new AgentRunRequest(signed.Id, 0, null), await AnswerAllAsync(picker));
+        Assert.Equal(2, prompt.Labels.Count);
+    }
+
     [Fact]
     public async Task ARefusedChoiceStartsOverWithAFreshList()
     {
@@ -183,12 +242,18 @@ public sealed class SequencePickerTests
     private static (SequencePicker Picker, ScriptedSignInPrompt Prompt, StringWriter Console) Create(
         AgentSequenceChoice[] sequences,
         LocalDisk[] disks,
+        params string[] typed) => Create(sequences, disks, null, typed);
+
+    private static (SequencePicker Picker, ScriptedSignInPrompt Prompt, StringWriter Console) Create(
+        AgentSequenceChoice[] sequences,
+        LocalDisk[] disks,
+        bool? secureBootEnabled,
         params string[] typed)
     {
         StringWriter console = new();
         ScriptedSignInPrompt prompt = new(typed);
         SequencePicker picker = new(prompt, new AgentLog(new ImmediateTimeProvider(), console));
-        picker.Offer(sequences, disks);
+        picker.Offer(sequences, disks, secureBootEnabled);
 
         return (picker, prompt, console);
     }

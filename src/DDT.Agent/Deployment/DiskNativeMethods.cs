@@ -11,9 +11,12 @@ namespace DDT.Agent.Deployment;
 internal static unsafe partial class DiskNativeMethods
 {
     public const uint GenericRead = 0x80000000;
+    public const uint GenericWrite = 0x40000000;
     public const uint FileShareRead = 0x1;
     public const uint FileShareWrite = 0x2;
     public const uint OpenExisting = 3;
+    public const uint FileFlagWriteThrough = 0x80000000;
+    public const uint FileFlagNoBuffering = 0x20000000;
 
     public const uint IoctlStorageQueryProperty = 0x002D1400;
     public const uint IoctlDiskGetLengthInfo = 0x0007405C;
@@ -21,6 +24,9 @@ internal static unsafe partial class DiskNativeMethods
     public const uint IoctlDiskGetPartitionInfoEx = 0x00070048;
     public const uint IoctlDiskGetDriveGeometry = 0x00070000;
     public const uint IoctlStorageGetDeviceNumber = 0x002D1080;
+    public const uint IoctlDiskGetDriveGeometryEx = 0x000700A0;
+    public const uint IoctlDiskUpdateProperties = 0x00070140;
+    public const uint FsctlSetSparse = 0x000900C4;
 
     public const int ErrorFileNotFound = 2;
     public const int ErrorPathNotFound = 3;
@@ -49,6 +55,10 @@ internal static unsafe partial class DiskNativeMethods
         uint outBufferSize,
         out uint bytesReturned,
         nint overlapped);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool FlushFileBuffers(SafeFileHandle file);
 
     [LibraryImport("kernel32.dll")]
     public static partial uint GetLogicalDrives();

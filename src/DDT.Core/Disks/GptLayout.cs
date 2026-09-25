@@ -36,8 +36,13 @@ public sealed class GptLayout
     private const int NameOffset = 56;
     private const int NameLength = 72;
 
-    // Real tables put their entries at LBA 2. The cap keeps a forged header from asking for gigabytes.
-    private const long MaxEntriesLba = AlignmentSectors;
+    // Real tables put 16 KiB of entries at LBA 2. The caps keep a table within the first mebibyte of the disk, which is
+    // what an agent holds back while it writes an image, and a forged header from asking for gigabytes.
+    private const long MaxEntriesLba = AlignmentSectors / 2;
+    private const long MaxEntryBytes = AlignmentSectors / 2 * SectorSize;
+
+    // The most HeadBytes can be.
+    public const int MaxHeadBytes = (int)(AlignmentSectors * SectorSize);
 
     private readonly byte[] _entries;
 
@@ -358,7 +363,8 @@ public sealed class GptLayout
         if (entriesLba is < 2 or > MaxEntriesLba
             || count is 0 or > MaxEntryCount
             || size is < MinEntrySize or > MaxEntrySize
-            || size % 8 != 0)
+            || size % 8 != 0
+            || (long)count * size > MaxEntryBytes)
         {
             throw new InvalidGptException($"{DamagedMessage} Its partition entries are laid out in a way DDT does not read.");
         }

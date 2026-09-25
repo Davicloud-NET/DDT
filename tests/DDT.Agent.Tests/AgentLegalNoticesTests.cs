@@ -57,7 +57,7 @@ public sealed class AgentLegalNoticesTests
     public void CarriesEveryLicenceTextThatConcernsTheAgent()
     {
         string root = RepositoryRoot();
-        string[] folders = ["dotnet", "wimlib"];
+        string[] folders = ["dotnet", "wimlib", "zstd"];
         string[] expected =
         [
             "LICENSE",

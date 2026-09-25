@@ -17,6 +17,8 @@ public sealed class AgentStepRunner(
     WriteUnattendStepRunner writeUnattend,
     JoinDomainStepRunner joinDomain,
     RunScriptStepRunner runScript,
+    WriteRawImageStepRunner writeRawImage,
+    WriteCloudInitSeedStepRunner writeCloudInitSeed,
     Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
     TimeProvider timeProvider) : IStepRunner
@@ -48,6 +50,8 @@ public sealed class AgentStepRunner(
                     InjectDriversStep injectDriversStep => await injectDrivers.RunAsync(injectDriversStep, context, cancellationToken).ConfigureAwait(false),
                     WriteUnattendStep writeUnattendStep => await writeUnattend.RunAsync(writeUnattendStep, context, cancellationToken).ConfigureAwait(false),
                     RunScriptStep runScriptStep => await runScript.RunAsync(runScriptStep, context, cancellationToken).ConfigureAwait(false),
+                    WriteRawImageStep writeRawImageStep => await writeRawImage.RunAsync(writeRawImageStep, context, cancellationToken).ConfigureAwait(false),
+                    WriteCloudInitSeedStep seedStep => await writeCloudInitSeed.RunAsync(seedStep, context, cancellationToken).ConfigureAwait(false),
                     RebootStep => StepResult.RebootRequired(),
                     JoinDomainStep when context.Phase == SequencePhase.WindowsPE => StepResult.Failed(JoinDomainInWindowsPE),
                     JoinDomainStep joinDomainStep => await joinDomain.RunAsync(joinDomainStep, context, cancellationToken).ConfigureAwait(false),

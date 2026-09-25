@@ -60,6 +60,7 @@ public static class WindowsPhaseService
         SequenceRunner runner = new(
             server,
             new DiskpartPartitioner(tools, log, TimeProvider.System, directory),
+            new PhysicalDisks(),
             new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(directory, "logs", "wimlib.log")),
             new BcdbootWriter(tools, new UefiVariables(), log),
             rebooter,

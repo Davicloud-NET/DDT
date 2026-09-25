@@ -164,6 +164,26 @@ internal sealed class FakeDeploymentTools
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<Guid>> CleanAsync(LocalDisk disk, CancellationToken cancellationToken)
+    {
+        Record("clean", $" {disk.Number}");
+
+        return Task.FromResult<IReadOnlyList<Guid>>([ErasedSystemPartitionId]);
+    }
+
+    // The journal names the loader and the partition it is on.
+    public Task PutFirstAsync(
+        EspPartition esp,
+        string loaderPath,
+        string description,
+        IReadOnlyCollection<Guid> erasedSystemPartitionIds,
+        CancellationToken cancellationToken)
+    {
+        Record("firmware", $" {description} {loaderPath} on partition {esp.PartitionNumber}");
+
+        return Task.CompletedTask;
+    }
+
     public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
     {
         Record("find", $" {ids.Windows}");

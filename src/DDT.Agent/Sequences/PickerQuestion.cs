@@ -11,4 +11,7 @@ internal enum PickerQuestion
     Disk,
     ComputerName,
     Confirmation,
+
+    // ANYWAY, for a disk image that will not start with the Secure Boot the machine has on.
+    SecureBoot,
 }

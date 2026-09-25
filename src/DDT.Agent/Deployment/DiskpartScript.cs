@@ -58,6 +58,14 @@ public static class DiskpartScript
         return Script(lines);
     }
 
+    // Removes every partition and the partition table, and leaves the disk otherwise as it is.
+    public static string Clean(int diskNumber)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);
+
+        return Script([string.Create(CultureInfo.InvariantCulture, $"select disk {diskNumber}"), "clean", "exit"]);
+    }
+
     // Gives the system and recovery partitions of a run letters again after a restart. The recovery partition keeps
     // its attributes: they only keep Windows from giving it a letter by itself.
     public static string AssignLetters(int diskNumber, uint systemPartition, char system, uint recoveryPartition, char recovery)

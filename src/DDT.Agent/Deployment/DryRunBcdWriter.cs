@@ -32,6 +32,22 @@ public sealed class DryRunBcdWriter(AgentLog log) : IBcdWriter
         return Task.CompletedTask;
     }
 
+    public Task PutFirstAsync(
+        EspPartition esp,
+        string loaderPath,
+        string description,
+        IReadOnlyCollection<Guid> erasedSystemPartitionIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(esp);
+
+        log.Information(
+            $"Dry run: the firmware boot order is not changed. A boot entry {description} for {loaderPath} on partition " +
+            $"{esp.PartitionNumber} ({esp.PartitionId}) would be put first.");
+
+        return Task.CompletedTask;
+    }
+
     public Task RestoreBootOrderAsync(CancellationToken cancellationToken)
     {
         log.Information("Dry run: the firmware boot order was not changed, so it is not put back.");

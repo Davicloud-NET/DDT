@@ -5,17 +5,21 @@
 using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 using DDT.Core.Unattend;
 
 namespace DDT.Agent.Sequences;
 
 // What the technician signed in at the machine has chosen so far: a sequence, then only what that sequence needs: a
-// disk when it erases one and there are several, a computer name when the server needs one, and ERASE before a disk
-// is erased. Anything but ERASE at that question goes back to the list, so nothing is erased by a stray key. The
-// sequences an assignment rule suggests for this machine come first.
+// disk when it erases one and there are several, a computer name when the server needs one, ERASE before a disk is
+// erased, and ANYWAY before a disk image is written that will not start with the Secure Boot the machine has on.
+// Anything but the word at those questions goes back to the list, so nothing is erased by a stray key. The sequences an
+// assignment rule suggests for this machine come first.
 public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 {
     public const string ConfirmationWord = "ERASE";
+
+    public const string SecureBootWord = "ANYWAY";
 
     public const string ChangedAfterChoiceMessage =
         "The sequence was changed after it was chosen at this machine and now erases a disk, which nobody confirmed with " +
@@ -27,6 +31,8 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     private AgentSequenceChoice? _sequence;
     private LocalDisk? _disk;
     private string? _computerName;
+    private bool? _secureBootEnabled;
+    private bool _allowSecureBootMismatch;
 
     public bool IsAvailable => prompt.IsAvailable;
 
@@ -36,8 +42,8 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     // The disk chosen so far, which is the confirmed one once Accept returns a request for a sequence that erases it.
     public LocalDisk? ChosenDisk => _disk;
 
-    // disks may be empty when no sequence erases a disk.
-    public void Offer(IReadOnlyList<AgentSequenceChoice> sequences, IReadOnlyList<LocalDisk> disks)
+    // disks may be empty when no sequence erases a disk. secureBootEnabled is what the firmware says, if anything.
+    public void Offer(IReadOnlyList<AgentSequenceChoice> sequences, IReadOnlyList<LocalDisk> disks, bool? secureBootEnabled = null)
     {
         ArgumentNullException.ThrowIfNull(sequences);
         ArgumentNullException.ThrowIfNull(disks);
@@ -53,6 +59,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 
         _sequences = [.. runnable.Where(sequence => sequence.Suggested), .. runnable.Where(sequence => !sequence.Suggested)];
         _disks = disks;
+        _secureBootEnabled = secureBootEnabled;
         StartOver();
     }
 
@@ -64,6 +71,8 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _sequence = null;
         _disk = null;
         _computerName = null;
+        _secureBootEnabled = null;
+        _allowSecureBootMismatch = false;
     }
 
     public Task<string?> ReadAsync(CancellationToken cancellationToken)
@@ -98,6 +107,13 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
                     $"{LocalDisk.Partitions(_disk.PartitionCount)}) will be erased by {_sequence!.Name}.");
 
                 return prompt.ReadLineAsync($"Type {ConfirmationWord} to continue", secret: false, cancellationToken);
+            case PickerQuestion.SecureBoot:
+                log.Warning(
+                    $"{_sequence!.RawImageName} {(_sequence.RawImageBootCapability == ImageBootCapability.NotSigned ? "will" : "may")} not start " +
+                    "with Secure Boot on, and this machine has Secure Boot on. It starts " +
+                    "only once Secure Boot is turned off in the firmware setup, or your own key is enrolled.");
+
+                return prompt.ReadLineAsync($"Type {SecureBootWord} to write it all the same", secret: false, cancellationToken);
             default:
                 throw new InvalidOperationException("There is nothing to pick yet.");
         }
@@ -159,6 +175,18 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
                     return null;
                 }
 
+                return Ask(AfterConfirmation());
+            case PickerQuestion.SecureBoot:
+                if (!string.Equals(answer, SecureBootWord, StringComparison.Ordinal))
+                {
+                    log.Information("Nothing was erased.");
+                    StartOver();
+
+                    return null;
+                }
+
+                _allowSecureBootMismatch = true;
+
                 return Request();
             default:
                 return null;
@@ -205,11 +233,18 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _sequence = null;
         _disk = null;
         _computerName = null;
+        _allowSecureBootMismatch = false;
     }
 
     private PickerQuestion AfterDisk() => _sequence!.NeedsComputerName ? PickerQuestion.ComputerName : AfterComputerName();
 
-    private PickerQuestion AfterComputerName() => _sequence!.ErasesDisk ? PickerQuestion.Confirmation : PickerQuestion.None;
+    private PickerQuestion AfterComputerName() => _sequence!.ErasesDisk ? PickerQuestion.Confirmation : AfterConfirmation();
+
+    // Only where the firmware says Secure Boot is on: elsewhere the image may well start.
+    private PickerQuestion AfterConfirmation() =>
+        _sequence!.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown && _secureBootEnabled == true
+            ? PickerQuestion.SecureBoot
+            : PickerQuestion.None;
 
     // A sequence that has nothing more to ask starts at once.
     private AgentRunRequest? Ask(PickerQuestion question)
@@ -224,7 +259,8 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         return null;
     }
 
-    private AgentRunRequest Request() => new(_sequence!.Id, _sequence.ErasesDisk ? _disk!.Number : null, _computerName);
+    private AgentRunRequest Request() =>
+        new(_sequence!.Id, _sequence.ErasesDisk ? _disk!.Number : null, _computerName, _allowSecureBootMismatch);
 
     private static string Describe(AgentSequenceChoice sequence)
     {
@@ -232,6 +268,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         {
             sequence.Suggested ? "suggested for this machine" : null,
             sequence.ErasesDisk ? "erases a disk" : null,
+            sequence.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown ? "not for Secure Boot" : null,
             sequence.RequiredBytes > 0 ? $"needs {ByteSize.Format(sequence.RequiredBytes)}" : null,
         }.OfType<string>();
 

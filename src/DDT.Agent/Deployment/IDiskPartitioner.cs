@@ -16,6 +16,10 @@ public interface IDiskPartitioner
         int recoveryPartitionMegabytes,
         CancellationToken cancellationToken);
 
+    // Erases the disk's partition table, as a raw disk image brings its own, and returns the unique GUIDs of the EFI
+    // system partitions it erased, which old firmware boot entries may still name.
+    Task<IReadOnlyList<Guid>> CleanAsync(LocalDisk disk, CancellationToken cancellationToken);
+
     // Finds a run's partitions again after a restart: Windows PE gave the Windows volume at windowsRoot a letter of
     // its own choosing and the system and recovery partitions none, so they get letters again here.
     Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken);

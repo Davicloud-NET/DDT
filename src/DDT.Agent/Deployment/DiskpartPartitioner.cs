@@ -82,6 +82,24 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
         };
     }
 
+    public async Task<IReadOnlyList<Guid>> CleanAsync(LocalDisk disk, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        string script = DiskpartScript.Clean(disk.Number);
+        string path = Path.Combine(workDirectory, "clean.txt");
+
+        Directory.CreateDirectory(workDirectory);
+        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+
+        IReadOnlyList<Guid> erased = ReadSystemPartitionIds(disk.Number);
+
+        log.Information($"Erasing the partition table of disk {disk.Number} with diskpart clean.");
+        await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
+
+        return erased;
+    }
+
     public async Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);

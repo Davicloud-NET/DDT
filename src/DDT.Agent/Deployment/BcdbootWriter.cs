@@ -57,7 +57,13 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
 
         try
         {
-            WindowsBootEntry.MakeFirst(changes, EspReader.Read(volumes.System), volumes.ErasedSystemPartitionIds, log);
+            FirmwareBootEntry.MakeFirst(
+                changes,
+                EspReader.Read(volumes.System),
+                FirmwareBootEntry.WindowsLoaderPath,
+                FirmwareBootEntry.WindowsDescription,
+                volumes.ErasedSystemPartitionIds,
+                log);
         }
         catch (Exception exception)
         {
@@ -66,6 +72,35 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
                 "start from the network again. Set its boot order to start Windows Boot Manager first.");
         }
 
+        await ListFirmwareEntriesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task PutFirstAsync(
+        EspPartition esp,
+        string loaderPath,
+        string description,
+        IReadOnlyCollection<Guid> erasedSystemPartitionIds,
+        CancellationToken cancellationToken)
+    {
+        UndoableUefiVariables changes = new(variables);
+        _changes = changes;
+
+        try
+        {
+            FirmwareBootEntry.MakeFirst(changes, esp, loaderPath, description, erasedSystemPartitionIds, log);
+        }
+        catch (Exception exception)
+        {
+            log.Warning(
+                $"{description} could not be put first in the firmware boot order ({exception.Message}), so this machine may start " +
+                "from the network again. Set its boot order to start the disk first.");
+        }
+
+        await ListFirmwareEntriesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ListFirmwareEntriesAsync(CancellationToken cancellationToken)
+    {
         // Only for the machine log, which then shows the order the firmware has.
         try
         {

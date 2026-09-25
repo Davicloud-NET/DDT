@@ -23,7 +23,10 @@ public sealed record AgentOptions(
 
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--dry-run [--dry-run-id <number>]], or ddt-agent --licenses";
+        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], or ddt-agent --licenses";
+
+    // The fake machine of a dry run says that Secure Boot is on.
+    public bool DryRunSecureBoot { get; init; }
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)
@@ -36,6 +39,7 @@ public sealed record AgentOptions(
         string? rootPem = null;
         string? keyboardLayout = null;
         bool dryRun = false;
+        bool dryRunSecureBoot = false;
         bool noUpdate = false;
         int dryRunId = 1;
 
@@ -46,6 +50,12 @@ public sealed record AgentOptions(
             if (argument == "--dry-run")
             {
                 dryRun = true;
+                continue;
+            }
+
+            if (argument == "--dry-run-secure-boot")
+            {
+                dryRunSecureBoot = true;
                 continue;
             }
 
@@ -142,7 +152,7 @@ public sealed record AgentOptions(
             }
         }
 
-        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout);
+        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout) { DryRunSecureBoot = dryRunSecureBoot };
         error = string.Empty;
 
         return true;

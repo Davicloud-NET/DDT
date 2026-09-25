@@ -11,8 +11,8 @@ namespace DDT.Agent.Tests;
 
 public sealed class EfiLoadOptionTests
 {
-    private const string Description = WindowsBootEntry.Description;
-    private const string Loader = WindowsBootEntry.LoaderPath;
+    private const string Description = FirmwareBootEntry.WindowsDescription;
+    private const string Loader = FirmwareBootEntry.WindowsLoaderPath;
 
     // The description's 42 bytes follow the 6-byte header.
     private const int ListStart = 48;

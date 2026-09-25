@@ -12,6 +12,12 @@ public sealed class DiskpartScriptTests
     private const uint DrivesAtoX = (1u << 24) - 1;
 
     [Fact]
+    public void CleansADiskForARawImageWithoutMakingAnyPartition()
+    {
+        Assert.Equal("select disk 3\r\nclean\r\nexit\r\n", DiskpartScript.Clean(3));
+    }
+
+    [Fact]
     public void BuildsMicrosoftsUefiLayoutWithCrlfAndNoBlankLine()
     {
         string script = DiskpartScript.Build(2, 'S', 'W', 'R');

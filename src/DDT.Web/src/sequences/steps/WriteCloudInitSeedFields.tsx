@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { useRef } from "react";
+
 import { FormCheckbox } from "../FormCheckbox";
 import { FormField } from "../FormField";
 import { fieldMessages } from "../problems";
@@ -18,6 +20,9 @@ export function WriteCloudInitSeedFields({
   findings,
   onChange,
 }: KindFieldsProps<WriteCloudInitSeedStep>) {
+  // What network-config held when it was turned off, while this card is shown.
+  const lastNetworkConfig = useRef("version: 2\n");
+
   return (
     <>
       <p className={styles.explain}>
@@ -63,7 +68,11 @@ export function WriteCloudInitSeedFields({
         messages={step.networkConfig === null ? fieldMessages(findings, "networkConfig") : []}
         hint="Without it, the image configures its network itself, usually by DHCP."
         onChange={(write) => {
-          onChange({ networkConfig: write ? "version: 2\n" : null });
+          if (!write && step.networkConfig !== null) {
+            lastNetworkConfig.current = step.networkConfig;
+          }
+
+          onChange({ networkConfig: write ? lastNetworkConfig.current : null }, true);
         }}
       />
       {step.networkConfig !== null && (

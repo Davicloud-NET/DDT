@@ -49,12 +49,14 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   const nameHintId = useId();
   const nameErrorId = useId();
   const allowId = useId();
+  const riskId = useId();
 
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [computerName, setComputerName] = useState(machine.assignedName ?? "");
   const [nameProblem, setNameProblem] = useState<string | null>(null);
-  // Given for the sequence shown, so choosing another asks again.
-  const [allowMismatch, setAllowMismatch] = useState(false);
+  // The sequence and image the allowance was given for, so another sequence, or another image written by the same
+  // one after a live update, asks again.
+  const [allowedFor, setAllowedFor] = useState<string | null>(null);
 
   const assign = useMutation({
     mutationFn: (request: AssignSequenceRequest) => assignSequence(machine.id, request),
@@ -81,7 +83,8 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
     null;
   const erases = sequence?.erasesDisk === true;
   const risk = secureBootRisk(machine, sequence);
-  const allowed = risk !== null && allowMismatch;
+  const allowanceKey = sequence === null ? null : `${sequence.id} ${sequence.rawImageName ?? ""}`;
+  const allowed = risk !== null && allowedFor !== null && allowedFor === allowanceKey;
   const nameRequired = sequence?.needsComputerName === true && machine.assignedName === null;
   const severalDisks = machine.eligibleDiskCount !== null && machine.eligibleDiskCount > 1;
   // A machine that reported no eligible disk has no disks line; the error below says so.
@@ -153,7 +156,7 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
             aria-describedby={ruleChoice === null ? undefined : sequenceHintId}
             onChange={(event) => {
               setChosenId(event.target.value);
-              setAllowMismatch(false);
+              setAllowedFor(null);
             }}
           >
             {list.map((candidate) => (
@@ -226,7 +229,11 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
                 {sequence.name} does not erase the disk of {label}.
               </p>
             ))}
-          {risk !== null && <p className={styles.warning}>{risk.warning}</p>}
+          {risk !== null && (
+            <p id={riskId} className={styles.warning}>
+              {risk.warning}
+            </p>
+          )}
           {sequence?.continuesInWindows === true && (
             <p>
               After the image is applied, the run continues in the installed Windows, where the
@@ -274,9 +281,10 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
             <input
               id={allowId}
               type="checkbox"
-              checked={allowMismatch}
+              checked={allowed}
+              aria-describedby={riskId}
               onChange={(event) => {
-                setAllowMismatch(event.target.checked);
+                setAllowedFor(event.target.checked ? allowanceKey : null);
               }}
             />
             <label htmlFor={allowId}>{risk.allowLabel}</label>

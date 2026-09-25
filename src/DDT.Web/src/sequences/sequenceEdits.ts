@@ -21,7 +21,8 @@ export type SequenceEdit =
   | { type: "removeStep"; id: string }
   | { type: "restoreStep"; step: SequenceStep; index: number }
   | { type: "moveStep"; id: string; to: number }
-  | { type: "updateStep"; id: string; patch: StepPatch }
+  // chosen marks a patch made by a switch although it sets a text field, such as turning a seed file on.
+  | { type: "updateStep"; id: string; patch: StepPatch; chosen?: boolean }
   | { type: "addCondition"; stepId: string }
   | { type: "updateCondition"; stepId: string; index: number; patch: Partial<StepCondition> }
   | { type: "removeCondition"; stepId: string; index: number };
@@ -57,6 +58,9 @@ export function isTyping(edit: SequenceEdit): boolean {
     case "describe":
       return true;
     case "updateStep":
+      return (
+        edit.chosen !== true && Object.keys(edit.patch).some((field) => !chosenFields.has(field))
+      );
     case "updateCondition":
       return Object.keys(edit.patch).some((field) => !chosenFields.has(field));
     default:

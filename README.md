@@ -748,7 +748,7 @@ finished at once. A dry run stopped with Ctrl+C goes on when it is started again
 an argument.
 
 A sequence that writes a raw disk image writes it to `%TEMP%\ddt-dry-run-{id}-disk0.img`, a sparse
-file as large as the fake disk, 128 GB, which takes only what is written to it. The file outlasts
+file as large as the fake disk, 128 GiB, which takes only what is written to it. The file outlasts
 the run, so the disk can be looked at afterwards, and the next run that cleans the disk deletes it.
 `--dry-run-secure-boot` makes the fake machine report that Secure Boot is on, to try the
 [Secure Boot check](#secure-boot-and-raw-disk-images).
@@ -832,8 +832,10 @@ distributions publish, and a file that ends before its last partition is refused
 server then reads the EFI system partition, and in it `\EFI\BOOT\BOOTX64.EFI`, the file the firmware
 starts from a disk that has no boot entry of its own. Its signature decides the Secure Boot column:
 
-- **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, which the firmware of stock
-  PCs trusts, as a distribution's shim is. The machine starts the image with Secure Boot on.
+- **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, as a distribution's shim is.
+  The machine starts the image with Secure Boot on, provided its firmware trusts that CA: PCs trust
+  the 2011 CA as they come and the 2023 CA once a firmware or Windows update added it, and
+  Secured-core PCs turn the CA off until it is turned on in their firmware setup.
 - **Not signed**: the file has no signature, or one that does not lead to Microsoft's UEFI CA. The
   machine starts the image only with Secure Boot off, or with your own key enrolled. The page says
   why, for example that a distribution's own shim is elsewhere on the partition.
@@ -841,8 +843,12 @@ starts from a disk that has no boot entry of its own. Its signature decides the 
 
 The Architecture column comes from the same file, and an image whose boot file is for arm64 or x86
 machines only cannot be written. The check follows the signature and the certificate chain as the
-firmware does, but not the firmware's revocation list, so a file that Microsoft revoked still shows
-as signed.
+firmware does, but not the firmware's revocation lists, dbx and SBAT, so a file that was revoked
+still shows as signed.
+
+An upload the server cannot convert for a cause of its own, a missing `xz` or `qemu-img`, a tool
+that failed or a full store volume, stays on the server. Complete it again once the cause is fixed,
+or discard it.
 
 The server stores the disk compressed with zstd, and names it by that file's SHA-256. The Size column
 shows the stored file and the Installed column the disk it holds, which the machine's disk must be
@@ -896,7 +902,7 @@ sequences on the Sequences page. A deployment runs one sequence on one machine, 
 | Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
 | Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
 | Write raw disk image | Windows PE | Erases the disk and writes the chosen [raw disk image](#raw-disk-images) over it as it downloads, see [Deploying Linux](#deploying-linux). |
-| Write the cloud-init seed | Windows PE | Adds a 64 MB partition labelled `CIDATA` at the end of the disk with the `meta-data`, `user-data` and optionally `network-config` files the step holds, with the machine's values filled in, for cloud-init to find at the image's first start. |
+| Write the cloud-init seed | Windows PE | Adds a 64 MiB partition labelled `CIDATA` at the end of the disk with the `meta-data`, `user-data` and optionally `network-config` files the step holds, with the machine's values filled in, for cloud-init to find at the image's first start. |
 
 Every step has a name, conditions and two switches. "Go on when this step fails" lets the run go on
 after the step failed, which stays marked as failed. "Restart after this step" restarts the machine
@@ -1017,11 +1023,11 @@ A rule's sequence runs only in two ways:
   the sequence the operator saw, and the server refuses it when the rules now choose another. When
   the sequence has a problem, erases a disk on a machine that reported more than one, or joins a
   domain or names the machine in its cloud-init seed and the machine has no name yet, the approval
-  only authorizes the machine. When the sequence writes a raw disk image that may not start with
-  Secure Boot on, the confirmation says so, and for a machine that reported Secure Boot on it
-  approves only once the operator allows the image. So does an
-  approval with someone signed in at the machine, who chooses there; with
-  `DDT:Machines:RequireWebApproval` on, an approval therefore never runs a rule's sequence.
+  only authorizes the machine. So does an approval with someone signed in at the machine, who
+  chooses there; with `DDT:Machines:RequireWebApproval` on, an approval therefore never runs a
+  rule's sequence. When the sequence writes a raw disk image that may not start with Secure Boot
+  on, the confirmation says so, and for a machine that reported Secure Boot on it approves only once
+  the operator allows the image.
 - **Suggested at the machine.** The technician signed in at the machine sees the rule's sequence
   first, marked as suggested, and still chooses it, confirming with `ERASE` when it erases a disk.
 
@@ -1294,7 +1300,7 @@ A sequence that writes a [raw disk image](#raw-disk-images), such as one from th
 template, runs in Windows PE and ends there.
 
 Before it touches the disk, the agent checks that the disk has 512-byte sectors and holds the disk
-image, plus 66 MB for a seed, and whether the image may be written with the machine's Secure Boot,
+image, plus 66 MiB for a seed, and whether the image may be written with the machine's Secure Boot,
 see below. A failure here leaves the disk as it was.
 
 Write raw disk image removes the partition table with `diskpart`'s `clean`, then downloads the
@@ -1306,7 +1312,7 @@ no partition table. The image's backup table moves to the end of the disk, and t
 after the image's partitions stays free. A download that does not match its SHA-256 fails the step
 before the partition table is written.
 
-Write the cloud-init seed adds a partition labelled `CIDATA` at the end of the disk, 64 MB with FAT16,
+Write the cloud-init seed adds a partition labelled `CIDATA` at the end of the disk, 64 MiB with FAT16,
 and writes the step's files into it. cloud-init's NoCloud source finds them at the image's first
 start. The seed's place leaves the free space right after the image's partitions, so cloud-init's
 `growpart` still grows the root partition into it. Before writing, the agent fills in these
@@ -1330,8 +1336,9 @@ the image, puts it first in the boot order and restarts the machine into the ima
 it takes over an entry that pointed at the EFI system partition the run erased, rather than adding
 one more at every deployment. An image without an EFI system partition gets no entry, and the log
 says to set the boot order by hand. The run is done when the machine restarts: DDT does not run in
-the image, so the server hears nothing from the machine after that. A run that fails before its end,
-a failed seed included, adds no boot entry and does not restart the machine.
+the image, so the server hears nothing from the machine after that. A run that fails adds no boot
+entry and does not restart the machine. A seed step skipped by its conditions, or one that failed
+with "Go on when this step fails" on, leaves the image to start without a seed.
 
 #### Secure Boot and raw disk images
 

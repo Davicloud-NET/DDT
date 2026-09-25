@@ -17,7 +17,7 @@ import type { CurrentUser } from "@/auth/auth";
 import type { DeploymentOptionsView, DeploymentSummary } from "@/deployments/deployments";
 import { upsertMachine, type MachineSummary } from "@/machines/machines";
 import type { MachineSequenceResolution } from "@/rules/rules";
-import type { SequenceSummary } from "@/sequences/sequences";
+import { sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
 
 import { MachinesPage } from "./MachinesPage";
 
@@ -942,7 +942,7 @@ describe("MachinesPage", () => {
 
   it("assigns a raw disk image not signed for Secure Boot to a machine with it on only once allowed", async () => {
     const approved = machine({ state: "Approved", everApproved: true, secureBootEnabled: true });
-    const { calls } = renderWith([approved], operator, {
+    const { calls, queryClient } = renderWith([approved], operator, {
       "GET /api/sequences": { body: [sequence({}), linux] },
       "GET /api/deployments/options": { body: options({}) },
       [`POST /api/machines/${approved.id}/deployments`]: {
@@ -972,7 +972,11 @@ describe("MachinesPage", () => {
     ).toBeInTheDocument();
     expect(submit).toBeDisabled();
 
-    fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));
+    const allow = within(dialog).getByLabelText("Write noble anyway");
+    expect(allow).toHaveAccessibleDescription(
+      /^noble is not signed for Secure Boot, and this machine has Secure Boot on\./,
+    );
+    fireEvent.click(allow);
     expect(submit).toBeEnabled();
 
     // Another sequence asks again.
@@ -984,7 +988,18 @@ describe("MachinesPage", () => {
     });
     expect(within(dialog).getByLabelText("Write noble anyway")).not.toBeChecked();
 
+    // So does the same sequence once a live update makes it write another image.
     fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));
+    act(() => {
+      queryClient.setQueryData(sequencesQuery.queryKey, [
+        sequence({}),
+        { ...linux, rawImageName: "jammy" },
+      ]);
+    });
+    expect(await within(dialog).findByLabelText("Write jammy anyway")).not.toBeChecked();
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByLabelText("Write jammy anyway"));
     fireEvent.click(submit);
 
     await waitFor(() => {
@@ -1056,11 +1071,10 @@ describe("MachinesPage", () => {
     });
     const confirm = within(dialog).getByRole("button", { name: "Approve and run Install Linux" });
 
-    expect(
-      within(dialog).getByText(
-        /^noble is not signed for Secure Boot, and this machine has Secure Boot on\./,
-      ),
-    ).toBeInTheDocument();
+    // The warning is part of what the dialog says as it opens.
+    expect(dialog).toHaveAccessibleDescription(
+      /which a rule for its model chose\. All data on its disk is erased\. noble is not signed for Secure Boot, and this machine has Secure Boot on\./,
+    );
     expect(confirm).toBeDisabled();
 
     fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));

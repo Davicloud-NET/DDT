@@ -131,8 +131,13 @@ export function StepCard({
         step={step}
         findings={findings}
         catalog={catalog}
-        onChange={(patch) => {
-          onEdit({ type: "updateStep", id: step.id, patch });
+        onChange={(patch, chosen) => {
+          onEdit({
+            type: "updateStep",
+            id: step.id,
+            patch,
+            ...(chosen === true ? { chosen } : {}),
+          });
         }}
       />
 

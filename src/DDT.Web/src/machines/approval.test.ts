@@ -71,22 +71,19 @@ describe("approvalPlan", () => {
       consequence:
         "Approving PC-042 also runs Install Windows on it, which a rule for its MAC address chose. Its disk is not erased.",
       confirmLabel: "Approve and run Install Windows",
-      secureBoot: null,
+      sequence: installWindows,
     });
   });
 
-  it("carries what the run must be allowed when it writes an image not signed for Secure Boot", () => {
+  it("carries the sequence it runs, and none when it only authorizes the machine", () => {
     const linux = {
       ...installWindows,
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
     } as const;
 
-    const plan = approvalPlan({ ...machine, secureBootEnabled: true }, chosen, [linux]);
-
-    expect(plan?.expectedSequenceId).toBe("s1");
-    expect(plan?.secureBoot?.required).toBe(true);
-    expect(plan?.secureBoot?.allowLabel).toBe("Write noble anyway");
+    expect(approvalPlan(machine, chosen, [linux])?.sequence).toBe(linux);
+    expect(approvalPlan(machine, { ...chosen, problemCount: 1 }, [linux])?.sequence).toBeNull();
   });
 
   it.each([

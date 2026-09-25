@@ -7,6 +7,7 @@ import { useId, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ApprovalPlan } from "@/machines/approval";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
+import { secureBootRisk } from "@/machines/secureBoot";
 import type { MachineActionState } from "@/machines/useMachineActions";
 
 import styles from "./ApprovalDialog.module.scss";
@@ -24,7 +25,8 @@ export function ApprovalDialog({ machine, plan, actions }: ApprovalDialogProps) 
   const { approveWithPlan } = actions;
   const allowId = useId();
   const [allowMismatch, setAllowMismatch] = useState(false);
-  const risk = plan.secureBoot;
+  // From the machine as the list has it now, which may have registered again since the plan was made.
+  const risk = secureBootRisk(machine, plan.sequence);
 
   return (
     <ConfirmDialog
@@ -35,7 +37,7 @@ export function ApprovalDialog({ machine, plan, actions }: ApprovalDialogProps) 
         }
       }}
       title={`Approve ${machineLabel(machine)}?`}
-      consequence={plan.consequence}
+      consequence={risk === null ? plan.consequence : `${plan.consequence} ${risk.warning}`}
       confirmLabel={plan.confirmLabel}
       busy={approveWithPlan.isPending}
       error={approveWithPlan.isError ? approveWithPlan.error.message : null}
@@ -50,7 +52,6 @@ export function ApprovalDialog({ machine, plan, actions }: ApprovalDialogProps) 
     >
       {risk !== null && (
         <div className={styles.secureBoot}>
-          <p className={styles.warning}>{risk.warning}</p>
           <div className={styles.check}>
             <input
               id={allowId}

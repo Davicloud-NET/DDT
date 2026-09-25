@@ -641,7 +641,7 @@ describe("SequenceEditorPage", () => {
   });
 
   it("starts the seed with the machine's name and a cloud-config, and lists the placeholders", async () => {
-    serve(administrator, linuxView(rawImage.id), undefined, [rawImage]);
+    const { saves } = serve(administrator, linuxView(rawImage.id), undefined, [rawImage]);
 
     await screen.findByLabelText("meta-data");
     const seed = card("Write the cloud-init seed");
@@ -654,6 +654,23 @@ describe("SequenceEditorPage", () => {
 
     fireEvent.click(within(seed).getByLabelText("Write network-config"));
     expect(within(seed).getByLabelText("network-config")).toHaveValue("version: 2\n");
+
+    // The switch saves at once, and turned off and on again it keeps what was typed.
+    await waitFor(
+      () => {
+        expect(saves.at(-1)?.definition.steps[1]).toMatchObject({ networkConfig: "version: 2\n" });
+      },
+      { timeout: 500 },
+    );
+    fireEvent.change(within(seed).getByLabelText("network-config"), {
+      target: { value: "version: 2\nethernets: {}\n" },
+    });
+    fireEvent.click(within(seed).getByLabelText("Write network-config"));
+    expect(within(seed).queryByLabelText("network-config")).not.toBeInTheDocument();
+    fireEvent.click(within(seed).getByLabelText("Write network-config"));
+    expect(within(seed).getByLabelText("network-config")).toHaveValue(
+      "version: 2\nethernets: {}\n",
+    );
   });
 
   it("names an image of the other kind instead of calling it deleted", async () => {

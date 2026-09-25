@@ -114,7 +114,8 @@ export interface SequenceDefinition {
 }
 
 // A sequence with problemCount above zero is kept as a draft and cannot run. The facts let a dialog say what
-// running it does without loading the whole document. needsComputerName: the sequence joins the domain.
+// running it does without loading the whole document. needsComputerName: the sequence joins the domain under the
+// machine's name, or puts it in a cloud-init seed.
 export interface SequenceSummary {
   id: string;
   name: string;

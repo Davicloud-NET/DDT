@@ -94,13 +94,18 @@ export function bootCapabilityLabel(image: ImageSummary): string | null {
   }
 }
 
-// The warning for a raw disk image that will not start with Secure Boot on; null for every other image.
+// The warning for a raw disk image that will not, or may not, start with Secure Boot on; null for every other image.
 export function secureBootWarning(image: ImageSummary): string | null {
   if (image.kind !== "RawDisk" || image.bootCapability === "SecureBootOk") {
     return null;
   }
 
-  return "This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.";
+  const why =
+    image.bootCapability === "NotSigned"
+      ? "This image will not start with Secure Boot on."
+      : "This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it.";
+
+  return `${why} Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
 }
 
 export function deleteImage(id: string): Promise<void> {

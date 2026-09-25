@@ -60,6 +60,41 @@ const image: ImageSummary = {
   sourceSha256: null,
 };
 
+const rawImage: ImageSummary = {
+  ...image,
+  id: "0193a4b2-0000-7000-8000-0000000000a2",
+  name: "noble",
+  kind: "RawDisk",
+  wimIndex: 0,
+  edition: null,
+  version: null,
+  language: null,
+  originalFileName: "noble.img",
+  bootCapability: "NotSigned",
+  bootDetail: "\\EFI\\BOOT\\BOOTX64.EFI carries no signature.",
+  sourceSha256: "01",
+};
+
+const signedRawImage: ImageSummary = {
+  ...rawImage,
+  id: "0193a4b2-0000-7000-8000-0000000000a3",
+  name: "debian-12",
+  bootCapability: "SecureBootOk",
+  bootDetail: "Signed under Microsoft's UEFI CA.",
+};
+
+const linuxView = (imageId = EMPTY_ID) =>
+  view({
+    definition: {
+      version: SEQUENCE_VERSION,
+      steps: [
+        { ...newStep("writeRawImage", "w"), imageId } as SequenceStep,
+        newStep("writeCloudInitSeed", "c"),
+      ],
+    },
+    stepPhases: ["WindowsPE", "WindowsPE"],
+  });
+
 const steps: SequenceStep[] = [
   newStep("partition", "p"),
   newStep("applyImage", "i"),
@@ -95,7 +130,12 @@ type SaveAnswer = (request: SaveSequenceRequest) => Response;
 
 // The server holds one sequence. Saves answer as the given function says; by default they are stored with the
 // next revision, as the server does.
-function serve(user: CurrentUser, initial: SequenceView, answer?: SaveAnswer) {
+function serve(
+  user: CurrentUser,
+  initial: SequenceView,
+  answer?: SaveAnswer,
+  images: ImageSummary[] = [image],
+) {
   let stored = initial;
   let deleted = false;
   const saves: SaveSequenceRequest[] = [];
@@ -146,7 +186,7 @@ function serve(user: CurrentUser, initial: SequenceView, answer?: SaveAnswer) {
                 });
         }
         case "GET /api/images":
-          return Promise.resolve(json([image]));
+          return Promise.resolve(json(images));
         case "GET /api/packages":
           return Promise.resolve(json([]));
         case "GET /api/sequences":
@@ -566,6 +606,77 @@ describe("SequenceEditorPage", () => {
     }, saveWait);
     // The sequence has no description, which the page edits as empty text.
     expect(saves.at(-1)?.description).toBeNull();
+  });
+
+  it("offers only raw disk images to write, and warns of one not signed for Secure Boot", async () => {
+    const { saves } = serve(administrator, linuxView(), undefined, [
+      image,
+      rawImage,
+      signedRawImage,
+    ]);
+
+    const select = await screen.findByLabelText("Raw disk image");
+    await screen.findByRole("option", { name: "noble (not for Secure Boot)" });
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Choose an image", "noble (not for Secure Boot)", "debian-12 (Secure Boot)"]);
+    expect(screen.queryByText(/will not start with Secure Boot on/)).not.toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: rawImage.id } });
+
+    expect(screen.getByText(/^This image will not start with Secure Boot on\./)).toHaveTextContent(
+      "\\EFI\\BOOT\\BOOTX64.EFI carries no signature.",
+    );
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.steps[0]).toMatchObject({
+        kind: "writeRawImage",
+        imageId: rawImage.id,
+      });
+    }, saveWait);
+
+    fireEvent.change(select, { target: { value: signedRawImage.id } });
+    expect(screen.queryByText(/will not start with Secure Boot on/)).not.toBeInTheDocument();
+  });
+
+  it("starts the seed with the machine's name and a cloud-config, and lists the placeholders", async () => {
+    serve(administrator, linuxView(rawImage.id), undefined, [rawImage]);
+
+    await screen.findByLabelText("meta-data");
+    const seed = card("Write the cloud-init seed");
+    expect(within(seed).getByLabelText("meta-data")).toHaveValue(
+      'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n',
+    );
+    expect(within(seed).getByLabelText("user-data")).toHaveValue("#cloud-config\n");
+    expect(within(seed).queryByLabelText("network-config")).not.toBeInTheDocument();
+    expect(within(seed).getByText(/\{\{SerialNumber\}\}, \{\{SmbiosUuid\}\}/)).toBeInTheDocument();
+
+    fireEvent.click(within(seed).getByLabelText("Write network-config"));
+    expect(within(seed).getByLabelText("network-config")).toHaveValue("version: 2\n");
+  });
+
+  it("names an image of the other kind instead of calling it deleted", async () => {
+    serve(
+      administrator,
+      view({
+        definition: {
+          version: 1,
+          steps: [{ ...newStep("applyImage", "i"), imageId: rawImage.id } as SequenceStep],
+        },
+        stepPhases: ["WindowsPE"],
+      }),
+      undefined,
+      [image, rawImage],
+    );
+
+    const select = await screen.findByLabelText("Image");
+    await screen.findByRole("option", { name: "noble (raw disk image)" });
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["noble (raw disk image)", "Windows 11 Pro (en-US, x64)"]);
   });
 
   it("offers to bring a removed step back for 10 s", async () => {

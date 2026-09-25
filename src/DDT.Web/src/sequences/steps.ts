@@ -43,7 +43,7 @@ export function phaseLabel(phase: SequencePhase): string {
 export const defaultMetaData =
   'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';
 
-// The placeholders the server fills in the seed files, as {{Name}}.
+// The placeholders the agent fills in the seed files, as {{Name}}.
 export const seedPlaceholders = [
   "ComputerName",
   "Manufacturer",

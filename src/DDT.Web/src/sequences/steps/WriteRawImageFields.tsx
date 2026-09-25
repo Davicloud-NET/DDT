@@ -32,6 +32,11 @@ export function WriteRawImageFields({
   const rawImages = catalog.images.filter((image) => image.kind === "RawDisk");
   const chosen = rawImages.find((image) => image.id === step.imageId);
   const warning = chosen === undefined ? null : secureBootWarning(chosen);
+  // A Windows image chosen elsewhere, such as in an imported sequence, which this step cannot write.
+  const windowsImage =
+    chosen === undefined
+      ? catalog.images.find((image) => image.id === step.imageId && image.kind === "Wim")
+      : undefined;
 
   return (
     <>
@@ -54,7 +59,11 @@ export function WriteRawImageFields({
           >
             {step.imageId === EMPTY_ID && <option value={EMPTY_ID}>Choose an image</option>}
             {step.imageId !== EMPTY_ID && chosen === undefined && (
-              <option value={step.imageId}>Image deleted</option>
+              <option value={step.imageId}>
+                {windowsImage === undefined
+                  ? "Image deleted"
+                  : `${windowsImage.name} (Windows image)`}
+              </option>
             )}
             {rawImages.map((image) => (
               <option key={image.id} value={image.id} disabled={!isDeployable(image)}>

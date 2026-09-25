@@ -30,6 +30,10 @@ export function ApplyImageFields({
 }: KindFieldsProps<ApplyImageStep>) {
   const windowsImages = catalog.images.filter((image) => image.kind === "Wim");
   const chosen = windowsImages.some((image) => image.id === step.imageId);
+  // A raw disk image chosen elsewhere, such as in an imported sequence, which this step cannot install.
+  const rawImage = chosen
+    ? undefined
+    : catalog.images.find((image) => image.id === step.imageId && image.kind === "RawDisk");
 
   return (
     <>
@@ -48,7 +52,9 @@ export function ApplyImageFields({
           >
             {step.imageId === EMPTY_ID && <option value={EMPTY_ID}>Choose an image</option>}
             {step.imageId !== EMPTY_ID && !chosen && (
-              <option value={step.imageId}>Image deleted</option>
+              <option value={step.imageId}>
+                {rawImage === undefined ? "Image deleted" : `${rawImage.name} (raw disk image)`}
+              </option>
             )}
             {windowsImages.map((image) => (
               <option key={image.id} value={image.id} disabled={!isDeployable(image)}>

@@ -51,6 +51,7 @@ export function machineSummary(overrides: Partial<MachineSummary> = {}): Machine
     disks: "Disk 0: Msft Virtual Disk, 64 GB, SCSI",
     eligibleDiskCount: 1,
     deployment: null,
+    secureBootEnabled: null,
     ...overrides,
   };
 }

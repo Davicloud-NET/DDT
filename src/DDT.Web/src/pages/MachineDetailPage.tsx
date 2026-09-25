@@ -18,7 +18,7 @@ import { RunHistory } from "@/runs/RunHistory";
 import { RunOverview } from "@/runs/RunOverview";
 import { RunStepList } from "@/runs/RunStepList";
 import { RunTimeline } from "@/runs/RunTimeline";
-import { runTimeline } from "@/runs/runs";
+import { runTimeline, secureBootAllowance } from "@/runs/runs";
 import { useRunDetail } from "@/runs/useRunDetail";
 
 import styles from "./MachineDetailPage.module.scss";
@@ -96,6 +96,7 @@ export function MachineDetailPage() {
           revision={view?.sequenceRevision ?? null}
           lastSeenUtc={machine?.lastSeenUtc ?? summary.updatedUtc}
           now={now}
+          allowance={view === null ? null : secureBootAllowance(view)}
         />
       )}
 

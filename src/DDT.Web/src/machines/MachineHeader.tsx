@@ -62,6 +62,16 @@ export function MachineHeader({ machine, actions, resolution, now }: MachineHead
           <dd>{machine.agentVersion ?? "Not reported"}</dd>
         </div>
         <div>
+          <dt>Secure Boot</dt>
+          <dd>
+            {machine.secureBootEnabled === null
+              ? "Not reported"
+              : machine.secureBootEnabled
+                ? "On"
+                : "Off"}
+          </dd>
+        </div>
+        <div>
           <dt>Disks</dt>
           <dd>
             {machine.disks ??

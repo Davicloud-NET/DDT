@@ -28,6 +28,7 @@ function machine(id: string, state: MachineSummary["state"], firstSeenUtc: strin
     disks: null,
     eligibleDiskCount: null,
     deployment: null,
+    secureBootEnabled: null,
   };
 }
 

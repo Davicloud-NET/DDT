@@ -6,6 +6,7 @@ import type {
   DeploymentState,
   DeploymentStepView,
   DeploymentSummary,
+  DeploymentView,
 } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
@@ -216,4 +217,17 @@ export function runTimeline(
   }
 
   return entries.sort((a, b) => Date.parse(a.utc) - Date.parse(b.utc));
+}
+
+// Says that whoever started the run let it write a raw disk image that may not start with Secure Boot on; null
+// otherwise.
+export function secureBootAllowance(view: DeploymentView): string | null {
+  if (!view.allowSecureBootMismatch) {
+    return null;
+  }
+
+  const step = view.definition?.steps.find((candidate) => candidate.kind === "writeRawImage");
+  const image = view.artifacts.find((artifact) => artifact.stepId === step?.id)?.name;
+
+  return `Allowed to write ${image ?? "its raw disk image"} although it may not start with Secure Boot on.`;
 }

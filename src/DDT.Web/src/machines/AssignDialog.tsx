@@ -23,6 +23,7 @@ import {
   WAITING_WINDOW_MS,
   type MachineSummary,
 } from "@/machines/machines";
+import { secureBootRisk } from "@/machines/secureBoot";
 import { isRuleChoice, sequenceResolutionQuery } from "@/rules/rules";
 import { canRun, sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
 
@@ -47,10 +48,13 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   const nameFieldId = useId();
   const nameHintId = useId();
   const nameErrorId = useId();
+  const allowId = useId();
 
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [computerName, setComputerName] = useState(machine.assignedName ?? "");
   const [nameProblem, setNameProblem] = useState<string | null>(null);
+  // Given for the sequence shown, so choosing another asks again.
+  const [allowMismatch, setAllowMismatch] = useState(false);
 
   const assign = useMutation({
     mutationFn: (request: AssignSequenceRequest) => assignSequence(machine.id, request),
@@ -76,6 +80,8 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
     runnable[0] ??
     null;
   const erases = sequence?.erasesDisk === true;
+  const risk = secureBootRisk(machine, sequence);
+  const allowed = risk !== null && allowMismatch;
   const nameRequired = sequence?.needsComputerName === true && machine.assignedName === null;
   const severalDisks = machine.eligibleDiskCount !== null && machine.eligibleDiskCount > 1;
   // A machine that reported no eligible disk has no disks line; the error below says so.
@@ -95,6 +101,7 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
   const canSubmit =
     sequence !== null &&
     !(erases && severalDisks) &&
+    !(risk?.required === true && !allowed) &&
     !assign.isPending &&
     options.data !== undefined &&
     !sequences.isPending;
@@ -107,12 +114,16 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
     const name = computerName.trim();
 
     if (nameRequired && name === "") {
-      setNameProblem(`Enter a computer name. ${sequence.name} joins the domain under this name.`);
+      setNameProblem(`Enter a computer name. ${sequence.name} ${nameUse(sequence)}.`);
       return;
     }
 
     setNameProblem(null);
-    assign.mutate({ sequenceId: sequence.id, computerName: name === "" ? null : name });
+    assign.mutate({
+      sequenceId: sequence.id,
+      computerName: name === "" ? null : name,
+      ...(allowed ? { allowSecureBootMismatch: true } : {}),
+    });
   }
 
   return (
@@ -142,6 +153,7 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
             aria-describedby={ruleChoice === null ? undefined : sequenceHintId}
             onChange={(event) => {
               setChosenId(event.target.value);
+              setAllowMismatch(false);
             }}
           >
             {list.map((candidate) => (
@@ -214,6 +226,7 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
                 {sequence.name} does not erase the disk of {label}.
               </p>
             ))}
+          {risk !== null && <p className={styles.warning}>{risk.warning}</p>}
           {sequence?.continuesInWindows === true && (
             <p>
               After the image is applied, the run continues in the installed Windows, where the
@@ -256,6 +269,20 @@ export function AssignDialog({ machine, onClose }: AssignDialogProps) {
           )}
         </div>
 
+        {risk !== null && (
+          <div className={styles.check}>
+            <input
+              id={allowId}
+              type="checkbox"
+              checked={allowMismatch}
+              onChange={(event) => {
+                setAllowMismatch(event.target.checked);
+              }}
+            />
+            <label htmlFor={allowId}>{risk.allowLabel}</label>
+          </div>
+        )}
+
         {error !== null && (
           <p className={styles.error} role="alert">
             {error}
@@ -286,19 +313,35 @@ function optionLabel(sequence: SequenceSummary): string {
     : `${sequence.name} (${plural(sequence.problemCount, "problem")}, cannot run)`;
 }
 
-// The server asks for a name only when the sequence joins the domain and the machine has none yet.
+// What a sequence that needs a computer name does with it: a Windows sequence joins the domain under it, and one that
+// writes a raw disk image puts it in the cloud-init seed.
+function nameUse(sequence: SequenceSummary): string {
+  return sequence.rawImageName === null
+    ? "joins the domain under this name"
+    : "gives this name to the machine in its cloud-init seed";
+}
+
+// The server asks for a name only when the sequence uses it and the machine has none yet.
 function nameHint(machine: MachineSummary, sequence: SequenceSummary | null): string {
-  const joins = sequence?.needsComputerName === true;
+  const uses = sequence?.needsComputerName === true;
 
   if (machine.assignedName === null) {
-    return joins
-      ? `Required, because ${sequence.name} joins the domain under this name.`
-      : "Optional. Without a name, Windows picks one.";
+    if (uses) {
+      return `Required, because ${sequence.name} ${nameUse(sequence)}.`;
+    }
+
+    return sequence?.rawImageName == null
+      ? "Optional. Without a name, Windows picks one."
+      : "Optional. Without a name, the image picks one.";
   }
 
-  return joins
+  if (!uses) {
+    return `Optional. Left empty, the machine keeps the name ${machine.assignedName}.`;
+  }
+
+  return sequence.rawImageName === null
     ? `Optional. Left empty, the machine keeps the name ${machine.assignedName} and joins the domain under it.`
-    : `Optional. Left empty, the machine keeps the name ${machine.assignedName}.`;
+    : `Optional. Left empty, the machine keeps the name ${machine.assignedName}, which its cloud-init seed gets.`;
 }
 
 // What the assignment does to a machine that is not authorized yet, with now on the server's clock.

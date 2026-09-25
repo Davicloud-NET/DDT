@@ -154,6 +154,7 @@ function machine(id: string): MachineSummary {
     disks: null,
     eligibleDiskCount: null,
     deployment: null,
+    secureBootEnabled: null,
   };
 }
 

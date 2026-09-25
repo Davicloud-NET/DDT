@@ -55,6 +55,8 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     continuesInWindows: false,
     updatedUtc: new Date(Date.now() - 120_000).toISOString(),
     updatedBy: "admin",
+    rawImageName: null,
+    rawImageBootCapability: null,
     ...overrides,
   };
 }

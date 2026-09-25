@@ -4,6 +4,7 @@
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { isActive } from "@/deployments/deployments";
+import { ApprovalDialog } from "@/machines/ApprovalDialog";
 import { AssignDialog } from "@/machines/AssignDialog";
 import {
   isRemovable,
@@ -35,7 +36,7 @@ export interface MachineActionsProps {
 
 // The buttons for one machine, with the dialogs they open.
 export function MachineActions({ machine, actions, strays = null }: MachineActionsProps) {
-  const { decide, prepareApproval, approveWithPlan, remove, cancel, stop, busy } = actions;
+  const { decide, prepareApproval, remove, cancel, stop, busy } = actions;
   const approval = approvalRequested(actions.approveOn, machine);
   const deploymentState = machine.deployment?.state;
   const running = deploymentState === "Running" ? machine.deployment : null;
@@ -139,24 +140,7 @@ export function MachineActions({ machine, actions, strays = null }: MachineActio
         />
       )}
 
-      {approval !== null && (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              actions.setApproveOn(null);
-            }
-          }}
-          title={`Approve ${machineLabel(machine)}?`}
-          consequence={approval.consequence}
-          confirmLabel={approval.confirmLabel}
-          busy={approveWithPlan.isPending}
-          error={approveWithPlan.isError ? approveWithPlan.error.message : null}
-          onConfirm={() => {
-            approveWithPlan.mutate({ id: machine.id, plan: approval });
-          }}
-        />
-      )}
+      {approval !== null && <ApprovalDialog machine={machine} plan={approval} actions={actions} />}
 
       {isStopRequested(actions.stopOn, machine) && (
         <ConfirmDialog

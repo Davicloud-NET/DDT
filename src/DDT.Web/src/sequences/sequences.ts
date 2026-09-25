@@ -5,6 +5,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import type { ImageBootCapability } from "@/images/images";
 
 export type SequencePhase = "WindowsPE" | "Windows";
 
@@ -127,6 +128,9 @@ export interface SequenceSummary {
   continuesInWindows: boolean;
   updatedUtc: string;
   updatedBy: string | null;
+  // The raw disk image the sequence writes, if any, and whether it starts with Secure Boot on.
+  rawImageName: string | null;
+  rawImageBootCapability: ImageBootCapability | null;
 }
 
 // SequenceDefinition.CurrentVersion: the document schema this page writes.

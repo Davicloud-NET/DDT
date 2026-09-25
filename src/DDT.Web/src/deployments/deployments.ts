@@ -85,11 +85,15 @@ export interface DeploymentView {
   definition: SequenceDefinition | null;
   steps: DeploymentStepView[];
   artifacts: DeploymentArtifactView[];
+  // Whoever started the run let it write a raw disk image that is not signed for Secure Boot.
+  allowSecureBootMismatch: boolean;
 }
 
 export interface AssignSequenceRequest {
   sequenceId: string;
   computerName: string | null;
+  // Lets the run write a raw disk image that is not signed for Secure Boot on a machine with Secure Boot on.
+  allowSecureBootMismatch?: boolean;
 }
 
 export interface DeploymentOptionsView {

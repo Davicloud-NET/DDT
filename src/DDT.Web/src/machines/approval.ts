@@ -4,6 +4,7 @@
 
 import { plural, upperFirst } from "@/lib/format";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
+import { secureBootRisk, type SecureBootRisk } from "@/machines/secureBoot";
 import { isRuleChoice, type MachineSequenceResolution } from "@/rules/rules";
 import type { SequenceSummary } from "@/sequences/sequences";
 
@@ -14,6 +15,8 @@ export interface ApprovalPlan {
   expectedSequenceId: string | null;
   consequence: string;
   confirmLabel: string;
+  // Where the run writes a raw disk image that may not start with Secure Boot on.
+  secureBoot: SecureBootRisk | null;
 }
 
 // Null when the approval runs nothing and needs no confirmation: no rule chooses a sequence, or someone signed
@@ -39,6 +42,7 @@ export function approvalPlan(
     expectedSequenceId: null,
     consequence: `${upperFirst(rule)} chooses ${name}, ${why}. Approving authorizes ${label} without running anything.`,
     confirmLabel: "Approve without a sequence",
+    secureBoot: null,
   });
 
   if (resolution.problemCount > 0) {
@@ -54,8 +58,13 @@ export function approvalPlan(
   }
 
   if (sequence?.needsComputerName === true && machine.assignedName === null) {
+    const use =
+      sequence.rawImageName === null
+        ? "joins the domain"
+        : "names the machine in its cloud-init seed";
+
     return withoutRun(
-      "which joins the domain, and the machine has no name yet; assign the sequence with a computer name",
+      `which ${use}, and the machine has no name yet; assign the sequence with a computer name`,
     );
   }
 
@@ -70,5 +79,6 @@ export function approvalPlan(
     expectedSequenceId: resolution.sequenceId,
     consequence: `Approving ${label} also runs ${name} on it, which ${rule} chose.${effects}`,
     confirmLabel: `Approve and run ${name}`,
+    secureBoot: secureBootRisk(machine, sequence),
   };
 }

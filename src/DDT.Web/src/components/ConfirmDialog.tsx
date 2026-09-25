@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import type { ReactNode } from "react";
+
 import { Dialog } from "./Dialog";
 
 import styles from "./ConfirmDialog.module.scss";
@@ -16,6 +18,9 @@ export interface ConfirmDialogProps {
   busy: boolean;
   error: string | null;
   onConfirm: () => void;
+  // Anything to decide before confirming, such as a checkbox, and whether confirming waits for it.
+  children?: ReactNode;
+  confirmDisabled?: boolean;
 }
 
 // Asks before an action that cannot be undone. Focus starts on Close, so Enter alone never confirms.
@@ -28,6 +33,8 @@ export function ConfirmDialog({
   busy,
   error,
   onConfirm,
+  children,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   return (
     <Dialog
@@ -40,6 +47,7 @@ export function ConfirmDialog({
       title={title}
       description={consequence}
     >
+      {children}
       {error !== null && (
         <p className={styles.error} role="alert">
           {error}
@@ -56,7 +64,12 @@ export function ConfirmDialog({
         >
           Close
         </button>
-        <button type="button" className={styles.confirm} disabled={busy} onClick={onConfirm}>
+        <button
+          type="button"
+          className={styles.confirm}
+          disabled={busy || confirmDisabled}
+          onClick={onConfirm}
+        >
           {confirmLabel}
         </button>
       </div>

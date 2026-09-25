@@ -46,6 +46,8 @@ function sequence(id: string, name: string, problemCount = 0): SequenceSummary {
     continuesInWindows: false,
     updatedUtc: "2026-09-15T10:00:00Z",
     updatedBy: "admin",
+    rawImageName: null,
+    rawImageBootCapability: null,
   };
 }
 

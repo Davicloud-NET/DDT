@@ -20,10 +20,18 @@ export interface RunOverviewProps {
   // The machine's last contact with the server.
   lastSeenUtc: string;
   now: number;
+  // What the run was allowed beyond its sequence, such as writing an image not signed for Secure Boot.
+  allowance?: string | null;
 }
 
 // Where the run is and for how long, in one place above its steps.
-export function RunOverview({ run, revision, lastSeenUtc, now }: RunOverviewProps) {
+export function RunOverview({
+  run,
+  revision,
+  lastSeenUtc,
+  now,
+  allowance = null,
+}: RunOverviewProps) {
   const step = currentStepLabel(run);
   const activity = activityLabel(run.activity);
 
@@ -35,6 +43,8 @@ export function RunOverview({ run, revision, lastSeenUtc, now }: RunOverviewProp
           <span className={styles.secondary}> revision {String(revision)}</span>
         )}
       </h2>
+
+      {allowance !== null && <p className={styles.secondary}>{allowance}</p>}
 
       {run.state === "Assigned" && <p>{assignedBy(run)}. The machine has not started it yet.</p>}
 

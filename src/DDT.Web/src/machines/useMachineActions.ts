@@ -55,8 +55,15 @@ export function useMachineActions() {
   });
 
   const approveWithPlan = useMutation({
-    mutationFn: ({ id, plan }: { id: string; plan: ApprovalPlan }) =>
-      approveMachine(id, plan.expectedSequenceId),
+    mutationFn: ({
+      id,
+      plan,
+      allowSecureBootMismatch = false,
+    }: {
+      id: string;
+      plan: ApprovalPlan;
+      allowSecureBootMismatch?: boolean;
+    }) => approveMachine(id, plan.expectedSequenceId, allowSecureBootMismatch),
     onSuccess: (machine) => {
       upsertMachine(queryClient, machine);
       setApproveOn(null);

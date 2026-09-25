@@ -30,6 +30,7 @@ const machine: MachineSummary = {
   disks: null,
   eligibleDiskCount: 1,
   deployment: null,
+  secureBootEnabled: null,
 };
 
 const chosen: MachineSequenceResolution = {
@@ -54,6 +55,8 @@ const installWindows: SequenceSummary = {
   continuesInWindows: true,
   updatedUtc: "2026-09-15T10:00:00Z",
   updatedBy: null,
+  rawImageName: null,
+  rawImageBootCapability: null,
 };
 
 describe("approvalPlan", () => {
@@ -68,7 +71,22 @@ describe("approvalPlan", () => {
       consequence:
         "Approving PC-042 also runs Install Windows on it, which a rule for its MAC address chose. Its disk is not erased.",
       confirmLabel: "Approve and run Install Windows",
+      secureBoot: null,
     });
+  });
+
+  it("carries what the run must be allowed when it writes an image not signed for Secure Boot", () => {
+    const linux = {
+      ...installWindows,
+      rawImageName: "noble",
+      rawImageBootCapability: "NotSigned",
+    } as const;
+
+    const plan = approvalPlan({ ...machine, secureBootEnabled: true }, chosen, [linux]);
+
+    expect(plan?.expectedSequenceId).toBe("s1");
+    expect(plan?.secureBoot?.required).toBe(true);
+    expect(plan?.secureBoot?.allowLabel).toBe("Write noble anyway");
   });
 
   it.each([
@@ -83,6 +101,12 @@ describe("approvalPlan", () => {
       target: { ...machine, assignedName: null },
       sequence: { ...installWindows, needsComputerName: true },
       why: "which joins the domain, and the machine has no name yet; assign the sequence with a computer name",
+    },
+    {
+      where: "the sequence names the machine in its seed and the machine has no name",
+      target: { ...machine, assignedName: null },
+      sequence: { ...installWindows, needsComputerName: true, rawImageName: "noble" },
+      why: "which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name",
     },
   ])("only authorizes the machine where $where", ({ target, sequence, why }) => {
     const plan = approvalPlan(target, chosen, [sequence]);

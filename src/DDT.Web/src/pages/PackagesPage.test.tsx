@@ -85,6 +85,8 @@ function summary(id: string, name: string): SequenceSummary {
     continuesInWindows: false,
     updatedUtc: "2026-09-15T10:00:00Z",
     updatedBy: "admin",
+    rawImageName: null,
+    rawImageBootCapability: null,
   };
 }
 

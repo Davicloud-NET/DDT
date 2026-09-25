@@ -48,6 +48,7 @@ function machine(overrides: Partial<MachineSummary>): MachineSummary {
     disks: "Disk 0: Msft Virtual Disk, 64 GB, SCSI",
     eligibleDiskCount: 1,
     deployment: null,
+    secureBootEnabled: null,
     ...overrides,
   };
 }
@@ -91,9 +92,21 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     continuesInWindows: false,
     updatedUtc: "2026-09-15T10:00:00Z",
     updatedBy: "admin",
+    rawImageName: null,
+    rawImageBootCapability: null,
     ...overrides,
   };
 }
+
+const installLinuxId = "0193a4b2-0000-7000-8000-0000000000e2";
+
+const linux = sequence({
+  id: installLinuxId,
+  name: "Install Linux",
+  stepCount: 2,
+  rawImageName: "noble",
+  rawImageBootCapability: "NotSigned",
+});
 
 function resolution(overrides: Partial<MachineSequenceResolution>): MachineSequenceResolution {
   return {
@@ -904,6 +917,162 @@ describe("MachinesPage", () => {
     expect(within(dialog).queryByText(/more than one disk/)).not.toBeInTheDocument();
     await waitFor(() => {
       expect(within(dialog).getByRole("button", { name: "Assign sequence" })).toBeEnabled();
+    });
+  });
+
+  it("shows whether each machine's firmware has Secure Boot on", async () => {
+    renderWith(
+      [
+        machine({ secureBootEnabled: true }),
+        machine({
+          id: "0193a4b2-0000-7000-8000-000000000002",
+          model: "Latitude 5440",
+          serialNumber: "5678",
+          secureBootEnabled: false,
+        }),
+      ],
+      operator,
+    );
+
+    expect(
+      await screen.findByText("Microsoft Corporation, 1234, Secure Boot on"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Microsoft Corporation, 5678, Secure Boot off")).toBeInTheDocument();
+  });
+
+  it("assigns a raw disk image not signed for Secure Boot to a machine with it on only once allowed", async () => {
+    const approved = machine({ state: "Approved", everApproved: true, secureBootEnabled: true });
+    const { calls } = renderWith([approved], operator, {
+      "GET /api/sequences": { body: [sequence({}), linux] },
+      "GET /api/deployments/options": { body: options({}) },
+      [`POST /api/machines/${approved.id}/deployments`]: {
+        body: {
+          ...approved,
+          deployment: deployment({ sequenceId: installLinuxId, title: "Install Linux" }),
+        },
+      },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+    await within(dialog).findByRole("option", { name: "Install Linux" });
+    const submit = within(dialog).getByRole("button", { name: "Assign sequence" });
+
+    // A Windows sequence starts with Secure Boot on: nothing to allow.
+    expect(within(dialog).queryByLabelText("Write noble anyway")).not.toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText("Task sequence"), {
+      target: { value: installLinuxId },
+    });
+
+    expect(
+      within(dialog).getByText(
+        /^noble is not signed for Secure Boot, and this machine has Secure Boot on\./,
+      ),
+    ).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));
+    expect(submit).toBeEnabled();
+
+    // Another sequence asks again.
+    fireEvent.change(within(dialog).getByLabelText("Task sequence"), {
+      target: { value: installWindowsId },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Task sequence"), {
+      target: { value: installLinuxId },
+    });
+    expect(within(dialog).getByLabelText("Write noble anyway")).not.toBeChecked();
+
+    fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(calls).toContainEqual({
+      method: "POST",
+      path: `/api/machines/${approved.id}/deployments`,
+      body: { sequenceId: installLinuxId, computerName: null, allowSecureBootMismatch: true },
+    });
+  });
+
+  it("assigns a raw disk image where the machine did not say whether Secure Boot is on", async () => {
+    const approved = machine({ state: "Approved", everApproved: true });
+    const { calls } = renderWith([approved], operator, {
+      "GET /api/sequences": {
+        body: [{ ...linux, needsComputerName: true, rawImageBootCapability: "Unknown" }],
+      },
+      "GET /api/deployments/options": { body: options({}) },
+      [`POST /api/machines/${approved.id}/deployments`]: { body: approved },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Assign" }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      await within(dialog).findByText(
+        "noble may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        /Required, because Install Linux gives this name to the machine in its cloud-init seed\./,
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText("Computer name"), {
+      target: { value: "LAB-01" },
+    });
+    await waitFor(() => {
+      expect(within(dialog).getByRole("button", { name: "Assign sequence" })).toBeEnabled();
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Assign sequence" }));
+
+    await waitFor(() => {
+      expect(calls).toContainEqual({
+        method: "POST",
+        path: `/api/machines/${approved.id}/deployments`,
+        body: { sequenceId: installLinuxId, computerName: "LAB-01" },
+      });
+    });
+  });
+
+  it("approves with a rule's raw disk image not signed for Secure Boot only once allowed", async () => {
+    const waiting = machine({ secureBootEnabled: true });
+    const { calls } = renderWith([waiting], operator, {
+      [`GET /api/machines/${waiting.id}/sequence`]: {
+        body: modelRule({ sequenceId: installLinuxId, sequenceName: "Install Linux" }),
+      },
+      "GET /api/sequences": { body: [linux] },
+      [`POST /api/machines/${waiting.id}/approve`]: {
+        body: { ...waiting, state: "Approved", everApproved: true },
+      },
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Approve Virtual Machine (00:15:5D:01:02:03)?",
+    });
+    const confirm = within(dialog).getByRole("button", { name: "Approve and run Install Linux" });
+
+    expect(
+      within(dialog).getByText(
+        /^noble is not signed for Secure Boot, and this machine has Secure Boot on\./,
+      ),
+    ).toBeInTheDocument();
+    expect(confirm).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByLabelText("Write noble anyway"));
+    fireEvent.click(confirm);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(calls).toContainEqual({
+      method: "POST",
+      path: `/api/machines/${waiting.id}/approve`,
+      body: { expectedSequenceId: installLinuxId, allowSecureBootMismatch: true },
     });
   });
 

@@ -33,6 +33,8 @@ export interface MachineSummary {
   eligibleDiskCount: number | null;
   // The active deployment, else the latest finished one.
   deployment: DeploymentSummary | null;
+  // Whether the firmware started the agent with Secure Boot on; null when it did not say.
+  secureBootEnabled: boolean | null;
 }
 
 // A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A
@@ -83,14 +85,20 @@ export function upsertMachine(queryClient: QueryClient, machine: MachineSummary)
 }
 
 // With the sequence the page showed a rule choosing, the approval also runs it, and the server refuses when the
-// rules choose otherwise by now. Without one the approval runs nothing.
+// rules choose otherwise by now. Without one the approval runs nothing. allowSecureBootMismatch lets that run write a
+// raw disk image that is not signed for Secure Boot.
 export function approveMachine(
   id: string,
   expectedSequenceId: string | null = null,
+  allowSecureBootMismatch = false,
 ): Promise<MachineSummary> {
   return apiPost<MachineSummary>(
     `/api/machines/${id}/approve`,
-    expectedSequenceId === null ? undefined : { expectedSequenceId },
+    expectedSequenceId === null
+      ? undefined
+      : allowSecureBootMismatch
+        ? { expectedSequenceId, allowSecureBootMismatch }
+        : { expectedSequenceId },
   );
 }
 

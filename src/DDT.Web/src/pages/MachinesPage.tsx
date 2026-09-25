@@ -11,6 +11,7 @@ import { useNow } from "@/lib/useNow";
 import { DeploymentCell } from "@/machines/DeploymentCell";
 import { MachineActionErrors } from "@/machines/MachineActionErrors";
 import { MachineActions } from "@/machines/MachineActions";
+import { secureBootLabel } from "@/machines/secureBoot";
 import { formatMac, isStray, machinesQuery } from "@/machines/machines";
 import { useMachineActions } from "@/machines/useMachineActions";
 
@@ -98,7 +99,9 @@ export function MachinesPage() {
                       {machine.assignedName ?? machine.model ?? "Unknown model"}
                     </Link>
                     <div className={styles.secondary}>
-                      {[machine.manufacturer, machine.serialNumber].filter(Boolean).join(", ")}
+                      {[machine.manufacturer, machine.serialNumber, secureBootLabel(machine)]
+                        .filter(Boolean)
+                        .join(", ")}
                     </div>
                   </td>
                   <td className={styles.mono}>{formatMac(machine.primaryMac)}</td>

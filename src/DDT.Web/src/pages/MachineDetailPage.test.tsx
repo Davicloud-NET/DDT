@@ -78,6 +78,7 @@ function machine(overrides: Partial<MachineSummary>): MachineSummary {
     disks: "Disk 0: Msft Virtual Disk, 64 GB, SCSI",
     eligibleDiskCount: 1,
     deployment: run({}),
+    secureBootEnabled: null,
     ...overrides,
   };
 }
@@ -165,6 +166,7 @@ function view(overrides: Partial<DeploymentView>): DeploymentView {
       step(5, "s6", "Set wallpaper", "runScript", { phase: "Windows" }),
     ],
     artifacts: [],
+    allowSecureBootMismatch: false,
     ...overrides,
   };
 }
@@ -797,6 +799,63 @@ describe("MachineDetailPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Run" })).not.toBeInTheDocument();
+  });
+
+  it("shows the machine's Secure Boot state, and that its run may write an image not signed for it", async () => {
+    const linux = run({
+      title: "Install Linux",
+      state: "Done",
+      stepCount: 2,
+      stepIndex: null,
+      stepName: null,
+      activity: null,
+      finishedUtc: "2026-09-16T10:30:00Z",
+    });
+    renderAt(
+      `/machines/${machineId}`,
+      standardAnswers(
+        [machine({ state: "Done", deployment: linux, secureBootEnabled: true })],
+        [linux],
+        [
+          view({
+            summary: linux,
+            definition: {
+              version: 2,
+              steps: [
+                planned("w1", "Write the disk", "writeRawImage"),
+                planned("c1", "Seed", "writeCloudInitSeed"),
+              ],
+            },
+            steps: [
+              step(0, "w1", "Write the disk", "writeRawImage", { state: "Done" }),
+              step(1, "c1", "Seed", "writeCloudInitSeed", { state: "Done" }),
+            ],
+            artifacts: [
+              {
+                stepId: "w1",
+                kind: "Image",
+                sourceId: "0193a4b2-0000-7000-8000-0000000000a9",
+                name: "noble",
+                sha256: "00",
+                sizeBytes: 1,
+              },
+            ],
+            allowSecureBootMismatch: true,
+          }),
+        ],
+      ),
+    );
+
+    expect(
+      await screen.findByText(
+        "Allowed to write noble although it may not start with Secure Boot on.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Secure Boot", { selector: "dt" }).nextElementSibling,
+    ).toHaveTextContent("On");
+    expect(within(stepRow("Write the disk")).getByText("Write raw disk image")).toBeInTheDocument();
+    expect(within(stepRow("Seed")).getByText("Write the cloud-init seed")).toBeInTheDocument();
   });
 
   it("says when the machine was removed", async () => {

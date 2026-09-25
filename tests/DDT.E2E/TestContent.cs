@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using DDT.Core.Disks;
 
 namespace DDT.E2E;
 
@@ -53,6 +54,40 @@ internal static class TestContent
         file.Write(list);
     }
 
+    // A raw disk image as a distribution lays out its cloud image, gzipped as some publish it: an EFI system partition
+    // at 1 MiB with an x64 \EFI\BOOT\BOOTX64.EFI that is not signed, and a root partition of rootMegabytes of random
+    // bytes, with the backup table at the image's end.
+    public static void WriteRawImage(string path, int rootMegabytes)
+    {
+        const long espFirst = 2048;
+        const long espSectors = 8192;
+        long rootFirst = espFirst + espSectors;
+        long rootSectors = rootMegabytes * 2048L;
+        long sectors = rootFirst + rootSectors + 2048;
+
+        GptLayout layout = GptLayout.Create(sectors, Guid.NewGuid())
+            .WithPartition(GptPartitionTypes.EfiSystem, Guid.NewGuid(), "EFI", espFirst, espFirst + espSectors - 1)
+            .WithPartition(GptPartitionTypes.LinuxFileSystem, Guid.NewGuid(), "root", rootFirst, rootFirst + rootSectors - 1);
+        byte[] disk = new byte[sectors * GptLayout.SectorSize];
+
+        void Place(long lba, byte[] content) => content.CopyTo(disk, lba * GptLayout.SectorSize);
+
+        Place(0, layout.ProtectiveMbr(default));
+        Place(1, layout.PrimaryHeader());
+        Place(layout.EntriesLba, layout.EntryArray());
+        Place(layout.BackupEntriesLba, layout.EntryArray());
+        Place(layout.BackupLba, layout.BackupHeader());
+
+        FatVolumeBuilder esp = new(espSectors * GptLayout.SectorSize, "UEFI", 0x0DD7E2E0, DateTime.UtcNow) { HiddenSectors = espFirst };
+        esp.AddFile(@"EFI\BOOT\BOOTX64.EFI", UnsignedEfiProgram());
+        Place(espFirst, esp.Build());
+        RandomNumberGenerator.Fill(disk.AsSpan((int)(rootFirst * GptLayout.SectorSize), (int)(rootSectors * GptLayout.SectorSize)));
+
+        using FileStream file = File.Create(path);
+        using GZipStream gzip = new(file, CompressionLevel.Fastest);
+        gzip.Write(disk);
+    }
+
     // A driver package needs an .inf, which the server checks for.
     public static void WriteDriverPackage(string path)
     {
@@ -72,6 +107,38 @@ internal static class TestContent
             using Stream data = zip.CreateEntry("data.bin", CompressionLevel.NoCompression).Open();
             WriteRandom(data, (long)dataMegabytes * Megabyte);
         }
+    }
+
+    // The smallest PE32+ file for x64 the server reads: headers in the first 512 bytes, then one section of 512 bytes,
+    // and no certificate table.
+    private static byte[] UnsignedEfiProgram()
+    {
+        const int peOffset = 0x40;
+        const int optionalHeader = peOffset + 24;
+        const int section = optionalHeader + 240;
+        byte[] file = new byte[1024];
+        Span<byte> span = file;
+
+        span[0] = (byte)'M';
+        span[1] = (byte)'Z';
+        BinaryPrimitives.WriteInt32LittleEndian(span[0x3C..], peOffset);
+        BinaryPrimitives.WriteUInt32LittleEndian(span[peOffset..], 0x00004550);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[(peOffset + 4)..], 0x8664);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[(peOffset + 6)..], 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[(peOffset + 20)..], 240);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[(peOffset + 22)..], 0x22);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[optionalHeader..], 0x20B);
+        BinaryPrimitives.WriteInt32LittleEndian(span[(optionalHeader + 60)..], 0x200);
+        BinaryPrimitives.WriteUInt16LittleEndian(span[(optionalHeader + 68)..], 10);
+        BinaryPrimitives.WriteUInt32LittleEndian(span[(optionalHeader + 108)..], 16);
+        ".text"u8.CopyTo(span[section..]);
+        BinaryPrimitives.WriteInt32LittleEndian(span[(section + 8)..], 0x200);
+        BinaryPrimitives.WriteInt32LittleEndian(span[(section + 12)..], 0x1000);
+        BinaryPrimitives.WriteInt32LittleEndian(span[(section + 16)..], 0x200);
+        BinaryPrimitives.WriteInt32LittleEndian(span[(section + 20)..], 0x200);
+        RandomNumberGenerator.Fill(span[0x200..]);
+
+        return file;
     }
 
     private static void WriteEntry(ZipArchive zip, string name, byte[] content)

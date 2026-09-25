@@ -116,6 +116,22 @@ internal sealed class AdminApi : IDisposable
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
+    // For a request the server is to refuse: returns the body of its answer.
+    public async Task<string> SendRefusedAsync<TBody>(
+        HttpMethod method,
+        string path,
+        TBody body,
+        JsonTypeInfo<TBody> bodyType,
+        HttpStatusCode expected,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = JsonContent.Create(body, bodyType) };
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
+
+        return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task DeleteAsync(string path, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Delete, new Uri(path, UriKind.Relative));

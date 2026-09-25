@@ -4,12 +4,16 @@
 
 using System.Globalization;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using DDT.Contracts;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
+using DDT.Core.Disks;
 using DDT.Server.Data;
 using Xunit;
 
@@ -346,6 +350,95 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         lab.AssertClean([agent], []);
     }
 
+    // A raw disk image that is not signed for Secure Boot, on a machine that says Secure Boot is on: the server refuses the
+    // run until it is allowed, and then the dry run's disk file holds the image, both of its tables, and the seed last.
+    [Fact(Timeout = 600_000)]
+    public async Task ARawDiskImageNotSignedForSecureBootIsWrittenWithItsSeedOnceAllowed()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        ImageSummary image = lab.RawImage;
+        Assert.Equal((ImageKind.RawDisk, ImageBootCapability.NotSigned, "x64"), (image.Kind, image.BootCapability, image.Architecture));
+        Assert.Equal("e2e-cloudimg-amd64", image.Name);
+
+        // Windows PE cannot restart in such a sequence, so the script takes no exit code as a restart.
+        RunScriptStep before = Script("Before the disk", SequencePhase.WindowsPE, "echo %DDT_PHASE%") with { RebootExitCodes = [] };
+        WriteRawImageStep write = new() { Id = Guid.CreateVersion7(), Name = "Write the disk image", ImageId = image.Id };
+        WriteCloudInitSeedStep seed = new()
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Write the cloud-init seed",
+            MetaData = "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n",
+            UserData = "#cloud-config\nwrite_files:\n  - path: /etc/ddt-serial\n    content: \"{{SerialNumber}}\"\n",
+        };
+        SequenceView sequence = await lab.CreateSequenceAsync("Install Linux", [before, write, seed], cancellationToken);
+        Assert.Contains(
+            sequence.Warnings,
+            warning => warning.StepId == write.Id && warning.Message.StartsWith($"{image.Name} will not start with Secure Boot on.", StringComparison.Ordinal));
+
+        await using AgentProcess agent = lab.StartAgent(secureBoot: true);
+        MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
+        Assert.True(machine.SecureBootEnabled);
+        await lab.Live.WatchAsync(machine.Id, cancellationToken);
+        await lab.ApproveAsync(machine.Id, null, cancellationToken);
+
+        string refusal = await lab.Api.SendRefusedAsync(
+            HttpMethod.Post,
+            $"api/machines/{machine.Id:D}/deployments",
+            new AssignSequenceRequest(sequence.Id, ComputerName(agent)),
+            DdtJsonContext.Default.AssignSequenceRequest,
+            HttpStatusCode.BadRequest,
+            cancellationToken);
+        Assert.Contains($"{image.Name} will not start with Secure Boot on, and this machine has Secure Boot on.", refusal, StringComparison.Ordinal);
+        Assert.False(File.Exists(agent.DiskPath), $"{agent.DiskPath} was written before the run was allowed.");
+
+        DeploymentSummary assigned = (await lab.AssignAsync(machine.Id, sequence.Id, ComputerName(agent), cancellationToken, allowSecureBootMismatch: true)).Deployment!;
+
+        Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+        DeploymentView run = await lab.RunAsync(assigned.Id, cancellationToken);
+        Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+        Assert.True(run.AllowSecureBootMismatch);
+        Assert.Equal(
+            [(before.Id, StepState.Done), (write.Id, StepState.Done), (seed.Id, StepState.Done)],
+            run.Steps.Select(step => (step.StepId, step.State)));
+        Assert.Equal(
+            [(write.Id, ArtifactKind.Image, image.Id, image.Sha256)],
+            run.Artifacts.Select(artifact => (artifact.StepId, artifact.Kind, artifact.SourceId, artifact.Sha256)));
+        Assert.Equal(
+            1,
+            agent.Output.Count($"A boot entry {image.Name} for {RawImageInspector.BootDirectory}\\{RawImageInspector.FallbackFile} on partition 1"));
+
+        using (FileStream disk = new(agent.DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            byte[] head = new byte[GptLayout.MaxHeadBytes];
+            disk.ReadExactly(head);
+            GptLayout layout = GptLayout.Read(head);
+            Assert.Equal((disk.Length / GptLayout.SectorSize) - 1, layout.BackupLba);
+
+            byte[] backup = new byte[GptLayout.SectorSize];
+            disk.Position = layout.BackupLba * GptLayout.SectorSize;
+            disk.ReadExactly(backup);
+            Assert.Equal(layout.BackupHeader(), backup);
+
+            Assert.Equal(["EFI", "root", CloudInitSeed.Label], layout.Partitions.Select(partition => partition.Name));
+            GptPartition seeded = layout.Partitions[^1];
+            Assert.True(seeded.FirstLba > layout.Partitions[1].LastLba + 2048, "The seed is not at the end of the disk.");
+
+            FatVolume volume = FatVolume.Open(disk, seeded.FirstLba * GptLayout.SectorSize, seeded.Sectors * GptLayout.SectorSize);
+            Assert.Equal(CloudInitSeed.Label, volume.Label);
+            Assert.Contains($"local-hostname: \"{ComputerName(agent)}\"", Text(volume, CloudInitSeed.MetaData), StringComparison.Ordinal);
+            Assert.Contains($"content: \"{agent.SerialNumber}\"", Text(volume, CloudInitSeed.UserData), StringComparison.Ordinal);
+            Assert.Null(volume.Find(CloudInitSeed.NetworkConfig));
+        }
+
+        IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(assigned.Id, cancellationToken);
+        Assert.Contains(
+            audit,
+            entry => entry.Detail?.Contains($"It may write {image.Name} although it will not start with Secure Boot on.", StringComparison.Ordinal) == true);
+
+        lab.AssertClean([agent], [$"{image.Name} is not signed for Secure Boot, and this machine has Secure Boot on. The run was allowed to write it"]);
+    }
+
     // Approved and assigned on the web, as an operator does for a machine waiting at its prompt. The machine is
     // watched first, so no push about its run is missed. Returns the machine and its run.
     private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(
@@ -420,6 +513,8 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
 
     private static RunScriptStep Script(string name, SequencePhase phase, string script, ScriptInterpreter interpreter = ScriptInterpreter.Cmd) =>
         new() { Id = Guid.CreateVersion7(), Name = name, Phase = phase, Interpreter = interpreter, Script = script };
+
+    private static string Text(FatVolume volume, string name) => Encoding.UTF8.GetString(volume.ReadFile(volume.Find(name)!, 64 * 1024));
 
     private static string Json(SequenceDefinition definition) => JsonSerializer.Serialize(definition, DdtJsonContext.Default.SequenceDefinition);
 

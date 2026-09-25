@@ -64,6 +64,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     public PackageSummary LargeFiles { get; private set; } = null!;
 
+    // A raw disk image whose boot file is not signed for Secure Boot.
+    public ImageSummary RawImage { get; private set; } = null!;
+
     public async ValueTask InitializeAsync()
     {
         try
@@ -107,19 +110,21 @@ public sealed partial class DryRunLab : IAsyncLifetime
         foreach (int id in _dryRunIds)
         {
             await DeleteDirectoryAsync(AgentProcess.RootOf(id)).ConfigureAwait(false);
+            File.Delete(AgentProcess.DiskPathOf(id));
         }
 
         await DeleteDirectoryAsync(_directory).ConfigureAwait(false);
     }
 
     // A new machine, or with dryRunId the machine an earlier agent stood in for, whose disk it goes on with. With
-    // slowDownloads, the agent reaches the host through the slow relay.
-    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false)
+    // slowDownloads, the agent reaches the host through the slow relay, and with secureBoot the machine says Secure Boot
+    // is on.
+    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false)
     {
         int id = dryRunId ?? NewDryRunId();
         string log = Path.Combine(_directory, $"agent-{id}-{Environment.TickCount64}.log");
 
-        return AgentProcess.Start(_agentPath!, slowDownloads ? _relay!.Url : Host.Url, Host.RootCertificatePath, id, log);
+        return AgentProcess.Start(_agentPath!, slowDownloads ? _relay!.Url : Host.Url, Host.RootCertificatePath, id, log, secureBoot);
     }
 
     internal async Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken)
@@ -157,11 +162,16 @@ public sealed partial class DryRunLab : IAsyncLifetime
             HttpStatusCode.OK,
             cancellationToken);
 
-    internal Task<MachineSummary> AssignAsync(Guid machineId, Guid sequenceId, string? computerName, CancellationToken cancellationToken) =>
+    internal Task<MachineSummary> AssignAsync(
+        Guid machineId,
+        Guid sequenceId,
+        string? computerName,
+        CancellationToken cancellationToken,
+        bool allowSecureBootMismatch = false) =>
         Api.SendAsync(
             HttpMethod.Post,
             $"api/machines/{machineId:D}/deployments",
-            new AssignSequenceRequest(sequenceId, computerName),
+            new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch),
             DdtJsonContext.Default.AssignSequenceRequest,
             DdtJsonContext.Default.MachineSummary,
             HttpStatusCode.OK,
@@ -311,6 +321,10 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
         Files = await UploadFilesAsync("files.zip", 0, cancellationToken).ConfigureAwait(false);
         LargeFiles = await UploadFilesAsync("large-files.zip", LargeMegabytes, cancellationToken).ConfigureAwait(false);
+
+        string raw = Path.Combine(_directory, "e2e-cloudimg-amd64.img.gz");
+        TestContent.WriteRawImage(raw, 16);
+        RawImage = Assert.Single(await Api.UploadImageAsync(raw, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<ImageSummary> UploadImageAsync(string name, int megabytes, CancellationToken cancellationToken)

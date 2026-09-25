@@ -29,9 +29,15 @@ internal sealed class AgentProcess : IAsyncDisposable
     // The dry run's disk, which outlasts the process: an agent started again with the same id goes on with its run.
     public string Root => RootOf(DryRunId);
 
+    // Where a sequence that writes a raw disk image writes the dry run's disk. It outlasts the root.
+    public string DiskPath => DiskPathOf(DryRunId);
+
     public static string RootOf(int dryRunId) => Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{dryRunId}");
 
-    public static AgentProcess Start(string agentPath, Uri server, string rootCertificatePath, int dryRunId, string logPath)
+    public static string DiskPathOf(int dryRunId) => $"{RootOf(dryRunId)}-disk0.img";
+
+    // With secureBoot, the dry run's machine says Secure Boot is on.
+    public static AgentProcess Start(string agentPath, Uri server, string rootCertificatePath, int dryRunId, string logPath, bool secureBoot = false)
     {
         ArgumentNullException.ThrowIfNull(server);
 
@@ -44,6 +50,7 @@ internal sealed class AgentProcess : IAsyncDisposable
             server.AbsoluteUri,
             "--root-certificate",
             rootCertificatePath,
+            .. secureBoot ? (string[])["--dry-run-secure-boot"] : [],
         ];
         ProcessStartInfo start = new(agentPath, arguments)
         {

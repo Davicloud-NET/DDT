@@ -16,7 +16,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DDT.Server.Migrations
 {
     [DbContext(typeof(DdtDbContext))]
-    [Migration("20260925093515_LinuxImages")]
+    [Migration("20260925095404_LinuxImages")]
     partial class LinuxImages
     {
         /// <inheritdoc />
@@ -300,6 +300,10 @@ namespace DDT.Server.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BootCapability")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("DeploymentId")
                         .HasColumnType("uuid");

@@ -115,6 +115,7 @@ public static class DeploymentEndpoints
             run.RuleId,
             snapshot is null ? null : SequenceDocuments.Read(snapshot.Definition),
             [.. steps.Select(DeploymentSummaries.Step)],
-            [.. artifacts.Select(DeploymentSummaries.Artifact)]));
+            [.. artifacts.Select(DeploymentSummaries.Artifact)],
+            run.AllowSecureBootMismatch));
     }
 }

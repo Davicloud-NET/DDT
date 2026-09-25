@@ -40,7 +40,8 @@ public sealed class DeployingMachine : IDisposable
     public static async Task<DeployingMachine> RegisterAsync(
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
-        string? remoteAddress = null)
+        string? remoteAddress = null,
+        bool? secureBootEnabled = null)
     {
         ArgumentNullException.ThrowIfNull(application);
 
@@ -50,6 +51,7 @@ public sealed class DeployingMachine : IDisposable
             "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)) with
         {
             Disks = disks,
+            SecureBootEnabled = secureBootEnabled,
         };
 
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
@@ -62,9 +64,10 @@ public sealed class DeployingMachine : IDisposable
     public static async Task<DeployingMachine> SignedInAsync(
         DdtApplication application,
         string userName,
-        IReadOnlyList<AgentDisk>? disks = null)
+        IReadOnlyList<AgentDisk>? disks = null,
+        bool? secureBootEnabled = null)
     {
-        DeployingMachine machine = await RegisterAsync(application, disks);
+        DeployingMachine machine = await RegisterAsync(application, disks, secureBootEnabled: secureBootEnabled);
 
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
             await machine.Agent.SignInAsync(machine.Id, machine.Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));

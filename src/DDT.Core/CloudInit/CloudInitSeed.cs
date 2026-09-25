@@ -19,6 +19,10 @@ public static class CloudInitSeed
     // Far more than seeds need, and still FAT16, which every Linux reads.
     public const long SizeBytes = 64L * 1024 * 1024;
 
+    // What the seed takes on a disk beyond the image: itself, the mebibyte its start is aligned to, and the backup
+    // partition table after it.
+    public const long DiskBytes = SizeBytes + (2L * 1024 * 1024);
+
     // The rendered files; networkConfig is left out when null. firstSector is where the partition starts on the disk.
     public static byte[] Build(string metaData, string userData, string? networkConfig, uint serialNumber, DateTime timestamp, long firstSector)
     {

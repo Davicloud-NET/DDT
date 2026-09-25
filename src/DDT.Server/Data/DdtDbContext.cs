@@ -170,6 +170,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             artifact.Property(a => a.Name).HasMaxLength(256);
             artifact.Property(a => a.Sha256).HasMaxLength(64);
             artifact.Property(a => a.Language).HasMaxLength(16);
+            artifact.Property(a => a.BootCapability).HasConversion<string>().HasMaxLength(16);
             artifact.HasIndex(a => a.Sha256);
             artifact.HasIndex(a => a.SourceId);
             artifact.HasOne<Deployment>().WithMany().HasForeignKey(a => a.DeploymentId).OnDelete(DeleteBehavior.Cascade);

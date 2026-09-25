@@ -253,7 +253,14 @@ public static class MachineEndpoints
         {
             string? address = context.Connection.RemoteIpAddress?.ToString();
             DeploymentDecision decision = await deployments
-                .AssignByRuleAsync(machine, expected, Principals.UserId(user), user.Identity?.Name, address, cancellationToken)
+                .AssignByRuleAsync(
+                    machine,
+                    expected,
+                    request?.AllowSecureBootMismatch ?? false,
+                    Principals.UserId(user),
+                    user.Identity?.Name,
+                    address,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             if (decision.Outcome != DeploymentOutcome.Accepted)

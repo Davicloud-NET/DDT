@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 
 namespace DDT.Server.Deployments;
 
@@ -31,6 +32,9 @@ public sealed class DeploymentArtifact
     public long ExpandedBytes { get; set; }
 
     public int? WimIndex { get; set; }
+
+    // For a raw disk image: whether it starts with Secure Boot on, as the library judged it.
+    public ImageBootCapability? BootCapability { get; set; }
 
     public string? Language { get; set; }
 }

@@ -53,6 +53,14 @@ namespace DDT.Server.Migrations
                 nullable: false,
                 defaultValue: false);
 
+            migrationBuilder.AddColumn<string>(
+                name: "BootCapability",
+                schema: "ddt",
+                table: "DeploymentArtifacts",
+                type: "character varying(16)",
+                maxLength: 16,
+                nullable: true);
+
             migrationBuilder.CreateIndex(
                 name: "IX_Images_SourceSha256",
                 schema: "ddt",
@@ -92,6 +100,11 @@ namespace DDT.Server.Migrations
                 name: "AllowSecureBootMismatch",
                 schema: "ddt",
                 table: "Deployments");
+
+            migrationBuilder.DropColumn(
+                name: "BootCapability",
+                schema: "ddt",
+                table: "DeploymentArtifacts");
         }
     }
 }

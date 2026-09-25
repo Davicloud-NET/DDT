@@ -214,6 +214,13 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
+        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
+
+        if (secureBootProblem is not null)
+        {
+            return DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem);
+        }
+
         DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
@@ -226,6 +233,7 @@ public sealed class DeploymentService(
             userName,
             diskNumber: null,
             request.ComputerName,
+            allowMismatch,
             now);
 
         database.AuditEvents.Add(Audit(
@@ -233,7 +241,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}.",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}.{MismatchNote(definition, references, allowMismatch)}",
             actorUserId: userId,
             actorName: userName));
 
@@ -275,6 +283,7 @@ public sealed class DeploymentService(
     public async Task<DeploymentDecision> AssignByRuleAsync(
         Machine machine,
         Guid expectedSequenceId,
+        bool allowSecureBootMismatch,
         Guid? userId,
         string? userName,
         string? address,
@@ -317,6 +326,13 @@ public sealed class DeploymentService(
                 $"{sequence.Name} {names}, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.");
         }
 
+        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, allowSecureBootMismatch);
+
+        if (secureBootProblem is not null)
+        {
+            return DeploymentDecision.Conflict(secureBootProblem);
+        }
+
         DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
@@ -329,6 +345,7 @@ public sealed class DeploymentService(
             userName,
             diskNumber: null,
             computerName: null,
+            allowMismatch,
             now);
 
         database.AuditEvents.Add(Audit(
@@ -336,7 +353,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.{MismatchNote(definition, references, allowMismatch)}",
             actorUserId: userId,
             actorName: userName));
 
@@ -400,6 +417,13 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
+        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
+
+        if (secureBootProblem is not null)
+        {
+            return DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem);
+        }
+
         SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
         DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
@@ -413,6 +437,7 @@ public sealed class DeploymentService(
             machine.SignedInUserName,
             erases ? request.DiskNumber : null,
             request.ComputerName,
+            allowMismatch,
             now);
 
         machine.State = MachineState.Approved;
@@ -422,7 +447,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen at the machine.",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen at the machine.{MismatchNote(definition, references, allowMismatch)}",
             actorUserId: machine.SignedInByUserId,
             actorName: machine.SignedInUserName,
             actorMachineId: machine.Id));
@@ -686,6 +711,36 @@ public sealed class DeploymentService(
                 : null;
     }
 
+    // A raw disk image that will not start with Secure Boot on is written only where someone allowed it for the run, or
+    // where the machine did not say Secure Boot is on; the agent checks the firmware again before it writes. The
+    // allowance is kept only where it matters. Returns it, and the refusal when the machine said Secure Boot is on and
+    // nobody allowed the image.
+    private static (bool Allow, string? Problem) SecureBootDecision(
+        Machine machine,
+        SequenceDefinition definition,
+        SequenceReferences references,
+        bool allowed)
+    {
+        if (SequenceChecks.RawImage(definition, references) is not { BootCapability: not ImageBootCapability.SecureBootOk } image)
+        {
+            return (false, null);
+        }
+
+        if (allowed)
+        {
+            return (true, null);
+        }
+
+        return machine.SecureBootEnabled == true
+            ? (false, $"{image.Name} will not start with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.")
+            : (false, null);
+    }
+
+    private static string MismatchNote(SequenceDefinition definition, SequenceReferences references, bool allowed) =>
+        allowed && SequenceChecks.RawImage(definition, references) is { } image
+            ? $" It may write {image.Name} although it will not start with Secure Boot on."
+            : "";
+
     // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.
     // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none.
     private static string? ComputerNameProblem(Machine machine, string? computerName, string? use)
@@ -716,6 +771,7 @@ public sealed class DeploymentService(
         string? requestedByName,
         int? diskNumber,
         string? computerName,
+        bool allowSecureBootMismatch,
         DateTimeOffset now)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
@@ -737,6 +793,7 @@ public sealed class DeploymentService(
             RequestedByUserId = requestedByUserId,
             RequestedByName = requestedByName,
             StepCount = definition.Steps.Count,
+            AllowSecureBootMismatch = allowSecureBootMismatch,
             CreatedUtc = now,
             UpdatedUtc = now,
         };

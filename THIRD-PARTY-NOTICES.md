@@ -86,6 +86,16 @@ Both files are taken from the OpenTelemetry 1.18.0 package. None of the packages
 server uses carry no licence file and declare BSD-3-Clause with "Copyright (c) 2024, App vNext";
 the text is Polly's own licence file as Polly.Core 8.6.6 carries it.
 
+### ZstdSharp and Zstandard
+
+`ZstdSharp.Port`, Copyright (c) 2021 Oleg Stepanischev, under the MIT licence, text in
+[licenses/zstd/ZstdSharp-LICENSE](licenses/zstd/ZstdSharp-LICENSE), taken from the ZstdSharp
+repository at the commit version 0.8.8 was built from, because the package carries none. It is a
+port of Zstandard 1.5.7 to C#, Copyright (c) Meta Platforms, Inc. and affiliates, which Meta offers
+under the BSD licence or the GNU General Public License, version 2; DDT uses it under the BSD
+licence in [licenses/zstd/LICENSE](licenses/zstd/LICENSE). The server compresses raw disk images
+with it.
+
 ### SQLitePCLRaw and SQLite
 
 `SQLitePCLRaw.bundle_e_sqlite3`, `SQLitePCLRaw.core`, `SQLitePCLRaw.lib.e_sqlite3` and
@@ -218,8 +228,9 @@ not cover them. DDT adds `ddt-agent.exe`, `agent.json` and `startnet.cmd`, and w
 ## The container base image
 
 `build/Dockerfile` builds on `mcr.microsoft.com/dotnet/aspnet:10.0-noble`, which is Ubuntu 24.04
-with the .NET and ASP.NET Core runtimes, and adds `libldap2` from Ubuntu's archive together with
-the packages it depends on, such as the Cyrus SASL library. None of this is DDT's. Each Ubuntu
+with the .NET and ASP.NET Core runtimes, and adds `libldap2`, `qemu-utils` and `xz-utils` from
+Ubuntu's archive together with the packages they depend on, such as the Cyrus SASL library and
+GLib. None of this is DDT's. Each Ubuntu
 package carries its copyright and licence in `/usr/share/doc/<package>/copyright`, and the .NET
 runtimes carry theirs in `/usr/share/dotnet`, in `LICENSE.txt` and `ThirdPartyNotices.txt`. Their
 source comes from Ubuntu (`apt-get source <package>`, or https://launchpad.net/ubuntu) and from

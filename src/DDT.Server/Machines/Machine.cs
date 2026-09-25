@@ -39,6 +39,10 @@ public sealed class Machine
 
     public AgentEnvironment AgentEnvironment { get; set; }
 
+    // What the firmware said at the last registration; null when the agent could not tell or is older than raw disk
+    // images.
+    public bool? SecureBootEnabled { get; set; }
+
     public MachineState State { get; set; } = MachineState.Pending;
 
     // Every issued machine token carries the generation it was minted under. Bumping this

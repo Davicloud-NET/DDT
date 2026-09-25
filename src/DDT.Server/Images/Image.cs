@@ -39,4 +39,12 @@ public sealed class Image
     public Guid? UploadedByUserId { get; set; }
 
     public string? UploadedByName { get; set; }
+
+    // Raw disk images only: whether the image starts with Secure Boot on, the sentence that says why, and the SHA-256
+    // of the uncompressed disk, which finds the same disk uploaded again in another format.
+    public ImageBootCapability? BootCapability { get; set; }
+
+    public string? BootDetail { get; set; }
+
+    public string? SourceSha256 { get; set; }
 }

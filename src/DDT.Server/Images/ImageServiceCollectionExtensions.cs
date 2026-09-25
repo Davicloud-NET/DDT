@@ -17,6 +17,8 @@ public static class ImageServiceCollectionExtensions
         services.AddSingleton<ImageStore>();
         services.AddSingleton<ImageUploadLocks>();
         services.AddSingleton<ImageUploadCompleter>();
+        services.TryAddSingleton<ConversionTools>();
+        services.AddSingleton<RawImageImporter>();
         services.AddScoped<ImageUploadSessions>();
         services.AddSingleton<ImageUploadSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<ImageUploadSweeper>());

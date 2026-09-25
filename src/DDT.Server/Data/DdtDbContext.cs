@@ -108,6 +108,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             image.Property(i => i.Language).HasMaxLength(16);
             image.Property(i => i.OriginalFileName).HasMaxLength(256);
             image.Property(i => i.UploadedByName).HasMaxLength(256);
+            image.Property(i => i.BootCapability).HasConversion<string>().HasMaxLength(16);
+            image.Property(i => i.BootDetail).HasMaxLength(RawImageLimits.MaxBootDetailLength);
+            image.Property(i => i.SourceSha256).HasMaxLength(64);
+            image.HasIndex(i => i.SourceSha256);
             image.HasIndex(i => i.Sha256);
             image.HasOne<DdtUser>().WithMany().HasForeignKey(i => i.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
         });

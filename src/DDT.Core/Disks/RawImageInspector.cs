@@ -25,7 +25,9 @@ public static class RawImageInspector
         ArgumentNullException.ThrowIfNull(image);
 
         long length = image.Length;
-        byte[] first = ReadHead(image, 2 * GptLayout.SectorSize);
+
+        // Enough to see a table made for 4 KiB sectors, which starts at 4096.
+        byte[] first = ReadHead(image, Math.Clamp(length, 2 * GptLayout.SectorSize, 8192));
         byte[] head = ReadHead(image, GptLayout.HeadBytesFor(first));
         GptLayout table = GptLayout.Read(head);
         long end = (table.LastUsedLba + 1) * GptLayout.SectorSize;

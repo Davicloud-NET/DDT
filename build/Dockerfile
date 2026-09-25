@@ -33,7 +33,8 @@ RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-r
 FROM ${DOTNET_RUNTIME} AS final
 # System.DirectoryServices.Protocols probes libldap.so.2, which the runtime image does not carry.
 # Without it every LDAP call throws TypeInitializationException, including constructing a connection.
-RUN apt-get update && apt-get install -y --no-install-recommends libldap2 && rm -rf /var/lib/apt/lists/*
+# qemu-utils and xz-utils convert uploaded qcow2 and .xz disk images, as distributions publish their cloud images.
+RUN apt-get update && apt-get install -y --no-install-recommends libldap2 qemu-utils xz-utils && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
 # Defaults of the image rather than of the code: a declared Kestrel endpoint makes Kestrel ignore the URLs Aspire

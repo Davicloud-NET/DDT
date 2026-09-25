@@ -28,6 +28,14 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
 
     public string PartPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.part");
 
+    // Where the import of a disk image keeps the raw disk and its compressed copy until the copy joins the library.
+    public string RawPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.raw");
+
+    public string CompressedPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.zst");
+
+    // Every file an upload may have on the volume.
+    public IEnumerable<string> UploadFiles(Guid uploadId) => [PartPath(uploadId), RawPath(uploadId), CompressedPath(uploadId)];
+
     // On Linux DriveInfo measures the file system of the path it is given, which is the store volume.
     public DriveInfo Volume() => new(Directory.CreateDirectory(UploadsDirectory).FullName);
 

@@ -1,0 +1,84 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Security.Cryptography.X509Certificates;
+using DDT.Contracts.Images;
+using DDT.Core.Disks;
+
+namespace DDT.Server.Images;
+
+// Judges a raw disk image by the file firmware starts from its EFI system partition, \EFI\BOOT\BOOTX64.EFI, which is
+// also the file the boot entry DDT writes starts. The shims beside a distribution's boot loader only explain a
+// fallback file that is not signed.
+public static class BootCapabilities
+{
+    public const string FallbackPath = @"\EFI\BOOT\BOOTX64.EFI";
+
+    private static readonly Dictionary<string, string> s_otherFallbacks = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [@"\EFI\BOOT\BOOTAA64.EFI"] = "arm64",
+        [@"\EFI\BOOT\BOOTIA32.EFI"] = "x86",
+    };
+
+    public static BootAssessment Assess(RawImageInfo info, IReadOnlyCollection<X509Certificate2> trusted)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+        ArgumentNullException.ThrowIfNull(trusted);
+
+        RawImageBootFile? fallback = info.BootFiles.FirstOrDefault(file => string.Equals(file.Path, FallbackPath, StringComparison.OrdinalIgnoreCase));
+
+        if (fallback is null)
+        {
+            if (info.BootFiles.FirstOrDefault(file => s_otherFallbacks.ContainsKey(file.Path)) is { } other)
+            {
+                return new BootAssessment(
+                    ImageBootCapability.Unknown,
+                    $"The image is for {s_otherFallbacks[other.Path]} machines: it has {other.Path} and no {FallbackPath}.",
+                    s_otherFallbacks[other.Path]);
+            }
+
+            return new BootAssessment(
+                ImageBootCapability.Unknown,
+                info.BootProblem is { } problem
+                    ? $"{problem} DDT cannot tell whether it starts with Secure Boot on."
+                    : $"The image has no {FallbackPath}, the file DDT's boot entry starts.",
+                null);
+        }
+
+        AuthenticodeResult result = Authenticode.Check(fallback.Content, trusted);
+        string? architecture = result.Machine switch
+        {
+            PeImage.MachineAmd64 => "x64",
+            PeImage.MachineArm64 => "arm64",
+            PeImage.MachineI386 => "x86",
+            _ => null,
+        };
+
+        return result.Status switch
+        {
+            AuthenticodeStatus.Trusted => new BootAssessment(
+                ImageBootCapability.SecureBootOk,
+                $"{FallbackPath} is signed by {result.Signer} under Microsoft's UEFI CA, which stock PCs trust.",
+                architecture),
+            AuthenticodeStatus.SignedByOthers => new BootAssessment(
+                ImageBootCapability.NotSigned,
+                $"{FallbackPath} is signed by {result.Signer}, which Microsoft's UEFI CA did not certify.{ShimNote(info, trusted)}",
+                architecture),
+            AuthenticodeStatus.NotSigned => new BootAssessment(
+                ImageBootCapability.NotSigned,
+                $"{FallbackPath} {result.Reason}.{ShimNote(info, trusted)}",
+                architecture),
+            _ => new BootAssessment(ImageBootCapability.Unknown, $"{FallbackPath} {result.Reason}.", architecture),
+        };
+    }
+
+    private static string ShimNote(RawImageInfo info, IReadOnlyCollection<X509Certificate2> trusted)
+    {
+        RawImageBootFile? shim = info.BootFiles
+            .Where(file => !string.Equals(file.Path, FallbackPath, StringComparison.OrdinalIgnoreCase) && !s_otherFallbacks.ContainsKey(file.Path))
+            .FirstOrDefault(file => Authenticode.Check(file.Content, trusted).Status == AuthenticodeStatus.Trusted);
+
+        return shim is null ? "" : $" {shim.Path} is signed under Microsoft's UEFI CA, but DDT's boot entry starts {FallbackPath}.";
+    }
+}

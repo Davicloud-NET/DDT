@@ -28,6 +28,7 @@ namespace DDT.Server.Images;
 public sealed partial class ImageUploadCompleter(
     IServiceScopeFactory scopes,
     ImageStore store,
+    RawImageImporter importer,
     ImageUploadLocks locks,
     LiveNotifier live,
     TimeProvider timeProvider,
@@ -153,6 +154,11 @@ public sealed partial class ImageUploadCompleter(
             return await CompletePackageAsync(database, upload, userId, userName, address, cancellationToken).ConfigureAwait(false);
         }
 
+        if (!await IsWimAsync(part, cancellationToken).ConfigureAwait(false))
+        {
+            return await CompleteRawAsync(database, upload, userId, userName, address, cancellationToken).ConfigureAwait(false);
+        }
+
         (string sha256, List<WimImageInfo> deployable, string? refusal) = await ReadPartAsync(part, cancellationToken).ConfigureAwait(false);
 
         if (refusal is not null)
@@ -193,7 +199,12 @@ public sealed partial class ImageUploadCompleter(
         RememberRefusal(upload.Id, refusal);
         database.ImageUploads.Remove(upload);
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        File.Delete(store.PartPath(upload.Id));
+
+        foreach (string file in store.UploadFiles(upload.Id))
+        {
+            File.Delete(file);
+        }
+
         LogUploadRefused(upload.Id, upload.FileName, refusal);
 
         return new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal);
@@ -267,7 +278,7 @@ public sealed partial class ImageUploadCompleter(
 
             upload.CompletedSha256 = sha256;
             upload.UpdatedUtc = now;
-            await SaveWithFileAsync(database, upload.Id, sha256).ConfigureAwait(false);
+            await SaveWithFileAsync(database, store.PartPath(upload.Id), sha256).ConfigureAwait(false);
 
             if (existing is not null)
             {
@@ -283,6 +294,126 @@ public sealed partial class ImageUploadCompleter(
         {
             store.LibraryLock.Release();
         }
+    }
+
+    // A WIM starts with its magic; any other image upload is a disk image, or refused as neither.
+    private static async Task<bool> IsWimAsync(string part, CancellationToken cancellationToken)
+    {
+        byte[] magic = new byte[8];
+
+        await using FileStream file = new(part, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0, useAsync: true);
+
+        return await file.ReadAtLeastAsync(magic, magic.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) == magic.Length
+            && magic.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x4D, 0x53, 0x57, 0x49, 0x4D, 0x00, 0x00, 0x00]);
+    }
+
+    // The conversion runs before the library lock is taken: it takes minutes for a large image, and nothing it makes is
+    // in the library yet. The same disk uploaded again, in whatever format, adds nothing.
+    private async Task<UploadCompletion> CompleteRawAsync(
+        DdtDbContext database,
+        ImageUpload upload,
+        Guid? userId,
+        string? userName,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        RawImport import = await importer.ImportAsync(upload.Id, cancellationToken).ConfigureAwait(false);
+
+        if (import.Refusal is { } refusal)
+        {
+            return await RefuseAsync(database, upload, refusal, cancellationToken).ConfigureAwait(false);
+        }
+
+        BootAssessment boot = BootCapabilities.Assess(import.Info!, UefiCertificateAuthorities.Microsoft);
+        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            Image? same = await database.Images
+                .AsNoTracking()
+                .Where(i => i.SourceSha256 == import.SourceSha256)
+                .OrderBy(i => i.Id)
+                .FirstOrDefaultAsync(CancellationToken.None)
+                .ConfigureAwait(false);
+
+            if (same is not null)
+            {
+                database.AuditEvents.Add(RawAudit(same.Id, now, userId, userName, address,
+                    $"{upload.FileName} holds the disk of {same.Name}, SHA-256 {import.SourceSha256}, so no entry was added."));
+                upload.CompletedSha256 = same.Sha256;
+                upload.UpdatedUtc = now;
+                await database.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                File.Delete(import.CompressedPath);
+                File.Delete(store.PartPath(upload.Id));
+
+                return new UploadCompletion(
+                    UploadCompletionStatus.Existing,
+                    await ImagesOfAsync(database, same.Sha256, CancellationToken.None).ConfigureAwait(false));
+            }
+
+            Image image = NewRawImage(upload, import, boot, now, userId, userName);
+            database.Images.Add(image);
+            database.AuditEvents.Add(RawAudit(image.Id, now, userId, userName, address,
+                $"{image.Name}, a raw disk image of {import.Info!.SizeBytes} bytes from {upload.FileName}, {boot.Capability}, " +
+                $"SHA-256 {import.Sha256} compressed and {import.SourceSha256} as a disk."));
+            upload.CompletedSha256 = import.Sha256;
+            upload.UpdatedUtc = now;
+            await SaveWithFileAsync(database, import.CompressedPath, import.Sha256).ConfigureAwait(false);
+            File.Delete(store.PartPath(upload.Id));
+
+            live.ImagesChanged();
+            LogRawImageAdded(image.Id, upload.Id, upload.FileName, boot.Capability, import.Sha256);
+
+            return new UploadCompletion(UploadCompletionStatus.Added, [ImageSummaries.From(image)]);
+        }
+        finally
+        {
+            store.LibraryLock.Release();
+        }
+    }
+
+    private static AuditEvent RawAudit(Guid imageId, DateTimeOffset now, Guid? userId, string? userName, string? address, string detail) => new()
+    {
+        OccurredUtc = now,
+        Action = AuditActions.ImageUploaded,
+        ActorUserId = userId,
+        ActorName = userName,
+        SubjectId = imageId.ToString("D"),
+        SourceAddress = address,
+        Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
+    };
+
+    // Named after the file without the extensions of its formats, such as noble-server-cloudimg-amd64 for
+    // noble-server-cloudimg-amd64.img.zst.
+    private static Image NewRawImage(ImageUpload upload, RawImport import, BootAssessment boot, DateTimeOffset now, Guid? userId, string? userName)
+    {
+        string name = upload.FileName;
+
+        while (Path.GetExtension(name).ToLowerInvariant() is ".img" or ".raw" or ".qcow2" or ".qcow" or ".gz" or ".xz" or ".zst" or ".zstd"
+            && name.Length > Path.GetExtension(name).Length)
+        {
+            name = Path.GetFileNameWithoutExtension(name);
+        }
+
+        return new Image
+        {
+            Id = Guid.CreateVersion7(now),
+            Name = Bounded(name, 256),
+            Kind = ImageKind.RawDisk,
+            Sha256 = import.Sha256,
+            SizeBytes = import.SizeBytes,
+            WimIndex = 0,
+            Architecture = boot.Architecture,
+            InstalledBytes = import.Info!.MinimumDiskBytes,
+            OriginalFileName = upload.FileName,
+            UploadedUtc = now,
+            UploadedByUserId = userId,
+            UploadedByName = Bounded(userName, 256),
+            BootCapability = boot.Capability,
+            BootDetail = Bounded(boot.Detail, RawImageLimits.MaxBootDetailLength),
+            SourceSha256 = import.SourceSha256,
+        };
     }
 
     private static PackageKind PackageKindOf(UploadKind kind) => kind == UploadKind.Drivers ? PackageKind.Drivers : PackageKind.Files;
@@ -439,7 +570,7 @@ public sealed partial class ImageUploadCompleter(
 
             upload.CompletedSha256 = sha256;
             upload.UpdatedUtc = now;
-            await SaveWithFileAsync(database, upload.Id, sha256).ConfigureAwait(false);
+            await SaveWithFileAsync(database, store.PartPath(upload.Id), sha256).ConfigureAwait(false);
 
             if (added.Count == 0)
             {
@@ -459,19 +590,18 @@ public sealed partial class ImageUploadCompleter(
         }
     }
 
-    // Puts the part file into the library and saves the rows added for it. The file itself decides, not its rows: a
-    // stored file whose rows were lost is used again, and one that went missing under its rows is put back. Call with
-    // LibraryLock held.
-    private async Task SaveWithFileAsync(DdtDbContext database, Guid uploadId, string sha256)
+    // Puts source, the part file or the compressed copy of a disk image, into the library and saves the rows added for
+    // it. The file itself decides, not its rows: a stored file whose rows were lost is used again, and one that went
+    // missing under its rows is put back. Call with LibraryLock held.
+    private async Task SaveWithFileAsync(DdtDbContext database, string source, string sha256)
     {
-        string part = store.PartPath(uploadId);
         string target = store.ObjectPath(sha256);
         bool moved = !File.Exists(target);
 
         if (moved)
         {
             Directory.CreateDirectory(store.ObjectsDirectory);
-            File.Move(part, target, overwrite: false);
+            File.Move(source, target, overwrite: false);
         }
 
         try
@@ -482,14 +612,14 @@ public sealed partial class ImageUploadCompleter(
         catch when (moved)
         {
             // Completing again, as the failure's answer asks, starts from the part file.
-            File.Move(target, part, overwrite: false);
+            File.Move(target, source, overwrite: false);
 
             throw;
         }
 
         if (!moved)
         {
-            File.Delete(part);
+            File.Delete(source);
         }
     }
 
@@ -537,6 +667,12 @@ public sealed partial class ImageUploadCompleter(
 
     [LoggerMessage(EventId = 903, Level = LogLevel.Error, Message = "Could not complete upload {UploadId}")]
     private partial void LogCompletionFailed(Guid uploadId, Exception exception);
+
+    [LoggerMessage(
+        EventId = 917,
+        Level = LogLevel.Information,
+        Message = "Added the raw disk image {ImageId} from upload {UploadId} ({FileName}), {Capability}, SHA-256 {Sha256}")]
+    private partial void LogRawImageAdded(Guid imageId, Guid uploadId, string fileName, ImageBootCapability capability, string sha256);
 
     [LoggerMessage(
         EventId = 912,

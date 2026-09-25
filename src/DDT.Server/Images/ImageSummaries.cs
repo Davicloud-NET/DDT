@@ -26,6 +26,9 @@ public static class ImageSummaries
             image.InstalledBytes,
             image.OriginalFileName,
             image.UploadedUtc,
-            image.UploadedByName);
+            image.UploadedByName,
+            image.BootCapability,
+            image.BootDetail,
+            image.SourceSha256);
     }
 }

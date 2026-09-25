@@ -359,7 +359,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
 
     [Fact]
     public Task RefusesAFileThatIsNotAWim() =>
-        AssertRefusedAsync(RandomNumberGenerator.GetBytes(5000), "This file is not a WIM image.");
+        AssertRefusedAsync(RandomNumberGenerator.GetBytes(5000), RawImageImporter.NotAnImageMessage);
 
     [Fact]
     public Task RefusesASplitWim() =>

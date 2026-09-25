@@ -124,7 +124,11 @@ public sealed partial class ImageUploadSweeper(
 
             database.ImageUploads.Remove(upload);
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            File.Delete(store.PartPath(uploadId));
+
+            foreach (string file in store.UploadFiles(uploadId))
+            {
+                File.Delete(file);
+            }
 
             return true;
         }
@@ -141,7 +145,8 @@ public sealed partial class ImageUploadSweeper(
 
         List<(Guid UploadId, FileInfo File)> parts = [];
 
-        foreach (FileInfo file in uploads.EnumerateFiles("*.part"))
+        // The part files, and the raw disks and compressed copies an import of a disk image made from them.
+        foreach (FileInfo file in uploads.EnumerateFiles("*.*").Where(file => file.Extension is ".part" or ".raw" or ".zst"))
         {
             if (Guid.TryParseExact(Path.GetFileNameWithoutExtension(file.Name), "N", out Guid uploadId))
             {

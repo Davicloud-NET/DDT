@@ -62,4 +62,8 @@ public sealed class Deployment
     public DateTimeOffset UpdatedUtc { get; set; }
 
     public string? Error { get; set; }
+
+    // Whoever started the run let a raw disk image that is not signed for Secure Boot be written on a machine that
+    // has Secure Boot on. A rule's run never has it.
+    public bool AllowSecureBootMismatch { get; set; }
 }

@@ -5,6 +5,7 @@
 using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Core.Unattend;
@@ -639,11 +640,16 @@ public sealed class DeploymentService(
             $"{running.Title} on machine {machine.Id:D}. {error}"));
     }
 
-    internal static string? NotDeployable(Image image) => image.Architecture switch
+    // A raw disk image whose boot file DDT could not read may still start, so only a known other processor keeps it
+    // from being written.
+    internal static string? NotDeployable(Image image) => (image.Kind, image.Architecture) switch
     {
-        DeployableArchitecture => null,
-        null => $"{image.Name} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
-        string architecture => $"{image.Name} is an {architecture} image, and DDT deploys only x64 Windows. Choose an x64 image.",
+        (_, DeployableArchitecture) => null,
+        (ImageKind.RawDisk, null) => null,
+        (ImageKind.RawDisk, string architecture) =>
+            $"{image.Name} starts {architecture} machines, and DDT writes images for x64 machines. Choose an x64 image.",
+        (_, null) => $"{image.Name} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
+        (_, string architecture) => $"{image.Name} is an {architecture} image, and DDT deploys only x64 Windows. Choose an x64 image.",
     };
 
     private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);

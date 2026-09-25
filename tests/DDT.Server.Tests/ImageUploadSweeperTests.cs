@@ -46,9 +46,10 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
         return await database.ImageUploads.AnyAsync(u => u.Id == uploadId, TestContext.Current.CancellationToken);
     }
 
-    private string OrphanPart(TimeSpan age)
+    // A part file, or with pathOf another file of an upload that no session has.
+    private string OrphanPart(TimeSpan age, Func<Guid, string>? pathOf = null)
     {
-        string path = Store.PartPath(Guid.NewGuid());
+        string path = (pathOf ?? Store.PartPath)(Guid.NewGuid());
 
         Directory.CreateDirectory(Store.UploadsDirectory);
         File.WriteAllBytes(path, new byte[10]);
@@ -77,6 +78,12 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
 
         string orphan = OrphanPart(s_twoDays);
         string freshOrphan = OrphanPart(TimeSpan.FromHours(1));
+
+        // What an import of a disk image that stopped leaves: the raw disk and its compressed copy.
+        string orphanRaw = OrphanPart(s_twoDays, Store.RawPath);
+        string orphanCompressed = OrphanPart(s_twoDays, Store.CompressedPath);
+        string abandonedRaw = Store.RawPath(abandoned.Id);
+        File.WriteAllBytes(abandonedRaw, new byte[10]);
         string foreign = Path.Combine(Store.UploadsDirectory, "notes.part");
         File.WriteAllBytes(foreign, new byte[10]);
         File.SetLastWriteTimeUtc(foreign, DateTime.UtcNow - s_twoDays);
@@ -92,11 +99,14 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
                 .SweepOnceAsync(TestContext.Current.CancellationToken);
         }
 
-        Assert.Equal(3, removed);
+        Assert.Equal(5, removed);
         Assert.False(await ExistsAsync(abandoned.Id));
         Assert.False(File.Exists(Store.PartPath(abandoned.Id)));
+        Assert.False(File.Exists(abandonedRaw));
         Assert.False(await ExistsAsync(finished.Id));
         Assert.False(File.Exists(orphan));
+        Assert.False(File.Exists(orphanRaw));
+        Assert.False(File.Exists(orphanCompressed));
 
         Assert.True(await ExistsAsync(active.Id));
         Assert.True(File.Exists(Store.PartPath(active.Id)));

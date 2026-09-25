@@ -1489,10 +1489,22 @@ On 2026-09-24, with master at commit `b367f52`, the same machine and boot image 
   agent in the boot image, built before the fix, still missed its first update check twice, for
   2 s each.
 
+On 2026-09-24 and 2026-09-25, with master at `5b04fdf`, two more runs checked the rest:
+
+- With the Join the domain step set to `OU=Nowhere,DC=davicloud,DC=local`, "Check the join account"
+  signed in over LDAP signed and sealed with Kerberos or NTLM, as the test domain controller has no
+  LDAPS, and reported that the domain has no such organizational unit. The run then failed at the
+  step with "davicloud.local has no organizational unit OU=Nowhere,DC=davicloud,DC=local (error
+  2)". Less than a minute later Windows restarted on its own, requested by its setup experience
+  (`CloudExperienceHostBroker.exe`, event 1074), which removed `C:\DDT` as the agent had marked it.
+- A Run script step with the condition Model is "No such Model" was skipped, and the machine log
+  said "Step Run script was skipped, because this condition did not hold: Model is "No such
+  Model", and the machine reports "Virtual Machine".".
+- A script step copied `C:\DDT\logs\agent.log` while the run went on. Its lines start with the date
+  and time in UTC, such as `2026-09-25 07:23:00 UTC INFO`.
+
 Not checked on a machine yet:
 
-- the texts for an organizational unit the domain join cannot use;
-- the log line for a skipped step, and the dates in `agent.log`;
 - a model rule;
 - two administrators editing one sequence.
 

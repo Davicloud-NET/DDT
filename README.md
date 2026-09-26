@@ -1672,9 +1672,30 @@ Letting the operator or the technician type the join credentials for a run is pl
 Linux raw disk images (M6) are built: the upload and conversion of raw, gzip, zstd, xz and qcow2
 images with the Secure Boot check of their boot file, the Write raw disk image and Write the
 cloud-init seed steps, the boot entry, and the Secure Boot state of each machine with the allowance
-for an image not signed for it. They are tested with fakes, on the Debian 12 cloud image, whose
-signed shim the server reads as signed, and end to end in `DDT.E2E` with a dry run. They have not
-run on a machine yet.
+for an image not signed for it. They are tested with fakes and end to end in `DDT.E2E` with a dry
+run. On 2026-09-26, with branch `m6` at `b5b82f5`, they ran on Hyper-V against a development host,
+with the Ubuntu 24.04 and Debian 13 cloud images:
+
+- The server read both as signed for Secure Boot and x64. Ubuntu's disk uploaded raw and again
+  compressed with zstd became one image. Ubuntu's qcow2 was kept as an unfinished upload, because the
+  host has no `qemu-img`.
+- A second Generation 2 machine, without a virtual TPM, netbooted Windows PE with Secure Boot off.
+  Ubuntu was written with its seed, then Debian over it: each started under its assigned name with
+  the seed's user and SSH key, and DDT took over the boot entry of the erased partition. Switched to
+  the Microsoft UEFI Certificate Authority template with Secure Boot on, Ubuntu started through its
+  shim.
+- The Debian image with its grub as `BOOTX64.EFI`, which is not signed for Secure Boot, started with
+  Secure Boot off. On the first machine, with Secure Boot on and the Windows template, the web and
+  the console asked for the allowance, and Hyper-V then refused to start it, as the warning says. A
+  signed Ubuntu image was written there without a question and did not start either: the Windows
+  template does not trust Microsoft's third-party CA, and DDT does not yet read which CAs a machine
+  trusts.
+- A disk with 4 KiB sectors was refused before anything was erased, and Windows was installed over
+  the Linux disk.
+- With its seed step skipped by a condition, Ubuntu showed nothing on its screen after the early boot
+  messages. The image has no network configuration of its own and sends the rest of its boot to the
+  serial console, so it was most likely waiting for the network.
+- A power cut during the write could not be timed: the write took seconds.
 
 Later milestones, in order: M6.5 the real UI, as the web UI and the agent's console in Windows PE are
 concept UIs until then; M7 the task sequence flow builder.

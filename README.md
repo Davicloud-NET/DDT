@@ -835,7 +835,10 @@ starts from a disk that has no boot entry of its own. Its signature decides the 
 - **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, as a distribution's shim is.
   The machine starts the image with Secure Boot on, provided its firmware trusts that CA: PCs trust
   the 2011 CA as they come and the 2023 CA once a firmware or Windows update added it, and
-  Secured-core PCs turn the CA off until it is turned on in their firmware setup.
+  Secured-core PCs turn the CA off until it is turned on in their firmware setup. A Hyper-V
+  Generation 2 machine trusts it only with the Microsoft UEFI Certificate Authority template, which
+  in turn does not trust the Windows boot manager DDT netboots, so there Windows PE runs with Secure
+  Boot off, as `New-TestVm.ps1 -SecureBootOff -NoTpm` sets up.
 - **Not signed**: the file has no signature, or one that does not lead to Microsoft's UEFI CA. The
   machine starts the image only with Secure Boot off, or with your own key enrolled. The page says
   why, for example that a distribution's own shim is elsewhere on the partition.

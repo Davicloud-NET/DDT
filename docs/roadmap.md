@@ -28,7 +28,9 @@ A graphical console in Windows PE, a new web UI, and the settings page that
 
 ## M7 The flow builder and the sequence model
 
-The task sequence flow builder. It shows the sequence model, so the model grows with it:
+The task sequence flow builder is a node editor, in the manner of Blender's shader nodes or Unreal's
+Blueprints, with the elements of a flow chart such as decisions. It shows the sequence model, so the
+model grows with it:
 
 - **Groups** of steps with conditions of their own, and conditions that hold when all, any or none
   of their parts hold. [Groups, If statements]
@@ -105,6 +107,12 @@ ends when the disk is written, and DDT does not watch what cloud-init does at th
 
 The whole project documented, for the people who run DDT and for those who work on it. The README
 stands in until then.
+
+## Ideas for later
+
+- **Custom input pages** in the graphical console in Windows PE, designed with the sequence, whose
+  fields write to variables. They would build on M7's inputs and variables and M6.5's console. Not
+  planned yet.
 
 ## Not planned
 

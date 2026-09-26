@@ -134,6 +134,7 @@ api.MapGroup("/packages").MapPackageEndpoints();
 api.MapGroup("/rules").MapRuleEndpoints();
 api.MapGroup("/about").MapAboutEndpoints();
 api.MapGroup("/server").MapServerEndpoints();
+api.MapGroup("/audit").MapAuditEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 

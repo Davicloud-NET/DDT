@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
+using DDT.Contracts.Audit;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
@@ -66,4 +67,6 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(SaveAssignmentRuleRequest))]
 [JsonSerializable(typeof(MachineSequenceResolution))]
 [JsonSerializable(typeof(IReadOnlyList<HardwareModelCount>))]
+[JsonSerializable(typeof(AuditPage))]
+[JsonSerializable(typeof(AuditEntry[]))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

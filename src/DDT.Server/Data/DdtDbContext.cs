@@ -12,6 +12,7 @@ using DDT.Server.Rules;
 using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DDT.Server.Data;
 
@@ -227,6 +228,16 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             audit.Property(a => a.Detail).HasMaxLength(AuditEvent.MaxDetailLength);
             audit.HasIndex(a => a.OccurredUtc);
             audit.HasIndex(a => a.Action);
+
+            // SQLite has no type for DateTimeOffset and compares it only for equality, but the audit log is filtered by
+            // time. As UTC ticks it compares in order and keeps every digit, which EF Core's own binary converter does
+            // not. PostgreSQL, which has the type, keeps it.
+            if (Database.IsSqlite())
+            {
+                audit.Property(a => a.OccurredUtc).HasConversion(new ValueConverter<DateTimeOffset, long>(
+                    time => time.UtcTicks,
+                    ticks => new DateTimeOffset(ticks, TimeSpan.Zero)));
+            }
         });
     }
 }

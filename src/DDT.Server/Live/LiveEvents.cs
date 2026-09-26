@@ -32,4 +32,7 @@ public static class LiveEvents
 
     // Carries a MachineLogAppendedEvent, only to the connections that watch the machine.
     public const string MachineLogAppended = "machineLogAppended";
+
+    // Carries the AuditEntry rows one save added, oldest first, only to the connections of administrators.
+    public const string AuditAppended = "auditAppended";
 }

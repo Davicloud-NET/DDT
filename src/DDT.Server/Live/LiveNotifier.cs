@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Audit;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
@@ -118,6 +119,14 @@ public sealed partial class LiveNotifier(
 
     public void RulesChanged() => _ = PushEventAsync(LiveEvents.RulesChanged);
 
+    // Audit rows are for administrators only.
+    public void AuditAppended(AuditEntry[] entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        _ = PushToAdministratorsAsync(LiveEvents.AuditAppended, entries);
+    }
+
     public void SequenceChanged(SequenceChangedEvent change)
     {
         ArgumentNullException.ThrowIfNull(change);
@@ -145,6 +154,18 @@ public sealed partial class LiveNotifier(
         try
         {
             await hub.Clients.Group(LiveGroups.Machine(machineId)).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            LogEventPushFailed(liveEvent, exception);
+        }
+    }
+
+    private async Task PushToAdministratorsAsync(string liveEvent, object payload)
+    {
+        try
+        {
+            await hub.Clients.Group(LiveGroups.Administrators).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

@@ -36,6 +36,13 @@ on the host.
 
 .EXAMPLE
 .\build\New-TestVm.ps1 -Remove
+.EXAMPLE
+.\build\New-TestVm.ps1 -Name DDT-Linux -MacAddress 02155D0D0D02 -NoTpm -SecureBootOff
+
+A second machine for raw disk images. Hyper-V's Secure Boot templates trust either Microsoft's Windows
+CA, which signs the boot manager DDT serves, or its third-party UEFI CA, which signs the distributions'
+shim, never both. This one netboots with Secure Boot off, and without a virtual TPM its template can
+change afterwards, to start the written image with Secure Boot on.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Create')]
 param(
@@ -68,6 +75,14 @@ param(
     # boot manager DDT serves.
     [ValidateNotNullOrEmpty()]
     [string] $SecureBootTemplate = 'MicrosoftWindows',
+
+    # Leaves Secure Boot off. The template is set all the same, for when it is turned on.
+    [Parameter(ParameterSetName = 'Create')]
+    [switch] $SecureBootOff,
+
+    # Adds no virtual TPM, which would freeze the Secure Boot template. An existing one stays.
+    [Parameter(ParameterSetName = 'Create')]
+    [switch] $NoTpm,
 
     [Parameter(ParameterSetName = 'Create')]
     [switch] $Start,
@@ -194,8 +209,10 @@ function Initialize-Vm {
         Set-VMFirmware -VM $vm -SecureBootTemplateId $template.Id
     }
 
-    if ($firmware.SecureBoot -ne 'On') {
-        Set-VMFirmware -VM $vm -EnableSecureBoot On
+    $secureBoot = if ($SecureBootOff) { 'Off' } else { 'On' }
+
+    if ($firmware.SecureBoot -ne $secureBoot) {
+        Set-VMFirmware -VM $vm -EnableSecureBoot $secureBoot
     }
 
     # PauseAfterBootFailure keeps the firmware error on screen instead of scrolling past it.
@@ -203,7 +220,12 @@ function Initialize-Vm {
 
     # A local key protector is enough for a test machine. Windows 11 setup is not run, but Windows expects a
     # TPM once deployed. It comes after the template, which the TPM freezes.
-    if (-not $tpmEnabled) {
+    if ($NoTpm) {
+        if ($tpmEnabled) {
+            Write-Warning "Virtual machine '$Name' already has a virtual TPM, which -NoTpm leaves in place."
+        }
+    }
+    elseif (-not $tpmEnabled) {
         Set-VMKeyProtector -VM $vm -NewLocalKeyProtector
         Enable-VMTPM -VM $vm
     }

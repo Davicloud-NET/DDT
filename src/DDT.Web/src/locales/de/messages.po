@@ -1,0 +1,294 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-26 21:09+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: de\n"
+
+#: src/about/AboutPage.tsx
+#: src/app/Shell.tsx
+#: src/auth/SignInPage.tsx
+msgid "About DDT"
+msgstr "Über DDT"
+
+#: src/app/Shell.tsx
+msgid "Account and security"
+msgstr "Konto und Sicherheit"
+
+#: src/app/Shell.tsx
+msgid "Account menu"
+msgstr "Kontomenü"
+
+#: src/app/Shell.tsx
+msgid "Account menu for {name}"
+msgstr "Kontomenü für {name}"
+
+#: src/app/navigation.ts
+msgid "Administration"
+msgstr "Verwaltung"
+
+#: src/app/navigation.ts
+msgid "All machines"
+msgstr "Alle Geräte"
+
+#: src/app/navigation.ts
+msgid "API tokens"
+msgstr "API-Token"
+
+#: src/app/Shell.tsx
+msgid "Appearance"
+msgstr "Darstellung"
+
+#: src/app/navigation.ts
+msgid "Approval and zero touch"
+msgstr "Freigabe und Zero Touch"
+
+#: src/app/navigation.ts
+msgid "Assignment rules"
+msgstr "Zuweisungsregeln"
+
+#: src/app/navigation.ts
+msgid "Audit log"
+msgstr "Änderungsprotokoll"
+
+#: src/auth/SignInPage.tsx
+msgid "Authenticator code"
+msgstr "Code der Authenticator-App"
+
+#: src/about/AboutPage.tsx
+msgid "Back to DDT"
+msgstr "Zurück zu DDT"
+
+#: src/app/navigation.ts
+msgid "Boot"
+msgstr "Boot"
+
+#: src/app/navigation.ts
+msgid "Boot image"
+msgstr "Bootimage"
+
+#: src/auth/SignInPage.tsx
+msgid "Confirm it is you"
+msgstr "Bestätigen Sie, dass Sie es sind"
+
+#: src/auth/SignInPage.tsx
+msgid "Could not reach the server."
+msgstr "Der Server ist nicht erreichbar."
+
+#: src/app/Shell.tsx
+msgid "Dark"
+msgstr "Dunkel"
+
+#: src/about/AboutPage.tsx
+msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
+msgstr "DDT wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt, soweit das anwendbare Recht es zulässt. Einzelheiten stehen in der GNU General Public License. DDT enthält Software anderer unter deren eigenen Lizenzen."
+
+#: src/app/RouteError.tsx
+msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
+msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und dieser Computer ihn erreicht, und versuchen Sie es dann erneut."
+
+#: src/about/AboutPage.tsx
+msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
+msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und verändern, entweder in Version 3 der Lizenz oder nach Ihrer Wahl in jeder späteren Version, zusammen mit zusätzlichen Bedingungen nach Abschnitt 7 dieser Lizenz."
+
+#: src/app/navigation.ts
+msgid "Deployment"
+msgstr "Bereitstellung"
+
+#: src/app/navigation.ts
+msgid "Deployment defaults"
+msgstr "Standardwerte der Bereitstellung"
+
+#: src/app/navigation.ts
+msgid "Drivers"
+msgstr "Treiber"
+
+#: src/auth/SignInPage.tsx
+msgid "Enter one of the recovery codes you saved."
+msgstr "Geben Sie einen Ihrer gespeicherten Wiederherstellungscodes ein."
+
+#: src/auth/SignInPage.tsx
+msgid "Enter the six digits your authenticator app shows for DDT."
+msgstr "Geben Sie die sechs Ziffern ein, die Ihre Authenticator-App für DDT anzeigt."
+
+#: src/app/navigation.ts
+msgid "Files"
+msgstr "Dateien"
+
+#: src/app/Shell.tsx
+msgid "Language"
+msgstr "Sprache"
+
+#: src/app/navigation.ts
+msgid "Library"
+msgstr "Bibliothek"
+
+#: src/about/AboutPage.tsx
+msgid "Licence and notices"
+msgstr "Lizenz und Hinweise"
+
+#: src/about/AboutPage.tsx
+msgid "Licence texts of the software by others"
+msgstr "Lizenztexte der Software anderer"
+
+#: src/app/Shell.tsx
+msgid "Light"
+msgstr "Hell"
+
+#: src/app/navigation.ts
+msgid "Machines"
+msgstr "Geräte"
+
+#: src/app/navigation.ts
+msgid "Network boot"
+msgstr "Netzwerkboot"
+
+#: src/auth/SignInPage.tsx
+msgid "No account could be created for that identity. Ask an administrator."
+msgstr "Für diese Identität konnte kein Konto angelegt werden. Wenden Sie sich an einen Administrator."
+
+#: src/auth/SignInPage.tsx
+msgid "No DDT account is linked to that identity. Ask an administrator."
+msgstr "Mit dieser Identität ist kein DDT-Konto verknüpft. Wenden Sie sich an einen Administrator."
+
+#: src/app/navigation.ts
+msgid "OS images"
+msgstr "Betriebssystem-Images"
+
+#: src/auth/SignInPage.tsx
+msgid "Password"
+msgstr "Kennwort"
+
+#: src/app/Shell.tsx
+msgid "Pseudo (development)"
+msgstr "Pseudo (Entwicklung)"
+
+#: src/auth/SignInPage.tsx
+msgid "Recovery code"
+msgstr "Wiederherstellungscode"
+
+#: src/app/navigation.ts
+msgid "Run history"
+msgstr "Verlauf"
+
+#: src/app/Shell.tsx
+msgid "Same as the system"
+msgstr "Wie das System"
+
+#: src/app/Shell.tsx
+msgid "Sections"
+msgstr "Bereiche"
+
+#: src/app/navigation.ts
+msgid "Server"
+msgstr "Server"
+
+#: src/auth/SignInPage.tsx
+msgid "Sign in"
+msgstr "Anmelden"
+
+#: src/app/Shell.tsx
+msgid "Sign out"
+msgstr "Abmelden"
+
+#: src/app/navigation.ts
+msgid "Sign-in"
+msgstr "Anmeldung"
+
+#: src/auth/SignInPage.tsx
+msgid "Signing in"
+msgstr "Anmeldung läuft"
+
+#: src/app/RouteError.tsx
+msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
+msgstr "Beim Laden dieser Seite ist ein Fehler aufgetreten. Versuchen Sie es erneut; wenn es weiter fehlschlägt, steht der Grund im Serverprotokoll."
+
+#: src/about/AboutPage.tsx
+msgid "Source code"
+msgstr "Quellcode"
+
+#: src/app/navigation.ts
+msgid "Task sequences"
+msgstr "Tasksequenzen"
+
+#: src/auth/SignInPage.tsx
+msgid "That code is not valid."
+msgstr "Dieser Code ist ungültig."
+
+#: src/auth/SignInPage.tsx
+msgid "That user name or password is not correct."
+msgstr "Benutzername oder Kennwort ist falsch."
+
+#: src/about/AboutPage.tsx
+msgid "The attribution notice, the warranty disclaimer and the additional terms"
+msgstr "Der Urheberhinweis, der Gewährleistungsausschluss und die zusätzlichen Bedingungen"
+
+#: src/about/AboutPage.tsx
+msgid "The GNU General Public License, version 3"
+msgstr "Die GNU General Public License, Version 3"
+
+#: src/about/AboutPage.tsx
+msgid "The licences of the packages in this web interface"
+msgstr "Die Lizenzen der Pakete in dieser Weboberfläche"
+
+#: src/app/Shell.tsx
+msgid "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
+msgstr "Die Live-Verbindung zum Server ist unterbrochen. DDT versucht weiter, sich zu verbinden; bis dahin aktualisieren sich die Seiten alle paar Sekunden."
+
+#: src/app/RouteError.tsx
+msgid "The server does not answer"
+msgstr "Der Server antwortet nicht"
+
+#: src/auth/SignInPage.tsx
+msgid "The sign-in at the identity provider did not finish. Try again."
+msgstr "Die Anmeldung beim Identitätsanbieter wurde nicht abgeschlossen. Versuchen Sie es erneut."
+
+#: src/about/AboutPage.tsx
+msgid "The software by others that DDT contains, and its licences"
+msgstr "Die Software anderer, die DDT enthält, und ihre Lizenzen"
+
+#: src/about/AboutPage.tsx
+msgid "The version and the licence texts could not be loaded."
+msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
+
+#: src/auth/SignInPage.tsx
+msgid "This account is locked. Try again later or ask an administrator."
+msgstr "Dieses Konto ist gesperrt. Versuchen Sie es später erneut oder wenden Sie sich an einen Administrator."
+
+#: src/auth/SignInPage.tsx
+msgid "This account may not sign in. Ask an administrator."
+msgstr "Dieses Konto darf sich nicht anmelden. Wenden Sie sich an einen Administrator."
+
+#: src/app/RouteError.tsx
+msgid "This page could not load"
+msgstr "Diese Seite konnte nicht geladen werden"
+
+#: src/app/PendingPage.tsx
+msgid "This page is being rebuilt on the new design system."
+msgstr "Diese Seite wird gerade auf dem neuen Designsystem neu gebaut."
+
+#: src/app/RouteError.tsx
+msgid "Try again"
+msgstr "Erneut versuchen"
+
+#: src/auth/SignInPage.tsx
+msgid "Use a recovery code"
+msgstr "Wiederherstellungscode verwenden"
+
+#: src/auth/SignInPage.tsx
+msgid "Use an authenticator code"
+msgstr "Code der Authenticator-App verwenden"
+
+#: src/auth/SignInPage.tsx
+msgid "User name"
+msgstr "Benutzername"
+
+#: src/app/navigation.ts
+msgid "Users and roles"
+msgstr "Benutzer und Rollen"
+
+#: src/about/AboutPage.tsx
+msgid "Version {version}"
+msgstr "Version {version}"

@@ -17,14 +17,16 @@ public sealed class SourceHeaderTests
         "Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.",
     ];
 
-    private static readonly Dictionary<string, string> s_commentPrefixes = new(StringComparer.Ordinal)
+    // Each line of the header sits between these, per file type. CSS has only block comments.
+    private static readonly Dictionary<string, (string Prefix, string Suffix)> s_comments = new(StringComparer.Ordinal)
     {
-        [".cs"] = "// ",
-        [".ts"] = "// ",
-        [".tsx"] = "// ",
-        [".js"] = "// ",
-        [".scss"] = "// ",
-        [".ps1"] = "# ",
+        [".cs"] = ("// ", ""),
+        [".ts"] = ("// ", ""),
+        [".tsx"] = ("// ", ""),
+        [".js"] = ("// ", ""),
+        [".mjs"] = ("// ", ""),
+        [".css"] = ("/* ", " */"),
+        [".ps1"] = ("# ", ""),
     };
 
     private static readonly string[] s_sourceFolders = ["src", "tests", "build"];
@@ -42,11 +44,12 @@ public sealed class SourceHeaderTests
 
         Assert.Contains(Path.Combine(root, "build", "Publish-Agent.ps1"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "main.tsx"), files);
+        Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "styles", "app.css"), files);
 
         List<string> withoutHeader = [];
         foreach (string file in files)
         {
-            if (!await StartsWithHeaderAsync(file, s_commentPrefixes[Path.GetExtension(file)], cancellationToken))
+            if (!await StartsWithHeaderAsync(file, s_comments[Path.GetExtension(file)], cancellationToken))
             {
                 withoutHeader.Add(Path.GetRelativePath(root, file));
             }
@@ -59,7 +62,7 @@ public sealed class SourceHeaderTests
     {
         foreach (FileInfo file in directory.EnumerateFiles())
         {
-            if (s_commentPrefixes.ContainsKey(file.Extension))
+            if (s_comments.ContainsKey(file.Extension))
             {
                 yield return file.FullName;
             }
@@ -74,13 +77,13 @@ public sealed class SourceHeaderTests
         }
     }
 
-    private static async Task<bool> StartsWithHeaderAsync(string path, string commentPrefix, CancellationToken cancellationToken)
+    private static async Task<bool> StartsWithHeaderAsync(string path, (string Prefix, string Suffix) comment, CancellationToken cancellationToken)
     {
         using StreamReader reader = new(path);
 
         foreach (string line in s_headerLines)
         {
-            if (await reader.ReadLineAsync(cancellationToken) != commentPrefix + line)
+            if (await reader.ReadLineAsync(cancellationToken) != comment.Prefix + line + comment.Suffix)
             {
                 return false;
             }

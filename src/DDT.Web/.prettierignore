@@ -3,3 +3,5 @@ dist
 coverage
 package-lock.json
 src/test/fixtures
+src/styles/theme.css
+src/locales

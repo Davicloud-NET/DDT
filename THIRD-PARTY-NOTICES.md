@@ -112,44 +112,73 @@ the notice for code by Microsoft Open Technologies.
 Vite builds `src/DDT.Web` into the static files the server serves.
 [licenses/web/THIRD-PARTY-LICENSES.txt](licenses/web/THIRD-PARTY-LICENSES.txt) holds, for every
 package in the non-development closure of `src/DDT.Web/package-lock.json`, its licence text with
-its copyright line, followed by the two build tools whose own code the bundle contains. The build
-leaves some of these packages out of the bundle, such as the type declarations and the Node.js
-dependencies of `@microsoft/signalr`, so the file covers more than the bundle holds.
-`@microsoft/signalr`, `react-remove-scroll-bar` and `tr46` carry no licence file, and their
-entries say where their text comes from.
+its copyright line, followed by the build tools whose own code the bundle contains. `npm run
+licences` in `src/DDT.Web` writes it. The build leaves many of these packages out of the bundle,
+such as the type declarations, the Node.js dependencies of `@microsoft/signalr`, and the Babel and
+Jest packages that Lingui's runtime declares for its macros and its configuration, so the file
+covers more than the bundle holds. `@microsoft/signalr`, `client-only` and `tr46` carry no licence
+file, and their entries say where their text comes from.
 
 - Meta Platforms, Inc. and affiliates, MIT: `react`, `react-dom`, `scheduler` and
-  `use-sync-external-store`.
-- WorkOS, MIT: `@radix-ui/primitive`, `@radix-ui/react-compose-refs`, `@radix-ui/react-context`,
-  `@radix-ui/react-dialog`, `@radix-ui/react-dismissable-layer`, `@radix-ui/react-focus-guards`,
-  `@radix-ui/react-focus-scope`, `@radix-ui/react-id`, `@radix-ui/react-portal`,
-  `@radix-ui/react-presence`, `@radix-ui/react-primitive`, `@radix-ui/react-slot`,
-  `@radix-ui/react-use-callback-ref`, `@radix-ui/react-use-controllable-state`,
-  `@radix-ui/react-use-effect-event` and `@radix-ui/react-use-layout-effect`.
+  `use-sync-external-store`; with Facebook, Inc. and its affiliates, `react-is`. Their Jest
+  packages, MIT, reach the closure through Lingui's configuration and not the bundle:
+  `@jest/schemas`, `@jest/types`, `jest-get-type`, `jest-validate` and `pretty-format`.
+- Adobe, from the React Spectrum project, Apache License 2.0: `react-aria`, `react-aria-components`, `react-stately`,
+  `@internationalized/date`, `@internationalized/number`, `@internationalized/string` and
+  `@react-types/shared`.
 - Tanner Linsley, MIT: `@tanstack/history`, `@tanstack/query-core`, `@tanstack/react-query`,
   `@tanstack/react-router`, `@tanstack/react-store`, `@tanstack/router-core` and
   `@tanstack/store`.
-- Anton Korzunov, MIT: `aria-hidden`, `get-nonce`, `react-remove-scroll`,
-  `react-remove-scroll-bar`, `react-style-singleton`, `use-callback-ref` and `use-sidecar`.
+- Tomáš Ehrlich and Crowdin, MIT: `@lingui/core`, `@lingui/react`, `@lingui/message-utils`,
+  `@lingui/conf` and `@lingui/babel-plugin-lingui-macro`. OpenJS Foundation and contributors,
+  MIT: `@messageformat/date-skeleton` and `@messageformat/parser`. Tim Radvan, BSD 3-Clause:
+  `moo`.
+- Paweł Kuna, MIT: `@tabler/icons` and `@tabler/icons-react`, the icons.
+- Dany Castillo, MIT: `tailwind-merge`.
+- Fonts under the SIL Open Font License 1.1: `@fontsource-variable/archivo` (The Archivo Project
+  Authors) and `@fontsource-variable/martian-mono` (The Martian Mono Project Authors).
 - .NET Foundation and Contributors, MIT: `@microsoft/signalr`.
-- Microsoft Corporation: `tslib` under the BSD Zero Clause License, and `@types/react` and
-  `@types/react-dom` under MIT.
+- Microsoft Corporation: `tslib` under the BSD Zero Clause License; and under MIT the type
+  declarations `@types/istanbul-lib-coverage`, `@types/istanbul-lib-report`,
+  `@types/istanbul-reports`, `@types/node`, `@types/yargs` and `@types/yargs-parser`.
+- Babel, MIT (Sebastian McKenzie and other contributors, the parser by various contributors),
+  which Lingui's runtime declares for its macros: `@babel/code-frame`, `@babel/compat-data`,
+  `@babel/core`, `@babel/generator`, `@babel/helper-compilation-targets`, `@babel/helper-globals`,
+  `@babel/helper-module-imports`, `@babel/helper-module-transforms`,
+  `@babel/helper-string-parser`, `@babel/helper-validator-identifier`,
+  `@babel/helper-validator-option`, `@babel/helpers`, `@babel/parser`, `@babel/template`,
+  `@babel/traverse` and `@babel/types`. With them, under MIT unless named: `@jridgewell/gen-mapping`,
+  `@jridgewell/remapping`, `@jridgewell/resolve-uri`, `@jridgewell/sourcemap-codec` and
+  `@jridgewell/trace-mapping` (Justin Ridgewell); `browserslist` and `update-browserslist-db`
+  (Andrey Sitnik); `baseline-browser-mapping` (Apache License 2.0, the web-platform-dx project);
+  `caniuse-lite` (Creative Commons Attribution 4.0, Ben Briggs, with the data of caniuse.com); `electron-to-chromium` (ISC,
+  Kilian Valkhof); `node-releases` (Sergey Rubanov); `lru-cache`, `semver` and `yallist` (ISC, Isaac
+  Z. Schlueter and contributors); `gensync` (Logan Smyth); `json5` (Aseem Kishore and others);
+  `jsesc` (Mathias Bynens); `js-tokens` (Simon Lydell); `convert-source-map` (Thorsten Lorenz);
+  `debug` (TJ Holowaychuk); `ms` (Vercel, Inc.); `escalade` (Luke Edwards); `picocolors` (ISC,
+  Oleksii Raspopov, Kostiantyn Denysov, Anton Verinov); `jiti` (Pooya Parsa); `lilconfig` (Anton
+  Kastritskiy); `normalize-path` (Jon Schlinkert); `camelcase`, `ansi-styles`, `chalk`, `has-flag`,
+  `leven` and `supports-color` (Sindre Sorhus); `color-convert` (Heather Arthur); `color-name`
+  (Dmitry Ivanov); `@sinclair/typebox` (Haydn Paterson); and `@swc/helpers` (Apache License 2.0,
+  the SWC project).
 - Alexis Munsayac, MIT: `seroval` and `seroval-plugins`.
 - Unshift.io, Arnout Kazemier and contributors, MIT: `querystringify`, `requires-port` and
   `url-parse`.
 - Toru Nagashima, MIT: `abort-controller` and `event-target-shim`.
 - Sebastian Mayr, MIT: `tr46` and `whatwg-url`.
-- MIT, one package each: `cookie-es` (Pooya Parsa, Roman Shtylman, Douglas Christopher Wilson),
-  `csstype` (Fredrik Nicol), `detect-node-es` (Ilya Kantor), `eventsource` (EventSource GitHub
-  organisation), `node-fetch` (David Frank), `psl` (Lupo Montero), `punycode` (Mathias Bynens),
-  `set-cookie-parser` (Nathan Friedly), `universalify` (Ryan Zimmerman) and `ws` (Einar Otto
-  Stangvik).
+- MIT, one package each: `aria-hidden` (Anton Korzunov), `client-only` (no holder named),
+  `clsx` (Luke Edwards), `cookie-es` (Pooya Parsa), `eventsource` (EventSource GitHub
+  organisation), `js-sha256` (Chen, Yi-Cyuan), `node-fetch` (David Frank), `psl` (Lupo Montero),
+  `punycode` (Mathias Bynens), `set-cookie-parser` (Nathan Friedly), `undici-types` (Matteo Collina
+  and Undici contributors), `universalify` (Ryan Zimmerman) and `ws` (Einar Otto Stangvik).
 - Other licences: `tough-cookie` (BSD 3-Clause, Salesforce.com, Inc.), `webidl-conversions`
   (BSD 2-Clause, Domenic Denicola), and `fetch-cookie` and `isbot`, which their authors dedicate
   to the public domain under the Unlicense.
 - Build tools, MIT: `rolldown` (VoidZero Inc. and Contributors, with parts derived from Rollup and
   from esbuild by Evan Wallace) adds its helpers for CommonJS interoperability and the module
-  preload polyfill, and `vite` (VoidZero Inc. and Vite contributors) asks for that polyfill.
+  preload polyfill, `vite` (VoidZero Inc. and Vite contributors) asks for that polyfill, and
+  `tailwindcss` (Tailwind Labs, Inc.) writes its base styles and the utility classes the web UI
+  uses into the stylesheet.
 
 ## The agent, `ddt-agent.exe`
 

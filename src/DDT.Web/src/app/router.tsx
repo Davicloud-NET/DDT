@@ -10,27 +10,23 @@ import {
   redirect,
 } from "@tanstack/react-router";
 
+import { AboutPage } from "@/about/AboutPage";
 import { currentUserQuery } from "@/auth/auth";
-import { machineSearch } from "@/machines/machineSearch";
-import { AboutPage } from "@/pages/AboutPage";
-import { AccountPage } from "@/pages/AccountPage";
-import { ImagesPage } from "@/pages/ImagesPage";
-import { MachineDetailPage } from "@/pages/MachineDetailPage";
-import { MachinesPage } from "@/pages/MachinesPage";
-import { PackagesPage } from "@/pages/PackagesPage";
-import { RulesPage } from "@/pages/RulesPage";
-import { SequenceEditorPage } from "@/pages/SequenceEditorPage";
-import { SequencesPage } from "@/pages/SequencesPage";
-import { SignInPage } from "@/pages/SignInPage";
+import { SignInPage } from "@/auth/SignInPage";
 
-import { AppShell } from "./AppShell";
+import { PendingPage } from "./PendingPage";
+import { RouteError } from "./RouteError";
 import { RootLayout } from "./RootLayout";
+import { Shell } from "./Shell";
 
 export interface RouterContext {
   queryClient: QueryClient;
 }
 
-const rootRoute = createRootRouteWithContext<RouterContext>()({ component: RootLayout });
+const rootRoute = createRootRouteWithContext<RouterContext>()({
+  component: RootLayout,
+  errorComponent: RouteError,
+});
 
 // The server's OpenID Connect callback sends an account with a second factor here for its code, and a sign-in it
 // refused with the reason.
@@ -51,12 +47,12 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
-// Everything inside the shell requires a session. The check runs before the route renders, so
-// there is no flash of the application for a signed out visitor.
+// Everything inside the shell requires a session. The check runs before the route renders, so there is no flash of
+// the application for a signed out visitor.
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "shell",
-  component: AppShell,
+  component: Shell,
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.query({ ...currentUserQuery, staleTime: "static" });
 
@@ -68,66 +64,135 @@ const shellRoute = createRoute({
   },
 });
 
-const machinesRoute = createRoute({
+// The server still sends signed in people to /, which is the machine list.
+const homeRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/",
-  component: MachinesPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/machines" });
+  },
 });
 
+// The pages of the navigation, plus a machine, a sequence and the account. PendingPage stands in until each is rebuilt.
+const machinesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines",
+  component: PendingPage,
+});
+const runHistoryRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines/runs",
+  component: PendingPage,
+});
+const approvalRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines/approval",
+  component: PendingPage,
+});
 const machineRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/$machineId",
-  validateSearch: machineSearch,
-  component: MachineDetailPage,
+  component: PendingPage,
 });
-
 const sequencesRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: "/sequences",
-  component: SequencesPage,
+  path: "/deployment/sequences",
+  component: PendingPage,
 });
-
 const sequenceRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: "/sequences/$sequenceId",
-  component: SequenceEditorPage,
+  path: "/deployment/sequences/$sequenceId",
+  component: PendingPage,
 });
-
-const packagesRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: "/packages",
-  component: PackagesPage,
-});
-
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: "/rules",
-  component: RulesPage,
+  path: "/deployment/rules",
+  component: PendingPage,
 });
-
+const deploymentDefaultsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/deployment/defaults",
+  component: PendingPage,
+});
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: "/images",
-  component: ImagesPage,
+  path: "/library/images",
+  component: PendingPage,
 });
-
+const driversRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/library/drivers",
+  component: PendingPage,
+});
+const filesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/library/files",
+  component: PendingPage,
+});
+const bootImageRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/boot/image",
+  component: PendingPage,
+});
+const networkBootRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/boot/network",
+  component: PendingPage,
+});
+const usersRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/admin/users",
+  component: PendingPage,
+});
+const signInSettingsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/admin/sign-in",
+  component: PendingPage,
+});
+const tokensRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/admin/tokens",
+  component: PendingPage,
+});
+const serverRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/admin/server",
+  component: PendingPage,
+});
+const auditRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/admin/audit",
+  component: PendingPage,
+});
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/account",
-  component: AccountPage,
+  component: PendingPage,
 });
 
 const routeTree = rootRoute.addChildren([
   signInRoute,
   aboutRoute,
   shellRoute.addChildren([
+    homeRoute,
     machinesRoute,
+    runHistoryRoute,
+    approvalRoute,
     machineRoute,
     sequencesRoute,
     sequenceRoute,
-    packagesRoute,
     rulesRoute,
+    deploymentDefaultsRoute,
     imagesRoute,
+    driversRoute,
+    filesRoute,
+    bootImageRoute,
+    networkBootRoute,
+    usersRoute,
+    signInSettingsRoute,
+    tokensRoute,
+    serverRoute,
+    auditRoute,
     accountRoute,
   ]),
 ]);

@@ -1,0 +1,294 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-26 21:09+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/about/AboutPage.tsx
+#: src/app/Shell.tsx
+#: src/auth/SignInPage.tsx
+msgid "About DDT"
+msgstr "About DDT"
+
+#: src/app/Shell.tsx
+msgid "Account and security"
+msgstr "Account and security"
+
+#: src/app/Shell.tsx
+msgid "Account menu"
+msgstr "Account menu"
+
+#: src/app/Shell.tsx
+msgid "Account menu for {name}"
+msgstr "Account menu for {name}"
+
+#: src/app/navigation.ts
+msgid "Administration"
+msgstr "Administration"
+
+#: src/app/navigation.ts
+msgid "All machines"
+msgstr "All machines"
+
+#: src/app/navigation.ts
+msgid "API tokens"
+msgstr "API tokens"
+
+#: src/app/Shell.tsx
+msgid "Appearance"
+msgstr "Appearance"
+
+#: src/app/navigation.ts
+msgid "Approval and zero touch"
+msgstr "Approval and zero touch"
+
+#: src/app/navigation.ts
+msgid "Assignment rules"
+msgstr "Assignment rules"
+
+#: src/app/navigation.ts
+msgid "Audit log"
+msgstr "Audit log"
+
+#: src/auth/SignInPage.tsx
+msgid "Authenticator code"
+msgstr "Authenticator code"
+
+#: src/about/AboutPage.tsx
+msgid "Back to DDT"
+msgstr "Back to DDT"
+
+#: src/app/navigation.ts
+msgid "Boot"
+msgstr "Boot"
+
+#: src/app/navigation.ts
+msgid "Boot image"
+msgstr "Boot image"
+
+#: src/auth/SignInPage.tsx
+msgid "Confirm it is you"
+msgstr "Confirm it is you"
+
+#: src/auth/SignInPage.tsx
+msgid "Could not reach the server."
+msgstr "Could not reach the server."
+
+#: src/app/Shell.tsx
+msgid "Dark"
+msgstr "Dark"
+
+#: src/about/AboutPage.tsx
+msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
+msgstr "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
+
+#: src/app/RouteError.tsx
+msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
+msgstr "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
+
+#: src/about/AboutPage.tsx
+msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
+msgstr "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
+
+#: src/app/navigation.ts
+msgid "Deployment"
+msgstr "Deployment"
+
+#: src/app/navigation.ts
+msgid "Deployment defaults"
+msgstr "Deployment defaults"
+
+#: src/app/navigation.ts
+msgid "Drivers"
+msgstr "Drivers"
+
+#: src/auth/SignInPage.tsx
+msgid "Enter one of the recovery codes you saved."
+msgstr "Enter one of the recovery codes you saved."
+
+#: src/auth/SignInPage.tsx
+msgid "Enter the six digits your authenticator app shows for DDT."
+msgstr "Enter the six digits your authenticator app shows for DDT."
+
+#: src/app/navigation.ts
+msgid "Files"
+msgstr "Files"
+
+#: src/app/Shell.tsx
+msgid "Language"
+msgstr "Language"
+
+#: src/app/navigation.ts
+msgid "Library"
+msgstr "Library"
+
+#: src/about/AboutPage.tsx
+msgid "Licence and notices"
+msgstr "Licence and notices"
+
+#: src/about/AboutPage.tsx
+msgid "Licence texts of the software by others"
+msgstr "Licence texts of the software by others"
+
+#: src/app/Shell.tsx
+msgid "Light"
+msgstr "Light"
+
+#: src/app/navigation.ts
+msgid "Machines"
+msgstr "Machines"
+
+#: src/app/navigation.ts
+msgid "Network boot"
+msgstr "Network boot"
+
+#: src/auth/SignInPage.tsx
+msgid "No account could be created for that identity. Ask an administrator."
+msgstr "No account could be created for that identity. Ask an administrator."
+
+#: src/auth/SignInPage.tsx
+msgid "No DDT account is linked to that identity. Ask an administrator."
+msgstr "No DDT account is linked to that identity. Ask an administrator."
+
+#: src/app/navigation.ts
+msgid "OS images"
+msgstr "OS images"
+
+#: src/auth/SignInPage.tsx
+msgid "Password"
+msgstr "Password"
+
+#: src/app/Shell.tsx
+msgid "Pseudo (development)"
+msgstr "Pseudo (development)"
+
+#: src/auth/SignInPage.tsx
+msgid "Recovery code"
+msgstr "Recovery code"
+
+#: src/app/navigation.ts
+msgid "Run history"
+msgstr "Run history"
+
+#: src/app/Shell.tsx
+msgid "Same as the system"
+msgstr "Same as the system"
+
+#: src/app/Shell.tsx
+msgid "Sections"
+msgstr "Sections"
+
+#: src/app/navigation.ts
+msgid "Server"
+msgstr "Server"
+
+#: src/auth/SignInPage.tsx
+msgid "Sign in"
+msgstr "Sign in"
+
+#: src/app/Shell.tsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/app/navigation.ts
+msgid "Sign-in"
+msgstr "Sign-in"
+
+#: src/auth/SignInPage.tsx
+msgid "Signing in"
+msgstr "Signing in"
+
+#: src/app/RouteError.tsx
+msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
+msgstr "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
+
+#: src/about/AboutPage.tsx
+msgid "Source code"
+msgstr "Source code"
+
+#: src/app/navigation.ts
+msgid "Task sequences"
+msgstr "Task sequences"
+
+#: src/auth/SignInPage.tsx
+msgid "That code is not valid."
+msgstr "That code is not valid."
+
+#: src/auth/SignInPage.tsx
+msgid "That user name or password is not correct."
+msgstr "That user name or password is not correct."
+
+#: src/about/AboutPage.tsx
+msgid "The attribution notice, the warranty disclaimer and the additional terms"
+msgstr "The attribution notice, the warranty disclaimer and the additional terms"
+
+#: src/about/AboutPage.tsx
+msgid "The GNU General Public License, version 3"
+msgstr "The GNU General Public License, version 3"
+
+#: src/about/AboutPage.tsx
+msgid "The licences of the packages in this web interface"
+msgstr "The licences of the packages in this web interface"
+
+#: src/app/Shell.tsx
+msgid "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
+msgstr "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
+
+#: src/app/RouteError.tsx
+msgid "The server does not answer"
+msgstr "The server does not answer"
+
+#: src/auth/SignInPage.tsx
+msgid "The sign-in at the identity provider did not finish. Try again."
+msgstr "The sign-in at the identity provider did not finish. Try again."
+
+#: src/about/AboutPage.tsx
+msgid "The software by others that DDT contains, and its licences"
+msgstr "The software by others that DDT contains, and its licences"
+
+#: src/about/AboutPage.tsx
+msgid "The version and the licence texts could not be loaded."
+msgstr "The version and the licence texts could not be loaded."
+
+#: src/auth/SignInPage.tsx
+msgid "This account is locked. Try again later or ask an administrator."
+msgstr "This account is locked. Try again later or ask an administrator."
+
+#: src/auth/SignInPage.tsx
+msgid "This account may not sign in. Ask an administrator."
+msgstr "This account may not sign in. Ask an administrator."
+
+#: src/app/RouteError.tsx
+msgid "This page could not load"
+msgstr "This page could not load"
+
+#: src/app/PendingPage.tsx
+msgid "This page is being rebuilt on the new design system."
+msgstr "This page is being rebuilt on the new design system."
+
+#: src/app/RouteError.tsx
+msgid "Try again"
+msgstr "Try again"
+
+#: src/auth/SignInPage.tsx
+msgid "Use a recovery code"
+msgstr "Use a recovery code"
+
+#: src/auth/SignInPage.tsx
+msgid "Use an authenticator code"
+msgstr "Use an authenticator code"
+
+#: src/auth/SignInPage.tsx
+msgid "User name"
+msgstr "User name"
+
+#: src/app/navigation.ts
+msgid "Users and roles"
+msgstr "Users and roles"
+
+#: src/about/AboutPage.tsx
+msgid "Version {version}"
+msgstr "Version {version}"

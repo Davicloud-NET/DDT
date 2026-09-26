@@ -14,7 +14,6 @@ export default mergeConfig(
       globals: false,
       setupFiles: ["./src/test/setup.ts"],
       include: ["src/**/*.{test,spec}.{ts,tsx}"],
-      css: { modules: { classNameStrategy: "non-scoped" } },
     },
   }),
 );

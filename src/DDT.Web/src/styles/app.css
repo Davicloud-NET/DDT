@@ -1,0 +1,73 @@
+/* Copyright (C) 2026 Davicloud */
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. */
+
+@import "tailwindcss";
+@import "./theme.css";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/martian-mono/standard.css";
+
+/* Adds React Aria's states as variants, such as pressed:, selected: and focus-visible:. */
+@plugin "tailwindcss-react-aria-components";
+
+/* The theme switches by a class on <html>; the tokens change under it, so components rarely need dark:. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: var(--color-placeholder);
+  }
+}
+
+/* The running step of a sequence rail is the one thing on a page that moves. */
+@keyframes rail-live {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 16.97px 0;
+  }
+}
+
+@utility rail-live {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-rail-stripe) 0 6px,
+    transparent 6px 12px
+  );
+  animation: rail-live 1.1s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

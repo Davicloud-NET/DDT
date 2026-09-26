@@ -3,8 +3,12 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import "@testing-library/jest-dom/vitest";
+import { i18n } from "@lingui/core";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// Tests read the English text: with no catalog, the macros fall back to the message in the code.
+i18n.loadAndActivate({ locale: "en", messages: {} });
 
 afterEach(() => {
   cleanup();

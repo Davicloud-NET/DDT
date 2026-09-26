@@ -17,7 +17,7 @@ public sealed class ThirdPartyNoticesTests
 
     // Development packages whose own code the bundle contains: Rolldown's runtime helpers and the module preload
     // polyfill Vite asks it for.
-    private static readonly string[] s_bundledBuildTools = ["rolldown", "vite"];
+    private static readonly string[] s_bundledBuildTools = ["rolldown", "vite", "tailwindcss"];
 
     // Each entry in the web licence file starts with a line of this, followed by "<name> <version>".
     private static readonly string s_webEntrySeparator = new('=', 100);

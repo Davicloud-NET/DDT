@@ -82,7 +82,8 @@ src/
   DDT.Pxe/                 hosted services that bind the UDP sockets and drive DDT.Protocols
   DDT.Server/              EF Core, image storage, minimal API endpoints, SignalR hubs
   DDT.Host/                ASP.NET Core entry point. Registers roles, serves the API, hubs and SPA
-  DDT.Web/                 Vite + React + TypeScript SPA, SCSS modules
+  DDT.Web/                 Vite + React + TypeScript SPA: React Aria components, Tailwind CSS, Lingui
+  DDT.Design/              design tokens, the one source of the look, and the generator for the theme
   DDT.Agent/               NativeAOT agent for Windows PE, and its temporary service in Windows
   DDT.AppHost/             Aspire orchestration, development only
   DDT.ServiceDefaults/     OpenTelemetry, health checks, service discovery

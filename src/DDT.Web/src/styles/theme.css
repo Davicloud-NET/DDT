@@ -1,0 +1,283 @@
+/* Copyright (C) 2026 Davicloud */
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. */
+
+/* Written by src/DDT.Design/generate.mjs from src/DDT.Design/tokens.json. Change those and run npm run tokens. */
+
+:root {
+  color-scheme: light;
+  --sg-frame: #2A2E31;
+  --sg-frame-text: #E6E9E6;
+  --sg-frame-muted: #AAB1B3;
+  --sg-frame-line: #3C4245;
+  --sg-frame-hover: #34393C;
+  --sg-frame-logo: #F08A8A;
+  --sg-page: #DCDFDB;
+  --sg-panel: #F7F8F6;
+  --sg-raised: #FFFFFF;
+  --sg-well: #ECEEEA;
+  --sg-field: #FFFFFF;
+  --sg-hover: #EEF0EC;
+  --sg-selected: #E6ECF4;
+  --sg-line: #CCD1CD;
+  --sg-line-soft: #E4E7E3;
+  --sg-control: #7D8588;
+  --sg-ink: #1F2426;
+  --sg-ink-2: #454D51;
+  --sg-muted: #566064;
+  --sg-placeholder: #6B7478;
+  --sg-inverse: #F7F8F6;
+  --sg-run: #1F5AA6;
+  --sg-run-text: #1F5AA6;
+  --sg-run-soft: rgb(31 90 166 / 0.08);
+  --sg-attention: #F2A900;
+  --sg-on-attention: #1F2426;
+  --sg-attention-text: #7A5300;
+  --sg-fail: #C22A2F;
+  --sg-on-fail: #FFFFFF;
+  --sg-fail-text: #B3262B;
+  --sg-ok: #22774D;
+  --sg-on-ok: #FFFFFF;
+  --sg-ok-text: #1E6B45;
+  --sg-key-primary: #1F2426;
+  --sg-key-primary-hover: #384044;
+  --sg-on-key-primary: #F7F8F6;
+  --sg-key-secondary: #FFFFFF;
+  --sg-key-secondary-hover: #F0F2EF;
+  --sg-rail-done: #4D565A;
+  --sg-rail-edge: #AEB4B0;
+  --sg-rail-stripe: rgb(255 255 255 / 0.16);
+  --sg-focus: #1F5AA6;
+  --sg-console: #1B1E20;
+  --sg-console-text: #D9DDDA;
+  --sg-console-muted: #A0A8AC;
+  --sg-console-line: #2C3134;
+  --sg-backdrop: rgb(21 24 26 / 0.45);
+  --sg-edge-panel: rgb(31 36 38 / 0.09);
+  --sg-edge-overlay: rgb(31 36 38 / 0.08);
+  --sg-shadow-overlay: rgb(31 36 38 / 0.20);
+  --sg-logo-ring: #981F28;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --sg-frame: #15181A;
+  --sg-frame-text: #E6E9E6;
+  --sg-frame-muted: #A0A8AC;
+  --sg-frame-line: #2A2F32;
+  --sg-frame-hover: #1F2326;
+  --sg-frame-logo: #F08A8A;
+  --sg-page: #1D2123;
+  --sg-panel: #262B2E;
+  --sg-raised: #30363A;
+  --sg-well: #1F2326;
+  --sg-field: #1F2326;
+  --sg-hover: #2C3236;
+  --sg-selected: #28323C;
+  --sg-line: #394044;
+  --sg-line-soft: #30363A;
+  --sg-control: #7C868B;
+  --sg-ink: #E8EAE7;
+  --sg-ink-2: #C3C8C6;
+  --sg-muted: #A0A8AC;
+  --sg-placeholder: #8E979B;
+  --sg-inverse: #1D2123;
+  --sg-run: #2D6CC9;
+  --sg-run-text: #8DB6F2;
+  --sg-run-soft: rgb(88 146 230 / 0.10);
+  --sg-attention: #F2B21B;
+  --sg-on-attention: #1D2123;
+  --sg-attention-text: #F2C35A;
+  --sg-fail: #D1383E;
+  --sg-on-fail: #FFFFFF;
+  --sg-fail-text: #F08D8F;
+  --sg-ok: #25784F;
+  --sg-on-ok: #FFFFFF;
+  --sg-ok-text: #7FCFA3;
+  --sg-key-primary: #E8EAE7;
+  --sg-key-primary-hover: #FFFFFF;
+  --sg-on-key-primary: #1D2123;
+  --sg-key-secondary: #30363A;
+  --sg-key-secondary-hover: #373E43;
+  --sg-rail-done: #A0A8AC;
+  --sg-rail-edge: #4A5357;
+  --sg-rail-stripe: rgb(255 255 255 / 0.12);
+  --sg-focus: #8DB6F2;
+  --sg-console: #141618;
+  --sg-console-text: #D9DDDA;
+  --sg-console-muted: #A0A8AC;
+  --sg-console-line: #2C3134;
+  --sg-backdrop: rgb(0 0 0 / 0.55);
+  --sg-edge-panel: rgb(255 255 255 / 0.06);
+  --sg-edge-overlay: rgb(255 255 255 / 0.08);
+  --sg-shadow-overlay: rgb(0 0 0 / 0.55);
+  --sg-logo-ring: #F08A8A;
+}
+
+/* Only the tokens exist: Tailwind's own palette, fonts, sizes, radii and shadows are cleared. */
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+}
+
+@theme inline {
+  --color-white: #FFFFFF;
+  --color-frame: var(--sg-frame);
+  --color-frame-text: var(--sg-frame-text);
+  --color-frame-muted: var(--sg-frame-muted);
+  --color-frame-line: var(--sg-frame-line);
+  --color-frame-hover: var(--sg-frame-hover);
+  --color-frame-logo: var(--sg-frame-logo);
+  --color-page: var(--sg-page);
+  --color-panel: var(--sg-panel);
+  --color-raised: var(--sg-raised);
+  --color-well: var(--sg-well);
+  --color-field: var(--sg-field);
+  --color-hover: var(--sg-hover);
+  --color-selected: var(--sg-selected);
+  --color-line: var(--sg-line);
+  --color-line-soft: var(--sg-line-soft);
+  --color-control: var(--sg-control);
+  --color-ink: var(--sg-ink);
+  --color-ink-2: var(--sg-ink-2);
+  --color-muted: var(--sg-muted);
+  --color-placeholder: var(--sg-placeholder);
+  --color-inverse: var(--sg-inverse);
+  --color-run: var(--sg-run);
+  --color-run-text: var(--sg-run-text);
+  --color-run-soft: var(--sg-run-soft);
+  --color-attention: var(--sg-attention);
+  --color-on-attention: var(--sg-on-attention);
+  --color-attention-text: var(--sg-attention-text);
+  --color-fail: var(--sg-fail);
+  --color-on-fail: var(--sg-on-fail);
+  --color-fail-text: var(--sg-fail-text);
+  --color-ok: var(--sg-ok);
+  --color-on-ok: var(--sg-on-ok);
+  --color-ok-text: var(--sg-ok-text);
+  --color-key-primary: var(--sg-key-primary);
+  --color-key-primary-hover: var(--sg-key-primary-hover);
+  --color-on-key-primary: var(--sg-on-key-primary);
+  --color-key-secondary: var(--sg-key-secondary);
+  --color-key-secondary-hover: var(--sg-key-secondary-hover);
+  --color-rail-done: var(--sg-rail-done);
+  --color-rail-edge: var(--sg-rail-edge);
+  --color-rail-stripe: var(--sg-rail-stripe);
+  --color-focus: var(--sg-focus);
+  --color-console: var(--sg-console);
+  --color-console-text: var(--sg-console-text);
+  --color-console-muted: var(--sg-console-muted);
+  --color-console-line: var(--sg-console-line);
+  --color-backdrop: var(--sg-backdrop);
+  --color-edge-panel: var(--sg-edge-panel);
+  --color-edge-overlay: var(--sg-edge-overlay);
+  --color-shadow-overlay: var(--sg-shadow-overlay);
+  --color-logo-ring: var(--sg-logo-ring);
+
+  --font-sans: "Archivo Variable", Archivo, "Segoe UI", "system-ui", "sans-serif";
+  --font-mono: "Martian Mono Variable", "Martian Mono", "Cascadia Mono", Consolas, monospace;
+
+  --text-wordmark: 21px;
+  --text-wordmark--line-height: 1;
+  --text-display: 64px;
+  --text-display--line-height: 0.82;
+  --text-title: 42px;
+  --text-title--line-height: 0.95;
+  --text-heading: 20px;
+  --text-heading--line-height: 1.2;
+  --text-label: 15px;
+  --text-label--line-height: 1.3;
+  --text-body: 14px;
+  --text-body--line-height: 1.45;
+  --text-small: 13px;
+  --text-small--line-height: 1.4;
+  --text-tag: 13px;
+  --text-tag--line-height: 1;
+  --text-data: 12.5px;
+  --text-data--line-height: 1.5;
+
+  --radius-tag: 2px;
+  --radius-key: 4px;
+  --radius-panel: 6px;
+  --radius-overlay: 8px;
+
+  --shadow-panel: 0 0 0 1px var(--sg-edge-panel);
+  --shadow-overlay: 0 0 0 1px var(--sg-edge-overlay), 0 14px 36px -8px var(--sg-shadow-overlay);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0.13, 1);
+  --default-transition-duration: 120ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0.13, 1);
+}
+
+@utility type-wordmark {
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 800;
+  font-stretch: 72%;
+}
+
+@utility type-display {
+  font-size: 64px;
+  line-height: 0.82;
+  font-weight: 750;
+  font-stretch: 62%;
+  letter-spacing: -0.02em;
+}
+
+@utility type-title {
+  font-size: 42px;
+  line-height: 0.95;
+  font-weight: 750;
+  font-stretch: 70%;
+  letter-spacing: -0.01em;
+}
+
+@utility type-heading {
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-stretch: 78%;
+}
+
+@utility type-label {
+  font-size: 15px;
+  line-height: 1.3;
+  font-weight: 650;
+  font-stretch: 80%;
+}
+
+@utility type-body {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+  font-stretch: 100%;
+}
+
+@utility type-small {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 400;
+  font-stretch: 100%;
+}
+
+@utility type-tag {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 750;
+  font-stretch: 75%;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+@utility type-data {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 400;
+  font-stretch: 87.5%;
+}

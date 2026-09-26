@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { plural, t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPut } from "@/lib/api";
-import { formatBytes, plural } from "@/lib/format";
+import { formatBytes } from "@/lib/format";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import type { SequenceView } from "@/sequences/sequences";
 
@@ -117,29 +118,37 @@ export function deletionConsequence(
 ): string {
   const known = users ?? [];
   const names = known.map((sequence) => sequence.name).join(", ");
-  const sentences = [`${item.name} (${formatBytes(item.sizeBytes)}) is deleted from the library.`];
+  const count = known.length;
+  const name = item.name;
+  const size = formatBytes(item.sizeBytes);
+  const sentences = [t`${name} (${size}) is deleted from the library.`];
 
   if (item.kind === "Files" && users === null) {
     sentences.push(
-      "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen.",
+      t`Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen.`,
     );
-  } else if (item.kind === "Files" && known.length === 0) {
-    sentences.push("No sequence names it.");
-  } else if (item.kind === "Files" && known.length === 1) {
-    sentences.push(
-      `The sequence ${names} names it in a Run script step and shows a problem until another package is chosen.`,
-    );
+  } else if (item.kind === "Files" && count === 0) {
+    sentences.push(t`No sequence names it.`);
   } else if (item.kind === "Files") {
     sentences.push(
-      `The ${plural(known.length, "sequence")} ${names} name it in a Run script step and show a problem until another package is chosen.`,
+      plural(count, {
+        one: `The sequence ${names} names it in a Run script step and shows a problem until another package is chosen.`,
+        other: `The sequences ${names} name it in a Run script step and show a problem until another package is chosen.`,
+      }),
     );
   } else if (item.targets.length > 0) {
+    const targets = item.targets.map(describeTarget).join(", ");
+
     sentences.push(
-      `Machines of ${item.targets.map(describeTarget).join(", ")} no longer get these drivers${known.length === 0 ? "" : ` from the Inject drivers step of ${names}`}.`,
+      count === 0
+        ? t`Machines of ${targets} no longer get these drivers.`
+        : t`Machines of ${targets} no longer get these drivers from the Inject drivers step of ${names}.`,
     );
   }
 
-  sentences.push("The server refuses while a machine is assigned or runs a sequence that uses it.");
+  sentences.push(
+    t`The server refuses while a machine is assigned or runs a sequence that uses it.`,
+  );
 
   return sentences.join(" ");
 }

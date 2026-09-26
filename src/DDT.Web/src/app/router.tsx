@@ -12,10 +12,12 @@ import {
 
 import { AboutPage } from "@/about/AboutPage";
 import { currentUserQuery } from "@/auth/auth";
+import { ImagesPage } from "@/images/ImagesPage";
 import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
+import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
 
 import { DesignPage } from "./DesignPage";
@@ -124,17 +126,17 @@ const deploymentDefaultsRoute = createRoute({
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/library/images",
-  component: PendingPage,
+  component: ImagesPage,
 });
 const driversRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/library/drivers",
-  component: PendingPage,
+  component: DriversPage,
 });
 const filesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/library/files",
-  component: PendingPage,
+  component: FilesPage,
 });
 const bootImageRoute = createRoute({
   getParentRoute: () => shellRoute,

@@ -44,6 +44,22 @@ msgstr "{count, plural, one {# Problem} other {# Probleme}}"
 msgid "{count, plural, one {# warning} other {# warnings}}"
 msgstr "{count, plural, one {# Warnung} other {# Warnungen}}"
 
+#: src/images/ImagesPage.tsx
+msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
+msgstr "{count, plural, one {# Image aus {file} hinzugefügt.} other {# Images aus {file} hinzugefügt.}}"
+
+#: src/packages/PackagesPage.tsx
+msgid "{count, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
+msgstr "{count, plural, one {Passt auf # registriertes Gerät.} other {Passt auf # registrierte Geräte.}}"
+
+#: src/images/ImagesPage.tsx
+msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
+msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
+
+#: src/packages/packages.ts
+msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
+msgstr "{count, plural, one {Die Tasksequenz {names} nennt es in einem Schritt „Skript ausführen“ und zeigt ein Problem, bis ein anderes Paket gewählt ist.} other {Die Tasksequenzen {names} nennen es in einem Schritt „Skript ausführen“ und zeigen ein Problem, bis ein anderes Paket gewählt ist.}}"
+
 #: src/lib/format.ts
 msgid "{count} bytes"
 msgstr "{count} Bytes"
@@ -51,6 +67,18 @@ msgstr "{count} Bytes"
 #: src/runs/runs.ts
 msgid "{described}, and the machine reports \"{value}\""
 msgstr "{described}, und das Gerät meldet \"{value}\""
+
+#: src/packages/PackagesPage.tsx
+msgid "{file} is already in the library as {name}."
+msgstr "{file} ist schon als {name} in der Bibliothek."
+
+#: src/images/ImagesPage.tsx
+msgid "{file}, index {index}"
+msgstr "{file}, Index {index}"
+
+#: src/packages/PackagesPage.tsx
+msgid "{files, plural, one {# file, {unpacked} unpacked} other {# files, {unpacked} unpacked}}"
+msgstr "{files, plural, one {# Datei, {unpacked} entpackt} other {# Dateien, {unpacked} entpackt}}"
 
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
@@ -75,6 +103,14 @@ msgstr "{image} startet mit aktiviertem Secure Boot möglicherweise nicht, da DD
 #: src/machines/secureBoot.ts
 msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
 msgstr "{image} startet mit aktiviertem Secure Boot möglicherweise nicht, da DDT nicht feststellen konnte, ob es dafür signiert ist. Das Gerät hat nicht gemeldet, ob Secure Boot aktiviert ist. Falls ja, hält die Ausführung an, bevor sie etwas löscht, es sei denn, Sie lassen das Image hier zu."
+
+#: src/images/ImagesPage.tsx
+msgid "{installed} disk"
+msgstr "{installed} Datenträger"
+
+#: src/images/ImagesPage.tsx
+msgid "{installed} installed"
+msgstr "{installed} installiert"
 
 #: src/runs/RunSteps.tsx
 msgid "{kind}, {phase}"
@@ -108,6 +144,7 @@ msgstr "{loaded, plural, one {Die # geladene Zeile durchsuchen} other {Die # gel
 msgid "{maker}, serial {serial}"
 msgstr "{maker}, Seriennummer {serial}"
 
+#: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 msgid "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{matching, plural, one {Passt auf # registriertes Gerät.} other {Passt auf # registrierte Geräte.}}"
@@ -120,13 +157,41 @@ msgstr "{minutes} Min. {seconds} s"
 msgid "{more, plural, one {(+# line)} other {(+# lines)}}"
 msgstr "{more, plural, one {(+# Zeile)} other {(+# Zeilen)}}"
 
+#: src/packages/packages.ts
+msgid "{name} ({size}) is deleted from the library."
+msgstr "{name} ({size}) wird aus der Bibliothek gelöscht."
+
+#: src/images/ImagesPage.tsx
+msgid "{name} ({size}) is removed from the library and can no longer be used by a task sequence. Its compressed disk is deleted from the server."
+msgstr "{name} ({size}) wird aus der Bibliothek entfernt und kann von keiner Tasksequenz mehr verwendet werden. Der komprimierte Datenträger wird vom Server gelöscht."
+
+#: src/images/ImagesPage.tsx
+msgid "{name} ({size}) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it."
+msgstr "{name} ({size}) wird aus der Bibliothek entfernt und kann von keiner Tasksequenz mehr verwendet werden. Die WIM-Datei wird vom Server gelöscht, sobald kein anderes Image der Bibliothek aus ihr stammt."
+
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} hat {warnings}. Sie läuft, aber sehen Sie sich die Tasksequenz vorher an."
 
+#: src/uploads/UploadPanel.tsx
+msgid "{name} is empty."
+msgstr "{name} ist leer."
+
+#: src/uploads/UploadPanel.tsx
+msgid "{name} was not added. {reason}"
+msgstr "{name} wurde nicht hinzugefügt. {reason}"
+
 #: src/log/LogPanel.tsx
 msgid "{newLines, plural, one {Paused, # new line} other {Paused, # new lines}}"
 msgstr "{newLines, plural, one {Angehalten, # neue Zeile} other {Angehalten, # neue Zeilen}}"
+
+#: src/uploads/UploadPanel.tsx
+msgid "{percent}% of {total} at {speed}/s, {took} so far"
+msgstr "{percent} % von {total} mit {speed}/s, bisher {took}"
+
+#: src/uploads/UploadPanel.tsx
+msgid "{percent}% of {total}, {took} so far"
+msgstr "{percent} % von {total}, bisher {took}"
 
 #: src/machines/AssignDialog.tsx
 msgid "{problems}, cannot run"
@@ -180,6 +245,8 @@ msgstr "{step} {percent} %"
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "{when} by {by}"
 msgstr "{when} von {by}"
@@ -220,6 +287,22 @@ msgstr "Eine Regel braucht eine Tasksequenz, die sie wählen kann. Legen Sie zue
 msgid "a sequence"
 msgstr "eine Tasksequenz"
 
+#: src/images/ImagesPage.tsx
+msgid "a WIM, ESD or disk image file"
+msgstr "eine WIM-, ESD- oder Datenträgerimage-Datei"
+
+#: src/packages/PackagesPage.tsx
+msgid "a zip file"
+msgstr "eine ZIP-Datei"
+
+#: src/packages/PackagesPage.tsx
+msgid "A zip of driver folders with their .inf files. Choose the hardware models it is for once it is added."
+msgstr "Eine ZIP-Datei mit Treiberordnern und ihren .inf-Dateien. Wählen Sie nach dem Hinzufügen die Hardwaremodelle, für die sie ist."
+
+#: src/packages/PackagesPage.tsx
+msgid "A zip of the files a Run script step needs. The step finds them unpacked in its working folder."
+msgstr "Eine ZIP-Datei mit den Dateien, die ein Schritt „Skript ausführen“ braucht. Der Schritt findet sie entpackt in seinem Arbeitsordner."
+
 #: src/about/AboutPage.tsx
 #: src/app/Shell.tsx
 #: src/auth/SignInPage.tsx
@@ -238,7 +321,9 @@ msgstr "Kontomenü"
 msgid "Account menu for {name}"
 msgstr "Kontomenü für {name}"
 
+#: src/images/ImagesPage.tsx
 #: src/machines/MachinesPage.tsx
+#: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "Actions"
 msgstr "Aktionen"
@@ -247,9 +332,18 @@ msgstr "Aktionen"
 msgid "Actions for {label}"
 msgstr "Aktionen für {label}"
 
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
+msgid "Actions for {name}"
+msgstr "Aktionen für {name}"
+
 #: src/rules/RulesPage.tsx
 msgid "Actions for the rule for {description}"
 msgstr "Aktionen für die Regel für {description}"
+
+#: src/packages/PackageDialog.tsx
+msgid "Add a model"
+msgstr "Modell hinzufügen"
 
 #: src/rules/RuleDialog.tsx
 msgid "Add an assignment rule"
@@ -259,6 +353,10 @@ msgstr "Zuweisungsregel hinzufügen"
 #: src/rules/RulesPage.tsx
 msgid "Add rule"
 msgstr "Regel hinzufügen"
+
+#: src/packages/PackagesPage.tsx
+msgid "Added {name} from {file}."
+msgstr "{name} aus {file} hinzugefügt."
 
 #: src/machines/MachinePanel.tsx
 msgid "Address"
@@ -305,6 +403,14 @@ msgstr "Darf {image} schreiben, obwohl es mit aktiviertem Secure Boot möglicher
 #: src/runs/runs.ts
 msgid "Allowed to write its raw disk image although it may not start with Secure Boot on."
 msgstr "Darf ihr Raw-Datenträgerimage schreiben, obwohl es mit aktiviertem Secure Boot möglicherweise nicht startet."
+
+#: src/images/ImagesPage.tsx
+msgid "An administrator adds images by uploading WIM files or disk images here."
+msgstr "Ein Administrator fügt hier Images hinzu, indem er WIM-Dateien oder Datenträgerimages hochlädt."
+
+#: src/packages/PackageDialog.tsx
+msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
+msgstr "Ein Schritt „Treiber einbinden“ fügt diese Treiber Geräten hinzu, deren Modell auf eines davon passt. Mit * am Ende passt ein Modell auf jedes, das so beginnt; ein leerer Hersteller passt auf jeden."
 
 #: src/runs/runs.ts
 msgid "an operator"
@@ -357,6 +463,10 @@ msgstr "Freigegeben mit der Tasksequenz, die eine Regel gewählt hat"
 #: src/machines/approval.ts
 msgid "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgstr "Mit der Freigabe von {label} läuft darauf auch {name}, die {ruleInside} gewählt hat."
+
+#: src/images/ImagesPage.tsx
+msgid "Architecture"
+msgstr "Architektur"
 
 #: src/machines/MachineActions.tsx
 msgid "Assign"
@@ -432,6 +542,7 @@ msgid "By MAC address"
 msgstr "Nach MAC-Adresse"
 
 #: src/machines/AssignDialog.tsx
+#: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/ui/Dialog.tsx
 msgid "Cancel"
@@ -441,9 +552,14 @@ msgstr "Abbrechen"
 msgid "Cancel the assignment"
 msgstr "Zuweisung aufheben"
 
+#: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "Change"
 msgstr "Ändern"
+
+#: src/packages/PackageDialog.tsx
+msgid "Change the package"
+msgstr "Paket ändern"
 
 #: src/rules/RuleDialog.tsx
 msgid "Change the rule"
@@ -452,6 +568,18 @@ msgstr "Regel ändern"
 #: src/rules/RulesPage.tsx
 msgid "Changed"
 msgstr "Geändert"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Checking {file}"
+msgstr "{file} wird geprüft"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Choose {file} again to resume at {percent}%."
+msgstr "Wählen Sie {file} erneut, um bei {percent} % fortzusetzen."
+
+#: src/uploads/UploadPanel.tsx
+msgid "Choose a file"
+msgstr "Datei wählen"
 
 #: src/rules/RuleDialog.tsx
 msgid "Choose a sequence"
@@ -498,6 +626,10 @@ msgstr "Bestätigen Sie, dass Sie es sind"
 msgid "contains"
 msgstr "enthält"
 
+#: src/images/ImagesPage.tsx
+msgid "Copy SHA-256"
+msgstr "SHA-256 kopieren"
+
 #: src/auth/SignInPage.tsx
 msgid "Could not reach the server."
 msgstr "Der Server ist nicht erreichbar."
@@ -522,9 +654,24 @@ msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und 
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und verändern, entweder in Version 3 der Lizenz oder nach Ihrer Wahl in jeder späteren Version, zusammen mit zusätzlichen Bedingungen nach Abschnitt 7 dieser Lizenz."
 
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "Delete"
 msgstr "Löschen"
+
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
+msgid "Delete {name}?"
+msgstr "{name} löschen?"
+
+#: src/images/ImagesPage.tsx
+msgid "Delete image"
+msgstr "Image löschen"
+
+#: src/packages/PackagesPage.tsx
+msgid "Delete package"
+msgstr "Paket löschen"
 
 #: src/rules/RulesPage.tsx
 msgid "Delete rule"
@@ -546,9 +693,34 @@ msgstr "Bereitstellung"
 msgid "Deployment defaults"
 msgstr "Standardwerte der Bereitstellung"
 
+#: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 msgid "Description"
 msgstr "Beschreibung"
+
+#: src/images/ImagesPage.tsx
+msgid "Details"
+msgstr "Details"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Discard"
+msgstr "Verwerfen"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Discard {file}"
+msgstr "{file} verwerfen"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Discard the upload of {file}?"
+msgstr "Den Upload von {file} verwerfen?"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Discard upload"
+msgstr "Upload verwerfen"
+
+#: src/images/ImagesPage.tsx
+msgid "Disk SHA-256"
+msgstr "SHA-256 des Datenträgers"
 
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
@@ -566,9 +738,30 @@ msgstr "ist nicht gleich"
 msgid "Done"
 msgstr "Fertig"
 
+#: src/packages/PackagesPage.tsx
+msgid "Driver packages"
+msgstr "Treiberpakete"
+
 #: src/app/navigation.ts
+#: src/packages/PackagesPage.tsx
 msgid "Drivers"
 msgstr "Treiber"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Drop {what} here, or choose one."
+msgstr "Legen Sie {what} hier ab, oder wählen Sie eine."
+
+#: src/uploads/UploadPanel.tsx
+msgid "Drop a file to upload"
+msgstr "Datei zum Hochladen ablegen"
+
+#: src/images/ImagesPage.tsx
+msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgstr "Jedes x64-Windows-Image in einer WIM- oder ESD-Datei wird ein Eintrag. Ein Datenträgerimage, etwa ein Linux-Cloud-Image, wird einer: roh, mit gzip, zstd oder xz komprimiert, oder qcow2. Wandeln Sie VHDX, VMDK oder VDI zuerst mit qemu-img in ein Rohformat um."
+
+#: src/images/ImagesPage.tsx
+msgid "Edition"
+msgstr "Edition"
 
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
@@ -598,6 +791,10 @@ msgstr "ist gleich"
 msgid "Errors"
 msgstr "Fehler"
 
+#: src/images/ImagesPage.tsx
+msgid "Every image in {file} is already in the library."
+msgstr "Jedes Image aus {file} ist schon in der Bibliothek."
+
 #: src/machines/AssignDialog.tsx
 msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 msgstr "Jede Tasksequenz hat Probleme, daher kann keine laufen. Ein Administrator behebt sie unter Bereitstellung, Tasksequenzen."
@@ -612,17 +809,46 @@ msgstr "Fehlgeschlagen"
 msgid "Failed at step {number} of {count}"
 msgstr "Fehlgeschlagen bei Schritt {number} von {count}"
 
+#: src/images/ImagesPage.tsx
+msgid "File"
+msgstr "Datei"
+
+#: src/packages/PackagesPage.tsx
+msgid "File packages"
+msgstr "Dateipakete"
+
 #: src/app/navigation.ts
+#: src/packages/PackagesPage.tsx
 msgid "Files"
 msgstr "Dateien"
+
+#: src/packages/PackagesPage.tsx
+msgid "Find a driver package"
+msgstr "Treiberpaket suchen"
+
+#: src/packages/PackagesPage.tsx
+msgid "Find a file package"
+msgstr "Dateipaket suchen"
 
 #: src/machines/MachinesPage.tsx
 msgid "Find a machine"
 msgstr "Gerät suchen"
 
+#: src/images/ImagesPage.tsx
+msgid "Find an image"
+msgstr "Image suchen"
+
 #: src/deployments/deployments.ts
 msgid "Finishing"
 msgstr "Wird abgeschlossen"
+
+#: src/packages/PackagesPage.tsx
+msgid "For"
+msgstr "Für"
+
+#: src/packages/PackageDialog.tsx
+msgid "For these hardware models"
+msgstr "Für diese Hardwaremodelle"
 
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
@@ -631,6 +857,10 @@ msgstr "An Windows übergeben; nach dem Windows-Setup hat der Agent {took} spät
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
 msgstr "Übergabe an Windows"
+
+#: src/images/ImagesPage.tsx
+msgid "Image"
+msgstr "Image"
 
 #: src/runs/RunPanel.tsx
 msgid "In the installed Windows"
@@ -647,6 +877,10 @@ msgstr "Informationen"
 #: src/sequences/steps.ts
 msgid "Inject drivers"
 msgstr "Treiber einbinden"
+
+#: src/images/ImagesPage.tsx
+msgid "Installed"
+msgstr "Installiert"
 
 #: src/runs/runs.ts
 msgid "is"
@@ -680,7 +914,12 @@ msgstr "Der Domäne beitreten"
 msgid "Jump to the newest"
 msgstr "Zur neuesten Zeile"
 
+#: src/images/ImagesPage.tsx
+msgid "Kind"
+msgstr "Art"
+
 #: src/app/Shell.tsx
+#: src/images/ImagesPage.tsx
 msgid "Language"
 msgstr "Sprache"
 
@@ -704,6 +943,18 @@ msgstr "Zuletzt gesehen {when} von {from}; niemand hat sich daran angemeldet."
 #: src/machines/AssignDialog.tsx
 msgid "Last seen from {from} {when}; signed in by {by}."
 msgstr "Zuletzt gesehen {when} von {from}; angemeldet von {by}."
+
+#: src/uploads/UploadPanel.tsx
+msgid "Leave page"
+msgstr "Seite verlassen"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Leave while {file} is checked?"
+msgstr "Seite verlassen, während {file} geprüft wird?"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Leaving this page stops the upload of {file} at {percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there."
+msgstr "Wenn Sie diese Seite verlassen, stoppt der Upload von {file} bei {percent} %. Der Server behält, was er empfangen hat, und wenn Sie die Datei hier erneut wählen, geht der Upload dort weiter."
 
 #: src/rules/RuleDialog.tsx
 msgid "Left empty, any manufacturer."
@@ -779,10 +1030,19 @@ msgstr "Geräte"
 msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 msgstr "Geräte erscheinen hier von selbst, wenige Sekunden nachdem sie in einem Netzwerk, in dem DDT antwortet, per Netzwerk gestartet sind. Nichts wird gelöscht, bis sich jemand am Gerät anmeldet oder ihm hier eine Tasksequenz zuweist."
 
+#: src/packages/packages.ts
+msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
+msgstr "Geräte von {targets} erhalten diese Treiber nicht mehr über den Schritt „Treiber einbinden“ von {names}."
+
+#: src/packages/packages.ts
+msgid "Machines of {targets} no longer get these drivers."
+msgstr "Geräte von {targets} erhalten diese Treiber nicht mehr."
+
 #: src/rules/rules.ts
 msgid "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
 msgstr "Für Geräte des Modells {target} wird {sequence} nicht mehr gewählt; stattdessen wählt eine andere Regel oder ein Operator. Geräte, die schon eine Ausführung haben, behalten sie."
 
+#: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/sequences/steps.ts
 msgid "Manufacturer"
@@ -791,6 +1051,10 @@ msgstr "Hersteller"
 #: src/rules/RulesPage.tsx
 msgid "Matches"
 msgstr "Passt auf"
+
+#: src/images/ImagesPage.tsx
+msgid "Microsoft's boot files"
+msgstr "Startdateien von Microsoft"
 
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
@@ -804,6 +1068,7 @@ msgstr "Microsofts UEFI-CA für Drittanbieter {first}"
 msgid "Microsoft's third-party UEFI CAs {first} and {second}"
 msgstr "Microsofts UEFI-CAs für Drittanbieter {first} und {second}"
 
+#: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
 #: src/sequences/steps.ts
@@ -838,9 +1103,25 @@ msgstr "Mehr"
 msgid "More for {label}"
 msgstr "Mehr für {label}"
 
+#: src/packages/PackageDialog.tsx
+msgid "Name"
+msgstr "Name"
+
+#: src/packages/PackagesPage.tsx
+msgid "Name or file"
+msgstr "Name oder Datei"
+
+#: src/images/ImagesPage.tsx
+msgid "Name, edition, version, language or file"
+msgstr "Name, Edition, Version, Sprache oder Datei"
+
 #: src/machines/MachinesPage.tsx
 msgid "Name, MAC, serial or address"
 msgstr "Name, MAC, Seriennummer oder Adresse"
+
+#: src/packages/PackagesPage.tsx
+msgid "Name, model or file"
+msgstr "Name, Modell oder Datei"
 
 #: src/machines/MachinesPage.tsx
 msgid "Needs your approval"
@@ -870,6 +1151,22 @@ msgstr "Mit dieser Identität ist kein DDT-Konto verknüpft. Wenden Sie sich an 
 msgid "No disk DDT can install on"
 msgstr "Kein Datenträger, auf dem DDT installieren kann"
 
+#: src/packages/PackagesPage.tsx
+msgid "No driver packages yet"
+msgstr "Noch keine Treiberpakete"
+
+#: src/packages/PackagesPage.tsx
+msgid "No file packages yet"
+msgstr "Noch keine Dateipakete"
+
+#: src/images/ImagesPage.tsx
+msgid "No image matches"
+msgstr "Kein Image passt"
+
+#: src/images/ImagesPage.tsx
+msgid "No images yet"
+msgstr "Noch keine Images"
+
 #: src/log/LogPanel.tsx
 msgid "No loaded line matches the filter."
 msgstr "Keine geladene Zeile passt zum Filter."
@@ -886,10 +1183,21 @@ msgstr "Kein Gerät passt"
 msgid "No machines yet"
 msgstr "Noch keine Geräte"
 
+#: src/packages/PackageDialog.tsx
+#: src/packages/PackagesPage.tsx
+msgid "No model yet: no machine gets these drivers."
+msgstr "Noch kein Modell: Kein Gerät erhält diese Treiber."
+
+#: src/packages/PackagesPage.tsx
+msgid "No package matches"
+msgstr "Kein Paket passt"
+
 #: src/rules/RulesPage.tsx
 msgid "No registered machine"
 msgstr "Kein registriertes Gerät"
 
+#: src/packages/PackageDialog.tsx
+#: src/packages/PackagesPage.tsx
 #: src/rules/RuleDialog.tsx
 msgid "No registered machine matches yet."
 msgstr "Noch passt kein registriertes Gerät."
@@ -906,6 +1214,14 @@ msgstr "Noch keine Ausführungen"
 msgid "No sequence assigned"
 msgstr "Keine Tasksequenz zugewiesen"
 
+#: src/packages/PackagesPage.tsx
+msgid "No sequence names it"
+msgstr "Keine Tasksequenz nennt es"
+
+#: src/packages/packages.ts
+msgid "No sequence names it."
+msgstr "Keine Tasksequenz nennt es."
+
 #: src/machines/AssignDialog.tsx
 msgid "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
 msgstr "Es gibt noch keine Tasksequenz. Ein Administrator legt eine unter Bereitstellung, Tasksequenzen an."
@@ -913,6 +1229,10 @@ msgstr "Es gibt noch keine Tasksequenz. Ein Administrator legt eine unter Bereit
 #: src/machines/MachinesPage.tsx
 msgid "Nobody has signed in yet"
 msgstr "Noch niemand angemeldet"
+
+#: src/images/ImagesPage.tsx
+msgid "Not deployable: only x64 images can be installed."
+msgstr "Nicht bereitstellbar: Nur x64-Images können installiert werden."
 
 #: src/machines/AssignDialog.tsx
 msgid "not reported"
@@ -923,6 +1243,10 @@ msgstr "nicht gemeldet"
 msgid "Not reported"
 msgstr "Nicht gemeldet"
 
+#: src/images/images.ts
+msgid "Not signed"
+msgstr "Nicht signiert"
+
 #: src/runs/MachineRuns.tsx
 #: src/runs/runView.ts
 msgid "Not started"
@@ -931,6 +1255,10 @@ msgstr "Nicht gestartet"
 #: src/machines/machineView.ts
 msgid "Not started, {count} steps"
 msgstr "Nicht gestartet, {count} Schritte"
+
+#: src/images/ImagesPage.tsx
+msgid "Not stated"
+msgstr "Nicht angegeben"
 
 #: src/runs/RunPanel.tsx
 msgid "of the run"
@@ -972,6 +1300,10 @@ msgstr "Optional. Leer gelassen, behält das Gerät den Namen {current}, den sei
 msgid "Optional. Left empty, the machine keeps the name {current}."
 msgstr "Optional. Leer gelassen, behält das Gerät den Namen {current}."
 
+#: src/packages/PackageDialog.tsx
+msgid "Optional. What is in it and where it came from."
+msgstr "Optional. Was es enthält und woher es stammt."
+
 #: src/rules/RuleDialog.tsx
 msgid "Optional. Why the rule exists, for whoever reads it later."
 msgstr "Optional. Warum es die Regel gibt, für alle, die sie später lesen."
@@ -985,8 +1317,13 @@ msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Ohne Namen wählt Windows einen."
 
 #: src/app/navigation.ts
+#: src/images/ImagesPage.tsx
 msgid "OS images"
 msgstr "Betriebssystem-Images"
+
+#: src/packages/PackagesPage.tsx
+msgid "Package"
+msgstr "Paket"
 
 #: src/sequences/steps.ts
 msgid "Partition the disk"
@@ -1011,6 +1348,10 @@ msgstr "Wird vorbereitet"
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (Entwicklung)"
+
+#: src/images/images.ts
+msgid "Raw disk image"
+msgstr "Raw-Datenträgerimage"
 
 #: src/log/LogPanel.tsx
 msgid "Reading every {pollSeconds} s, because the live connection is down."
@@ -1047,6 +1388,10 @@ msgstr "Entfernen"
 #: src/machines/MachineActions.tsx
 msgid "Remove all {count} waiting from {address}"
 msgstr "Alle {count} wartenden von {address} entfernen"
+
+#: src/packages/PackageDialog.tsx
+msgid "Remove model {position}"
+msgstr "Modell {position} entfernen"
 
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
@@ -1125,6 +1470,10 @@ msgstr "Ausführungen dieses Geräts"
 msgid "Same as the system"
 msgstr "Wie das System"
 
+#: src/packages/PackageDialog.tsx
+msgid "Save package"
+msgstr "Paket speichern"
+
 #: src/rules/RuleDialog.tsx
 msgid "Save rule"
 msgstr "Regel speichern"
@@ -1137,6 +1486,7 @@ msgstr "Protokoll durchsuchen"
 msgid "Sections"
 msgstr "Bereiche"
 
+#: src/images/ImagesPage.tsx
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Secure Boot"
@@ -1179,6 +1529,10 @@ msgstr "Seriennummer"
 msgid "Server"
 msgstr "Server"
 
+#: src/images/ImagesPage.tsx
+msgid "SHA-256"
+msgstr "SHA-256"
+
 #: src/machines/MachinesPage.tsx
 msgid "Show all machines"
 msgstr "Alle Geräte anzeigen"
@@ -1207,9 +1561,18 @@ msgstr "Abmelden"
 msgid "Sign-in"
 msgstr "Anmeldung"
 
+#: src/images/images.ts
+msgid "Signed"
+msgstr "Signiert"
+
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
 msgstr "Anmeldung läuft"
+
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
+msgid "Size"
+msgstr "Größe"
 
 #: src/runs/runView.ts
 msgid "Skipped"
@@ -1343,6 +1706,18 @@ msgstr "Ausführung beenden"
 msgid "Stop the run on {label}?"
 msgstr "Ausführung auf {label} beenden?"
 
+#: src/uploads/UploadPanel.tsx
+msgid "Stop the upload of {file}?"
+msgstr "Den Upload von {file} stoppen?"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Stop upload"
+msgstr "Upload stoppen"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Stop upload and leave"
+msgstr "Upload stoppen und verlassen"
+
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
 #: src/runs/runView.ts
@@ -1375,6 +1750,10 @@ msgstr "Dieser Code ist ungültig."
 msgid "That user name or password is not correct."
 msgstr "Benutzername oder Kennwort ist falsch."
 
+#: src/uploads/UploadPanel.tsx
+msgid "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
+msgstr "Die bisher hochgeladenen {sent} von {file} werden vom Server gelöscht. Wenn Sie die Datei erneut wählen, beginnt der Upload von vorn."
+
 #: src/runs/runs.ts
 msgid "The agent started the run"
 msgstr "Der Agent hat die Ausführung gestartet"
@@ -1402,6 +1781,10 @@ msgstr "Die GNU General Public License, Version 3"
 #: src/runs/runs.ts
 msgid "The hand-over to Windows began"
 msgstr "Die Übergabe an Windows hat begonnen"
+
+#: src/images/ImagesPage.tsx
+msgid "The image list could not be loaded."
+msgstr "Die Liste der Images konnte nicht geladen werden."
 
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
@@ -1447,6 +1830,10 @@ msgstr "das Gerät mit der MAC {mac}"
 msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 msgstr "Für das Gerät mit der MAC {target} wird {sequence} nicht mehr gewählt; stattdessen wählt eine andere Regel oder ein Operator. Ein Gerät, das schon eine Ausführung hat, behält sie."
 
+#: src/packages/PackagesPage.tsx
+msgid "The packages could not be loaded."
+msgstr "Die Pakete konnten nicht geladen werden."
+
 #: src/rules/RulesPage.tsx
 msgid "The rules could not be loaded."
 msgstr "Die Regeln konnten nicht geladen werden."
@@ -1483,9 +1870,33 @@ msgstr "Die Ausführung ging weiter, weil für diesen Schritt \"Bei Fehler fortf
 msgid "The runs of this machine could not be loaded."
 msgstr "Die Ausführungen dieses Geräts konnten nicht geladen werden."
 
+#: src/images/ImagesPage.tsx
+msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
+msgstr "Der Server prüft die Datei, liest die Images darin und komprimiert ein Datenträgerimage. Bei einer großen Datei dauert das einige Minuten."
+
+#: src/packages/PackagesPage.tsx
+msgid "The server checks the zip and counts what is in it."
+msgstr "Der Server prüft die ZIP-Datei und zählt, was sie enthält."
+
 #: src/app/RouteError.tsx
 msgid "The server does not answer"
 msgstr "Der Server antwortet nicht"
+
+#: src/uploads/UploadPanel.tsx
+msgid "The server does not answer. The upload goes on when it does."
+msgstr "Der Server antwortet nicht. Der Upload geht weiter, sobald er antwortet."
+
+#: src/packages/PackagesPage.tsx
+msgid "The server goes on checking {file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why."
+msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, und fügt es der Bibliothek hinzu, wenn er fertig ist. Lehnt er die Datei ab, sehen Sie nicht, warum."
+
+#: src/images/ImagesPage.tsx
+msgid "The server goes on checking {file} after you leave and adds its images to the library when it finishes. If it refuses the file, you do not see why."
+msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, und fügt ihre Images der Bibliothek hinzu, wenn er fertig ist. Lehnt er die Datei ab, sehen Sie nicht, warum."
+
+#: src/packages/packages.ts
+msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
+msgstr "Der Server lehnt ab, solange einem Gerät eine Tasksequenz zugewiesen ist oder es eine ausführt, die es verwendet."
 
 #: src/auth/SignInPage.tsx
 msgid "The sign-in at the identity provider did not finish. Try again."
@@ -1502,6 +1913,14 @@ msgstr "Der Schritt ist ohne Angabe eines Grundes fehlgeschlagen."
 #: src/machines/AssignDialog.tsx
 msgid "The task sequence list could not be loaded."
 msgstr "Die Liste der Tasksequenzen konnte nicht geladen werden."
+
+#: src/uploads/UploadPanel.tsx
+msgid "The upload failed."
+msgstr "Der Upload ist fehlgeschlagen."
+
+#: src/uploads/UploadPanel.tsx
+msgid "The upload of {name} stopped. Choose the file again to resume."
+msgstr "Der Upload von {name} wurde gestoppt. Wählen Sie die Datei erneut, um fortzusetzen."
 
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
@@ -1526,6 +1945,14 @@ msgstr "Damit wird das Gerät auch autorisiert; es führt dann die Tasksequenz a
 #: src/runs/RunPanel.tsx
 msgid "This deployment ran before task sequences, so it has no steps to show."
 msgstr "Diese Bereitstellung lief vor den Tasksequenzen und hat daher keine Schritte."
+
+#: src/images/images.ts
+msgid "This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
+msgstr "Dieses Image startet mit aktiviertem Secure Boot möglicherweise nicht, da DDT nicht feststellen konnte, ob es dafür signiert ist. Deaktivieren Sie Secure Boot im Firmware-Setup des Geräts oder registrieren Sie Ihren eigenen Schlüssel."
+
+#: src/images/images.ts
+msgid "This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
+msgstr "Dieses Image startet nicht mit aktiviertem Secure Boot. Deaktivieren Sie Secure Boot im Firmware-Setup des Geräts oder registrieren Sie Ihren eigenen Schlüssel."
 
 #: src/machines/AssignDialog.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."
@@ -1583,6 +2010,18 @@ msgstr "Erneut versuchen"
 msgid "Type {typedWord} to go on"
 msgstr "Geben Sie {typedWord} ein, um fortzufahren"
 
+#: src/uploads/UploadPanel.tsx
+msgid "Unfinished uploads"
+msgstr "Unvollständige Uploads"
+
+#: src/images/images.ts
+msgid "Unknown"
+msgstr "Unbekannt"
+
+#: src/images/ImagesPage.tsx
+msgid "Unknown file"
+msgstr "Unbekannte Datei"
+
 #: src/machines/machineView.ts
 msgid "Unknown model"
 msgstr "Unbekanntes Modell"
@@ -1590,6 +2029,31 @@ msgstr "Unbekanntes Modell"
 #: src/machines/AssignDialog.tsx
 msgid "Up to 15 letters A to Z, digits and hyphens."
 msgstr "Bis zu 15 Buchstaben A bis Z, Ziffern und Bindestriche."
+
+#: src/uploads/UploadPanel.tsx
+msgid "Upload"
+msgstr "Upload"
+
+#: src/images/ImagesPage.tsx
+msgid "Upload a WIM file to add its Windows images, or a disk image such as a Linux cloud image. A task sequence then applies or writes one."
+msgstr "Laden Sie eine WIM-Datei hoch, um ihre Windows-Images hinzuzufügen, oder ein Datenträgerimage wie ein Linux-Cloud-Image. Eine Tasksequenz wendet es dann an oder schreibt es."
+
+#: src/packages/PackagesPage.tsx
+msgid "Upload a zip of drivers and choose the models it is for. A task sequence with an Inject drivers step then adds them to those machines."
+msgstr "Laden Sie eine ZIP-Datei mit Treibern hoch und wählen Sie die Modelle, für die sie ist. Eine Tasksequenz mit einem Schritt „Treiber einbinden“ fügt sie dann diesen Geräten hinzu."
+
+#: src/packages/PackagesPage.tsx
+msgid "Upload a zip of files, then choose it in a Run script step of a task sequence."
+msgstr "Laden Sie eine ZIP-Datei mit Dateien hoch und wählen Sie sie dann in einem Schritt „Skript ausführen“ einer Tasksequenz."
+
+#: src/images/ImagesPage.tsx
+#: src/packages/PackagesPage.tsx
+msgid "Uploaded"
+msgstr "Hochgeladen"
+
+#: src/uploads/UploadPanel.tsx
+msgid "Uploading {file}"
+msgstr "{file} wird hochgeladen"
 
 #: src/auth/SignInPage.tsx
 msgid "Use a recovery code"
@@ -1599,6 +2063,10 @@ msgstr "Wiederherstellungscode verwenden"
 msgid "Use an authenticator code"
 msgstr "Code der Authenticator-App verwenden"
 
+#: src/packages/PackagesPage.tsx
+msgid "Used by"
+msgstr "Verwendet von"
+
 #: src/auth/SignInPage.tsx
 msgid "User name"
 msgstr "Benutzername"
@@ -1606,6 +2074,10 @@ msgstr "Benutzername"
 #: src/app/navigation.ts
 msgid "Users and roles"
 msgstr "Benutzer und Rollen"
+
+#: src/images/ImagesPage.tsx
+msgid "Version"
+msgstr "Version"
 
 #: src/about/AboutPage.tsx
 msgid "Version {version}"
@@ -1635,6 +2107,10 @@ msgstr "Welche Zeilen"
 msgid "Which machines the rule is for"
 msgstr "Für welche Geräte die Regel gilt"
 
+#: src/packages/packages.ts
+msgid "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
+msgstr "Welche Tasksequenzen es nennen, ist nicht bekannt, weil nicht jede Tasksequenz gelesen werden konnte; diese zeigen ein Problem, bis ein anderes Paket gewählt ist."
+
 #: src/log/LogPanel.tsx
 msgid "Whole machine"
 msgstr "Ganzes Gerät"
@@ -1642,6 +2118,10 @@ msgstr "Ganzes Gerät"
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
+
+#: src/images/images.ts
+msgid "Windows image"
+msgstr "Windows-Image"
 
 #: src/sequences/steps.ts
 msgid "Windows PE"

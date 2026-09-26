@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet } from "@/lib/api";
@@ -77,18 +78,18 @@ export function isDeployable(image: ImageSummary): boolean {
 }
 
 export function kindLabel(kind: ImageKind): string {
-  return kind === "RawDisk" ? "Raw disk image" : "Windows image";
+  return kind === "RawDisk" ? t`Raw disk image` : t`Windows image`;
 }
 
 // What the Secure Boot column says of a raw disk image; null for a Windows image, whose boot files Microsoft signs.
 export function bootCapabilityLabel(image: ImageSummary): string | null {
   switch (image.kind === "RawDisk" ? image.bootCapability : null) {
     case "SecureBootOk":
-      return "Signed";
+      return t`Signed`;
     case "NotSigned":
-      return "Not signed";
+      return t`Not signed`;
     case "Unknown":
-      return "Unknown";
+      return t`Unknown`;
     case null:
       return null;
   }
@@ -100,12 +101,9 @@ export function secureBootWarning(image: ImageSummary): string | null {
     return null;
   }
 
-  const why =
-    image.bootCapability === "NotSigned"
-      ? "This image will not start with Secure Boot on."
-      : "This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it.";
-
-  return `${why} Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
+  return image.bootCapability === "NotSigned"
+    ? t`This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`
+    : t`This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
 }
 
 export function deleteImage(id: string): Promise<void> {

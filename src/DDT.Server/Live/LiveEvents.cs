@@ -35,4 +35,8 @@ public static class LiveEvents
 
     // Carries the AuditEntry rows one save added, oldest first, only to the connections of administrators.
     public const string AuditAppended = "auditAppended";
+
+    // Carries an ApiTokenView whenever a token is created, used or revoked, to administrators and to its owner. A
+    // connection in both groups may receive it twice, which an upsert by id does not notice.
+    public const string TokenChanged = "tokenChanged";
 }

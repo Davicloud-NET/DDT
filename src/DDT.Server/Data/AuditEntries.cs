@@ -27,7 +27,8 @@ public static class AuditEntries
 
     // A technician who signs in at a machine is recorded with both ids, and it is the person who acted.
     private static AuditActorKind KindOf(AuditEvent audit) =>
-        audit.ActorUserId is not null ? AuditActorKind.User
+        audit.ActorTokenId is not null ? AuditActorKind.Token
+        : audit.ActorUserId is not null ? AuditActorKind.User
         : audit.ActorMachineId is not null ? AuditActorKind.Machine
         : AuditActorKind.System;
 }

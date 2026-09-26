@@ -10,6 +10,7 @@ using DDT.Server.Machines;
 using DDT.Server.Packages;
 using DDT.Server.Rules;
 using DDT.Server.Sequences;
+using DDT.Server.Tokens;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -44,6 +45,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
     public DbSet<AssignmentRule> AssignmentRules => Set<AssignmentRule>();
+
+    public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -217,6 +220,24 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             // A sequence that rules choose cannot be deleted, so no rule is left pointing nowhere.
             rule.HasOne<TaskSequence>().WithMany().HasForeignKey(r => r.TaskSequenceId).OnDelete(DeleteBehavior.Restrict);
             rule.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<ApiToken>(token =>
+        {
+            token.Property(t => t.Name).HasMaxLength(ApiTokenLimits.MaxNameLength);
+            token.Property(t => t.Role).HasMaxLength(16);
+            token.Property(t => t.SecretHash).HasMaxLength(64);
+            token.Property(t => t.Hint).HasMaxLength(ApiTokenSecrets.HintLength);
+            token.Property(t => t.LastUsedAddress).HasMaxLength(64);
+            token.Property(t => t.RevokedByName).HasMaxLength(256);
+
+            // Every request that carries a token looks it up by the hash of what it sent.
+            token.HasIndex(t => t.SecretHash).IsUnique();
+            token.HasIndex(t => t.UserId);
+
+            // A token acts only for its user, so it goes with the account.
+            token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.RevokedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<AuditEvent>(audit =>

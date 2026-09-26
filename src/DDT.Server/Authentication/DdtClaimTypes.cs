@@ -10,4 +10,8 @@ public static class DdtClaimTypes
     public const string MachineActor = "machine";
     public const string TokenGeneration = "ddt:tokengen";
     public const string TokenPurpose = "ddt:tokenpurpose";
+
+    // On a user's principal authenticated by an API token: the token's id and name.
+    public const string ApiTokenId = "ddt:apitoken";
+    public const string ApiTokenName = "ddt:apitokenname";
 }

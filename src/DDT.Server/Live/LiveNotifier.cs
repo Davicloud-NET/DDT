@@ -6,6 +6,7 @@ using DDT.Contracts.Audit;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Tokens;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
@@ -127,6 +128,13 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.AuditAppended, entries);
     }
 
+    public void TokenChanged(ApiTokenView token)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+
+        _ = PushToGroupsAsync([LiveGroups.Administrators, LiveGroups.User(token.UserId)], LiveEvents.TokenChanged, token);
+    }
+
     public void SequenceChanged(SequenceChangedEvent change)
     {
         ArgumentNullException.ThrowIfNull(change);
@@ -161,11 +169,13 @@ public sealed partial class LiveNotifier(
         }
     }
 
-    private async Task PushToAdministratorsAsync(string liveEvent, object payload)
+    private Task PushToAdministratorsAsync(string liveEvent, object payload) => PushToGroupsAsync([LiveGroups.Administrators], liveEvent, payload);
+
+    private async Task PushToGroupsAsync(IReadOnlyList<string> groups, string liveEvent, object payload)
     {
         try
         {
-            await hub.Clients.Group(LiveGroups.Administrators).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
+            await hub.Clients.Groups(groups).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Authentication;
+using DDT.Server.Endpoints;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
@@ -24,6 +25,11 @@ public sealed class LiveHub : Hub
         if (Context.User?.IsInRole(DdtRoleNames.Administrator) == true)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Administrators, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+
+        if (Context.User is { } user && Principals.UserId(user) is { } userId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.User(userId), Context.ConnectionAborted).ConfigureAwait(false);
         }
 
         await base.OnConnectedAsync().ConfigureAwait(false);

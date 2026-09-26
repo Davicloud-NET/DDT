@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -22,10 +23,10 @@ public static class TwoFactorEndpoints
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        group.MapPost("/enroll", StartEnrollmentAsync);
-        group.MapPost("/enable", EnableAsync);
-        group.MapPost("/disable", DisableAsync);
-        group.MapPost("/recovery-codes", RegenerateRecoveryCodesAsync);
+        group.MapPost("/enroll", StartEnrollmentAsync).RequireSession();
+        group.MapPost("/enable", EnableAsync).RequireSession();
+        group.MapPost("/disable", DisableAsync).RequireSession();
+        group.MapPost("/recovery-codes", RegenerateRecoveryCodesAsync).RequireSession();
 
         return group;
     }

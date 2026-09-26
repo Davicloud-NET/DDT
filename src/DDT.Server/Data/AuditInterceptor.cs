@@ -4,8 +4,9 @@
 
 using System.Data.Common;
 using System.Runtime.CompilerServices;
-using DDT.Contracts.Audit;
+using DDT.Server.Endpoints;
 using DDT.Server.Live;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -13,9 +14,12 @@ namespace DDT.Server.Data;
 
 // Every audit row is written in the save of the change it records, so watching the saves finds every new row without a
 // call site having to remember it. The rows go to the administrators' live connections once they are stored: after the
-// save, or after the commit of a transaction the save ran in, and never when that transaction rolls back.
-public sealed class AuditInterceptor(LiveNotifier live) : ISaveChangesInterceptor, IDbTransactionInterceptor
+// save, or after the commit of a transaction the save ran in, and never when that transaction rolls back. A row whose
+// actor is the user of a request authenticated by an API token is marked with the token before it is stored.
+public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor httpContextAccessor) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
+    private const int MaxActorNameLength = 256;
+
     // The rows of a save in progress, and those saved in a transaction that has not committed yet, per context. A pooled
     // context serves one request at a time, and the table forgets a context that is gone.
     private readonly ConditionalWeakTable<DbContext, List<AuditEvent>> _saving = [];
@@ -108,11 +112,31 @@ public sealed class AuditInterceptor(LiveNotifier live) : ISaveChangesIntercepto
 
         if (added.Count > 0)
         {
+            NameTokenActor(added);
             _saving.AddOrUpdate(context, added);
         }
         else
         {
             _saving.Remove(context);
+        }
+    }
+
+    // Named as alice (token build-server), so the log reads right without a lookup, and the token's id kept beside it.
+    private void NameTokenActor(List<AuditEvent> added)
+    {
+        if (httpContextAccessor.HttpContext?.User is not { } user
+            || Principals.ApiTokenId(user) is not { } tokenId
+            || Principals.UserId(user) is not { } userId)
+        {
+            return;
+        }
+
+        string? name = StoredText.Bound(Principals.ActorName(user), MaxActorNameLength);
+
+        foreach (AuditEvent audit in added.Where(a => a.ActorUserId == userId && a.ActorTokenId is null))
+        {
+            audit.ActorTokenId = tokenId;
+            audit.ActorName = name;
         }
     }
 

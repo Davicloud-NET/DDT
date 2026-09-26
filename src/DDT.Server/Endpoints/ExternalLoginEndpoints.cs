@@ -4,6 +4,7 @@
 
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -25,7 +26,7 @@ public static class ExternalLoginEndpoints
 
         group.MapGet("/start", Start).AllowAnonymous();
         group.MapGet("/complete", CompleteAsync).AllowAnonymous();
-        group.MapPost("/link", LinkAsync);
+        group.MapPost("/link", LinkAsync).RequireSession();
 
         return group;
     }

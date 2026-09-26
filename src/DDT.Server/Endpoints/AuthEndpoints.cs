@@ -30,7 +30,7 @@ public static class AuthEndpoints
         group.MapPost("/login", LoginAsync).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.SignIn);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", GetCurrentUserAsync);
-        group.MapPost("/password", ChangePasswordAsync);
+        group.MapPost("/password", ChangePasswordAsync).RequireSession();
 
         return group;
     }

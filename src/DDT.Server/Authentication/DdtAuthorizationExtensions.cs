@@ -4,7 +4,6 @@
 
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Authentication;
@@ -17,19 +16,19 @@ public static class DdtAuthorizationExtensions
 
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .Build())
             .AddPolicy(DdtPolicies.Administrator, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator))
             .AddPolicy(DdtPolicies.Operator, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator))
             .AddPolicy(DdtPolicies.Viewer, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator, DdtRoleNames.Viewer))
             .AddPolicy(DdtPolicies.Machine, policy => policy

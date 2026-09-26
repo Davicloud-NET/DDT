@@ -22,7 +22,8 @@ public static class DataServiceCollectionExtensions
 
         string? postgres = configuration.GetConnectionString("ddtdb");
 
-        // Sees every save, to push the audit rows it added.
+        // Sees every save, to push the audit rows it added and to name an API token that acted.
+        services.AddHttpContextAccessor();
         services.AddSingleton<AuditInterceptor>();
 
         if (string.IsNullOrWhiteSpace(postgres))

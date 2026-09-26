@@ -33,4 +33,6 @@ public static class AuditActions
     public const string RuleCreated = "rule.created";
     public const string RuleChanged = "rule.changed";
     public const string RuleDeleted = "rule.deleted";
+    public const string TokenCreated = "token.created";
+    public const string TokenRevoked = "token.revoked";
 }

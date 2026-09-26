@@ -75,6 +75,17 @@ public static class DdtAuthenticationExtensions
         authentication.AddScheme<AuthenticationSchemeOptions, MachineAuthenticationHandler>(
             DdtAuthenticationSchemes.Machine,
             configureOptions: null);
+        authentication.AddScheme<AuthenticationSchemeOptions, ApiTokenAuthenticationHandler>(
+            DdtAuthenticationSchemes.ApiToken,
+            configureOptions: null);
+
+        // Any bearer token goes to the API token scheme, which ignores a machine token, so a request that carries one is
+        // never taken for the browser session whose cookie it may also carry.
+        authentication.AddPolicyScheme(DdtAuthenticationSchemes.User, displayName: null, user =>
+            user.ForwardDefaultSelector = context =>
+                context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                    ? DdtAuthenticationSchemes.ApiToken
+                    : IdentityConstants.ApplicationScheme);
 
         services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, cookie =>
         {

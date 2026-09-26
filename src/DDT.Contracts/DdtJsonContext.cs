@@ -13,6 +13,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
+using DDT.Contracts.Tokens;
 
 namespace DDT.Contracts;
 
@@ -69,4 +70,8 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<HardwareModelCount>))]
 [JsonSerializable(typeof(AuditPage))]
 [JsonSerializable(typeof(AuditEntry[]))]
+[JsonSerializable(typeof(ApiTokenView))]
+[JsonSerializable(typeof(IReadOnlyList<ApiTokenView>))]
+[JsonSerializable(typeof(CreateApiTokenRequest))]
+[JsonSerializable(typeof(CreatedApiToken))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

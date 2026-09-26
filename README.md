@@ -307,6 +307,25 @@ carries the passkey table from the first migration so turning them on later need
 Roles are Administrator, Operator and Viewer. Endpoints deny by default: a new endpoint is closed
 until it explicitly opts out.
 
+### API tokens
+
+A script or another system calls the API with an API token, which a user makes for themselves with
+`POST /api/tokens`: a name, a role no higher than their own, and a lifetime of 1 to 365 days, 90 by
+default. The answer carries the secret, `ddt_` and 43 letters and digits, once; DDT keeps only its
+SHA-256. The prefix lets secret scanners recognise a token that leaked into a repository or a log.
+The token goes in every request as `Authorization: Bearer ddt_...`, and such a request needs no
+antiforgery token: it is authenticated by that header alone, never by a session cookie that rides
+along, and a page on another site cannot make a browser send the header.
+
+A token acts with the lower of its own role and its user's current highest role, so demoting a user
+demotes their tokens, and it stops working the moment it is revoked or expires, or its user is
+disabled or locked out. It cannot change its account: the password, two factor authentication,
+linking an external sign in and making tokens answer it with 403. `GET /api/tokens` lists a user's
+tokens with when and from where each was last used, recorded at most once a minute, and
+`GET /api/tokens/all` every user's, for administrators. `DELETE /api/tokens/{id}` revokes one, by its
+owner or an administrator, and keeps its row. What a token does is audited under its user's name and
+the token's, as `alice (token build-server)`.
+
 ### The first administrator
 
 A fresh deployment creates an `admin` account and prints its password once, at warning level:

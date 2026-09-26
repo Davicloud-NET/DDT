@@ -4,8 +4,11 @@
 
 namespace DDT.Server.Data;
 
+// External accounts were created by single sign-on. Before M6.5 they were stored as Directory accounts, which
+// IdentityBootstrap corrects at start: a directory account always has a DirectoryObjectId, and they never do.
 public enum AccountSource
 {
     Local,
     Directory,
+    External,
 }

@@ -270,8 +270,10 @@ public static class AgentEndpoints
 
         string userName = account.UserName ?? request.UserName;
 
-        if (!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
-            && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
+        // A password an administrator was shown authorizes nothing until the account has set its own, here as on the web.
+        if ((!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
+                && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
+            || (await users.GetClaimsAsync(account).ConfigureAwait(false)).Any(claim => claim.Type == DdtClaimTypes.MustChangePassword))
         {
             AuthLog.MachineSignInNotPermitted(logger, userName, id, address);
 

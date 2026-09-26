@@ -307,6 +307,40 @@ carries the passkey table from the first migration so turning them on later need
 Roles are Administrator, Operator and Viewer. Endpoints deny by default: a new endpoint is closed
 until it explicitly opts out.
 
+### Users and roles
+
+Administrators manage the accounts on Administration > Users and roles, through `/api/users`. The
+page lists every account with its source (local, directory or single sign-on), its role and where
+the role comes from: an administrator set it, the account's directory or single sign-on groups
+decide it at each sign-in, or DDT gave it when single sign-on created the account and no
+administrator has changed it since. An account shows the highest role it holds, and a role set on
+the page is then the only one it has. A role that groups decide is not changed on the page: the
+request is refused with the place to change it instead, the groups or the group map.
+
+A new account is a local one. DDT makes up its password and shows it once; the account has to
+change it at its first sign-in, and until then it reaches nothing but its Account page and
+authorizes no machine, so only its owner knows the password it then uses. A password reset works
+the same way, and also ends a lockout. A reset of the second factor turns it off with a new key, for
+an account that lost its authenticator.
+
+Disabling an account changes its security stamp, which ends its sessions at their next check,
+within a minute, and closes its live connections at once. Taking a role away also closes them, and
+the page connects again with what the account holds now, because the live connection reads the
+account when it connects rather than trusting the cookie. Deleting a directory or single sign-on
+account only lasts until its next sign-in; disabling it is what keeps it out.
+
+DDT never leaves itself without an enabled administrator: disabling, deleting or demoting the last
+one is refused, and so is an administrator disabling, deleting or demoting their own account, or
+resetting their own password or second factor there, which the Account page does with the current
+password or code. Every change is written to the audit table (`user.created`, `user.changed` with
+each field and the role before and after, `user.disabled`, `user.enabled`, `user.deleted`,
+`user.password-reset` and `user.two-factor-reset`), and reaches the pages of the other
+administrators as it happens, as does every sign-in.
+
+Single sign-on accounts were stored as directory accounts before M6.5. DDT tells them apart at
+start, since a directory account always carries the directory's identifier, so that a password
+typed for one no longer goes to the directory.
+
 ### The first administrator
 
 A fresh deployment creates an `admin` account and prints its password once, at warning level:
@@ -1513,7 +1547,7 @@ is being checked does not receive it.
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
 operator is written to the audit table with the actor and source address, and so is every run that
 is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
-sequence, package or rule. Waiting machines removed after a day unseen are only counted in the
+sequence, package, rule or account. Waiting machines removed after a day unseen are only counted in the
 server log. Since anyone can register, approve on the page only a machine you can tie to a real PC,
 by its address or by someone signing in at it.
 

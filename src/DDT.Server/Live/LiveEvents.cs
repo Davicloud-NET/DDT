@@ -28,4 +28,10 @@ public static class LiveEvents
 
     // Carries a MachineLogAppendedEvent, only to the connections that watch the machine.
     public const string MachineLogAppended = "machineLogAppended";
+
+    // Carries a UserView, only to administrators: an account was created or changed, or signed in.
+    public const string UserChanged = "userChanged";
+
+    // Carries a UsersRemovedEvent, only to administrators.
+    public const string UsersRemoved = "usersRemoved";
 }

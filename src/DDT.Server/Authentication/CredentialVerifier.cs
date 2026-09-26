@@ -31,8 +31,9 @@ public sealed class CredentialVerifier(
             return await directory.AuthenticateAsync(userName, password, cancellationToken).ConfigureAwait(false);
         }
 
-        // An unknown user and a wrong password must be indistinguishable in both body and timing.
-        if (user is null)
+        // An unknown user and a wrong password must be indistinguishable in both body and timing. An account of single
+        // sign-on has no password to check, and a guess must not lock it out.
+        if (user is null or { Source: AccountSource.External })
         {
             _ = userManager.PasswordHasher.HashPassword(new DdtUser { UserName = userName }, password);
 

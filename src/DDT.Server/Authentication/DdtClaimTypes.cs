@@ -10,4 +10,8 @@ public static class DdtClaimTypes
     public const string MachineActor = "machine";
     public const string TokenGeneration = "ddt:tokengen";
     public const string TokenPurpose = "ddt:tokenpurpose";
+
+    // Kept as a claim of the account, so that it travels in the cookie and the policies can refuse on it without a
+    // query. Its value is not read.
+    public const string MustChangePassword = "ddt:mustchangepassword";
 }

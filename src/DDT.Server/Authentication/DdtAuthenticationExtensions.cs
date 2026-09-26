@@ -7,6 +7,7 @@ using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -38,6 +39,8 @@ public static class DdtAuthenticationExtensions
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
         services.AddScoped<DirectorySignInService>();
         services.AddScoped<CredentialVerifier>();
+        services.AddScoped<UserViews>();
+        services.AddScoped<UserActivity>();
 
         // The key ring can mint an administrator cookie and every machine token, so it has to
         // survive restarts and it has to live on the store volume, not in the read only layer.

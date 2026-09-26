@@ -4,6 +4,7 @@
 
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -41,9 +42,11 @@ public static class ExternalLoginEndpoints
     private static async Task<RedirectHttpResult> CompleteAsync(
         SignInManager<DdtUser> signInManager,
         UserManager<DdtUser> userManager,
+        UserActivity activity,
         IOptions<OidcOptions> options,
         TimeProvider time,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
     {
         ExternalLoginInfo? info = await signInManager.GetExternalLoginInfoAsync().ConfigureAwait(false);
 
@@ -52,8 +55,10 @@ public static class ExternalLoginEndpoints
             return TypedResults.Redirect("/sign-in?error=external");
         }
 
+        DdtUser? existing = await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey).ConfigureAwait(false);
+
         // Identity does not know DDT's disabled flag, so this checks it as the password sign-in does.
-        if (await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey).ConfigureAwait(false) is { IsDisabled: true })
+        if (existing is { IsDisabled: true })
         {
             return TypedResults.Redirect("/sign-in?error=not-allowed");
         }
@@ -64,6 +69,11 @@ public static class ExternalLoginEndpoints
 
         if (result.Succeeded)
         {
+            if (existing is not null)
+            {
+                await activity.SignedInAsync(existing, cancellationToken).ConfigureAwait(false);
+            }
+
             return TypedResults.Redirect("/");
         }
 
@@ -97,7 +107,7 @@ public static class ExternalLoginEndpoints
             UserName = info.Principal.Identity?.Name ?? info.ProviderKey,
             Email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value,
             DisplayName = info.Principal.Identity?.Name,
-            Source = AccountSource.Directory,
+            Source = AccountSource.External,
             CreatedUtc = time.GetUtcNow(),
         };
 
@@ -117,6 +127,7 @@ public static class ExternalLoginEndpoints
         }
 
         await signInManager.SignInAsync(user, isPersistent: false).ConfigureAwait(false);
+        await activity.SignedInAsync(user, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Redirect("/");
     }

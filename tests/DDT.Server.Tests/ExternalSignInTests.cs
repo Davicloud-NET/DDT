@@ -6,10 +6,12 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -35,6 +37,40 @@ public sealed class ExternalSignInTests(ExternalSignInApplication application) :
         DdtUser? user = await users.FindByLoginAsync(OidcOptions.SchemeName, subject);
         Assert.Equal(FakeOidcHandler.UserNameOf(subject), user?.UserName);
         Assert.Equal([DdtRoleNames.Operator], await users.GetRolesAsync(user!));
+    }
+
+    // DDT gave the role, until an administrator chooses one.
+    [Fact]
+    public async Task AProvisionedAccountIsExternalAndSaysItsRoleWasGiven()
+    {
+        string subject = Guid.NewGuid().ToString("N");
+        CookieContainer cookies = new();
+        using HttpClient client = application.CreateDefaultClient(new CookieContainerHandler(cookies));
+        using HttpResponseMessage completed = await SignInAsync(client, subject);
+        SignedInClient administrator = await application.AdministratorAsync();
+        Guid id = await application.QueryAsync(database => database.Users
+            .Where(u => u.UserName == FakeOidcHandler.UserNameOf(subject))
+            .Select(u => u.Id)
+            .SingleAsync(TestContext.Current.CancellationToken));
+
+        UserView provisioned = await administrator.UserAsync(id);
+
+        Assert.Equal(UserSource.External, provisioned.Source);
+        Assert.Equal(DdtRoleNames.Operator, provisioned.Role);
+        Assert.Equal(RoleSource.Provisioned, provisioned.RoleFrom);
+        Assert.Equal("Single sign on", provisioned.ExternalProvider);
+        Assert.False(provisioned.HasPassword);
+        Assert.NotNull(provisioned.LastSignInUtc);
+
+        UserView chosen = await RegisteredMachine.ReadAsync<UserView>(
+            await administrator.PatchAsync($"{UserRequests.UsersApi}/{id}", new UpdateUserRequest(null, null, DdtRoleNames.Viewer)));
+
+        Assert.Equal(RoleSource.Manual, chosen.RoleFrom);
+        Assert.Equal(
+            "This account signs in through single sign-on and has no password in DDT.",
+            await TestDatabase.TitleAsync(await administrator.PostAsync($"{UserRequests.UsersApi}/{id}/reset-password")) is { } title
+                ? title.Replace(FakeOidcHandler.UserNameOf(subject) + " signs in", "This account signs in", StringComparison.Ordinal)
+                : null);
     }
 
     // The identity's own account stops at its second factor, and the sign-in page asks for the code as after a password.

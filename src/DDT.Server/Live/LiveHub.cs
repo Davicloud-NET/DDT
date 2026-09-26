@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Authentication;
+using DDT.Server.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
@@ -10,23 +12,45 @@ namespace DDT.Server.Live;
 // Server to client: clients receive small change events and patch or refetch their queries. A page that shows one
 // machine watches it, to receive also what only it needs, such as new log lines and step changes. Groups do not
 // survive a reconnect, so a client watches again after one.
-public sealed class LiveHub : Hub
+public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, LiveConnections connections) : Hub
 {
     // A connection is one browser tab, which shows a machine or a few.
     public const int MaxWatchedMachines = 16;
 
     private const string WatchedKey = "ddt.watched";
 
-    // Administrators also receive what only they may read, such as the audit log. A role changed while the
-    // connection is open takes effect at its next connect, which a sign-out or a new session forces anyway.
+    // The cookie carries the roles and the security stamp of its last check, up to a minute old, so the account is read
+    // as it is now: one disabled, deleted or signed out everywhere since then gets no connection, and administrators,
+    // who also receive what only they may read, are told apart by the roles they hold now. A role changed while the
+    // connection is open takes effect when it connects again, which the Users API forces by closing it.
     public override async Task OnConnectedAsync()
     {
-        if (Context.User?.IsInRole(DdtRoleNames.Administrator) == true)
+        DdtUser? user = Context.User is { } principal
+            ? await signInManager.ValidateSecurityStampAsync(principal).ConfigureAwait(false)
+            : null;
+
+        if (user is null || user.IsDisabled)
+        {
+            Context.Abort();
+
+            return;
+        }
+
+        connections.Opened(user.Id, Context);
+
+        if (await userManager.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Administrators, Context.ConnectionAborted).ConfigureAwait(false);
         }
 
         await base.OnConnectedAsync().ConfigureAwait(false);
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        connections.Closed(Context.ConnectionId);
+
+        return base.OnDisconnectedAsync(exception);
     }
 
     public async Task WatchMachine(Guid machineId)

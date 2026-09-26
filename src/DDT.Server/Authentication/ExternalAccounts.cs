@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Data;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Authentication;
@@ -30,6 +31,12 @@ public static class ExternalAccounts
         if (result.Succeeded)
         {
             result = await users.AddToRoleAsync(user, role).ConfigureAwait(false);
+        }
+
+        // The Users page tells a role DDT gave from one an administrator chose.
+        if (result.Succeeded)
+        {
+            result = await users.SetAuthenticationTokenAsync(user, UserViews.MarkerProvider, UserViews.ProvisionedMarker, "true").ConfigureAwait(false);
         }
 
         if (!result.Succeeded)

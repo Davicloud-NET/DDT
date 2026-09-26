@@ -12,6 +12,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
+using DDT.Contracts.Users;
 
 namespace DDT.Contracts;
 
@@ -64,4 +65,11 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(SaveAssignmentRuleRequest))]
 [JsonSerializable(typeof(MachineSequenceResolution))]
 [JsonSerializable(typeof(IReadOnlyList<HardwareModelCount>))]
+[JsonSerializable(typeof(UserView))]
+[JsonSerializable(typeof(IReadOnlyList<UserView>))]
+[JsonSerializable(typeof(CreateUserRequest))]
+[JsonSerializable(typeof(UpdateUserRequest))]
+[JsonSerializable(typeof(CreatedUser))]
+[JsonSerializable(typeof(OneTimePassword))]
+[JsonSerializable(typeof(UsersRemovedEvent))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

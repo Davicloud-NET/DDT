@@ -4,8 +4,11 @@
 
 namespace DDT.Server.Live;
 
-// A connection that watches a machine joins its group and receives the events only watchers need.
+// A connection that watches a machine joins its group and receives the events only watchers need. The connections of
+// administrators join one more group for the events only they may receive.
 public static class LiveGroups
 {
+    public const string Administrators = "administrators";
+
     public static string Machine(Guid machineId) => $"machine:{machineId:D}";
 }

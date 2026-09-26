@@ -8,7 +8,7 @@ public static class LiveEvents
 {
     public const string MachineChanged = "machineChanged";
 
-    // Carries nothing: clients load the list again, which is simpler than naming every removed machine.
+    // Carries a MachinesRemovedEvent, so clients drop the machines from their lists without loading them again.
     public const string MachinesRemoved = "machinesRemoved";
 
     // Carries nothing either: clients load the image list again.

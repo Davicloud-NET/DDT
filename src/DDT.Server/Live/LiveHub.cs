@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Server.Authentication;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
@@ -15,6 +16,18 @@ public sealed class LiveHub : Hub
     public const int MaxWatchedMachines = 16;
 
     private const string WatchedKey = "ddt.watched";
+
+    // Administrators also receive what only they may read, such as the audit log. A role changed while the
+    // connection is open takes effect at its next connect, which a sign-out or a new session forces anyway.
+    public override async Task OnConnectedAsync()
+    {
+        if (Context.User?.IsInRole(DdtRoleNames.Administrator) == true)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Administrators, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+
+        await base.OnConnectedAsync().ConfigureAwait(false);
+    }
 
     public async Task WatchMachine(Guid machineId)
     {

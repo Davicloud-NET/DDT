@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { isActive, type DeploymentSummary } from "@/deployments/deployments";
@@ -38,6 +39,9 @@ export interface MachineSummary {
   // Which of Microsoft's third-party UEFI CAs, which sign Linux shims, the firmware trusts, as the server writes the
   // flags: "None", "Microsoft2011", "Microsoft2023" or "Microsoft2011, Microsoft2023"; null when unknown.
   trustedUefiCas: string | null;
+  // What kind of computer it is, from its SMBIOS chassis type, or Virtual from its maker and model. Unknown until
+  // an agent that reports the chassis registers it.
+  deviceKind: "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
 }
 
 // A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A
@@ -85,6 +89,19 @@ export function upsertMachine(queryClient: QueryClient, machine: MachineSummary)
 
     return [machine, ...others].sort(compareMachines);
   });
+}
+
+// The hub's machinesRemoved names the machines, so the list drops them without being read again.
+export interface MachinesRemoved {
+  machineIds: string[];
+}
+
+export function removeMachines(queryClient: QueryClient, machineIds: readonly string[]): void {
+  const removed = new Set(machineIds);
+
+  queryClient.setQueryData<MachineSummary[]>(machinesQuery.queryKey, (machines) =>
+    machines?.filter((machine) => !removed.has(machine.id)),
+  );
 }
 
 // With the sequence the page showed a rule choosing, the approval also runs it, and the server refuses when the
@@ -140,8 +157,9 @@ export function machineLabel(machine: MachineSummary): string {
   }
 
   const mac = formatMac(machine.primaryMac);
+  const model = machine.model;
 
-  return machine.model === null ? `the machine with MAC ${mac}` : `${machine.model} (${mac})`;
+  return model === null ? t`the machine with MAC ${mac}` : `${model} (${mac})`;
 }
 
 // The server's DeploymentLimits.WaitingAtPrompt, which decides whether an assignment authorizes a waiting

@@ -41,7 +41,7 @@ export function MenuItem({
   className,
   children,
   ...props
-}: Omit<AriaMenuItemProps, "className"> & { className?: string }) {
+}: Omit<AriaMenuItemProps, "className"> & { className?: string | undefined }) {
   return (
     <AriaMenuItem
       {...props}

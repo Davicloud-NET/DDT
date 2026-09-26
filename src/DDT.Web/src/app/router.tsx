@@ -13,6 +13,8 @@ import {
 import { AboutPage } from "@/about/AboutPage";
 import { currentUserQuery } from "@/auth/auth";
 import { SignInPage } from "@/auth/SignInPage";
+import { machinesSearch } from "@/machines/machineSearch";
+import { MachinesPage } from "@/machines/MachinesPage";
 
 import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
@@ -78,7 +80,8 @@ const homeRoute = createRoute({
 const machinesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines",
-  component: PendingPage,
+  validateSearch: machinesSearch,
+  component: MachinesPage,
 });
 const runHistoryRoute = createRoute({
   getParentRoute: () => shellRoute,

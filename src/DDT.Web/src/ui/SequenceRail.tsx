@@ -84,12 +84,15 @@ export function SequenceRail({
   steps,
   phases,
   size = "md",
+  showNames = true,
   describe,
   className,
 }: {
   steps: RailStep[];
   phases?: RailPhase[];
   size?: "md" | "lg";
+  // Without names, only the number and the short line show, for narrow places such as a panel.
+  showNames?: boolean;
   // Says a step in words for screen readers, such as "Step 2, Apply image, running, 62 percent".
   describe: (step: RailStep, index: number) => string;
   className?: string;
@@ -151,7 +154,7 @@ export function SequenceRail({
                   </span>
                 ) : null}
               </span>
-              {step.name ? (
+              {showNames && step.name ? (
                 <span
                   aria-hidden="true"
                   className={cx(

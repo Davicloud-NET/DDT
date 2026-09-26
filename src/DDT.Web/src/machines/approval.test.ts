@@ -32,6 +32,7 @@ const machine: MachineSummary = {
   deployment: null,
   secureBootEnabled: null,
   trustedUefiCas: null,
+  deviceKind: "Unknown",
 };
 
 const chosen: MachineSequenceResolution = {

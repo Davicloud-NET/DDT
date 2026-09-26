@@ -7,6 +7,123 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/machines/MachinesPage.tsx
+msgid "{activity}, last contact {contact}"
+msgstr "{activity}, last contact {contact}"
+
+#: src/machines/MachinesPage.tsx
+msgid "{by} signed in at the machine"
+msgstr "{by} signed in at the machine"
+
+#: src/machines/approval.ts
+#: src/machines/AssignDialog.tsx
+msgid "{count, plural, one {# problem} other {# problems}}"
+msgstr "{count, plural, one {# problem} other {# problems}}"
+
+#: src/machines/AssignDialog.tsx
+msgid "{count, plural, one {# warning} other {# warnings}}"
+msgstr "{count, plural, one {# warning} other {# warnings}}"
+
+#: src/lib/format.ts
+msgid "{count} bytes"
+msgstr "{count} bytes"
+
+#: src/lib/format.ts
+msgid "{hours} h {minutes} min"
+msgstr "{hours} h {minutes} min"
+
+#: src/machines/secureBoot.ts
+msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+msgstr "{image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+
+#: src/machines/secureBoot.ts
+msgid "{image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+msgstr "{image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+
+#: src/machines/secureBoot.ts
+msgid "{image} is signed under {cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup."
+msgstr "{image} is signed under {cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup."
+
+#: src/machines/secureBoot.ts
+msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+msgstr "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+
+#: src/machines/secureBoot.ts
+msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+msgstr "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+
+#: src/machines/machineView.ts
+msgid "{maker}, serial {serial}"
+msgstr "{maker}, serial {serial}"
+
+#: src/lib/format.ts
+msgid "{minutes} min {seconds} s"
+msgstr "{minutes} min {seconds} s"
+
+#: src/machines/AssignDialog.tsx
+msgid "{name} has {warnings}. It runs, but look at the sequence first."
+msgstr "{name} has {warnings}. It runs, but look at the sequence first."
+
+#: src/machines/AssignDialog.tsx
+msgid "{problems}, cannot run"
+msgstr "{problems}, cannot run"
+
+#: src/machines/approval.ts
+msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
+msgstr "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
+
+#: src/machines/approval.ts
+msgid "{rule} chooses {name}, which erases a disk, and the machine has more than one; sign in at it to choose the disk. Approving authorizes {label} without running anything."
+msgstr "{rule} chooses {name}, which erases a disk, and the machine has more than one; sign in at it to choose the disk. Approving authorizes {label} without running anything."
+
+#: src/machines/approval.ts
+msgid "{rule} chooses {name}, which joins the domain, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
+msgstr "{rule} chooses {name}, which joins the domain, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
+
+#: src/machines/approval.ts
+msgid "{rule} chooses {name}, which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
+msgstr "{rule} chooses {name}, which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
+
+#: src/lib/format.ts
+msgid "{seconds} s"
+msgstr "{seconds} s"
+
+#: src/machines/AssignDialog.tsx
+msgid "{sequenceName} does not erase the disk of {label}."
+msgstr "{sequenceName} does not erase the disk of {label}."
+
+#: src/machines/AssignDialog.tsx
+msgid "{sequenceName} erases all data on the disk of {label}."
+msgstr "{sequenceName} erases all data on the disk of {label}."
+
+#: src/machines/MachinePanel.tsx
+msgid "{signedInBy} signed in here"
+msgstr "{signedInBy} signed in here"
+
+#: src/machines/MachinesPage.tsx
+msgid "{step} {percent}%"
+msgstr "{step} {percent}%"
+
+#: src/machines/approval.ts
+msgid "a rule for its MAC address"
+msgstr "a rule for its MAC address"
+
+#: src/machines/approval.ts
+msgid "A rule for its MAC address"
+msgstr "A rule for its MAC address"
+
+#: src/machines/approval.ts
+msgid "a rule for its model"
+msgstr "a rule for its model"
+
+#: src/machines/approval.ts
+msgid "A rule for its model"
+msgstr "A rule for its model"
+
+#: src/machines/approval.ts
+msgid "a sequence"
+msgstr "a sequence"
+
 #: src/about/AboutPage.tsx
 #: src/app/Shell.tsx
 #: src/auth/SignInPage.tsx
@@ -25,11 +142,40 @@ msgstr "Account menu"
 msgid "Account menu for {name}"
 msgstr "Account menu for {name}"
 
+#: src/machines/MachinesPage.tsx
+msgid "Actions"
+msgstr "Actions"
+
+#: src/machines/MachineActions.tsx
+msgid "Actions for {label}"
+msgstr "Actions for {label}"
+
+#: src/machines/MachinePanel.tsx
+msgid "Address"
+msgstr "Address"
+
 #: src/app/navigation.ts
 msgid "Administration"
 msgstr "Administration"
 
+#: src/machines/AssignDialog.tsx
+msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
+msgstr "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
+
+#: src/machines/machineView.ts
+msgid "All"
+msgstr "All"
+
+#: src/machines/machineView.ts
+msgid "All {count} steps done"
+msgstr "All {count} steps done"
+
+#: src/machines/approval.ts
+msgid "All data on its disk is erased."
+msgstr "All data on its disk is erased."
+
 #: src/app/navigation.ts
+#: src/machines/MachinesPage.tsx
 msgid "All machines"
 msgstr "All machines"
 
@@ -44,6 +190,58 @@ msgstr "Appearance"
 #: src/app/navigation.ts
 msgid "Approval and zero touch"
 msgstr "Approval and zero touch"
+
+#: src/machines/MachineActions.tsx
+msgid "Approve"
+msgstr "Approve"
+
+#: src/machines/MachineActions.tsx
+msgid "Approve {label}?"
+msgstr "Approve {label}?"
+
+#: src/machines/approval.ts
+msgid "Approve and run {name}"
+msgstr "Approve and run {name}"
+
+#: src/machines/approval.ts
+msgid "Approve without a sequence"
+msgstr "Approve without a sequence"
+
+#: src/deployments/deployments.ts
+msgid "Approved by {by} with the sequence a rule chose"
+msgstr "Approved by {by} with the sequence a rule chose"
+
+#: src/deployments/deployments.ts
+msgid "Approved with the sequence a rule chose"
+msgstr "Approved with the sequence a rule chose"
+
+#: src/machines/approval.ts
+msgid "Approving {label} also runs {name} on it, which {ruleInside} chose."
+msgstr "Approving {label} also runs {name} on it, which {ruleInside} chose."
+
+#: src/machines/MachineActions.tsx
+msgid "Assign"
+msgstr "Assign"
+
+#: src/machines/MachineActions.tsx
+msgid "Assign a sequence"
+msgstr "Assign a sequence"
+
+#: src/machines/AssignDialog.tsx
+msgid "Assign a task sequence to {label}"
+msgstr "Assign a task sequence to {label}"
+
+#: src/machines/AssignDialog.tsx
+msgid "Assign sequence"
+msgstr "Assign sequence"
+
+#: src/deployments/deployments.ts
+msgid "Assigned"
+msgstr "Assigned"
+
+#: src/deployments/deployments.ts
+msgid "Assigned by {by}"
+msgstr "Assigned by {by}"
 
 #: src/app/navigation.ts
 msgid "Assignment rules"
@@ -69,15 +267,36 @@ msgstr "Boot"
 msgid "Boot image"
 msgstr "Boot image"
 
+#: src/machines/AssignDialog.tsx
 #: src/ui/Dialog.tsx
 msgid "Cancel"
 msgstr "Cancel"
+
+#: src/machines/MachineActions.tsx
+msgid "Cancel the assignment"
+msgstr "Cancel the assignment"
+
+#: src/deployments/deployments.ts
+msgid "Chosen at the machine"
+msgstr "Chosen at the machine"
+
+#: src/deployments/deployments.ts
+msgid "Chosen at the machine by {by}"
+msgstr "Chosen at the machine by {by}"
 
 #: src/ui/Dialog.tsx
 #: src/ui/Drawer.tsx
 #: src/ui/Toast.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/machines/MachinePanel.tsx
+msgid "Close the details"
+msgstr "Close the details"
+
+#: src/machines/AssignDialog.tsx
+msgid "Computer name"
+msgstr "Computer name"
 
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
@@ -86,6 +305,10 @@ msgstr "Confirm it is you"
 #: src/auth/SignInPage.tsx
 msgid "Could not reach the server."
 msgstr "Could not reach the server."
+
+#: src/machines/MachinePanel.tsx
+msgid "Current run"
+msgstr "Current run"
 
 #: src/app/Shell.tsx
 msgid "Dark"
@@ -103,6 +326,10 @@ msgstr "DDT could not reach its server. Check that the server is running and tha
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 
+#: src/machines/machineView.ts
+msgid "Deploying"
+msgstr "Deploying"
+
 #: src/app/navigation.ts
 msgid "Deployment"
 msgstr "Deployment"
@@ -111,9 +338,27 @@ msgstr "Deployment"
 msgid "Deployment defaults"
 msgstr "Deployment defaults"
 
+#: src/machines/MachinePanel.tsx
+msgid "Disks"
+msgstr "Disks"
+
+#: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
+#: src/machines/machineView.ts
+msgid "Done"
+msgstr "Done"
+
 #: src/app/navigation.ts
 msgid "Drivers"
 msgstr "Drivers"
+
+#: src/machines/AssignDialog.tsx
+msgid "Enter a computer name. {name} gives this name to the machine in its cloud-init seed."
+msgstr "Enter a computer name. {name} gives this name to the machine in its cloud-init seed."
+
+#: src/machines/AssignDialog.tsx
+msgid "Enter a computer name. {name} joins the domain under this name."
+msgstr "Enter a computer name. {name} joins the domain under this name."
 
 #: src/auth/SignInPage.tsx
 msgid "Enter one of the recovery codes you saved."
@@ -123,13 +368,70 @@ msgstr "Enter one of the recovery codes you saved."
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr "Enter the six digits your authenticator app shows for DDT."
 
+#: src/machines/AssignDialog.tsx
+msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
+msgstr "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
+
+#: src/machines/MachinePanel.tsx
+#: src/machines/machineView.ts
+msgid "Failed"
+msgstr "Failed"
+
+#: src/machines/machineView.ts
+msgid "Failed at step {number} of {count}"
+msgstr "Failed at step {number} of {count}"
+
 #: src/app/navigation.ts
 msgid "Files"
 msgstr "Files"
 
+#: src/machines/MachinesPage.tsx
+msgid "Find a machine"
+msgstr "Find a machine"
+
+#: src/deployments/deployments.ts
+msgid "Finishing"
+msgstr "Finishing"
+
+#: src/deployments/deployments.ts
+msgid "Handing over to Windows"
+msgstr "Handing over to Windows"
+
+#: src/machines/AssignDialog.tsx
+msgid "It stays waiting until someone signs in at it or it netboots from a zero touch network."
+msgstr "It stays waiting until someone signs in at it or it netboots from a zero touch network."
+
+#: src/machines/AssignDialog.tsx
+msgid "It stays waiting until someone signs in at it."
+msgstr "It stays waiting until someone signs in at it."
+
+#: src/machines/approval.ts
+msgid "Its disk is not erased."
+msgstr "Its disk is not erased."
+
 #: src/app/Shell.tsx
 msgid "Language"
 msgstr "Language"
+
+#: src/machines/MachinePanel.tsx
+msgid "Last seen"
+msgstr "Last seen"
+
+#: src/machines/AssignDialog.tsx
+msgid "Last seen {when}; nobody has signed in at it."
+msgstr "Last seen {when}; nobody has signed in at it."
+
+#: src/machines/AssignDialog.tsx
+msgid "Last seen {when}; signed in by {by}."
+msgstr "Last seen {when}; signed in by {by}."
+
+#: src/machines/AssignDialog.tsx
+msgid "Last seen from {from} {when}; nobody has signed in at it."
+msgstr "Last seen from {from} {when}; nobody has signed in at it."
+
+#: src/machines/AssignDialog.tsx
+msgid "Last seen from {from} {when}; signed in by {by}."
+msgstr "Last seen from {from} {when}; signed in by {by}."
 
 #: src/ui/Controls.tsx
 msgid "Less"
@@ -151,13 +453,62 @@ msgstr "Licence texts of the software by others"
 msgid "Light"
 msgstr "Light"
 
+#: src/machines/MachinePanel.tsx
+msgid "MAC address"
+msgstr "MAC address"
+
+#: src/machines/MachinesPage.tsx
+msgid "Machine"
+msgstr "Machine"
+
 #: src/app/navigation.ts
+#: src/machines/MachinesPage.tsx
 msgid "Machines"
 msgstr "Machines"
+
+#: src/machines/MachinesPage.tsx
+msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
+msgstr "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
+
+#: src/machines/secureBoot.ts
+msgid "Microsoft's third-party UEFI CA"
+msgstr "Microsoft's third-party UEFI CA"
+
+#: src/machines/secureBoot.ts
+msgid "Microsoft's third-party UEFI CA {first}"
+msgstr "Microsoft's third-party UEFI CA {first}"
+
+#: src/machines/secureBoot.ts
+msgid "Microsoft's third-party UEFI CAs {first} and {second}"
+msgstr "Microsoft's third-party UEFI CAs {first} and {second}"
+
+#: src/machines/AssignDialog.tsx
+msgid "Model: {model}."
+msgstr "Model: {model}."
+
+#: src/machines/AssignDialog.tsx
+msgid "Model: {model}. Reported disks: {disks}."
+msgstr "Model: {model}. Reported disks: {disks}."
+
+#: src/machines/AssignDialog.tsx
+msgid "Model: {model}. The machine has not reported its disks."
+msgstr "Model: {model}. The machine has not reported its disks."
 
 #: src/ui/Controls.tsx
 msgid "More"
 msgstr "More"
+
+#: src/machines/MachineActions.tsx
+msgid "More for {label}"
+msgstr "More for {label}"
+
+#: src/machines/MachinesPage.tsx
+msgid "Name, MAC, serial or address"
+msgstr "Name, MAC, serial or address"
+
+#: src/machines/MachinesPage.tsx
+msgid "Needs your approval"
+msgstr "Needs your approval"
 
 #: src/app/navigation.ts
 msgid "Network boot"
@@ -171,6 +522,74 @@ msgstr "No account could be created for that identity. Ask an administrator."
 msgid "No DDT account is linked to that identity. Ask an administrator."
 msgstr "No DDT account is linked to that identity. Ask an administrator."
 
+#: src/machines/MachinesPage.tsx
+msgid "No machine matches"
+msgstr "No machine matches"
+
+#: src/machines/MachinesPage.tsx
+msgid "No machines yet"
+msgstr "No machines yet"
+
+#: src/machines/MachinesPage.tsx
+msgid "No sequence assigned"
+msgstr "No sequence assigned"
+
+#: src/machines/AssignDialog.tsx
+msgid "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
+msgstr "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
+
+#: src/machines/MachinesPage.tsx
+msgid "Nobody has signed in yet"
+msgstr "Nobody has signed in yet"
+
+#: src/machines/AssignDialog.tsx
+msgid "not reported"
+msgstr "not reported"
+
+#: src/machines/secureBoot.ts
+msgid "Not reported"
+msgstr "Not reported"
+
+#: src/machines/machineView.ts
+msgid "Not started, {count} steps"
+msgstr "Not started, {count} steps"
+
+#: src/machines/secureBoot.ts
+msgid "Off"
+msgstr "Off"
+
+#: src/machines/secureBoot.ts
+msgid "On"
+msgstr "On"
+
+#: src/machines/secureBoot.ts
+msgid "On, {note}"
+msgstr "On, {note}"
+
+#: src/machines/MachinePanel.tsx
+msgid "Open machine"
+msgstr "Open machine"
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
+msgstr "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine keeps the name {current}, which its cloud-init seed gets."
+msgstr "Optional. Left empty, the machine keeps the name {current}, which its cloud-init seed gets."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine keeps the name {current}."
+msgstr "Optional. Left empty, the machine keeps the name {current}."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Without a name, the image picks one."
+msgstr "Optional. Without a name, the image picks one."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Without a name, Windows picks one."
+msgstr "Optional. Without a name, Windows picks one."
+
 #: src/app/navigation.ts
 msgid "OS images"
 msgstr "OS images"
@@ -179,17 +598,69 @@ msgstr "OS images"
 msgid "Password"
 msgstr "Password"
 
+#: src/deployments/deployments.ts
+msgid "Preparing"
+msgstr "Preparing"
+
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (development)"
+
+#: src/machines/machineView.ts
+msgid "Ready"
+msgstr "Ready"
 
 #: src/auth/SignInPage.tsx
 msgid "Recovery code"
 msgstr "Recovery code"
 
+#: src/machines/MachinesPage.tsx
+msgid "Registered {registered}"
+msgstr "Registered {registered}"
+
+#: src/machines/MachineActions.tsx
+msgid "Reject"
+msgstr "Reject"
+
+#: src/machines/machineView.ts
+msgid "Rejected"
+msgstr "Rejected"
+
+#: src/machines/MachineActions.tsx
+msgid "Remove"
+msgstr "Remove"
+
+#: src/machines/MachineActions.tsx
+msgid "Remove all {count} waiting from {address}"
+msgstr "Remove all {count} waiting from {address}"
+
+#: src/deployments/deployments.ts
+msgid "Removing the agent from Windows"
+msgstr "Removing the agent from Windows"
+
+#: src/machines/AssignDialog.tsx
+msgid "Required, because {name} gives this name to the machine in its cloud-init seed."
+msgstr "Required, because {name} gives this name to the machine in its cloud-init seed."
+
+#: src/machines/AssignDialog.tsx
+msgid "Required, because {name} joins the domain under this name."
+msgstr "Required, because {name} joins the domain under this name."
+
+#: src/deployments/deployments.ts
+msgid "Restarting"
+msgstr "Restarting"
+
+#: src/machines/machineView.ts
+msgid "Retired"
+msgstr "Retired"
+
 #: src/app/navigation.ts
 msgid "Run history"
 msgstr "Run history"
+
+#: src/machines/MachinePanel.tsx
+msgid "Running for {duration}"
+msgstr "Running for {duration}"
 
 #: src/app/Shell.tsx
 msgid "Same as the system"
@@ -199,9 +670,49 @@ msgstr "Same as the system"
 msgid "Sections"
 msgstr "Sections"
 
+#: src/machines/MachinePanel.tsx
+msgid "Secure Boot"
+msgstr "Secure Boot"
+
+#: src/machines/secureBoot.ts
+msgid "Secure Boot off"
+msgstr "Secure Boot off"
+
+#: src/machines/secureBoot.ts
+msgid "Secure Boot on"
+msgstr "Secure Boot on"
+
+#: src/machines/secureBoot.ts
+msgid "Secure Boot on, {note}"
+msgstr "Secure Boot on, {note}"
+
+#: src/machines/MachinesPage.tsx
+msgid "Seen"
+msgstr "Seen"
+
+#: src/machines/MachinesPage.tsx
+msgid "Sequence"
+msgstr "Sequence"
+
+#: src/machines/MachinePanel.tsx
+msgid "Serial"
+msgstr "Serial"
+
+#: src/machines/machineView.ts
+msgid "Serial {serial}"
+msgstr "Serial {serial}"
+
 #: src/app/navigation.ts
 msgid "Server"
 msgstr "Server"
+
+#: src/machines/MachinesPage.tsx
+msgid "Show all machines"
+msgstr "Show all machines"
+
+#: src/machines/MachinesPage.tsx
+msgid "Show machines by state"
+msgstr "Show machines by state"
 
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
@@ -227,6 +738,104 @@ msgstr "Something went wrong while loading this page. Try again; if it keeps fai
 msgid "Source code"
 msgstr "Source code"
 
+#: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
+msgid "Starting"
+msgstr "Starting"
+
+#: src/machines/machineView.ts
+msgid "Starting, {count} steps"
+msgstr "Starting, {count} steps"
+
+#: src/machines/MachinesPage.tsx
+msgid "State"
+msgstr "State"
+
+#: src/machines/MachinesPage.tsx
+msgid "Step {number} failed"
+msgstr "Step {number} failed"
+
+#: src/deployments/deployments.ts
+msgid "step {number} of {count}"
+msgstr "step {number} of {count}"
+
+#: src/machines/MachinePanel.tsx
+msgid "Step {number} of {count}"
+msgstr "Step {number} of {count}"
+
+#: src/machines/machineView.ts
+msgid "Step {number} of {count} running, {percent} percent"
+msgstr "Step {number} of {count} running, {percent} percent"
+
+#: src/deployments/deployments.ts
+msgid "step {number} of {count}: {name}"
+msgstr "step {number} of {count}: {name}"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, {name}, done"
+msgstr "Step {number}, {name}, done"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, {name}, failed"
+msgstr "Step {number}, {name}, failed"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, {name}, not started"
+msgstr "Step {number}, {name}, not started"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, {name}, running, {percent} percent"
+msgstr "Step {number}, {name}, running, {percent} percent"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, {name}, skipped"
+msgstr "Step {number}, {name}, skipped"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, done"
+msgstr "Step {number}, done"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, failed"
+msgstr "Step {number}, failed"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, not started"
+msgstr "Step {number}, not started"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, running, {percent} percent"
+msgstr "Step {number}, running, {percent} percent"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, skipped"
+msgstr "Step {number}, skipped"
+
+#: src/machines/MachineActions.tsx
+msgid "Stop the run"
+msgstr "Stop the run"
+
+#: src/machines/MachineActions.tsx
+msgid "Stop the run on {label}?"
+msgstr "Stop the run on {label}?"
+
+#: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
+msgid "Stopped"
+msgstr "Stopped"
+
+#: src/machines/MachinesPage.tsx
+msgid "Stopped {when}"
+msgstr "Stopped {when}"
+
+#: src/machines/machineView.ts
+msgid "Stopped at step {number} of {count}"
+msgstr "Stopped at step {number} of {count}"
+
+#: src/machines/AssignDialog.tsx
+msgid "Task sequence"
+msgstr "Task sequence"
+
 #: src/app/navigation.ts
 msgid "Task sequences"
 msgstr "Task sequences"
@@ -243,6 +852,10 @@ msgstr "That user name or password is not correct."
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
 msgstr "The attribution notice, the warranty disclaimer and the additional terms"
 
+#: src/machines/AssignDialog.tsx
+msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
+msgstr "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
+
 #: src/about/AboutPage.tsx
 msgid "The GNU General Public License, version 3"
 msgstr "The GNU General Public License, version 3"
@@ -254,6 +867,18 @@ msgstr "The licences of the packages in this web interface"
 #: src/app/Shell.tsx
 msgid "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
 msgstr "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
+
+#: src/machines/MachinesPage.tsx
+msgid "The machine list could not be loaded."
+msgstr "The machine list could not be loaded."
+
+#: src/machines/AssignDialog.tsx
+msgid "The machine reported no disk DDT can install on, so the run will fail."
+msgstr "The machine reported no disk DDT can install on, so the run will fail."
+
+#: src/machines/machines.ts
+msgid "the machine with MAC {mac}"
+msgstr "the machine with MAC {mac}"
 
 #: src/app/RouteError.tsx
 msgid "The server does not answer"
@@ -267,6 +892,10 @@ msgstr "The sign-in at the identity provider did not finish. Try again."
 msgid "The software by others that DDT contains, and its licences"
 msgstr "The software by others that DDT contains, and its licences"
 
+#: src/machines/AssignDialog.tsx
+msgid "The task sequence list could not be loaded."
+msgstr "The task sequence list could not be loaded."
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
@@ -279,6 +908,18 @@ msgstr "This account is locked. Try again later or ask an administrator."
 msgid "This account may not sign in. Ask an administrator."
 msgstr "This account may not sign in. Ask an administrator."
 
+#: src/machines/AssignDialog.tsx
+msgid "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
+msgstr "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
+
+#: src/machines/AssignDialog.tsx
+msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
+msgstr "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
+
+#: src/machines/AssignDialog.tsx
+msgid "This machine has more than one disk. Sign in at it and choose the disk there."
+msgstr "This machine has more than one disk. Sign in at it and choose the disk there."
+
 #: src/app/RouteError.tsx
 msgid "This page could not load"
 msgstr "This page could not load"
@@ -287,6 +928,18 @@ msgstr "This page could not load"
 msgid "This page is being rebuilt on the new design system."
 msgstr "This page is being rebuilt on the new design system."
 
+#: src/machines/MachineActions.tsx
+msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
+msgstr "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
+
+#: src/machines/MachineActions.tsx
+msgid "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
+msgstr "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
+
+#: src/machines/MachinesPage.tsx
+msgid "Took {took}, finished {finished}"
+msgstr "Took {took}, finished {finished}"
+
 #: src/app/RouteError.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -294,6 +947,14 @@ msgstr "Try again"
 #: src/ui/Dialog.tsx
 msgid "Type {typedWord} to go on"
 msgstr "Type {typedWord} to go on"
+
+#: src/machines/machineView.ts
+msgid "Unknown model"
+msgstr "Unknown model"
+
+#: src/machines/AssignDialog.tsx
+msgid "Up to 15 letters A to Z, digits and hyphens."
+msgstr "Up to 15 letters A to Z, digits and hyphens."
 
 #: src/auth/SignInPage.tsx
 msgid "Use a recovery code"
@@ -314,3 +975,27 @@ msgstr "Users and roles"
 #: src/about/AboutPage.tsx
 msgid "Version {version}"
 msgstr "Version {version}"
+
+#: src/machines/machineView.ts
+msgid "Waiting"
+msgstr "Waiting"
+
+#: src/deployments/deployments.ts
+msgid "Waiting for Windows setup"
+msgstr "Waiting for Windows setup"
+
+#: src/machines/MachinePanel.tsx
+msgid "Waiting to start"
+msgstr "Waiting to start"
+
+#: src/machines/secureBoot.ts
+msgid "with {cas} only"
+msgstr "with {cas} only"
+
+#: src/machines/secureBoot.ts
+msgid "without Microsoft's third-party UEFI CA"
+msgstr "without Microsoft's third-party UEFI CA"
+
+#: src/machines/secureBoot.ts
+msgid "Write {image} anyway"
+msgstr "Write {image} anyway"

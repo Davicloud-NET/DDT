@@ -2,14 +2,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
+import { formattingLocale } from "@/i18n/i18n";
+
 const units = ["KB", "MB", "GB", "TB"] as const;
-const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+
+// Numbers follow the language chosen in DDT, not the browser's, so a German page writes 5,9 GB.
+function number(value: number): string {
+  return new Intl.NumberFormat(formattingLocale(), { maximumFractionDigits: 1 }).format(value);
+}
 
 // Binary multiples with the labels Windows shows, so a size here matches what Explorer and Disk
 // Management report for the same file or disk.
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) {
-    return `${number.format(bytes)} bytes`;
+    const count = number(bytes);
+
+    return t`${count} bytes`;
   }
 
   let value = bytes / 1024;
@@ -24,7 +34,7 @@ export function formatBytes(bytes: number): string {
     unit = next;
   }
 
-  return `${number.format(value)} ${unit}`;
+  return `${number(value)} ${unit}`;
 }
 
 export function formatDuration(milliseconds: number): string {
@@ -34,19 +44,20 @@ export function formatDuration(milliseconds: number): string {
   const seconds = total % 60;
 
   if (hours > 0) {
-    return `${String(hours)} h ${String(minutes)} min`;
+    return t`${hours} h ${minutes} min`;
   }
 
   if (minutes > 0) {
-    return `${String(minutes)} min ${String(seconds)} s`;
+    return t`${minutes} min ${seconds} s`;
   }
 
-  return `${String(seconds)} s`;
+  return t`${seconds} s`;
 }
 
-// "1 problem", "2 problems": for nouns that add an s.
+// "1 problem", "2 problems": for nouns that add an s. English only; messages that are translated use Lingui's
+// plural instead, and the modules still calling this move to it as their pages are rebuilt.
 export function plural(count: number, noun: string): string {
-  return `${number.format(count)} ${noun}${count === 1 ? "" : "s"}`;
+  return `${number(count)} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 // For a phrase that also appears inside sentences, such as "step 4 of 9", when it starts one.

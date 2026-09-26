@@ -188,6 +188,8 @@
   --text-display--line-height: 0.82;
   --text-title: 42px;
   --text-title--line-height: 0.95;
+  --text-subtitle: 28px;
+  --text-subtitle--line-height: 1;
   --text-heading: 20px;
   --text-heading--line-height: 1.2;
   --text-label: 15px;
@@ -239,6 +241,14 @@
   font-weight: 750;
   font-stretch: 70%;
   letter-spacing: -0.01em;
+}
+
+@utility type-subtitle {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 750;
+  font-stretch: 72%;
+  letter-spacing: -0.005em;
 }
 
 @utility type-heading {

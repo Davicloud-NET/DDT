@@ -11,6 +11,7 @@ const typeScale = [
   "wordmark",
   "display",
   "title",
+  "subtitle",
   "heading",
   "label",
   "body",

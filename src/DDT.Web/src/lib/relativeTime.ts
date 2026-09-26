@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+import { formattingLocale } from "@/i18n/i18n";
 
+// "5 minutes ago", "vor 5 Minuten": in the language chosen in DDT.
 export function relativeTime(iso: string, now: number): string {
+  const formatter = new Intl.RelativeTimeFormat(formattingLocale(), { numeric: "auto" });
   const seconds = Math.round((new Date(iso).getTime() - now) / 1000);
 
   if (Math.abs(seconds) < 60) {

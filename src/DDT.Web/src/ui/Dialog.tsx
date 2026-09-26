@@ -101,6 +101,8 @@ export interface ConfirmDialogProps {
   error?: ReactNode;
   // A word to type before the confirm key works, such as ERASE. The dialog then carries the hazard band.
   typedWord?: string;
+  // Keeps the confirm key off for a reason the dialog's content explains, such as an allowance not given yet.
+  isConfirmDisabled?: boolean;
 }
 
 // Asks before an action. The safe way out comes first and holds the focus, so Enter never confirms by accident;
@@ -116,9 +118,10 @@ export function ConfirmDialog({
   isBusy = false,
   error,
   typedWord,
+  isConfirmDisabled = false,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState("");
-  const ready = typedWord === undefined || typed === typedWord;
+  const ready = (typedWord === undefined || typed === typedWord) && !isConfirmDisabled;
 
   function openChange(open: boolean) {
     if (!open) {

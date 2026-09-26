@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceSummary } from "@/sequences/sequences";
 
@@ -30,32 +32,37 @@ export function secureBootRisk(
   if (capability === "SecureBootOk") {
     const signedUnder = sequence?.rawImageSignedUnder ?? null;
 
+    const cas = describeUefiCas(signedUnder);
+
     return machine.secureBootEnabled === true && untrusted(machine.trustedUefiCas, signedUnder)
       ? {
           required: true,
-          warning: `${image} is signed under ${describeUefiCas(signedUnder)}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup.`,
-          allowLabel: `Write ${image} anyway`,
+          warning: t`${image} is signed under ${cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup.`,
+          allowLabel: t`Write ${image} anyway`,
         }
       : null;
   }
 
-  const why =
-    capability === "NotSigned"
-      ? `${image} is not signed for Secure Boot`
-      : `${image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it`;
-  const allowLabel = `Write ${image} anyway`;
+  const allowLabel = t`Write ${image} anyway`;
+  const unsigned = capability === "NotSigned";
 
-  return machine.secureBootEnabled === true
-    ? {
-        required: true,
-        warning: `${why}, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.`,
-        allowLabel,
-      }
-    : {
-        required: false,
-        warning: `${why}. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.`,
-        allowLabel,
-      };
+  if (machine.secureBootEnabled === true) {
+    return {
+      required: true,
+      warning: unsigned
+        ? t`${image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.`
+        : t`${image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.`,
+      allowLabel,
+    };
+  }
+
+  return {
+    required: false,
+    warning: unsigned
+      ? t`${image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.`
+      : t`${image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.`,
+    allowLabel,
+  };
 }
 
 // The CAs a flags value names, as the server writes them, or null when unknown.
@@ -89,13 +96,15 @@ function untrusted(trusted: string | null, signedUnder: string | null): boolean 
 export function describeUefiCas(value: string | null): string {
   const years = [...(uefiCas(value) ?? [])].map((ca) => ca.replace("Microsoft", "")).sort();
 
+  const [first = "", second = ""] = years;
+
   switch (years.length) {
     case 1:
-      return `Microsoft's third-party UEFI CA ${years[0] ?? ""}`;
+      return t`Microsoft's third-party UEFI CA ${first}`;
     case 2:
-      return `Microsoft's third-party UEFI CAs ${years.join(" and ")}`;
+      return t`Microsoft's third-party UEFI CAs ${first} and ${second}`;
     default:
-      return "Microsoft's third-party UEFI CA";
+      return t`Microsoft's third-party UEFI CA`;
   }
 }
 
@@ -107,9 +116,9 @@ function trustNote(machine: MachineSummary): string | null {
     return null;
   }
 
-  return trusted.size === 0
-    ? "without Microsoft's third-party UEFI CA"
-    : `with ${describeUefiCas(machine.trustedUefiCas)} only`;
+  const cas = describeUefiCas(machine.trustedUefiCas);
+
+  return trusted.size === 0 ? t`without Microsoft's third-party UEFI CA` : t`with ${cas} only`;
 }
 
 // "On", "Off" or "Not reported", with what the firmware trusts, for the machine's page.
@@ -118,12 +127,12 @@ export function secureBootFact(machine: MachineSummary): string {
     case true: {
       const note = trustNote(machine);
 
-      return note === null ? "On" : `On, ${note}`;
+      return note === null ? t`On` : t`On, ${note}`;
     }
     case false:
-      return "Off";
+      return t`Off`;
     case null:
-      return "Not reported";
+      return t`Not reported`;
   }
 }
 
@@ -133,10 +142,10 @@ export function secureBootLabel(machine: MachineSummary): string | null {
     case true: {
       const note = trustNote(machine);
 
-      return note === null ? "Secure Boot on" : `Secure Boot on, ${note}`;
+      return note === null ? t`Secure Boot on` : t`Secure Boot on, ${note}`;
     }
     case false:
-      return "Secure Boot off";
+      return t`Secure Boot off`;
     case null:
       return null;
   }

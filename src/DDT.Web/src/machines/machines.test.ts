@@ -30,6 +30,7 @@ function machine(id: string, state: MachineSummary["state"], firstSeenUtc: strin
     deployment: null,
     secureBootEnabled: null,
     trustedUefiCas: null,
+    deviceKind: "Unknown",
   };
 }
 

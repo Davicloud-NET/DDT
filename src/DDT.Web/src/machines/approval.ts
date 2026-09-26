@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { plural, upperFirst } from "@/lib/format";
+import { plural, t } from "@lingui/core/macro";
+
 import { machineLabel, type MachineSummary } from "@/machines/machines";
 
 import { isRuleChoice, type MachineSequenceResolution } from "@/rules/rules";
@@ -33,52 +34,55 @@ export function approvalPlan(
   }
 
   const label = machineLabel(machine);
-  const name = resolution.sequenceName ?? "a sequence";
-  const rule =
-    resolution.source === "MacRule" ? "a rule for its MAC address" : "a rule for its model";
+  const name = resolution.sequenceName ?? t`a sequence`;
+  const byMac = resolution.source === "MacRule";
+  // The rule as the subject of a sentence, and inside one.
+  const rule = byMac ? t`A rule for its MAC address` : t`A rule for its model`;
+  const ruleInside = byMac ? t`a rule for its MAC address` : t`a rule for its model`;
   const sequence = sequences.find((candidate) => candidate.id === resolution.sequenceId);
 
-  const withoutRun = (why: string): ApprovalPlan => ({
+  const withoutRun = (consequence: string): ApprovalPlan => ({
     expectedSequenceId: null,
-    consequence: `${upperFirst(rule)} chooses ${name}, ${why}. Approving authorizes ${label} without running anything.`,
-    confirmLabel: "Approve without a sequence",
+    consequence,
+    confirmLabel: t`Approve without a sequence`,
     sequence: null,
   });
 
   if (resolution.problemCount > 0) {
+    const count = resolution.problemCount;
+    const problems = plural(count, { one: "# problem", other: "# problems" });
+
     return withoutRun(
-      `but it has ${plural(resolution.problemCount, "problem")} and cannot run until they are fixed`,
+      t`${rule} chooses ${name}, but it has ${problems} and cannot run until they are fixed. Approving authorizes ${label} without running anything.`,
     );
   }
 
   if (sequence?.erasesDisk === true && (machine.eligibleDiskCount ?? 0) > 1) {
     return withoutRun(
-      "which erases a disk, and the machine has more than one; sign in at it to choose the disk",
+      t`${rule} chooses ${name}, which erases a disk, and the machine has more than one; sign in at it to choose the disk. Approving authorizes ${label} without running anything.`,
     );
   }
 
   if (sequence?.needsComputerName === true && machine.assignedName === null) {
-    const use =
-      sequence.rawImageName === null
-        ? "joins the domain"
-        : "names the machine in its cloud-init seed";
-
     return withoutRun(
-      `which ${use}, and the machine has no name yet; assign the sequence with a computer name`,
+      sequence.rawImageName === null
+        ? t`${rule} chooses ${name}, which joins the domain, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes ${label} without running anything.`
+        : t`${rule} chooses ${name}, which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes ${label} without running anything.`,
     );
   }
 
+  const runs = t`Approving ${label} also runs ${name} on it, which ${ruleInside} chose.`;
   const effects =
     sequence === undefined
       ? ""
       : sequence.erasesDisk
-        ? " All data on its disk is erased."
-        : " Its disk is not erased.";
+        ? ` ${t`All data on its disk is erased.`}`
+        : ` ${t`Its disk is not erased.`}`;
 
   return {
     expectedSequenceId: resolution.sequenceId,
-    consequence: `Approving ${label} also runs ${name} on it, which ${rule} chose.${effects}`,
-    confirmLabel: `Approve and run ${name}`,
+    consequence: `${runs}${effects}`,
+    confirmLabel: t`Approve and run ${name}`,
     sequence: sequence ?? null,
   };
 }

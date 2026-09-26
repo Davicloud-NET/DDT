@@ -7,7 +7,13 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import type { DeploymentStepView } from "@/deployments/deployments";
 import { imagesQuery, uploadsQuery } from "@/images/images";
-import { machinesQuery, upsertMachine, type MachineSummary } from "@/machines/machines";
+import {
+  machinesQuery,
+  removeMachines,
+  upsertMachine,
+  type MachinesRemoved,
+  type MachineSummary,
+} from "@/machines/machines";
 import { packagesQuery } from "@/packages/packages";
 import { rulesQuery, sequenceResolutionsKey } from "@/rules/rules";
 import {
@@ -212,7 +218,9 @@ export function createLiveConnection(
       upsertMachine(queryClient, machine);
     });
 
-    current.on("machinesRemoved", refetchMachines);
+    current.on("machinesRemoved", (event: MachinesRemoved) => {
+      removeMachines(queryClient, event.machineIds);
+    });
 
     current.on("imagesChanged", () => {
       refetchImages();

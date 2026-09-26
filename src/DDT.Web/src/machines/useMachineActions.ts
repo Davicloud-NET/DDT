@@ -9,9 +9,11 @@ import { endDeployment } from "@/deployments/deployments";
 import { approvalPlan, type ApprovalPlan } from "@/machines/approval";
 import {
   approveMachine,
+  isStray,
   machinesQuery,
   rejectMachine,
   removeMachine,
+  removeMachines,
   removeWaitingFrom,
   upsertMachine,
   type MachineSummary,
@@ -98,10 +100,24 @@ export function useMachineActions() {
     },
   });
 
+  // The server answers a removal with no body, so the list drops the machines itself; the hub's machinesRemoved
+  // does the same for everyone else looking.
   const remove = useMutation({
     mutationFn: (target: { id: string } | { address: string }) =>
       "id" in target ? removeMachine(target.id) : removeWaitingFrom(target.address),
-    onSettled: refresh,
+    onSuccess: (_, target) => {
+      const machines = queryClient.getQueryData<MachineSummary[]>(machinesQuery.queryKey) ?? [];
+
+      removeMachines(
+        queryClient,
+        "id" in target
+          ? [target.id]
+          : machines
+              .filter((machine) => isStray(machine) && machine.firstSeenAddress === target.address)
+              .map((machine) => machine.id),
+      );
+    },
+    onError: refresh,
   });
 
   const cancel = useMutation({

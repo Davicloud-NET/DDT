@@ -156,6 +156,7 @@ function machine(id: string): MachineSummary {
     deployment: null,
     secureBootEnabled: null,
     trustedUefiCas: null,
+    deviceKind: "Unknown",
   };
 }
 
@@ -201,6 +202,22 @@ describe("createLiveConnection", () => {
     for (const queryKey of resynced) {
       expect(invalidate).toHaveBeenCalledWith({ queryKey });
     }
+  });
+
+  it("drops removed machines from the list without reading it again", async () => {
+    const { live, hub, queryClient } = connection();
+    queryClient.setQueryData(["machines"], [machine("m1"), machine("m2"), machine("m3")]);
+
+    live.start();
+    await settle();
+
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    hub().emit("machinesRemoved", { machineIds: ["m1", "m3"] });
+
+    expect(
+      queryClient.getQueryData<MachineSummary[]>(["machines"])?.map((listed) => listed.id),
+    ).toEqual(["m2"]);
+    expect(invalidate).not.toHaveBeenCalled();
   });
 
   it("refetches the sequences, the rules and what the rules choose when either changes", async () => {

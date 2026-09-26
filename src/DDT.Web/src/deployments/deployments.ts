@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
@@ -123,9 +124,11 @@ export function currentStepLabel(deployment: DeploymentSummary): string | null {
     return null;
   }
 
-  const position = `step ${String(deployment.stepIndex + 1)} of ${String(deployment.stepCount)}`;
+  const number = deployment.stepIndex + 1;
+  const count = deployment.stepCount;
+  const name = deployment.stepName;
 
-  return deployment.stepName === null ? position : `${position}: ${deployment.stepName}`;
+  return name === null ? t`step ${number} of ${count}` : t`step ${number} of ${count}: ${name}`;
 }
 
 // Who put the run on the machine, for a run that has not started.
@@ -134,13 +137,13 @@ export function assignedBy(deployment: DeploymentSummary): string {
 
   switch (deployment.source) {
     case "Web":
-      return by === null ? "Assigned" : `Assigned by ${by}`;
+      return by === null ? t`Assigned` : t`Assigned by ${by}`;
     case "Rule":
       return by === null
-        ? "Approved with the sequence a rule chose"
-        : `Approved by ${by} with the sequence a rule chose`;
+        ? t`Approved with the sequence a rule chose`
+        : t`Approved by ${by} with the sequence a rule chose`;
     case "Console":
-      return by === null ? "Chosen at the machine" : `Chosen at the machine by ${by}`;
+      return by === null ? t`Chosen at the machine` : t`Chosen at the machine by ${by}`;
   }
 }
 
@@ -148,17 +151,17 @@ export function assignedBy(deployment: DeploymentSummary): string {
 export function activityLabel(activity: RunActivity | null): string | null {
   switch (activity) {
     case "Preparing":
-      return "Preparing";
+      return t`Preparing`;
     case "HandingOver":
-      return "Handing over to Windows";
+      return t`Handing over to Windows`;
     case "Restarting":
-      return "Restarting";
+      return t`Restarting`;
     case "WaitingForWindowsSetup":
-      return "Waiting for Windows setup";
+      return t`Waiting for Windows setup`;
     case "Finishing":
-      return "Finishing";
+      return t`Finishing`;
     case "Removing":
-      return "Removing the agent from Windows";
+      return t`Removing the agent from Windows`;
     case "Step":
     case null:
       return null;

@@ -13,11 +13,9 @@ import {
   withCurrentRun,
   withStep,
 } from "@/deployments/deployments";
+import { liveListOptions, POLL_MS } from "@/live/freshness";
 import { useMachineWatch } from "@/live/useMachineWatch";
 import { machinesQuery } from "@/machines/machines";
-
-// Without the live connection the page reads again this often while a run is active.
-export const POLL_MS = 5_000;
 
 // One machine and the run its page shows: the pinned run, else the machine's current or latest run. Changes
 // arrive live: the machine list follows the machine and its current run, and step changes patch the run.
@@ -42,13 +40,7 @@ export function useRunDetail(machineId: string, pinnedRunId: string | null) {
 
   const polling = status !== "live";
 
-  const machines = useQuery({
-    ...machinesQuery,
-    refetchInterval: (query) =>
-      polling && isActive(query.state.data?.find((m) => m.id === machineId)?.deployment ?? null)
-        ? POLL_MS
-        : false,
-  });
+  const machines = useQuery({ ...machinesQuery, ...liveListOptions(status) });
   const machine = machines.data?.find((candidate) => candidate.id === machineId) ?? null;
   const current = machine?.deployment ?? null;
 

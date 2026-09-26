@@ -53,6 +53,7 @@ export function machineSummary(overrides: Partial<MachineSummary> = {}): Machine
     deployment: null,
     secureBootEnabled: null,
     trustedUefiCas: null,
+    deviceKind: "Unknown",
     ...overrides,
   };
 }

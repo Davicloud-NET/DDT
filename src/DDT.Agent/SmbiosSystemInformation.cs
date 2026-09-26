@@ -4,4 +4,6 @@
 
 namespace DDT.Agent;
 
-public sealed record SmbiosSystemInformation(Guid Uuid, string? Manufacturer, string? ProductName, string? SerialNumber);
+// ChassisType is the System Enclosure's chassis type as DMTF DSP0134 numbers it, without the lock bit, and null when the
+// table has no System Enclosure structure.
+public sealed record SmbiosSystemInformation(Guid Uuid, string? Manufacturer, string? ProductName, string? SerialNumber, byte? ChassisType);

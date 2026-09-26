@@ -50,6 +50,23 @@ public sealed class RegistrationValidatorTests
         Assert.Equal(32, normalised.AgentVersion.Length);
     }
 
+    // Whoever booted boot.wim can send anything, but a chassis type has seven bits.
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData(0, 0)]
+    [InlineData(10, 10)]
+    [InlineData(127, 127)]
+    [InlineData(128, null)]
+    [InlineData(-1, null)]
+    [InlineData(int.MaxValue, null)]
+    public void KeepsOnlyAChassisTypeSmbiosCanHold(int? sent, int? kept)
+    {
+        AgentRegistration registration = new(Guid.NewGuid().ToString(), "00155D010203", ["00155D010203"], null, null, null, "1", ChassisType: sent);
+
+        Assert.True(RegistrationValidator.TryNormalise(registration, out NormalisedRegistration? normalised, out _));
+        Assert.Equal(kept, normalised!.ChassisType);
+    }
+
     [Fact]
     public void DescribesOneDiskPerLine()
     {

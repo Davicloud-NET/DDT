@@ -150,6 +150,7 @@ public sealed partial class MachineRegistrar(
         machine.AgentEnvironment = registration.Environment;
         machine.SecureBootEnabled = registration.SecureBootEnabled;
         machine.TrustedUefiCas = registration.TrustedUefiCas;
+        machine.ChassisType = registration.ChassisType;
         machine.LastSeenUtc = now;
         machine.LastSeenAddress = address;
 

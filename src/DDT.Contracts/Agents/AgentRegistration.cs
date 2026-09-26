@@ -13,7 +13,9 @@ namespace DDT.Contracts.Agents;
 // before task sequences: an agent throws on a step kind it does not know, so the server hands it no newer run.
 // SecureBootEnabled is what the firmware says, null when the agent cannot tell or is older than raw disk images.
 // TrustedUefiCas says which of Microsoft's third-party UEFI CAs, which sign the shims of Linux distributions, the
-// firmware's db holds; null when the agent cannot read or parse db, or is older than this field.
+// firmware's db holds; null when the agent cannot read or parse db, or is older than this field. ChassisType is the
+// SMBIOS System Enclosure's chassis type without its lock bit, so the web can tell a laptop from a desktop; null when
+// the firmware lists no enclosure or the agent is older than this field.
 public sealed record AgentRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -28,4 +30,5 @@ public sealed record AgentRegistration(
     int SequenceVersion = 0,
     AgentEnvironment Environment = AgentEnvironment.WindowsPE,
     bool? SecureBootEnabled = null,
-    UefiCa? TrustedUefiCas = null);
+    UefiCa? TrustedUefiCas = null,
+    int? ChassisType = null);

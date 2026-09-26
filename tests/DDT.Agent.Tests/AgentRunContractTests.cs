@@ -49,10 +49,11 @@ public sealed class AgentRunContractTests
             SequenceVersion: SequenceDefinition.CurrentVersion,
             Environment: AgentEnvironment.Windows,
             SecureBootEnabled: true,
-            TrustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023);
+            TrustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023,
+            ChassisType: 10);
 
         Assert.EndsWith(
-            ""","runToken":"run-token","sequenceVersion":2,"environment":"Windows","secureBootEnabled":true,"trustedUefiCas":"Microsoft2011, Microsoft2023"}""",
+            ""","runToken":"run-token","sequenceVersion":2,"environment":"Windows","secureBootEnabled":true,"trustedUefiCas":"Microsoft2011, Microsoft2023","chassisType":10}""",
             JsonSerializer.Serialize(registration, AgentJsonContext.Default.AgentRegistration),
             StringComparison.Ordinal);
     }

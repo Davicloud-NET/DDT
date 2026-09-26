@@ -190,4 +190,17 @@ public sealed class AgentLoopTests : IDisposable
         Assert.Equal(expected.PrimaryMac, sent.PrimaryMac);
         Assert.Equal("1.0.0-test", sent.AgentVersion);
     }
+
+    [Fact]
+    public async Task ReportsTheChassisTypeWhenRegistering()
+    {
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Registered(MachineState.Rejected, token: null, resumeToken: null));
+
+        (AgentLoop loop, _) = Create(server, new SequenceIdentityReader(new DryRunMachineIdentityReader(1).Read() with { ChassisType = 10 }));
+
+        await loop.RunAsync(server.Stop.Token);
+
+        Assert.Equal(10, Assert.Single(server.Registrations).ChassisType);
+    }
 }

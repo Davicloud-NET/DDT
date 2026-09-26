@@ -14,10 +14,18 @@ public static class SmbiosParser
 {
     private const int RawHeaderLength = 8;
     private const byte SystemInformationType = 1;
+    private const byte SystemEnclosureType = 3;
     private const byte EndOfTableType = 127;
     private const int UuidOffset = 0x08;
     private const int UuidLength = 16;
+    private const int ChassisTypeOffset = 0x05;
 
+    // The top bit of the chassis type says whether the enclosure has a lock, which says nothing about its kind.
+    private const byte ChassisTypeMask = 0x7F;
+
+    // One pass reads the System Information structure and the chassis type of the System Enclosure structure, which
+    // firmware lists in either order. A structure that is not well formed ends the pass, because nothing after it can
+    // be found safely, but what was read before it is kept.
     public static SmbiosSystemInformation? TryReadSystemInformation(ReadOnlySpan<byte> raw)
     {
         if (raw.Length < RawHeaderLength)
@@ -30,16 +38,18 @@ public static class SmbiosParser
         int tableLength = (int)Math.Min(BinaryPrimitives.ReadUInt32LittleEndian(raw[4..]), (uint)(raw.Length - RawHeaderLength));
         ReadOnlySpan<byte> table = raw.Slice(RawHeaderLength, tableLength);
 
+        SmbiosSystemInformation? system = null;
+        byte? chassisType = null;
         int offset = 0;
 
-        while (offset + 4 <= table.Length)
+        while (offset + 4 <= table.Length && (system is null || chassisType is null))
         {
             byte type = table[offset];
             byte length = table[offset + 1];
 
             if (length < 4 || offset + length > table.Length)
             {
-                return null;
+                break;
             }
 
             ReadOnlySpan<byte> formatted = table.Slice(offset, length);
@@ -48,29 +58,33 @@ public static class SmbiosParser
 
             if (end < 0)
             {
-                return null;
+                break;
             }
 
-            if (type == SystemInformationType && length >= UuidOffset + UuidLength)
+            if (type == SystemInformationType && system is null && length >= UuidOffset + UuidLength)
             {
                 ReadOnlySpan<byte> strings = table[stringsStart..end];
 
-                return new SmbiosSystemInformation(
+                system = new SmbiosSystemInformation(
                     ReadUuid(formatted.Slice(UuidOffset, UuidLength), major, minor),
                     ReadString(strings, formatted[0x04]),
                     ReadString(strings, formatted[0x05]),
-                    ReadString(strings, formatted[0x07]));
+                    ReadString(strings, formatted[0x07]),
+                    null);
             }
-
-            if (type == EndOfTableType)
+            else if (type == SystemEnclosureType && chassisType is null && length > ChassisTypeOffset)
             {
-                return null;
+                chassisType = (byte)(formatted[ChassisTypeOffset] & ChassisTypeMask);
+            }
+            else if (type == EndOfTableType)
+            {
+                break;
             }
 
             offset = end;
         }
 
-        return null;
+        return system is null ? null : system with { ChassisType = chassisType };
     }
 
     // SMBIOS 2.6 fixed the encoding of the first three UUID fields as little endian, which is also how

@@ -18,6 +18,9 @@ public static class RegistrationValidator
     private const int MaxDiskModelLength = 64;
     private const int MaxBusTypeLength = 16;
 
+    // The agent drops the chassis type's lock bit, which leaves seven.
+    private const int MaxChassisType = 0x7F;
+
     // The column's length. PostgreSQL refuses a longer value, and the agent would resend it forever.
     internal const int MaxDisksLength = 512;
 
@@ -94,7 +97,8 @@ public static class RegistrationValidator
             Math.Max(registration.SequenceVersion, 0),
             registration.Environment,
             registration.SecureBootEnabled,
-            registration.TrustedUefiCas);
+            registration.TrustedUefiCas,
+            registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null);
         error = string.Empty;
 
         return true;

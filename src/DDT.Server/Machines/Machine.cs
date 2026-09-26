@@ -48,6 +48,10 @@ public sealed class Machine
     // could not read db or is older than this field.
     public UefiCa? TrustedUefiCas { get; set; }
 
+    // The SMBIOS chassis type from the last registration, which tells a laptop from a desktop; null when the firmware
+    // listed no enclosure or the agent is older than this field.
+    public int? ChassisType { get; set; }
+
     public MachineState State { get; set; } = MachineState.Pending;
 
     // Every issued machine token carries the generation it was minted under. Bumping this

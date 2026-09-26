@@ -539,7 +539,8 @@ public sealed class AgentLoop(
                         _runToken,
                         SequenceDefinition.CurrentVersion,
                         SecureBootEnabled: identity.SecureBootEnabled,
-                        TrustedUefiCas: identity.TrustedUefiCas),
+                        TrustedUefiCas: identity.TrustedUefiCas,
+                        ChassisType: identity.ChassisType),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException)

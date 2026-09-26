@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
@@ -129,6 +130,50 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { TrustedUefiCas = null }, registered.ResumeToken));
         Assert.Null((await MachineAsync(admin, registered.MachineId)).TrustedUefiCas);
+    }
+
+    // The kind is what the last registration says, and unknown for an agent older than chassis types. A virtual machine
+    // is told by its names whatever chassis it reports.
+    [Fact]
+    public async Task ShowsTheKindOfComputerTheAgentReportsLast()
+    {
+        SignedInClient admin = await _application.AdministratorAsync();
+        using AgentClient agent = Agent();
+        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac()) with
+        {
+            Manufacturer = "LENOVO",
+            Model = "21HD003AGE",
+            ChassisType = 10,
+        };
+
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        Assert.Equal(DeviceKind.Laptop, (await MachineAsync(admin, registered.MachineId)).DeviceKind);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { ChassisType = null }, registered.ResumeToken));
+        Assert.Equal(DeviceKind.Unknown, (await MachineAsync(admin, registered.MachineId)).DeviceKind);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(
+            registration with { Manufacturer = "Microsoft Corporation", Model = "Virtual Machine", ChassisType = 3 },
+            registered.ResumeToken));
+        Assert.Equal(DeviceKind.Virtual, (await MachineAsync(admin, registered.MachineId)).DeviceKind);
+    }
+
+    // The web UI reads the kind as a name, like every other enum it receives.
+    [Fact]
+    public async Task SendsTheKindOfComputerAsItsName()
+    {
+        SignedInClient admin = await _application.AdministratorAsync();
+        using AgentClient agent = Agent();
+        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac()) with { Manufacturer = "Dell Inc.", Model = "OptiPlex 7010", ChassisType = 3 };
+
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        using JsonDocument machines = JsonDocument.Parse(
+            await (await admin.GetAsync("/api/machines")).Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        JsonElement machine = Assert.Single(
+            machines.RootElement.EnumerateArray(),
+            m => m.GetProperty("id").GetGuid() == registered.MachineId);
+
+        Assert.Equal("Desktop", machine.GetProperty("deviceKind").GetString());
     }
 
     private static async Task<MachineSummary> MachineAsync(SignedInClient admin, Guid machineId) =>

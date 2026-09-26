@@ -7,7 +7,8 @@ using DDT.Contracts.Images;
 namespace DDT.Agent;
 
 // SecureBootEnabled is what the firmware says, null when Windows does not tell. TrustedUefiCas says which of Microsoft's
-// third-party UEFI CAs the firmware trusts, null when its signature database cannot be read.
+// third-party UEFI CAs the firmware trusts, null when its signature database cannot be read. ChassisType is the SMBIOS
+// chassis type, null when the firmware lists no enclosure.
 public sealed record MachineIdentity(
     string SmbiosUuid,
     string PrimaryMac,
@@ -16,4 +17,5 @@ public sealed record MachineIdentity(
     string? Model,
     string? SerialNumber,
     bool? SecureBootEnabled = null,
-    UefiCa? TrustedUefiCas = null);
+    UefiCa? TrustedUefiCas = null,
+    byte? ChassisType = null);

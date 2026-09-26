@@ -8,7 +8,8 @@ using DDT.Contracts.Images;
 namespace DDT.Server.Machines;
 
 // Disks and EligibleDiskCount are null when the agent is too old to report its disks, and SecureBootEnabled and
-// TrustedUefiCas when it cannot tell or is older than raw disk images.
+// TrustedUefiCas when it cannot tell or is older than raw disk images. ChassisType is null when the firmware lists no
+// enclosure, the agent is older than the field, or it sent a value no chassis type can have.
 public sealed record NormalisedRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -24,4 +25,5 @@ public sealed record NormalisedRegistration(
     int SequenceVersion = 0,
     AgentEnvironment Environment = AgentEnvironment.WindowsPE,
     bool? SecureBootEnabled = null,
-    UefiCa? TrustedUefiCas = null);
+    UefiCa? TrustedUefiCas = null,
+    int? ChassisType = null);

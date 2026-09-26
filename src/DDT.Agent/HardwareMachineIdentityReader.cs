@@ -22,7 +22,8 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
             system?.ProductName,
             system?.SerialNumber,
             SecureBootState.Read(),
-            SecureBootTrust.Read());
+            SecureBootTrust.Read(),
+            system?.ChassisType);
     }
 
     private static SmbiosSystemInformation? ReadSmbios()

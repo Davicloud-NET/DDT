@@ -28,4 +28,5 @@ public sealed record MachineSummary(
     int? EligibleDiskCount = null,
     DeploymentSummary? Deployment = null,
     bool? SecureBootEnabled = null,
-    UefiCa? TrustedUefiCas = null);
+    UefiCa? TrustedUefiCas = null,
+    DeviceKind DeviceKind = DeviceKind.Unknown);

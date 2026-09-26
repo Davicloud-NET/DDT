@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Machines;
+using DDT.Core.Machines;
 using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
@@ -36,6 +37,7 @@ public static class MachineSummaries
             machine.EligibleDiskCount,
             deployment is null ? null : DeploymentSummaries.From(deployment),
             machine.SecureBootEnabled,
-            machine.TrustedUefiCas);
+            machine.TrustedUefiCas,
+            DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType));
     }
 }

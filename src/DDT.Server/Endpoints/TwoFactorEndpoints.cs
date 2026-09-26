@@ -14,6 +14,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Endpoints;
 
+// Changing the authenticator key or turning the second factor on or off changes the security stamp, which ends
+// every session of the account within the stamp validation interval. The session that made the change is signed in
+// again with the new stamp, so only the others end, as with a password change.
 public static class TwoFactorEndpoints
 {
     private const int RecoveryCodeCount = 10;
@@ -32,7 +35,8 @@ public static class TwoFactorEndpoints
 
     private static async Task<Results<Ok<TwoFactorEnrollment>, UnauthorizedHttpResult>> StartEnrollmentAsync(
         ClaimsPrincipal principal,
-        UserManager<DdtUser> userManager)
+        UserManager<DdtUser> userManager,
+        SignInManager<DdtUser> signInManager)
     {
         DdtUser? user = await userManager.GetUserAsync(principal).ConfigureAwait(false);
 
@@ -46,6 +50,7 @@ public static class TwoFactorEndpoints
         if (string.IsNullOrEmpty(key))
         {
             await userManager.ResetAuthenticatorKeyAsync(user).ConfigureAwait(false);
+            await signInManager.RefreshSignInAsync(user).ConfigureAwait(false);
             key = await userManager.GetAuthenticatorKeyAsync(user).ConfigureAwait(false) ?? string.Empty;
         }
 
@@ -58,6 +63,7 @@ public static class TwoFactorEndpoints
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
         UserManager<DdtUser> userManager,
+        SignInManager<DdtUser> signInManager,
         ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -83,6 +89,7 @@ public static class TwoFactorEndpoints
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, enabled: true).ConfigureAwait(false);
+        await signInManager.RefreshSignInAsync(user).ConfigureAwait(false);
 
         ILogger logger = loggerFactory.CreateLogger(typeof(TwoFactorEndpoints));
         string userName = user.UserName ?? string.Empty;
@@ -99,6 +106,7 @@ public static class TwoFactorEndpoints
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
         UserManager<DdtUser> userManager,
+        SignInManager<DdtUser> signInManager,
         ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -127,6 +135,7 @@ public static class TwoFactorEndpoints
 
         await userManager.SetTwoFactorEnabledAsync(user, enabled: false).ConfigureAwait(false);
         await userManager.ResetAuthenticatorKeyAsync(user).ConfigureAwait(false);
+        await signInManager.RefreshSignInAsync(user).ConfigureAwait(false);
 
         ILogger logger = loggerFactory.CreateLogger(typeof(TwoFactorEndpoints));
         string userName = user.UserName ?? string.Empty;

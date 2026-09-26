@@ -69,6 +69,16 @@ msgstr "Boot"
 msgid "Boot image"
 msgstr "Bootimage"
 
+#: src/ui/Dialog.tsx
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: src/ui/Dialog.tsx
+#: src/ui/Drawer.tsx
+#: src/ui/Toast.tsx
+msgid "Close"
+msgstr "Schließen"
+
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
 msgstr "Bestätigen Sie, dass Sie es sind"
@@ -121,6 +131,10 @@ msgstr "Dateien"
 msgid "Language"
 msgstr "Sprache"
 
+#: src/ui/Controls.tsx
+msgid "Less"
+msgstr "Weniger"
+
 #: src/app/navigation.ts
 msgid "Library"
 msgstr "Bibliothek"
@@ -140,6 +154,10 @@ msgstr "Hell"
 #: src/app/navigation.ts
 msgid "Machines"
 msgstr "Geräte"
+
+#: src/ui/Controls.tsx
+msgid "More"
+msgstr "Mehr"
 
 #: src/app/navigation.ts
 msgid "Network boot"
@@ -272,6 +290,10 @@ msgstr "Diese Seite wird gerade auf dem neuen Designsystem neu gebaut."
 #: src/app/RouteError.tsx
 msgid "Try again"
 msgstr "Erneut versuchen"
+
+#: src/ui/Dialog.tsx
+msgid "Type {typedWord} to go on"
+msgstr "Geben Sie {typedWord} ein, um fortzufahren"
 
 #: src/auth/SignInPage.tsx
 msgid "Use a recovery code"

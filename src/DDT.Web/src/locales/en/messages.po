@@ -69,6 +69,16 @@ msgstr "Boot"
 msgid "Boot image"
 msgstr "Boot image"
 
+#: src/ui/Dialog.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/ui/Dialog.tsx
+#: src/ui/Drawer.tsx
+#: src/ui/Toast.tsx
+msgid "Close"
+msgstr "Close"
+
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
 msgstr "Confirm it is you"
@@ -121,6 +131,10 @@ msgstr "Files"
 msgid "Language"
 msgstr "Language"
 
+#: src/ui/Controls.tsx
+msgid "Less"
+msgstr "Less"
+
 #: src/app/navigation.ts
 msgid "Library"
 msgstr "Library"
@@ -140,6 +154,10 @@ msgstr "Light"
 #: src/app/navigation.ts
 msgid "Machines"
 msgstr "Machines"
+
+#: src/ui/Controls.tsx
+msgid "More"
+msgstr "More"
 
 #: src/app/navigation.ts
 msgid "Network boot"
@@ -272,6 +290,10 @@ msgstr "This page is being rebuilt on the new design system."
 #: src/app/RouteError.tsx
 msgid "Try again"
 msgstr "Try again"
+
+#: src/ui/Dialog.tsx
+msgid "Type {typedWord} to go on"
+msgstr "Type {typedWord} to go on"
 
 #: src/auth/SignInPage.tsx
 msgid "Use a recovery code"

@@ -69,6 +69,16 @@ msgstr ""
 msgid "Boot image"
 msgstr ""
 
+#: src/ui/Dialog.tsx
+msgid "Cancel"
+msgstr ""
+
+#: src/ui/Dialog.tsx
+#: src/ui/Drawer.tsx
+#: src/ui/Toast.tsx
+msgid "Close"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
 msgstr ""
@@ -121,6 +131,10 @@ msgstr ""
 msgid "Language"
 msgstr ""
 
+#: src/ui/Controls.tsx
+msgid "Less"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Library"
 msgstr ""
@@ -139,6 +153,10 @@ msgstr ""
 
 #: src/app/navigation.ts
 msgid "Machines"
+msgstr ""
+
+#: src/ui/Controls.tsx
+msgid "More"
 msgstr ""
 
 #: src/app/navigation.ts
@@ -271,6 +289,10 @@ msgstr ""
 
 #: src/app/RouteError.tsx
 msgid "Try again"
+msgstr ""
+
+#: src/ui/Dialog.tsx
+msgid "Type {typedWord} to go on"
 msgstr ""
 
 #: src/auth/SignInPage.tsx

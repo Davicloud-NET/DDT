@@ -125,7 +125,7 @@
   --drop-shadow-*: initial;
 }
 
-@theme inline {
+@theme static {
   --color-white: #FFFFFF;
   --color-frame: var(--sg-frame);
   --color-frame-text: var(--sg-frame-text);
@@ -196,6 +196,10 @@
   --text-body--line-height: 1.45;
   --text-small: 13px;
   --text-small--line-height: 1.4;
+  --text-numeral: 15px;
+  --text-numeral--line-height: 1.2;
+  --text-step: 15px;
+  --text-step--line-height: 1.2;
   --text-tag: 13px;
   --text-tag--line-height: 1;
   --text-data: 12.5px;
@@ -263,6 +267,20 @@
   line-height: 1.4;
   font-weight: 400;
   font-stretch: 100%;
+}
+
+@utility type-numeral {
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-stretch: 70%;
+}
+
+@utility type-step {
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 500;
+  font-stretch: 85%;
 }
 
 @utility type-tag {

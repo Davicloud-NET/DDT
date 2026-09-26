@@ -63,10 +63,70 @@
   }
 }
 
+/* Hatching for a failed step (red) and a skipped one (grey), and the band over anything that erases. */
+@utility hatch-fail {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-fail) 0 4px,
+    var(--color-fail-text) 4px 7px
+  );
+}
+
+@utility hatch-skip {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-rail-edge) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+@utility hazard-band {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-ink) 0 9px,
+    var(--color-attention) 9px 18px
+  );
+}
+
+/* Motion that answers an action: overlays appear, drawers slide in from the edge they belong to. */
+@theme {
+  --animate-overlay-in: overlay-in 160ms var(--ease-standard);
+  --animate-pop-in: pop-in 160ms var(--ease-standard);
+  --animate-drawer-in: drawer-in 200ms var(--ease-standard);
+  --animate-toast-in: toast-in 160ms var(--ease-standard);
+
+  @keyframes overlay-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+
+  @keyframes drawer-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

@@ -15,7 +15,7 @@ import { buttonClass, type ButtonSize, type ButtonVariant } from "./buttonClass"
 export interface ButtonProps extends Omit<AriaButtonProps, "className" | "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  className?: string;
+  className?: string | undefined;
   children: ReactNode;
 }
 
@@ -26,7 +26,7 @@ export function Button({ variant, size, className, ...props }: ButtonProps) {
 export interface LinkButtonProps extends Omit<AriaLinkProps, "className" | "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  className?: string;
+  className?: string | undefined;
   children: ReactNode;
 }
 

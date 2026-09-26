@@ -119,6 +119,12 @@ Jest packages that Lingui's runtime declares for its macros and its configuratio
 covers more than the bundle holds. `@microsoft/signalr`, `client-only` and `tr46` carry no licence
 file, and their entries say where their text comes from.
 
+Two of the web UI's components, the table and the drawer, are adapted from Untitled UI React,
+Copyright (c) 2025 Untitled UI, under the MIT licence in
+[licenses/untitledui/LICENSE](licenses/untitledui/LICENSE). Each adapted file says so under its
+licence header. Untitled UI's icon package is not used: its licence file forbids distributing the
+icons.
+
 - Meta Platforms, Inc. and affiliates, MIT: `react`, `react-dom`, `scheduler` and
   `use-sync-external-store`; with Facebook, Inc. and its affiliates, `react-is`. Their Jest
   packages, MIT, reach the closure through Lingui's configuration and not the bundle:

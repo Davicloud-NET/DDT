@@ -15,6 +15,8 @@ const typeScale = [
   "label",
   "body",
   "small",
+  "numeral",
+  "step",
   "tag",
   "data",
 ];

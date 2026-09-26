@@ -125,7 +125,7 @@ export function renderWebTheme(tokens) {
     "  --drop-shadow-*: initial;",
     "}",
     "",
-    "@theme inline {",
+    "@theme static {",
     "  --color-white: #FFFFFF;",
     ...names.map((name) => `  --color-${name}: var(--sg-${name});`),
     "",

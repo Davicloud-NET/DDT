@@ -14,6 +14,7 @@ import { AboutPage } from "@/about/AboutPage";
 import { currentUserQuery } from "@/auth/auth";
 import { SignInPage } from "@/auth/SignInPage";
 
+import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
 import { RouteError } from "./RouteError";
 import { RootLayout } from "./RootLayout";
@@ -170,6 +171,13 @@ const accountRoute = createRoute({
   component: PendingPage,
 });
 
+// Every token and component on one page, in development builds only.
+const designRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/design",
+  component: DesignPage,
+});
+
 const routeTree = rootRoute.addChildren([
   signInRoute,
   aboutRoute,
@@ -194,6 +202,7 @@ const routeTree = rootRoute.addChildren([
     serverRoute,
     auditRoute,
     accountRoute,
+    ...(import.meta.env.DEV ? [designRoute] : []),
   ]),
 ]);
 

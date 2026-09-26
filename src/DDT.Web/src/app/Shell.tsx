@@ -16,6 +16,7 @@ import { useLiveUpdates } from "@/live/useLiveUpdates";
 import { cx } from "@/ui/cx";
 import { Logo } from "@/ui/Logo";
 import { Menu, MenuItem, MenuSection, MenuSeparator } from "@/ui/Menu";
+import { Toasts } from "@/ui/Toast";
 
 import { categories, locate } from "./navigation";
 import { chooseTheme, useThemeChoice, type ThemeChoice } from "./theme";
@@ -35,6 +36,7 @@ export function Shell() {
           <Outlet />
         </LiveContext>
       </main>
+      <Toasts />
     </div>
   );
 }

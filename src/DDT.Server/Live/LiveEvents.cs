@@ -8,8 +8,12 @@ public static class LiveEvents
 {
     public const string MachineChanged = "machineChanged";
 
-    // Carries a MachinesRemovedEvent, so clients drop the machines from their lists without loading them again.
+    // Carries a MachinesRemovedEvent, so clients drop the machines from their lists without loading them again. The
+    // machines' runs are gone with them, so the run history drops those too.
     public const string MachinesRemoved = "machinesRemoved";
+
+    // Carries a RunHistoryItem whenever a run or the machine it names changes, so the run history upserts it by run id.
+    public const string RunChanged = "runChanged";
 
     // Carries nothing either: clients load the image list again.
     public const string ImagesChanged = "imagesChanged";

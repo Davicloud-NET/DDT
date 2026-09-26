@@ -41,6 +41,8 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(ApproveMachineRequest))]
 [JsonSerializable(typeof(DeploymentView))]
 [JsonSerializable(typeof(IReadOnlyList<DeploymentSummary>))]
+[JsonSerializable(typeof(RunHistoryPage))]
+[JsonSerializable(typeof(RunHistoryItem))]
 [JsonSerializable(typeof(RunStepChangedEvent))]
 [JsonSerializable(typeof(DeploymentOptionsView))]
 [JsonSerializable(typeof(DomainJoinCheckRequest))]

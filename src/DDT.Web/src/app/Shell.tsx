@@ -18,6 +18,7 @@ import { Logo } from "@/ui/Logo";
 import { Menu, MenuItem, MenuSection, MenuSeparator } from "@/ui/Menu";
 import { Toasts } from "@/ui/Toast";
 
+import { CommandPalette } from "./CommandPalette";
 import { categories, locate } from "./navigation";
 import { chooseTheme, useThemeChoice, type ThemeChoice } from "./theme";
 
@@ -74,6 +75,7 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
         })}
       </nav>
       <div className="flex-1" />
+      <CommandPalette />
       {user ? <UserMenu user={user} /> : null}
     </header>
   );

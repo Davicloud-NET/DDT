@@ -900,6 +900,14 @@ msgstr "For"
 msgid "For these hardware models"
 msgstr "For these hardware models"
 
+#: src/app/CommandPalette.tsx
+msgid "Go to a page, machine, sequence or image"
+msgstr "Go to a page, machine, sequence or image"
+
+#: src/app/CommandPalette.tsx
+msgid "Go to…"
+msgstr "Go to…"
+
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
 msgstr "Handed over to Windows; after Windows setup the agent continued there {took} later"
@@ -1083,6 +1091,7 @@ msgstr "MAC address"
 msgid "Machine"
 msgstr "Machine"
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/machines/MachinesPage.tsx
 msgid "Machines"
@@ -1339,6 +1348,10 @@ msgstr "Not started, {count} steps"
 msgid "Not stated"
 msgstr "Not stated"
 
+#: src/app/CommandPalette.tsx
+msgid "Nothing matches."
+msgstr "Nothing matches."
+
 #: src/runs/RunPanel.tsx
 msgid "of the run"
 msgstr "of the run"
@@ -1401,6 +1414,7 @@ msgstr "Optional. Without a name, the image picks one."
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Without a name, Windows picks one."
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
@@ -1409,6 +1423,10 @@ msgstr "OS images"
 #: src/packages/PackagesPage.tsx
 msgid "Package"
 msgstr "Package"
+
+#: src/app/CommandPalette.tsx
+msgid "Pages"
+msgstr "Pages"
 
 #: src/sequences/steps.ts
 msgid "Partition the disk"
@@ -1515,6 +1533,10 @@ msgstr "Restarted after step {number}, {name}; back after {took}"
 msgid "Restarting"
 msgstr "Restarting"
 
+#: src/app/CommandPalette.tsx
+msgid "Results"
+msgstr "Results"
+
 #: src/machines/machineView.ts
 msgid "Retired"
 msgstr "Retired"
@@ -1579,6 +1601,10 @@ msgstr "Save rule"
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
 msgstr "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
+
+#: src/app/CommandPalette.tsx
+msgid "Search"
+msgstr "Search"
 
 #: src/log/LogPanel.tsx
 msgid "Search the log"
@@ -1852,6 +1878,7 @@ msgstr "Stopped at step {number} of {count}"
 msgid "Task sequence"
 msgstr "Task sequence"
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 msgid "Task sequences"
 msgstr "Task sequences"

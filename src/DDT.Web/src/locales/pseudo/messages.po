@@ -900,6 +900,14 @@ msgstr ""
 msgid "For these hardware models"
 msgstr ""
 
+#: src/app/CommandPalette.tsx
+msgid "Go to a page, machine, sequence or image"
+msgstr ""
+
+#: src/app/CommandPalette.tsx
+msgid "Go to…"
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
 msgstr ""
@@ -1083,6 +1091,7 @@ msgstr ""
 msgid "Machine"
 msgstr ""
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/machines/MachinesPage.tsx
 msgid "Machines"
@@ -1339,6 +1348,10 @@ msgstr ""
 msgid "Not stated"
 msgstr ""
 
+#: src/app/CommandPalette.tsx
+msgid "Nothing matches."
+msgstr ""
+
 #: src/runs/RunPanel.tsx
 msgid "of the run"
 msgstr ""
@@ -1401,6 +1414,7 @@ msgstr ""
 msgid "Optional. Without a name, Windows picks one."
 msgstr ""
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
@@ -1408,6 +1422,10 @@ msgstr ""
 
 #: src/packages/PackagesPage.tsx
 msgid "Package"
+msgstr ""
+
+#: src/app/CommandPalette.tsx
+msgid "Pages"
 msgstr ""
 
 #: src/sequences/steps.ts
@@ -1515,6 +1533,10 @@ msgstr ""
 msgid "Restarting"
 msgstr ""
 
+#: src/app/CommandPalette.tsx
+msgid "Results"
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "Retired"
 msgstr ""
@@ -1578,6 +1600,10 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
+msgstr ""
+
+#: src/app/CommandPalette.tsx
+msgid "Search"
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -1852,6 +1878,7 @@ msgstr ""
 msgid "Task sequence"
 msgstr ""
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 msgid "Task sequences"
 msgstr ""

@@ -900,6 +900,14 @@ msgstr "Für"
 msgid "For these hardware models"
 msgstr "Für diese Hardwaremodelle"
 
+#: src/app/CommandPalette.tsx
+msgid "Go to a page, machine, sequence or image"
+msgstr "Zu einer Seite, einem Gerät, einer Tasksequenz oder einem Image"
+
+#: src/app/CommandPalette.tsx
+msgid "Go to…"
+msgstr "Gehe zu…"
+
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
 msgstr "An Windows übergeben; nach dem Windows-Setup hat der Agent {took} später dort weitergemacht"
@@ -1083,6 +1091,7 @@ msgstr "MAC-Adresse"
 msgid "Machine"
 msgstr "Gerät"
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/machines/MachinesPage.tsx
 msgid "Machines"
@@ -1339,6 +1348,10 @@ msgstr "Nicht gestartet, {count} Schritte"
 msgid "Not stated"
 msgstr "Nicht angegeben"
 
+#: src/app/CommandPalette.tsx
+msgid "Nothing matches."
+msgstr "Nichts passt."
+
 #: src/runs/RunPanel.tsx
 msgid "of the run"
 msgstr "der Ausführung"
@@ -1401,6 +1414,7 @@ msgstr "Optional. Ohne Namen wählt das Image einen."
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Ohne Namen wählt Windows einen."
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
@@ -1409,6 +1423,10 @@ msgstr "Betriebssystem-Images"
 #: src/packages/PackagesPage.tsx
 msgid "Package"
 msgstr "Paket"
+
+#: src/app/CommandPalette.tsx
+msgid "Pages"
+msgstr "Seiten"
 
 #: src/sequences/steps.ts
 msgid "Partition the disk"
@@ -1515,6 +1533,10 @@ msgstr "Nach Schritt {number}, {name}, neu gestartet; nach {took} zurück"
 msgid "Restarting"
 msgstr "Wird neu gestartet"
 
+#: src/app/CommandPalette.tsx
+msgid "Results"
+msgstr "Ergebnisse"
+
 #: src/machines/machineView.ts
 msgid "Retired"
 msgstr "Ausgemustert"
@@ -1579,6 +1601,10 @@ msgstr "Regel speichern"
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
 msgstr "Scannen Sie den Code mit Ihrer Authenticator-App oder geben Sie den Schlüssel dort ein. Geben Sie dann den Code ein, den die App anzeigt."
+
+#: src/app/CommandPalette.tsx
+msgid "Search"
+msgstr "Suchen"
 
 #: src/log/LogPanel.tsx
 msgid "Search the log"
@@ -1852,6 +1878,7 @@ msgstr "Beendet bei Schritt {number} von {count}"
 msgid "Task sequence"
 msgstr "Tasksequenz"
 
+#: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 msgid "Task sequences"
 msgstr "Tasksequenzen"

@@ -73,6 +73,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             machine.Property(m => m.FirstSeenAddress).HasMaxLength(64);
             machine.Property(m => m.State).HasConversion<string>().HasMaxLength(16);
             machine.Property(m => m.AgentEnvironment).HasConversion<string>().HasMaxLength(16).HasDefaultValue(AgentEnvironment.WindowsPE);
+            machine.Property(m => m.TrustedUefiCas).HasConversion<string>().HasMaxLength(32);
 
             // State and generation are checked on save, so an approval, a rejection and a registration that
             // starts over cannot silently overwrite one another: the loser retries or reports a conflict.
@@ -109,6 +110,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             image.Property(i => i.OriginalFileName).HasMaxLength(256);
             image.Property(i => i.UploadedByName).HasMaxLength(256);
             image.Property(i => i.BootCapability).HasConversion<string>().HasMaxLength(16);
+            image.Property(i => i.SignedUnder).HasConversion<string>().HasMaxLength(32);
             image.Property(i => i.BootDetail).HasMaxLength(RawImageLimits.MaxBootDetailLength);
             image.Property(i => i.SourceSha256).HasMaxLength(64);
             image.HasIndex(i => i.SourceSha256);
@@ -171,6 +173,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             artifact.Property(a => a.Sha256).HasMaxLength(64);
             artifact.Property(a => a.Language).HasMaxLength(16);
             artifact.Property(a => a.BootCapability).HasConversion<string>().HasMaxLength(16);
+            artifact.Property(a => a.SignedUnder).HasConversion<string>().HasMaxLength(32);
             artifact.HasIndex(a => a.Sha256);
             artifact.HasIndex(a => a.SourceId);
             artifact.HasOne<Deployment>().WithMany().HasForeignKey(a => a.DeploymentId).OnDelete(DeleteBehavior.Cascade);

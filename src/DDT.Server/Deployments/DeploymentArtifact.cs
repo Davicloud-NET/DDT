@@ -36,5 +36,8 @@ public sealed class DeploymentArtifact
     // For a raw disk image: whether it starts with Secure Boot on, as the library judged it.
     public ImageBootCapability? BootCapability { get; set; }
 
+    // For a raw disk image signed for Secure Boot: which of Microsoft's third-party UEFI CAs its boot file is signed under.
+    public UefiCa? SignedUnder { get; set; }
+
     public string? Language { get; set; }
 }

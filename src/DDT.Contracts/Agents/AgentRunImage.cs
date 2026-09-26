@@ -8,7 +8,8 @@ namespace DDT.Contracts.Agents;
 
 // ImageId is the one an ApplyImage or WriteRawImage step names. The agent downloads the file by its Sha256 from
 // AgentRoutes.RunFile. For a raw disk image, the file is compressed with zstd, SizeBytes is what is downloaded,
-// InstalledBytes the disk it holds, and BootCapability whether it starts with Secure Boot on.
+// InstalledBytes the disk it holds, BootCapability whether it starts with Secure Boot on, and SignedUnder which of
+// Microsoft's third-party UEFI CAs its boot file is signed under.
 public sealed record AgentRunImage(
     Guid ImageId,
     string Name,
@@ -17,4 +18,5 @@ public sealed record AgentRunImage(
     int WimIndex,
     long InstalledBytes,
     ImageKind Kind = ImageKind.Wim,
-    ImageBootCapability? BootCapability = null);
+    ImageBootCapability? BootCapability = null,
+    UefiCa? SignedUnder = null);

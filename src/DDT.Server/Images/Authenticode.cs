@@ -42,6 +42,8 @@ public static class Authenticode
         }
 
         Dictionary<HashAlgorithmName, byte[]> hashes = [];
+        List<X509Certificate2> anchors = [];
+        string? trustedSigner = null;
         string? otherSigner = null;
         bool mismatch = false;
         bool unreadable = false;
@@ -87,12 +89,25 @@ public static class Authenticode
 
             string name = certificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
-            if (ChainsTo(certificate, cms.Certificates, trusted))
+            // Every signature counts: a shim signed under both of Microsoft's CAs starts where either is trusted.
+            if (ChainsTo(certificate, cms.Certificates, trusted) is { } anchor)
             {
-                return new AuthenticodeResult(AuthenticodeStatus.Trusted, image.Machine, name, null);
+                trustedSigner ??= name;
+
+                if (!anchors.Contains(anchor))
+                {
+                    anchors.Add(anchor);
+                }
+
+                continue;
             }
 
             otherSigner ??= name;
+        }
+
+        if (trustedSigner is not null)
+        {
+            return new AuthenticodeResult(AuthenticodeStatus.Trusted, image.Machine, trustedSigner, null, anchors);
         }
 
         if (otherSigner is not null)
@@ -142,15 +157,16 @@ public static class Authenticode
         };
     }
 
-    private static bool ChainsTo(X509Certificate2 signer, X509Certificate2Collection carried, IReadOnlyCollection<X509Certificate2> trusted)
+    // The trusted certificate the signer's chain leads to, or null.
+    private static X509Certificate2? ChainsTo(X509Certificate2 signer, X509Certificate2Collection carried, IReadOnlyCollection<X509Certificate2> trusted)
     {
         X509Certificate2 current = signer;
 
         for (int depth = 0; depth < MaxChainLength; depth++)
         {
-            if (trusted.Any(anchor => anchor.RawData.AsSpan().SequenceEqual(current.RawData)))
+            if (trusted.FirstOrDefault(anchor => anchor.RawData.AsSpan().SequenceEqual(current.RawData)) is { } reached)
             {
-                return true;
+                return reached;
             }
 
             X509Certificate2? issuer = trusted.Concat(carried).FirstOrDefault(candidate =>
@@ -160,13 +176,13 @@ public static class Authenticode
 
             if (issuer is null)
             {
-                return false;
+                return null;
             }
 
             current = issuer;
         }
 
-        return false;
+        return null;
     }
 
     private static bool IsSignedBy(X509Certificate2 certificate, X509Certificate2 issuer)

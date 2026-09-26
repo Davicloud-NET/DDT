@@ -3,11 +3,12 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 
 namespace DDT.Server.Machines;
 
-// Disks and EligibleDiskCount are null when the agent is too old to report its disks, and SecureBootEnabled when it
-// cannot tell or is older than raw disk images.
+// Disks and EligibleDiskCount are null when the agent is too old to report its disks, and SecureBootEnabled and
+// TrustedUefiCas when it cannot tell or is older than raw disk images.
 public sealed record NormalisedRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -22,4 +23,5 @@ public sealed record NormalisedRegistration(
     string? RunToken = null,
     int SequenceVersion = 0,
     AgentEnvironment Environment = AgentEnvironment.WindowsPE,
-    bool? SecureBootEnabled = null);
+    bool? SecureBootEnabled = null,
+    UefiCa? TrustedUefiCas = null);

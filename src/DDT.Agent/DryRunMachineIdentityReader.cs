@@ -4,13 +4,18 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using DDT.Contracts.Images;
 
 namespace DDT.Agent;
 
 // A stable identity per dry run id, so several dry runs can stand in for several machines and a
 // repeated run is recognised as the same machine.
-// secureBootEnabled is what the fake machine's firmware says.
-public sealed class DryRunMachineIdentityReader(int dryRunId, bool secureBootEnabled = false) : IMachineIdentityReader
+// secureBootEnabled is what the fake machine's firmware says. It trusts both of Microsoft's third-party UEFI CAs, as an
+// updated PC does, unless trustedUefiCas says otherwise.
+public sealed class DryRunMachineIdentityReader(
+    int dryRunId,
+    bool secureBootEnabled = false,
+    UefiCa trustedUefiCas = UefiCa.Microsoft2011 | UefiCa.Microsoft2023) : IMachineIdentityReader
 {
     public MachineIdentity Read()
     {
@@ -26,6 +31,7 @@ public sealed class DryRunMachineIdentityReader(int dryRunId, bool secureBootEna
             "DDT",
             "Dry run",
             $"DRYRUN-{dryRunId}",
-            secureBootEnabled);
+            secureBootEnabled,
+            trustedUefiCas);
     }
 }

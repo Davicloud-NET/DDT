@@ -4,6 +4,7 @@
 
 using System.Net.Http.Json;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -42,7 +43,8 @@ public sealed class DeployingMachine : IDisposable
         IReadOnlyList<AgentDisk>? disks = null,
         string? remoteAddress = null,
         bool? secureBootEnabled = null,
-        int? sequenceVersion = null)
+        int? sequenceVersion = null,
+        UefiCa? trustedUefiCas = null)
     {
         ArgumentNullException.ThrowIfNull(application);
 
@@ -53,6 +55,7 @@ public sealed class DeployingMachine : IDisposable
         {
             Disks = disks,
             SecureBootEnabled = secureBootEnabled,
+            TrustedUefiCas = trustedUefiCas,
         };
 
         if (sequenceVersion is { } version)

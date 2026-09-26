@@ -4,6 +4,7 @@
 
 import { relativeTime } from "@/lib/relativeTime";
 import { MachineActions } from "@/machines/MachineActions";
+import { secureBootFact } from "@/machines/secureBoot";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import type { MachineActionState } from "@/machines/useMachineActions";
 
@@ -63,13 +64,7 @@ export function MachineHeader({ machine, actions, resolution, now }: MachineHead
         </div>
         <div>
           <dt>Secure Boot</dt>
-          <dd>
-            {machine.secureBootEnabled === null
-              ? "Not reported"
-              : machine.secureBootEnabled
-                ? "On"
-                : "Off"}
-          </dd>
+          <dd>{secureBootFact(machine)}</dd>
         </div>
         <div>
           <dt>Disks</dt>

@@ -8,4 +8,4 @@ namespace DDT.Server.Images;
 
 // Whether a raw disk image starts with Secure Boot on, the sentence that says why, and the processor its boot file
 // is for, null when it has none DDT could read.
-public sealed record BootAssessment(ImageBootCapability Capability, string Detail, string? Architecture);
+public sealed record BootAssessment(ImageBootCapability Capability, string Detail, string? Architecture, UefiCa? SignedUnder = null);

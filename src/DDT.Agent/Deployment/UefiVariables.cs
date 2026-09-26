@@ -7,11 +7,14 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// The EFI global variables through the Windows firmware variable functions. They need SeSystemEnvironmentPrivilege,
-// which Windows PE's SYSTEM account holds but has to enable first.
+// The EFI global variables through the Windows firmware variable functions, and the signature database db. They need
+// SeSystemEnvironmentPrivilege, which Windows PE's SYSTEM account holds but has to enable first.
 public sealed class UefiVariables : IUefiVariables
 {
     private const string GlobalVariableGuid = "{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}";
+
+    // EFI_IMAGE_SECURITY_DATABASE_GUID, under which db and dbx live.
+    private const string ImageSecurityDatabaseGuid = "{D719B2CB-3D3A-4596-A3BC-DAD00E67656F}";
 
     // NON_VOLATILE | BOOTSERVICE_ACCESS | RUNTIME_ACCESS, which the specification requires for boot variables.
     private const uint BootVariableAttributes = 0x7;
@@ -24,7 +27,12 @@ public sealed class UefiVariables : IUefiVariables
 
     private bool _privilegeEnabled;
 
-    public unsafe byte[]? Read(string name)
+    public byte[]? Read(string name) => Read(name, GlobalVariableGuid);
+
+    // The certificates and hashes the firmware trusts with Secure Boot on; null when there are none.
+    public byte[]? ReadSignatureDatabase() => Read("db", ImageSecurityDatabaseGuid);
+
+    private unsafe byte[]? Read(string name, string guid)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         EnablePrivilege();
@@ -37,7 +45,7 @@ public sealed class UefiVariables : IUefiVariables
 
             fixed (byte* output = buffer)
             {
-                stored = FirmwareNativeMethods.GetFirmwareEnvironmentVariableEx(name, GlobalVariableGuid, output, (uint)length, 0);
+                stored = FirmwareNativeMethods.GetFirmwareEnvironmentVariableEx(name, guid, output, (uint)length, 0);
                 error = Marshal.GetLastPInvokeError();
             }
 

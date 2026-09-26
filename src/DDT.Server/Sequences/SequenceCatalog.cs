@@ -72,6 +72,7 @@ public sealed class SequenceCatalog(DdtDbContext database, IOptions<DeploymentOp
             sequence.UpdatedUtc,
             sequence.UpdatedByName,
             SequenceChecks.RawImage(definition, references)?.Name,
-            SequenceChecks.RawImage(definition, references)?.BootCapability);
+            SequenceChecks.RawImage(definition, references)?.BootCapability,
+            SequenceChecks.RawImage(definition, references)?.SignedUnder);
     }
 }

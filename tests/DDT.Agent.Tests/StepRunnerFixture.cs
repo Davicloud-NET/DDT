@@ -6,6 +6,7 @@ using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -22,13 +23,14 @@ internal sealed class StepRunnerFixture : IDisposable
     public static readonly Guid MachineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
-    // secureBootEnabled is what the firmware says; allowSecureBootMismatch what the run was allowed.
+    // secureBootEnabled and trustedUefiCas are what the firmware says; allowSecureBootMismatch what the run was allowed.
     public StepRunnerFixture(
         IReadOnlyList<SequenceStep> steps,
         IReadOnlyList<AgentRunImage>? images = null,
         IReadOnlyList<AgentRunPackage>? packages = null,
         bool? secureBootEnabled = null,
-        bool allowSecureBootMismatch = false)
+        bool allowSecureBootMismatch = false,
+        UefiCa? trustedUefiCas = null)
     {
         AgentRun run = new(
             RunId,
@@ -46,6 +48,7 @@ internal sealed class StepRunnerFixture : IDisposable
         {
             Disk = FakeDeploymentTools.Disk(0),
             SecureBootEnabled = secureBootEnabled,
+            TrustedUefiCas = trustedUefiCas,
         };
         Store = new FileRunStateStore(Session.Tokens);
         Downloads = new RunDownloads(Server, Session, Log, Time, TimeSpan.FromSeconds(10));

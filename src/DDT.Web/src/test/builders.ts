@@ -52,6 +52,7 @@ export function machineSummary(overrides: Partial<MachineSummary> = {}): Machine
     eligibleDiskCount: 1,
     deployment: null,
     secureBootEnabled: null,
+    trustedUefiCas: null,
     ...overrides,
   };
 }

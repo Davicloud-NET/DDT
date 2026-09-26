@@ -95,7 +95,7 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         Assert.Equal(disk.Length, image.InstalledBytes);
         Assert.Equal(ImageBootCapability.SecureBootOk, image.BootCapability);
         Assert.Equal(
-            @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do.",
+            @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's third-party UEFI CA 2011, which PCs trust unless their firmware lacks it or turns it off, as Secured-core PCs do.",
             image.BootDetail);
         Assert.Equal(TestDisk.Sha256(disk), image.SourceSha256);
 

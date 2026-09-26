@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 
 namespace DDT.Contracts.Machines;
 
@@ -26,4 +27,5 @@ public sealed record MachineSummary(
     string? Disks = null,
     int? EligibleDiskCount = null,
     DeploymentSummary? Deployment = null,
-    bool? SecureBootEnabled = null);
+    bool? SecureBootEnabled = null,
+    UefiCa? TrustedUefiCas = null);

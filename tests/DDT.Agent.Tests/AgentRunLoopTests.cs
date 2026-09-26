@@ -7,6 +7,7 @@ using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
@@ -89,9 +90,11 @@ public sealed class AgentRunLoopTests : IDisposable
             _tools,
             new AgentLog(time, TextWriter.Null),
             time,
-            new DryRunMachineIdentityReader(1, secureBootEnabled: true)).RunAsync(server.Stop.Token);
+            new DryRunMachineIdentityReader(1, secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011)).RunAsync(server.Stop.Token);
 
-        Assert.True(Assert.Single(server.Registrations).SecureBootEnabled);
+        AgentRegistration registration = Assert.Single(server.Registrations);
+        Assert.True(registration.SecureBootEnabled);
+        Assert.Equal(UefiCa.Microsoft2011, registration.TrustedUefiCas);
     }
 
     [Fact]

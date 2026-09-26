@@ -35,7 +35,7 @@ public sealed class WriteRawImageStepRunner(
         LocalDisk disk = session.Disk
             ?? throw new DeploymentStepException("No disk was chosen for this run, so nothing was written.");
 
-        if (SecureBootGate.Refusal(image, session.Run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } refusal)
+        if (SecureBootGate.Refusal(image, session.Run.AllowSecureBootMismatch, session.SecureBootEnabled, session.TrustedUefiCas) is { } refusal)
         {
             throw new DeploymentStepException(refusal);
         }

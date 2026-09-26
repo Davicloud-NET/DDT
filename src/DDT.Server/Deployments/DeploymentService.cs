@@ -8,6 +8,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
+using DDT.Core.Boot;
 using DDT.Core.Unattend;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -139,7 +140,8 @@ public sealed class DeploymentService(
                 RunSnapshots.RequiredBytes(definition, artifacts),
                 sequence.Id == suggested,
                 SequenceChecks.RawImage(definition, references)?.Name,
-                SequenceChecks.RawImage(definition, references)?.BootCapability));
+                SequenceChecks.RawImage(definition, references)?.BootCapability,
+                SequenceChecks.RawImage(definition, references)?.SignedUnder));
         }
 
         return choices;
@@ -242,7 +244,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}.{MismatchNote(definition, references, allowMismatch)}",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}.{MismatchNote(machine, definition, references, allowMismatch)}",
             actorUserId: userId,
             actorName: userName));
 
@@ -354,7 +356,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.{MismatchNote(definition, references, allowMismatch)}",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.{MismatchNote(machine, definition, references, allowMismatch)}",
             actorUserId: userId,
             actorName: userName));
 
@@ -456,7 +458,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen at the machine.{MismatchNote(definition, references, allowMismatch)}",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen at the machine.{MismatchNote(machine, definition, references, allowMismatch)}",
             actorUserId: machine.SignedInByUserId,
             actorName: machine.SignedInUserName,
             actorMachineId: machine.Id));
@@ -720,17 +722,18 @@ public sealed class DeploymentService(
                 : null;
     }
 
-    // A raw disk image that will not start with Secure Boot on is written only where someone allowed it for the run, or
-    // where the machine did not say Secure Boot is on; the agent checks the firmware again before it writes. The
-    // allowance is kept only where it matters. Returns it, and the refusal when the machine said Secure Boot is on and
-    // nobody allowed the image.
+    // A raw disk image the machine will not start with Secure Boot on is written only where someone allowed it for the
+    // run, or where the machine did not say Secure Boot is on; the agent checks the firmware again before it writes. An
+    // image signed for Secure Boot is such an image on a machine whose firmware does not trust Microsoft's third-party
+    // UEFI CA. The allowance is kept only where it matters. Returns it, and the refusal when the machine said Secure Boot
+    // is on and nobody allowed the image.
     private static (bool Allow, string? Problem) SecureBootDecision(
         Machine machine,
         SequenceDefinition definition,
         SequenceReferences references,
         bool allowed)
     {
-        if (SequenceChecks.RawImage(definition, references) is not { BootCapability: not ImageBootCapability.SecureBootOk } image)
+        if (SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is not { } why)
         {
             return (false, null);
         }
@@ -741,14 +744,35 @@ public sealed class DeploymentService(
         }
 
         return machine.SecureBootEnabled == true
-            ? (false, $"{image.Name} {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.")
+            ? (false, $"{image.Name} {why}, and this machine has Secure Boot on. Allow it for this run, or {Remedy(machine, image)} first.")
             : (false, null);
     }
 
-    private static string MismatchNote(SequenceDefinition definition, SequenceReferences references, bool allowed) =>
-        allowed && SequenceChecks.RawImage(definition, references) is { } image
-            ? $" It may write {image.Name} although it {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on."
-            : "";
+    // Why the machine would not start the image with Secure Boot on, or null when it would.
+    private static string? NotStarting(Machine machine, Image image) => image.BootCapability switch
+    {
+        ImageBootCapability.SecureBootOk when MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder) =>
+            $"is signed under {MicrosoftUefiCa.Describe(image.SignedUnder)}, which this machine's firmware does not trust",
+        ImageBootCapability.SecureBootOk => null,
+        _ => $"{BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on",
+    };
+
+    private static string Remedy(Machine machine, Image image) =>
+        image.BootCapability == ImageBootCapability.SecureBootOk && MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder)
+            ? "allow that CA or turn Secure Boot off in the machine's firmware"
+            : "turn Secure Boot off in the machine's firmware";
+
+    private static string MismatchNote(Machine machine, SequenceDefinition definition, SequenceReferences references, bool allowed)
+    {
+        if (!allowed || SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is null)
+        {
+            return "";
+        }
+
+        return image.BootCapability == ImageBootCapability.SecureBootOk
+            ? $" It may write {image.Name} although this machine's firmware does not trust {MicrosoftUefiCa.Describe(image.SignedUnder)}, which signed it."
+            : $" It may write {image.Name} although it {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on.";
+    }
 
     // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.
     // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none.

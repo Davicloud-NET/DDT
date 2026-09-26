@@ -16,7 +16,12 @@ public sealed class AuthenticodeTests
     {
         AuthenticodeResult result = Authenticode.Check(TestPe.Fixture("shimx64.efi.dualsigned"), UefiCertificateAuthorities.Microsoft);
 
-        Assert.Equal(new AuthenticodeResult(AuthenticodeStatus.Trusted, PeImage.MachineAmd64, "Microsoft Windows UEFI Driver Publisher", null), result);
+        Assert.Equal(
+            (AuthenticodeStatus.Trusted, PeImage.MachineAmd64, "Microsoft Windows UEFI Driver Publisher", (string?)null),
+            (result.Status, result.Machine, result.Signer, result.Reason));
+
+        // The anchor its signatures lead to, which tells which of Microsoft's two CAs a firmware needs to start it.
+        Assert.Equal(["CN=Microsoft Corporation UEFI CA 2011"], result.Anchors!.Select(anchor => anchor.Subject.Split(", ")[0]));
     }
 
     [Fact]

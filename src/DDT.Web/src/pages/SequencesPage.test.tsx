@@ -57,6 +57,7 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     updatedBy: "admin",
     rawImageName: null,
     rawImageBootCapability: null,
+    rawImageSignedUnder: null,
     ...overrides,
   };
 }

@@ -327,6 +327,10 @@ namespace DDT.Server.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("SignedUnder")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
@@ -461,6 +465,10 @@ namespace DDT.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SignedUnder")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
@@ -656,6 +664,10 @@ namespace DDT.Server.Migrations
                     b.Property<int>("TokenGeneration")
                         .IsConcurrencyToken()
                         .HasColumnType("integer");
+
+                    b.Property<string>("TrustedUefiCas")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.HasKey("Id");
 

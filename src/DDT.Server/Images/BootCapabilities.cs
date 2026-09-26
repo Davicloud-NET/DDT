@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography.X509Certificates;
 using DDT.Contracts.Images;
+using DDT.Core.Boot;
 using DDT.Core.Disks;
 
 namespace DDT.Server.Images;
@@ -63,12 +64,16 @@ public static class BootCapabilities
             _ => null,
         };
 
+        UefiCa signedUnder = (result.Anchors ?? []).Aggregate(UefiCa.None, (cas, anchor) => cas | MicrosoftUefiCa.Of(anchor.RawData));
+
         return result.Status switch
         {
             AuthenticodeStatus.Trusted => new BootAssessment(
                 ImageBootCapability.SecureBootOk,
-                $"{FallbackPath} is signed by {result.Signer} under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do.",
-                architecture),
+                $"{FallbackPath} is signed by {result.Signer} under {MicrosoftUefiCa.Describe(signedUnder)}, which PCs trust unless their " +
+                "firmware lacks it or turns it off, as Secured-core PCs do.",
+                architecture,
+                signedUnder),
             AuthenticodeStatus.SignedByOthers => new BootAssessment(
                 ImageBootCapability.NotSigned,
                 $"{FallbackPath} is signed by {result.Signer}, which Microsoft's UEFI CA did not certify.{ShimNote(info, trusted)}",

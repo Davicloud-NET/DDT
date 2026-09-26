@@ -202,6 +202,26 @@ public sealed class SequencePickerTests
     }
 
     [Fact]
+    public async Task AsksForAnywayForASignedImageWhereTheFirmwareDoesNotTrustItsCa()
+    {
+        AgentSequenceChoice signed = s_linux with
+        {
+            RawImageBootCapability = ImageBootCapability.SecureBootOk,
+            RawImageSignedUnder = UefiCa.Microsoft2023,
+        };
+        StringWriter console = new();
+        ScriptedSignInPrompt prompt = new("1", "ERASE", "ANYWAY");
+        SequencePicker picker = new(prompt, new AgentLog(new ImmediateTimeProvider(), console));
+        picker.Offer([signed], [FakeDeploymentTools.Disk(0)], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011);
+
+        Assert.Equal(new AgentRunRequest(signed.Id, 0, null, AllowSecureBootMismatch: true), await AnswerAllAsync(picker));
+        Assert.Contains(Lines(console), line => line.EndsWith("1. Install Linux (erases a disk, not for this machine's Secure Boot, needs 4 GB)", StringComparison.Ordinal));
+        Assert.Contains(
+            Lines(console),
+            line => line.EndsWith("custom-image is signed under Microsoft's third-party UEFI CA 2023, which this machine's firmware does not trust. It starts only once that CA is allowed or Secure Boot is turned off in the firmware setup.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AsksNoAnywayForAnImageSignedForSecureBoot()
     {
         AgentSequenceChoice signed = s_linux with { RawImageBootCapability = ImageBootCapability.SecureBootOk };

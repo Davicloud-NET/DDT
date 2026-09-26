@@ -16,7 +16,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DDT.Server.Migrations
 {
     [DbContext(typeof(DdtDbContext))]
-    [Migration("20260925095404_LinuxImages")]
+    [Migration("20260926144137_LinuxImages")]
     partial class LinuxImages
     {
         /// <inheritdoc />
@@ -330,6 +330,10 @@ namespace DDT.Server.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("SignedUnder")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
@@ -464,6 +468,10 @@ namespace DDT.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SignedUnder")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
@@ -659,6 +667,10 @@ namespace DDT.Server.Migrations
                     b.Property<int>("TokenGeneration")
                         .IsConcurrencyToken()
                         .HasColumnType("integer");
+
+                    b.Property<string>("TrustedUefiCas")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.HasKey("Id");
 

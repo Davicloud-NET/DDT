@@ -79,6 +79,7 @@ function machine(overrides: Partial<MachineSummary>): MachineSummary {
     eligibleDiskCount: 1,
     deployment: run({}),
     secureBootEnabled: null,
+    trustedUefiCas: null,
     ...overrides,
   };
 }

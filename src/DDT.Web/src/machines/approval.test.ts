@@ -31,6 +31,7 @@ const machine: MachineSummary = {
   eligibleDiskCount: 1,
   deployment: null,
   secureBootEnabled: null,
+  trustedUefiCas: null,
 };
 
 const chosen: MachineSequenceResolution = {
@@ -57,6 +58,7 @@ const installWindows: SequenceSummary = {
   updatedBy: null,
   rawImageName: null,
   rawImageBootCapability: null,
+  rawImageSignedUnder: null,
 };
 
 describe("approvalPlan", () => {
@@ -80,6 +82,7 @@ describe("approvalPlan", () => {
       ...installWindows,
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
+      rawImageSignedUnder: null,
     } as const;
 
     expect(approvalPlan(machine, chosen, [linux])?.sequence).toBe(linux);

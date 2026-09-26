@@ -91,6 +91,7 @@ public static class RunSnapshots
                         SizeBytes = disk.SizeBytes,
                         ExpandedBytes = disk.InstalledBytes,
                         BootCapability = disk.BootCapability,
+                        SignedUnder = disk.SignedUnder,
                     });
                     break;
 
@@ -151,7 +152,7 @@ public static class RunSnapshots
                 .. artifacts
                     .Where(a => a.Kind == ArtifactKind.Image)
                     .Select(a => rawSteps.Contains(a.StepId)
-                        ? new AgentRunImage(a.SourceId, a.Name, a.Sha256, a.SizeBytes, 0, a.ExpandedBytes, ImageKind.RawDisk, a.BootCapability)
+                        ? new AgentRunImage(a.SourceId, a.Name, a.Sha256, a.SizeBytes, 0, a.ExpandedBytes, ImageKind.RawDisk, a.BootCapability, a.SignedUnder)
                         : new AgentRunImage(a.SourceId, a.Name, a.Sha256, a.SizeBytes, a.WimIndex ?? 1, a.ExpandedBytes)),
             ],
             [.. artifacts.Where(a => a.Kind != ArtifactKind.Image).Select(a => new AgentRunPackage(a.StepId, a.Name, a.Sha256, a.SizeBytes))],

@@ -60,8 +60,18 @@ internal sealed class TestRawImage
 
     public string Sha256 { get; }
 
-    public AgentRunImage RunImage(ImageBootCapability capability = ImageBootCapability.SecureBootOk) =>
-        new(ImageId, "noble-test", Sha256, Compressed.Length, 0, Disk.Length, ImageKind.RawDisk, capability);
+    // Signed for Secure Boot under the 2011 CA, as shims were until June 2026, unless signedUnder says otherwise.
+    public AgentRunImage RunImage(ImageBootCapability capability = ImageBootCapability.SecureBootOk, UefiCa? signedUnder = null) =>
+        new(
+            ImageId,
+            "noble-test",
+            Sha256,
+            Compressed.Length,
+            0,
+            Disk.Length,
+            ImageKind.RawDisk,
+            capability,
+            capability == ImageBootCapability.SecureBootOk ? signedUnder ?? UefiCa.Microsoft2011 : null);
 
     public ScriptedAgentServer Serve(ScriptedAgentServer server)
     {

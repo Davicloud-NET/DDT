@@ -18,4 +18,5 @@ public sealed record AgentSequenceChoice(
     long RequiredBytes,
     bool Suggested,
     string? RawImageName = null,
-    ImageBootCapability? RawImageBootCapability = null);
+    ImageBootCapability? RawImageBootCapability = null,
+    UefiCa? RawImageSignedUnder = null);

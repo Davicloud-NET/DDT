@@ -5,14 +5,6 @@ what is built. Most features below come from a comparison with the Microsoft Dep
 which Microsoft retired on 2026-01-06: they are what someone moving from MDT would miss, and the MDT
 feature each one answers is named in brackets.
 
-## Left from M6
-
-- **The Secure Boot trust check.** In Windows PE the agent reads which certificates the firmware
-  trusts. Where Microsoft's third-party UEFI CA is not among them, as on Secured-core PCs and on
-  Hyper-V's Windows template, an image signed only under that CA counts as not starting with Secure
-  Boot on, and the run asks for the allowance as for an unsigned image. The Hyper-V run of M6 showed
-  the gap.
-
 ## M6.5 The real UI
 
 A graphical console in Windows PE, a new web UI, and the settings page that

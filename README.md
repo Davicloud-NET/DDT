@@ -6,9 +6,9 @@ Windows PE and runs an agent there that executes a task sequence: it applies a W
 on in the installed Windows where the sequence asks for it, and reports progress live to a web UI.
 Windows PE is the only deployment environment: Linux is deployed from inside WinPE by writing a raw
 disk image and a cloud-init seed partition, so there is a single agent and a single boot path. DDT
-never ships its own EFI bootloader. It serves the Microsoft-signed `bootmgfw.efi` from the Windows ADK and does everything
-interesting after the boot manager has loaded, which is what lets it work on stock PCs with UEFI
-Secure Boot enabled.
+never ships its own EFI bootloader. It serves the Microsoft-signed `bootmgfw.efi` from the Windows
+ADK and does everything interesting after the boot manager has loaded, which is what lets it work on
+stock PCs with UEFI Secure Boot enabled.
 
 ## Architecture
 
@@ -755,11 +755,12 @@ the run, so the disk can be looked at afterwards, and the next run that cleans t
 
 ## Images
 
-The Images page lists the library: Windows images from WIM files, and
-[raw disk images](#raw-disk-images) such as a distribution's cloud image. An administrator uploads a
-WIM there, for example `sources\install.wim` from a Windows ISO, or an unencrypted ESD, or a disk
-image. The browser sends the file in 8 MiB chunks. If the page is reloaded or the connection drops, selecting the same file again continues where
-the server left off: it recognises the file by name, size and last change.
+The Images page lists the library: Windows images from WIM files, and [raw disk
+images](#raw-disk-images) such as a distribution's cloud image. An administrator uploads a WIM
+there, for example `sources\install.wim` from a Windows ISO, or an unencrypted ESD, or a disk image.
+The browser sends the file in 8 MiB chunks. If the page is reloaded or the connection drops,
+selecting the same file again continues where the server left off: it recognises the file by name,
+size and last change.
 
 After the last chunk the server reads the image list from a WIM and computes its SHA-256. It
 refuses a split WIM (`.swm`), a pipable WIM, a WIM whose image list is
@@ -832,13 +833,15 @@ distributions publish, and a file that ends before its last partition is refused
 server then reads the EFI system partition, and in it `\EFI\BOOT\BOOTX64.EFI`, the file the firmware
 starts from a disk that has no boot entry of its own. Its signature decides the Secure Boot column:
 
-- **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, as a distribution's shim is.
-  The machine starts the image with Secure Boot on, provided its firmware trusts that CA: PCs trust
-  the 2011 CA as they come and the 2023 CA once a firmware or Windows update added it, and
-  Secured-core PCs turn the CA off until it is turned on in their firmware setup. A Hyper-V
-  Generation 2 machine trusts it only with the Microsoft UEFI Certificate Authority template, which
-  in turn does not trust the Windows boot manager DDT netboots, so there Windows PE runs with Secure
-  Boot off, as `New-TestVm.ps1 -SecureBootOff -NoTpm` sets up.
+- **Signed**: the file is signed under Microsoft's UEFI CA 2011 or 2023, as a distribution's shim
+  is, and the detail names which. The machine starts the image with Secure Boot on, provided its
+  firmware trusts that CA: PCs trust the 2011 CA as they come and the 2023 CA once a firmware or
+  Windows update added it, and Secured-core PCs turn the CA off until it is turned on in their
+  firmware setup. The agent tells which machines do not trust it, see [Secure Boot and raw disk
+  images](#secure-boot-and-raw-disk-images). A Hyper-V Generation 2 machine trusts it only with the
+  Microsoft UEFI Certificate Authority template, which in turn does not trust the Windows boot
+  manager DDT netboots, so there Windows PE runs with Secure Boot off, as `New-TestVm.ps1
+  -SecureBootOff -NoTpm` sets up.
 - **Not signed**: the file has no signature, or one that does not lead to Microsoft's UEFI CA. The
   machine starts the image only with Secure Boot off, or with your own key enrolled. The page says
   why, for example that a distribution's own shim is elsewhere on the partition.
@@ -973,16 +976,16 @@ its step and field. The rules:
   `user-data` must be there, though they can be empty.
 - The image of Apply image must be an x64 Windows image in the library, the image of Write raw disk
   image a raw disk image in the library whose boot file is not for another processor, and a script's
-  package a files package in the library. A time zone, language and region, and keyboard must be ones Windows knows. "Add the local
-  administrator" needs `DDT:Deployment:LocalAdministrator:Password`, and Join the domain needs
-  `DDT:Deployment:Domain`.
+  package a files package in the library. A time zone, language and region, and keyboard must be
+  ones Windows knows. "Add the local administrator" needs
+  `DDT:Deployment:LocalAdministrator:Password`, and Join the domain needs `DDT:Deployment:Domain`.
 
 Three findings are only warnings. A sequence that goes on in Windows without a Write the answer file
 step that adds the local administrator: Windows setup then stops at its account page, and the run
 waits there until someone finishes it. A raw disk image that is not signed for Secure Boot, see
-[Secure Boot and raw disk images](#secure-boot-and-raw-disk-images). And a placeholder in a seed file
-that DDT does not know, which stays as it is. Deleting an image or a package, or changing a setting, can
-give a saved sequence a problem, which the page then shows.
+[Secure Boot and raw disk images](#secure-boot-and-raw-disk-images). And a placeholder in a seed
+file that DDT does not know, which stays as it is. Deleting an image or a package, or changing a
+setting, can give a saved sequence a problem, which the page then shows.
 
 **Templates.** "New from the Install Windows template" makes a sequence with Partition the disk,
 Apply image, Inject drivers, and Write the answer file, which adds the local administrator when one
@@ -1042,16 +1045,16 @@ it is cancelled. A new rule starts nothing by itself.
 A deployment, or run, runs one [task sequence](#task-sequences) on one machine. It starts in one of
 these ways.
 
-- **At the machine.** Once someone signed in at it (see
-  [Registration and authorization](#registration-and-authorization)), the agent lists the sequences
-  that can run, those a rule suggests first, and leaves out those that erase a disk when the machine
-  has no disk DDT could install on. The technician types the sequence's number, and then answers
-  only what that sequence needs: the disk number when it erases a disk and there is more than one,
-  a computer name when it joins a domain or names the machine in its cloud-init seed, and `ERASE`
-  when it erases a disk. Anything but `ERASE` there goes back to the list. On a machine with Secure
-  Boot on, a sequence that writes a raw disk image not signed for it asks last for `ANYWAY`, and
-  anything else goes back to the list too. A sequence with nothing more to ask starts once its number is
-  typed.
+- **At the machine.** Once someone signed in at it (see [Registration and
+  authorization](#registration-and-authorization)), the agent lists the sequences that can run,
+  those a rule suggests first, and leaves out those that erase a disk when the machine has no disk
+  DDT could install on. The technician types the sequence's number, and then answers only what that
+  sequence needs: the disk number when it erases a disk and there is more than one, a computer name
+  when it joins a domain or names the machine in its cloud-init seed, and `ERASE` when it erases a
+  disk. Anything but `ERASE` there goes back to the list. On a machine with Secure Boot on, a
+  sequence that writes a raw disk image the machine would not start, one not signed for Secure Boot
+  or signed under a CA its firmware does not trust, asks last for `ANYWAY`, and anything else goes
+  back to the list too. A sequence with nothing more to ask starts once its number is typed.
 - **On the Machines page.** An operator or administrator assigns a sequence, optionally with a
   computer name, which is required when the sequence joins a domain or names the machine in its
   cloud-init seed and the machine has no name yet.
@@ -1315,11 +1318,11 @@ no partition table. The image's backup table moves to the end of the disk, and t
 after the image's partitions stays free. A download that does not match its SHA-256 fails the step
 before the partition table is written.
 
-Write the cloud-init seed adds a partition labelled `CIDATA` at the end of the disk, 64 MiB with FAT16,
-and writes the step's files into it. cloud-init's NoCloud source finds them at the image's first
-start. The seed's place leaves the free space right after the image's partitions, so cloud-init's
-`growpart` still grows the root partition into it. Before writing, the agent fills in these
-placeholders, whose names it matches ignoring case:
+Write the cloud-init seed adds a partition labelled `CIDATA` at the end of the disk, 64 MiB with
+FAT16, and writes the step's files into it. cloud-init's NoCloud source finds them at the image's
+first start. The seed's place leaves the free space right after the image's partitions, so
+cloud-init's `growpart` still grows the root partition into it. Before writing, the agent fills in
+these placeholders, whose names it matches ignoring case:
 
 | Placeholder | Value |
 |---|---|
@@ -1345,21 +1348,28 @@ with "Go on when this step fails" on, leaves the image to start without a seed.
 
 #### Secure Boot and raw disk images
 
-The agent reads from Windows PE whether the firmware started it with Secure Boot on, and reports it
-when it registers. The Machines page shows it. An image that is not signed for Secure Boot does not
-start on a machine with Secure Boot on, so:
+The agent reads from Windows PE whether the firmware started it with Secure Boot on, and whether the
+firmware's list of trusted certificates, db, holds Microsoft's third-party UEFI CAs 2011 and 2023.
+It reports both when it registers, and the Machines page shows them. The server knows which of the
+two CAs each image's boot file is signed under. A machine with Secure Boot on does not start an image
+that is not signed for Secure Boot, nor one signed only under CAs its firmware does not trust: a
+Secured-core PC or Hyper-V's Microsoft Windows template trusts neither, and a PC that never got the
+2023 CA does not start a shim signed since June 2026, when the 2011 one expired. For such an image:
 
 - A machine that reported Secure Boot on gets such an image only when the run allows it: the operator
   ticks the box to write the image anyway when assigning or approving, or the technician types
-  `ANYWAY` at the machine. The server refuses the run otherwise, and the audit row of the assignment says it was
-  allowed. The machine then starts the image once Secure Boot is turned off in its firmware setup, or
-  your own key is enrolled.
+  `ANYWAY` at the machine. The server refuses the run otherwise, and the audit row of the assignment
+  says it was allowed. The machine then starts the image once Secure Boot is turned off in its
+  firmware setup, your own key is enrolled, or, for an image signed under the CA, the CA is allowed
+  there.
 - A machine that did not say gets the run, and the agent checks the firmware again before it erases
   anything: with Secure Boot on and the image not allowed, the run fails there and leaves the disk
   as it was.
 - A machine with Secure Boot off gets the image without a question.
 
 The image's name and the reason stand in each warning, and the run's page says when it was allowed.
+Where the agent cannot read the firmware's list, DDT cannot tell, writes a signed image without a
+question, and says so in the machine's log.
 
 ### When a deployment goes wrong
 
@@ -1688,8 +1698,8 @@ with the Ubuntu 24.04 and Debian 13 cloud images:
   Secure Boot off. On the first machine, with Secure Boot on and the Windows template, the web and
   the console asked for the allowance, and Hyper-V then refused to start it, as the warning says. A
   signed Ubuntu image was written there without a question and did not start either: the Windows
-  template does not trust Microsoft's third-party CA, and DDT does not yet read which CAs a machine
-  trusts.
+  template does not trust Microsoft's third-party CA. The agent has read the firmware's db since, and
+  asks for the allowance there too; that check has run only against fakes so far.
 - A disk with 4 KiB sectors was refused before anything was erased, and Windows was installed over
   the Linux disk.
 - With its seed step skipped by a condition, Ubuntu showed nothing on its screen after the early boot
@@ -1702,8 +1712,7 @@ the web UI and the agent's console in Windows PE are concept UIs until then; M7 
 flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
 installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
 lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,
-which this README stands in for until then. The roadmap also says what is left from M6 and what is
-not planned.
+which this README stands in for until then. The roadmap also says what is not planned.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

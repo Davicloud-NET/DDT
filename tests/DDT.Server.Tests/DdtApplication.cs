@@ -158,7 +158,8 @@ public class DdtApplication : WebApplicationFactory<Program>
         ImageBootCapability capability = ImageBootCapability.SecureBootOk,
         string? architecture = "x64",
         string? name = null,
-        long installedBytes = 16L * 1024 * 1024)
+        long installedBytes = 16L * 1024 * 1024,
+        UefiCa? signedUnder = null)
     {
         ArgumentNullException.ThrowIfNull(content);
 
@@ -173,8 +174,9 @@ public class DdtApplication : WebApplicationFactory<Program>
         image.Language = null;
         image.InstalledBytes = installedBytes;
         image.BootCapability = capability;
+        image.SignedUnder = capability == ImageBootCapability.SecureBootOk ? signedUnder ?? UefiCa.Microsoft2011 : null;
         image.BootDetail = capability == ImageBootCapability.SecureBootOk
-            ? @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's UEFI CA, which PCs trust unless their firmware turns it off, as Secured-core PCs do."
+            ? @"\EFI\BOOT\BOOTX64.EFI is signed by Microsoft Windows UEFI Driver Publisher under Microsoft's third-party UEFI CA 2011, which PCs trust unless their firmware lacks it or turns it off, as Secured-core PCs do."
             : @"\EFI\BOOT\BOOTX64.EFI carries no signature.";
         image.SourceSha256 = Convert.ToHexStringLower(SHA256.HashData([.. content, 1]));
         await database.SaveChangesAsync(TestContext.Current.CancellationToken);

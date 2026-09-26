@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Images;
+
 namespace DDT.Agent;
 
-// SecureBootEnabled is what the firmware says, null when Windows does not tell.
+// SecureBootEnabled is what the firmware says, null when Windows does not tell. TrustedUefiCas says which of Microsoft's
+// third-party UEFI CAs the firmware trusts, null when its signature database cannot be read.
 public sealed record MachineIdentity(
     string SmbiosUuid,
     string PrimaryMac,
@@ -12,4 +15,5 @@ public sealed record MachineIdentity(
     string? Manufacturer,
     string? Model,
     string? SerialNumber,
-    bool? SecureBootEnabled = null);
+    bool? SecureBootEnabled = null,
+    UefiCa? TrustedUefiCas = null);

@@ -171,7 +171,11 @@ public sealed class SequenceRunner(
         _phase = phase;
         _recordRestart = recordRestart;
 
-        RunSession session = new(machineId, run, tokens) { SecureBootEnabled = identity.SecureBootEnabled };
+        RunSession session = new(machineId, run, tokens)
+        {
+            SecureBootEnabled = identity.SecureBootEnabled,
+            TrustedUefiCas = identity.TrustedUefiCas,
+        };
         SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
 
         MachineVariables machine = new(
@@ -471,14 +475,19 @@ public sealed class SequenceRunner(
 
         if (rawImage is not null)
         {
-            if (SecureBootGate.Refusal(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } refusal)
+            if (SecureBootGate.Refusal(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled, session.TrustedUefiCas) is { } refusal)
             {
                 throw new DeploymentStepException(refusal);
             }
 
-            if (SecureBootGate.Warning(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled) is { } warning)
+            if (SecureBootGate.Warning(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled, session.TrustedUefiCas) is { } warning)
             {
                 log.Warning(warning);
+            }
+
+            if (SecureBootGate.Unknown(rawImage, session.SecureBootEnabled, session.TrustedUefiCas) is { } unknown)
+            {
+                log.Warning(unknown);
             }
 
             // A seed step that runs whatever happens has to have every value it uses, which is known now. One with

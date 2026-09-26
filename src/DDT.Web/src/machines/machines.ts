@@ -35,6 +35,9 @@ export interface MachineSummary {
   deployment: DeploymentSummary | null;
   // Whether the firmware started the agent with Secure Boot on; null when it did not say.
   secureBootEnabled: boolean | null;
+  // Which of Microsoft's third-party UEFI CAs, which sign Linux shims, the firmware trusts, as the server writes the
+  // flags: "None", "Microsoft2011", "Microsoft2023" or "Microsoft2011, Microsoft2023"; null when unknown.
+  trustedUefiCas: string | null;
 }
 
 // A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A

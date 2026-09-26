@@ -438,6 +438,7 @@ public sealed partial class ImageUploadCompleter(
             UploadedByUserId = userId,
             UploadedByName = Bounded(userName, 256),
             BootCapability = boot.Capability,
+            SignedUnder = boot.SignedUnder,
             BootDetail = Bounded(boot.Detail, RawImageLimits.MaxBootDetailLength),
             SourceSha256 = import.SourceSha256,
         };

@@ -35,6 +35,7 @@ public static class MachineSummaries
             machine.Disks,
             machine.EligibleDiskCount,
             deployment is null ? null : DeploymentSummaries.From(deployment),
-            machine.SecureBootEnabled);
+            machine.SecureBootEnabled,
+            machine.TrustedUefiCas);
     }
 }

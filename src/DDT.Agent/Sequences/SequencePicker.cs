@@ -6,6 +6,7 @@ using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
+using DDT.Core.Boot;
 using DDT.Core.Unattend;
 
 namespace DDT.Agent.Sequences;
@@ -32,6 +33,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     private LocalDisk? _disk;
     private string? _computerName;
     private bool? _secureBootEnabled;
+    private UefiCa? _trustedUefiCas;
     private bool _allowSecureBootMismatch;
 
     public bool IsAvailable => prompt.IsAvailable;
@@ -42,8 +44,13 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     // The disk chosen so far, which is the confirmed one once Accept returns a request for a sequence that erases it.
     public LocalDisk? ChosenDisk => _disk;
 
-    // disks may be empty when no sequence erases a disk. secureBootEnabled is what the firmware says, if anything.
-    public void Offer(IReadOnlyList<AgentSequenceChoice> sequences, IReadOnlyList<LocalDisk> disks, bool? secureBootEnabled = null)
+    // disks may be empty when no sequence erases a disk. secureBootEnabled is what the firmware says, if anything, and
+    // trustedUefiCas which of Microsoft's third-party UEFI CAs it trusts.
+    public void Offer(
+        IReadOnlyList<AgentSequenceChoice> sequences,
+        IReadOnlyList<LocalDisk> disks,
+        bool? secureBootEnabled = null,
+        UefiCa? trustedUefiCas = null)
     {
         ArgumentNullException.ThrowIfNull(sequences);
         ArgumentNullException.ThrowIfNull(disks);
@@ -60,6 +67,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _sequences = [.. runnable.Where(sequence => sequence.Suggested), .. runnable.Where(sequence => !sequence.Suggested)];
         _disks = disks;
         _secureBootEnabled = secureBootEnabled;
+        _trustedUefiCas = trustedUefiCas;
         StartOver();
     }
 
@@ -72,6 +80,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _disk = null;
         _computerName = null;
         _secureBootEnabled = null;
+        _trustedUefiCas = null;
         _allowSecureBootMismatch = false;
     }
 
@@ -108,10 +117,13 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 
                 return prompt.ReadLineAsync($"Type {ConfirmationWord} to continue", secret: false, cancellationToken);
             case PickerQuestion.SecureBoot:
-                log.Warning(
-                    $"{_sequence!.RawImageName} {(_sequence.RawImageBootCapability == ImageBootCapability.NotSigned ? "will" : "may")} not start " +
-                    "with Secure Boot on, and this machine has Secure Boot on. It starts " +
-                    "only once Secure Boot is turned off in the firmware setup, or your own key is enrolled.");
+                AgentSequenceChoice writing = _sequence!;
+                log.Warning(UntrustedCa(writing)
+                    ? $"{writing.RawImageName} is signed under {MicrosoftUefiCa.Describe(writing.RawImageSignedUnder)}, which this machine's " +
+                        "firmware does not trust. It starts only once that CA is allowed or Secure Boot is turned off in the firmware setup."
+                    : $"{writing.RawImageName} {(writing.RawImageBootCapability == ImageBootCapability.NotSigned ? "will" : "may")} not " +
+                        "start with Secure Boot on, and this machine has Secure Boot on. It starts only once Secure Boot is turned off in " +
+                        "the firmware setup, or your own key is enrolled.");
 
                 return prompt.ReadLineAsync($"Type {SecureBootWord} to write it all the same", secret: false, cancellationToken);
             default:
@@ -242,7 +254,8 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 
     // Only where the firmware says Secure Boot is on: elsewhere the image may well start.
     private PickerQuestion AfterConfirmation() =>
-        _sequence!.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown && _secureBootEnabled == true
+        (_sequence!.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown || UntrustedCa(_sequence))
+        && _secureBootEnabled == true
             ? PickerQuestion.SecureBoot
             : PickerQuestion.None;
 
@@ -262,13 +275,20 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     private AgentRunRequest Request() =>
         new(_sequence!.Id, _sequence.ErasesDisk ? _disk!.Number : null, _computerName, _allowSecureBootMismatch);
 
-    private static string Describe(AgentSequenceChoice sequence)
+    // Signed for Secure Boot, but only under CAs this machine's firmware does not trust, while Secure Boot is on.
+    private bool UntrustedCa(AgentSequenceChoice sequence) =>
+        sequence.RawImageBootCapability == ImageBootCapability.SecureBootOk
+        && _secureBootEnabled == true
+        && MicrosoftUefiCa.Untrusted(_trustedUefiCas, sequence.RawImageSignedUnder);
+
+    private string Describe(AgentSequenceChoice sequence)
     {
         IEnumerable<string> details = new[]
         {
             sequence.Suggested ? "suggested for this machine" : null,
             sequence.ErasesDisk ? "erases a disk" : null,
             sequence.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown ? "not for Secure Boot" : null,
+            UntrustedCa(sequence) ? "not for this machine's Secure Boot" : null,
             sequence.RequiredBytes > 0 ? $"needs {ByteSize.Format(sequence.RequiredBytes)}" : null,
         }.OfType<string>();
 

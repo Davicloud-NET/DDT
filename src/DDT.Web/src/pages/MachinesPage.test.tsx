@@ -49,6 +49,7 @@ function machine(overrides: Partial<MachineSummary>): MachineSummary {
     eligibleDiskCount: 1,
     deployment: null,
     secureBootEnabled: null,
+    trustedUefiCas: null,
     ...overrides,
   };
 }
@@ -94,6 +95,7 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     updatedBy: "admin",
     rawImageName: null,
     rawImageBootCapability: null,
+    rawImageSignedUnder: null,
     ...overrides,
   };
 }
@@ -106,6 +108,7 @@ const linux = sequence({
   stepCount: 2,
   rawImageName: "noble",
   rawImageBootCapability: "NotSigned",
+  rawImageSignedUnder: null,
 });
 
 function resolution(overrides: Partial<MachineSequenceResolution>): MachineSequenceResolution {

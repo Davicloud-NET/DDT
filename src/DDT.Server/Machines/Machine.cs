@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
 
@@ -42,6 +43,10 @@ public sealed class Machine
     // What the firmware said at the last registration; null when the agent could not tell or is older than raw disk
     // images.
     public bool? SecureBootEnabled { get; set; }
+
+    // Which of Microsoft's third-party UEFI CAs the firmware's db held at the last registration; null when the agent
+    // could not read db or is older than this field.
+    public UefiCa? TrustedUefiCas { get; set; }
 
     public MachineState State { get; set; } = MachineState.Pending;
 

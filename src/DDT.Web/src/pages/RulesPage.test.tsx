@@ -48,6 +48,7 @@ function sequence(id: string, name: string, problemCount = 0): SequenceSummary {
     updatedBy: "admin",
     rawImageName: null,
     rawImageBootCapability: null,
+    rawImageSignedUnder: null,
   };
 }
 

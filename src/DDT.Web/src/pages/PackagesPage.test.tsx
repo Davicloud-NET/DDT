@@ -87,6 +87,7 @@ function summary(id: string, name: string): SequenceSummary {
     updatedBy: "admin",
     rawImageName: null,
     rawImageBootCapability: null,
+    rawImageSignedUnder: null,
   };
 }
 

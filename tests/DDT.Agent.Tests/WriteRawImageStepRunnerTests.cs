@@ -4,6 +4,7 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
 using DDT.Contracts.Sequences;
 using DDT.Core.Disks;
@@ -96,6 +97,32 @@ public sealed class WriteRawImageStepRunnerTests : IDisposable
 
         Assert.Equal(StepOutcome.Done, (await RunAsync()).Outcome);
         Assert.Equal(["clean 0"], _run.Tools.Calls);
+    }
+
+    // A firmware with only the 2011 CA does not start a shim signed since June 2026, under the 2023 one.
+    [Fact]
+    public async Task RefusesASignedImageWhereTheFirmwareDoesNotTrustItsCa()
+    {
+        AgentRunImage image2023 = _image.RunImage(signedUnder: UefiCa.Microsoft2023);
+        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011));
+        _image.Serve(_run.Server);
+
+        DeploymentStepException refusal = await Assert.ThrowsAsync<DeploymentStepException>(RunAsync);
+
+        Assert.Equal(
+            "noble-test is signed under Microsoft's third-party UEFI CA 2023, which this machine's firmware does not trust, and this " +
+            "machine has Secure Boot on, so it would not start. Allow that CA or turn Secure Boot off in the firmware setup, or start the " +
+            "run again allowing the image.",
+            refusal.Message);
+        Assert.Empty(_run.Tools.Calls);
+
+        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, allowSecureBootMismatch: true, trustedUefiCas: UefiCa.Microsoft2011));
+        _image.Serve(_run.Server);
+        Assert.Equal(StepOutcome.Done, (await RunAsync()).Outcome);
+
+        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023));
+        _image.Serve(_run.Server);
+        Assert.Equal(StepOutcome.Done, (await RunAsync()).Outcome);
     }
 
     [Fact]

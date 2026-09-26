@@ -5,6 +5,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -110,6 +111,24 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { SecureBootEnabled = null }, registered.ResumeToken));
         Assert.Null((await MachineAsync(admin, registered.MachineId)).SecureBootEnabled);
+    }
+
+    [Fact]
+    public async Task ShowsWhichOfMicrosoftsThirdPartyCasTheFirmwareTrustsAsTheAgentReportsLast()
+    {
+        SignedInClient admin = await _application.AdministratorAsync();
+        using AgentClient agent = Agent();
+        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac()) with { SecureBootEnabled = true, TrustedUefiCas = UefiCa.None };
+
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        Assert.Equal(UefiCa.None, (await MachineAsync(admin, registered.MachineId)).TrustedUefiCas);
+
+        UefiCa both = UefiCa.Microsoft2011 | UefiCa.Microsoft2023;
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { TrustedUefiCas = both }, registered.ResumeToken));
+        Assert.Equal(both, (await MachineAsync(admin, registered.MachineId)).TrustedUefiCas);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { TrustedUefiCas = null }, registered.ResumeToken));
+        Assert.Null((await MachineAsync(admin, registered.MachineId)).TrustedUefiCas);
     }
 
     private static async Task<MachineSummary> MachineAsync(SignedInClient admin, Guid machineId) =>

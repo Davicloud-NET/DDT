@@ -456,7 +456,7 @@ public sealed class AgentLoop(
             }
         }
 
-        picker.Offer(sequences, _pickableDisks ?? [], _lastIdentity?.SecureBootEnabled);
+        picker.Offer(sequences, _pickableDisks ?? [], _lastIdentity?.SecureBootEnabled, _lastIdentity?.TrustedUefiCas);
     }
 
     // Waits for the prompt to let go of the console before anything else can ask for input.
@@ -538,7 +538,8 @@ public sealed class AgentLoop(
                         eligibleDisks,
                         _runToken,
                         SequenceDefinition.CurrentVersion,
-                        SecureBootEnabled: identity.SecureBootEnabled),
+                        SecureBootEnabled: identity.SecureBootEnabled,
+                        TrustedUefiCas: identity.TrustedUefiCas),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException)

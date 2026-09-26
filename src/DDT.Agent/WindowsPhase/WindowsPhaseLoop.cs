@@ -230,7 +230,8 @@ public sealed class WindowsPhaseLoop(
                         RunToken: runToken,
                         SequenceVersion: SequenceDefinition.CurrentVersion,
                         Environment: AgentEnvironment.Windows,
-                        SecureBootEnabled: identity.SecureBootEnabled),
+                        SecureBootEnabled: identity.SecureBootEnabled,
+                        TrustedUefiCas: identity.TrustedUefiCas),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)

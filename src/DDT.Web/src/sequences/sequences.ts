@@ -129,9 +129,11 @@ export interface SequenceSummary {
   continuesInWindows: boolean;
   updatedUtc: string;
   updatedBy: string | null;
-  // The raw disk image the sequence writes, if any, and whether it starts with Secure Boot on.
+  // The raw disk image the sequence writes, if any, whether it starts with Secure Boot on, and which of Microsoft's
+  // third-party UEFI CAs its boot file is signed under, written as the machine's trustedUefiCas are.
   rawImageName: string | null;
   rawImageBootCapability: ImageBootCapability | null;
+  rawImageSignedUnder: string | null;
 }
 
 // SequenceDefinition.CurrentVersion: the document schema this page writes.

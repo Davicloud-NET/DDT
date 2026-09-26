@@ -22,6 +22,14 @@ namespace DDT.Server.Migrations
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
+                name: "TrustedUefiCas",
+                schema: "ddt",
+                table: "Machines",
+                type: "character varying(32)",
+                maxLength: 32,
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
                 name: "BootCapability",
                 schema: "ddt",
                 table: "Images",
@@ -35,6 +43,14 @@ namespace DDT.Server.Migrations
                 table: "Images",
                 type: "character varying(512)",
                 maxLength: 512,
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "SignedUnder",
+                schema: "ddt",
+                table: "Images",
+                type: "character varying(32)",
+                maxLength: 32,
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
@@ -61,6 +77,14 @@ namespace DDT.Server.Migrations
                 maxLength: 16,
                 nullable: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "SignedUnder",
+                schema: "ddt",
+                table: "DeploymentArtifacts",
+                type: "character varying(32)",
+                maxLength: 32,
+                nullable: true);
+
             migrationBuilder.CreateIndex(
                 name: "IX_Images_SourceSha256",
                 schema: "ddt",
@@ -82,12 +106,22 @@ namespace DDT.Server.Migrations
                 table: "Machines");
 
             migrationBuilder.DropColumn(
+                name: "TrustedUefiCas",
+                schema: "ddt",
+                table: "Machines");
+
+            migrationBuilder.DropColumn(
                 name: "BootCapability",
                 schema: "ddt",
                 table: "Images");
 
             migrationBuilder.DropColumn(
                 name: "BootDetail",
+                schema: "ddt",
+                table: "Images");
+
+            migrationBuilder.DropColumn(
+                name: "SignedUnder",
                 schema: "ddt",
                 table: "Images");
 
@@ -103,6 +137,11 @@ namespace DDT.Server.Migrations
 
             migrationBuilder.DropColumn(
                 name: "BootCapability",
+                schema: "ddt",
+                table: "DeploymentArtifacts");
+
+            migrationBuilder.DropColumn(
+                name: "SignedUnder",
                 schema: "ddt",
                 table: "DeploymentArtifacts");
         }

@@ -93,7 +93,8 @@ public static class RegistrationValidator
             registration.RunToken,
             Math.Max(registration.SequenceVersion, 0),
             registration.Environment,
-            registration.SecureBootEnabled);
+            registration.SecureBootEnabled,
+            registration.TrustedUefiCas);
         error = string.Empty;
 
         return true;

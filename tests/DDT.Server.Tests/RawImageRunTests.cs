@@ -23,8 +23,13 @@ namespace DDT.Server.Tests;
 // Runs of sequences that write a raw disk image, and who may let one that will not start with Secure Boot on run.
 public sealed class RawImageRunTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
-    private Task<Image> DiskImageAsync(ImageBootCapability capability = ImageBootCapability.SecureBootOk) =>
-        application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), capability, name: $"noble {Guid.NewGuid():N}", installedBytes: 3_500_000_000);
+    private Task<Image> DiskImageAsync(ImageBootCapability capability = ImageBootCapability.SecureBootOk, UefiCa? signedUnder = null) =>
+        application.SeedRawImageAsync(
+            RandomNumberGenerator.GetBytes(4096),
+            capability,
+            name: $"noble {Guid.NewGuid():N}",
+            installedBytes: 3_500_000_000,
+            signedUnder: signedUnder);
 
     private async Task<SequenceView> LinuxAsync(Image image) =>
         await (await application.AdministratorAsync()).CreatedSequenceAsync(SequenceRequests.Linux(image.Id));
@@ -58,7 +63,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         AgentRun handed = Assert.IsType<AgentRun>((await machine.NextAsync()).Run);
 
         Assert.Equal(
-            [new AgentRunImage(image.Id, image.Name, image.Sha256, image.SizeBytes, 0, 3_500_000_000, ImageKind.RawDisk, ImageBootCapability.SecureBootOk)],
+            [new AgentRunImage(image.Id, image.Name, image.Sha256, image.SizeBytes, 0, 3_500_000_000, ImageKind.RawDisk, ImageBootCapability.SecureBootOk, UefiCa.Microsoft2011)],
             handed.Images);
         Assert.False(handed.AllowSecureBootMismatch);
         Assert.Equal(2, handed.Sequence.Version);
@@ -156,6 +161,44 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         DeploymentSummary unasked = await administrator.AssignedAsync(unknown.Id, sequence.Id, "LINUX-04");
         Assert.False(Assert.IsType<AgentRun>((await unknown.NextAsync()).Run).AllowSecureBootMismatch);
         Assert.Equal([$"{sequence.Name}, revision 1, to machine {unknown.Id:D}."], await AuditAsync(unasked.Id));
+    }
+
+    // A machine with Secure Boot on starts no image signed only under CAs its firmware does not trust: one that holds
+    // only the 2011 CA refuses a shim signed since June 2026, and a Secured-core PC or Hyper-V's Windows template
+    // refuses both.
+    [Fact]
+    public async Task AsksForTheOverrideForASignedImageWhereTheFirmwareDoesNotTrustItsCa()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine only2011 = await DeployingMachine.RegisterAsync(
+            application,
+            [DeployingMachine.Disk(0)],
+            secureBootEnabled: true,
+            trustedUefiCas: UefiCa.Microsoft2011);
+        using DeployingMachine both = await DeployingMachine.RegisterAsync(
+            application,
+            [DeployingMachine.Disk(0)],
+            secureBootEnabled: true,
+            trustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023);
+        Image image = await DiskImageAsync(signedUnder: UefiCa.Microsoft2023);
+        SequenceView sequence = await LinuxAsync(image);
+
+        ValidationProblemDetails refused = await ValidationAsync(await administrator.AssignAsync(only2011.Id, sequence.Id, "LINUX-07"));
+        Assert.Equal(
+            [$"{image.Name} is signed under Microsoft's third-party UEFI CA 2023, which this machine's firmware does not trust, and this machine has Secure Boot on. Allow it for this run, or allow that CA or turn Secure Boot off in the machine's firmware first."],
+            refused.Errors["allowSecureBootMismatch"]);
+
+        DeploymentSummary allowed = (await RegisteredMachine.ReadAsync<MachineSummary>(
+            await administrator.AssignAsync(only2011.Id, sequence.Id, "LINUX-07", allowSecureBootMismatch: true))).Deployment!;
+        AgentRun run = Assert.IsType<AgentRun>((await only2011.NextAsync()).Run);
+        Assert.True(run.AllowSecureBootMismatch);
+        Assert.Equal(UefiCa.Microsoft2023, Assert.Single(run.Images).SignedUnder);
+        Assert.Equal(
+            [$"{sequence.Name}, revision 1, to machine {only2011.Id:D}. It may write {image.Name} although this machine's firmware does not trust Microsoft's third-party UEFI CA 2023, which signed it."],
+            await AuditAsync(allowed.Id));
+
+        DeploymentSummary unasked = await administrator.AssignedAsync(both.Id, sequence.Id, "LINUX-08");
+        Assert.False((await administrator.RunAsync(unasked.Id)).AllowSecureBootMismatch);
     }
 
     [Fact]

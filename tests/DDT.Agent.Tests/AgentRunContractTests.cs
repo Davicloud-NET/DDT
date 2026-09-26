@@ -5,6 +5,7 @@
 using System.Text.Json;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Sequences;
 using Xunit;
 
@@ -47,10 +48,11 @@ public sealed class AgentRunContractTests
             RunToken: "run-token",
             SequenceVersion: SequenceDefinition.CurrentVersion,
             Environment: AgentEnvironment.Windows,
-            SecureBootEnabled: true);
+            SecureBootEnabled: true,
+            TrustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023);
 
         Assert.EndsWith(
-            ""","runToken":"run-token","sequenceVersion":2,"environment":"Windows","secureBootEnabled":true}""",
+            ""","runToken":"run-token","sequenceVersion":2,"environment":"Windows","secureBootEnabled":true,"trustedUefiCas":"Microsoft2011, Microsoft2023"}""",
             JsonSerializer.Serialize(registration, AgentJsonContext.Default.AgentRegistration),
             StringComparison.Ordinal);
     }

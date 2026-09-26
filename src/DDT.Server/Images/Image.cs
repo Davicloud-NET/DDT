@@ -44,6 +44,9 @@ public sealed class Image
     // of the uncompressed disk, which finds the same disk uploaded again in another format.
     public ImageBootCapability? BootCapability { get; set; }
 
+    // For an image signed for Secure Boot: which of Microsoft's third-party UEFI CAs its boot file is signed under.
+    public UefiCa? SignedUnder { get; set; }
+
     public string? BootDetail { get; set; }
 
     public string? SourceSha256 { get; set; }

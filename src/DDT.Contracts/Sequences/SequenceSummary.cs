@@ -22,4 +22,5 @@ public sealed record SequenceSummary(
     DateTimeOffset UpdatedUtc,
     string? UpdatedBy,
     string? RawImageName = null,
-    ImageBootCapability? RawImageBootCapability = null);
+    ImageBootCapability? RawImageBootCapability = null,
+    UefiCa? RawImageSignedUnder = null);

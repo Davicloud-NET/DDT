@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import type { SequenceSummary } from "@/sequences/sequences";
 import { machineSummary } from "@/test/builders";
 
-import { secureBootLabel, secureBootRisk } from "./secureBoot";
+import { secureBootFact, secureBootLabel, secureBootRisk } from "./secureBoot";
 
 const linux: SequenceSummary = {
   id: "s1",
@@ -24,6 +24,7 @@ const linux: SequenceSummary = {
   updatedBy: null,
   rawImageName: "noble",
   rawImageBootCapability: "NotSigned",
+  rawImageSignedUnder: null,
 };
 
 describe("secureBootRisk", () => {
@@ -51,6 +52,7 @@ describe("secureBootRisk", () => {
     const risk = secureBootRisk(machineSummary({ secureBootEnabled: null }), {
       ...linux,
       rawImageBootCapability: "Unknown",
+      rawImageSignedUnder: null,
     });
 
     expect(risk?.required).toBe(false);
@@ -60,9 +62,63 @@ describe("secureBootRisk", () => {
   });
 });
 
+describe("secureBootRisk for a signed image", () => {
+  const signed2023: SequenceSummary = {
+    ...linux,
+    rawImageBootCapability: "SecureBootOk",
+    rawImageSignedUnder: "Microsoft2023",
+  };
+
+  it("requires the allowance where the firmware trusts none of the CAs the image is signed under", () => {
+    const risk = secureBootRisk(
+      machineSummary({ secureBootEnabled: true, trustedUefiCas: "Microsoft2011" }),
+      signed2023,
+    );
+
+    expect(risk?.required).toBe(true);
+    expect(risk?.warning).toMatch(
+      /^noble is signed under Microsoft's third-party UEFI CA 2023, which this machine's firmware does not trust\./,
+    );
+    expect(
+      secureBootRisk(machineSummary({ secureBootEnabled: true, trustedUefiCas: "None" }), {
+        ...signed2023,
+        rawImageSignedUnder: "Microsoft2011, Microsoft2023",
+      })?.warning,
+    ).toMatch(/^noble is signed under Microsoft's third-party UEFI CAs 2011 and 2023,/);
+  });
+
+  it("has nothing to allow where the firmware trusts a CA it is signed under, does not say, or Secure Boot is off", () => {
+    const both = "Microsoft2011, Microsoft2023";
+
+    expect(
+      secureBootRisk(machineSummary({ secureBootEnabled: true, trustedUefiCas: both }), signed2023),
+    ).toBeNull();
+    expect(
+      secureBootRisk(machineSummary({ secureBootEnabled: true, trustedUefiCas: null }), signed2023),
+    ).toBeNull();
+    expect(
+      secureBootRisk(
+        machineSummary({ secureBootEnabled: false, trustedUefiCas: "None" }),
+        signed2023,
+      ),
+    ).toBeNull();
+  });
+});
+
 describe("secureBootLabel", () => {
   it("says on or off, and nothing for a machine that did not say", () => {
     expect(secureBootLabel(machineSummary({ secureBootEnabled: true }))).toBe("Secure Boot on");
+    expect(
+      secureBootLabel(machineSummary({ secureBootEnabled: true, trustedUefiCas: "None" })),
+    ).toBe("Secure Boot on, without Microsoft's third-party UEFI CA");
+    expect(
+      secureBootLabel(machineSummary({ secureBootEnabled: true, trustedUefiCas: "Microsoft2011" })),
+    ).toBe("Secure Boot on, with Microsoft's third-party UEFI CA 2011 only");
+    expect(
+      secureBootFact(
+        machineSummary({ secureBootEnabled: true, trustedUefiCas: "Microsoft2011, Microsoft2023" }),
+      ),
+    ).toBe("On");
     expect(secureBootLabel(machineSummary({ secureBootEnabled: false }))).toBe("Secure Boot off");
     expect(secureBootLabel(machineSummary({ secureBootEnabled: null }))).toBeNull();
   });

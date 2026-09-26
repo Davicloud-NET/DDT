@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Images;
+
 namespace DDT.Contracts.Agents;
 
 // ResumeToken is the one the agent was last given, if any. It proves the registration comes from the
@@ -10,6 +12,8 @@ namespace DDT.Contracts.Agents;
 // run after a restart. SequenceVersion is the highest SequenceDefinition.Version the agent runs, 0 for an agent from
 // before task sequences: an agent throws on a step kind it does not know, so the server hands it no newer run.
 // SecureBootEnabled is what the firmware says, null when the agent cannot tell or is older than raw disk images.
+// TrustedUefiCas says which of Microsoft's third-party UEFI CAs, which sign the shims of Linux distributions, the
+// firmware's db holds; null when the agent cannot read or parse db, or is older than this field.
 public sealed record AgentRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -23,4 +27,5 @@ public sealed record AgentRegistration(
     string? RunToken = null,
     int SequenceVersion = 0,
     AgentEnvironment Environment = AgentEnvironment.WindowsPE,
-    bool? SecureBootEnabled = null);
+    bool? SecureBootEnabled = null,
+    UefiCa? TrustedUefiCas = null);

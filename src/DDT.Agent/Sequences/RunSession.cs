@@ -4,6 +4,7 @@
 
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Images;
 
 namespace DDT.Agent.Sequences;
 
@@ -22,6 +23,9 @@ public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens to
 
     // What the firmware said at the start of the run.
     public bool? SecureBootEnabled { get; init; }
+
+    // Which of Microsoft's third-party UEFI CAs the firmware trusts, null when that is not known.
+    public UefiCa? TrustedUefiCas { get; init; }
 
     public TargetVolumes? Volumes { get; set; }
 

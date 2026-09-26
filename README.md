@@ -73,6 +73,7 @@ NOTICE                     attribution notice and the additional terms under GPL
 THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
 licenses/                  licence texts of that software, one folder per component
 docs/settings.md           plan for moving admin settings from configuration to a settings page
+docs/roadmap.md            the milestones after M6 and what each one holds
 src/
   DDT.Core/                domain model, image library, hashing, task sequences, GPT, FAT and
                            cloud-init seeds. No ASP.NET, no EF
@@ -1696,14 +1697,13 @@ with the Ubuntu 24.04 and Debian 13 cloud images:
   serial console, so it was most likely waiting for the network.
 - A power cut during the write could not be timed: the write took seconds.
 
-Later milestones, in order: M6.5 the real UI, as the web UI and the agent's console in Windows PE are
-concept UIs until then; M7 the task sequence flow builder; M8 the Linux phase. In M8 a run goes on in
-the installed Linux as it goes on in the installed Windows: the cloud-init seed starts a Linux build
-of the agent, which runs the sequence's steps there, bash scripts, files packages and restarts
-included, fetches secrets when a step needs them, reports each step with its log, and ends the run
-only when those steps are done. Until then a run that writes a raw disk image ends when the disk is
-written, and what the seed's user-data does at the first start is up to cloud-init, which DDT does
-not watch. M9 is the documentation of the whole project, which this README stands in for until then.
+Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: M6.5 the real UI, as
+the web UI and the agent's console in Windows PE are concept UIs until then; M7 the task sequence
+flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
+installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
+lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,
+which this README stands in for until then. The roadmap also says what is left from M6 and what is
+not planned.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

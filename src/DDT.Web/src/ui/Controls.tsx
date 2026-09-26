@@ -58,34 +58,73 @@ export function FilterSelector({
           onChange(String(key));
         }
       }}
-      className="flex flex-wrap gap-0.5 rounded-panel bg-well p-0.75 shadow-[inset_0_0_0_1px_var(--color-line-soft)]"
+      className={wellClass}
     >
       {options.map((option) => (
-        <ToggleButton
-          key={option.id}
-          id={option.id}
-          className={cx(
-            "flex h-8 cursor-pointer items-center gap-2 rounded-key px-2.75 type-label font-semibold text-ink-2 outline-none",
-            "hover:text-ink selected:bg-raised selected:text-ink selected:shadow-[0_0_0_1px_var(--color-line)]",
-            "focus-visible:outline-2 focus-visible:outline-focus",
-          )}
-        >
-          <span>{option.label}</span>
-          {option.count !== undefined ? (
-            <span
-              className={cx(
-                "inline-flex h-5 min-w-5 items-center justify-center rounded-tag px-1 type-numeral",
-                option.tone === "attention" && option.count > 0 && "bg-attention text-on-attention",
-                option.tone === "fail" && option.count > 0 && "bg-fail text-on-fail",
-                (option.tone === undefined || option.count === 0) && "text-muted",
-              )}
-            >
-              {option.count}
-            </span>
-          ) : null}
-        </ToggleButton>
+        <FilterKey key={option.id} option={option} />
       ))}
     </ToggleButtonGroup>
+  );
+}
+
+// The same well for filters that combine, such as the levels of a log: every key toggles on its own, and at
+// least one stays on.
+export function FilterChips({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: FilterOption[];
+  selected: ReadonlySet<string>;
+  onChange: (selected: Set<string>) => void;
+}) {
+  return (
+    <ToggleButtonGroup
+      aria-label={label}
+      selectionMode="multiple"
+      disallowEmptySelection
+      selectedKeys={selected}
+      onSelectionChange={(keys: Set<Key>) => {
+        onChange(new Set([...keys].map(String)));
+      }}
+      className={wellClass}
+    >
+      {options.map((option) => (
+        <FilterKey key={option.id} option={option} />
+      ))}
+    </ToggleButtonGroup>
+  );
+}
+
+const wellClass =
+  "flex flex-wrap gap-0.5 rounded-panel bg-well p-0.75 shadow-[inset_0_0_0_1px_var(--color-line-soft)]";
+
+function FilterKey({ option }: { option: FilterOption }) {
+  return (
+    <ToggleButton
+      id={option.id}
+      className={cx(
+        "flex h-8 cursor-pointer items-center gap-2 rounded-key px-2.75 type-label font-semibold text-ink-2 outline-none",
+        "hover:text-ink selected:bg-raised selected:text-ink selected:shadow-[0_0_0_1px_var(--color-line)]",
+        "focus-visible:outline-2 focus-visible:outline-focus",
+      )}
+    >
+      <span>{option.label}</span>
+      {option.count !== undefined ? (
+        <span
+          className={cx(
+            "inline-flex h-5 min-w-5 items-center justify-center rounded-tag px-1 type-numeral",
+            option.tone === "attention" && option.count > 0 && "bg-attention text-on-attention",
+            option.tone === "fail" && option.count > 0 && "bg-fail text-on-fail",
+            (option.tone === undefined || option.count === 0) && "text-muted",
+          )}
+        >
+          {option.count}
+        </span>
+      ) : null}
+    </ToggleButton>
   );
 }
 

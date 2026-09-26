@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 import type { DeploymentStepView, DeploymentSummary } from "@/deployments/deployments";
 import { newStep } from "@/sequences/steps";
 
-import { runTimeline } from "./runs";
+import { runPercent, runTimeline } from "./runs";
+import { runPhases } from "./runView";
 
 const run: DeploymentSummary = {
   id: "d1",
@@ -109,5 +110,42 @@ describe("runTimeline", () => {
     );
 
     expect(entries.at(-1)?.text).toBe("The hand-over to Windows began");
+  });
+});
+
+describe("runPercent", () => {
+  it("counts finished and skipped steps whole and the running one by its percentage", () => {
+    expect(
+      runPercent([
+        step(0, {}),
+        step(1, { state: "Skipped", percent: 0 }),
+        step(2, { state: "Running", percent: 50 }),
+        step(3, { state: "Pending", percent: 0 }),
+      ]),
+    ).toBe(63);
+  });
+
+  it("is nothing for a run without steps", () => {
+    expect(runPercent([])).toBe(0);
+  });
+});
+
+describe("runPhases", () => {
+  it("groups consecutive steps by phase, in step order", () => {
+    expect(
+      runPhases([
+        step(2, { phase: "Windows" }),
+        step(0, {}),
+        step(1, {}),
+        step(3, { phase: "Windows" }),
+      ]),
+    ).toEqual([
+      { phase: "WindowsPE", steps: 2 },
+      { phase: "Windows", steps: 2 },
+    ]);
+  });
+
+  it("draws no phases for a run that stays in one", () => {
+    expect(runPhases([step(0, {}), step(1, {})])).toEqual([]);
   });
 });

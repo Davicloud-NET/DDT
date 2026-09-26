@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
+import { formattingLocale } from "@/i18n/i18n";
 import { apiGet } from "@/lib/api";
 import { formatDuration } from "@/lib/format";
 
@@ -74,9 +77,12 @@ export function clockNote(line: MachineLogEntry): string | null {
     return null;
   }
 
-  const said = new Date(line.agentTimestampUtc).toLocaleTimeString();
+  const said = new Date(line.agentTimestampUtc).toLocaleTimeString(formattingLocale());
+  const off = formatDuration(Math.abs(offset));
 
-  return `The agent's clock said ${said}, ${formatDuration(Math.abs(offset))} ${offset < 0 ? "behind" : "ahead of"} the server.`;
+  return offset < 0
+    ? t`The agent's clock said ${said}, ${off} behind the server.`
+    : t`The agent's clock said ${said}, ${off} ahead of the server.`;
 }
 
 export interface LogFilter {

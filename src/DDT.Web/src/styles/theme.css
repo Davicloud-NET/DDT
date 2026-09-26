@@ -52,6 +52,9 @@
   --sg-console-text: #D9DDDA;
   --sg-console-muted: #A0A8AC;
   --sg-console-line: #2C3134;
+  --sg-console-attention: #F2B84B;
+  --sg-console-fail: #F28B82;
+  --sg-console-selected: #2A3036;
   --sg-backdrop: rgb(21 24 26 / 0.45);
   --sg-edge-panel: rgb(31 36 38 / 0.09);
   --sg-edge-overlay: rgb(31 36 38 / 0.08);
@@ -107,6 +110,9 @@
   --sg-console-text: #D9DDDA;
   --sg-console-muted: #A0A8AC;
   --sg-console-line: #2C3134;
+  --sg-console-attention: #F2B84B;
+  --sg-console-fail: #F28B82;
+  --sg-console-selected: #2A3036;
   --sg-backdrop: rgb(0 0 0 / 0.55);
   --sg-edge-panel: rgb(255 255 255 / 0.06);
   --sg-edge-overlay: rgb(255 255 255 / 0.08);
@@ -173,6 +179,9 @@
   --color-console-text: var(--sg-console-text);
   --color-console-muted: var(--sg-console-muted);
   --color-console-line: var(--sg-console-line);
+  --color-console-attention: var(--sg-console-attention);
+  --color-console-fail: var(--sg-console-fail);
+  --color-console-selected: var(--sg-console-selected);
   --color-backdrop: var(--sg-backdrop);
   --color-edge-panel: var(--sg-edge-panel);
   --color-edge-overlay: var(--sg-edge-overlay);

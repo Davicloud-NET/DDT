@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { i18n, type MessageDescriptor } from "@lingui/core";
+import { msg, t } from "@lingui/core/macro";
+
 import type {
   DeploymentState,
   DeploymentStepView,
@@ -17,7 +20,7 @@ import type {
   SequenceStep,
   StepCondition,
 } from "@/sequences/sequences";
-import { phaseLabel } from "@/sequences/steps";
+import { phaseLabel, variableLabel } from "@/sequences/steps";
 
 // One moment of a run, on the server's clock.
 export interface TimelineEntry {
@@ -26,27 +29,19 @@ export interface TimelineEntry {
   text: string;
 }
 
-const variableLabels = new Map([
-  ["Manufacturer", "Manufacturer"],
-  ["Model", "Model"],
-  ["SerialNumber", "Serial number"],
-  ["SmbiosUuid", "SMBIOS UUID"],
-  ["MacAddress", "MAC address"],
-  ["ComputerName", "Computer name"],
-  ["Phase", "Phase"],
-]);
-
-const operatorLabels: Record<ConditionOperator, string> = {
-  Equals: "is",
-  NotEquals: "is not",
-  StartsWith: "starts with",
-  Contains: "contains",
+const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
+  Equals: msg`is`,
+  NotEquals: msg`is not`,
+  StartsWith: msg`starts with`,
+  Contains: msg`contains`,
 };
 
 export function describeCondition(condition: StepCondition): string {
-  const variable = variableLabels.get(condition.variable) ?? condition.variable;
+  const variable = variableLabel(condition.variable);
+  const operator = i18n._(operatorLabels[condition.operator]);
+  const value = condition.value;
 
-  return `${variable} ${operatorLabels[condition.operator]} "${condition.value}"`;
+  return t`${variable} ${operator} "${value}"`;
 }
 
 // What the machine reports for a condition's variable now; the run checked what it reported then.
@@ -83,18 +78,19 @@ export function skipReason(
   }
 
   if (planned === undefined || planned.conditions.length === 0) {
-    return "Skipped.";
+    return t`Skipped.`;
   }
 
-  const conditions = planned.conditions.map((condition) => {
-    const value = machine === null ? null : reported(condition.variable, machine, step.phase);
+  const conditions = planned.conditions
+    .map((condition) => {
+      const value = machine === null ? null : reported(condition.variable, machine, step.phase);
+      const described = describeCondition(condition);
 
-    return value === null
-      ? describeCondition(condition)
-      : `${describeCondition(condition)}, and the machine reports "${value}"`;
-  });
+      return value === null ? described : t`${described}, and the machine reports "${value}"`;
+    })
+    .join("; ");
 
-  return `Skipped, because not every condition held: ${conditions.join("; ")}.`;
+  return t`Skipped, because not every condition held: ${conditions}.`;
 }
 
 export function plannedSteps(definition: SequenceDefinition | null): Map<string, SequenceStep> {
@@ -126,16 +122,38 @@ export function stepDuration(step: DeploymentStepView, now: number): number | nu
   return end - Date.parse(step.startedUtc);
 }
 
+// How far the whole run is, from 0 to 100: every finished or skipped step counts whole, the running one by its
+// percentage. Steps take very different times, so this is a rough measure, shown as such.
+export function runPercent(steps: readonly DeploymentStepView[]): number {
+  if (steps.length === 0) {
+    return 0;
+  }
+
+  const done = steps.reduce(
+    (sum, step) =>
+      sum +
+      (step.state === "Running"
+        ? Math.min(100, Math.max(0, step.percent)) / 100
+        : step.state === "Pending"
+          ? 0
+          : 1),
+    0,
+  );
+
+  return Math.round((done / steps.length) * 100);
+}
+
 function assignment(run: DeploymentSummary): string {
-  const by = run.requestedBy ?? "an operator";
+  const by = run.requestedBy ?? t`an operator`;
+  const title = run.title;
 
   switch (run.source) {
     case "Web":
-      return `${by} assigned ${run.title} on the web`;
+      return t`${by} assigned ${title} on the web`;
     case "Rule":
-      return `${by} approved the machine on the web to run ${run.title}, which a rule chose`;
+      return t`${by} approved the machine on the web to run ${title}, which a rule chose`;
     case "Console":
-      return `${by} signed in at the machine and chose ${run.title} there`;
+      return t`${by} signed in at the machine and chose ${title} there`;
   }
 }
 
@@ -155,20 +173,22 @@ export function runTimeline(
   const entries: TimelineEntry[] = [];
 
   if (machine !== null && Date.parse(machine.firstSeenUtc) <= Date.parse(run.createdUtc)) {
+    const from = machine.firstSeenAddress;
+
     entries.push({
       key: "registered",
       utc: machine.firstSeenUtc,
       text:
-        machine.firstSeenAddress === null
-          ? "The machine registered for the first time"
-          : `The machine registered for the first time, from ${machine.firstSeenAddress}`,
+        from === null
+          ? t`The machine registered for the first time`
+          : t`The machine registered for the first time, from ${from}`,
     });
   }
 
   entries.push({ key: "assigned", utc: run.createdUtc, text: assignment(run) });
 
   if (run.startedUtc !== null) {
-    entries.push({ key: "started", utc: run.startedUtc, text: "The agent started the run" });
+    entries.push({ key: "started", utc: run.startedUtc, text: t`The agent started the run` });
   }
 
   steps.forEach((step, position) => {
@@ -181,6 +201,9 @@ export function runTimeline(
     const back = next?.startedUtc ?? null;
     const handsOver = step.phase === "WindowsPE" && steps[position + 1]?.phase === "Windows";
     const restarts = step.kind === "reboot" || planned.get(step.stepId)?.rebootAfter === true;
+    const number = step.index + 1;
+    const name = step.name;
+    const took = back === null ? "" : gap(step.finishedUtc, back);
 
     if (handsOver) {
       entries.push({
@@ -188,8 +211,8 @@ export function runTimeline(
         utc: step.finishedUtc,
         text:
           back === null || next?.phase !== "Windows"
-            ? "The hand-over to Windows began"
-            : `Handed over to Windows; after Windows setup the agent continued there ${gap(step.finishedUtc, back)} later`,
+            ? t`The hand-over to Windows began`
+            : t`Handed over to Windows; after Windows setup the agent continued there ${took} later`,
       });
     } else if (restarts) {
       entries.push({
@@ -197,22 +220,26 @@ export function runTimeline(
         utc: step.finishedUtc,
         text:
           back === null
-            ? `Restarted after step ${String(step.index + 1)}, ${step.name}`
-            : `Restarted after step ${String(step.index + 1)}, ${step.name}; back after ${gap(step.finishedUtc, back)}`,
+            ? t`Restarted after step ${number}, ${name}`
+            : t`Restarted after step ${number}, ${name}; back after ${took}`,
       });
     }
   });
 
   if (run.finishedUtc !== null) {
+    const error = run.error;
+
     entries.push({
       key: "finished",
       utc: run.finishedUtc,
       text:
         run.state === "Done"
-          ? "The run is done"
+          ? t`The run is done`
           : run.state === "Cancelled"
-            ? "The run was cancelled"
-            : `The run failed${run.error === null ? "" : `: ${run.error}`}`,
+            ? t`The run was cancelled`
+            : error === null
+              ? t`The run failed`
+              : t`The run failed: ${error}`,
     });
   }
 
@@ -229,5 +256,7 @@ export function secureBootAllowance(view: DeploymentView): string | null {
   const step = view.definition?.steps.find((candidate) => candidate.kind === "writeRawImage");
   const image = view.artifacts.find((artifact) => artifact.stepId === step?.id)?.name;
 
-  return `Allowed to write ${image ?? "its raw disk image"} although it may not start with Secure Boot on.`;
+  return image === undefined
+    ? t`Allowed to write its raw disk image although it may not start with Secure Boot on.`
+    : t`Allowed to write ${image} although it may not start with Secure Boot on.`;
 }

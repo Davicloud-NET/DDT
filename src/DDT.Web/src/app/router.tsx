@@ -13,7 +13,8 @@ import {
 import { AboutPage } from "@/about/AboutPage";
 import { currentUserQuery } from "@/auth/auth";
 import { SignInPage } from "@/auth/SignInPage";
-import { machinesSearch } from "@/machines/machineSearch";
+import { MachinePage } from "@/machines/MachinePage";
+import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 
 import { DesignPage } from "./DesignPage";
@@ -96,7 +97,8 @@ const approvalRoute = createRoute({
 const machineRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/$machineId",
-  component: PendingPage,
+  validateSearch: machineSearch,
+  component: MachinePage,
 });
 const sequencesRoute = createRoute({
   getParentRoute: () => shellRoute,

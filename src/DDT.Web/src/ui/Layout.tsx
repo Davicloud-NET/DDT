@@ -106,20 +106,18 @@ export function Facts({
   layout?: "list" | "plate";
   className?: string;
 }) {
+  // The cells of a plate sit on a hairline-coloured ground one pixel apart, so the rules between them follow the
+  // cells when they wrap onto more rows on a narrow screen.
   if (layout === "plate") {
     return (
       <dl
-        className={cx("grid rounded-panel bg-panel shadow-panel", className)}
-        style={{ gridTemplateColumns: `repeat(${String(items.length)}, minmax(0, auto))` }}
+        className={cx(
+          "grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-px overflow-hidden rounded-panel bg-line-soft shadow-panel",
+          className,
+        )}
       >
         {items.map((item, index) => (
-          <div
-            key={index}
-            className={cx(
-              "flex min-w-0 flex-col gap-0.75 px-3.5 py-2.5",
-              index > 0 && "border-l border-line-soft",
-            )}
-          >
+          <div key={index} className="flex min-w-0 flex-col gap-0.75 bg-panel px-3.5 py-2.5">
             <dt className="type-small text-muted">{item.label}</dt>
             <dd className={cx("truncate", item.mono ? "type-data" : "type-body")}>{item.value}</dd>
           </div>

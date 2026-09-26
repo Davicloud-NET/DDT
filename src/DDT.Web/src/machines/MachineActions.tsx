@@ -25,6 +25,7 @@ import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import { ConfirmDialog } from "@/ui/Dialog";
 import { Menu, MenuItem } from "@/ui/Menu";
+import { Notice } from "@/ui/Notice";
 
 import { AssignDialog } from "./AssignDialog";
 
@@ -212,6 +213,15 @@ export function MachineActions({
       </ConfirmDialog>
     </>
   );
+}
+
+// Why the last action on a machine failed, for the actions that open no dialog of their own.
+export function MachineActionErrors({ actions }: { actions: MachineActionState }) {
+  const failed = [actions.decide, actions.prepareApproval, actions.remove, actions.cancel].find(
+    (mutation) => mutation.isError,
+  );
+
+  return failed?.error ? <Notice tone="fail">{failed.error.message}</Notice> : null;
 }
 
 // Confirms an approval that runs the sequence a rule chose. Where that run writes a raw disk image that may not

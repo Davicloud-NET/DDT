@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { i18n, type MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+
 import type {
   ConditionOperator,
   ScriptInterpreter,
@@ -11,16 +14,16 @@ import type {
   StepKind,
 } from "./sequences";
 
-const kindLabels: Record<StepKind, string> = {
-  partition: "Partition the disk",
-  applyImage: "Apply image",
-  injectDrivers: "Inject drivers",
-  writeUnattend: "Write the answer file",
-  joinDomain: "Join the domain",
-  runScript: "Run script",
-  reboot: "Restart",
-  writeRawImage: "Write raw disk image",
-  writeCloudInitSeed: "Write the cloud-init seed",
+const kindLabels: Record<StepKind, MessageDescriptor> = {
+  partition: msg`Partition the disk`,
+  applyImage: msg`Apply image`,
+  injectDrivers: msg`Inject drivers`,
+  writeUnattend: msg`Write the answer file`,
+  joinDomain: msg`Join the domain`,
+  runScript: msg`Run script`,
+  reboot: msg`Restart`,
+  writeRawImage: msg`Write raw disk image`,
+  writeCloudInitSeed: msg`Write the cloud-init seed`,
 };
 
 // In the order a sequence usually has them.
@@ -28,7 +31,7 @@ export const stepKinds = Object.keys(kindLabels) as StepKind[];
 
 // A run names its steps' kinds as text, so a kind this page does not know yet is shown as it is.
 export function stepKindLabel(kind: string): string {
-  return isStepKind(kind) ? kindLabels[kind] : kind;
+  return isStepKind(kind) ? i18n._(kindLabels[kind]) : kind;
 }
 
 export function isStepKind(kind: string): kind is StepKind {
@@ -36,7 +39,7 @@ export function isStepKind(kind: string): kind is StepKind {
 }
 
 export function phaseLabel(phase: SequencePhase): string {
-  return phase === "WindowsPE" ? "Windows PE" : "Windows";
+  return phase === "WindowsPE" ? i18n._(msg`Windows PE`) : i18n._(msg`Windows`);
 }
 
 // cloud-init's instance id, which runs its first-boot modules once per value, and the machine's name.
@@ -67,33 +70,33 @@ export const machineVariables = [
   "Phase",
 ] as const;
 
-const variableLabels: Record<(typeof machineVariables)[number], string> = {
-  Manufacturer: "Manufacturer",
-  Model: "Model",
-  SerialNumber: "Serial number",
-  SmbiosUuid: "SMBIOS UUID",
-  MacAddress: "MAC address",
-  ComputerName: "Computer name",
-  Phase: "Phase",
+const variableLabels: Record<(typeof machineVariables)[number], MessageDescriptor> = {
+  Manufacturer: msg`Manufacturer`,
+  Model: msg`Model`,
+  SerialNumber: msg`Serial number`,
+  SmbiosUuid: msg`SMBIOS UUID`,
+  MacAddress: msg`MAC address`,
+  ComputerName: msg`Computer name`,
+  Phase: msg`Phase`,
 };
 
 export function variableLabel(variable: string): string {
   return Object.hasOwn(variableLabels, variable)
-    ? variableLabels[variable as (typeof machineVariables)[number]]
+    ? i18n._(variableLabels[variable as (typeof machineVariables)[number]])
     : variable;
 }
 
-const operatorLabels: Record<ConditionOperator, string> = {
-  Equals: "equals",
-  NotEquals: "does not equal",
-  StartsWith: "starts with",
-  Contains: "contains",
+const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
+  Equals: msg`equals`,
+  NotEquals: msg`does not equal`,
+  StartsWith: msg`starts with`,
+  Contains: msg`contains`,
 };
 
 export const conditionOperators = Object.keys(operatorLabels) as ConditionOperator[];
 
 export function operatorLabel(operator: ConditionOperator): string {
-  return operatorLabels[operator];
+  return i18n._(operatorLabels[operator]);
 }
 
 export const interpreters: ScriptInterpreter[] = ["Cmd", "PowerShell"];
@@ -124,7 +127,7 @@ export function newCondition(): StepCondition {
 export function newStep(kind: StepKind, id: string): SequenceStep {
   const common = {
     id,
-    name: kindLabels[kind],
+    name: i18n._(kindLabels[kind]),
     conditions: [],
     continueOnError: false,
     rebootAfter: false,

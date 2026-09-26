@@ -11,8 +11,24 @@ msgstr ""
 msgid "{activity}, last contact {contact}"
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "{assigned}. The machine has not started it yet."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "{by} approved the machine on the web to run {title}, which a rule chose"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "{by} assigned {title} on the web"
+msgstr ""
+
 #: src/machines/MachinesPage.tsx
 msgid "{by} signed in at the machine"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "{by} signed in at the machine and chose {title} there"
 msgstr ""
 
 #: src/machines/approval.ts
@@ -26,6 +42,10 @@ msgstr ""
 
 #: src/lib/format.ts
 msgid "{count} bytes"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "{described}, and the machine reports \"{value}\""
 msgstr ""
 
 #: src/lib/format.ts
@@ -52,6 +72,34 @@ msgstr ""
 msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
 msgstr ""
 
+#: src/runs/RunSteps.tsx
+msgid "{kind}, {phase}"
+msgstr ""
+
+#: src/runs/RunSteps.tsx
+msgid "{kind}, {phase}, {started} to {ended}, took {took}"
+msgstr ""
+
+#: src/runs/RunSteps.tsx
+msgid "{kind}, {phase}, started {started}, running for {took}"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "{kind}: {file}, {size}"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "{level} at {at}, during {step}. Received {received}."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "{level} at {at}. Received {received}."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "{loaded, plural, one {Search the # loaded line} other {Search the # loaded lines}}"
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "{maker}, serial {serial}"
 msgstr ""
@@ -60,8 +108,16 @@ msgstr ""
 msgid "{minutes} min {seconds} s"
 msgstr ""
 
+#: src/log/LogViewport.tsx
+msgid "{more, plural, one {(+# line)} other {(+# lines)}}"
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "{newLines, plural, one {Paused, # new line} other {Paused, # new lines}}"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -88,6 +144,10 @@ msgstr ""
 msgid "{seconds} s"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
+msgid "{seen} from {from}"
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
 msgstr ""
@@ -96,12 +156,24 @@ msgstr ""
 msgid "{sequenceName} erases all data on the disk of {label}."
 msgstr ""
 
+#: src/machines/MachinePage.tsx
+msgid "{signedInBy} signed in at the machine."
+msgstr ""
+
 #: src/machines/MachinePanel.tsx
 msgid "{signedInBy} signed in here"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
 msgid "{step} {percent}%"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "{variable} {operator} \"{value}\""
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "A new run started on this machine."
 msgstr ""
 
 #: src/machines/approval.ts
@@ -158,8 +230,16 @@ msgstr ""
 msgid "Administration"
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "After {after}"
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "Agent"
 msgstr ""
 
 #: src/machines/machineView.ts
@@ -175,8 +255,21 @@ msgid "All data on its disk is erased."
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinesPage.tsx
 msgid "All machines"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Allowed to write {image} although it may not start with Secure Boot on."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Allowed to write its raw disk image although it may not start with Secure Boot on."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "an operator"
 msgstr ""
 
 #: src/app/navigation.ts
@@ -185,6 +278,10 @@ msgstr ""
 
 #: src/app/Shell.tsx
 msgid "Appearance"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Apply image"
 msgstr ""
 
 #: src/app/navigation.ts
@@ -227,6 +324,10 @@ msgstr ""
 msgid "Assign a sequence"
 msgstr ""
 
+#: src/runs/MachineRuns.tsx
+msgid "Assign a sequence above, or add an assignment rule for its model under Deployment, Assignment rules."
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "Assign a task sequence to {label}"
 msgstr ""
@@ -239,12 +340,24 @@ msgstr ""
 msgid "Assigned"
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "assigned {assigned}"
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Assigned by {by}"
 msgstr ""
 
+#: src/runs/runView.ts
+msgid "Assigned on the web"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Assignment rules"
+msgstr ""
+
+#: src/runs/MachineRuns.tsx
+msgid "At {step}"
 msgstr ""
 
 #: src/app/navigation.ts
@@ -277,11 +390,16 @@ msgid "Cancel the assignment"
 msgstr ""
 
 #: src/deployments/deployments.ts
+#: src/runs/runView.ts
 msgid "Chosen at the machine"
 msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Chosen at the machine by {by}"
+msgstr ""
+
+#: src/runs/runView.ts
+msgid "Chosen by a rule, approved on the web"
 msgstr ""
 
 #: src/ui/Dialog.tsx
@@ -294,12 +412,22 @@ msgstr ""
 msgid "Close the details"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Close the line"
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
+#: src/sequences/steps.ts
 msgid "Computer name"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "contains"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -338,13 +466,19 @@ msgstr ""
 msgid "Deployment defaults"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Disks"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "does not equal"
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
+#: src/runs/runView.ts
 msgid "Done"
 msgstr ""
 
@@ -368,12 +502,21 @@ msgstr ""
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "equals"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Errors"
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
+#: src/runs/runView.ts
 msgid "Failed"
 msgstr ""
 
@@ -393,8 +536,40 @@ msgstr ""
 msgid "Finishing"
 msgstr ""
 
+#: src/runs/runs.ts
+msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "In the installed Windows"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "In Windows PE"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Information"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Inject drivers"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "is"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "is not"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "It registers as a new machine at its next netboot."
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -409,10 +584,19 @@ msgstr ""
 msgid "Its disk is not erased."
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Join the domain"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Jump to the newest"
+msgstr ""
+
 #: src/app/Shell.tsx
 msgid "Language"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Last seen"
 msgstr ""
@@ -437,6 +621,10 @@ msgstr ""
 msgid "Less"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Levels"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Library"
 msgstr ""
@@ -453,7 +641,30 @@ msgstr ""
 msgid "Light"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Load older lines"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Loading older lines"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+#: src/runs/RunSteps.tsx
+msgid "Log"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Log line"
+msgstr ""
+
+#: src/log/LogViewport.tsx
+msgid "Log lines"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
+#: src/sequences/steps.ts
 msgid "MAC address"
 msgstr ""
 
@@ -470,6 +681,10 @@ msgstr ""
 msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Manufacturer"
+msgstr ""
+
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
 msgstr ""
@@ -480,6 +695,14 @@ msgstr ""
 
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CAs {first} and {second}"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Model"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "Model not reported"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -518,8 +741,28 @@ msgstr ""
 msgid "No account could be created for that identity. Ask an administrator."
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "No contact for {silentFor}, as the machine restarts."
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "No contact for {silentFor}. Windows setup runs before the agent starts again, which can take a while."
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "No DDT account is linked to that identity. Ask an administrator."
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "No disk DDT can install on"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "No loaded line matches the filter."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "No log lines for this run yet. The agent sends its log while it runs."
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
@@ -528,6 +771,10 @@ msgstr ""
 
 #: src/machines/MachinesPage.tsx
 msgid "No machines yet"
+msgstr ""
+
+#: src/runs/MachineRuns.tsx
+msgid "No runs yet"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
@@ -546,12 +793,22 @@ msgstr ""
 msgid "not reported"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
 #: src/machines/secureBoot.ts
 msgid "Not reported"
 msgstr ""
 
+#: src/runs/MachineRuns.tsx
+#: src/runs/runView.ts
+msgid "Not started"
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "Not started, {count} steps"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "of the run"
 msgstr ""
 
 #: src/machines/secureBoot.ts
@@ -564,6 +821,10 @@ msgstr ""
 
 #: src/machines/secureBoot.ts
 msgid "On, {note}"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Only the lines of {filteredStep}."
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
@@ -594,8 +855,20 @@ msgstr ""
 msgid "OS images"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Partition the disk"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "Password"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Paused"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Phase"
 msgstr ""
 
 #: src/deployments/deployments.ts
@@ -606,8 +879,16 @@ msgstr ""
 msgid "Pseudo (development)"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Reading every {pollSeconds} s, because the live connection is down."
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "Ready"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -646,6 +927,18 @@ msgstr ""
 msgid "Required, because {name} joins the domain under this name."
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Restart"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Restarted after step {number}, {name}"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Restarted after step {number}, {name}; back after {took}"
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr ""
@@ -654,22 +947,52 @@ msgstr ""
 msgid "Retired"
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "Revision {revision}"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Run history"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Run script"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+#: src/runs/runView.ts
+msgid "Running"
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
 msgid "Running for {duration}"
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "running for {running}"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "Running for {runningFor}"
+msgstr ""
+
+#: src/runs/MachineRuns.tsx
+msgid "Runs of this machine"
+msgstr ""
+
 #: src/app/Shell.tsx
 msgid "Same as the system"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Search the log"
 msgstr ""
 
 #: src/app/Shell.tsx
 msgid "Sections"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Secure Boot"
 msgstr ""
@@ -694,6 +1017,7 @@ msgstr ""
 msgid "Sequence"
 msgstr ""
 
+#: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Serial"
 msgstr ""
@@ -702,12 +1026,24 @@ msgstr ""
 msgid "Serial {serial}"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Serial number"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Server"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
 msgid "Show all machines"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Show every step"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "Show it"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
@@ -730,6 +1066,23 @@ msgstr ""
 msgid "Signing in"
 msgstr ""
 
+#: src/runs/runView.ts
+msgid "Skipped"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Skipped, because not every condition held: {conditions}."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "Skipped."
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+#: src/sequences/steps.ts
+msgid "SMBIOS UUID"
+msgstr ""
+
 #: src/app/RouteError.tsx
 msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
 msgstr ""
@@ -738,13 +1091,27 @@ msgstr ""
 msgid "Source code"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "started {started}"
+msgstr ""
+
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
+#: src/runs/RunPanel.tsx
 msgid "Starting"
 msgstr ""
 
 #: src/machines/machineView.ts
 msgid "Starting, {count} steps"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "starts with"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
@@ -765,6 +1132,10 @@ msgstr ""
 
 #: src/machines/machineView.ts
 msgid "Step {number} of {count} running, {percent} percent"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "Step {number} of {count}, {phase}"
 msgstr ""
 
 #: src/deployments/deployments.ts
@@ -811,6 +1182,14 @@ msgstr ""
 msgid "Step {number}, skipped"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "step {position}, {name}"
+msgstr ""
+
+#: src/runs/RunSteps.tsx
+msgid "Steps"
+msgstr ""
+
 #: src/machines/MachineActions.tsx
 msgid "Stop the run"
 msgstr ""
@@ -821,6 +1200,7 @@ msgstr ""
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
+#: src/runs/runView.ts
 msgid "Stopped"
 msgstr ""
 
@@ -848,6 +1228,18 @@ msgstr ""
 msgid "That user name or password is not correct."
 msgstr ""
 
+#: src/runs/runs.ts
+msgid "The agent started the run"
+msgstr ""
+
+#: src/log/log.ts
+msgid "The agent's clock said {said}, {off} ahead of the server."
+msgstr ""
+
+#: src/log/log.ts
+msgid "The agent's clock said {said}, {off} behind the server."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
 msgstr ""
@@ -860,16 +1252,40 @@ msgstr ""
 msgid "The GNU General Public License, version 3"
 msgstr ""
 
+#: src/runs/runs.ts
+msgid "The hand-over to Windows began"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "The live connection is down. New lines appear once it is back."
 msgstr ""
 
 #: src/app/Shell.tsx
 msgid "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "The log could not be read: {readError}"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "The machine could not be loaded."
+msgstr ""
+
 #: src/machines/MachinesPage.tsx
 msgid "The machine list could not be loaded."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The machine registered for the first time"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The machine registered for the first time, from {from}"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -878,6 +1294,38 @@ msgstr ""
 
 #: src/machines/machines.ts
 msgid "the machine with MAC {mac}"
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "The run could not be loaded."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The run failed"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "The run failed without saying why."
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The run failed: {error}"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The run is done"
+msgstr ""
+
+#: src/runs/runs.ts
+msgid "The run was cancelled"
+msgstr ""
+
+#: src/runs/RunSteps.tsx
+msgid "The run went on, because \"Go on when this step fails\" is on for this step."
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "The runs of this machine could not be loaded."
 msgstr ""
 
 #: src/app/RouteError.tsx
@@ -890,6 +1338,10 @@ msgstr ""
 
 #: src/about/AboutPage.tsx
 msgid "The software by others that DDT contains, and its licences"
+msgstr ""
+
+#: src/runs/RunSteps.tsx
+msgid "The step failed without saying why."
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -916,16 +1368,36 @@ msgstr ""
 msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
 msgstr ""
 
+#: src/runs/RunPanel.tsx
+msgid "This deployment ran before task sequences, so it has no steps to show."
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "This machine has sent no log lines yet."
+msgstr ""
+
+#: src/machines/MachinePage.tsx
+msgid "This machine was removed"
 msgstr ""
 
 #: src/app/RouteError.tsx
 msgid "This page could not load"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "This page holds at most {bufferLimit} lines. Older ones stay on the server."
+msgstr ""
+
 #: src/app/PendingPage.tsx
 msgid "This page is being rebuilt on the new design system."
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "This run"
 msgstr ""
 
 #: src/machines/MachineActions.tsx
@@ -934,6 +1406,14 @@ msgstr ""
 
 #: src/machines/MachineActions.tsx
 msgid "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
+msgstr ""
+
+#: src/runs/RunTimeline.tsx
+msgid "Timeline"
+msgstr ""
+
+#: src/runs/RunPanel.tsx
+msgid "took {took}"
 msgstr ""
 
 #: src/machines/MachinesPage.tsx
@@ -988,6 +1468,26 @@ msgstr ""
 msgid "Waiting to start"
 msgstr ""
 
+#: src/log/LogPanel.tsx
+msgid "Warnings"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Which lines"
+msgstr ""
+
+#: src/log/LogPanel.tsx
+msgid "Whole machine"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Windows"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Windows PE"
+msgstr ""
+
 #: src/machines/secureBoot.ts
 msgid "with {cas} only"
 msgstr ""
@@ -998,4 +1498,16 @@ msgstr ""
 
 #: src/machines/secureBoot.ts
 msgid "Write {image} anyway"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Write raw disk image"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Write the answer file"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Write the cloud-init seed"
 msgstr ""

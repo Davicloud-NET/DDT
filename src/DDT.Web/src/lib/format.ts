@@ -9,7 +9,7 @@ import { formattingLocale } from "@/i18n/i18n";
 const units = ["KB", "MB", "GB", "TB"] as const;
 
 // Numbers follow the language chosen in DDT, not the browser's, so a German page writes 5,9 GB.
-function number(value: number): string {
+export function number(value: number): string {
   return new Intl.NumberFormat(formattingLocale(), { maximumFractionDigits: 1 }).format(value);
 }
 

@@ -26,7 +26,7 @@ import { SequenceRailStrip } from "@/ui/SequenceRail";
 import { StateTag } from "@/ui/StateTag";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/ui/Table";
 
-import { MachineActions } from "./MachineActions";
+import { MachineActionErrors, MachineActions } from "./MachineActions";
 import { MachinePanel } from "./MachinePanel";
 import {
   byAttention,
@@ -237,7 +237,7 @@ export function MachinesPage() {
         ) : null}
       </div>
 
-      <ActionErrors actions={actions} />
+      <MachineActionErrors actions={actions} />
     </Page>
   );
 }
@@ -417,10 +417,3 @@ function LoadingRows() {
 
 // A refused action says why, where the page shows it; the machine's row already shows what the server stored,
 // because the hub pushed it.
-function ActionErrors({ actions }: { actions: ReturnType<typeof useMachineActions> }) {
-  const failed = [actions.decide, actions.prepareApproval, actions.remove, actions.cancel].find(
-    (mutation) => mutation.isError,
-  );
-
-  return failed?.error ? <Notice tone="fail">{failed.error.message}</Notice> : null;
-}

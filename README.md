@@ -4,10 +4,9 @@ DDT is a self-hostable, open-source replacement for the Microsoft Deployment Too
 networks of 10 to 100 machines that may span several sites over a VPN. It netboots machines into
 Windows PE and runs an agent there that executes a task sequence: it applies a Windows image, goes
 on in the installed Windows where the sequence asks for it, and reports progress live to a web UI.
-Windows PE is the only deployment environment: Linux, a later milestone, is to be deployed from
-inside WinPE by writing a raw disk image and a cloud-init seed partition, so there is a single agent
-and a single boot path. DDT never ships its own EFI
-bootloader. It serves the Microsoft-signed `bootmgfw.efi` from the Windows ADK and does everything
+Windows PE is the only deployment environment: Linux is deployed from inside WinPE by writing a raw
+disk image and a cloud-init seed partition, so there is a single agent and a single boot path. DDT
+never ships its own EFI bootloader. It serves the Microsoft-signed `bootmgfw.efi` from the Windows ADK and does everything
 interesting after the boot manager has loaded, which is what lets it work on stock PCs with UEFI
 Secure Boot enabled.
 
@@ -1698,7 +1697,13 @@ with the Ubuntu 24.04 and Debian 13 cloud images:
 - A power cut during the write could not be timed: the write took seconds.
 
 Later milestones, in order: M6.5 the real UI, as the web UI and the agent's console in Windows PE are
-concept UIs until then; M7 the task sequence flow builder.
+concept UIs until then; M7 the task sequence flow builder; M8 the Linux phase. In M8 a run goes on in
+the installed Linux as it goes on in the installed Windows: the cloud-init seed starts a Linux build
+of the agent, which runs the sequence's steps there, bash scripts, files packages and restarts
+included, fetches secrets when a step needs them, reports each step with its log, and ends the run
+only when those steps are done. Until then a run that writes a raw disk image ends when the disk is
+written, and what the seed's user-data does at the first start is up to cloud-init, which DDT does
+not watch.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

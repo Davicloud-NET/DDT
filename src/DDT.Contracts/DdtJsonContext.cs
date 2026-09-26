@@ -31,6 +31,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<MachineSummary>))]
 [JsonSerializable(typeof(MachineLogPage))]
 [JsonSerializable(typeof(MachineLogAppendedEvent))]
+[JsonSerializable(typeof(MachinesRemovedEvent))]
 [JsonSerializable(typeof(ImageSummary))]
 [JsonSerializable(typeof(IReadOnlyList<ImageSummary>))]
 [JsonSerializable(typeof(CreateImageUploadRequest))]

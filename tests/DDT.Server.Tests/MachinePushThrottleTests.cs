@@ -69,13 +69,16 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         SignedInClient administrator = await application.AdministratorAsync();
         await using LiveListener listener = await LiveListener.StartAsync(application, administrator);
         ChannelReader<MachineSummary> pushes = listener.Listen<MachineSummary>(LiveEvents.MachineChanged);
-        ChannelReader<DateTimeOffset> removals = listener.Listen(LiveEvents.MachinesRemoved);
+        ChannelReader<MachinesRemovedEvent> removals = listener.Listen<MachinesRemovedEvent>(LiveEvents.MachinesRemoved);
         using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
 
         await LiveListener.NextAsync(pushes, m => m.Id == machine.Id);
         (await administrator.PostAsync($"/api/machines/{machine.Id}/reject")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines/{machine.Id}")).StatusCode);
-        await LiveListener.NextAsync(removals);
+
+        // The event names the machine, so a page drops it without reading the list again.
+        MachinesRemovedEvent removal = await LiveListener.NextAsync(removals);
+        Assert.Equal([machine.Id], removal.MachineIds);
 
         application.Clock.Advance(LiveNotifier.MachinePushInterval);
 

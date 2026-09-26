@@ -66,12 +66,14 @@ public sealed partial class LiveNotifier(
     {
         ArgumentNullException.ThrowIfNull(machineIds);
 
-        foreach (Guid machineId in machineIds)
+        Guid[] removed = [.. machineIds];
+
+        foreach (Guid machineId in removed)
         {
             _machines.Discard(machineId);
         }
 
-        _ = PushEventAsync(LiveEvents.MachinesRemoved);
+        _ = PushEventAsync(LiveEvents.MachinesRemoved, new MachinesRemovedEvent(removed));
     }
 
     public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);

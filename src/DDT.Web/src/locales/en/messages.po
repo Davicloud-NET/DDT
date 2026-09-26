@@ -283,6 +283,10 @@ msgstr "A rule for its model"
 msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 msgstr "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 
+#: src/account/AccountPage.tsx
+msgid "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
+msgstr "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
+
 #: src/machines/approval.ts
 msgid "a sequence"
 msgstr "a sequence"
@@ -309,6 +313,11 @@ msgstr "A zip of the files a Run script step needs. The step finds them unpacked
 msgid "About DDT"
 msgstr "About DDT"
 
+#: src/account/AccountPage.tsx
+msgid "Account"
+msgstr "Account"
+
+#: src/account/AccountPage.tsx
 #: src/app/Shell.tsx
 msgid "Account and security"
 msgstr "Account and security"
@@ -365,6 +374,10 @@ msgstr "Address"
 #: src/app/navigation.ts
 msgid "Administration"
 msgstr "Administration"
+
+#: src/account/AccountPage.tsx
+msgid "Administrator"
+msgstr "Administrator"
 
 #: src/runs/RunPanel.tsx
 msgid "After {after}"
@@ -513,9 +526,17 @@ msgstr "Assignment rules"
 msgid "At {step}"
 msgstr "At {step}"
 
+#: src/account/AccountPage.tsx
+msgid "At least 12 characters."
+msgstr "At least 12 characters."
+
 #: src/app/navigation.ts
 msgid "Audit log"
 msgstr "Audit log"
+
+#: src/account/AccountPage.tsx
+msgid "Authenticator"
+msgstr "Authenticator"
 
 #: src/auth/SignInPage.tsx
 msgid "Authenticator code"
@@ -541,6 +562,7 @@ msgstr "By hardware model"
 msgid "By MAC address"
 msgstr "By MAC address"
 
+#: src/account/AccountPage.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -556,6 +578,10 @@ msgstr "Cancel the assignment"
 #: src/rules/RulesPage.tsx
 msgid "Change"
 msgstr "Change"
+
+#: src/account/AccountPage.tsx
+msgid "Change password"
+msgstr "Change password"
 
 #: src/packages/PackageDialog.tsx
 msgid "Change the package"
@@ -612,6 +638,10 @@ msgstr "Close the details"
 msgid "Close the line"
 msgstr "Close the line"
 
+#: src/account/AccountPage.tsx
+msgid "Code from the authenticator app"
+msgstr "Code from the authenticator app"
+
 #: src/machines/AssignDialog.tsx
 #: src/sequences/steps.ts
 msgid "Computer name"
@@ -626,6 +656,14 @@ msgstr "Confirm it is you"
 msgid "contains"
 msgstr "contains"
 
+#: src/account/AccountPage.tsx
+msgid "Copied"
+msgstr "Copied"
+
+#: src/account/AccountPage.tsx
+msgid "Copy"
+msgstr "Copy"
+
 #: src/images/ImagesPage.tsx
 msgid "Copy SHA-256"
 msgstr "Copy SHA-256"
@@ -633,6 +671,10 @@ msgstr "Copy SHA-256"
 #: src/auth/SignInPage.tsx
 msgid "Could not reach the server."
 msgstr "Could not reach the server."
+
+#: src/account/AccountPage.tsx
+msgid "Current password"
+msgstr "Current password"
 
 #: src/machines/MachinePanel.tsx
 msgid "Current run"
@@ -702,6 +744,10 @@ msgstr "Description"
 msgid "Details"
 msgstr "Details"
 
+#: src/account/AccountPage.tsx
+msgid "Directory account"
+msgstr "Directory account"
+
 #: src/uploads/UploadPanel.tsx
 msgid "Discard"
 msgstr "Discard"
@@ -754,6 +800,10 @@ msgstr "Drop {what} here, or choose one."
 #: src/uploads/UploadPanel.tsx
 msgid "Drop a file to upload"
 msgstr "Drop a file to upload"
+
+#: src/account/AccountPage.tsx
+msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
+msgstr "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
 
 #: src/images/ImagesPage.tsx
 msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
@@ -858,6 +908,10 @@ msgstr "Handed over to Windows; after Windows setup the agent continued there {t
 msgid "Handing over to Windows"
 msgstr "Handing over to Windows"
 
+#: src/account/AccountPage.tsx
+msgid "I have saved them"
+msgstr "I have saved them"
+
 #: src/images/ImagesPage.tsx
 msgid "Image"
 msgstr "Image"
@@ -913,6 +967,10 @@ msgstr "Join the domain"
 #: src/log/LogPanel.tsx
 msgid "Jump to the newest"
 msgstr "Jump to the newest"
+
+#: src/account/AccountPage.tsx
+msgid "Key"
+msgstr "Key"
 
 #: src/images/ImagesPage.tsx
 msgid "Kind"
@@ -992,6 +1050,10 @@ msgstr "Load older lines"
 msgid "Loading older lines"
 msgstr "Loading older lines"
 
+#: src/account/AccountPage.tsx
+msgid "Local account"
+msgstr "Local account"
+
 #: src/log/LogPanel.tsx
 #: src/runs/RunSteps.tsx
 msgid "Log"
@@ -1041,6 +1103,10 @@ msgstr "Machines of {targets} no longer get these drivers."
 #: src/rules/rules.ts
 msgid "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
 msgstr "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
+
+#: src/account/AccountPage.tsx
+msgid "Make new recovery codes"
+msgstr "Make new recovery codes"
 
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -1103,6 +1169,7 @@ msgstr "More"
 msgid "More for {label}"
 msgstr "More for {label}"
 
+#: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
 msgid "Name"
 msgstr "Name"
@@ -1130,6 +1197,14 @@ msgstr "Needs your approval"
 #: src/app/navigation.ts
 msgid "Network boot"
 msgstr "Network boot"
+
+#: src/account/AccountPage.tsx
+msgid "New password"
+msgstr "New password"
+
+#: src/account/AccountPage.tsx
+msgid "New password again"
+msgstr "New password again"
 
 #: src/auth/SignInPage.tsx
 msgid "No account could be created for that identity. Ask an administrator."
@@ -1230,6 +1305,10 @@ msgstr "No task sequence exists yet. An administrator creates one under Deployme
 msgid "Nobody has signed in yet"
 msgstr "Nobody has signed in yet"
 
+#: src/account/AccountPage.tsx
+msgid "None"
+msgstr "None"
+
 #: src/images/ImagesPage.tsx
 msgid "Not deployable: only x64 images can be installed."
 msgstr "Not deployable: only x64 images can be installed."
@@ -1264,10 +1343,12 @@ msgstr "Not stated"
 msgid "of the run"
 msgstr "of the run"
 
+#: src/account/AccountPage.tsx
 #: src/machines/secureBoot.ts
 msgid "Off"
 msgstr "Off"
 
+#: src/account/AccountPage.tsx
 #: src/machines/secureBoot.ts
 msgid "On"
 msgstr "On"
@@ -1287,6 +1368,10 @@ msgstr "Only the lines of {filteredStep}."
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
 msgstr "Open machine"
+
+#: src/account/AccountPage.tsx
+msgid "Operator"
+msgstr "Operator"
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
@@ -1329,9 +1414,14 @@ msgstr "Package"
 msgid "Partition the disk"
 msgstr "Partition the disk"
 
+#: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
 msgid "Password"
 msgstr "Password"
+
+#: src/account/AccountPage.tsx
+msgid "Password changed."
+msgstr "Password changed."
 
 #: src/log/LogPanel.tsx
 msgid "Paused"
@@ -1348,6 +1438,10 @@ msgstr "Preparing"
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (development)"
+
+#: src/account/AccountPage.tsx
+msgid "QR code for your authenticator app"
+msgstr "QR code for your authenticator app"
 
 #: src/images/images.ts
 msgid "Raw disk image"
@@ -1429,6 +1523,10 @@ msgstr "Retired"
 msgid "Revision {revision}"
 msgstr "Revision {revision}"
 
+#: src/account/AccountPage.tsx
+msgid "Role"
+msgstr "Role"
+
 #: src/rules/RulesPage.tsx
 msgid "Rules by hardware model"
 msgstr "Rules by hardware model"
@@ -1477,6 +1575,10 @@ msgstr "Save package"
 #: src/rules/RuleDialog.tsx
 msgid "Save rule"
 msgstr "Save rule"
+
+#: src/account/AccountPage.tsx
+msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
+msgstr "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
 
 #: src/log/LogPanel.tsx
 msgid "Search the log"
@@ -1529,6 +1631,10 @@ msgstr "Serial number"
 msgid "Server"
 msgstr "Server"
 
+#: src/account/AccountPage.tsx
+msgid "Set up an authenticator"
+msgstr "Set up an authenticator"
+
 #: src/images/ImagesPage.tsx
 msgid "SHA-256"
 msgstr "SHA-256"
@@ -1568,6 +1674,14 @@ msgstr "Signed"
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
 msgstr "Signing in"
+
+#: src/account/AccountPage.tsx
+msgid "Signing in asks for a code from your authenticator app. To turn it off, enter a current code."
+msgstr "Signing in asks for a code from your authenticator app. To turn it off, enter a current code."
+
+#: src/account/AccountPage.tsx
+msgid "Single sign-on account"
+msgstr "Single sign-on account"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
@@ -1830,6 +1944,10 @@ msgstr "the machine with MAC {mac}"
 msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 msgstr "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 
+#: src/account/AccountPage.tsx
+msgid "The new passwords do not match."
+msgstr "The new passwords do not match."
+
 #: src/packages/PackagesPage.tsx
 msgid "The packages could not be loaded."
 msgstr "The packages could not be loaded."
@@ -1926,6 +2044,10 @@ msgstr "The upload of {name} stopped. Choose the file again to resume."
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
 
+#: src/account/AccountPage.tsx
+msgid "This account comes from the directory. Change its password there."
+msgstr "This account comes from the directory. Change its password there."
+
 #: src/auth/SignInPage.tsx
 msgid "This account is locked. Try again later or ask an administrator."
 msgstr "This account is locked. Try again later or ask an administrator."
@@ -1933,6 +2055,10 @@ msgstr "This account is locked. Try again later or ask an administrator."
 #: src/auth/SignInPage.tsx
 msgid "This account may not sign in. Ask an administrator."
 msgstr "This account may not sign in. Ask an administrator."
+
+#: src/account/AccountPage.tsx
+msgid "This account signs in through single sign-on and has no password in DDT."
+msgstr "This account signs in through single sign-on and has no password in DDT."
 
 #: src/machines/AssignDialog.tsx
 msgid "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
@@ -2006,6 +2132,14 @@ msgstr "Took {took}, finished {finished}"
 msgid "Try again"
 msgstr "Try again"
 
+#: src/account/AccountPage.tsx
+msgid "Turn off"
+msgstr "Turn off"
+
+#: src/account/AccountPage.tsx
+msgid "Turn on"
+msgstr "Turn on"
+
 #: src/ui/Dialog.tsx
 msgid "Type {typedWord} to go on"
 msgstr "Type {typedWord} to go on"
@@ -2067,6 +2201,7 @@ msgstr "Use an authenticator code"
 msgid "Used by"
 msgstr "Used by"
 
+#: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
 msgid "User name"
 msgstr "User name"
@@ -2082,6 +2217,10 @@ msgstr "Version"
 #: src/about/AboutPage.tsx
 msgid "Version {version}"
 msgstr "Version {version}"
+
+#: src/account/AccountPage.tsx
+msgid "Viewer"
+msgstr "Viewer"
 
 #: src/machines/machineView.ts
 msgid "Waiting"
@@ -2158,3 +2297,11 @@ msgstr "Write the answer file"
 #: src/sequences/steps.ts
 msgid "Write the cloud-init seed"
 msgstr "Write the cloud-init seed"
+
+#: src/account/AccountPage.tsx
+msgid "You"
+msgstr "You"
+
+#: src/account/AccountPage.tsx
+msgid "Your recovery codes"
+msgstr "Your recovery codes"

@@ -141,6 +141,7 @@ icons.
   `moo`.
 - Paweł Kuna, MIT: `@tabler/icons` and `@tabler/icons-react`, the icons.
 - Dany Castillo, MIT: `tailwind-merge`.
+- Project Nayuki and Anthony Fu, MIT: `uqr`, which draws the QR code for setting up an authenticator.
 - Fonts under the SIL Open Font License 1.1: `@fontsource-variable/archivo` (The Archivo Project
   Authors) and `@fontsource-variable/martian-mono` (The Martian Mono Project Authors).
 - .NET Foundation and Contributors, MIT: `@microsoft/signalr`.

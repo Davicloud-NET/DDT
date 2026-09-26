@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 
 import { AboutPage } from "@/about/AboutPage";
+import { AccountPage } from "@/account/AccountPage";
 import { currentUserQuery } from "@/auth/auth";
 import { ImagesPage } from "@/images/ImagesPage";
 import { SignInPage } from "@/auth/SignInPage";
@@ -176,7 +177,7 @@ const auditRoute = createRoute({
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/account",
-  component: PendingPage,
+  component: AccountPage,
 });
 
 // Every token and component on one page, in development builds only.

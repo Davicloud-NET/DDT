@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost, apiPut, type ApiProblem } from "@/lib/api";
@@ -58,10 +59,23 @@ export const rulesQuery = queryOptions({
 // "MAC 00:15:5D:01:02:03" or "model Dell Inc. Latitude 7440", to put in a sentence.
 export function describeRule(rule: AssignmentRuleView): string {
   if (rule.kind === "Mac") {
-    return `MAC ${formatMac(rule.mac ?? "")}`;
+    const mac = formatMac(rule.mac ?? "");
+
+    return t`MAC ${mac}`;
   }
 
-  return `model ${rule.manufacturer === null ? "" : `${rule.manufacturer} `}${rule.model ?? ""}`;
+  const model = ruleTarget(rule);
+
+  return t`model ${model}`;
+}
+
+// What the rule matches, without saying which kind of rule it is: a MAC address, or a maker and model.
+export function ruleTarget(rule: AssignmentRuleView): string {
+  if (rule.kind === "Mac") {
+    return formatMac(rule.mac ?? "");
+  }
+
+  return `${rule.manufacturer === null ? "" : `${rule.manufacturer} `}${rule.model ?? ""}`;
 }
 
 export function isRuleChoice(resolution: MachineSequenceResolution): boolean {
@@ -173,10 +187,10 @@ export function ruleMatches(
 }
 
 export function ruleDeletionConsequence(rule: AssignmentRuleView): string {
-  const machines =
-    rule.kind === "Mac"
-      ? `The machine with ${describeRule(rule)} no longer gets ${rule.sequenceName} chosen for it`
-      : `Machines of ${describeRule(rule)} no longer get ${rule.sequenceName} chosen for them`;
+  const target = ruleTarget(rule);
+  const sequence = rule.sequenceName;
 
-  return `${machines}; another rule or an operator chooses instead. Machines that already have a run keep it.`;
+  return rule.kind === "Mac"
+    ? t`The machine with MAC ${target} no longer gets ${sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it.`
+    : t`Machines of model ${target} no longer get ${sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it.`;
 }

@@ -15,7 +15,7 @@ import {
   type MachineSummary,
 } from "@/machines/machines";
 import { packagesQuery } from "@/packages/packages";
-import { rulesQuery, sequenceResolutionsKey } from "@/rules/rules";
+import { rulesQuery, sequenceResolutionsKey, type AssignmentRuleView } from "@/rules/rules";
 import {
   sequenceDocumentsKey,
   sequenceQuery,
@@ -231,7 +231,15 @@ export function createLiveConnection(
 
     current.on("sequenceChanged", sequenceChanged);
 
-    current.on("rulesChanged", refetchRules);
+    // Rules are few and reorder together, so the event carries the whole ordered list.
+    current.on("rulesChanged", (rules?: AssignmentRuleView[]) => {
+      if (Array.isArray(rules)) {
+        queryClient.setQueryData(rulesQuery.queryKey, rules);
+        refetchResolutions();
+      } else {
+        refetchRules();
+      }
+    });
 
     current.on("machineLogAppended", (event: MachineLogAppended) => {
       for (const watch of watchesOf(event.machineId)) {

@@ -16,6 +16,7 @@ import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
+import { RulesPage } from "@/rules/RulesPage";
 
 import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
@@ -113,7 +114,7 @@ const sequenceRoute = createRoute({
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/rules",
-  component: PendingPage,
+  component: RulesPage,
 });
 const deploymentDefaultsRoute = createRoute({
   getParentRoute: () => shellRoute,

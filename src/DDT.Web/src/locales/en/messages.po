@@ -31,6 +31,10 @@ msgstr "{by} signed in at the machine"
 msgid "{by} signed in at the machine and chose {title} there"
 msgstr "{by} signed in at the machine and chose {title} there"
 
+#: src/rules/RulesPage.tsx
+msgid "{count, plural, one {# machine} other {# machines}}"
+msgstr "{count, plural, one {# machine} other {# machines}}"
+
 #: src/machines/approval.ts
 #: src/machines/AssignDialog.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
@@ -104,6 +108,10 @@ msgstr "{loaded, plural, one {Search the # loaded line} other {Search the # load
 msgid "{maker}, serial {serial}"
 msgstr "{maker}, serial {serial}"
 
+#: src/rules/RuleDialog.tsx
+msgid "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
+msgstr "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
+
 #: src/lib/format.ts
 msgid "{minutes} min {seconds} s"
 msgstr "{minutes} min {seconds} s"
@@ -172,9 +180,21 @@ msgstr "{step} {percent}%"
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
+#: src/rules/RulesPage.tsx
+msgid "{when} by {by}"
+msgstr "{when} by {by}"
+
+#: src/rules/RuleDialog.tsx
+msgid "A hardware model"
+msgstr "A hardware model"
+
 #: src/machines/MachinePage.tsx
 msgid "A new run started on this machine."
 msgstr "A new run started on this machine."
+
+#: src/rules/RulesPage.tsx
+msgid "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
+msgstr "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
 
 #: src/machines/approval.ts
 msgid "a rule for its MAC address"
@@ -191,6 +211,10 @@ msgstr "a rule for its model"
 #: src/machines/approval.ts
 msgid "A rule for its model"
 msgstr "A rule for its model"
+
+#: src/rules/RulesPage.tsx
+msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
+msgstr "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 
 #: src/machines/approval.ts
 msgid "a sequence"
@@ -215,12 +239,26 @@ msgid "Account menu for {name}"
 msgstr "Account menu for {name}"
 
 #: src/machines/MachinesPage.tsx
+#: src/rules/RulesPage.tsx
 msgid "Actions"
 msgstr "Actions"
 
 #: src/machines/MachineActions.tsx
 msgid "Actions for {label}"
 msgstr "Actions for {label}"
+
+#: src/rules/RulesPage.tsx
+msgid "Actions for the rule for {description}"
+msgstr "Actions for the rule for {description}"
+
+#: src/rules/RuleDialog.tsx
+msgid "Add an assignment rule"
+msgstr "Add an assignment rule"
+
+#: src/rules/RuleDialog.tsx
+#: src/rules/RulesPage.tsx
+msgid "Add rule"
+msgstr "Add rule"
 
 #: src/machines/MachinePanel.tsx
 msgid "Address"
@@ -271,6 +309,10 @@ msgstr "Allowed to write its raw disk image although it may not start with Secur
 #: src/runs/runs.ts
 msgid "an operator"
 msgstr "an operator"
+
+#: src/rules/RuleDialog.tsx
+msgid "Any of the machine's network adapters, with or without separators."
+msgstr "Any of the machine's network adapters, with or without separators."
 
 #: src/app/navigation.ts
 msgid "API tokens"
@@ -353,6 +395,7 @@ msgid "Assigned on the web"
 msgstr "Assigned on the web"
 
 #: src/app/navigation.ts
+#: src/rules/RulesPage.tsx
 msgid "Assignment rules"
 msgstr "Assignment rules"
 
@@ -380,7 +423,16 @@ msgstr "Boot"
 msgid "Boot image"
 msgstr "Boot image"
 
+#: src/rules/RulesPage.tsx
+msgid "By hardware model"
+msgstr "By hardware model"
+
+#: src/rules/RulesPage.tsx
+msgid "By MAC address"
+msgstr "By MAC address"
+
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 #: src/ui/Dialog.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -388,6 +440,22 @@ msgstr "Cancel"
 #: src/machines/MachineActions.tsx
 msgid "Cancel the assignment"
 msgstr "Cancel the assignment"
+
+#: src/rules/RulesPage.tsx
+msgid "Change"
+msgstr "Change"
+
+#: src/rules/RuleDialog.tsx
+msgid "Change the rule"
+msgstr "Change the rule"
+
+#: src/rules/RulesPage.tsx
+msgid "Changed"
+msgstr "Changed"
+
+#: src/rules/RuleDialog.tsx
+msgid "Choose a sequence"
+msgstr "Choose a sequence"
 
 #: src/deployments/deployments.ts
 #: src/runs/runView.ts
@@ -454,6 +522,18 @@ msgstr "DDT could not reach its server. Check that the server is running and tha
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 
+#: src/rules/RulesPage.tsx
+msgid "Delete"
+msgstr "Delete"
+
+#: src/rules/RulesPage.tsx
+msgid "Delete rule"
+msgstr "Delete rule"
+
+#: src/rules/RulesPage.tsx
+msgid "Delete the rule for {description}?"
+msgstr "Delete the rule for {description}?"
+
 #: src/machines/machineView.ts
 msgid "Deploying"
 msgstr "Deploying"
@@ -465,6 +545,10 @@ msgstr "Deployment"
 #: src/app/navigation.ts
 msgid "Deployment defaults"
 msgstr "Deployment defaults"
+
+#: src/rules/RuleDialog.tsx
+msgid "Description"
+msgstr "Description"
 
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
@@ -485,6 +569,10 @@ msgstr "Done"
 #: src/app/navigation.ts
 msgid "Drivers"
 msgstr "Drivers"
+
+#: src/rules/RuleDialog.tsx
+msgid "End it with * to match every model that starts with it."
+msgstr "End it with * to match every model that starts with it."
 
 #: src/machines/AssignDialog.tsx
 msgid "Enter a computer name. {name} gives this name to the machine in its cloud-init seed."
@@ -617,6 +705,10 @@ msgstr "Last seen from {from} {when}; nobody has signed in at it."
 msgid "Last seen from {from} {when}; signed in by {by}."
 msgstr "Last seen from {from} {when}; signed in by {by}."
 
+#: src/rules/RuleDialog.tsx
+msgid "Left empty, any manufacturer."
+msgstr "Left empty, any manufacturer."
+
 #: src/ui/Controls.tsx
 msgid "Less"
 msgstr "Less"
@@ -662,8 +754,14 @@ msgstr "Log line"
 msgid "Log lines"
 msgstr "Log lines"
 
+#: src/rules/rules.ts
+msgid "MAC {mac}"
+msgstr "MAC {mac}"
+
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
+#: src/rules/RuleDialog.tsx
+#: src/rules/RulesPage.tsx
 #: src/sequences/steps.ts
 msgid "MAC address"
 msgstr "MAC address"
@@ -681,9 +779,18 @@ msgstr "Machines"
 msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 msgstr "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 
+#: src/rules/rules.ts
+msgid "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
+msgstr "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
+
+#: src/rules/RuleDialog.tsx
 #: src/sequences/steps.ts
 msgid "Manufacturer"
 msgstr "Manufacturer"
+
+#: src/rules/RulesPage.tsx
+msgid "Matches"
+msgstr "Matches"
 
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
@@ -697,9 +804,15 @@ msgstr "Microsoft's third-party UEFI CA {first}"
 msgid "Microsoft's third-party UEFI CAs {first} and {second}"
 msgstr "Microsoft's third-party UEFI CAs {first} and {second}"
 
+#: src/rules/RuleDialog.tsx
+#: src/rules/RulesPage.tsx
 #: src/sequences/steps.ts
 msgid "Model"
 msgstr "Model"
+
+#: src/rules/rules.ts
+msgid "model {model}"
+msgstr "model {model}"
 
 #: src/machines/MachinePage.tsx
 msgid "Model not reported"
@@ -773,6 +886,18 @@ msgstr "No machine matches"
 msgid "No machines yet"
 msgstr "No machines yet"
 
+#: src/rules/RulesPage.tsx
+msgid "No registered machine"
+msgstr "No registered machine"
+
+#: src/rules/RuleDialog.tsx
+msgid "No registered machine matches yet."
+msgstr "No registered machine matches yet."
+
+#: src/rules/RulesPage.tsx
+msgid "No rules yet"
+msgstr "No rules yet"
+
 #: src/runs/MachineRuns.tsx
 msgid "No runs yet"
 msgstr "No runs yet"
@@ -823,6 +948,10 @@ msgstr "On"
 msgid "On, {note}"
 msgstr "On, {note}"
 
+#: src/rules/RuleDialog.tsx
+msgid "One MAC address"
+msgstr "One MAC address"
+
 #: src/log/LogPanel.tsx
 msgid "Only the lines of {filteredStep}."
 msgstr "Only the lines of {filteredStep}."
@@ -842,6 +971,10 @@ msgstr "Optional. Left empty, the machine keeps the name {current}, which its cl
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current}."
 msgstr "Optional. Left empty, the machine keeps the name {current}."
+
+#: src/rules/RuleDialog.tsx
+msgid "Optional. Why the rule exists, for whoever reads it later."
+msgstr "Optional. Why the rule exists, for whoever reads it later."
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Without a name, the image picks one."
@@ -951,6 +1084,14 @@ msgstr "Retired"
 msgid "Revision {revision}"
 msgstr "Revision {revision}"
 
+#: src/rules/RulesPage.tsx
+msgid "Rules by hardware model"
+msgstr "Rules by hardware model"
+
+#: src/rules/RulesPage.tsx
+msgid "Rules by MAC address"
+msgstr "Rules by MAC address"
+
 #: src/app/navigation.ts
 msgid "Run history"
 msgstr "Run history"
@@ -983,6 +1124,10 @@ msgstr "Runs of this machine"
 #: src/app/Shell.tsx
 msgid "Same as the system"
 msgstr "Same as the system"
+
+#: src/rules/RuleDialog.tsx
+msgid "Save rule"
+msgstr "Save rule"
 
 #: src/log/LogPanel.tsx
 msgid "Search the log"
@@ -1213,6 +1358,8 @@ msgid "Stopped at step {number} of {count}"
 msgstr "Stopped at step {number} of {count}"
 
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
+#: src/rules/RulesPage.tsx
 msgid "Task sequence"
 msgstr "Task sequence"
 
@@ -1295,6 +1442,14 @@ msgstr "The machine reported no disk DDT can install on, so the run will fail."
 #: src/machines/machines.ts
 msgid "the machine with MAC {mac}"
 msgstr "the machine with MAC {mac}"
+
+#: src/rules/rules.ts
+msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
+msgstr "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
+
+#: src/rules/RulesPage.tsx
+msgid "The rules could not be loaded."
+msgstr "The rules could not be loaded."
 
 #: src/machines/MachinePage.tsx
 msgid "The run could not be loaded."
@@ -1476,6 +1631,10 @@ msgstr "Warnings"
 msgid "Which lines"
 msgstr "Which lines"
 
+#: src/rules/RuleDialog.tsx
+msgid "Which machines the rule is for"
+msgstr "Which machines the rule is for"
+
 #: src/log/LogPanel.tsx
 msgid "Whole machine"
 msgstr "Whole machine"
@@ -1495,6 +1654,14 @@ msgstr "with {cas} only"
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"
 msgstr "without Microsoft's third-party UEFI CA"
+
+#: src/rules/RulesPage.tsx
+msgid "Without rules an operator assigns a sequence to each machine. Add a rule to choose one by hardware model or MAC address."
+msgstr "Without rules an operator assigns a sequence to each machine. Add a rule to choose one by hardware model or MAC address."
+
+#: src/rules/RulesPage.tsx
+msgid "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
+msgstr "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
 
 #: src/machines/secureBoot.ts
 msgid "Write {image} anyway"

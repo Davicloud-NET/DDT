@@ -1703,7 +1703,7 @@ of the agent, which runs the sequence's steps there, bash scripts, files package
 included, fetches secrets when a step needs them, reports each step with its log, and ends the run
 only when those steps are done. Until then a run that writes a raw disk image ends when the disk is
 written, and what the seed's user-data does at the first start is up to cloud-init, which DDT does
-not watch.
+not watch. M9 is the documentation of the whole project, which this README stands in for until then.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

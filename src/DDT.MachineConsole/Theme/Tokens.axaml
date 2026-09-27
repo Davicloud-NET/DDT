@@ -284,4 +284,15 @@
   <x:Double x:Key="SgTypeDataSize">12.5</x:Double>
   <x:Double x:Key="SgTypeDataLineHeight">18.75</x:Double>
   <x:Double x:Key="SgTypeDataLetterSpacing">0</x:Double>
+
+  <!-- Motion: how long a change takes, how it eases in and out, and how far a thing travels at most. -->
+  <x:TimeSpan x:Key="SgMotionPress">0:0:0.07</x:TimeSpan>
+  <x:TimeSpan x:Key="SgMotionFast">0:0:0.12</x:TimeSpan>
+  <x:TimeSpan x:Key="SgMotionNormal">0:0:0.16</x:TimeSpan>
+  <x:TimeSpan x:Key="SgMotionSlow">0:0:0.24</x:TimeSpan>
+  <x:TimeSpan x:Key="SgMotionFlash">0:0:1.4</x:TimeSpan>
+  <SplineEasing x:Key="SgMotionEasing" X1="0.2" Y1="0" X2="0.13" Y2="1" />
+  <SplineEasing x:Key="SgMotionEnter" X1="0" Y1="0" X2="0.2" Y2="1" />
+  <SplineEasing x:Key="SgMotionExit" X1="0.4" Y1="0" X2="1" Y2="1" />
+  <x:Double x:Key="SgMotionDistance">6</x:Double>
 </ResourceDictionary>

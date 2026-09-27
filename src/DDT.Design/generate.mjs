@@ -205,6 +205,31 @@ function decimal(number) {
   return String(Math.round(number * 1000) / 1000);
 }
 
+// A duration in ms as the TimeSpan XAML reads, hours:minutes:seconds.
+function timeSpan(value) {
+  const match = /^([0-9.]+)ms$/.exec(value);
+
+  if (!match) {
+    throw new Error(`${value} is not a duration in ms.`);
+  }
+
+  return `0:0:${decimal(Number(match[1]) / 1000)}`;
+}
+
+// cubic-bezier(x1, y1, x2, y2) as Avalonia's SplineEasing, which takes the same two control points.
+function splineEasing(key, value) {
+  const number = "\\s*(-?[0-9.]+)\\s*";
+  const match = new RegExp(`^cubic-bezier\\(${number},${number},${number},${number}\\)$`).exec(value);
+
+  if (!match) {
+    throw new Error(`${value} is not a cubic-bezier().`);
+  }
+
+  const [x1, y1, x2, y2] = match.slice(1).map((part) => decimal(Number(part)));
+
+  return `  <SplineEasing x:Key="${key}" X1="${x1}" Y1="${y1}" X2="${x2}" Y2="${y2}" />`;
+}
+
 // The face a type is set in, by its family, weight and width, as cut_fonts.py names the faces.
 export function consoleFontFamily(type) {
   const family = consoleFamilies[type.family ?? "sans"];
@@ -213,7 +238,8 @@ export function consoleFontFamily(type) {
 }
 
 // The console's ResourceDictionary: every colour as a Color and a brush for the light and the dark theme, the radii,
-// and each type's face, size, line height and letter spacing in pixels.
+// each type's face, size, line height and letter spacing in pixels, and the motion: each duration as a TimeSpan, the
+// easings as SplineEasing and the distance in pixels.
 export function renderConsoleTheme(tokens) {
   const missing = entries(tokens.color.light)
     .map(([name]) => name)
@@ -266,6 +292,13 @@ export function renderConsoleTheme(tokens) {
     "",
     "  <!-- Each type has a face of its own, so no weight or width is synthesized. The console sets tags in capitals. -->",
     ...type,
+    "",
+    "  <!-- Motion: how long a change takes, how it eases in and out, and how far a thing travels at most. -->",
+    ...["press", "fast", "normal", "slow", "flash"].map(
+      (name) => `  <x:TimeSpan x:Key="SgMotion${pascal(name)}">${timeSpan(tokens.motion[name])}</x:TimeSpan>`,
+    ),
+    ...["easing", "enter", "exit"].map((name) => splineEasing(`SgMotion${pascal(name)}`, tokens.motion[name])),
+    `  <x:Double x:Key="SgMotionDistance">${decimal(pixels(tokens.motion.distance))}</x:Double>`,
     "</ResourceDictionary>",
     "",
   ].join("\n");

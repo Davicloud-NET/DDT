@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import {
+  SelectionIndicator,
   Tab as AriaTab,
   TabList as AriaTabList,
   TabPanel as AriaTabPanel,
@@ -15,7 +16,8 @@ import {
 
 import { cx } from "./cx";
 
-// Tabs within a page look like the page row under the top bar: the chosen one is underlined in ink.
+// Tabs within a page look like the page row under the top bar: the chosen one is underlined in ink. The underline
+// moves to a newly chosen tab, and the tab's panel fades in.
 export function Tabs({
   className,
   ...props
@@ -32,18 +34,27 @@ export function TabList<T extends object>({
 
 export function Tab({
   className,
+  children,
   ...props
 }: Omit<AriaTabProps, "className"> & { className?: string }) {
   return (
     <AriaTab
       {...props}
       className={cx(
-        "-mb-px flex h-10 cursor-pointer items-center type-label font-medium text-ink-2 outline-none hover:text-ink",
-        "selected:font-semibold selected:text-ink selected:shadow-[inset_0_-2px_0_var(--color-ink)]",
+        "relative -mb-px flex h-10 cursor-pointer items-center type-label font-medium text-ink-2 motion-colors outline-none hover:text-ink",
+        "selected:font-semibold selected:text-ink",
         "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
         className,
       )}
-    />
+    >
+      {(renderProps) => (
+        <>
+          {typeof children === "function" ? children(renderProps) : children}
+          {/* Only its position moves; it takes the new tab's width at once. */}
+          <SelectionIndicator className="absolute inset-x-0 bottom-0 h-0.5 bg-ink transition-[translate] duration-(--duration-normal) ease-standard" />
+        </>
+      )}
+    </AriaTab>
   );
 }
 
@@ -51,5 +62,7 @@ export function TabPanel({
   className,
   ...props
 }: Omit<AriaTabPanelProps, "className"> & { className?: string }) {
-  return <AriaTabPanel {...props} className={cx("outline-none", className)} />;
+  return (
+    <AriaTabPanel {...props} className={cx("outline-none entering:animate-page-in", className)} />
+  );
 }

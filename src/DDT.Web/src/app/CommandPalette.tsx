@@ -69,7 +69,7 @@ export function CommandPalette() {
           setOpen(true);
         }}
         aria-keyshortcuts="Control+K"
-        className="mr-3 flex h-8 w-56 cursor-pointer items-center gap-2 self-center rounded-key bg-frame-hover px-2.5 text-frame-muted outline-none hover:text-frame-text focus-visible:outline-2 focus-visible:outline-focus max-md:w-auto"
+        className="mr-3 flex h-8 w-56 cursor-pointer items-center gap-2 self-center rounded-key bg-frame-hover px-2.5 text-frame-muted motion-colors outline-none hover:text-frame-text focus-visible:outline-2 focus-visible:outline-focus max-md:w-auto"
       >
         <IconSearch aria-hidden="true" size={16} stroke={2} />
         <span className="flex-1 text-left type-small max-md:sr-only">
@@ -83,9 +83,9 @@ export function CommandPalette() {
         isOpen={isOpen}
         onOpenChange={setOpen}
         isDismissable
-        className="fixed inset-0 z-50 flex items-start justify-center bg-backdrop px-4 pt-[14vh] entering:animate-overlay-in"
+        className="fixed inset-0 z-50 flex items-start justify-center bg-backdrop px-4 pt-[14vh] entering:animate-overlay-in exiting:animate-overlay-out"
       >
-        <AriaModal className="w-full max-w-150 overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in">
+        <AriaModal className="w-full max-w-150 overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in exiting:animate-pop-out">
           <AriaDialog
             aria-label={t`Go to a page, machine, sequence or image`}
             className="outline-none"
@@ -214,7 +214,7 @@ function Section({ title, entries }: { title: ReactNode; entries: Entry[] }) {
           textValue={entry.label}
           className={({ isFocused }) =>
             cx(
-              "flex cursor-pointer items-baseline gap-3 rounded-key px-2.5 py-2 outline-none",
+              "flex cursor-pointer items-baseline gap-3 rounded-key px-2.5 py-2 motion-highlight outline-none",
               isFocused && "bg-selected",
             )
           }

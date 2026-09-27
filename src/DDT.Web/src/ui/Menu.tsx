@@ -18,6 +18,7 @@ import {
 import { cx } from "./cx";
 
 // A menu floats above the page, so it is an overlay: the lightest surface, and one of the few things with a shadow.
+// It comes from the side of its trigger and leaves towards it.
 export function Menu<T extends object>({
   className,
   placement = "bottom end",
@@ -27,7 +28,7 @@ export function Menu<T extends object>({
     <Popover
       placement={placement}
       offset={6}
-      className="min-w-56 rounded-overlay bg-raised shadow-overlay outline-none entering:animate-none"
+      className="min-w-56 rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in exiting:animate-pop-out"
     >
       <AriaMenu
         {...props}
@@ -46,7 +47,7 @@ export function MenuItem({
     <AriaMenuItem
       {...props}
       className={cx(
-        "flex cursor-pointer items-center gap-2.5 rounded-key px-2.5 py-2 type-body text-ink outline-none",
+        "flex cursor-pointer items-center gap-2.5 rounded-key px-2.5 py-2 type-body text-ink motion-highlight outline-none",
         "focused:bg-hover disabled:cursor-default disabled:text-muted",
         className,
       )}

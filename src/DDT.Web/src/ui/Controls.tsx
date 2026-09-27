@@ -26,7 +26,8 @@ import { cx } from "./cx";
 import { fieldClass } from "./TextField";
 
 // A selector for filtering a list by state: a well holding one key per state, the chosen key raised out of it.
-// Each key carries its count; a count that needs someone (waiting, failed) is printed on a signal-coloured tag.
+// Each key carries its count; a count that needs someone (waiting, failed) is printed on a signal-coloured tag. The
+// keys differ in width, so the raised one does not slide to another: one sinks and the other rises, in colour.
 export interface FilterOption {
   id: string;
   label: ReactNode;
@@ -106,7 +107,7 @@ function FilterKey({ option }: { option: FilterOption }) {
     <ToggleButton
       id={option.id}
       className={cx(
-        "flex h-8 cursor-pointer items-center gap-2 rounded-key px-2.75 type-label font-semibold text-ink-2 outline-none",
+        "flex h-8 cursor-pointer items-center gap-2 rounded-key px-2.75 type-label font-semibold text-ink-2 motion-colors outline-none",
         "hover:text-ink selected:bg-raised selected:text-ink selected:shadow-[0_0_0_1px_var(--color-line)]",
         "focus-visible:outline-2 focus-visible:outline-focus",
       )}
@@ -115,7 +116,7 @@ function FilterKey({ option }: { option: FilterOption }) {
       {option.count !== undefined ? (
         <span
           className={cx(
-            "inline-flex h-5 min-w-5 items-center justify-center rounded-tag px-1 type-numeral",
+            "inline-flex h-5 min-w-5 items-center justify-center rounded-tag px-1 type-numeral motion-colors",
             option.tone === "attention" && option.count > 0 && "bg-attention text-on-attention",
             option.tone === "fail" && option.count > 0 && "bg-fail text-on-fail",
             (option.tone === undefined || option.count === 0) && "text-muted",
@@ -188,7 +189,7 @@ export function ProgressBar({
             <span
               className={cx(
                 "absolute inset-y-0 left-0 bg-run rail-live",
-                isIndeterminate && "w-full opacity-60",
+                isIndeterminate ? "w-full opacity-60" : "motion-fill",
               )}
               style={isIndeterminate ? undefined : { width: `${String(percentage ?? 0)}%` }}
             />
@@ -213,8 +214,9 @@ export function NumberField({
   className?: string;
 }) {
   const { t } = useLingui();
+  // The steppers sit inside the field's frame, so a press darkens them without sinking them.
   const stepper =
-    "flex w-8 cursor-pointer items-center justify-center text-muted outline-none hover:bg-hover hover:text-ink disabled:opacity-40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus";
+    "flex w-8 cursor-pointer items-center justify-center text-muted motion-colors outline-none hover:bg-hover hover:text-ink pressed:bg-key-quiet-pressed pressed:duration-(--duration-press) disabled:opacity-40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus";
 
   return (
     <AriaNumberField {...props} className={cx("flex flex-col gap-1.5", className)}>
@@ -222,7 +224,7 @@ export function NumberField({
       <Group
         className={cx(
           fieldClass,
-          "flex h-9.5 overflow-hidden px-0 focus-within:shadow-[inset_0_0_0_2px_var(--color-focus)]",
+          "flex h-9.5 overflow-hidden px-0 focus-within:shadow-[inset_0_0_0_2px_var(--color-focus)] focus-within:duration-0",
         )}
       >
         <Input className="min-w-0 flex-1 bg-transparent px-2.5 type-data outline-none" />

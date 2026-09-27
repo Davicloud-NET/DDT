@@ -36,7 +36,7 @@ export function Checkbox({ children, className, ...props }: CheckboxProps) {
             <span
               aria-hidden="true"
               className={cx(
-                "flex size-4 shrink-0 items-center justify-center rounded-tag transition-colors",
+                "flex size-4 shrink-0 items-center justify-center rounded-tag motion-colors",
                 focusRing,
                 isSelected || isIndeterminate
                   ? "bg-key-primary text-on-key-primary"
@@ -72,17 +72,18 @@ export function Switch({ children, className, ...props }: SwitchProps) {
             <span
               aria-hidden="true"
               className={cx(
-                "relative h-5 w-9 shrink-0 rounded-key transition-colors",
+                "relative h-5 w-9 shrink-0 rounded-key motion-colors",
                 focusRing,
                 isSelected
                   ? "bg-key-primary"
                   : "bg-well shadow-[inset_0_0_0_1px_var(--color-control)]",
               )}
             >
+              {/* The thumb slides across, as a switch's lever does. */}
               <span
                 className={cx(
-                  "absolute top-0.5 size-4 rounded-tag transition-[left,background-color]",
-                  isSelected ? "left-4.5 bg-on-key-primary" : "left-0.5 bg-control",
+                  "absolute top-0.5 left-0.5 size-4 rounded-tag transition-[translate,background-color] duration-(--duration-fast) ease-standard",
+                  isSelected ? "translate-x-4 bg-on-key-primary" : "bg-control",
                 )}
               />
             </span>

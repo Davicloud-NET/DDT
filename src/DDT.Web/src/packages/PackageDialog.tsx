@@ -213,7 +213,7 @@ export function PackageDialog({
                     onPress={() => {
                       setTargets((rows) => rows.filter((row) => row.key !== target.key));
                     }}
-                    className="mb-0.5 flex size-9 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+                    className="mb-0.5 flex size-9 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
                   >
                     <IconX size={16} stroke={2} />
                   </AriaButton>

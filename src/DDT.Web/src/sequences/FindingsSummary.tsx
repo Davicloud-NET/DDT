@@ -98,7 +98,7 @@ export function FindingsSummary({
                           onGoTo(step.id, finding.field);
                         }}
                         className={cx(
-                          "-mx-1.5 cursor-pointer rounded-key px-1.5 py-1 text-left outline-none hover:bg-hover",
+                          "-mx-1.5 cursor-pointer rounded-key px-1.5 py-1 text-left motion-colors outline-none hover:bg-hover",
                           "focus-visible:outline-2 focus-visible:outline-focus",
                           toned(tone),
                         )}

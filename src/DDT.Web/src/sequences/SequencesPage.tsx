@@ -359,7 +359,7 @@ function DeleteKey({ name, onPress }: { name: string; onPress: () => void }) {
       <AriaButton
         aria-label={t`Delete ${name}`}
         onPress={onPress}
-        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-fail-text focus-visible:outline-2 focus-visible:outline-focus"
+        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-fail-text focus-visible:outline-2 focus-visible:outline-focus"
       >
         <IconTrash size={17} stroke={2} />
       </AriaButton>

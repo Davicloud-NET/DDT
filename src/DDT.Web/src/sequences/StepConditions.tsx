@@ -123,7 +123,7 @@ export function StepConditions({
                     onPress={() => {
                       onEdit({ type: "removeCondition", stepId: step.id, index });
                     }}
-                    className="mt-1.5 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+                    className="mt-1.5 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
                   >
                     <IconX size={16} stroke={2} />
                   </AriaButton>

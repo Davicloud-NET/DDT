@@ -91,10 +91,14 @@ export function EmptyState({
   );
 }
 
-// A placeholder in the shape of what is loading, so the page does not jump when it arrives.
+// A placeholder in the shape of what is loading, so the page does not jump when it arrives. It stands for work in
+// progress, so it pulses, barely: most loads end before the first pulse shows.
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <span aria-hidden="true" className={cx("block animate-pulse rounded-tag bg-well", className)} />
+    <span
+      aria-hidden="true"
+      className={cx("block animate-skeleton rounded-tag bg-well", className)}
+    />
   );
 }
 

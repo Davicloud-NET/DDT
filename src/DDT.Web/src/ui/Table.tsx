@@ -72,7 +72,7 @@ export function TableColumn({ children, className, ...props }: TableColumnProps)
       className={cx(
         "border-b border-line px-3 text-left align-middle type-label text-ink-2 outline-none",
         "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
-        props.allowsSorting && "cursor-pointer hover:text-ink",
+        props.allowsSorting && "cursor-pointer motion-colors hover:text-ink",
         className,
       )}
     >
@@ -116,7 +116,7 @@ export function TableRow<T extends object>({
     <AriaRow
       {...props}
       className={cx(
-        "group/row h-14 outline-none transition-colors hover:bg-hover selected:bg-selected",
+        "group/row h-14 motion-colors outline-none hover:bg-hover selected:bg-selected",
         "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
         props.href || props.onAction ? "cursor-pointer" : "",
         className,

@@ -16,10 +16,11 @@ import {
 import { cx } from "./cx";
 
 // The label sits above the field, the hint below it, and an error replaces nothing: it is added under the hint.
-// React Aria links all three to the input for screen readers.
+// React Aria links all three to the input for screen readers. The frame changes colour in fast, as when a value turns
+// invalid, but the focus ring appears at once.
 export const fieldClass =
-  "w-full rounded-key bg-field px-2.5 text-ink shadow-[inset_0_0_0_1px_var(--color-control)] outline-none " +
-  "focus:shadow-[inset_0_0_0_2px_var(--color-focus)] invalid:shadow-[inset_0_0_0_1.5px_var(--color-fail-text)] " +
+  "w-full rounded-key bg-field px-2.5 text-ink shadow-[inset_0_0_0_1px_var(--color-control)] motion-colors outline-none " +
+  "focus:shadow-[inset_0_0_0_2px_var(--color-focus)] focus:duration-0 invalid:shadow-[inset_0_0_0_1.5px_var(--color-fail-text)] " +
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 export interface TextFieldProps extends Omit<AriaTextFieldProps, "className" | "children"> {

@@ -28,8 +28,11 @@ export interface RailPhase {
   steps: number;
 }
 
+// One fill serves the running and the done step, so a step that moves on or finishes fills on in slow, and turns
+// from the running blue to done, instead of jumping. The stripes run only while the step does.
 function Module({ step, height }: { step: RailStep; height: string }) {
   const percent = Math.min(100, Math.max(0, step.percent ?? 0));
+  const fill = step.state === "done" ? 100 : step.state === "running" ? percent : 0;
 
   return (
     <span
@@ -40,17 +43,18 @@ function Module({ step, height }: { step: RailStep; height: string }) {
         step.state === "running" && "shadow-[0_0_0_1px_var(--color-run)]",
       )}
     >
-      {step.state === "done" ? <span className="absolute inset-0 bg-rail-done" /> : null}
+      <span
+        className={cx(
+          "absolute inset-y-0 left-0 motion-fill",
+          step.state === "done" ? "bg-rail-done" : "bg-run",
+          step.state === "running" && "rail-live",
+        )}
+        style={{ width: `${String(fill)}%` }}
+      />
       {step.state === "failed" ? <span className="absolute inset-0 hatch-fail" /> : null}
       {step.state === "skipped" ? <span className="absolute inset-0 hatch-skip" /> : null}
       {step.mark === "problem" ? <span className="absolute inset-0 hatch-fail" /> : null}
       {step.mark === "warning" ? <span className="absolute inset-0 bg-attention" /> : null}
-      {step.state === "running" ? (
-        <span
-          className="absolute inset-y-0 left-0 bg-run rail-live"
-          style={{ width: `${String(percent)}%` }}
-        />
-      ) : null}
     </span>
   );
 }
@@ -273,7 +277,7 @@ export function SequenceRailPicker({
                   moveKey(event, index, step.id);
                 }}
                 className={cx(
-                  "group flex min-w-0 cursor-pointer flex-col gap-2 rounded-key p-1.5 outline-none hover:bg-hover",
+                  "group flex min-w-0 cursor-pointer flex-col gap-2 rounded-key p-1.5 motion-colors outline-none hover:bg-hover",
                   "selected:bg-raised selected:shadow-[0_0_0_1px_var(--color-line)]",
                   "focus-visible:outline-2 focus-visible:outline-focus",
                 )}

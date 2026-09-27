@@ -27,7 +27,7 @@ export function Tooltip({
       <AriaTooltip
         placement={placement}
         offset={6}
-        className="max-w-72 rounded-key bg-ink px-2.5 py-1.5 type-small text-inverse entering:animate-overlay-in"
+        className="max-w-72 rounded-key bg-ink px-2.5 py-1.5 type-small text-inverse entering:animate-pop-in exiting:animate-pop-out"
       >
         {content}
       </AriaTooltip>

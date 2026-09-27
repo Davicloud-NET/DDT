@@ -158,7 +158,7 @@ export function MachineActions({
             <AriaButton
               aria-label={translate`More for ${label}`}
               isDisabled={busy}
-              className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
+              className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
             >
               <IconDots size={18} stroke={2} />
             </AriaButton>

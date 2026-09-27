@@ -19,7 +19,8 @@ import { Notice } from "./Notice";
 import { TextField } from "./TextField";
 
 // A dialog floats over the page: the lightest surface, one of the few with a shadow, over a dimmed page. React Aria
-// traps the focus inside, closes it with Escape and gives the focus back to what opened it.
+// traps the focus inside, closes it with Escape and gives the focus back to what opened it. It rises into place as
+// the page dims, and leaves the same way, faster; React Aria keeps it mounted until it has left.
 
 export interface DialogProps {
   isOpen: boolean;
@@ -55,11 +56,11 @@ export function Dialog({
       onOpenChange={onOpenChange}
       isDismissable={!isBusy}
       isKeyboardDismissDisabled={isBusy}
-      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-backdrop px-4 pt-[12vh] pb-8 entering:animate-overlay-in"
+      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-backdrop px-4 pt-[12vh] pb-8 entering:animate-overlay-in exiting:animate-overlay-out"
     >
       <AriaModal
         className={cx(
-          "w-full overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in",
+          "w-full overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in exiting:animate-pop-out",
           width === "md" ? "max-w-130" : "max-w-180",
         )}
       >
@@ -76,7 +77,7 @@ export function Dialog({
               slot="close"
               aria-label={t`Close`}
               isDisabled={isBusy}
-              className="-mt-1 -mr-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
+              className="-mt-1 -mr-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover hover:text-ink pressed:bg-key-quiet-pressed focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
             >
               <IconX size={18} stroke={2} />
             </AriaButton>
@@ -163,7 +164,9 @@ export function ConfirmDialog({
             variant={danger ? "danger" : "primary"}
             isDisabled={isBusy || !ready}
             className={
-              danger && ready ? "bg-fail text-on-fail shadow-none hover:bg-fail" : undefined
+              danger && ready
+                ? "bg-fail text-on-fail shadow-none hover:bg-fail pressed:bg-fail-pressed"
+                : undefined
             }
             onPress={onConfirm}
           >

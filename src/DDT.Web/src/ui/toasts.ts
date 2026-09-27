@@ -13,7 +13,61 @@ export interface ToastMessage {
   tone?: "ok" | "fail" | "info";
 }
 
-export const toasts = new ToastQueue<ToastMessage>({ maxVisibleToasts: 4 });
+// React Aria removes a closed toast at once. This queue keeps a shown one on screen while it leaves: closing it, by
+// its key or its timeout, only marks it as leaving, and the toast finishes the close once its exit has run.
+export class LeavingToastQueue<T> extends ToastQueue<T> {
+  #leaving: ReadonlySet<string> = new Set();
+  readonly #listeners = new Set<() => void>();
+
+  override close(key: string): void {
+    if (!this.visibleToasts.some((toast) => toast.key === key)) {
+      super.close(key);
+      return;
+    }
+
+    if (!this.#leaving.has(key)) {
+      this.#leaving = new Set([...this.#leaving, key]);
+      this.#emit();
+    }
+  }
+
+  // Removes a toast that has left.
+  finishClose(key: string): void {
+    if (!this.#leaving.has(key)) {
+      return;
+    }
+
+    this.#leaving = new Set([...this.#leaving].filter((leaving) => leaving !== key));
+    super.close(key);
+    this.#emit();
+  }
+
+  // Removes every toast at once, leaving or not.
+  override clear(): void {
+    this.#leaving = new Set();
+    super.clear();
+    this.#emit();
+  }
+
+  isLeaving = (key: string): boolean => this.#leaving.has(key);
+
+  // Returns the unsubscribe.
+  subscribeLeaving = (listener: () => void): (() => void) => {
+    this.#listeners.add(listener);
+
+    return () => {
+      this.#listeners.delete(listener);
+    };
+  };
+
+  #emit(): void {
+    for (const listener of [...this.#listeners]) {
+      listener();
+    }
+  }
+}
+
+export const toasts = new LeavingToastQueue<ToastMessage>({ maxVisibleToasts: 4 });
 
 export function showToast(message: ToastMessage): void {
   toasts.add(message, message.tone === "fail" ? {} : { timeout: 6000 });

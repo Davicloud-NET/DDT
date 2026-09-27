@@ -31,7 +31,7 @@ import { phaseLabel, stepKindLabel } from "./steps";
 import type { StepCatalog } from "./useSequenceEditor";
 
 const iconKey =
-  "flex size-7.5 cursor-pointer items-center justify-center rounded-key text-ink-2 outline-none hover:bg-hover hover:text-ink " +
+  "flex size-7.5 cursor-pointer items-center justify-center rounded-key text-ink-2 key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink " +
   "focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-40";
 
 // The step picked on the rail, with everything it does. Its keys move, insert and remove it; the arrow keys on its

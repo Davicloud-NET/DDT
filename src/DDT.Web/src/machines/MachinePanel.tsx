@@ -33,7 +33,8 @@ import {
 } from "./machineView";
 
 // The machine picked in the list, beside it: its run as it happens and what it is, without leaving the list. It
-// follows the machine live: the run's steps arrive from the hub while the panel is open.
+// follows the machine live: the run's steps arrive from the hub while the panel is open. It enters from the list's
+// side when it opens; picking another machine only changes what it shows.
 export function MachinePanel({
   machine,
   actions,
@@ -60,7 +61,7 @@ export function MachinePanel({
   return (
     <aside
       aria-label={displayName(machine)}
-      className="flex w-100 shrink-0 flex-col self-start overflow-hidden rounded-overlay bg-raised shadow-overlay max-lg:hidden"
+      className="flex w-100 shrink-0 animate-panel-in flex-col self-start overflow-hidden rounded-overlay bg-raised shadow-overlay max-lg:hidden"
     >
       <div className="flex items-start gap-3.5 px-4.5 pt-4.5 pb-3.5">
         <DeviceGlyph kind={deviceKind(machine)} size="lg" />
@@ -79,7 +80,7 @@ export function MachinePanel({
         <AriaButton
           aria-label={translate`Close the details`}
           onPress={onClose}
-          className="-mt-1 -mr-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+          className="-mt-1 -mr-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover hover:text-ink pressed:bg-key-quiet-pressed focus-visible:outline-2 focus-visible:outline-focus"
         >
           <IconX size={18} stroke={2} />
         </AriaButton>

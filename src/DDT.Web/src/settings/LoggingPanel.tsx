@@ -201,7 +201,7 @@ function LevelRows({
                   }}
                   className={cx(
                     index === 0 ? "mt-7" : "mt-1.5",
-                    "flex size-9 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus",
+                    "flex size-9 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus",
                   )}
                 >
                   <IconX size={16} stroke={2} />

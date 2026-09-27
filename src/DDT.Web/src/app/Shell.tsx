@@ -6,7 +6,14 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Button as AriaButton, MenuTrigger, type Key, type Selection } from "react-aria-components";
+import {
+  Button as AriaButton,
+  MenuTrigger,
+  SharedElement,
+  SharedElementTransition,
+  type Key,
+  type Selection,
+} from "react-aria-components";
 
 import { currentUserQuery, logout, type CurrentUser } from "@/auth/auth";
 import { chooseLanguage, LANGUAGES, type Language } from "@/i18n/i18n";
@@ -16,6 +23,7 @@ import { useLiveUpdates } from "@/live/useLiveUpdates";
 import { cx } from "@/ui/cx";
 import { Logo } from "@/ui/Logo";
 import { Menu, MenuItem, MenuSection, MenuSeparator } from "@/ui/Menu";
+import { useReplay } from "@/ui/motion";
 import { Toasts } from "@/ui/Toast";
 
 import { CommandPalette } from "./CommandPalette";
@@ -30,13 +38,21 @@ export function Shell() {
   const live = useLiveUpdates(!passwordFirst);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const here = passwordFirst ? null : locate(pathname);
+  // Another page fades in; the first one, and the same page with another filter, simply show.
+  const replay = useReplay(pathname);
 
   return (
     <div className="flex h-full flex-col">
       <TopBar activeCategory={here?.category.id} passwordFirst={passwordFirst} />
       {here ? <SubNavigation categoryId={here.category.id} activePage={here.page.to} /> : null}
       {passwordFirst ? null : <ConnectionBanner live={live} />}
-      <main className="min-h-0 flex-1 overflow-auto">
+      <main
+        className={cx(
+          "min-h-0 flex-1 overflow-auto",
+          replay === 0 && "animate-page-in",
+          replay === 1 && "animate-page-in-again",
+        )}
+      >
         <LiveContext value={live}>
           <Outlet />
         </LiveContext>
@@ -78,7 +94,7 @@ function TopBar({
               to={category.pages[0].to}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "flex h-10.5 shrink-0 items-center rounded-t-key px-4 type-label whitespace-nowrap outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
+                "flex h-10.5 shrink-0 items-center rounded-t-key px-4 type-label whitespace-nowrap motion-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
                 active ? "bg-page text-ink" : "text-frame-muted hover:text-frame-text",
               )}
             >
@@ -93,6 +109,8 @@ function TopBar({
   );
 }
 
+// The pages of a category. The underline of the page shown moves to the next page chosen in the same row; another
+// category's row starts with its own.
 function SubNavigation({ categoryId, activePage }: { categoryId: string; activePage: string }) {
   const { i18n } = useLingui();
   const category = categories.find((candidate) => candidate.id === categoryId);
@@ -106,25 +124,32 @@ function SubNavigation({ categoryId, activePage }: { categoryId: string; activeP
       aria-label={i18n._(category.label)}
       className="flex h-11 shrink-0 items-stretch gap-6.5 overflow-x-auto border-b border-line px-6"
     >
-      {category.pages.map((page) => {
-        const active = page.to === activePage;
+      <SharedElementTransition key={category.id}>
+        {category.pages.map((page) => {
+          const active = page.to === activePage;
 
-        return (
-          <Link
-            key={page.to}
-            to={page.to}
-            aria-current={active ? "page" : undefined}
-            className={cx(
-              "flex shrink-0 items-center type-label outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
-              active
-                ? "text-ink shadow-[inset_0_-2px_0_var(--color-ink)]"
-                : "font-medium text-ink-2 hover:text-ink",
-            )}
-          >
-            {i18n._(page.label)}
-          </Link>
-        );
-      })}
+          return (
+            <Link
+              key={page.to}
+              to={page.to}
+              aria-current={active ? "page" : undefined}
+              className={cx(
+                "relative flex shrink-0 items-center type-label motion-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
+                active ? "text-ink" : "font-medium text-ink-2 hover:text-ink",
+              )}
+            >
+              {i18n._(page.label)}
+              {/* Only its position moves; it takes the new page's width at once. */}
+              <SharedElement
+                name="page-underline"
+                isVisible={active}
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-0.5 bg-ink transition-[translate] duration-(--duration-normal) ease-standard"
+              />
+            </Link>
+          );
+        })}
+      </SharedElementTransition>
     </nav>
   );
 }
@@ -169,7 +194,7 @@ function UserMenu({ user }: { user: CurrentUser }) {
     <MenuTrigger>
       <AriaButton
         aria-label={t`Account menu for ${name}`}
-        className="w-13 cursor-pointer border-l border-frame-line type-label text-frame-text outline-none hover:bg-frame-hover focus-visible:outline-2 focus-visible:-outline-offset-2"
+        className="w-13 cursor-pointer border-l border-frame-line type-label text-frame-text motion-colors outline-none hover:bg-frame-hover focus-visible:outline-2 focus-visible:-outline-offset-2"
       >
         {initials(user)}
       </AriaButton>

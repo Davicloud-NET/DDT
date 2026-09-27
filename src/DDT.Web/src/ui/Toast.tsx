@@ -4,16 +4,18 @@
 
 import { useLingui } from "@lingui/react/macro";
 import { IconX } from "@tabler/icons-react";
+import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import {
   Button as AriaButton,
   Text,
   UNSTABLE_Toast as AriaToast,
   UNSTABLE_ToastContent as ToastContent,
   UNSTABLE_ToastRegion as ToastRegion,
+  type QueuedToast,
 } from "react-aria-components";
 
 import { cx } from "./cx";
-import { toasts } from "./toasts";
+import { toasts, type ToastMessage } from "./toasts";
 
 const marks: Record<"ok" | "fail" | "info", string> = {
   ok: "bg-ok",
@@ -22,41 +24,79 @@ const marks: Record<"ok" | "fail" | "info", string> = {
 };
 
 export function Toasts() {
-  const { t } = useLingui();
-
   return (
     <ToastRegion
       queue={toasts}
       className="fixed right-4 bottom-4 z-50 flex w-90 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none"
     >
-      {({ toast }) => (
-        <AriaToast
-          toast={toast}
-          className="flex items-stretch overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none entering:animate-toast-in focus-visible:outline-2 focus-visible:outline-focus"
-        >
-          <span
-            aria-hidden="true"
-            className={cx("w-1.5 shrink-0", marks[toast.content.tone ?? "info"])}
-          />
-          <ToastContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-3.5 py-3">
-            <Text slot="title" className="type-label text-ink">
-              {toast.content.title}
-            </Text>
-            {toast.content.description ? (
-              <Text slot="description" className="type-small text-ink-2">
-                {toast.content.description}
-              </Text>
-            ) : null}
-          </ToastContent>
-          <AriaButton
-            slot="close"
-            aria-label={t`Close`}
-            className="flex w-9 shrink-0 cursor-pointer items-start justify-center pt-3 text-muted outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
-          >
-            <IconX size={16} stroke={2} />
-          </AriaButton>
-        </AriaToast>
-      )}
+      {({ toast }) => <Toast toast={toast} />}
     </ToastRegion>
+  );
+}
+
+// A toast rises into place when it comes, and sinks back as it leaves, faster.
+function Toast({ toast }: { toast: QueuedToast<ToastMessage> }) {
+  const { t } = useLingui();
+  const ref = useRef<HTMLDivElement>(null);
+  const key = toast.key;
+  const leaving = useSyncExternalStore(toasts.subscribeLeaving, () => toasts.isLeaving(key));
+
+  // The close ends once the exit has run, or at once where nothing runs: with "reduce motion", or in tests.
+  useLayoutEffect(() => {
+    if (!leaving) {
+      return;
+    }
+
+    const element = ref.current;
+    const running = element !== null && "getAnimations" in element ? element.getAnimations() : [];
+    let current = true;
+
+    if (running.length === 0) {
+      toasts.finishClose(key);
+      return;
+    }
+
+    void Promise.allSettled(running.map((animation) => animation.finished)).then(() => {
+      if (current) {
+        toasts.finishClose(key);
+      }
+    });
+
+    return () => {
+      current = false;
+    };
+  }, [leaving, key]);
+
+  return (
+    <AriaToast
+      ref={ref}
+      toast={toast}
+      className={cx(
+        "flex items-stretch overflow-hidden rounded-overlay bg-raised shadow-overlay outline-none focus-visible:outline-2 focus-visible:outline-focus",
+        leaving ? "pointer-events-none animate-pop-out" : "animate-pop-in",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cx("w-1.5 shrink-0", marks[toast.content.tone ?? "info"])}
+      />
+      <ToastContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-3.5 py-3">
+        <Text slot="title" className="type-label text-ink">
+          {toast.content.title}
+        </Text>
+        {toast.content.description ? (
+          <Text slot="description" className="type-small text-ink-2">
+            {toast.content.description}
+          </Text>
+        ) : null}
+      </ToastContent>
+      <AriaButton
+        slot="close"
+        aria-label={t`Close`}
+        className="flex w-9 shrink-0 cursor-pointer items-start justify-center pt-3 text-muted motion-colors outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+      >
+        <IconX size={16} stroke={2} />
+      </AriaButton>
+    </AriaToast>
   );
 }

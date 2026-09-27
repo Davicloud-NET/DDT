@@ -8,7 +8,8 @@ import { cx } from "./cx";
 
 // The one place a state gets its look. Filled tags are the states that ask for attention or show work in progress;
 // the resting states are outlined, so a list of finished machines stays quiet. Tags are printed, not raised: flat,
-// square and in capitals, the only capitals in the interface.
+// square and in capitals, the only capitals in the interface. A tag whose state changes turns to its new colours in
+// fast.
 export type StateTone = "run" | "attention" | "fail" | "ok" | "idle" | "retired";
 
 const tones: Record<StateTone, string> = {
@@ -32,7 +33,7 @@ export function StateTag({
   return (
     <span
       className={cx(
-        "inline-flex h-6 shrink-0 items-center self-start rounded-tag px-2 whitespace-nowrap type-tag",
+        "inline-flex h-6 shrink-0 items-center self-start rounded-tag px-2 whitespace-nowrap type-tag motion-colors",
         tones[tone],
         className,
       )}

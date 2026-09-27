@@ -28,7 +28,7 @@ import { fieldClass } from "./TextField";
 // MAC addresses). Both take their options as ListBoxItem children.
 
 const popoverClass =
-  "w-(--trigger-width) min-w-48 rounded-overlay bg-raised p-1 shadow-overlay outline-none entering:animate-pop-in";
+  "w-(--trigger-width) min-w-48 rounded-overlay bg-raised p-1 shadow-overlay outline-none entering:animate-pop-in exiting:animate-pop-out";
 
 export function ListBoxItem({
   children,
@@ -47,7 +47,7 @@ export function ListBoxItem({
       {...props}
       {...(props.textValue === undefined && text !== undefined ? { textValue: text } : {})}
       className={cx(
-        "flex cursor-pointer items-start gap-2 rounded-key px-2.5 py-2 type-body text-ink outline-none",
+        "flex cursor-pointer items-start gap-2 rounded-key px-2.5 py-2 type-body text-ink motion-highlight outline-none",
         "focused:bg-hover selected:font-semibold disabled:cursor-default disabled:text-muted",
         className,
       )}
@@ -141,7 +141,7 @@ export function ComboBox<T extends object>({
           {...(placeholder === undefined ? {} : { placeholder })}
           className={cx(fieldClass, "h-9.5 pr-9", mono ? "type-data" : "type-body")}
         />
-        <AriaButton className="absolute inset-y-0 right-0 flex w-9 cursor-pointer items-center justify-center text-muted outline-none">
+        <AriaButton className="absolute inset-y-0 right-0 flex w-9 cursor-pointer items-center justify-center text-muted motion-colors outline-none hover:text-ink">
           <IconChevronDown aria-hidden="true" size={16} stroke={2} />
         </AriaButton>
       </div>

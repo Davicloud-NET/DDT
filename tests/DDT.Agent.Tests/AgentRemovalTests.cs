@@ -114,6 +114,8 @@ public sealed class AgentRemovalTests : IDisposable
 
         try
         {
+            Assert.SkipWhen(CanList(run), "This session lists the directory in spite of the deny, as an elevated one may, so nothing is unreadable to the removal.");
+
             await RemoveAsync();
         }
         finally
@@ -274,6 +276,20 @@ public sealed class AgentRemovalTests : IDisposable
             {
                 await Task.Delay(10, timeout.Token);
             }
+        }
+    }
+
+    private static bool CanList(DirectoryInfo directory)
+    {
+        try
+        {
+            _ = directory.GetFileSystemInfos();
+
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 

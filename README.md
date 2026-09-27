@@ -2299,8 +2299,9 @@ Two things about the protocol layer are deliberately not done yet:
 ## Contributing
 
 Bug reports and feature requests are welcome as issues, and [CONTRIBUTING.md](CONTRIBUTING.md) says
-what a useful one holds and what every change has to pass. DDT does not take pull requests from
-outside contributors yet. Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says.
+what a useful one holds and what every change has to pass. DDT takes no pull requests from outside
+contributors until its contributor licence agreement is in place. Report a vulnerability privately,
+as [SECURITY.md](SECURITY.md) says.
 Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Licence

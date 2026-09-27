@@ -30,9 +30,10 @@ feature you miss; the roadmap is ordered by what someone moving from MDT would m
 
 ## Pull requests
 
-DDT does not take pull requests from outside contributors yet, while the terms for contributions
-are being settled. Please open an issue instead, describing the bug or the change you have in mind.
-This section will say how to contribute code once those terms are in place.
+DDT takes no pull requests from outside contributors until its contributor licence agreement is in
+place, which Davicloud is preparing. Until then a pull request from outside cannot be merged, so
+please open an issue instead, describing the bug or the change you have in mind. This section will
+say how to sign the agreement once it exists.
 
 ## Working on DDT
 

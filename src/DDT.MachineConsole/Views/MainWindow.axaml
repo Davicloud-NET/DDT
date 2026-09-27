@@ -121,18 +121,30 @@
         </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
 
-      <!-- Many laptops send media keys from their top row unless Fn is held; the console says so when one arrives. -->
+      <!-- A short note with the keys it names: hold Fn when a laptop's top row sends media keys, or why the console
+           stays open when someone tries to close it. -->
       <Border Grid.Row="2"
-              Name="MediaKeysHint"
+              Name="Notice"
               Classes="raised"
-              c:Motion.Shown="{Binding MediaKeysHint}"
+              c:Motion.Shown="{Binding HasNotice}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
               Margin="36,0,36,20"
               Padding="18,12">
         <StackPanel Orientation="Horizontal" Spacing="12">
-          <c:KeyCap Key="Fn" VerticalAlignment="Center" />
-          <TextBlock Classes="body" Text="{Binding MediaKeysText}" TextWrapping="Wrap" MaxWidth="760" VerticalAlignment="Center" />
+          <ItemsControl ItemsSource="{Binding NoticeKeys}" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <c:KeyCap Key="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Classes="body" Text="{Binding NoticeText}" TextWrapping="Wrap" MaxWidth="760" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
 

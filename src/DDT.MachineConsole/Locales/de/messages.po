@@ -683,6 +683,10 @@ msgstr "Die Verbindung zum Agent ist abgebrochen"
 msgid "The console restarts a machine only in Windows PE."
 msgstr "Die Konsole startet ein Gerät nur in Windows PE neu."
 
+#: ViewModels/MainViewModel.cs
+msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
+msgstr "Die Konsole bleibt offen, solange DDT an diesem Gerät arbeitet. Umschalt+F10 öffnet eine Eingabeaufforderung."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "The disk has no partitions."
 msgstr "Der Datenträger hat keine Partitionen."

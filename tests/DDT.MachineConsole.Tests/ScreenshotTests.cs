@@ -85,6 +85,11 @@ public sealed class ScreenshotTests
             console.Show(Scenarios.Running);
             console.Model.Press(Avalonia.Input.Key.VolumeMute);
         },
+        ["26-close-refused"] = console =>
+        {
+            console.Show(Scenarios.Running);
+            console.Model.RefuseClose();
+        },
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];

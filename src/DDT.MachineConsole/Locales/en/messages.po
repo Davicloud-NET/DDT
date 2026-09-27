@@ -683,6 +683,10 @@ msgstr "The connection to the agent broke"
 msgid "The console restarts a machine only in Windows PE."
 msgstr "The console restarts a machine only in Windows PE."
 
+#: ViewModels/MainViewModel.cs
+msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
+msgstr "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "The disk has no partitions."
 msgstr "The disk has no partitions."

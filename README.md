@@ -1015,8 +1015,10 @@ its own, in front of the console and with the keyboard, in `X:\DDT`, while the a
 console fills the screen but does not stay on top, and it never takes the keyboard back, so the
 prompt stays in front until it is closed or clicked away. The machine's details (F2) and the band
 shown once the agent has ended name the key; the keys along the bottom have no room for it at
-1024 × 768. Closing the console itself, with Alt+F4 at any time, leaves the agent running in the
-text console underneath, where Ctrl+C stops it.
+1024 × 768. While the agent works, the console cannot be closed: Alt+F4, which passers-by press
+more often than one would think, only brings a note that the console stays open and that Shift+F10
+opens a prompt. A shutdown or restart of the machine closes it as usual, and so does F9 once the
+agent has ended.
 
 Many laptops send mute, volume and media keys from their top row unless Fn is held, and Windows PE
 has no driver of the maker's that would change that. When such a key arrives, the console says to

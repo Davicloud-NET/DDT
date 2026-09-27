@@ -63,6 +63,20 @@ public sealed partial class MainWindow : Window
         Activate();
     }
 
+    // Alt+F4 or the close button, while the agent works: refused with a note, so a passer-by cannot take the console
+    // away. The console's own close, a shutdown and a restart go through as they are.
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        if (e.CloseReason == WindowCloseReason.WindowClosing && !e.IsProgrammatic && _model?.RefuseClose() == true)
+        {
+            e.Cancel = true;
+        }
+
+        base.OnClosing(e);
+    }
+
     private void OnKeyDownFirst(object? sender, KeyEventArgs e)
     {
         _frames?.Measure($"key {e.Key}", Motion.Press);

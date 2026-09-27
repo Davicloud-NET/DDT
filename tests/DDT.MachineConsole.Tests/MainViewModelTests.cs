@@ -300,22 +300,56 @@ public sealed class MainViewModelTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);
 
-        Assert.False(console.Model.MediaKeysHint);
+        Assert.False(console.Model.HasNotice);
         Assert.True(console.Model.Press(Key.VolumeMute));
-        Assert.True(console.Model.MediaKeysHint);
+        Assert.Equal(ConsoleNotice.MediaKeys, console.Model.Notice);
         Assert.False(console.Model.HasOverlay);
-        Assert.Contains("Fn", console.Model.MediaKeysText, StringComparison.Ordinal);
+        Assert.Equal(["Fn"], console.Model.NoticeKeys);
+        Assert.Contains("Hold Fn", console.Model.NoticeText, StringComparison.Ordinal);
 
         Assert.True(console.Model.Press(Key.F2));
-        Assert.False(console.Model.MediaKeysHint);
+        Assert.False(console.Model.HasNotice);
         Assert.Equal(Overlay.Machine, console.Model.OverlayShown);
 
         console.Model.Press(Key.VolumeUp);
-        Assert.True(console.Model.MediaKeysHint);
+        Assert.True(console.Model.HasNotice);
         console.Model.Press(Key.Escape);
-        Assert.False(console.Model.MediaKeysHint);
+        Assert.False(console.Model.HasNotice);
 
-        Assert.StartsWith("Die obere Tastenreihe", new TestConsole(UiLanguage.German).Model.MediaKeysText, StringComparison.Ordinal);
+        TestConsole german = new(UiLanguage.German);
+        german.Model.Press(Key.VolumeDown);
+        Assert.StartsWith("Die obere Tastenreihe", german.Model.NoticeText, StringComparison.Ordinal);
+    }
+
+    // Alt+F4 while the agent works would leave the machine to the text console, and passers-by press it. The console
+    // stays and says how to reach a prompt; once the agent has ended, closing is F9's job and goes through.
+    [Fact]
+    public void RefusesToCloseWhileTheAgentWorksAndSaysHowToReachAPrompt()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+
+        Assert.True(console.Model.RefuseClose());
+        Assert.Equal(ConsoleNotice.CloseRefused, console.Model.Notice);
+        Assert.Equal(["Shift", "F10"], console.Model.NoticeKeys);
+        Assert.Equal(
+            "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt.",
+            console.Model.NoticeText);
+
+        // The next key has read it; the note leaves and keeps its words while it fades.
+        console.Model.Press(Key.F1);
+        Assert.False(console.Model.HasNotice);
+        Assert.Equal(["Shift", "F10"], console.Model.NoticeKeys);
+        Assert.Equal(0, console.Closed);
+
+        // Before the agent has said anything, too.
+        Assert.True(new TestConsole().Model.RefuseClose());
+
+        console.Model.Ended(LinkEnd.Closed);
+        Assert.False(console.Model.RefuseClose());
+
+        TestConsole german = new(UiLanguage.German);
+        Assert.True(german.Model.RefuseClose());
+        Assert.StartsWith("Die Konsole bleibt offen", german.Model.NoticeText, StringComparison.Ordinal);
     }
 
     [Fact]

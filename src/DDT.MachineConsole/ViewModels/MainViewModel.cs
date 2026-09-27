@@ -39,7 +39,8 @@ public sealed class MainViewModel : ObservableObject
     private LicencesViewModel? _licences;
     private LinkEnd? _ended;
     private bool _confirmingRestart;
-    private bool _mediaKeysHint;
+    private ConsoleNotice _notice;
+    private ConsoleNotice _shownNotice;
     private bool _isDark = true;
 
     // send takes an answer to the agent; close ends the console.
@@ -243,15 +244,59 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    // Shown when a media key arrives, as a laptop's top row sends them without Fn, until a function key comes through.
-    public bool MediaKeysHint
+    // A short note above the keys: how to reach F1 to F12 when a laptop's top row sends media keys, or why the console
+    // stays open when someone tries to close it.
+    public ConsoleNotice Notice
     {
-        get => _mediaKeysHint;
-        private set => Set(ref _mediaKeysHint, value);
+        get => _notice;
+        private set
+        {
+            // The band keeps the last note's words while it fades out.
+            if (value != ConsoleNotice.None)
+            {
+                _shownNotice = value;
+            }
+
+            if (Set(ref _notice, value))
+            {
+                Raise(nameof(HasNotice));
+                Raise(nameof(NoticeText));
+                Raise(nameof(NoticeKeys));
+            }
+        }
     }
 
-    public string MediaKeysText =>
-        _l.T("This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys.");
+    public bool HasNotice => Notice != ConsoleNotice.None;
+
+    public string NoticeText => _shownNotice switch
+    {
+        ConsoleNotice.MediaKeys =>
+            _l.T("This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."),
+        ConsoleNotice.CloseRefused =>
+            _l.T("The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."),
+        _ => string.Empty,
+    };
+
+    public IReadOnlyList<string> NoticeKeys => _shownNotice switch
+    {
+        ConsoleNotice.MediaKeys => ["Fn"],
+        ConsoleNotice.CloseRefused => ["Shift", "F10"],
+        _ => [],
+    };
+
+    // Someone closes the window, with Alt+F4 or its close button. While the agent works, a passer-by must not take the
+    // console away, so it stays and says how to reach a prompt; once the agent has ended, F9 closes it anyway.
+    public bool RefuseClose()
+    {
+        if (IsEnded)
+        {
+            return false;
+        }
+
+        Notice = ConsoleNotice.CloseRefused;
+
+        return true;
+    }
 
     public string ConfirmTitle => _l.T("Restart this machine now?");
 
@@ -313,6 +358,12 @@ public sealed class MainViewModel : ObservableObject
     // A key pressed anywhere. Only Shift+F10 takes a modifier; every other key works alone.
     public bool Press(Key key, KeyModifiers modifiers)
     {
+        // The note about closing has been read once the person presses on.
+        if (Notice == ConsoleNotice.CloseRefused)
+        {
+            Notice = ConsoleNotice.None;
+        }
+
         if (key == Key.F10 && modifiers == KeyModifiers.Shift)
         {
             _prompt.Open();
@@ -327,15 +378,15 @@ public sealed class MainViewModel : ObservableObject
 
         if (IsMediaKey(key))
         {
-            MediaKeysHint = true;
+            Notice = ConsoleNotice.MediaKeys;
 
             return true;
         }
 
         // A function key came through, so the person has found Fn.
-        if (key is >= Key.F1 and <= Key.F12 || key == Key.Escape)
+        if (Notice == ConsoleNotice.MediaKeys && (key is >= Key.F1 and <= Key.F12 || key == Key.Escape))
         {
-            MediaKeysHint = false;
+            Notice = ConsoleNotice.None;
         }
 
         if (ConfirmingRestart)
@@ -531,6 +582,13 @@ public sealed class MainViewModel : ObservableObject
         _licences?.Refresh();
         RaiseAll();
     }
+}
+
+public enum ConsoleNotice
+{
+    None,
+    MediaKeys,
+    CloseRefused,
 }
 
 // A key in the footer: what it is, what it does, and whether what it opens is open.

@@ -88,21 +88,6 @@ export function roleOrigin(user: UserView): string | null {
   }
 }
 
-// Why the role cannot be chosen here, and where to change it instead.
-export function roleLockReason(user: UserView): string | null {
-  const name = user.userName;
-
-  if (user.roleFrom === "DirectoryGroups") {
-    return t`The role of ${name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map.`;
-  }
-
-  if (user.roleFrom === "SingleSignOnGroups") {
-    return t`The role of ${name} comes from its single sign-on groups, through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map.`;
-  }
-
-  return null;
-}
-
 export function matchesUser(user: UserView, needle: string): boolean {
   return [user.userName, user.displayName, user.email, user.externalProvider].some(
     (value) => value?.toLowerCase().includes(needle) === true,

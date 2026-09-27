@@ -1160,7 +1160,10 @@ starts, the agent does not report, and the page shows the last contact. Once the
 reports while it waits for Windows setup to finish. A run whose agent has been silent for longer
 than a run token lasts (7 days) can never go on, so the server fails it within the next hour, with
 an error that says since when; until then it stays running unless someone stops it. The same data
-is at `GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`.
+is at `GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`. The runs of every machine
+are at `GET /api/deployments`, newest first and a page at a time, filtered by state, sequence,
+machine and a search over the machine's name, model, serial number and MAC addresses and the run's
+title; the first page counts the runs of each state.
 
 The log panel shows the newest 500 lines of the run, or of the machine with its registration and
 sign-in lines, and adds each line the agent sends as it arrives. It follows the newest line until
@@ -1562,9 +1565,15 @@ is being checked does not receive it.
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
 operator is written to the audit table with the actor and source address, and so is every run that
 is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
-sequence, package or rule. Waiting machines removed after a day unseen are only counted in the
-server log. Since anyone can register, approve on the page only a machine you can tie to a real PC,
-by its address or by someone signing in at it.
+sequence, package, rule or API token. Waiting machines removed after a day unseen are only counted
+in the server log. Since anyone can register, approve on the page only a machine you can tie to a
+real PC, by its address or by someone signing in at it.
+
+Administrators read the audit table at `GET /api/audit`, newest first, a page of up to 500 rows at a
+time, filtered by the start of the action such as `machine.`, any part of the actor's name, the exact
+subject id and a time range, `from` included and `to` not. Each row says whether a user, an API
+token, a machine or DDT itself acted, and the rows a change adds reach administrators' open pages as
+it is stored.
 
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
 ring is already required, already rotates, and this needs no token library. Each purpose, poll,

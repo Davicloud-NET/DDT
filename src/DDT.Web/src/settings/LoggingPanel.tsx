@@ -141,9 +141,11 @@ function LevelRows({
           return (
             <li
               key={row.id}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(9rem,13rem)_2.25rem] items-start gap-3"
+              // On a phone the category takes a line of its own, above its level.
+              className="grid grid-cols-[minmax(0,1fr)_2.25rem] items-start gap-3 border-t border-line-soft pt-3 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,1fr)_minmax(9rem,13rem)_2.25rem] sm:border-t-0 sm:pt-0"
             >
               <TextField
+                className="col-span-2 sm:col-span-1"
                 label={shown(<Trans>Category</Trans>)}
                 mono
                 value={row.category}

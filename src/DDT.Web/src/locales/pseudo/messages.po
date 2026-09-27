@@ -78,6 +78,10 @@ msgctxt "uefiCa.name"
 msgid "{cas, select, ca2011 {Microsoft's third-party UEFI CA 2011} ca2023 {Microsoft's third-party UEFI CA 2023} both {Microsoft's third-party UEFI CAs 2011 and 2023} other {Microsoft's third-party UEFI CA}}"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "{category} is listed again below, whose level applies."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "domain.checkError"
 msgid "{controller} answered the check with an error: {detail}"
@@ -333,6 +337,10 @@ msgstr ""
 msgid "{loaded, plural, one {Search the # loaded line} other {Search the # loaded lines}}"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "{locked, plural, one {# set in configuration} other {# set in configuration}}"
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "{maker}, serial {serial}"
 msgstr ""
@@ -414,6 +422,7 @@ msgstr ""
 msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "{name} is empty."
 msgstr ""
@@ -426,6 +435,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "directory.noMappedGroup"
 msgid "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -449,6 +462,14 @@ msgstr ""
 
 #: src/uploads/UploadPanel.tsx
 msgid "{name} was not added. {reason}"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "{name} was not uploaded. {reason}"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -482,6 +503,10 @@ msgstr ""
 
 #: src/sequences/sequenceList.ts
 msgid "{problemCount, plural, one {# problem} other {# problems}}"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "{problems, plural, one {# problem} other {# problems}}"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -560,6 +585,10 @@ msgstr ""
 
 #: src/sequences/SequenceEditor.tsx
 msgid "{stepName} moved to position {position} of {count}."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "{uploadedWhen} by {uploadedBy}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -780,6 +809,10 @@ msgctxt "model.nameLength"
 msgid "A name here has at most {max} characters and no control characters."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "A new certificate is served at once, on trial: this page's next request gets it, and you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the certificate before."
+msgstr ""
+
 #: src/machines/MachinePage.tsx
 msgid "A new run started on this machine."
 msgstr ""
@@ -796,6 +829,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartAfterRestart"
 msgid "A restart step restarts anyway, so it cannot restart again after it."
+msgstr ""
+
+#: src/settings/ProxiesPanel.tsx
+msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr ""
 
 #: src/rules/RulesPage.tsx
@@ -968,6 +1005,10 @@ msgstr ""
 msgid "a WIM, ESD or disk image file"
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "A Windows executable of at most 128 MB."
+msgstr ""
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "A Windows time zone id as tzutil /l lists it, such as W. Europe Standard Time."
 msgstr ""
@@ -1084,6 +1125,10 @@ msgstr ""
 msgid "Add {shown} to the map"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Add a category"
+msgstr ""
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "Add a claim value"
 msgstr ""
@@ -1197,7 +1242,12 @@ msgstr ""
 
 #: src/boot/BootImagePage.tsx
 #: src/machines/MachinePage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Agent"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Agent for netbooting machines"
 msgstr ""
 
 #: src/machines/machineView.ts
@@ -1336,6 +1386,10 @@ msgctxt "upload.chunkBusy"
 msgid "Another request is using this upload. Wait a few seconds, then send the chunk again."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Another root: an administrator's certificate, which DDT does not renew"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.nameTaken"
 msgid "Another sequence is already called {name}. Choose another name."
@@ -1396,12 +1450,17 @@ msgstr ""
 msgid "Applied"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Applies at its next use"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "Apply image"
 msgstr ""
 
 #: src/app/navigation.ts
 #: src/settings/ApprovalPage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Approval and zero touch"
 msgstr ""
 
@@ -1620,6 +1679,7 @@ msgstr ""
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/sequences/NewSequenceDialog.tsx
+#: src/settings/CertificatePanel.tsx
 #: src/settings/SettingsParts.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/ui/Dialog.tsx
@@ -1637,8 +1697,20 @@ msgstr ""
 msgid "Cannot run"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Category"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Certificate"
+msgstr ""
+
 #: src/audit/auditView.ts
 msgid "Certificate change acknowledged"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Certificate, followed by its intermediates"
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -1716,8 +1788,13 @@ msgstr ""
 msgid "Choose {file} again to resume at {percent}%."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Choose a file"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Choose a PFX file"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1757,6 +1834,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionVariable"
 msgid "Choose one of the variables {variables}."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Choose the agent first."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1833,6 +1914,10 @@ msgstr ""
 msgid "Code from the authenticator app"
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Compare the SHA-256 with the one published for the release you meant to install."
+msgstr ""
+
 #: src/sequences/StepConditions.tsx
 msgid "Comparison"
 msgstr ""
@@ -1850,12 +1935,25 @@ msgstr ""
 msgid "Conditions"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Configuration values"
+msgstr ""
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Configured default"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Confirm and generate"
+msgstr ""
+
 #: src/settings/SettingsParts.tsx
 msgid "Confirm and save"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+#: src/settings/CertificatePanel.tsx
+msgid "Confirm and upload"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -1870,6 +1968,7 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 #: src/boot/BootImagePage.tsx
+#: src/settings/AgentPanel.tsx
 #: src/ui/SecretValue.tsx
 msgid "Copied"
 msgstr ""
@@ -1884,6 +1983,7 @@ msgid "Copy command"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
+#: src/settings/AgentPanel.tsx
 msgid "Copy SHA-256"
 msgstr ""
 
@@ -1935,8 +2035,20 @@ msgstr ""
 msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "DDT has no root yet, so Generate makes one. Boot images pin the root, so every boot image has to be built again with the new one, and every browser that manages DDT has to trust it. Until then, netbooting machines cannot reach the server."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "DDT has no root yet, so it makes one. Every boot image then has to be built again with it, and every browser that manages DDT has to trust it."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "DDT issues a certificate from its root for localhost, this computer's name and addresses, and the server names below, and serves it at once, on trial until you keep it."
 msgstr ""
 
 #: src/settings/DirectorySettings.tsx
@@ -1949,6 +2061,10 @@ msgstr ""
 
 #: src/settings/DirectorySettings.tsx
 msgid "DDT reads the directory with this account: it finds the user who signs in, and their groups. A saved password goes only to the server it was entered for, so after a change of the server, port or encryption, enter it again."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "DDT renews it {renews}."
 msgstr ""
 
 #: src/boot/BootImagePage.tsx
@@ -1967,6 +2083,14 @@ msgstr ""
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the agent on this page."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "directory.noMapNewAccount"
 msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
@@ -1980,6 +2104,14 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "directory.noMapNoRole"
 msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "DDT's root, {root}"
+msgstr ""
+
+#: src/settings/ConfigurationOrigin.tsx
+msgid "default"
 msgstr ""
 
 #: src/settings/DeploymentDefaultsPage.tsx
@@ -2044,6 +2176,7 @@ msgstr ""
 
 #: src/app/navigation.ts
 #: src/settings/DeploymentDefaultsPage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Deployment defaults"
 msgstr ""
 
@@ -2059,6 +2192,10 @@ msgstr ""
 
 #: src/images/ImagesPage.tsx
 msgid "Details"
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Details for finding a fault"
 msgstr ""
 
 #: src/settings/DirectorySettings.tsx
@@ -2080,6 +2217,10 @@ msgstr ""
 
 #: src/settings/DirectorySettings.tsx
 msgid "Directory server"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Directory sign-in (LDAP)"
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -2194,12 +2335,24 @@ msgstr ""
 msgid "Drop a file to upload"
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Drop ddt-agent.exe here, or choose it."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Drop the agent to upload it"
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
 msgstr ""
 
 #: src/tokens/TokensPage.tsx
 msgid "Each person makes their own tokens on the Account and security page, with a role no higher than theirs. A token acts for its user: it stops working when it expires, is revoked, or its user is disabled or loses the role."
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Each section is saved on the page of what it configures, and applies without a restart: some at their next use, others by rebuilding their part of the running server."
 msgstr ""
 
 #: src/images/ImagesPage.tsx
@@ -2386,6 +2539,10 @@ msgstr ""
 msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Everything, a line for every packet and request"
+msgstr ""
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Exit codes that ask for a restart"
 msgstr ""
@@ -2525,12 +2682,20 @@ msgstr ""
 msgid "For these hardware models"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Format"
+msgstr ""
+
 #: src/settings/DirectorySettings.tsx
 msgid "Found"
 msgstr ""
 
 #: src/audit/AuditPage.tsx
 msgid "From"
+msgstr ""
+
+#: src/settings/ConfigurationOrigin.tsx
+msgid "from {source}"
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
@@ -2541,12 +2706,32 @@ msgstr ""
 msgid "From 300 to 65536 MB."
 msgstr ""
 
+#: src/settings/ConfigurationOrigin.tsx
+msgid "from an environment variable"
+msgstr ""
+
+#: src/settings/ConfigurationOrigin.tsx
+msgid "from configuration"
+msgstr ""
+
 #: src/users/userView.ts
 msgid "From its directory groups"
 msgstr ""
 
 #: src/users/userView.ts
 msgid "From its single sign-on groups"
+msgstr ""
+
+#: src/settings/ConfigurationOrigin.tsx
+msgid "from the command line"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Generate a new certificate?"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Generate certificate"
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -2617,6 +2802,10 @@ msgstr ""
 msgid "How long DDT waits for each answer of the directory."
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "How much the server writes to its log, per category. A category covers the categories below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category not listed. A change applies at once."
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "HTTP boot port"
 msgstr ""
@@ -2680,6 +2869,14 @@ msgstr ""
 msgid "Insert after {name}"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Install a certificate from another root?"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Install it anyway"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "template.installLinux"
 msgid "Install Linux"
@@ -2721,6 +2918,10 @@ msgstr ""
 
 #: src/runs/runs.ts
 msgid "is not"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Issued by"
 msgstr ""
 
 #: src/settings/SignInSettingsPage.tsx
@@ -2787,12 +2988,24 @@ msgstr ""
 msgid "Keep mine"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Keep the new certificate"
+msgstr ""
+
 #: src/settings/SettingsParts.tsx
 msgid "Keep the stored one"
 msgstr ""
 
 #: src/sequences/sequenceList.ts
 msgid "Keeps the disk"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed by hand and this page only reads it. To manage it here, keep the certificate and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Kestrel:Certificates:Default:Path and KeyPath are not both set in configuration, so DDT has no files to keep a certificate in. Name the PEM files there, where DDT may write, and restart DDT to manage the certificate here."
 msgstr ""
 
 #: src/account/AccountPage.tsx
@@ -2907,6 +3120,14 @@ msgstr ""
 msgid "Let people sign in with their directory account"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Level"
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Level <0>of {category}</0>"
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "Levels"
 msgstr ""
@@ -2933,6 +3154,18 @@ msgstr ""
 
 #: src/users/UsersPage.tsx
 msgid "Linked to {provider}"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Load a file"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Load a file with the certificate"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Load a file with the private key"
 msgstr ""
 
 #: src/audit/AuditPage.tsx
@@ -2989,12 +3222,20 @@ msgstr ""
 msgid "Log"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Log levels"
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "Log line"
 msgstr ""
 
 #: src/log/LogViewport.tsx
 msgid "Log lines"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Logging"
 msgstr ""
 
 #: src/rules/rules.ts
@@ -3052,6 +3293,10 @@ msgstr ""
 msgid "Machines"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Machines and browsers that trust DDT's root keep trusting any certificate issued from it, so Generate needs nothing else. A certificate from another root has to be trusted anew: every boot image has to be built again with that root, and every browser that manages DDT has to trust it."
+msgstr ""
+
 #: src/machines/MachinesPage.tsx
 msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 msgstr ""
@@ -3073,8 +3318,24 @@ msgstr ""
 msgid "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Machines run"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
+msgstr ""
+
 #: src/users/UsersPage.tsx
 msgid "Make a new password"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Make a new root"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Make a new root?"
 msgstr ""
 
 #: src/tokens/OwnTokensPanel.tsx
@@ -3238,6 +3499,14 @@ msgstr ""
 msgid "Name, user name or email"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Names"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Names and addresses"
+msgstr ""
+
 #: src/sequences/sequenceList.ts
 msgid "needs a computer name"
 msgstr ""
@@ -3248,12 +3517,17 @@ msgstr ""
 
 #: src/app/navigation.ts
 #: src/settings/NetworkBootPage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Network boot"
 msgstr ""
 
 #: src/tokens/TokenTable.tsx
 #: src/users/UsersPage.tsx
 msgid "Never"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Never changed on a page"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -3363,6 +3637,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "account.noExternalSignIn"
 msgid "No external sign in is in progress."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "No file chosen"
 msgstr ""
 
 #: src/packages/PackagesPage.tsx
@@ -3592,6 +3870,7 @@ msgstr ""
 msgid "Not saved: another administrator saved this sequence"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Not set"
 msgstr ""
@@ -3621,6 +3900,10 @@ msgstr ""
 
 #: src/settings/SignInSettingsPage.tsx
 msgid "Not used while the claim map below has entries: the map decides the role."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Nothing"
 msgstr ""
 
 #: src/app/CommandPalette.tsx
@@ -3675,6 +3958,10 @@ msgstr ""
 msgid "Once directory sign-in is on and its server and search base are saved, you can find groups by name here. Until then, add a group by its distinguished name."
 msgstr ""
 
+#: src/settings/ProxiesPanel.tsx
+msgid "One IP address per line, such as 10.0.0.2 or fd00::2."
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
 msgstr ""
@@ -3683,8 +3970,16 @@ msgstr ""
 msgid "One MAC address"
 msgstr ""
 
+#: src/settings/ProxiesPanel.tsx
+msgid "One network per line, such as 10.0.1.0/24, for proxies that share an address pool."
+msgstr ""
+
 #: src/settings/ApprovalPage.tsx
 msgid "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "One per line, such as ddt.corp.example or 10.0.0.5. Generate adds localhost and this computer's name and addresses by itself."
 msgstr ""
 
 #: src/settings/SignInSettingsPage.tsx
@@ -3729,12 +4024,24 @@ msgstr ""
 msgid "Only administrators see and change network boot: which interfaces DDT answers on and what machines load."
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Only administrators see and change the server's settings."
+msgstr ""
+
 #: src/tokens/TokensPage.tsx
 msgid "Only administrators see every token. Your own are on the Account and security page in the account menu."
 msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Only ever useful for BIOS machines: UEFI firmware can refuse an answer that carries it."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Only failures"
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Only failures that stop the server or a part of it"
 msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx
@@ -3757,6 +4064,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "token.onlyOwnerRevokes"
 msgid "Only the token's owner or an administrator can revoke it."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Only what went unexpectedly"
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
@@ -3844,6 +4155,10 @@ msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Otherwise the step is done without adding drivers."
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Overview"
 msgstr ""
 
 #: src/packages/PackagesPage.tsx
@@ -3959,6 +4274,10 @@ msgstr ""
 msgid "Paused"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "PEM files"
+msgstr ""
+
 #: src/settings/SettingsParts.tsx
 msgid "Pending"
 msgstr ""
@@ -3976,6 +4295,14 @@ msgstr ""
 msgid "Person"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "PFX file"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "PFX password"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "Phase"
 msgstr ""
@@ -3991,6 +4318,10 @@ msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Preparing"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Private key"
 msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
@@ -4011,6 +4342,18 @@ msgstr ""
 
 #: src/settings/SignInSettingsPage.tsx
 msgid "Provider address"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Proxies"
+msgstr ""
+
+#: src/settings/ProxiesPanel.tsx
+msgid "Proxy addresses"
+msgstr ""
+
+#: src/settings/ProxiesPanel.tsx
+msgid "Proxy networks"
 msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
@@ -4069,6 +4412,10 @@ msgstr ""
 msgid "Ready to run"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Rebuilds its part of the server on save"
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
 msgstr ""
@@ -4122,6 +4469,10 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Remove {category}"
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Remove {entry}"
 msgstr ""
@@ -4150,12 +4501,20 @@ msgstr ""
 msgid "Remove the boot target for {key}"
 msgstr ""
 
+#: src/settings/LoggingPanel.tsx
+msgid "Remove this row"
+msgstr ""
+
 #: src/sequences/RemovedStepNotice.tsx
 msgid "Removed {name} ({kind}). You can bring it back for 10 seconds."
 msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Renewal"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -4213,6 +4572,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machineState.retired"
 msgid "Retired"
+msgstr ""
+
+#: src/settings/ProxiesPanel.tsx
+msgid "Reverse proxies"
 msgstr ""
 
 #: src/runs/RunPanel.tsx
@@ -4273,6 +4636,10 @@ msgstr ""
 
 #: src/settings/RoleMapEditor.tsx
 msgid "Role that {key} gives"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Root SHA-256"
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -4426,6 +4793,14 @@ msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Save your version over theirs?"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Saved {savedWhen}"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Saved {savedWhen} by {savedBy}"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -4586,8 +4961,13 @@ msgstr ""
 msgid "Serve boot files over TFTP"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Served certificate"
+msgstr ""
+
 #: src/app/navigation.ts
 #: src/settings/DirectorySettings.tsx
+#: src/settings/ServerPage.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Server"
 msgstr ""
@@ -4608,10 +4988,20 @@ msgstr ""
 msgid "Server name for the URL"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+#: src/settings/ServerPage.tsx
+msgid "Server names"
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "Server settings"
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Serving"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Set"
 msgstr ""
@@ -4625,6 +5015,7 @@ msgid "Set by an administrator"
 msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Set in configuration"
 msgstr ""
 
@@ -4640,11 +5031,21 @@ msgstr ""
 msgid "Set up an authenticator"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Set, not shown"
+msgstr ""
+
 #: src/audit/auditView.ts
 msgid "Settings"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Settings sections"
+msgstr ""
+
 #: src/images/ImagesPage.tsx
+#: src/settings/AgentPanel.tsx
+#: src/settings/CertificatePanel.tsx
 msgid "SHA-256"
 msgstr ""
 
@@ -4759,6 +5160,10 @@ msgstr ""
 msgid "Single sign-on"
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "Single sign-on (OpenID Connect)"
+msgstr ""
+
 #: src/users/userView.ts
 msgid "Single sign-on account"
 msgstr ""
@@ -4769,6 +5174,7 @@ msgstr ""
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/settings/AgentPanel.tsx
 msgid "Size"
 msgstr ""
 
@@ -4996,6 +5402,10 @@ msgstr ""
 msgid "Stopped at step {number} of {count}"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Subject"
+msgstr ""
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Such as de-DE."
 msgstr ""
@@ -5096,8 +5506,28 @@ msgstr ""
 msgid "The accounts could not be loaded."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "The agent in their boot image, since none was uploaded"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "The agent machines netboot with could not be read."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "The agent started the run"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "The agent uploaded here"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "The agent you upload runs as SYSTEM on every machine that netboots from now on, before anybody authorized the machine. Upload only ddt-agent.exe from a DDT release or as Publish-Agent.ps1 builds it."
 msgstr ""
 
 #: src/log/log.ts
@@ -5143,6 +5573,10 @@ msgstr ""
 
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "The certificate has to be valid now and name {host}, the name this page is reached by, and every server name. It is served at once, on trial until you keep it."
 msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
@@ -5201,6 +5635,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "domain.noComputersContainer"
 msgid "The default Computers container of {domain} was not found, or {user} may not read it."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity Framework Core categories at Warning."
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -5363,6 +5801,10 @@ msgstr ""
 msgid "The fields marked below say what."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "The file DDT:Agent:BinaryPath names in configuration"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "gpt.noTable"
 msgid "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image."
@@ -5500,6 +5942,10 @@ msgctxt "domain.noJoinAccount"
 msgid "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "The key is set <0/>."
+msgstr ""
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
 msgstr ""
@@ -5611,12 +6057,24 @@ msgstr ""
 msgid "The name or IPv4 address machines reach DDT by. The boot file offers URLs with it."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "The names and addresses browsers and machines reach this server by. Generate issues the certificate for them, and an uploaded certificate has to name each of them, so a change takes effect with the next certificate. DDT's automatic renewal still issues for the names in DDT:Https:SubjectAlternativeNames only."
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "The network boot settings could not be loaded."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "The new certificate is on trial until {deadline}"
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "The new passwords do not match."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "The normal course of events"
 msgstr ""
 
 #: src/users/UserDialogs.tsx
@@ -5834,12 +6292,24 @@ msgstr ""
 msgid "The server answered with status {status}."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "The server certificate could not be read."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "The server certificate decides what browsers and machines trust, so replacing it needs your password again."
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
 msgstr ""
 
 #: src/packages/PackagesPage.tsx
 msgid "The server checks the zip and counts what is in it."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
 msgstr ""
 
 #: src/lib/autosave.ts
@@ -5881,8 +6351,16 @@ msgctxt "upload.restarted"
 msgid "The server lost part of this upload. Send the file again from the start."
 msgstr ""
 
+#: src/settings/ServerPage.tsx
+msgid "The server needs these before it can serve this page, so they stay in its configuration: environment variables, appsettings.json or the command line. It reads them as it starts, so a change there takes a restart of DDT. Values that could hold a password are never shown."
+msgstr ""
+
 #: src/packages/packages.ts
 msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "The server's settings could not be read."
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -5986,6 +6464,9 @@ msgctxt "user.nameTaken"
 msgid "There is an account named {name} already."
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+#: src/settings/LoggingPanel.tsx
+#: src/settings/ProxiesPanel.tsx
 #: src/settings/SettingsParts.tsx
 msgid "These settings could not be loaded."
 msgstr ""
@@ -6038,6 +6519,10 @@ msgstr ""
 
 #: src/machines/AssignDialog.tsx
 msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "This certificate does not come from DDT's root, which boot images pin. Every boot image has to be built again with its root, and every browser that manages DDT has to trust that root. Until then, netbooting machines cannot reach the server."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6119,6 +6604,14 @@ msgstr ""
 msgid "This machine was removed"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "This page"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "This page cannot change the certificate"
+msgstr ""
+
 #: src/app/RouteError.tsx
 msgid "This page could not load"
 msgstr ""
@@ -6127,8 +6620,12 @@ msgstr ""
 msgid "This page holds at most {bufferLimit} lines. Older ones stay on the server."
 msgstr ""
 
-#: src/app/PendingPage.tsx
-msgid "This page is being rebuilt on the new design system."
+#: src/settings/CertificatePanel.tsx
+msgid "This page's next request gets the new certificate. Once the page works with it, keep it here. If nobody keeps it by {deadline}, {left}, DDT goes back to the certificate before, so a certificate your browser refuses cannot lock you out."
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "This process cannot read the key ring the stored secrets were encrypted with, so it refuses every save. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -6149,6 +6646,10 @@ msgstr ""
 
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
+msgstr ""
+
+#: src/settings/ServerPage.tsx
+msgid "This server saves no settings"
 msgstr ""
 
 #: src/machines/MachineActions.tsx
@@ -6370,6 +6871,14 @@ msgstr ""
 msgid "Upload"
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Upload {name} as the agent?"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Upload a certificate"
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "Upload a WIM file to add its Windows images, or a disk image such as a Linux cloud image. A task sequence then applies or writes one."
 msgstr ""
@@ -6382,13 +6891,38 @@ msgstr ""
 msgid "Upload a zip of files, then choose it in a Run script step of a task sequence."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Upload agent"
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Upload certificate"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Upload the agent"
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/settings/AgentPanel.tsx
 msgid "Uploaded"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Uploaded. Machines that netboot from now on run the agent with SHA-256 {uploaded}."
 msgstr ""
 
 #: src/uploads/UploadPanel.tsx
 msgid "Uploading {file}"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Uploading {name}"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Uploads are off"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -6409,6 +6943,10 @@ msgstr ""
 
 #: src/sequences/StepInspector.tsx
 msgid "Use the arrow keys to move the step, and Home or End to move it to the start or the end."
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Use the defaults"
 msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
@@ -6479,6 +7017,10 @@ msgstr ""
 msgid "Users and roles"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Valid until"
+msgstr ""
+
 #: src/sequences/StepConditions.tsx
 msgid "Value"
 msgstr ""
@@ -6500,6 +7042,7 @@ msgid "Version"
 msgstr ""
 
 #: src/about/AboutPage.tsx
+#: src/settings/ServerPage.tsx
 msgid "Version {version}"
 msgstr ""
 
@@ -6545,6 +7088,14 @@ msgstr ""
 msgid "Warnings"
 msgstr ""
 
+#: src/settings/CertificatePanel.tsx
+msgid "Was served the certificate before; its next request gets this one."
+msgstr ""
+
+#: src/settings/CertificatePanel.tsx
+msgid "Was served this certificate."
+msgstr ""
+
 #: src/audit/AuditPage.tsx
 msgid "What"
 msgstr ""
@@ -6575,6 +7126,10 @@ msgstr ""
 
 #: src/audit/AuditPage.tsx
 msgid "When"
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "When a machine does not netboot, set DDT.Pxe to Debug or Trace and let the machine try again: the log then says what it asked for and what the server answered. Set it back afterwards, since Trace writes a line for every packet."
 msgstr ""
 
 #: src/settings/DirectorySettings.tsx

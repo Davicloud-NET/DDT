@@ -25,6 +25,8 @@ import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
 import { NetworkBootPage } from "@/settings/NetworkBootPage";
+import { ServerPage } from "@/settings/ServerPage";
+import { serverSearch } from "@/settings/serverSearch";
 import { SignInSettingsPage } from "@/settings/SignInSettingsPage";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
@@ -35,7 +37,6 @@ import { TokensPage } from "@/tokens/TokensPage";
 import { UsersPage } from "@/users/UsersPage";
 
 import { DesignPage } from "./DesignPage";
-import { PendingPage } from "./PendingPage";
 import { RouteError } from "./RouteError";
 import { RootLayout } from "./RootLayout";
 import { Shell } from "./Shell";
@@ -100,7 +101,7 @@ const homeRoute = createRoute({
   },
 });
 
-// The pages of the navigation, plus a machine, a sequence and the account. PendingPage stands in until each is rebuilt.
+// The pages of the navigation, plus a machine, a sequence and the account.
 const machinesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines",
@@ -189,7 +190,8 @@ const tokensRoute = createRoute({
 const serverRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/server",
-  component: PendingPage,
+  validateSearch: serverSearch,
+  component: ServerPage,
 });
 const auditRoute = createRoute({
   getParentRoute: () => shellRoute,

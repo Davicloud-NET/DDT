@@ -123,7 +123,6 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(OidcTestResult))]
 [JsonSerializable(typeof(IReadOnlyList<PxeHostInterfaces>))]
 [JsonSerializable(typeof(AgentBinaryView))]
-[JsonSerializable(typeof(AgentBinaryUploaded))]
 [JsonSerializable(typeof(SettingsSectionView<CertificateSettings>))]
 [JsonSerializable(typeof(SettingsSectionUpdate<CertificateSettings>))]
 [JsonSerializable(typeof(CertificateView))]

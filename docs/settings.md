@@ -1042,7 +1042,8 @@ m6.5-settings. Where the implementation deliberately differs from the plan above
   `/api/auth/external/start` answers 404, and the providers endpoint lists nothing, while the scheme
   is not registered, which also covers a scheme whose options failed to build.
 - **The agent.** The upload is limited to 128 MB. `uploadedUtc` and `uploadedBy` come from the
-  latest `agent.uploaded` audit row.
+  latest `agent.uploaded` audit row. The upload answers with the view GET /api/settings/agent reads
+  from then on, rather than `{ sha256, size }`, so the page shows it without reading it again.
 - **Console.** `settings create-admin [user name]`, `admin` by default, also ends a lockout and turns
   off the second factor of an existing local account.
 - **A process that cannot read the key ring** answers a save with 409 and says so on the overview,

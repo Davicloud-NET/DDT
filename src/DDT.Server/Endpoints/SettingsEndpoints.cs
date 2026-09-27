@@ -576,7 +576,7 @@ public static class SettingsEndpoints
             File.Delete(temporary);
         }
 
-        database.AuditEvents.Add(new AuditEvent
+        AuditEvent audit = new()
         {
             OccurredUtc = timeProvider.GetUtcNow(),
             Action = AuditActions.AgentUploaded,
@@ -585,11 +585,13 @@ public static class SettingsEndpoints
             SubjectId = sha256,
             SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
             Detail = $"Uploaded the agent with SHA-256 {sha256}, {size} bytes. Netbooting machines run it from their next boot.",
-        });
+        };
 
+        database.AuditEvents.Add(audit);
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return TypedResults.Ok(new AgentBinaryUploaded(sha256, size));
+        // As GET /api/settings/agent reads it from now on, so the page shows the answer without reading it again.
+        return TypedResults.Ok(new AgentBinaryView(sha256, size, audit.OccurredUtc, audit.ActorName, AgentBinarySource.Uploaded));
     }
 
     private static ProblemHttpResult TooLarge() =>

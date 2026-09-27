@@ -4,7 +4,7 @@
 
 import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { equalJson } from "@/lib/equalJson";
 import { relativeTime } from "@/lib/relativeTime";
@@ -120,12 +120,23 @@ export function SettingsSection<T>({
       </div>
 
       <WarningsDialog form={form} />
-      <ReauthDialog form={form} />
+      <ReauthDialog
+        isOpen={form.needsReauth}
+        onAccepted={form.retryAfterReauth}
+        onCancel={form.cancelReauth}
+      />
     </Panel>
   );
 }
 
-function ApplyStates({ states, version }: { states: SettingsApplyState[]; version: number }) {
+// How far each host has applied a section that rebuilds a subsystem, as of the section's version.
+export function ApplyStates({
+  states,
+  version,
+}: {
+  states: SettingsApplyState[];
+  version: number;
+}) {
   const { t: translate } = useLingui();
 
   return (
@@ -528,9 +539,24 @@ function WarningsDialog<T>({ form }: { form: SettingsForm<T> }) {
   );
 }
 
-// Fields that grant roles or trust need the password again, as the server asks. The token it gives lasts a few
-// minutes, so several saves in a row ask once.
-function ReauthDialog<T>({ form }: { form: SettingsForm<T> }) {
+// Fields that grant roles or trust, and actions such as the agent upload, need the password again, as the server
+// asks. The token it gives lasts a few minutes, so several saves in a row ask once. onAccepted runs once the server
+// took the password, to send what it refused again.
+export function ReauthDialog({
+  isOpen,
+  onAccepted,
+  onCancel,
+  reason,
+  confirmLabel,
+}: {
+  isOpen: boolean;
+  onAccepted: () => void;
+  onCancel: () => void;
+  // Why the password is needed, where it is not a section's save.
+  reason?: ReactNode;
+  confirmLabel?: ReactNode;
+}) {
+  const formId = useId();
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -540,12 +566,12 @@ function ReauthDialog<T>({ form }: { form: SettingsForm<T> }) {
     setPassword("");
     setCode("");
     setError(null);
-    form.cancelReauth();
+    onCancel();
   };
 
   return (
     <Dialog
-      isOpen={form.needsReauth}
+      isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
           close();
@@ -560,17 +586,17 @@ function ReauthDialog<T>({ form }: { form: SettingsForm<T> }) {
           </Button>
           <Button
             type="submit"
-            form="settings-reauth"
+            form={formId}
             variant="primary"
             isDisabled={busy || password === ""}
           >
-            <Trans>Confirm and save</Trans>
+            {confirmLabel ?? <Trans>Confirm and save</Trans>}
           </Button>
         </>
       }
     >
       <form
-        id="settings-reauth"
+        id={formId}
         className="flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault();
@@ -580,7 +606,7 @@ function ReauthDialog<T>({ form }: { form: SettingsForm<T> }) {
             .then(() => {
               setPassword("");
               setCode("");
-              form.retryAfterReauth();
+              onAccepted();
             })
             .catch((failure: unknown) => {
               setError(failure instanceof Error ? failure.message : t`That did not work.`);
@@ -591,10 +617,12 @@ function ReauthDialog<T>({ form }: { form: SettingsForm<T> }) {
         }}
       >
         <p>
-          <Trans>
-            These settings decide who signs in and what machines trust, so they need your password
-            again.
-          </Trans>
+          {reason ?? (
+            <Trans>
+              These settings decide who signs in and what machines trust, so they need your password
+              again.
+            </Trans>
+          )}
         </p>
         <TextField
           label={<Trans>Password</Trans>}

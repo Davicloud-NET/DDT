@@ -4,11 +4,12 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import { IconPlus, IconX } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { equalJson } from "@/lib/equalJson";
 import { Button } from "@/ui/Button";
+import { cx } from "@/ui/cx";
 import { Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 import { ListBoxItem, Select } from "@/ui/Select";
@@ -133,6 +134,9 @@ function LevelRows({
                   ...form.fieldErrors(`logLevel[${category}]`),
                 ];
           const known = levels.find((level) => level.toLowerCase() === row.level.toLowerCase());
+          // The first row's labels head the columns; the rows below keep theirs for screen readers only.
+          const shown = (label: ReactNode) =>
+            index === 0 ? label : <span className="sr-only">{label}</span>;
 
           return (
             <li
@@ -140,7 +144,7 @@ function LevelRows({
               className="grid grid-cols-[minmax(0,1fr)_minmax(9rem,13rem)_2.25rem] items-start gap-3"
             >
               <TextField
-                label={<Trans>Category</Trans>}
+                label={shown(<Trans>Category</Trans>)}
                 mono
                 value={row.category}
                 placeholder="DDT.Pxe"
@@ -158,15 +162,15 @@ function LevelRows({
                 }}
               />
               <Select
-                label={
+                label={shown(
                   category === "" ? (
                     <Trans>Level</Trans>
                   ) : (
                     <Trans>
                       Level <span className="sr-only">of {category}</span>
                     </Trans>
-                  )
-                }
+                  ),
+                )}
                 value={known ?? row.level}
                 isDisabled={locked}
                 onChange={(key) => {
@@ -193,7 +197,10 @@ function LevelRows({
                   onPress={() => {
                     change(rows.filter((other) => other.id !== row.id));
                   }}
-                  className="mt-7 flex size-9 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+                  className={cx(
+                    index === 0 ? "mt-7" : "mt-1.5",
+                    "flex size-9 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus",
+                  )}
                 >
                   <IconX size={16} stroke={2} />
                 </AriaButton>

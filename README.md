@@ -205,6 +205,42 @@ same name overrides each of them. The store path is DDT's own default as well, r
 image. The endpoint and the certificate paths are not defaults of DDT itself, because a declared
 Kestrel endpoint makes Kestrel ignore the URLs that Aspire and launch profiles assign.
 
+## The web UI
+
+The `web` role serves the web UI at the server's address. Its top bar holds five categories, each
+with a row of pages, and every setting sits on the page of the thing it configures:
+
+| Category | Pages |
+|---|---|
+| Machines | All machines, a page for each machine with its run and live log, Run history, Approval and zero touch |
+| Deployment | Task sequences, Assignment rules, Deployment defaults |
+| Library | OS images, Drivers, Files |
+| Boot | Boot image, Network boot |
+| Administration | Users and roles, Sign-in, API tokens, Server, Audit log |
+
+- **Live.** The pages hold one connection to the server's hub, and what anyone changes, a machine
+  that registers, a step that finishes, a sequence another administrator saves, shows at once
+  without a reload. An action puts the server's answer on the page instead of reading the list
+  again. While the connection is down a banner says so, the lists are read every 5 seconds, and
+  everything the hub would have changed is read once when it is back.
+- **Roles.** A viewer sees machines and runs and changes nothing. An operator also approves and
+  removes machines, starts and ends their deployments, and reads the deployment defaults and the
+  approval settings. An administrator changes everything else, the accounts, the sign-in and the
+  server's settings included, see [Users and roles](#users-and-roles). A page for administrators
+  only says so to anyone else, and reads nothing from the server.
+- **Languages.** English and German. The UI starts in the first language of the browser that it
+  has, else English, and the account menu changes it for that browser. The server's refusals and
+  validation messages carry codes, so they are shown in the chosen language too. The agent's
+  console in Windows PE is English.
+- **Look.** Light and dark, following the system unless the account menu picks one. The look,
+  Switchgear, is defined once in `src/DDT.Design/tokens.json`, the source of the web's theme and
+  later of the agent's console in Windows PE.
+- **Keyboard and phone.** Ctrl K opens a search over the pages, machines, task sequences and OS
+  images. Every control works from the keyboard, and the pages fit a phone's width, for approving a
+  machine or watching a run away from a desk.
+
+[docs/web-ui.md](docs/web-ui.md) describes how the UI is built, for anyone changing it.
+
 ## Configuration
 
 `DDT:Roles` is a single comma separated string, not a list:

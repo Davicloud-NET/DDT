@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -17,9 +18,6 @@ namespace DDT.Server.Rules;
 // runs a rule's sequence, and a console only offers it.
 public sealed class SequenceResolver(DdtDbContext database)
 {
-    private const string OnlyChooses =
-        "A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered.";
-
     public async Task<SequenceResolution> ResolveAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -28,7 +26,7 @@ public sealed class SequenceResolver(DdtDbContext database)
             && await database.Deployments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == activeId, cancellationToken).ConfigureAwait(false)
                 is { } active)
         {
-            string by = active.RequestedByName ?? "An operator";
+            object by = active.RequestedByName ?? (object)ServerMessages.SomeOperator.With();
 
             return active.Source == DeploymentSource.Console
                 ? new SequenceResolution(
@@ -36,13 +34,13 @@ public sealed class SequenceResolver(DdtDbContext database)
                     null,
                     null,
                     active,
-                    $"{by} chose {active.Title} at the machine, which comes before every rule.")
+                    ServerMessages.ResolutionChosenAtMachine.With("by", by, "sequence", active.Title))
                 : new SequenceResolution(
                     SequenceResolutionSource.Assigned,
                     null,
                     null,
                     active,
-                    $"{by} assigned {active.Title} on the web, which comes before every rule.");
+                    ServerMessages.ResolutionAssignedOnWeb.With("by", by, "sequence", active.Title));
         }
 
         List<AssignmentRule> rules = await database.AssignmentRules.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -54,7 +52,7 @@ public sealed class SequenceResolver(DdtDbContext database)
                 null,
                 null,
                 null,
-                "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence.");
+                ServerMessages.ResolutionNoRule.With());
         }
 
         TaskSequence sequence = await database.TaskSequences
@@ -67,7 +65,7 @@ public sealed class SequenceResolver(DdtDbContext database)
             sequence,
             rule,
             null,
-            $"The rule for {AssignmentRuleKeys.Describe(rule)} chooses {sequence.Name}. {OnlyChooses}");
+            ServerMessages.ResolutionRuleChooses.With("rule", AssignmentRuleKeys.DescribeMessage(rule), "sequence", sequence.Name));
     }
 
     // The primary MAC address first, then the others in the order the machine reported them.

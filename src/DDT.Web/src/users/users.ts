@@ -5,6 +5,7 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatchJson, apiPost } from "@/lib/api";
+import { serverText, type ServerArguments } from "@/lib/serverText";
 
 export type UserRole = "Administrator" | "Operator" | "Viewer";
 export type AccountSource = "Local" | "Directory" | "External";
@@ -126,7 +127,8 @@ export interface DirectoryGroup {
   description: string | null;
 }
 
-// What a sign-in of the user would give, found without their password.
+// What a sign-in of the user would give, found without their password. message is the server's English, which
+// directoryCheckText says in the person's language.
 export interface DirectoryCheck {
   found: boolean;
   distinguishedName: string | null;
@@ -135,6 +137,12 @@ export interface DirectoryCheck {
   matches: { group: string; role: UserRole }[];
   role: UserRole | null;
   message: string;
+  messageCode?: string | null;
+  messageArgs?: ServerArguments | null;
+}
+
+export function directoryCheckText(check: DirectoryCheck): string {
+  return serverText(check.messageCode, check.messageArgs, check.message);
 }
 
 export const directoryQuery = queryOptions({

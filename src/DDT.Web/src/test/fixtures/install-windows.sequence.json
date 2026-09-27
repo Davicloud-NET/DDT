@@ -55,5 +55,9 @@
         "rebootAfter": true
       }
     ]
-  }
+  },
+  "nameCode": "template.installWindows",
+  "nameArgs": {},
+  "descriptionCode": "template.installWindowsJoinDescription",
+  "descriptionArgs": {}
 }

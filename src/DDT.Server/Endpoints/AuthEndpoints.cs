@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
@@ -229,18 +230,12 @@ public static class AuthEndpoints
 
         if (user.Source == AccountSource.Directory)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                ["source"] = ["This account is managed by the directory. Change the password there."],
-            });
+            return ServerProblems.Validation("source", ServerMessages.AccountPasswordInDirectory.With());
         }
 
         if (user.Source == AccountSource.External)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                ["source"] = ["This account signs in through single sign-on and has no password in DDT."],
-            });
+            return ServerProblems.Validation("source", ServerMessages.AccountNoPassword.With());
         }
 
         IdentityResult result = await userManager
@@ -249,7 +244,7 @@ public static class AuthEndpoints
 
         if (!result.Succeeded)
         {
-            return TypedResults.ValidationProblem(result.ToProblemDictionary());
+            return result.ToValidationProblem();
         }
 
         // The new password is one nobody else was shown, so the account reaches everything its role allows again. The
@@ -262,7 +257,7 @@ public static class AuthEndpoints
 
             if (!result.Succeeded)
             {
-                return TypedResults.ValidationProblem(result.ToProblemDictionary());
+                return result.ToValidationProblem();
             }
         }
 
@@ -272,13 +267,22 @@ public static class AuthEndpoints
         return TypedResults.Ok();
     }
 
-    internal static Dictionary<string, string[]> ToProblemDictionary(this IdentityResult result) =>
-        result.Errors
-            .GroupBy(error => error.Code, StringComparer.Ordinal)
-            .ToDictionary(
-                group => group.Key,
-                group => group.Select(error => error.Description).ToArray(),
-                StringComparer.Ordinal);
+    // Identity's refusals by the field each is about, Identity's code unless field says otherwise.
+    internal static ValidationProblem ToValidationProblem(this IdentityResult result, Func<IdentityError, string>? field = null)
+    {
+        FieldProblems problems = new();
+
+        foreach (IdentityError error in result.Errors)
+        {
+            problems.Add(field?.Invoke(error) ?? error.Code, MessageOf(error));
+        }
+
+        return problems.ToResult();
+    }
+
+    // An error DdtIdentityErrorDescriber did not make says its English as it is.
+    internal static ServerMessage MessageOf(IdentityError error) =>
+        DdtIdentityErrorDescriber.MessageOf(error) ?? ServerMessages.IdentityOther.With("description", error.Description);
 
     internal static string BuildAuthenticatorUri(string userName, string sharedKey) =>
         string.Format(

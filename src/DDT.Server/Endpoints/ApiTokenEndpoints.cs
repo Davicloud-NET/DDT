@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Security.Claims;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Tokens;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -87,7 +88,7 @@ public static class ApiTokenEndpoints
             return TypedResults.Unauthorized();
         }
 
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string name = request.Name?.Trim() ?? string.Empty;
         string? role = ApiTokenRoles.Known(request.Role);
         int days = request.ExpiresInDays ?? ApiTokenLimits.DefaultDays;
@@ -103,7 +104,7 @@ public static class ApiTokenEndpoints
 
         if (name.Length is 0 or > ApiTokenLimits.MaxNameLength || name.Any(char.IsControl))
         {
-            problems["name"] = [$"The name must have 1 to {ApiTokenLimits.MaxNameLength} characters and no control characters."];
+            problems.Add("name", ServerMessages.NameLength.With("max", ApiTokenLimits.MaxNameLength));
         }
         else
         {
@@ -115,29 +116,27 @@ public static class ApiTokenEndpoints
 
             if (active.Any(t => t.ExpiresUtc > now))
             {
-                problems["name"] = ["You have a token of that name already. Choose another name, or revoke that token first."];
+                problems.Add("name", ServerMessages.TokenNameTaken.With());
             }
         }
 
         if (role is null)
         {
-            problems["role"] = ["Choose Administrator, Operator or Viewer."];
+            problems.Add("role", ServerMessages.UserRole.With());
         }
         else if (ApiTokenRoles.Lower(role, highest) != role)
         {
-            problems["role"] = [highest is null
-                ? "Your account has no role, so it cannot have a token."
-                : $"A token can do at most what you can, and you are {IndefiniteArticle(highest)} {highest}."];
+            problems.Add("role", highest is null ? ServerMessages.TokenNoRole.With() : ServerMessages.TokenRoleTooHigh.With("role", WithArticle(highest)));
         }
 
         if (days is < 1 or > ApiTokenLimits.MaxDays)
         {
-            problems["expiresInDays"] = [$"A token lasts 1 to {ApiTokenLimits.MaxDays} days."];
+            problems.Add("expiresInDays", ServerMessages.TokenLifetime.With("max", ApiTokenLimits.MaxDays));
         }
 
         if (problems.Count > 0)
         {
-            return TypedResults.ValidationProblem(problems);
+            return problems.ToResult();
         }
 
         string secret = ApiTokenSecrets.Create();
@@ -193,9 +192,7 @@ public static class ApiTokenEndpoints
 
         if (token.UserId != userId && !user.IsInRole(DdtRoleNames.Administrator))
         {
-            return TypedResults.Problem(
-                title: "Only the token's owner or an administrator can revoke it.",
-                statusCode: StatusCodes.Status403Forbidden);
+            return ServerProblems.Problem(ServerMessages.TokenOnlyOwnerRevokes.With(), StatusCodes.Status403Forbidden);
         }
 
         if (token.RevokedUtc is not null)
@@ -227,7 +224,14 @@ public static class ApiTokenEndpoints
         return TypedResults.NoContent();
     }
 
-    private static string IndefiniteArticle(string role) => role.StartsWith('A') || role.StartsWith('O') ? "an" : "a";
+    // The role within the sentence, with the article English gives it.
+    private static object WithArticle(string role) => role switch
+    {
+        DdtRoleNames.Administrator => ServerMessages.RoleAnAdministrator.With(),
+        DdtRoleNames.Operator => ServerMessages.RoleAnOperator.With(),
+        DdtRoleNames.Viewer => ServerMessages.RoleAViewer.With(),
+        _ => $"a {role}",
+    };
 
     private static AuditEvent Audit(
         string action,

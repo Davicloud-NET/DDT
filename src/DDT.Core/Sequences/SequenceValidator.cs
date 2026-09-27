@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
@@ -26,20 +27,6 @@ public static class SequenceValidator
     private const int MinRecoveryPartitionMegabytes = 300;
     private const int MaxRecoveryPartitionMegabytes = 65536;
 
-    // Before Partition the run's state exists only in memory, so a restart in Windows PE would lose the run.
-    private const string RestartBeforePartition =
-        "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.";
-
-    // A raw disk image leaves no partition DDT could keep the run's state or unpack a package on.
-    private const string RestartWithRawImage =
-        "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.";
-
-    private const string PackageWithRawImage =
-        "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one.";
-
-    private const string WindowsWithRawImage =
-        "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.";
-
     public static IReadOnlyList<SequenceProblem> Validate(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -48,29 +35,29 @@ public static class SequenceValidator
 
         if (definition.Version is < 1 or > SequenceDefinition.CurrentVersion)
         {
-            problems.Add(new SequenceProblem(
+            problems.Add(SequenceProblem.From(
                 null,
                 "version",
-                $"This version of DDT runs sequences of version 1 to {SequenceDefinition.CurrentVersion}, not {definition.Version}."));
+                ServerMessages.SequenceVersionUnsupported.With("current", SequenceDefinition.CurrentVersion, "version", definition.Version)));
         }
         else if (definition.Version < definition.RequiredVersion())
         {
-            problems.Add(new SequenceProblem(
+            problems.Add(SequenceProblem.From(
                 null,
                 "version",
-                $"The sequence has steps of version {definition.RequiredVersion()}, but says it is of version {definition.Version}."));
+                ServerMessages.SequenceVersionTooLow.With("required", definition.RequiredVersion(), "version", definition.Version)));
         }
 
         IReadOnlyList<SequenceStep?> steps = definition.Steps ?? [];
 
         if (steps.Count is 0 or > MaxSteps)
         {
-            problems.Add(new SequenceProblem(null, "steps", $"A sequence needs 1 to {MaxSteps} steps."));
+            problems.Add(SequenceProblem.From(null, "steps", ServerMessages.SequenceStepCount.With("max", MaxSteps)));
         }
 
         if (steps.Contains(null))
         {
-            problems.Add(new SequenceProblem(null, "steps", "A step is empty."));
+            problems.Add(SequenceProblem.From(null, "steps", ServerMessages.SequenceStepEmpty.With()));
 
             return problems;
         }
@@ -85,7 +72,9 @@ public static class SequenceValidator
         bool writesRawImage = steps.Any(step => step is WriteRawImageStep);
         bool rawImageWritten = false;
         bool seedWritten = false;
-        string noRestart = writesRawImage ? RestartWithRawImage : RestartBeforePartition;
+        // Before Partition the run's state exists only in memory, so a restart in Windows PE would lose the run. A raw disk
+        // image leaves no partition DDT could keep the run's state or unpack a package on.
+        MessageTemplate noRestart = writesRawImage ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition;
 
         for (int index = 0; index < steps.Count; index++)
         {
@@ -93,53 +82,53 @@ public static class SequenceValidator
             SequencePhase phase = SequencePhases.Of(definition, index);
             string? phaseField = step is RunScriptStep ? "phase" : null;
 
-            void Add(string? field, string message) =>
-                problems.Add(new SequenceProblem(step.Id == Guid.Empty ? null : step.Id, field, message));
+            void Add(string? field, ServerMessage message) =>
+                problems.Add(SequenceProblem.From(step.Id == Guid.Empty ? null : step.Id, field, message));
 
             if (step.Id == Guid.Empty)
             {
-                Add("id", $"Step {index + 1} has no id.");
+                Add("id", ServerMessages.SequenceStepWithoutId.With("number", index + 1));
             }
             else if (!ids.Add(step.Id))
             {
-                Add("id", $"Step {index + 1} has the id of an earlier step.");
+                Add("id", ServerMessages.SequenceStepIdRepeated.With("number", index + 1));
             }
 
             if (string.IsNullOrWhiteSpace(step.Name))
             {
-                Add("name", "Enter a name for the step.");
+                Add("name", ServerMessages.SequenceStepNameEmpty.With());
             }
             else if (step.Name.Length > MaxNameLength)
             {
-                Add("name", $"A step name can have at most {MaxNameLength} characters.");
+                Add("name", ServerMessages.SequenceStepNameTooLong.With("max", MaxNameLength));
             }
 
             CheckConditions(step.Conditions, Add);
 
             if (phase == SequencePhase.WindowsPE && inWindows)
             {
-                Add(phaseField, "Steps in Windows PE come first, and an earlier step already runs in Windows.");
+                Add(phaseField, ServerMessages.SequenceWindowsPEAfterWindows.With());
             }
 
             if (step.RequiredPhase == SequencePhase.Windows && !imageAppliedEveryTime && !writesRawImage)
             {
-                Add(phaseField, "A step in Windows needs an earlier step that applies the image without conditions.");
+                Add(phaseField, ServerMessages.SequenceWindowsNeedsImage.With());
             }
 
             if (step.RebootAfter && step is RebootStep)
             {
-                Add("rebootAfter", "A restart step restarts anyway, so it cannot restart again after it.");
+                Add("rebootAfter", ServerMessages.SequenceRestartAfterRestart.With());
             }
             else if (step.RebootAfter && phase == SequencePhase.WindowsPE && !partitioned && step is not PartitionStep)
             {
-                Add("rebootAfter", noRestart);
+                Add("rebootAfter", noRestart.With());
             }
 
             // The rules of a Windows installation would only repeat what is wrong in other words.
             if (writesRawImage && (step is PartitionStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
                 || step.RequiredPhase == SequencePhase.Windows))
             {
-                Add(step is RunScriptStep ? "phase" : null, WindowsWithRawImage);
+                Add(step is RunScriptStep ? "phase" : null, ServerMessages.SequenceWindowsWithRawImage.With());
                 inWindows |= phase == SequencePhase.Windows;
 
                 continue;
@@ -154,34 +143,34 @@ public static class SequenceValidator
                 case ApplyImageStep:
                     if (imageApplied)
                     {
-                        Add(null, "A sequence can apply only one image.");
+                        Add(null, ServerMessages.SequenceOneImage.With());
                     }
 
                     if (!partitioned)
                     {
-                        Add(null, "The image can be applied only after a step that partitions the disk.");
+                        Add(null, ServerMessages.SequenceImageBeforePartition.With());
                     }
 
-                    CheckRunsEveryTime(step, "applying the image", Add);
+                    CheckRunsEveryTime(step, "image", Add);
                     imageApplied = true;
                     imageAppliedEveryTime |= step.Conditions is { Count: 0 };
                     break;
                 case InjectDriversStep:
                     if (!imageApplied)
                     {
-                        Add(null, "Drivers can be added only after the image is applied.");
+                        Add(null, ServerMessages.SequenceDriversBeforeImage.With());
                     }
 
                     break;
                 case WriteUnattendStep:
                     if (!imageApplied)
                     {
-                        Add(null, "The answer file can be written only after the image is applied.");
+                        Add(null, ServerMessages.SequenceUnattendBeforeImage.With());
                     }
 
                     if (unattendWritten)
                     {
-                        Add(null, "A sequence can write the answer file only once.");
+                        Add(null, ServerMessages.SequenceOneUnattend.With());
                     }
 
                     unattendWritten = true;
@@ -189,7 +178,7 @@ public static class SequenceValidator
                 case JoinDomainStep:
                     if (domainJoined)
                     {
-                        Add(null, "A sequence can join the domain only once.");
+                        Add(null, ServerMessages.SequenceOneDomainJoin.With());
                     }
 
                     domainJoined = true;
@@ -200,35 +189,35 @@ public static class SequenceValidator
                 case RebootStep:
                     if (phase == SequencePhase.WindowsPE && !partitioned)
                     {
-                        Add(null, noRestart);
+                        Add(null, noRestart.With());
                     }
 
                     break;
                 case WriteRawImageStep:
                     if (rawImageWritten)
                     {
-                        Add(null, "A sequence can write only one raw disk image.");
+                        Add(null, ServerMessages.SequenceOneRawImage.With());
                     }
 
-                    CheckRunsEveryTime(step, "writing the raw disk image", Add);
+                    CheckRunsEveryTime(step, "rawImage", Add);
                     rawImageWritten = true;
                     break;
                 case WriteCloudInitSeedStep seed:
                     if (!rawImageWritten)
                     {
-                        Add(null, "The cloud-init seed can be written only after a step that writes a raw disk image.");
+                        Add(null, ServerMessages.SequenceSeedBeforeRawImage.With());
                     }
 
                     if (seedWritten)
                     {
-                        Add(null, "A sequence can write the cloud-init seed only once.");
+                        Add(null, ServerMessages.SequenceOneSeed.With());
                     }
 
                     CheckSeed(seed, Add);
                     seedWritten = true;
                     break;
                 default:
-                    Add("kind", "This version of DDT does not know this kind of step.");
+                    Add("kind", ServerMessages.SequenceUnknownStep.With());
                     break;
             }
 
@@ -238,18 +227,18 @@ public static class SequenceValidator
         return problems;
     }
 
-    private static void CheckConditions(IReadOnlyList<StepCondition?>? conditions, Action<string?, string> add)
+    private static void CheckConditions(IReadOnlyList<StepCondition?>? conditions, Action<string?, ServerMessage> add)
     {
         if (conditions is null)
         {
-            add("conditions", "The conditions are missing.");
+            add("conditions", ServerMessages.SequenceConditionsMissing.With());
 
             return;
         }
 
         if (conditions.Count > MaxConditions)
         {
-            add("conditions", $"A step can have at most {MaxConditions} conditions.");
+            add("conditions", ServerMessages.SequenceTooManyConditions.With("max", MaxConditions));
         }
 
         for (int index = 0; index < conditions.Count; index++)
@@ -258,24 +247,24 @@ public static class SequenceValidator
 
             if (conditions[index] is not { } condition)
             {
-                add(field, "The condition is empty.");
+                add(field, ServerMessages.SequenceConditionEmpty.With());
 
                 continue;
             }
 
             if (!MachineVariableNames.All.Contains(condition.Variable, StringComparer.Ordinal))
             {
-                add($"{field}.variable", $"Choose one of the variables {string.Join(", ", MachineVariableNames.All)}.");
+                add($"{field}.variable", ServerMessages.SequenceConditionVariable.With("variables", string.Join(", ", MachineVariableNames.All)));
             }
 
             if (!Enum.IsDefined(condition.Operator))
             {
-                add($"{field}.operator", "Choose an operator.");
+                add($"{field}.operator", ServerMessages.SequenceConditionOperator.With());
             }
 
             if (string.IsNullOrWhiteSpace(condition.Value))
             {
-                add($"{field}.value", "Enter the value to compare with.");
+                add($"{field}.value", ServerMessages.SequenceConditionValue.With());
             }
             else if (condition.Variable == MachineVariableNames.MacAddress)
             {
@@ -285,7 +274,7 @@ public static class SequenceValidator
     }
 
     // Separators alone would leave nothing to compare, and StartsWith or Contains would then hold on every machine.
-    private static void CheckMac(StepCondition condition, string field, Action<string?, string> add)
+    private static void CheckMac(StepCondition condition, string field, Action<string?, ServerMessage> add)
     {
         string digits = ConditionEvaluator.NormaliseMac(condition.Value);
         bool hex = digits.All(char.IsAsciiHexDigit);
@@ -294,59 +283,60 @@ public static class SequenceValidator
         {
             if (digits.Length != 12 || !hex)
             {
-                add(field, "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03.");
+                add(field, ServerMessages.MacEnterFull.With());
             }
         }
         else if (digits.Length is 0 or > 12 || !hex)
         {
-            add(field, "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D.");
+            add(field, ServerMessages.MacEnterPart.With());
         }
     }
 
-    private static void CheckPartition(PartitionStep partition, bool partitioned, bool imageApplied, Action<string?, string> add)
+    private static void CheckPartition(PartitionStep partition, bool partitioned, bool imageApplied, Action<string?, ServerMessage> add)
     {
         if (partitioned)
         {
-            add(null, "A sequence can partition the disk only once.");
+            add(null, ServerMessages.SequenceOnePartition.With());
         }
 
         if (imageApplied)
         {
-            add(null, "The disk has to be partitioned before the image is applied.");
+            add(null, ServerMessages.SequencePartitionAfterImage.With());
         }
 
-        CheckRunsEveryTime(partition, "partitioning the disk", add);
+        CheckRunsEveryTime(partition, "partition", add);
 
         if (partition.SystemPartitionMegabytes is < MinSystemPartitionMegabytes or > MaxSystemPartitionMegabytes)
         {
             add(
                 "systemPartitionMegabytes",
-                $"The system partition needs {MinSystemPartitionMegabytes} to {MaxSystemPartitionMegabytes} MB.");
+                ServerMessages.SequenceSystemPartitionSize.With("min", MinSystemPartitionMegabytes, "max", MaxSystemPartitionMegabytes));
         }
 
         if (partition.RecoveryPartitionMegabytes is < MinRecoveryPartitionMegabytes or > MaxRecoveryPartitionMegabytes)
         {
             add(
                 "recoveryPartitionMegabytes",
-                $"The recovery partition needs {MinRecoveryPartitionMegabytes} to {MaxRecoveryPartitionMegabytes} MB.");
+                ServerMessages.SequenceRecoveryPartitionSize.With("min", MinRecoveryPartitionMegabytes, "max", MaxRecoveryPartitionMegabytes));
         }
     }
 
-    // Later steps rely on these, so they can neither be skipped nor fail quietly.
-    private static void CheckRunsEveryTime(SequenceStep step, string activity, Action<string?, string> add)
+    // Later steps rely on these, so they can neither be skipped nor fail quietly. The activity is partition, image or
+    // rawImage, which the messages say in words.
+    private static void CheckRunsEveryTime(SequenceStep step, string activity, Action<string?, ServerMessage> add)
     {
         if (step.Conditions is { Count: > 0 })
         {
-            add("conditions", $"The sequence cannot skip {activity}, so this step cannot have conditions.");
+            add("conditions", ServerMessages.SequenceCannotSkip.With("activity", activity));
         }
 
         if (step.ContinueOnError)
         {
-            add("continueOnError", $"The sequence cannot go on when {activity} fails.");
+            add("continueOnError", ServerMessages.SequenceCannotGoOn.With("activity", activity));
         }
     }
 
-    private static void CheckSeed(WriteCloudInitSeedStep seed, Action<string?, string> add)
+    private static void CheckSeed(WriteCloudInitSeedStep seed, Action<string?, ServerMessage> add)
     {
         foreach ((string field, string file, string? text, bool required) in new[]
         {
@@ -357,55 +347,59 @@ public static class SequenceValidator
         {
             if (text is null && required)
             {
-                add(field, $"The {file} file is missing. It can be empty.");
+                add(field, ServerMessages.SequenceSeedFileMissing.With("file", file));
             }
             else if (text is not null && Encoding.UTF8.GetByteCount(text) > MaxSeedFileBytes)
             {
-                add(field, $"The {file} file can have at most {MaxSeedFileBytes / 1024} KiB.");
+                add(field, ServerMessages.SequenceSeedFileTooLarge.With("file", file, "max", MaxSeedFileBytes / 1024));
             }
         }
     }
 
-    private static void CheckScript(RunScriptStep script, bool beforePartitionInWindowsPE, bool writesRawImage, Action<string?, string> add)
+    private static void CheckScript(
+        RunScriptStep script,
+        bool beforePartitionInWindowsPE,
+        bool writesRawImage,
+        Action<string?, ServerMessage> add)
     {
         if (!Enum.IsDefined(script.Phase))
         {
-            add("phase", "Choose Windows PE or Windows.");
+            add("phase", ServerMessages.SequenceScriptPhase.With());
         }
 
         if (!Enum.IsDefined(script.Interpreter))
         {
-            add("interpreter", "Choose cmd or PowerShell.");
+            add("interpreter", ServerMessages.SequenceScriptInterpreter.With());
         }
 
         if (string.IsNullOrWhiteSpace(script.Script))
         {
-            add("script", "Enter the script.");
+            add("script", ServerMessages.SequenceScriptEmpty.With());
         }
         else if (Encoding.UTF8.GetByteCount(script.Script) > MaxScriptBytes)
         {
-            add("script", $"A script can have at most {MaxScriptBytes / 1024} KiB.");
+            add("script", ServerMessages.SequenceScriptTooLarge.With("max", MaxScriptBytes / 1024));
         }
 
         if (script.TimeoutMinutes is < 1 or > MaxTimeoutMinutes)
         {
-            add("timeoutMinutes", $"The timeout has to be 1 to {MaxTimeoutMinutes} minutes.");
+            add("timeoutMinutes", ServerMessages.SequenceScriptTimeout.With("max", MaxTimeoutMinutes));
         }
 
         if (script.SuccessExitCodes is not { Count: >= 1 and <= MaxExitCodes })
         {
-            add("successExitCodes", $"Enter 1 to {MaxExitCodes} exit codes that mean success.");
+            add("successExitCodes", ServerMessages.SequenceSuccessExitCodes.With("max", MaxExitCodes));
         }
 
         // No restart codes is allowed: a script whose 3010 means success lists it among the success codes instead.
         if (script.RebootExitCodes is not { Count: <= MaxExitCodes })
         {
-            add("rebootExitCodes", $"Enter at most {MaxExitCodes} exit codes that ask for a restart.");
+            add("rebootExitCodes", ServerMessages.SequenceRebootExitCodes.With("max", MaxExitCodes));
         }
         else if (script.SuccessExitCodes is not null
             && script.SuccessExitCodes.Intersect(script.RebootExitCodes).ToArray() is { Length: > 0 } both)
         {
-            add("rebootExitCodes", $"An exit code cannot mean both success and a restart: {string.Join(", ", both)}.");
+            add("rebootExitCodes", ServerMessages.SequenceExitCodeMeansBoth.With("codes", string.Join(", ", both)));
         }
 
         if (beforePartitionInWindowsPE && script.PackageId is not null)
@@ -413,13 +407,13 @@ public static class SequenceValidator
             add(
                 "packageId",
                 writesRawImage
-                    ? PackageWithRawImage
-                    : "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put.");
+                    ? ServerMessages.SequencePackageWithRawImage.With()
+                    : ServerMessages.SequencePackageBeforePartition.With());
         }
 
         if (beforePartitionInWindowsPE && script.RebootExitCodes is { Count: > 0 })
         {
-            add("rebootExitCodes", writesRawImage ? RestartWithRawImage : RestartBeforePartition);
+            add("rebootExitCodes", (writesRawImage ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition).With());
         }
     }
 }

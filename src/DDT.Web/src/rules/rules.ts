@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost, apiPut, type ApiProblem } from "@/lib/api";
+import { serverText, type ServerArguments } from "@/lib/serverText";
 import { formatMac, type HardwareModelCount, type MachineSummary } from "@/machines/machines";
 import { matchingMachines } from "@/packages/packages";
 
@@ -14,7 +15,8 @@ import { matchingMachines } from "@/packages/packages";
 export type SequenceResolutionSource = "None" | "Assigned" | "Console" | "MacRule" | "ModelRule";
 
 // The sequence a machine would get and why. A rule only chooses: the machine still needs an approval or a
-// sign-in. problemCount above zero means the chosen sequence cannot run until it is fixed.
+// sign-in. problemCount above zero means the chosen sequence cannot run until it is fixed. explanation is the
+// server's English; resolutionText says it in the person's language.
 export interface MachineSequenceResolution {
   source: SequenceResolutionSource;
   sequenceId: string | null;
@@ -22,6 +24,12 @@ export interface MachineSequenceResolution {
   ruleId: string | null;
   problemCount: number;
   explanation: string;
+  explanationCode?: string | null;
+  explanationArgs?: ServerArguments | null;
+}
+
+export function resolutionText(resolution: MachineSequenceResolution): string {
+  return serverText(resolution.explanationCode, resolution.explanationArgs, resolution.explanation);
 }
 
 // The root of every machine's resolution, which a change of the rules or the sequences makes stale.

@@ -24,7 +24,7 @@ import {
   type MachineSummary,
 } from "@/machines/machines";
 import { secureBootRisk } from "@/machines/secureBoot";
-import { isRuleChoice, sequenceResolutionQuery } from "@/rules/rules";
+import { isRuleChoice, resolutionText, sequenceResolutionQuery } from "@/rules/rules";
 import { canRun, sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
@@ -161,7 +161,7 @@ export function AssignDialog({
             setChosenId(key === null ? null : String(key));
             setAllowedFor(null);
           }}
-          {...(ruleChoice === null ? {} : { hint: ruleChoice.explanation })}
+          {...(ruleChoice === null ? {} : { hint: resolutionText(ruleChoice) })}
         >
           {list.map((candidate) => (
             <ListBoxItem

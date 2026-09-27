@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers;
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Core.Unattend;
 
@@ -101,28 +102,27 @@ public static class DeploymentOptionsValidation
             || (upn.Length == 2 && !string.IsNullOrWhiteSpace(upn[0]) && !string.IsNullOrWhiteSpace(upn[1]) && down.Length == 1);
     }
 
-    internal static string? OrganizationalUnitProblem(string organizationalUnit)
+    internal static string? OrganizationalUnitProblem(string organizationalUnit) => OrganizationalUnitMessage(organizationalUnit)?.Text;
+
+    internal static ServerMessage? OrganizationalUnitMessage(string organizationalUnit)
     {
         string value = organizationalUnit.Trim();
-        const string example = "OU=Workstations,DC=example,DC=com";
 
         if (value.StartsWith("LDAP://", StringComparison.OrdinalIgnoreCase))
         {
-            return $"Must be a distinguished name without the LDAP:// prefix, such as {example}.";
+            return ServerMessages.OrganizationalUnitWithPrefix.With();
         }
 
         // The join can only name an organizational unit, and new computers land in the Computers container anyway.
         if (value.StartsWith("CN=Computers,", StringComparison.OrdinalIgnoreCase))
         {
-            return "The default Computers container is no organizational unit and cannot be named. Leave this empty to use it.";
+            return ServerMessages.OrganizationalUnitIsComputers.With();
         }
 
         bool distinguishedName =
             (value.StartsWith("OU=", StringComparison.OrdinalIgnoreCase) || value.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
             && value.Contains("DC=", StringComparison.OrdinalIgnoreCase);
 
-        return distinguishedName
-            ? null
-            : $"'{value}' is not a distinguished name. Write it like {example}.";
+        return distinguishedName ? null : ServerMessages.OrganizationalUnitNotDistinguished.With("value", value);
     }
 }

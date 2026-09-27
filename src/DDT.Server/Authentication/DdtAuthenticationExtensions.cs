@@ -63,6 +63,7 @@ public static class DdtAuthenticationExtensions
                 identity.SignIn.RequireConfirmedAccount = false;
             })
             .AddRoles<DdtRole>()
+            .AddErrorDescriber<DdtIdentityErrorDescriber>()
             .AddEntityFrameworkStores<DdtDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();

@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
+import {
+  isServerMessage,
+  serverText,
+  type ServerArguments,
+  type ServerMessage,
+} from "@/lib/serverText";
+
 const CSRF_HEADER = "X-CSRF-TOKEN";
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS", "TRACE"];
 
@@ -127,10 +136,15 @@ export function apiPatch(
 }
 
 // The problem details the server answers a refusal with. A validation failure keys its messages by the
-// field, for example "mac", so a form can show each one next to its field.
+// field, for example "mac", so a form can show each one next to its field. code and args are the title as a
+// message, and errorCodes the field's messages, in the order of errors; apiErrorFrom says both in the person's
+// language, so a page reads title and errors as they are.
 export interface ApiProblem {
   title?: string;
   errors?: Record<string, string[]>;
+  code?: string;
+  args?: ServerArguments;
+  errorCodes?: Record<string, (ServerMessage | null)[]>;
 }
 
 export class ApiError extends Error {
@@ -146,9 +160,39 @@ export class ApiError extends Error {
 }
 
 export async function apiErrorFrom(response: Response): Promise<ApiError> {
-  const problem = await readProblem(response);
+  const problem = translated(await readProblem(response));
 
   return new ApiError(response.status, errorMessage(response, problem), problem);
+}
+
+// The title and the field errors in the person's language where the server sent their codes; the rest as sent.
+function translated(problem: ApiProblem | null): ApiProblem | null {
+  if (problem === null) {
+    return null;
+  }
+
+  const { title, errors, errorCodes } = problem;
+
+  return {
+    ...problem,
+    ...(typeof title === "string" ? { title: serverText(problem.code, problem.args, title) } : {}),
+    ...(errors === undefined
+      ? {}
+      : {
+          errors: Object.fromEntries(
+            Object.entries(errors).map(([field, messages]) => [
+              field,
+              messages.map((english, index) => {
+                const coded = errorCodes?.[field]?.[index];
+
+                return isServerMessage(coded)
+                  ? serverText(coded.code, coded.args, english)
+                  : english;
+              }),
+            ]),
+          ),
+        }),
+  };
 }
 
 async function readBody<TResponse>(response: Response): Promise<TResponse> {
@@ -170,9 +214,10 @@ async function readProblem(response: Response): Promise<ApiProblem | null> {
 }
 
 function errorMessage(response: Response, problem: ApiProblem | null): string {
+  const status = String(response.status);
   const fallback =
     response.statusText === ""
-      ? `The server answered with status ${String(response.status)}.`
+      ? t`The server answered with status ${status}.`
       : response.statusText;
 
   return Object.values(problem?.errors ?? {})[0]?.[0] ?? problem?.title ?? fallback;

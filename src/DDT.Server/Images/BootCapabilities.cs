@@ -19,6 +19,10 @@ public static class BootCapabilities
     public static string NotStarting(ImageBootCapability? capability) =>
         capability == ImageBootCapability.Unknown ? "may not start" : "will not start";
 
+    // The same for a message, which chooses its words by it: maybe for an image DDT could not judge, never otherwise.
+    public static string NotStartingChoice(ImageBootCapability? capability) =>
+        capability == ImageBootCapability.Unknown ? "maybe" : "never";
+
     public const string FallbackPath = @"\EFI\BOOT\BOOTX64.EFI";
 
     private static readonly Dictionary<string, string> s_otherFallbacks = new(StringComparer.OrdinalIgnoreCase)

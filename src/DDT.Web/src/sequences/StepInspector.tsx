@@ -21,7 +21,7 @@ import { AddStepMenu } from "./AddStepMenu";
 import { movesFrom } from "./editorFocus";
 import { EditorLock } from "./editorLock";
 import { FlagSetting, TextSetting } from "./fields";
-import { unplacedFindings, type Findings } from "./problems";
+import { findingText, unplacedFindings, type Findings } from "./problems";
 import { findingCounts } from "./sequenceList";
 import type { SequenceEdit, StepPatch } from "./sequenceEdits";
 import type { SequencePhase, SequenceStep, StepKind } from "./sequences";
@@ -221,12 +221,12 @@ export function StepInspector({
             >
               {unplaced.problems.map((problem, position) => (
                 <li key={`p${String(position)}`} className="text-fail-text">
-                  {problem.message}
+                  {findingText(problem)}
                 </li>
               ))}
               {unplaced.warnings.map((warning, position) => (
                 <li key={`w${String(position)}`} className="text-attention-text">
-                  {warning.message}
+                  {findingText(warning)}
                 </li>
               ))}
             </ul>

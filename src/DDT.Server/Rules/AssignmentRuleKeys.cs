@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
 using DDT.Server.Machines;
 
@@ -22,15 +23,20 @@ public static class AssignmentRuleKeys
             : $"model:{HardwareModels.Normalize(manufacturer)}|{HardwareModels.Normalize(model)}";
 
     // For people: MAC address 00:15:5D:01:02:03, model Dell Inc. Latitude 5440, or model Latitude 7* of any maker.
-    public static string Describe(AssignmentRule rule)
+    public static string Describe(AssignmentRule rule) => DescribeMessage(rule).Text;
+
+    // Describe as a message, for a sentence the web says.
+    public static ServerMessage DescribeMessage(AssignmentRule rule)
     {
         ArgumentNullException.ThrowIfNull(rule);
 
         if (rule.Kind == AssignmentRuleKind.Mac)
         {
-            return $"MAC address {string.Join(':', (rule.Mac ?? "").Chunk(2).Select(pair => new string(pair)))}";
+            return ServerMessages.RuleForMac.With("mac", string.Join(':', (rule.Mac ?? "").Chunk(2).Select(pair => new string(pair))));
         }
 
-        return rule.Manufacturer is { } manufacturer ? $"model {manufacturer} {rule.Model}" : $"model {rule.Model} of any maker";
+        return rule.Manufacturer is { } manufacturer
+            ? ServerMessages.RuleForModel.With("manufacturer", manufacturer, "model", rule.Model ?? "")
+            : ServerMessages.RuleForModelOfAnyMaker.With("model", rule.Model ?? "");
     }
 }

@@ -4,6 +4,7 @@
 
 using System.Net.Mail;
 using System.Security.Claims;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -63,43 +64,43 @@ public static class UserEndpoints
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string? userName = Clean(request.UserName);
         string? displayName = Clean(request.DisplayName);
-        (string? email, string? emailProblem) = Email(request.Email);
+        (string? email, ServerMessage? emailProblem) = Email(request.Email);
         string? role = DdtRoleNames.Canonical(request.Role);
 
         if (userName is null)
         {
-            problems["userName"] = ["Enter a user name."];
+            problems.Add("userName", ServerMessages.UserNameEmpty.With());
         }
         else if (userName.Length > MaxTextLength)
         {
-            problems["userName"] = [$"A user name can have at most {MaxTextLength} characters."];
+            problems.Add("userName", ServerMessages.UserNameTooLong.With("max", MaxTextLength));
         }
 
         if (displayName is null)
         {
-            problems["displayName"] = ["Enter the name DDT shows for the account."];
+            problems.Add("displayName", ServerMessages.UserDisplayNameEmpty.With());
         }
         else if (displayName.Length > MaxTextLength)
         {
-            problems["displayName"] = [$"A display name can have at most {MaxTextLength} characters."];
+            problems.Add("displayName", ServerMessages.UserDisplayNameTooLong.With("max", MaxTextLength));
         }
 
         if (emailProblem is not null)
         {
-            problems["email"] = [emailProblem];
+            problems.Add("email", emailProblem);
         }
 
         if (role is null)
         {
-            problems["role"] = [RoleProblem];
+            problems.Add("role", ServerMessages.UserRole.With());
         }
 
         if (problems.Count > 0)
         {
-            return TypedResults.ValidationProblem(problems);
+            return problems.ToResult();
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
@@ -130,17 +131,14 @@ public static class UserEndpoints
             // Another administrator took the name a moment earlier, and the unique index kept only theirs.
             database.ChangeTracker.Clear();
 
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["userName"] = [$"There is an account named {userName} already."],
-            });
+            return ServerProblems.Validation("userName", ServerMessages.UserNameTaken.With("name", userName!));
         }
 
         if (!created.Succeeded)
         {
             database.ChangeTracker.Clear();
 
-            return TypedResults.ValidationProblem(Problems(created));
+            return created.ToValidationProblem(UserField);
         }
 
         UserView view = await views.ViewAsync(user, cancellationToken).ConfigureAwait(false);
@@ -169,29 +167,29 @@ public static class UserEndpoints
             return TypedResults.NotFound();
         }
 
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string? displayName = request.DisplayName is null ? user.DisplayName : Clean(request.DisplayName);
-        (string? email, string? emailProblem) = request.Email is null ? (user.Email, null) : Email(request.Email);
+        (string? email, ServerMessage? emailProblem) = request.Email is null ? (user.Email, null) : Email(request.Email);
         string? role = request.Role is null ? null : DdtRoleNames.Canonical(request.Role);
 
         if (displayName?.Length > MaxTextLength)
         {
-            problems["displayName"] = [$"A display name can have at most {MaxTextLength} characters."];
+            problems.Add("displayName", ServerMessages.UserDisplayNameTooLong.With("max", MaxTextLength));
         }
 
         if (emailProblem is not null)
         {
-            problems["email"] = [emailProblem];
+            problems.Add("email", emailProblem);
         }
 
         if (request.Role is not null && role is null)
         {
-            problems["role"] = [RoleProblem];
+            problems.Add("role", ServerMessages.UserRole.With());
         }
 
         if (problems.Count > 0)
         {
-            return TypedResults.ValidationProblem(problems);
+            return problems.ToResult();
         }
 
         List<string> changes = [];
@@ -209,7 +207,7 @@ public static class UserEndpoints
         // The directory writes both again at each sign-in.
         if (changes.Count > 0 && user.Source == AccountSource.Directory)
         {
-            return Conflict($"The directory provides the display name and email address of {user.UserName}. Change them there; DDT takes them over at its next sign-in.");
+            return Conflict(ServerMessages.UserDirectoryProvidesNames.With("name", user.UserName ?? ""));
         }
 
         string? current = await views.RoleAsync(user.Id, cancellationToken).ConfigureAwait(false);
@@ -225,7 +223,7 @@ public static class UserEndpoints
 
         if (demotes && Principals.UserId(actor) == id)
         {
-            return Conflict("You cannot take the Administrator role from your own account. Another administrator can.");
+            return Conflict(ServerMessages.UserOwnAdministratorRole.With());
         }
 
         if (changes.Count == 0 && !roleChanges)
@@ -318,7 +316,7 @@ public static class UserEndpoints
 
         if (Principals.UserId(actor) == id)
         {
-            return Conflict("You cannot disable your own account. Another administrator can.");
+            return Conflict(ServerMessages.UserOwnDisable.With());
         }
 
         if (user.IsDisabled)
@@ -417,17 +415,17 @@ public static class UserEndpoints
 
         if (Principals.UserId(actor) == id)
         {
-            return Conflict("Change your own password on the Account page.");
+            return Conflict(ServerMessages.UserOwnPassword.With());
         }
 
         if (user.Source == AccountSource.Directory)
         {
-            return Conflict($"{user.UserName} signs in with its directory password. Reset it in the directory.");
+            return Conflict(ServerMessages.UserDirectoryPassword.With("name", user.UserName ?? ""));
         }
 
         if (user.Source == AccountSource.External)
         {
-            return Conflict($"{user.UserName} signs in through single sign-on and has no password in DDT.");
+            return Conflict(ServerMessages.UserSingleSignOnPassword.With("name", user.UserName ?? ""));
         }
 
         string password = IdentityBootstrap.GeneratePassword();
@@ -483,7 +481,7 @@ public static class UserEndpoints
 
         if (Principals.UserId(actor) == id)
         {
-            return Conflict("Turn off your own second factor on the Account page.");
+            return Conflict(ServerMessages.UserOwnSecondFactor.With());
         }
 
         if (!user.TwoFactorEnabled)
@@ -536,7 +534,7 @@ public static class UserEndpoints
 
         if (Principals.UserId(actor) == id)
         {
-            return Conflict("You cannot delete your own account. Another administrator can.");
+            return Conflict(ServerMessages.UserOwnDelete.With());
         }
 
         await s_administratorChanges.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -574,10 +572,7 @@ public static class UserEndpoints
         return TypedResults.NoContent();
     }
 
-    private const string RoleProblem = "Choose Administrator, Operator or Viewer.";
-
-    private static string LastAdministrator(DdtUser user) =>
-        $"{user.UserName} is the last enabled administrator. Make another account an administrator first.";
+    private static ServerMessage LastAdministrator(DdtUser user) => ServerMessages.UserLastAdministrator.With("name", user.UserName ?? "");
 
     private static async Task<bool> OtherEnabledAdministratorsAsync(UserViews views, Guid id, CancellationToken cancellationToken) =>
         (await views.EnabledAdministratorsAsync(cancellationToken).ConfigureAwait(false)).Exists(administrator => administrator != id);
@@ -592,7 +587,7 @@ public static class UserEndpoints
     private static IdentityUserClaim<Guid> MustChangePassword(DdtUser user) =>
         new() { UserId = user.Id, ClaimType = DdtClaimTypes.MustChangePassword, ClaimValue = "true" };
 
-    private static ProblemHttpResult Conflict(string title) => TypedResults.Problem(title: title, statusCode: StatusCodes.Status409Conflict);
+    private static ProblemHttpResult Conflict(ServerMessage message) => ServerProblems.Problem(message, StatusCodes.Status409Conflict);
 
     // What an Identity call that saves refused, with what this request staged for that save thrown away. The calls
     // after validation only fail when the account changed meanwhile, or the store failed.
@@ -605,25 +600,25 @@ public static class UserEndpoints
 
         database.ChangeTracker.Clear();
 
-        return result.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure))
-            ? Conflict("The account changed while this was saved. Look at it again.")
+        if (result.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure)))
+        {
+            return Conflict(ServerMessages.UserChangedWhileSaving.With());
+        }
+
+        // Several errors make one title, which has no code of its own.
+        return result.Errors.Count() == 1
+            ? ServerProblems.Problem(AuthEndpoints.MessageOf(result.Errors.First()), StatusCodes.Status400BadRequest)
             : TypedResults.Problem(title: string.Join(" ", result.Errors.Select(error => error.Description)), statusCode: StatusCodes.Status400BadRequest);
     }
 
-    private static Dictionary<string, string[]> Problems(IdentityResult result) =>
-        result.Errors
-            .GroupBy(
-                error => error.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.InvalidUserName)
-                    ? "userName"
-                    : error.Code,
-                StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.Select(error => error.Description).ToArray(), StringComparer.Ordinal);
+    private static string UserField(IdentityError error) =>
+        error.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.InvalidUserName) ? "userName" : error.Code;
 
     private static string? Clean(string? value) =>
         value?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim() is { Length: > 0 } text ? text : null;
 
     // An empty address clears it. A display name part, as in "Jane <jane@corp.example>", is refused rather than kept.
-    private static (string? Email, string? Problem) Email(string? value)
+    private static (string? Email, ServerMessage? Problem) Email(string? value)
     {
         string? email = Clean(value);
 
@@ -634,7 +629,7 @@ public static class UserEndpoints
 
         return email.Length <= MaxTextLength && MailAddress.TryCreate(email, out MailAddress? parsed) && parsed.Address == email
             ? (email, null)
-            : (null, "Enter an email address such as jane@corp.example, or leave it empty.");
+            : (null, ServerMessages.UserEmail.With());
     }
 
     private static string Change(string field, string? from, string? to) => $"{field}: '{from}' to '{to}'";

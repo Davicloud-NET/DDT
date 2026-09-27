@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Messages;
 
 namespace DDT.Server.Deployments;
 
@@ -18,52 +19,52 @@ public static class DomainJoinAssessment
     {
         ArgumentNullException.ThrowIfNull(facts);
 
-        List<DomainJoinFinding> findings = [Passed($"Signed in to {controller} as {userName} over {facts.Connection}.")];
+        List<DomainJoinFinding> findings = [Passed(ServerMessages.DomainSignedIn.With("controller", controller, "user", userName, "connection", facts.Connection))];
         string expected = NamingContextOf(domain);
 
         if (!string.Equals(facts.NamingContext, expected, StringComparison.OrdinalIgnoreCase))
         {
-            findings.Add(Problem(
-                $"{controller} serves the domain {facts.NamingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or " +
-                "point DDT:Deployment:Domain:Controller at a domain controller of that domain."));
+            findings.Add(Problem(ServerMessages.DomainOtherDomain.With(
+                "controller",
+                controller,
+                "namingContext",
+                facts.NamingContext,
+                "domain",
+                domain,
+                "expected",
+                expected)));
 
             return new(false, null, findings);
         }
 
-        findings.Add(Passed($"{controller} is a domain controller of {domain}."));
+        findings.Add(Passed(ServerMessages.DomainControllerOf.With("controller", controller, "domain", domain)));
 
         if (facts.Container is not { } container)
         {
             findings.Add(Problem(organizationalUnit is null
-                ? $"The default Computers container of {domain} was not found, or {userName} may not read it."
-                : $"{domain} has no organizational unit {organizationalUnit}, or {userName} may not read it. Correct the organizational " +
-                  "unit of the Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none."));
+                ? ServerMessages.DomainNoComputersContainer.With("domain", domain, "user", userName)
+                : ServerMessages.DomainNoOrganizationalUnit.With("domain", domain, "organizationalUnit", organizationalUnit, "user", userName)));
 
             return new(false, null, findings);
         }
 
         if (facts.CanCreateComputers)
         {
-            findings.Add(Passed($"{userName} may create computer objects in {container}, as many as it needs."));
+            findings.Add(Passed(ServerMessages.DomainMayCreate.With("user", userName, "container", container)));
 
             return new(true, container, findings);
         }
 
         if (organizationalUnit is not null)
         {
-            findings.Add(Problem(
-                $"{userName} may not create computer objects in {container}, and the machine account quota does not reach an " +
-                "organizational unit. Delegate \"Create Computer objects\" on it to the account, for example with the Delegation of " +
-                "Control wizard of Active Directory Users and Computers."));
+            findings.Add(Problem(ServerMessages.DomainMayNotCreateInUnit.With("user", userName, "container", container)));
 
             return new(false, container, findings);
         }
 
         if (facts.MachineAccountQuota is not { } quota)
         {
-            findings.Add(Warning(
-                $"{userName} may not create computer objects in {container} by a right of its own, and the domain's machine account " +
-                "quota could not be read. Delegate \"Create Computer objects\" on the container to the account."));
+            findings.Add(Warning(ServerMessages.DomainQuotaUnknown.With("user", userName, "container", container)));
 
             return new(false, container, findings);
         }
@@ -72,55 +73,70 @@ public static class DomainJoinAssessment
 
         if (left == 0)
         {
-            findings.Add(Problem(
-                $"{userName} may not create computer objects in {container} by a right of its own, and has used its machine account " +
-                $"quota: {facts.ComputersCreated} of {quota} (ms-DS-MachineAccountQuota). Delegate \"Create Computer objects\" on the " +
-                "container to the account."));
+            findings.Add(Problem(ServerMessages.DomainQuotaUsed.With(
+                "user",
+                userName,
+                "container",
+                container,
+                "created",
+                facts.ComputersCreated,
+                "quota",
+                quota)));
 
             return new(false, container, findings);
         }
 
-        findings.Add(Warning(
-            $"{userName} may not create computer objects in {container} by a right of its own, so it joins within the domain's " +
-            $"machine account quota: {facts.ComputersCreated} of {quota} used, {left} left. That also needs the user right \"Add " +
-            "workstations to domain\", which Authenticated Users hold by default and this check cannot read. Delegate \"Create " +
-            "Computer objects\" on the container to the account to join more."));
+        findings.Add(Warning(ServerMessages.DomainQuotaLeft.With(
+            "user",
+            userName,
+            "container",
+            container,
+            "created",
+            facts.ComputersCreated,
+            "quota",
+            quota,
+            "left",
+            left)));
 
         return new(true, container, findings);
     }
 
     // Active Directory's reason codes for a refused LDAP sign-in.
-    public static string DescribeRefusal(string? reasonCode, string controller, string userName) => reasonCode switch
+    public static string DescribeRefusal(string? reasonCode, string controller, string userName) => RefusalMessage(reasonCode, controller, userName).Text;
+
+    public static ServerMessage RefusalMessage(string? reasonCode, string controller, string userName) => reasonCode switch
     {
-        "525" => $"{controller} knows no account {userName}. Correct DDT:Deployment:Domain:UserName.",
-        "52e" => $"{controller} did not accept the password of {userName}. Correct DDT:Deployment:Domain:Password.",
-        "530" => $"{userName} may not sign in at this time of day (logon hours).",
-        "531" => $"{userName} may not sign in from the DDT server (Log On To workstations).",
-        "532" => $"The password of {userName} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password.",
-        "533" => $"{userName} is disabled.",
-        "701" => $"{userName} has expired.",
-        "773" => $"{userName} has to change its password before it can sign in. Give it a new one, in the domain and in DDT:Deployment:Domain:Password.",
-        "775" => $"{userName} is locked out.",
-        _ => $"{controller} did not accept the user name or password of {userName}" + (reasonCode is null ? "." : $" (reason {reasonCode})."),
+        "525" => ServerMessages.DomainNoSuchAccount.With("controller", controller, "user", userName),
+        "52e" => ServerMessages.DomainWrongPassword.With("controller", controller, "user", userName),
+        "530" => ServerMessages.DomainLogonHours.With("user", userName),
+        "531" => ServerMessages.DomainLogonWorkstations.With("user", userName),
+        "532" => ServerMessages.DomainPasswordExpired.With("user", userName),
+        "533" => ServerMessages.DomainAccountDisabled.With("user", userName),
+        "701" => ServerMessages.DomainAccountExpired.With("user", userName),
+        "773" => ServerMessages.DomainMustChangePassword.With("user", userName),
+        "775" => ServerMessages.DomainLockedOut.With("user", userName),
+        null => ServerMessages.DomainSignInRefused.With("controller", controller, "user", userName),
+        _ => ServerMessages.DomainSignInRefusedWithReason.With("controller", controller, "user", userName, "reason", reasonCode),
     };
 
-    public static string DescribeUnreachable(string controller, string domain, string? detail) =>
-        $"{controller} could not be reached over LDAP" + (detail is null ? "" : $" ({detail.TrimEnd('.')})") + ". If this server's DNS does not " +
-        $"know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their " +
-        "domain controller through their own DNS.";
+    public static string DescribeUnreachable(string controller, string domain, string? detail) => UnreachableMessage(controller, domain, detail).Text;
 
-    public static string DescribeNoSecureConnection(string controller) =>
-        $"{controller} offers no LDAPS on port 636 that this server trusts, and on this operating system only LDAPS keeps the join " +
-        "account's password secret during the check. Give the domain controllers a certificate, for example from Active Directory " +
-        "Certificate Services, and trust its CA on this server. Joining does not depend on this check.";
+    public static ServerMessage UnreachableMessage(string controller, string domain, string? detail) =>
+        detail is null
+            ? ServerMessages.DomainUnreachable.With("controller", controller, "domain", domain)
+            : ServerMessages.DomainUnreachableWithDetail.With("controller", controller, "detail", detail.TrimEnd('.'), "domain", domain);
+
+    public static string DescribeNoSecureConnection(string controller) => NoSecureConnectionMessage(controller).Text;
+
+    public static ServerMessage NoSecureConnectionMessage(string controller) => ServerMessages.DomainNoSecureConnection.With("controller", controller);
 
     // corp.example becomes DC=corp,DC=example.
     public static string NamingContextOf(string domain) =>
         string.Join(',', domain.Trim().TrimEnd('.').Split('.').Select(label => $"DC={label}"));
 
-    private static DomainJoinFinding Passed(string text) => new(DomainJoinFindingLevel.Passed, text);
+    private static DomainJoinFinding Passed(ServerMessage message) => DomainJoinFinding.From(DomainJoinFindingLevel.Passed, message);
 
-    private static DomainJoinFinding Warning(string text) => new(DomainJoinFindingLevel.Warning, text);
+    private static DomainJoinFinding Warning(ServerMessage message) => DomainJoinFinding.From(DomainJoinFindingLevel.Warning, message);
 
-    private static DomainJoinFinding Problem(string text) => new(DomainJoinFindingLevel.Problem, text);
+    private static DomainJoinFinding Problem(ServerMessage message) => DomainJoinFinding.From(DomainJoinFindingLevel.Problem, message);
 }

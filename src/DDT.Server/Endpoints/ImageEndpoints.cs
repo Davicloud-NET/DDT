@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -77,9 +78,7 @@ public static class ImageEndpoints
 
             if (inUse)
             {
-                return TypedResults.Problem(
-                    title: "Runs that are assigned or running use this image. Cancel them or let them finish, then delete it.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ServerProblems.Problem(ServerMessages.ImageInUse.With(), StatusCodes.Status409Conflict);
             }
 
             database.Images.Remove(image);

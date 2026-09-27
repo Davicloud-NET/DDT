@@ -7,6 +7,26 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: de\n"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.keyboard"
+msgid "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407."
+msgstr "''{keyboard}'' ist kein Eingabegebietsschema. Verwenden Sie einen Namen wie de-DE oder einen Code wie 0407:00000407."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.locale"
+msgid "''{locale}'' is not a language and region that Windows knows. Use a name such as de-DE."
+msgstr "''{locale}'' ist keine Sprache und Region, die Windows kennt. Verwenden Sie einen Namen wie de-DE."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.timeZone"
+msgid "''{timeZone}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time."
+msgstr "''{timeZone}'' ist keine Windows-Zeitzonen-ID. Verwenden Sie einen Namen, den tzutil /l auflistet, etwa W. Europe Standard Time."
+
+#: src/lib/serverMessages.ts
+msgctxt "organizationalUnit.notDistinguished"
+msgid "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com."
+msgstr "''{value}'' ist kein Distinguished Name. Schreiben Sie ihn wie OU=Workstations,DC=example,DC=com."
+
 #: src/sequences/SequencesPage.tsx
 msgid "{activeRuns, plural, one {Assigned to or running on # machine} other {Assigned to or running on # machines}}"
 msgstr "{activeRuns, plural, one {Zugewiesen oder in Ausführung auf # Gerät} other {Zugewiesen oder in Ausführung auf # Geräten}}"
@@ -27,9 +47,19 @@ msgstr "{assigned}. Das Gerät hat sie noch nicht gestartet."
 msgid "{by} approved the machine on the web to run {title}, which a rule chose"
 msgstr "{by} hat das Gerät im Web freigegeben, um {title} auszuführen, das eine Regel gewählt hat"
 
+#: src/lib/serverMessages.ts
+msgctxt "resolution.assignedOnWeb"
+msgid "{by} assigned {sequence} on the web, which comes before every rule."
+msgstr "{by} hat {sequence} im Web zugewiesen, was vor jeder Regel kommt."
+
 #: src/runs/runs.ts
 msgid "{by} assigned {title} on the web"
 msgstr "{by} hat {title} im Web zugewiesen"
+
+#: src/lib/serverMessages.ts
+msgctxt "resolution.chosenAtMachine"
+msgid "{by} chose {sequence} at the machine, which comes before every rule."
+msgstr "{by} hat {sequence} am Gerät gewählt, was vor jeder Regel kommt."
 
 #: src/sequences/SaveState.tsx
 msgid "{by} saved it at {time}"
@@ -42,6 +72,71 @@ msgstr "{by} hat sich am Gerät angemeldet"
 #: src/runs/runs.ts
 msgid "{by} signed in at the machine and chose {title} there"
 msgstr "{by} hat sich am Gerät angemeldet und dort {title} gewählt"
+
+#: src/lib/serverMessages.ts
+msgctxt "uefiCa.name"
+msgid "{cas, select, ca2011 {Microsoft's third-party UEFI CA 2011} ca2023 {Microsoft's third-party UEFI CA 2023} both {Microsoft's third-party UEFI CAs 2011 and 2023} other {Microsoft's third-party UEFI CA}}"
+msgstr "{cas, select, ca2011 {Microsofts UEFI-CA für Drittanbieter 2011} ca2023 {Microsofts UEFI-CA für Drittanbieter 2023} both {Microsofts UEFI-CAs für Drittanbieter 2011 und 2023} other {Microsofts UEFI-CA für Drittanbieter}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.checkError"
+msgid "{controller} answered the check with an error: {detail}"
+msgstr "{controller} hat die Prüfung mit einem Fehler beantwortet: {detail}"
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.unreachableWithDetail"
+msgid "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
+msgstr "{controller} war über LDAP nicht erreichbar ({detail}). Wenn das DNS dieses Servers {domain} nicht kennt, setzen Sie DDT:Deployment:Domain:Controller auf den Namen oder die Adresse eines Domänencontrollers. Die Geräte finden ihren Domänencontroller über ihr eigenes DNS."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.unreachable"
+msgid "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
+msgstr "{controller} war über LDAP nicht erreichbar. Wenn das DNS dieses Servers {domain} nicht kennt, setzen Sie DDT:Deployment:Domain:Controller auf den Namen oder die Adresse eines Domänencontrollers. Die Geräte finden ihren Domänencontroller über ihr eigenes DNS."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.wrongPassword"
+msgid "{controller} did not accept the password of {user}. Correct DDT:Deployment:Domain:Password."
+msgstr "{controller} hat das Kennwort von {user} nicht angenommen. Korrigieren Sie DDT:Deployment:Domain:Password."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.signInRefusedWithReason"
+msgid "{controller} did not accept the user name or password of {user} (reason {reason})."
+msgstr "{controller} hat den Benutzernamen oder das Kennwort von {user} nicht angenommen (Grund {reason})."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.signInRefused"
+msgid "{controller} did not accept the user name or password of {user}."
+msgstr "{controller} hat den Benutzernamen oder das Kennwort von {user} nicht angenommen."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.controllerOf"
+msgid "{controller} is a domain controller of {domain}."
+msgstr "{controller} ist ein Domänencontroller von {domain}."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.noSuchAccount"
+msgid "{controller} knows no account {user}. Correct DDT:Deployment:Domain:UserName."
+msgstr "{controller} kennt kein Konto {user}. Korrigieren Sie DDT:Deployment:Domain:UserName."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.noSecureConnection"
+msgid "{controller} offers no LDAPS on port 636 that this server trusts, and on this operating system only LDAPS keeps the join account's password secret during the check. Give the domain controllers a certificate, for example from Active Directory Certificate Services, and trust its CA on this server. Joining does not depend on this check."
+msgstr "{controller} bietet kein LDAPS auf Port 636 an, dem dieser Server vertraut, und auf diesem Betriebssystem hält nur LDAPS das Kennwort des Beitrittskontos während der Prüfung geheim. Geben Sie den Domänencontrollern ein Zertifikat, etwa von den Active Directory-Zertifikatdiensten, und vertrauen Sie ihrer Zertifizierungsstelle auf diesem Server. Der Beitritt hängt nicht von dieser Prüfung ab."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.otherDomain"
+msgid "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or point DDT:Deployment:Domain:Controller at a domain controller of that domain."
+msgstr "{controller} bedient die Domäne {namingContext}, nicht {domain} ({expected}). Korrigieren Sie DDT:Deployment:Domain:Name, oder richten Sie DDT:Deployment:Domain:Controller auf einen Domänencontroller dieser Domäne."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.unknownPlaceholders"
+msgid "{count, plural, one {{named} is not one of DDT's placeholders, so it stays as it is. DDT fills in {known}.} other {{named} are not DDT's placeholders, so they stay as they are. DDT fills in {known}.}}"
+msgstr "{count, plural, one {{named} ist kein Platzhalter von DDT und bleibt daher, wie er ist. DDT setzt {known} ein.} other {{named} sind keine Platzhalter von DDT und bleiben daher, wie sie sind. DDT setzt {known} ein.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.sequenceHasProblems"
+msgid "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}"
+msgstr "{count, plural, one {{sequence} hat ein Problem und kann daher nicht laufen. Beheben Sie es zuerst auf der Seite der Tasksequenz.} other {{sequence} hat # Probleme und kann daher nicht laufen. Beheben Sie sie zuerst auf der Seite der Tasksequenz.}}"
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
@@ -68,6 +163,11 @@ msgstr "{count, plural, one {# Schritt} other {# Schritte}}"
 #: src/machines/AssignDialog.tsx
 msgid "{count, plural, one {# warning} other {# warnings}}"
 msgstr "{count, plural, one {# Warnung} other {# Warnungen}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.chosenByRules"
+msgid "{count, plural, one {A rule chooses this sequence. Delete the rule or let it choose another sequence, then delete this one.} other {# rules choose this sequence. Delete them or let them choose another sequence, then delete this one.}}"
+msgstr "{count, plural, one {Eine Regel wählt diese Tasksequenz. Löschen Sie die Regel oder lassen Sie sie eine andere Tasksequenz wählen, und löschen Sie dann diese.} other {# Regeln wählen diese Tasksequenz. Löschen Sie sie oder lassen Sie sie eine andere Tasksequenz wählen, und löschen Sie dann diese.}}"
 
 #: src/images/ImagesPage.tsx
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
@@ -97,6 +197,21 @@ msgstr "{count} Bytes"
 msgid "{described}, and the machine reports \"{value}\""
 msgstr "{described}, und das Gerät meldet \"{value}\""
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.other"
+msgid "{description}"
+msgstr "{description}"
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.noOrganizationalUnit"
+msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none."
+msgstr "{domain} hat keine Organisationseinheit {organizationalUnit}, oder {user} darf sie nicht lesen. Korrigieren Sie die Organisationseinheit des Schritts „Der Domäne beitreten“ oder DDT:Deployment:Domain:OrganizationalUnit, wenn der Schritt keine nennt."
+
+#: src/lib/serverMessages.ts
+msgctxt "resolution.cannotRun"
+msgid "{explanation} {count, plural, one {{sequence} has # problem, so it cannot run until it is fixed.} other {{sequence} has # problems, so it cannot run until they are fixed.}}"
+msgstr "{explanation} {count, plural, one {{sequence} hat # Problem und kann daher erst laufen, wenn es behoben ist.} other {{sequence} hat # Probleme und kann daher erst laufen, wenn sie behoben sind.}}"
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "{facts}, cannot be installed"
 msgstr "{facts}, kann nicht installiert werden"
@@ -117,6 +232,36 @@ msgstr "{files, plural, one {# Datei, {unpacked} entpackt} other {# Dateien, {un
 msgid "{hours} h {minutes} min"
 msgstr "{hours} Std. {minutes} Min."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.notStartingWithSecureBoot"
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
+msgstr "{image} {starting, select, maybe {startet mit aktiviertem Secure Boot möglicherweise nicht} other {startet mit aktiviertem Secure Boot nicht}}, und auf diesem Gerät ist Secure Boot aktiviert. Lassen Sie es für diese Ausführung zu, oder deaktivieren Sie zuerst Secure Boot in der Firmware des Geräts."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.rawImageNotStarting"
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
+msgstr "{image} {starting, select, maybe {startet mit aktiviertem Secure Boot möglicherweise nicht.} other {startet mit aktiviertem Secure Boot nicht.}} {detail} Deaktivieren Sie Secure Boot in der Firmware der Geräte, auf die es kommt, oder registrieren Sie Ihren eigenen Schlüssel. Beim Zuweisen der Tasksequenz werden Sie dann gefragt, ob Sie es zulassen."
+
+#: src/lib/serverMessages.ts
+msgctxt "image.withoutArchitecture"
+msgid "{image} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image."
+msgstr "{image} gibt nicht an, für welchen Prozessor es ist, und DDT stellt nur x64-Windows bereit. Wählen Sie ein x64-Image."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.imageIsRaw"
+msgid "{image} is a raw disk image, which a Write raw disk image step writes. Choose a Windows image."
+msgstr "{image} ist ein Raw-Datenträgerimage, das ein Schritt „Raw-Datenträgerimage schreiben“ schreibt. Wählen Sie ein Windows-Image."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.imageIsWindows"
+msgid "{image} is a Windows image, which an Apply image step applies. Choose a raw disk image."
+msgstr "{image} ist ein Windows-Image, das ein Schritt „Image anwenden“ anwendet. Wählen Sie ein Raw-Datenträgerimage."
+
+#: src/lib/serverMessages.ts
+msgctxt "image.otherArchitecture"
+msgid "{image} is an {architecture} image, and DDT deploys only x64 Windows. Choose an x64 image."
+msgstr "{image} ist ein {architecture}-Image, und DDT stellt nur x64-Windows bereit. Wählen Sie ein x64-Image."
+
 #: src/machines/secureBoot.ts
 msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
 msgstr "{image} ist nicht für Secure Boot signiert, und auf diesem Gerät ist Secure Boot aktiviert. Die Ausführung schreibt es nur, wenn Sie es zulassen, und das Gerät startet es erst, wenn Secure Boot in seinem Firmware-Setup deaktiviert oder Ihr eigener Schlüssel registriert ist."
@@ -124,6 +269,11 @@ msgstr "{image} ist nicht für Secure Boot signiert, und auf diesem Gerät ist S
 #: src/machines/secureBoot.ts
 msgid "{image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
 msgstr "{image} ist nicht für Secure Boot signiert. Das Gerät hat nicht gemeldet, ob Secure Boot aktiviert ist. Falls ja, hält die Ausführung an, bevor sie etwas löscht, es sei denn, Sie lassen das Image hier zu."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.untrustedCaWithSecureBoot"
+msgid "{image} is signed under {ca}, which this machine's firmware does not trust, and this machine has Secure Boot on. Allow it for this run, or allow that CA or turn Secure Boot off in the machine's firmware first."
+msgstr "{image} ist unter {ca} signiert, der die Firmware dieses Geräts nicht vertraut, und auf diesem Gerät ist Secure Boot aktiviert. Lassen Sie es für diese Ausführung zu, oder lassen Sie zuerst diese Zertifizierungsstelle zu oder deaktivieren Sie Secure Boot in der Firmware des Geräts."
 
 #: src/machines/secureBoot.ts
 msgid "{image} is signed under {cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup."
@@ -136,6 +286,11 @@ msgstr "{image} startet mit aktiviertem Secure Boot möglicherweise nicht, da DD
 #: src/machines/secureBoot.ts
 msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
 msgstr "{image} startet mit aktiviertem Secure Boot möglicherweise nicht, da DDT nicht feststellen konnte, ob es dafür signiert ist. Das Gerät hat nicht gemeldet, ob Secure Boot aktiviert ist. Falls ja, hält die Ausführung an, bevor sie etwas löscht, es sei denn, Sie lassen das Image hier zu."
+
+#: src/lib/serverMessages.ts
+msgctxt "image.rawForOtherArchitecture"
+msgid "{image} starts {architecture} machines, and DDT writes images for x64 machines. Choose an x64 image."
+msgstr "{image} startet {architecture}-Geräte, und DDT schreibt Images für x64-Geräte. Wählen Sie ein x64-Image."
 
 #: src/images/ImagesPage.tsx
 msgid "{installed} disk"
@@ -198,6 +353,11 @@ msgstr "{message} Ihre letzten Änderungen sind nicht gespeichert, und beim Verl
 msgid "{minutes} min {seconds} s"
 msgstr "{minutes} Min. {seconds} s"
 
+#: src/lib/serverMessages.ts
+msgctxt "package.targetTwice"
+msgid "{model} is a target twice."
+msgstr "{model} ist zweimal ein Ziel."
+
 #: src/log/LogViewport.tsx
 msgid "{more, plural, one {(+# line)} other {(+# lines)}}"
 msgstr "{more, plural, one {(+# Zeile)} other {(+# Zeilen)}}"
@@ -226,6 +386,11 @@ msgstr "{name} und seine API-Token werden aus DDT gelöscht. Das Änderungsproto
 msgid "{name} and its API tokens are deleted. The audit log keeps its entries. This cannot be undone; to keep the account out for now, disable it instead."
 msgstr "{name} und seine API-Token werden gelöscht. Das Änderungsprotokoll behält seine Einträge. Das lässt sich nicht rückgängig machen; um das Konto vorerst fernzuhalten, deaktivieren Sie es stattdessen."
 
+#: src/lib/serverMessages.ts
+msgctxt "directory.roleFromGroup"
+msgid "{name} gets {role} from {group}."
+msgstr "{name} erhält die Rolle {role} über {group}."
+
 #: src/users/DirectoryPanel.tsx
 msgid "{name} gives {label}"
 msgstr "{name} gibt {label}"
@@ -233,6 +398,16 @@ msgstr "{name} gibt {label}"
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} hat {warnings}. Sie läuft, aber sehen Sie sich die Tasksequenz vorher an."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.localAccount"
+msgid "{name} is a local account in DDT, so a sign-in with this name checks its DDT password and never asks the directory."
+msgstr "{name} ist ein lokales Konto in DDT, daher prüft eine Anmeldung mit diesem Namen sein DDT-Kennwort und fragt nie das Verzeichnis."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.singleSignOnAccount"
+msgid "{name} is a single sign-on account in DDT, so a sign-in with this name and a password is refused."
+msgstr "{name} ist ein Single-Sign-On-Konto in DDT, daher wird eine Anmeldung mit diesem Namen und einem Kennwort abgelehnt."
 
 #: src/sequences/sequenceList.ts
 msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
@@ -242,9 +417,34 @@ msgstr "{name} wird gelöscht und kann nicht mehr zugewiesen oder an einem Gerä
 msgid "{name} is empty."
 msgstr "{name} ist leer."
 
+#: src/lib/serverMessages.ts
+msgctxt "directory.roleFromGroups"
+msgid "{name} is in {count} mapped groups and gets the highest role they give, {role} from {group}."
+msgstr "{name} ist in {count} zugeordneten Gruppen und erhält die höchste Rolle, die sie geben: {role} über {group}."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.noMappedGroup"
+msgid "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused."
+msgstr "{name} ist in keiner der Gruppen, die DDT:Ldap:GroupRoleMap einer Rolle zuordnet, daher wird eine Anmeldung abgelehnt."
+
 #: src/users/UsersPage.tsx
 msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working, until an administrator enables it again. Nothing is deleted."
 msgstr "{name} wird innerhalb einer Minute abgemeldet und kann sich nicht anmelden, und seine API-Token funktionieren nicht mehr, bis ein Administrator das Konto wieder aktiviert. Nichts wird gelöscht."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.lastAdministrator"
+msgid "{name} is the last enabled administrator. Make another account an administrator first."
+msgstr "{name} ist der letzte aktivierte Administrator. Machen Sie zuerst ein anderes Konto zum Administrator."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.singleSignOnPassword"
+msgid "{name} signs in through single sign-on and has no password in DDT."
+msgstr "{name} meldet sich per Single Sign-On an und hat kein Kennwort in DDT."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.directoryPassword"
+msgid "{name} signs in with its directory password. Reset it in the directory."
+msgstr "{name} meldet sich mit seinem Verzeichniskennwort an. Setzen Sie es im Verzeichnis zurück."
 
 #: src/uploads/UploadPanel.tsx
 msgid "{name} was not added. {reason}"
@@ -261,6 +461,11 @@ msgstr "{otherName} (Raw-Datenträgerimage)"
 #: src/sequences/steps/RawImageFields.tsx
 msgid "{otherName} (Windows image)"
 msgstr "{otherName} (Windows-Image)"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageIsDrivers"
+msgid "{package} is a driver package. A script runs with a files package."
+msgstr "{package} ist ein Treiberpaket. Ein Skript läuft mit einem Dateipaket."
 
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
@@ -282,6 +487,11 @@ msgstr "{problemCount, plural, one {# Problem} other {# Probleme}}"
 #: src/rules/RuleDialog.tsx
 msgid "{problems}, cannot run"
 msgstr "{problems}, nicht ausführbar"
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.lockedOut"
+msgid "{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
+msgstr "{reason} Das Konto ist vorübergehend gesperrt, daher wartet eine Anmeldung, bis die Sperre endet."
 
 #: src/machines/approval.ts
 msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
@@ -307,6 +517,21 @@ msgstr "{seconds} s"
 msgid "{seen} from {from}"
 msgstr "{seen} von {from}"
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.approveThenName"
+msgid "{sequence} {use, select, domain {joins the domain} other {names the machine in its cloud-init seed}}, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name."
+msgstr "{sequence} {use, select, domain {tritt der Domäne bei} other {benennt das Gerät in ihrem cloud-init-Seed}}, und dieses Gerät hat noch keinen Namen. Geben Sie es ohne Tasksequenz frei und weisen Sie die Tasksequenz dann mit einem Computernamen zu."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.approveThenChooseDisk"
+msgid "{sequence} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there."
+msgstr "{sequence} löscht einen Datenträger, und dieses Gerät hat mehr als einen. Geben Sie es ohne Tasksequenz frei, melden Sie sich dann daran an und wählen Sie dort den Datenträger."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.erasesOneOfManyDisks"
+msgid "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
+msgstr "{sequence} löscht einen Datenträger, und dieses Gerät hat mehr als einen. Melden Sie sich daran an und wählen Sie dort den Datenträger."
+
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
 msgstr "{sequenceName} löscht den Datenträger von {label} nicht."
@@ -323,6 +548,11 @@ msgstr "{signedInBy} hat sich am Gerät angemeldet."
 msgid "{signedInBy} signed in here"
 msgstr "{signedInBy} hat sich hier angemeldet"
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.signerChooses"
+msgid "{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence."
+msgstr "{signer} hat sich am Gerät angemeldet und wählt dort seine Tasksequenz. Geben Sie es ohne Tasksequenz frei."
+
 #: src/machines/MachinesPage.tsx
 msgid "{step} {percent}%"
 msgstr "{step} {percent} %"
@@ -330,6 +560,66 @@ msgstr "{step} {percent} %"
 #: src/sequences/SequenceEditor.tsx
 msgid "{stepName} moved to position {position} of {count}."
 msgstr "{stepName} ist jetzt an Position {position} von {count}."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.accountExpired"
+msgid "{user} has expired."
+msgstr "{user} ist abgelaufen."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.mustChangePassword"
+msgid "{user} has to change its password before it can sign in. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
+msgstr "{user} muss sein Kennwort ändern, bevor es sich anmelden kann. Geben Sie ihm ein neues, in der Domäne und in DDT:Deployment:Domain:Password."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.accountDisabled"
+msgid "{user} is disabled."
+msgstr "{user} ist deaktiviert."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.lockedOut"
+msgid "{user} is locked out."
+msgstr "{user} ist gesperrt."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.mayCreate"
+msgid "{user} may create computer objects in {container}, as many as it needs."
+msgstr "{user} darf Computerobjekte in {container} erstellen, so viele es braucht."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.quotaUsed"
+msgid "{user} may not create computer objects in {container} by a right of its own, and has used its machine account quota: {created} of {quota} (ms-DS-MachineAccountQuota). Delegate \"Create Computer objects\" on the container to the account."
+msgstr "{user} darf aus eigenem Recht keine Computerobjekte in {container} erstellen und hat sein Computerkontingent verbraucht: {created} von {quota} (ms-DS-MachineAccountQuota). Delegieren Sie „Computerobjekte erstellen“ auf dem Container an das Konto."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.quotaUnknown"
+msgid "{user} may not create computer objects in {container} by a right of its own, and the domain's machine account quota could not be read. Delegate \"Create Computer objects\" on the container to the account."
+msgstr "{user} darf aus eigenem Recht keine Computerobjekte in {container} erstellen, und das Computerkontingent der Domäne war nicht lesbar. Delegieren Sie „Computerobjekte erstellen“ auf dem Container an das Konto."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.quotaLeft"
+msgid "{user} may not create computer objects in {container} by a right of its own, so it joins within the domain's machine account quota: {created} of {quota} used, {left} left. That also needs the user right \"Add workstations to domain\", which Authenticated Users hold by default and this check cannot read. Delegate \"Create Computer objects\" on the container to the account to join more."
+msgstr "{user} darf aus eigenem Recht keine Computerobjekte in {container} erstellen, tritt also im Rahmen des Computerkontingents der Domäne bei: {created} von {quota} verbraucht, {left} übrig. Dafür braucht es auch das Benutzerrecht „Hinzufügen von Arbeitsstationen zur Domäne“, das „Authentifizierte Benutzer“ standardmäßig haben und das diese Prüfung nicht lesen kann. Delegieren Sie „Computerobjekte erstellen“ auf dem Container an das Konto, um mehr beitreten zu lassen."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.mayNotCreateInUnit"
+msgid "{user} may not create computer objects in {container}, and the machine account quota does not reach an organizational unit. Delegate \"Create Computer objects\" on it to the account, for example with the Delegation of Control wizard of Active Directory Users and Computers."
+msgstr "{user} darf keine Computerobjekte in {container} erstellen, und das Computerkontingent reicht nicht in eine Organisationseinheit. Delegieren Sie „Computerobjekte erstellen“ darauf an das Konto, etwa mit dem Assistenten zum Zuweisen der Objektverwaltung in „Active Directory-Benutzer und -Computer“."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.logonHours"
+msgid "{user} may not sign in at this time of day (logon hours)."
+msgstr "{user} darf sich zu dieser Tageszeit nicht anmelden (Anmeldezeiten)."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.logonWorkstations"
+msgid "{user} may not sign in from the DDT server (Log On To workstations)."
+msgstr "{user} darf sich nicht vom DDT-Server aus anmelden (Anmelden an)."
+
+#: src/lib/serverMessages.ts
+msgctxt "model.placeholder"
+msgid "{value} is what firmware reports when the field was never filled in. It says nothing about the machine."
+msgstr "{value} meldet die Firmware, wenn das Feld nie ausgefüllt wurde. Es sagt nichts über das Gerät."
 
 #: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
@@ -374,13 +664,78 @@ msgstr "1 bis 365 Tage. Es läuft am {expires} ab."
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "Ein #cloud-config-Dokument oder ein Skript, das mit #! beginnt."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.chunkSize"
+msgid "A chunk holds 1 to {max} bytes. Send the file in smaller chunks."
+msgstr "Ein Block enthält 1 bis {max} Bytes. Senden Sie die Datei in kleineren Blöcken."
+
+#: src/lib/serverMessages.ts
+msgctxt "computerName.tooLong"
+msgid "A computer name can have at most {max} characters."
+msgstr "Ein Computername darf höchstens {max} Zeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "computerName.characters"
+msgid "A computer name can hold only the letters A to Z, digits and hyphens."
+msgstr "Ein Computername darf nur die Buchstaben A bis Z, Ziffern und Bindestriche enthalten."
+
+#: src/lib/serverMessages.ts
+msgctxt "computerName.digitsOnly"
+msgid "A computer name cannot consist of digits only."
+msgstr "Ein Computername darf nicht nur aus Ziffern bestehen."
+
+#: src/lib/serverMessages.ts
+msgctxt "computerName.startsWithHyphen"
+msgid "A computer name cannot start with a hyphen."
+msgstr "Ein Computername darf nicht mit einem Bindestrich beginnen."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.displayNameTooLong"
+msgid "A display name can have at most {max} characters."
+msgstr "Ein Anzeigename darf höchstens {max} Zeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.noInf"
+msgid "A driver package needs at least one .inf file. Zip the folder that holds the drivers' .inf files."
+msgstr "Ein Treiberpaket braucht mindestens eine .inf-Datei. Packen Sie den Ordner mit den .inf-Dateien der Treiber in die ZIP-Datei."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.filesHaveNoTargets"
+msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
+msgstr "Ein Dateipaket wird für die Schritte „Skript ausführen“ entpackt, die es nennen, nicht nach dem Modell des Geräts, daher hat es keine Ziele."
+
 #: src/rules/RuleDialog.tsx
 msgid "A hardware model"
 msgstr "Ein Hardwaremodell"
 
+#: src/lib/serverMessages.ts
+msgctxt "machine.changedWhileRemoving"
+msgid "A machine changed while it was being removed. Look at it again before removing it."
+msgstr "Ein Gerät hat sich geändert, während es entfernt wurde. Sehen Sie es sich erneut an, bevor Sie es entfernen."
+
+#: src/lib/serverMessages.ts
+msgctxt "model.manufacturerWhole"
+msgid "A manufacturer is matched whole, without {wildcard}."
+msgstr "Ein Hersteller wird als Ganzes verglichen, ohne {wildcard}."
+
+#: src/lib/serverMessages.ts
+msgctxt "model.nameLength"
+msgid "A name here has at most {max} characters and no control characters."
+msgstr "Ein Name hat hier höchstens {max} Zeichen und keine Steuerzeichen."
+
 #: src/machines/MachinePage.tsx
 msgid "A new run started on this machine."
 msgstr "Auf diesem Gerät hat eine neue Ausführung begonnen."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.tooManyTargets"
+msgid "A package can have at most {max} targets."
+msgstr "Ein Paket darf höchstens {max} Ziele haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.restartAfterRestart"
+msgid "A restart step restarts anyway, so it cannot restart again after it."
+msgstr "Ein Neustartschritt startet ohnehin neu, daher kann er danach nicht noch einmal neu starten."
 
 #: src/rules/RulesPage.tsx
 msgid "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
@@ -410,6 +765,11 @@ msgstr "Eine Regel braucht eine Tasksequenz, die sie wählen kann. Legen Sie zue
 msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
 msgstr "Eine Ausführung beginnt, wenn einem Gerät eine Tasksequenz zugewiesen wird, es mit der von einer Regel gewählten freigegeben wird oder jemand am Gerät eine wählt."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.scriptTooLarge"
+msgid "A script can have at most {max} KiB."
+msgstr "Ein Skript darf höchstens {max} KiB haben."
+
 #: src/tokens/MakeTokenDialog.tsx
 msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
 msgstr "Ein Skript sendet es im Authorization-Header: Bearer, ein Leerzeichen, dann das Token. Es hat die Rolle {tokenRole} und nie mehr Rechte als Ihr Konto."
@@ -422,13 +782,103 @@ msgstr "Ein zweiter Faktor schützt dieses Konto, auch wenn sein Kennwort gesehe
 msgid "a sequence"
 msgstr "eine Tasksequenz"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneImage"
+msgid "A sequence can apply only one image."
+msgstr "Eine Tasksequenz kann nur ein Image anwenden."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneDomainJoin"
+msgid "A sequence can join the domain only once."
+msgstr "Eine Tasksequenz kann der Domäne nur einmal beitreten."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.onePartition"
+msgid "A sequence can partition the disk only once."
+msgstr "Eine Tasksequenz kann den Datenträger nur einmal partitionieren."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneRawImage"
+msgid "A sequence can write only one raw disk image."
+msgstr "Eine Tasksequenz kann nur ein Raw-Datenträgerimage schreiben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneUnattend"
+msgid "A sequence can write the answer file only once."
+msgstr "Eine Tasksequenz kann die Antwortdatei nur einmal schreiben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneSeed"
+msgid "A sequence can write the cloud-init seed only once."
+msgstr "Eine Tasksequenz kann den cloud-init-Seed nur einmal schreiben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsWithRawImage"
+msgid "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows."
+msgstr "Eine Tasksequenz installiert entweder Windows oder schreibt ein Raw-Datenträgerimage. Dieser Schritt gehört zur Windows-Installation."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepCount"
+msgid "A sequence needs 1 to {max} steps."
+msgstr "Eine Tasksequenz braucht 1 bis {max} Schritte."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.requestTooLarge"
+msgid "A sequence request can have at most {max} KiB."
+msgstr "Eine Anfrage mit einer Tasksequenz darf höchstens {max} KiB haben."
+
 #: src/sequences/SequenceEditor.tsx
 msgid "A sequence that installs Windows starts by partitioning the disk and then applies an image. One for Linux writes a raw disk image and its cloud-init seed."
 msgstr "Eine Tasksequenz, die Windows installiert, partitioniert zuerst den Datenträger und wendet dann ein Image an. Eine für Linux schreibt ein Raw-Datenträgerimage und seinen cloud-init-Seed."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageWithRawImage"
+msgid "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one."
+msgstr "Eine Tasksequenz, die ein Raw-Datenträgerimage schreibt, hat keine Partition, auf der ein Paket entpackt werden kann, daher können ihre Skripte keines haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.restartWithRawImage"
+msgid "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it."
+msgstr "Eine Tasksequenz, die ein Raw-Datenträgerimage schreibt, hält ihren Zustand im Arbeitsspeicher, daher kann Windows PE währenddessen nicht neu starten."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.tooManyConditions"
+msgid "A step can have at most {max} conditions."
+msgstr "Ein Schritt darf höchstens {max} Bedingungen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsNeedsImage"
+msgid "A step in Windows needs an earlier step that applies the image without conditions."
+msgstr "Ein Schritt in Windows braucht einen früheren Schritt, der das Image ohne Bedingungen anwendet."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepEmpty"
+msgid "A step is empty."
+msgstr "Ein Schritt ist leer."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepNameTooLong"
+msgid "A step name can have at most {max} characters."
+msgstr "Ein Schrittname darf höchstens {max} Zeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.targetEmpty"
+msgid "A target is empty."
+msgstr "Ein Ziel ist leer."
+
 #: src/sequences/SequencesPage.tsx
 msgid "A task sequence is the list of steps a machine runs, such as partitioning the disk, applying an image and running scripts. One with problems is kept as a draft and cannot run until they are fixed."
 msgstr "Eine Tasksequenz ist die Liste der Schritte, die ein Gerät ausführt, etwa den Datenträger partitionieren, ein Image anwenden und Skripte ausführen. Eine Tasksequenz mit Problemen bleibt ein Entwurf und kann erst ausgeführt werden, wenn sie behoben sind."
+
+#: src/lib/serverMessages.ts
+msgctxt "token.roleTooHigh"
+msgid "A token can do at most what you can, and you are {role}."
+msgstr "Ein Token kann höchstens, was Sie können, und Sie sind {role}."
+
+#: src/lib/serverMessages.ts
+msgctxt "token.lifetime"
+msgid "A token lasts 1 to {max} days."
+msgstr "Ein Token gilt 1 bis {max} Tage."
 
 #: src/tokens/OwnTokensPanel.tsx
 msgid "A token lets a script call DDT's API as you, with a role no higher than yours and for as long as you choose."
@@ -437,6 +887,21 @@ msgstr "Mit einem Token ruft ein Skript die API von DDT in Ihrem Namen auf, mit 
 #: src/tokens/MakeTokenDialog.tsx
 msgid "A token lets a script call DDT's API as you. It stops working when it expires, when it is revoked, or when your account is disabled."
 msgstr "Mit einem Token ruft ein Skript die API von DDT in Ihrem Namen auf. Es funktioniert nicht mehr, wenn es abläuft, widerrufen wird oder Ihr Konto deaktiviert wird."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.nameTooLong"
+msgid "A user name can have at most {max} characters."
+msgstr "Ein Benutzername darf höchstens {max} Zeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.loginAlreadyAssociated"
+msgid "A user with this login already exists."
+msgstr "Ein Benutzer mit dieser Anmeldung existiert bereits."
+
+#: src/lib/serverMessages.ts
+msgctxt "role.aViewer"
+msgid "a Viewer"
+msgstr "ein Betrachter"
 
 #: src/images/ImagesPage.tsx
 msgid "a WIM, ESD or disk image file"
@@ -610,6 +1075,11 @@ msgstr "Verwaltung"
 msgid "Administrator"
 msgstr "Administrator"
 
+#: src/lib/serverMessages.ts
+msgctxt "role.administrator"
+msgid "Administrator"
+msgstr "Administrator"
+
 #: src/runs/RunPanel.tsx
 msgid "After {after}"
 msgstr "Nach {after}"
@@ -664,6 +1134,11 @@ msgstr "Darf {image} schreiben, obwohl es mit aktiviertem Secure Boot möglicher
 msgid "Allowed to write its raw disk image although it may not start with Secure Boot on."
 msgstr "Darf ihr Raw-Datenträgerimage schreiben, obwohl es mit aktiviertem Secure Boot möglicherweise nicht startet."
 
+#: src/lib/serverMessages.ts
+msgctxt "role.anAdministrator"
+msgid "an Administrator"
+msgstr "ein Administrator"
+
 #: src/images/ImagesPage.tsx
 msgid "An administrator adds images by uploading WIM files or disk images here."
 msgstr "Ein Administrator fügt hier Images hinzu, indem er WIM-Dateien oder Datenträgerimages hochlädt."
@@ -676,9 +1151,19 @@ msgstr "Ein Administrator ändert alles, auch die Konten hier; ein Operator gibt
 msgid "An administrator creates task sequences here. Until then, no machine can be given one."
 msgstr "Ein Administrator legt hier Tasksequenzen an. Bis dahin kann keinem Gerät eine zugewiesen werden."
 
+#: src/lib/serverMessages.ts
+msgctxt "account.apiTokenCannotChange"
+msgid "An API token cannot change the account it belongs to. Sign in on the web to do this."
+msgstr "Ein API-Token kann das Konto, zu dem es gehört, nicht ändern. Melden Sie sich dazu im Web an."
+
 #: src/sequences/NewSequenceDialog.tsx
 msgid "An empty sequence, to which you add the steps in the editor."
 msgstr "Eine leere Tasksequenz, der Sie die Schritte im Editor hinzufügen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.exitCodeMeansBoth"
+msgid "An exit code cannot mean both success and a restart: {codes}."
+msgstr "Ein Exitcode kann nicht zugleich Erfolg und Neustart bedeuten: {codes}."
 
 #: src/packages/PackageDialog.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
@@ -692,6 +1177,21 @@ msgstr "Ein Eingabegebietsschema wie de-DE oder 0407:00000407."
 msgid "an operator"
 msgstr "ein Operator"
 
+#: src/lib/serverMessages.ts
+msgctxt "role.anOperator"
+msgid "an Operator"
+msgstr "ein Operator"
+
+#: src/lib/serverMessages.ts
+msgctxt "person.someOperator"
+msgid "An operator"
+msgstr "Ein Operator"
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.defaultError"
+msgid "An unknown failure has occurred."
+msgstr "Ein unbekannter Fehler ist aufgetreten."
+
 #: src/sequences/SaveState.tsx
 msgid "Another administrator saved it at {time}"
 msgstr "Ein anderer Administrator hat sie um {time} gespeichert"
@@ -703,6 +1203,16 @@ msgstr "Ein anderer Administrator hat diese Tasksequenz gespeichert, während Si
 #: src/sequences/steps/RawImageFields.tsx
 msgid "another processor"
 msgstr "einen anderen Prozessor"
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.chunkBusy"
+msgid "Another request is using this upload. Wait a few seconds, then send the chunk again."
+msgstr "Eine andere Anfrage verwendet diesen Upload. Warten Sie einige Sekunden und senden Sie den Block dann erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.nameTaken"
+msgid "Another sequence is already called {name}. Choose another name."
+msgstr "Eine andere Tasksequenz heißt bereits {name}. Wählen Sie einen anderen Namen."
 
 #: src/rules/RuleDialog.tsx
 msgid "Any of the machine's network adapters, with or without separators."
@@ -762,6 +1272,11 @@ msgstr "Freigeben und {name} ausführen"
 #: src/machines/approval.ts
 msgid "Approve without a sequence"
 msgstr "Ohne Tasksequenz freigeben"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineState.approved"
+msgid "Approved"
+msgstr "Bereit"
 
 #: src/deployments/deployments.ts
 msgid "Approved by {by} with the sequence a rule chose"
@@ -957,6 +1472,11 @@ msgstr "Paket ändern"
 msgid "Change the rule"
 msgstr "Regel ändern"
 
+#: src/lib/serverMessages.ts
+msgctxt "user.ownPassword"
+msgid "Change your own password on the Account page."
+msgstr "Ändern Sie Ihr eigenes Kennwort auf der Seite „Konto“."
+
 #: src/rules/RulesPage.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Changed"
@@ -994,14 +1514,59 @@ msgstr "Wählen Sie {file} erneut, um bei {percent} % fortzusetzen."
 msgid "Choose a file"
 msgstr "Datei wählen"
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.chooseKind"
+msgid "Choose a rule by MAC address or by model."
+msgstr "Wählen Sie eine Regel nach MAC-Adresse oder nach Modell."
+
 #: src/rules/RuleDialog.tsx
 msgid "Choose a sequence"
 msgstr "Tasksequenz wählen"
+
+#: src/lib/serverMessages.ts
+msgctxt "user.role"
+msgid "Choose Administrator, Operator or Viewer."
+msgstr "Wählen Sie Administrator, Operator oder Betrachter."
 
 #: src/sequences/steps/RawImageFields.tsx
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Choose an image"
 msgstr "Image wählen"
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.kind"
+msgid "Choose an image, a driver package or a files package."
+msgstr "Wählen Sie ein Image, ein Treiberpaket oder ein Dateipaket."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionOperator"
+msgid "Choose an operator."
+msgstr "Wählen Sie einen Vergleich."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.scriptInterpreter"
+msgid "Choose cmd or PowerShell."
+msgstr "Wählen Sie cmd oder PowerShell."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionVariable"
+msgid "Choose one of the variables {variables}."
+msgstr "Wählen Sie eine der Variablen {variables}."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.chooseImage"
+msgid "Choose the image to apply."
+msgstr "Wählen Sie das anzuwendende Image."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.chooseRawImage"
+msgid "Choose the raw disk image to write."
+msgstr "Wählen Sie das zu schreibende Raw-Datenträgerimage."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.scriptPhase"
+msgid "Choose Windows PE or Windows."
+msgstr "Wählen Sie Windows PE oder Windows."
 
 #: src/deployments/deployments.ts
 #: src/runs/runView.ts
@@ -1143,6 +1708,21 @@ msgstr "DDT zeigt dieses Kennwort nur jetzt an. Bei der nächsten Anmeldung muss
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
 msgstr "DDT zeigt dieses Token nur jetzt an und speichert nur einen Hash davon. Geht es verloren, widerrufen Sie es und erstellen Sie ein neues."
 
+#: src/lib/serverMessages.ts
+msgctxt "directory.noMapNewAccount"
+msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
+msgstr "DDT:Ldap:GroupRoleMap ist leer, daher legen Administratoren die Rollen fest. Eine erste Anmeldung legt ein Konto ohne Rolle an, das nichts erreicht, bis ein Administrator ihm eine Rolle gibt."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.noMapRole"
+msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {role}."
+msgstr "DDT:Ldap:GroupRoleMap ist leer, daher legen Administratoren die Rollen fest. Das Konto hat die Rolle {role}."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.noMapNoRole"
+msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing."
+msgstr "DDT:Ldap:GroupRoleMap ist leer, daher legen Administratoren die Rollen fest. Das Konto hat noch keine, daher erreicht es nichts."
+
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
@@ -1187,6 +1767,11 @@ msgid "Delete the rule for {description}?"
 msgstr "Die Regel für {description} löschen?"
 
 #: src/machines/machineView.ts
+msgid "Deploying"
+msgstr "Wird bereitgestellt"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineState.deploying"
 msgid "Deploying"
 msgstr "Wird bereitgestellt"
 
@@ -1287,6 +1872,11 @@ msgstr "Domänenbeitritt geprüft"
 msgid "Done"
 msgstr "Fertig"
 
+#: src/lib/serverMessages.ts
+msgctxt "machineState.done"
+msgid "Done"
+msgstr "Fertig"
+
 #: src/packages/PackagesPage.tsx
 msgid "Driver packages"
 msgstr "Treiberpakete"
@@ -1304,6 +1894,11 @@ msgstr "Treiber"
 #: src/boot/BootImagePage.tsx
 msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory. Build it again to add them."
 msgstr "Treiber sind für Windows PE markiert, aber im Startverzeichnis liegt kein Startimage, das mit dieser Version des Build-Skripts erstellt wurde. Erstellen Sie es neu, um sie hinzuzufügen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.driversBeforeImage"
+msgid "Drivers can be added only after the image is applied."
+msgstr "Treiber können erst hinzugefügt werden, nachdem das Image angewendet ist."
 
 #: src/boot/BootImagePage.tsx
 msgid "Drivers for Windows PE"
@@ -1337,6 +1932,16 @@ msgstr "Nach vorn"
 msgid "Edition"
 msgstr "Edition"
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.duplicateEmail"
+msgid "Email ''{email}'' is already taken."
+msgstr "Die E-Mail-Adresse ''{email}'' ist bereits vergeben."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.invalidEmail"
+msgid "Email ''{email}'' is invalid."
+msgstr "Die E-Mail-Adresse ''{email}'' ist ungültig."
+
 #: src/users/UserDialogs.tsx
 msgid "Email address"
 msgstr "E-Mail-Adresse"
@@ -1353,6 +1958,21 @@ msgstr "Aktivieren"
 msgid "End it with * to match every model that starts with it."
 msgstr "Mit * am Ende passt sie auf jedes Modell, das so beginnt."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.successExitCodes"
+msgid "Enter 1 to {max} exit codes that mean success."
+msgstr "Geben Sie 1 bis {max} Exitcodes ein, die Erfolg bedeuten."
+
+#: src/lib/serverMessages.ts
+msgctxt "mac.enterPart"
+msgid "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D."
+msgstr "Geben Sie 1 bis 12 Hexadezimalziffern einer MAC-Adresse ein, etwa 00:15:5D."
+
+#: src/lib/serverMessages.ts
+msgctxt "computerName.empty"
+msgid "Enter a computer name."
+msgstr "Geben Sie einen Computernamen ein."
+
 #: src/machines/AssignDialog.tsx
 msgid "Enter a computer name. {name} gives this name to the machine in its cloud-init seed."
 msgstr "Geben Sie einen Computernamen ein. {name} gibt dem Gerät diesen Namen in ihrem cloud-init-Seed."
@@ -1361,13 +1981,68 @@ msgstr "Geben Sie einen Computernamen ein. {name} gibt dem Gerät diesen Namen i
 msgid "Enter a computer name. {name} joins the domain under this name."
 msgstr "Geben Sie einen Computernamen ein. {name} tritt unter diesem Namen der Domäne bei."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.enterComputerName"
+msgid "Enter a computer name. {use}"
+msgstr "Geben Sie einen Computernamen ein. {use}"
+
+#: src/lib/serverMessages.ts
+msgctxt "mac.enterFull"
+msgid "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03."
+msgstr "Geben Sie eine MAC-Adresse aus 12 Hexadezimalziffern ein, etwa 00:15:5D:01:02:03."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepNameEmpty"
+msgid "Enter a name for the step."
+msgstr "Geben Sie einen Namen für den Schritt ein."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.nameEmpty"
+msgid "Enter a user name."
+msgstr "Geben Sie einen Benutzernamen ein."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.email"
+msgid "Enter an email address such as jane@corp.example, or leave it empty."
+msgstr "Geben Sie eine E-Mail-Adresse wie jane@corp.example ein, oder lassen Sie das Feld leer."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.rebootExitCodes"
+msgid "Enter at most {max} exit codes that ask for a restart."
+msgstr "Geben Sie höchstens {max} Exitcodes ein, die einen Neustart anfordern."
+
 #: src/auth/SignInPage.tsx
 msgid "Enter one of the recovery codes you saved."
 msgstr "Geben Sie einen Ihrer gespeicherten Wiederherstellungscodes ein."
 
+#: src/lib/serverMessages.ts
+msgctxt "model.enter"
+msgid "Enter the model as the machine reports it."
+msgstr "Geben Sie das Modell so ein, wie das Gerät es meldet."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.displayNameEmpty"
+msgid "Enter the name DDT shows for the account."
+msgstr "Geben Sie den Namen ein, den DDT für das Konto anzeigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.scriptEmpty"
+msgid "Enter the script."
+msgstr "Geben Sie das Skript ein."
+
 #: src/auth/SignInPage.tsx
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr "Geben Sie die sechs Ziffern ein, die Ihre Authenticator-App für DDT anzeigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.enterUserName"
+msgid "Enter the user name to check."
+msgstr "Geben Sie den zu prüfenden Benutzernamen ein."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionValue"
+msgid "Enter the value to compare with."
+msgstr "Geben Sie den Vergleichswert ein."
 
 #: src/sequences/fields.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
@@ -1439,6 +2114,11 @@ msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 #: src/machines/machineView.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineState.failed"
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -1628,6 +2308,16 @@ msgstr "Im installierten Windows"
 msgid "In Windows PE"
 msgstr "In Windows PE"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageBeforePartition"
+msgid "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put."
+msgstr "In Windows PE läuft ein Skript mit Paket erst, nachdem der Datenträger partitioniert ist, wo das Paket abgelegt wird."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordMismatch"
+msgid "Incorrect password."
+msgstr "Falsches Kennwort."
+
 #: src/log/LogPanel.tsx
 msgid "Information"
 msgstr "Informationen"
@@ -1644,7 +2334,17 @@ msgstr "Dahinter einfügen"
 msgid "Insert after {name}"
 msgstr "Dahinter einfügen: nach {name}"
 
+#: src/lib/serverMessages.ts
+msgctxt "template.installLinux"
+msgid "Install Linux"
+msgstr "Linux installieren"
+
 #: src/sequences/AddStepMenu.tsx
+msgid "Install Windows"
+msgstr "Windows installieren"
+
+#: src/lib/serverMessages.ts
+msgctxt "template.installWindows"
 msgid "Install Windows"
 msgstr "Windows installieren"
 
@@ -1655,6 +2355,11 @@ msgstr "Installiert"
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Interpreter"
 msgstr "Interpreter"
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.invalidToken"
+msgid "Invalid token."
+msgstr "Ungültiges Token."
 
 #: src/runs/runs.ts
 msgid "is"
@@ -1866,6 +2571,11 @@ msgstr "Gesperrt"
 msgid "Locked until {until}"
 msgstr "Gesperrt bis {until}"
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.userLockoutNotEnabled"
+msgid "Lockout is not enabled for this user."
+msgstr "Für diesen Benutzer ist die Sperre nicht aktiviert."
+
 #: src/log/LogPanel.tsx
 #: src/runs/RunSteps.tsx
 msgid "Log"
@@ -1891,6 +2601,11 @@ msgstr "MAC {mac}"
 #: src/sequences/steps.ts
 msgid "MAC address"
 msgstr "MAC-Adresse"
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.forMac"
+msgid "MAC address {mac}"
+msgstr "die MAC-Adresse {mac}"
 
 #: src/audit/auditView.ts
 #: src/machines/MachinesPage.tsx
@@ -1932,6 +2647,11 @@ msgstr "Geräte"
 #: src/machines/MachinesPage.tsx
 msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
 msgstr "Geräte erscheinen hier von selbst, wenige Sekunden nachdem sie in einem Netzwerk, in dem DDT antwortet, per Netzwerk gestartet sind. Nichts wird gelöscht, bis sich jemand am Gerät anmeldet oder ihm hier eine Tasksequenz zuweist."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.inUse"
+msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
+msgstr "Geräte warten darauf, dieses Paket zu installieren, oder installieren es gerade. Brechen Sie diese Ausführungen ab oder lassen Sie sie fertig werden, und löschen Sie es dann."
 
 #: src/packages/packages.ts
 msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
@@ -2002,10 +2722,20 @@ msgstr "Microsofts UEFI-CAs für Drittanbieter {first} und {second}"
 msgid "Model"
 msgstr "Modell"
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.forModel"
+msgid "model {manufacturer} {model}"
+msgstr "das Modell {manufacturer} {model}"
+
 #: src/rules/rules.ts
 #: src/sequences/sequenceList.ts
 msgid "model {model}"
 msgstr "Modell {model}"
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.forModelOfAnyMaker"
+msgid "model {model} of any maker"
+msgstr "das Modell {model} jedes Herstellers"
 
 #: src/machines/MachinePage.tsx
 msgid "Model not reported"
@@ -2031,6 +2761,11 @@ msgstr "Mehr"
 msgid "More for {label}"
 msgstr "Mehr für {label}"
 
+#: src/lib/serverMessages.ts
+msgctxt "directory.manyEntries"
+msgid "More than one entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
+msgstr "Mehr als ein Eintrag unter {baseDn} passt über DDT:Ldap:UserFilter auf {name}, daher wird eine Anmeldung damit abgelehnt."
+
 #: src/sequences/StepInspector.tsx
 msgid "Move"
 msgstr "Verschieben"
@@ -2046,6 +2781,11 @@ msgstr "{name} nach vorn verschieben"
 #: src/sequences/StepInspector.tsx
 msgid "Move {name} later"
 msgstr "{name} nach hinten verschieben"
+
+#: src/lib/serverMessages.ts
+msgctxt "organizationalUnit.withPrefix"
+msgid "Must be a distinguished name without the LDAP:// prefix, such as OU=Workstations,DC=example,DC=com."
+msgstr "Muss ein Distinguished Name ohne das Präfix LDAP:// sein, etwa OU=Workstations,DC=example,DC=com."
 
 #: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
@@ -2147,9 +2887,19 @@ msgstr "Mit dieser Identität ist kein DDT-Konto verknüpft. Wenden Sie sich an 
 msgid "No disk DDT can install on"
 msgstr "Kein Datenträger, auf dem DDT installieren kann"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.noDomain"
+msgid "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step."
+msgstr "In DDT:Deployment:Domain ist keine Domäne eingerichtet, daher hat das Gerät keine Domäne, der es beitreten kann. Richten Sie eine ein oder entfernen Sie diesen Schritt."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "No domain is configured on the server, so this step cannot run."
 msgstr "Auf dem Server ist keine Domäne konfiguriert, daher kann dieser Schritt nicht ausgeführt werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.notConfigured"
+msgid "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server."
+msgstr "Es ist keine Domäne eingerichtet. Legen Sie DDT:Deployment:Domain:Name und das Beitrittskonto auf dem Server fest."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "No driver package is in the library yet."
@@ -2166,6 +2916,16 @@ msgstr "Keine Treiber markiert"
 #: src/audit/AuditPage.tsx
 msgid "No entry matches"
 msgstr "Kein Eintrag passt"
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.noEntry"
+msgid "No entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
+msgstr "Kein Eintrag unter {baseDn} passt über DDT:Ldap:UserFilter auf {name}, daher wird eine Anmeldung damit abgelehnt."
+
+#: src/lib/serverMessages.ts
+msgctxt "account.noExternalSignIn"
+msgid "No external sign in is in progress."
+msgstr "Es läuft keine externe Anmeldung."
 
 #: src/packages/PackagesPage.tsx
 msgid "No file packages yet"
@@ -2190,6 +2950,11 @@ msgstr "Noch keine Images"
 #: src/log/LogPanel.tsx
 msgid "No loaded line matches the filter."
 msgstr "Keine geladene Zeile passt zum Filter."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.noLocalAdministrator"
+msgid "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one."
+msgstr "In DDT:Deployment:LocalAdministrator ist kein lokaler Administrator eingerichtet, daher kann die Antwortdatei keinen hinzufügen."
 
 #: src/log/LogPanel.tsx
 msgid "No log lines for this run yet. The agent sends its log while it runs."
@@ -2230,6 +2995,11 @@ msgstr "Noch passt kein registriertes Gerät."
 #: src/users/UsersPage.tsx
 msgid "No role"
 msgstr "Keine Rolle"
+
+#: src/lib/serverMessages.ts
+msgctxt "resolution.noRule"
+msgid "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence."
+msgstr "Keine Regel passt auf die MAC-Adressen oder das Modell dieses Geräts, daher wählt ein Operator seine Tasksequenz."
 
 #: src/sequences/SequencesPage.tsx
 msgid "No rule, no machine"
@@ -2289,6 +3059,11 @@ msgstr "Noch keine Token"
 msgid "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
 msgstr "Noch niemand hat ein API-Token erstellt. Skripte, die DDT aufrufen, verwenden je eines, erstellt auf der Seite Konto und Sicherheit des Kontos, für das sie handeln."
 
+#: src/lib/serverMessages.ts
+msgctxt "machine.nobodySignedIn"
+msgid "Nobody has signed in at this machine yet."
+msgstr "An diesem Gerät hat sich noch niemand angemeldet."
+
 #: src/machines/MachinesPage.tsx
 msgid "Nobody has signed in yet"
 msgstr "Noch niemand angemeldet"
@@ -2301,6 +3076,11 @@ msgstr "Keine"
 #: src/sequences/FindingsSummary.tsx
 msgid "None. Nothing keeps this sequence from running."
 msgstr "Keine. Nichts verhindert die Ausführung dieser Tasksequenz."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.incomplete"
+msgid "Not all of the file has arrived. Continue the upload from the offset in the Upload-Offset header."
+msgstr "Die Datei ist noch nicht vollständig angekommen. Setzen Sie den Upload an der Position im Header Upload-Offset fort."
 
 #: src/boot/BootImagePage.tsx
 msgid "Not built yet"
@@ -2406,6 +3186,16 @@ msgstr "Eine MAC-Adresse"
 msgid "One-time password"
 msgstr "Einmalkennwort"
 
+#: src/lib/serverMessages.ts
+msgctxt "package.bootImageDriversOnly"
+msgid "Only a driver package can go into the Windows PE boot image."
+msgstr "Nur ein Treiberpaket kann in das Windows-PE-Startimage."
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.cannotBeRemoved"
+msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
+msgstr "Nur ein abgelehntes Gerät oder ein wartendes Gerät, das nie freigegeben wurde und keine zugewiesene Ausführung hat, kann entfernt werden."
+
 #: src/sequences/SequenceEditor.tsx
 msgid "Only administrators change task sequences. You can look at this one."
 msgstr "Nur Administratoren ändern Tasksequenzen. Sie können sich diese ansehen."
@@ -2430,9 +3220,19 @@ msgstr "Nur Administratoren sehen alle Token. Ihre eigenen finden Sie auf der Se
 msgid "Only images for x64 machines can be written."
 msgstr "Nur Images für x64-Geräte können geschrieben werden."
 
+#: src/lib/serverMessages.ts
+msgctxt "model.wildcardLast"
+msgid "Only the last character can be {wildcard}."
+msgstr "Nur das letzte Zeichen darf {wildcard} sein."
+
 #: src/log/LogPanel.tsx
 msgid "Only the lines of {filteredStep}."
 msgstr "Nur die Zeilen von {filteredStep}."
+
+#: src/lib/serverMessages.ts
+msgctxt "token.onlyOwnerRevokes"
+msgid "Only the token's owner or an administrator can revoke it."
+msgstr "Nur der Inhaber des Tokens oder ein Administrator kann es widerrufen."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Only x64 images can be installed."
@@ -2445,6 +3245,16 @@ msgstr "Gerät öffnen"
 #: src/users/userView.ts
 msgid "Operator"
 msgstr "Operator"
+
+#: src/lib/serverMessages.ts
+msgctxt "role.operator"
+msgid "Operator"
+msgstr "Operator"
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.concurrencyFailure"
+msgid "Optimistic concurrency failure, object has been modified."
+msgstr "Das Objekt wurde zwischenzeitlich geändert."
 
 #: src/users/UserDialogs.tsx
 msgid "Optional."
@@ -2530,6 +3340,16 @@ msgstr "Seiten"
 msgid "Partition the disk"
 msgstr "Datenträger partitionieren"
 
+#: src/lib/serverMessages.ts
+msgctxt "template.installWindowsJoinDescription"
+msgid "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file, then joins the domain in Windows."
+msgstr "Partitioniert den Datenträger, wendet ein Image an, fügt die Treiber für das Modell des Geräts hinzu und schreibt die Antwortdatei; danach tritt sie in Windows der Domäne bei."
+
+#: src/lib/serverMessages.ts
+msgctxt "template.installWindowsDescription"
+msgid "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file."
+msgstr "Partitioniert den Datenträger, wendet ein Image an, fügt die Treiber für das Modell des Geräts hinzu und schreibt die Antwortdatei."
+
 #: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
 msgid "Password"
@@ -2555,9 +3375,44 @@ msgstr "Kennwort von einer Ausführung gelesen"
 msgid "Password reset"
 msgstr "Kennwort zurückgesetzt"
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordTooShort"
+msgid "Passwords must be at least {length} characters."
+msgstr "Kennwörter müssen mindestens {length} Zeichen lang sein."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordRequiresDigit"
+msgid "Passwords must have at least one digit ('0'-'9')."
+msgstr "Kennwörter müssen mindestens eine Ziffer ('0'-'9') enthalten."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordRequiresLower"
+msgid "Passwords must have at least one lowercase ('a'-'z')."
+msgstr "Kennwörter müssen mindestens einen Kleinbuchstaben ('a'-'z') enthalten."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordRequiresNonAlphanumeric"
+msgid "Passwords must have at least one non alphanumeric character."
+msgstr "Kennwörter müssen mindestens ein Zeichen enthalten, das weder Buchstabe noch Ziffer ist."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordRequiresUpper"
+msgid "Passwords must have at least one uppercase ('A'-'Z')."
+msgstr "Kennwörter müssen mindestens einen Großbuchstaben ('A'-'Z') enthalten."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.passwordRequiresUniqueChars"
+msgid "Passwords must use at least {count} different characters."
+msgstr "Kennwörter müssen mindestens {count} verschiedene Zeichen enthalten."
+
 #: src/log/LogPanel.tsx
 msgid "Paused"
 msgstr "Angehalten"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineState.pending"
+msgid "Pending"
+msgstr "Wartet"
 
 #: src/audit/auditView.ts
 msgid "Person"
@@ -2566,6 +3421,11 @@ msgstr "Person"
 #: src/sequences/steps.ts
 msgid "Phase"
 msgstr "Phase"
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.pipable"
+msgid "Pipable WIM files are not supported. Export the image into a regular WIM first."
+msgstr "Pipefähige WIM-Dateien werden nicht unterstützt. Exportieren Sie das Image zuerst in eine normale WIM-Datei."
 
 #: src/deployments/deployments.ts
 msgid "Preparing"
@@ -2586,6 +3446,11 @@ msgstr "Probleme und Warnungen dieses Schritts"
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (Entwicklung)"
+
+#: src/lib/serverMessages.ts
+msgctxt "model.wildcardPrefix"
+msgid "Put at least {min} characters before {wildcard}, so it matches only one family of models."
+msgstr "Setzen Sie mindestens {min} Zeichen vor {wildcard}, damit es nur auf eine Modellfamilie passt."
 
 #: src/account/AccountPage.tsx
 msgid "QR code for your authenticator app"
@@ -2626,6 +3491,11 @@ msgstr "Verbindung wird wiederhergestellt. Zeilen, die inzwischen gesendet werde
 msgid "Recovery code"
 msgstr "Wiederherstellungscode"
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.recoveryCodeRedemptionFailed"
+msgid "Recovery code redemption failed."
+msgstr "Der Wiederherstellungscode konnte nicht eingelöst werden."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Recovery partition in MB"
 msgstr "Wiederherstellungspartition in MB"
@@ -2639,6 +3509,11 @@ msgid "Reject"
 msgstr "Ablehnen"
 
 #: src/machines/machineView.ts
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineState.rejected"
 msgid "Rejected"
 msgstr "Abgelehnt"
 
@@ -2719,6 +3594,11 @@ msgstr "Ergebnisse"
 msgid "Retired"
 msgstr "Ausgemustert"
 
+#: src/lib/serverMessages.ts
+msgctxt "machineState.retired"
+msgid "Retired"
+msgstr "Ausgemustert"
+
 #: src/runs/RunPanel.tsx
 msgid "Revision {revision}"
 msgstr "Revision {revision}"
@@ -2759,6 +3639,16 @@ msgstr "Rolle"
 #: src/users/DirectoryPanel.tsx
 msgid "Role at sign-in"
 msgstr "Rolle bei der Anmeldung"
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.duplicateRoleName"
+msgid "Role name ''{role}'' is already taken."
+msgstr "Der Rollenname ''{role}'' ist bereits vergeben."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.invalidRoleName"
+msgid "Role name ''{role}'' is invalid."
+msgstr "Der Rollenname ''{role}'' ist ungültig."
 
 #: src/audit/auditView.ts
 msgid "Rule added"
@@ -2868,6 +3758,11 @@ msgstr "Läuft auf jedem Gerät. Fügen Sie eine Bedingung hinzu, damit der Schr
 msgid "Runs that already ended keep their history."
 msgstr "Bereits beendete Ausführungen behalten ihren Verlauf."
 
+#: src/lib/serverMessages.ts
+msgctxt "image.inUse"
+msgid "Runs that are assigned or running use this image. Cancel them or let them finish, then delete it."
+msgstr "Zugewiesene oder laufende Ausführungen verwenden dieses Image. Brechen Sie sie ab oder lassen Sie sie fertig werden, und löschen Sie es dann."
+
 #: src/app/Shell.tsx
 msgid "Same as the system"
 msgstr "Wie das System"
@@ -2953,6 +3848,26 @@ msgstr "Gesehen"
 #: src/users/userView.ts
 msgid "Sees machines and runs, changes nothing."
 msgstr "Sieht Geräte und Ausführungen, ändert nichts."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.contentLength"
+msgid "Send every chunk with a Content-Length header."
+msgstr "Senden Sie jeden Block mit einem Content-Length-Header."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.targetsMissing"
+msgid "Send the list of targets, empty for none."
+msgstr "Senden Sie die Liste der Ziele, leer für keine."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.offsetHeader"
+msgid "Send the position of the chunk in the file in the Upload-Offset header."
+msgstr "Senden Sie die Position des Blocks in der Datei im Header Upload-Offset."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.sendJson"
+msgid "Send the sequence as JSON."
+msgstr "Senden Sie die Tasksequenz als JSON."
 
 #: src/machines/MachinesPage.tsx
 #: src/runs/RunHistoryPage.tsx
@@ -3094,6 +4009,11 @@ msgstr "Anmeldung"
 msgid "Sign-in through a directory is off. It is turned on and set up in the configuration, under DDT:Ldap, until the settings page takes it over."
 msgstr "Die Anmeldung über ein Verzeichnis ist aus. Sie wird in der Konfiguration unter DDT:Ldap eingeschaltet und eingerichtet, bis die Einstellungsseite das übernimmt."
 
+#: src/lib/serverMessages.ts
+msgctxt "directory.off"
+msgid "Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first."
+msgstr "Die Anmeldung über ein Verzeichnis ist ausgeschaltet. Schalten Sie zuerst DDT:Ldap:Enabled ein und legen Sie die Verbindung fest."
+
 #: src/images/images.ts
 msgid "Signed"
 msgstr "Signiert"
@@ -3105,6 +4025,11 @@ msgstr "Für Secure Boot signiert"
 #: src/audit/auditView.ts
 msgid "Signed in at a machine"
 msgstr "An einem Gerät angemeldet"
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.signedIn"
+msgid "Signed in to {controller} as {user} over {connection}."
+msgstr "Bei {controller} als {user} über {connection} angemeldet."
 
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
@@ -3160,6 +4085,11 @@ msgstr "Beim Laden dieser Seite ist ein Fehler aufgetreten. Versuchen Sie es ern
 msgid "Source code"
 msgstr "Quellcode"
 
+#: src/lib/serverMessages.ts
+msgctxt "wim.split"
+msgid "Split WIM files (.swm) are not supported. Export the image into a single WIM first."
+msgstr "Geteilte WIM-Dateien (.swm) werden nicht unterstützt. Exportieren Sie das Image zuerst in eine einzelne WIM-Datei."
+
 #: src/sequences/NewSequenceDialog.tsx
 msgid "Start from"
 msgstr "Ausgangspunkt"
@@ -3210,6 +4140,16 @@ msgstr "Schritt {number}"
 #: src/machines/MachinesPage.tsx
 msgid "Step {number} failed"
 msgstr "Schritt {number} fehlgeschlagen"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepWithoutId"
+msgid "Step {number} has no id."
+msgstr "Schritt {number} hat keine ID."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepIdRepeated"
+msgid "Step {number} has the id of an earlier step."
+msgstr "Schritt {number} hat die ID eines früheren Schritts."
 
 #: src/deployments/deployments.ts
 msgid "step {number} of {count}"
@@ -3279,6 +4219,11 @@ msgstr "Schritt {position}, {name}"
 #: src/sequences/SequenceEditor.tsx
 msgid "Steps"
 msgstr "Schritte"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsPEAfterWindows"
+msgid "Steps in Windows PE come first, and an earlier step already runs in Windows."
+msgstr "Schritte in Windows PE kommen zuerst, und ein früherer Schritt läuft bereits in Windows."
 
 #: src/sequences/SequenceEditor.tsx
 msgid "Steps of {name}"
@@ -3350,9 +4295,29 @@ msgstr "Tasksequenzen"
 msgid "That code is not valid."
 msgstr "Dieser Code ist ungültig."
 
+#: src/lib/serverMessages.ts
+msgctxt "account.codeNotValid"
+msgid "That code is not valid."
+msgstr "Dieser Code ist ungültig."
+
+#: src/lib/serverMessages.ts
+msgctxt "account.codeNotValidCheckTime"
+msgid "That code is not valid. Check the time on the device generating it."
+msgstr "Dieser Code ist ungültig. Prüfen Sie die Uhrzeit des Geräts, das ihn erzeugt."
+
 #: src/auth/SignInPage.tsx
 msgid "That user name or password is not correct."
 msgstr "Benutzername oder Kennwort ist falsch."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.seedFileTooLarge"
+msgid "The {file} file can have at most {max} KiB."
+msgstr "Die Datei {file} darf höchstens {max} KiB haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.seedFileMissing"
+msgid "The {file} file is missing. It can be empty."
+msgstr "Die Datei {file} fehlt. Sie darf leer sein."
 
 #: src/uploads/UploadPanel.tsx
 msgid "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
@@ -3361,6 +4326,11 @@ msgstr "Die bisher hochgeladenen {sent} von {file} werden vom Server gelöscht. 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "The account and its password are configured on the server, never in the sequence."
 msgstr "Das Konto und sein Kennwort werden auf dem Server konfiguriert, nie in der Tasksequenz."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.changedWhileSaving"
+msgid "The account changed while this was saved. Look at it again."
+msgstr "Das Konto hat sich geändert, während dies gespeichert wurde. Sehen Sie es sich erneut an."
 
 #: src/users/UserDialogs.tsx
 msgid "The account has no role yet, so it reaches nothing."
@@ -3385,6 +4355,11 @@ msgstr "Die Uhr des Agents zeigte {said}, {off} vor dem Server."
 #: src/log/log.ts
 msgid "The agent's clock said {said}, {off} behind the server."
 msgstr "Die Uhr des Agents zeigte {said}, {off} hinter dem Server."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.unattendBeforeImage"
+msgid "The answer file can be written only after the image is applied."
+msgstr "Die Antwortdatei kann erst geschrieben werden, nachdem das Image angewendet ist."
 
 #: src/about/AboutPage.tsx
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
@@ -3414,9 +4389,59 @@ msgstr "Der Browser hat DDT das Kopieren nicht erlaubt. Markieren und kopieren S
 msgid "The check did not run: {failure}"
 msgstr "Die Prüfung ist nicht gelaufen: {failure}"
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.cutOff"
+msgid "The chunk ended before all of it arrived. Send it again."
+msgstr "Der Block endete, bevor er vollständig angekommen war. Senden Sie ihn erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.stalled"
+msgid "The chunk stopped arriving for too long. Send it again."
+msgstr "Der Block kam zu lange nicht weiter an. Senden Sie ihn erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.seedBeforeRawImage"
+msgid "The cloud-init seed can be written only after a step that writes a raw disk image."
+msgstr "Der cloud-init-Seed kann erst nach einem Schritt geschrieben werden, der ein Raw-Datenträgerimage schreibt."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.compressedDamaged"
+msgid "The compressed file is damaged: {detail}"
+msgstr "Die komprimierte Datei ist beschädigt: {detail}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionEmpty"
+msgid "The condition is empty."
+msgstr "Die Bedingung ist leer."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionsMissing"
+msgid "The conditions are missing."
+msgstr "Die Bedingungen fehlen."
+
 #: src/users/UsersPage.tsx
 msgid "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
 msgstr "Das aktuelle Kennwort funktioniert sofort nicht mehr, und {name} wird innerhalb einer Minute abgemeldet. DDT zeigt das neue Kennwort einmal an; {name} ersetzt es bei der nächsten Anmeldung."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.historyCursor"
+msgid "The cursor is not one this server handed out. Start again from the first page."
+msgstr "Diese Position stammt nicht von diesem Server. Beginnen Sie wieder auf der ersten Seite."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.accountDisabled"
+msgid "The DDT account {name} is disabled, so a sign-in is refused."
+msgstr "Das DDT-Konto {name} ist deaktiviert, daher wird eine Anmeldung abgelehnt."
+
+#: src/lib/serverMessages.ts
+msgctxt "organizationalUnit.isComputers"
+msgid "The default Computers container is no organizational unit and cannot be named. Leave this empty to use it."
+msgstr "Der Standardcontainer Computers ist keine Organisationseinheit und kann nicht genannt werden. Lassen Sie das Feld leer, um ihn zu verwenden."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.noComputersContainer"
+msgid "The default Computers container of {domain} was not found, or {user} may not read it."
+msgstr "Der Standardcontainer Computers von {domain} wurde nicht gefunden, oder {user} darf ihn nicht lesen."
 
 #: src/machines/AssignDialog.tsx
 msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
@@ -3426,6 +4451,36 @@ msgstr "Die Bereitstellungseinstellungen konnten nicht geladen werden, daher kan
 msgid "the description"
 msgstr "die Beschreibung"
 
+#: src/lib/serverMessages.ts
+msgctxt "common.descriptionLength"
+msgid "The description can have at most {max} characters."
+msgstr "Die Beschreibung darf höchstens {max} Zeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.unreachable"
+msgid "The directory at {server} could not be reached: {detail}"
+msgstr "Das Verzeichnis unter {server} war nicht erreichbar: {detail}"
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.bindRefused"
+msgid "The directory at {server} refused the bind account {bindDn}. Check DDT:Ldap:BindDn and its password."
+msgstr "Das Verzeichnis unter {server} hat das Bindungskonto {bindDn} abgelehnt. Prüfen Sie DDT:Ldap:BindDn und sein Kennwort."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.searchRefused"
+msgid "The directory at {server} refused the search under {baseDn}: {detail} Check DDT:Ldap:BaseDn."
+msgstr "Das Verzeichnis unter {server} hat die Suche unter {baseDn} abgelehnt: {detail} Prüfen Sie DDT:Ldap:BaseDn."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.incomplete"
+msgid "The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn."
+msgstr "Die Verzeichnisverbindung ist unvollständig. Legen Sie DDT:Ldap:Host und DDT:Ldap:BaseDn fest."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.directoryProvidesNames"
+msgid "The directory provides the display name and email address of {name}. Change them there; DDT takes them over at its next sign-in."
+msgstr "Das Verzeichnis liefert den Anzeigenamen und die E-Mail-Adresse von {name}. Ändern Sie sie dort; DDT übernimmt sie bei der nächsten Anmeldung."
+
 #: src/users/UserDialogs.tsx
 msgid "The directory provides the name and email address. DDT takes them over at each sign-in."
 msgstr "Das Verzeichnis liefert den Namen und die E-Mail-Adresse. DDT übernimmt sie bei jeder Anmeldung."
@@ -3434,21 +4489,226 @@ msgstr "Das Verzeichnis liefert den Namen und die E-Mail-Adresse. DDT übernimmt
 msgid "The directory settings could not be loaded."
 msgstr "Die Verzeichniseinstellungen konnten nicht geladen werden."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.partitionAfterImage"
+msgid "The disk has to be partitioned before the image is applied."
+msgstr "Der Datenträger muss partitioniert werden, bevor das Image angewendet wird."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.incomplete"
+msgid "The disk image holds {length} bytes, but its partitions reach to byte {end}. The file is incomplete."
+msgstr "Das Datenträgerimage enthält {length} Bytes, aber seine Partitionen reichen bis Byte {end}. Die Datei ist unvollständig."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.fourKilobyteSectors"
+msgid "The disk image is made for disks with 4 KiB sectors. DDT writes images for disks with 512-byte sectors, which is what distributions publish."
+msgstr "Das Datenträgerimage ist für Datenträger mit 4-KiB-Sektoren gemacht. DDT schreibt Images für Datenträger mit 512-Byte-Sektoren, wie Distributionen sie veröffentlichen."
+
 #: src/boot/BootImagePage.tsx
 msgid "The drivers flagged for Windows PE have changed since the boot image was built. Build it again so that machines netboot with them."
 msgstr "Die für Windows PE markierten Treiber haben sich geändert, seit das Startimage erstellt wurde. Erstellen Sie es neu, damit Geräte mit ihnen per Netzwerk starten."
+
+#: src/lib/serverMessages.ts
+msgctxt "audit.rangeEnd"
+msgid "The end of the range must come after its start."
+msgstr "Das Ende des Zeitraums muss nach seinem Beginn liegen."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryChecksum"
+msgid "The entry {entry} does not unpack to the bytes the zip says it holds. Create the zip again."
+msgstr "Der Eintrag {entry} entpackt nicht zu den Bytes, die die ZIP-Datei für ihn angibt. Erstellen Sie die ZIP-Datei neu."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryForbiddenCharacter"
+msgid "The entry {entry} has a character Windows does not allow in names, such as : for a drive or a data stream."
+msgstr "Der Eintrag {entry} hat ein Zeichen, das Windows in Namen nicht erlaubt, etwa : für ein Laufwerk oder einen Datenstrom."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryControlCharacter"
+msgid "The entry {entry} has a control character in its name."
+msgstr "Der Eintrag {entry} hat ein Steuerzeichen im Namen."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryNameTooLong"
+msgid "The entry {entry} has a name longer than {max} characters."
+msgstr "Der Eintrag {entry} hat einen Namen mit mehr als {max} Zeichen."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryTrailingDot"
+msgid "The entry {entry} has a name that ends in a dot or a space, which Windows cannot create."
+msgstr "Der Eintrag {entry} hat einen Namen, der auf einen Punkt oder ein Leerzeichen endet, was Windows nicht anlegen kann."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryDeviceName"
+msgid "The entry {entry} has a name Windows keeps for a device, such as CON or NUL."
+msgstr "Der Eintrag {entry} hat einen Namen, den Windows für ein Gerät reserviert, etwa CON oder NUL."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryEmptyName"
+msgid "The entry {entry} has an empty name, or a folder name that points out of the package."
+msgstr "Der Eintrag {entry} hat einen leeren Namen oder einen Ordnernamen, der aus dem Paket hinauszeigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entrySymbolicLink"
+msgid "The entry {entry} is a symbolic link. Put the file itself in the zip."
+msgstr "Der Eintrag {entry} ist ein symbolischer Link. Legen Sie die Datei selbst in die ZIP-Datei."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryCompression"
+msgid "The entry {entry} is compressed in a way DDT cannot unpack. Create the zip with Deflate."
+msgstr "Der Eintrag {entry} ist so komprimiert, dass DDT ihn nicht entpacken kann. Erstellen Sie die ZIP-Datei mit Deflate."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryDamaged"
+msgid "The entry {entry} is damaged. Create the zip again."
+msgstr "Der Eintrag {entry} ist beschädigt. Erstellen Sie die ZIP-Datei neu."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryEncrypted"
+msgid "The entry {entry} is encrypted. Upload a zip without a password."
+msgstr "Der Eintrag {entry} ist verschlüsselt. Laden Sie eine ZIP-Datei ohne Kennwort hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryTwice"
+msgid "The entry {entry} is in the zip twice, if case is ignored as Windows ignores it."
+msgstr "Der Eintrag {entry} ist zweimal in der ZIP-Datei, wenn man wie Windows die Groß- und Kleinschreibung ignoriert."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryTooDeep"
+msgid "The entry {entry} is more than {max} folders deep."
+msgstr "Der Eintrag {entry} liegt mehr als {max} Ordner tief."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entryAtRoot"
+msgid "The entry {entry} starts at the root of a drive."
+msgstr "Der Eintrag {entry} beginnt im Stammverzeichnis eines Laufwerks."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.entrySize"
+msgid "The entry {entry} unpacks to {actual} bytes, but the zip says {declared}. Create the zip again."
+msgstr "Der Eintrag {entry} entpackt zu {actual} Bytes, aber die ZIP-Datei gibt {declared} an. Erstellen Sie die ZIP-Datei neu."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.noImmutableId"
+msgid "The entry has no {attribute} value to key the account on, so a sign-in is refused."
+msgstr "Der Eintrag hat keinen Wert {attribute}, an den das Konto gebunden werden kann, daher wird eine Anmeldung abgelehnt."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.noTable"
+msgid "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image."
+msgstr "Die Datei hat keine GUID-Partitionstabelle und ist daher kein UEFI-Datenträgerimage. Laden Sie ein Datenträgerimage hoch, etwa das Cloud-Image einer Distribution."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.notZip"
+msgid "The file is not a zip archive, or it is damaged. Upload a zip file."
+msgstr "Die Datei ist keine ZIP-Datei oder beschädigt. Laden Sie eine ZIP-Datei hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.length"
+msgid "The file must not be empty and must fit on the server's store volume."
+msgstr "Die Datei darf nicht leer sein und muss auf das Speichervolume des Servers passen."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.fileName"
+msgid "The file name must have 1 to {max} characters and no control characters."
+msgstr "Der Dateiname muss 1 bis {max} Zeichen und keine Steuerzeichen haben."
 
 #: src/about/AboutPage.tsx
 msgid "The GNU General Public License, version 3"
 msgstr "Die GNU General Public License, Version 3"
 
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damaged"
+msgid "The GUID partition table of the disk image is damaged."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedHeader"
+msgid "The GUID partition table of the disk image is damaged. Its header has a revision or size DDT does not know."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Ihr Header hat eine Revision oder Größe, die DDT nicht kennt."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedEntries"
+msgid "The GUID partition table of the disk image is damaged. Its partition entries are laid out in a way DDT does not read."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Ihre Partitionseinträge sind so angeordnet, wie DDT sie nicht liest."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedUsableRange"
+msgid "The GUID partition table of the disk image is damaged. Its usable range does not fit its own headers."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Ihr nutzbarer Bereich passt nicht zu ihren eigenen Headern."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedPartitionOutside"
+msgid "The GUID partition table of the disk image is damaged. Partition {number} lies outside the usable sectors."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Partition {number} liegt außerhalb der nutzbaren Sektoren."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedOverlap"
+msgid "The GUID partition table of the disk image is damaged. Partitions {first} and {second} overlap."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Die Partitionen {first} und {second} überlappen sich."
+
+#: src/lib/serverMessages.ts
+msgctxt "gpt.damagedEndsInTable"
+msgid "The GUID partition table of the disk image is damaged. The file ends inside the partition table."
+msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Die Datei endet innerhalb der Partitionstabelle."
+
 #: src/runs/runs.ts
 msgid "The hand-over to Windows began"
 msgstr "Die Übergabe an Windows hat begonnen"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.imageBeforePartition"
+msgid "The image can be applied only after a step that partitions the disk."
+msgstr "Das Image kann erst nach einem Schritt angewendet werden, der den Datenträger partitioniert."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.conversionFailed"
+msgid "The image could not be converted. {detail}"
+msgstr "Das Image konnte nicht umgewandelt werden. {detail}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.imageGone"
+msgid "The image is no longer in the library. Choose another image."
+msgstr "Das Image ist nicht mehr in der Bibliothek. Wählen Sie ein anderes Image."
+
 #: src/images/ImagesPage.tsx
 msgid "The image list could not be loaded."
 msgstr "Die Liste der Images konnte nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.listMismatch"
+msgid "The image list in this WIM file does not match its header."
+msgstr "Die Imageliste in dieser WIM-Datei passt nicht zu ihrem Header."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.listDamaged"
+msgid "The image list in this WIM file is damaged."
+msgstr "Die Imageliste in dieser WIM-Datei ist beschädigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.listNotUtf16"
+msgid "The image list in this WIM file is not UTF-16 text, which DDT cannot read."
+msgstr "Die Imageliste in dieser WIM-Datei ist kein UTF-16-Text, was DDT nicht lesen kann."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.listTooLarge"
+msgid "The image list in this WIM file is too large."
+msgstr "Die Imageliste in dieser WIM-Datei ist zu groß."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.diskFull"
+msgid "The image store is full. Free space on the server's store volume, then continue the upload."
+msgstr "Der Imagespeicher ist voll. Schaffen Sie Platz auf dem Speichervolume des Servers und setzen Sie den Upload dann fort."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.noSpace"
+msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
+msgstr "Der Imagespeicher braucht {required} freien Platz für diesen Upload, hat aber {available}. Schaffen Sie Platz auf dem Speichervolume des Servers oder verwerfen Sie unfertige Uploads, und versuchen Sie es dann erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.noJoinAccount"
+msgid "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
+msgstr "Das Beitrittskonto ist nicht eingerichtet. Legen Sie DDT:Deployment:Domain:UserName und Password auf dem Server fest."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
@@ -3474,9 +4734,29 @@ msgstr "Die Live-Verbindung zum Server ist unterbrochen. DDT versucht weiter, si
 msgid "The log could not be read: {readError}"
 msgstr "Das Protokoll konnte nicht gelesen werden: {readError}"
 
+#: src/lib/serverMessages.ts
+msgctxt "machine.changedWhileAssigning"
+msgid "The machine changed while the sequence was assigned. Look at it again before assigning."
+msgstr "Das Gerät hat sich geändert, während die Tasksequenz zugewiesen wurde. Sehen Sie es sich erneut an, bevor Sie zuweisen."
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.changedWhileDeciding"
+msgid "The machine changed while this decision was made. Look at it again before deciding."
+msgstr "Das Gerät hat sich geändert, während diese Entscheidung getroffen wurde. Sehen Sie es sich erneut an, bevor Sie entscheiden."
+
 #: src/machines/MachinePage.tsx
 msgid "The machine could not be loaded."
 msgstr "Das Gerät konnte nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.inState"
+msgid "The machine is {state}."
+msgstr "Das Gerät hat den Zustand „{state}“."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.machineRunning"
+msgid "The machine is running a task sequence. Stop that run before assigning another sequence."
+msgstr "Auf dem Gerät läuft eine Tasksequenz. Beenden Sie diese Ausführung, bevor Sie eine andere Tasksequenz zuweisen."
 
 #: src/machines/MachinesPage.tsx
 msgid "The machine list could not be loaded."
@@ -3502,6 +4782,16 @@ msgstr "Das Gerät startet neu, und die Tasksequenz fährt mit dem nächsten Sch
 msgid "The machine restarts once the step is done."
 msgstr "Das Gerät startet neu, sobald der Schritt fertig ist."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.machineRejected"
+msgid "The machine was rejected, so it cannot be given a sequence. Assign the sequence to another machine."
+msgstr "Das Gerät wurde abgelehnt und kann daher keine Tasksequenz erhalten. Weisen Sie die Tasksequenz einem anderen Gerät zu."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.machineRetired"
+msgid "The machine was retired, so it cannot be given a sequence. Assign the sequence to another machine."
+msgstr "Das Gerät wurde ausgemustert und kann daher keine Tasksequenz erhalten. Weisen Sie die Tasksequenz einem anderen Gerät zu."
+
 #: src/machines/machines.ts
 msgid "the machine with MAC {mac}"
 msgstr "das Gerät mit der MAC {mac}"
@@ -3517,6 +4807,11 @@ msgstr "der Name"
 #: src/users/UserDialogs.tsx
 msgid "The name DDT shows for the account, such as the person's full name."
 msgstr "Der Name, den DDT für das Konto anzeigt, etwa der vollständige Name der Person."
+
+#: src/lib/serverMessages.ts
+msgctxt "common.nameLength"
+msgid "The name must have 1 to {max} characters and no control characters."
+msgstr "Der Name muss 1 bis {max} Zeichen und keine Steuerzeichen haben."
 
 #: src/account/AccountPage.tsx
 msgid "The new passwords do not match."
@@ -3534,25 +4829,90 @@ msgstr "die Reihenfolge der Schritte"
 msgid "The organizational unit changed since, so check again."
 msgstr "Die Organisationseinheit hat sich seitdem geändert, prüfen Sie daher erneut."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageGone"
+msgid "The package is no longer in the library. Choose another package, or none."
+msgstr "Das Paket ist nicht mehr in der Bibliothek. Wählen Sie ein anderes Paket oder keines."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.fileMissing"
+msgid "The package's file is missing from the server's library. Upload it again."
+msgstr "Die Datei des Pakets fehlt in der Bibliothek des Servers. Laden Sie es erneut hoch."
+
 #: src/packages/PackagesPage.tsx
 msgid "The packages could not be loaded."
 msgstr "Die Pakete konnten nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.passwordExpired"
+msgid "The password of {user} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
+msgstr "Das Kennwort von {user} ist abgelaufen. Geben Sie ihm ein neues, in der Domäne und in DDT:Deployment:Domain:Password."
 
 #: src/account/AccountPage.tsx
 msgid "The password you were given and signed in with."
 msgstr "Das Kennwort, das Sie erhalten und mit dem Sie sich angemeldet haben."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.qcow2Backing"
+msgid "The qcow2 image depends on a backing file. Make a standalone image with qemu-img convert -O qcow2 <file> standalone.qcow2 and upload that."
+msgstr "Das qcow2-Image hängt von einer Basisdatei ab. Erstellen Sie mit qemu-img convert -O qcow2 <file> standalone.qcow2 ein eigenständiges Image und laden Sie dieses hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.qcow2Encrypted"
+msgid "The qcow2 image is encrypted. Upload an image that is not."
+msgstr "Das qcow2-Image ist verschlüsselt. Laden Sie ein unverschlüsseltes Image hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.qcow2TooShort"
+msgid "The qcow2 image is too short to be one."
+msgstr "Das qcow2-Image ist zu kurz, um eines zu sein."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.qcow2ExternalData"
+msgid "The qcow2 image keeps its data in an external file. Convert it with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+msgstr "Das qcow2-Image hält seine Daten in einer externen Datei. Wandeln Sie es mit qemu-img convert -O raw <file> disk.raw um und laden Sie disk.raw hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.recoveryPartitionSize"
+msgid "The recovery partition needs {min} to {max} MB."
+msgstr "Die Wiederherstellungspartition braucht {min} bis {max} MB."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.roleFromDirectoryGroups"
+msgid "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
+msgstr "Die Rolle von {name} kommt bei jeder Anmeldung über DDT:Ldap:GroupRoleMap aus seinen Verzeichnisgruppen. Ändern Sie seine Gruppen im Verzeichnis oder die Zuordnung."
+
 #: src/users/userView.ts
 msgid "The role of {name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
 msgstr "Die Rolle von {name} ergibt sich bei jeder Anmeldung über DDT:Ldap:GroupRoleMap aus seinen Verzeichnisgruppen. Ändern Sie seine Gruppen im Verzeichnis oder die Zuordnung."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.roleFromSingleSignOnGroups"
+msgid "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
+msgstr "Die Rolle von {name} kommt bei jeder Anmeldung über DDT:Oidc:GroupRoleMap aus seinen Single-Sign-On-Gruppen. Ändern Sie seine Gruppen beim Anbieter oder die Zuordnung."
 
 #: src/users/userView.ts
 msgid "The role of {name} comes from its single sign-on groups, through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
 msgstr "Die Rolle von {name} ergibt sich bei jeder Anmeldung über DDT:Oidc:GroupRoleMap aus seinen Single-Sign-On-Gruppen. Ändern Sie seine Gruppen beim Anbieter oder die Zuordnung."
 
+#: src/lib/serverMessages.ts
+msgctxt "resolution.ruleChooses"
+msgid "The rule for {rule} chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
+msgstr "Die Regel für {rule} wählt {sequence}. Eine Regel wählt nur: Das Gerät braucht weiterhin eine Freigabe im Web oder jemanden, der sich daran anmeldet, wo die Tasksequenz angeboten wird."
+
 #: src/rules/RulesPage.tsx
 msgid "The rules could not be loaded."
 msgstr "Die Regeln konnten nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.rulesNoLongerChoose"
+msgid "The rules no longer choose that sequence for this machine. {explanation} Look at the machine again."
+msgstr "Die Regeln wählen diese Tasksequenz für dieses Gerät nicht mehr. {explanation} Sehen Sie sich das Gerät erneut an."
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.runChangedWhileStopping"
+msgid "The run changed while it was being stopped. Look at the machine again."
+msgstr "Die Ausführung hat sich geändert, während sie beendet wurde. Sehen Sie sich das Gerät erneut an."
 
 #: src/machines/MachinePage.tsx
 msgid "The run could not be loaded."
@@ -3598,17 +4958,71 @@ msgstr "Das Skript lädt die markierten Treiber mit einem API-Token eines Admini
 msgid "The sequence"
 msgstr "Die Tasksequenz"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.cannotGoOn"
+msgid "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails."
+msgstr "Die Tasksequenz kann nicht weiterlaufen, wenn {activity, select, partition {das Partitionieren des Datenträgers} image {das Anwenden des Images} other {das Schreiben des Raw-Datenträgerimages}} fehlschlägt."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.cannotSkip"
+msgid "The sequence cannot skip {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}}, so this step cannot have conditions."
+msgstr "Die Tasksequenz kann {activity, select, partition {das Partitionieren des Datenträgers} image {das Anwenden des Images} other {das Schreiben des Raw-Datenträgerimages}} nicht überspringen, daher kann dieser Schritt keine Bedingungen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.changedWhileDeleting"
+msgid "The sequence changed, or a rule chose it, while it was being deleted. Look at it again before deleting it."
+msgstr "Die Tasksequenz hat sich geändert, oder eine Regel hat sie gewählt, während sie gelöscht wurde. Sehen Sie sie sich erneut an, bevor Sie sie löschen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.noAdministratorWarning"
+msgid "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then stops at the account page, and the sequence waits there until someone finishes it."
+msgstr "Die Tasksequenz läuft in Windows weiter, aber kein Schritt „Antwortdatei schreiben“ fügt den lokalen Administrator hinzu. Das Windows-Setup hält dann auf der Kontoseite an, und die Tasksequenz wartet dort, bis jemand es abschließt."
+
 #: src/sequences/SequenceEditorPage.tsx
 msgid "The sequence could not be loaded."
 msgstr "Die Tasksequenz konnte nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.versionTooLow"
+msgid "The sequence has steps of version {required}, but says it is of version {version}."
+msgstr "Die Tasksequenz hat Schritte der Version {required}, gibt aber Version {version} an."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.unreadable"
+msgid "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows."
+msgstr "Die Tasksequenz ist kein Dokument, das DDT lesen kann. Jeder Schritt braucht eine ID und eine Art, die diese Version von DDT kennt."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.joinsDomainUnderName"
+msgid "The sequence joins the machine to the domain under this name."
+msgstr "Die Tasksequenz nimmt das Gerät unter diesem Namen in die Domäne auf."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.sequenceGone"
+msgid "The sequence no longer exists. Choose another one."
+msgstr "Die Tasksequenz existiert nicht mehr. Wählen Sie eine andere."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.sequenceGone"
+msgid "The sequence no longer exists. Load the page again and choose another sequence."
+msgstr "Die Tasksequenz existiert nicht mehr. Laden Sie die Seite neu und wählen Sie eine andere Tasksequenz."
 
 #: src/sequences/NewSequenceDialog.tsx
 msgid "The sequence was not created. {error}"
 msgstr "Die Tasksequenz wurde nicht angelegt. {error}"
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.seedNamesMachine"
+msgid "The sequence's cloud-init seed gives the machine this name."
+msgstr "Der cloud-init-Seed der Tasksequenz gibt dem Gerät diesen Namen."
+
 #: src/boot/BootImagePage.tsx
 msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
 msgstr "Die Serveradresse ist die dieser Seite. Verwenden Sie den Namen, unter dem Geräte den Server erreichen, falls er ein anderer ist."
+
+#: src/lib/api.ts
+msgid "The server answered with status {status}."
+msgstr "Der Server hat mit Status {status} geantwortet."
 
 #: src/images/ImagesPage.tsx
 msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
@@ -3642,6 +5056,21 @@ msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, 
 msgid "The server goes on checking {file} after you leave and adds its images to the library when it finishes. If it refuses the file, you do not see why."
 msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, und fügt ihre Images der Bibliothek hinzu, wenn er fertig ist. Lehnt er die Datei ab, sehen Sie nicht, warum."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.offsetMismatch"
+msgid "The server holds a different part of this file. Continue from the offset in the Upload-Offset header."
+msgstr "Der Server hat einen anderen Teil dieser Datei. Setzen Sie an der Position im Header Upload-Offset fort."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.serverStopping"
+msgid "The server is stopping. Complete the upload again once it is back."
+msgstr "Der Server wird beendet. Schließen Sie den Upload erneut ab, sobald er wieder läuft."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.restarted"
+msgid "The server lost part of this upload. Send the file again from the start."
+msgstr "Der Server hat einen Teil dieses Uploads verloren. Senden Sie die Datei erneut von Anfang an."
+
 #: src/packages/packages.ts
 msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
 msgstr "Der Server lehnt ab, solange einem Gerät eine Tasksequenz zugewiesen ist oder es eine ausführt, die es verwendet."
@@ -3666,6 +5095,16 @@ msgstr "Der Schritt ist ohne Angabe eines Grundes fehlgeschlagen."
 msgid "The step fails when the script runs longer."
 msgstr "Der Schritt schlägt fehl, wenn das Skript länger läuft."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.conversionOutOfSpace"
+msgid "The store volume ran out of space while the image was converted. Free some space and complete the upload again."
+msgstr "Auf dem Speichervolume war während der Umwandlung des Images kein Platz mehr. Schaffen Sie Platz und schließen Sie den Upload erneut ab."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.systemPartitionSize"
+msgid "The system partition needs {min} to {max} MB."
+msgstr "Die Systempartition braucht {min} bis {max} MB."
+
 #: src/machines/AssignDialog.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "The task sequence list could not be loaded."
@@ -3675,9 +5114,19 @@ msgstr "Die Liste der Tasksequenzen konnte nicht geladen werden."
 msgid "The templates could not be loaded. You can still start with an empty sequence."
 msgstr "Die Vorlagen konnten nicht geladen werden. Sie können trotzdem mit einer leeren Tasksequenz beginnen."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.scriptTimeout"
+msgid "The timeout has to be 1 to {max} minutes."
+msgstr "Das Zeitlimit muss 1 bis {max} Minuten betragen."
+
 #: src/tokens/TokensPage.tsx
 msgid "The tokens could not be loaded."
 msgstr "Die Token konnten nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.failed"
+msgid "The upload could not be added to the library. Look at the server log, then complete the upload again."
+msgstr "Der Upload konnte nicht in die Bibliothek aufgenommen werden. Sehen Sie im Serverprotokoll nach und schließen Sie den Upload dann erneut ab."
 
 #: src/uploads/UploadPanel.tsx
 msgid "The upload failed."
@@ -3691,9 +5140,29 @@ msgstr "Der Upload von {name} wurde gestoppt. Wählen Sie die Datei erneut, um f
 msgid "The version and the licence texts could not be loaded."
 msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
 
+#: src/lib/serverMessages.ts
+msgctxt "package.fileAndFolder"
+msgid "The zip has a file {entry} and a folder of the same name."
+msgstr "Die ZIP-Datei hat eine Datei {entry} und einen gleichnamigen Ordner."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.tooManyEntries"
+msgid "The zip holds {count} entries. A package can hold at most {max}."
+msgstr "Die ZIP-Datei enthält {count} Einträge. Ein Paket darf höchstens {max} enthalten."
+
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr "Die dortigen Änderungen gehen verloren: {list}."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.exists"
+msgid "There is a rule for {rule} already. It chooses {sequence}; change that rule instead."
+msgstr "Es gibt bereits eine Regel für {rule}. Sie wählt {sequence}; ändern Sie stattdessen diese Regel."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.nameTaken"
+msgid "There is an account named {name} already."
+msgstr "Es gibt bereits ein Konto namens {name}."
 
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
@@ -3707,11 +5176,21 @@ msgstr "Dieses Konto stammt aus dem Verzeichnis. Ändern Sie sein Kennwort dort.
 msgid "This account is locked. Try again later or ask an administrator."
 msgstr "Dieses Konto ist gesperrt. Versuchen Sie es später erneut oder wenden Sie sich an einen Administrator."
 
+#: src/lib/serverMessages.ts
+msgctxt "account.passwordInDirectory"
+msgid "This account is managed by the directory. Change the password there."
+msgstr "Dieses Konto wird vom Verzeichnis verwaltet. Ändern Sie das Kennwort dort."
+
 #: src/auth/SignInPage.tsx
 msgid "This account may not sign in. Ask an administrator."
 msgstr "Dieses Konto darf sich nicht anmelden. Wenden Sie sich an einen Administrator."
 
 #: src/account/AccountPage.tsx
+msgid "This account signs in through single sign-on and has no password in DDT."
+msgstr "Dieses Konto meldet sich per Single Sign-On an und hat kein Kennwort in DDT."
+
+#: src/lib/serverMessages.ts
+msgctxt "account.noPassword"
 msgid "This account signs in through single sign-on and has no password in DDT."
 msgstr "Dieses Konto meldet sich per Single Sign-On an und hat kein Kennwort in DDT."
 
@@ -3723,9 +5202,34 @@ msgstr "Damit wird das Gerät auch autorisiert, weil sich {by} daran angemeldet 
 msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
 msgstr "Damit wird das Gerät auch autorisiert; es führt dann die Tasksequenz aus und erhält die Bereitstellungskennwörter."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.beyondLength"
+msgid "This chunk ends past the end of the file. Upload the file this session was created for."
+msgstr "Dieser Block endet hinter dem Ende der Datei. Laden Sie die Datei hoch, für die diese Sitzung angelegt wurde."
+
 #: src/runs/RunPanel.tsx
 msgid "This deployment ran before task sequences, so it has no steps to show."
 msgstr "Diese Bereitstellung lief vor den Tasksequenzen und hat daher keine Schritte."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.noXz"
+msgid "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, or unpack the file with xz -d and upload the disk image it holds."
+msgstr "Diese Datei ist mit xz komprimiert, das auf dem Server nicht installiert ist. Installieren Sie xz dort und schließen Sie den Upload erneut ab, oder entpacken Sie die Datei mit xz -d und laden Sie das enthaltene Datenträgerimage hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.notAnImage"
+msgid "This file is neither a WIM image nor a disk image with a GUID partition table. Upload a WIM or ESD file, or a disk image such as a distribution's cloud image."
+msgstr "Diese Datei ist weder ein WIM-Image noch ein Datenträgerimage mit GUID-Partitionstabelle. Laden Sie eine WIM- oder ESD-Datei hoch oder ein Datenträgerimage, etwa das Cloud-Image einer Distribution."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.notAWim"
+msgid "This file is not a WIM image."
+msgstr "Diese Datei ist kein WIM-Image."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.encrypted"
+msgid "This image is encrypted (an ESD from Windows Update) and cannot be applied."
+msgstr "Dieses Image ist verschlüsselt (eine ESD aus Windows Update) und kann nicht angewendet werden."
 
 #: src/images/images.ts
 #: src/sequences/steps/RawImageFields.tsx
@@ -3737,9 +5241,29 @@ msgstr "Dieses Image startet mit eingeschaltetem Secure Boot vielleicht nicht, d
 msgid "This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
 msgstr "Dieses Image startet nicht mit eingeschaltetem Secure Boot. Schalten Sie Secure Boot im Firmware-Setup des Geräts aus, oder registrieren Sie Ihren eigenen Schlüssel."
 
+#: src/lib/serverMessages.ts
+msgctxt "upload.unreadableFormat"
+msgid "This is a {format} disk image, which DDT does not read. Convert it with qemu-img convert -O raw <file> disk.raw and upload disk.raw, or upload the distribution's raw or qcow2 image."
+msgstr "Dies ist ein {format}-Datenträgerimage, das DDT nicht liest. Wandeln Sie es mit qemu-img convert -O raw <file> disk.raw um und laden Sie disk.raw hoch, oder laden Sie das Raw- oder qcow2-Image der Distribution hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.noQemuImg"
+msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+msgstr "Dies ist ein qcow2-Image, und qemu-img ist auf dem Server nicht installiert. Installieren Sie qemu-img dort und schließen Sie den Upload erneut ab, oder wandeln Sie die Datei mit qemu-img convert -O raw <file> disk.raw um und laden Sie disk.raw hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.alreadyHasRun"
+msgid "This machine already has a run. Cancel it before assigning another sequence."
+msgstr "Dieses Gerät hat bereits eine Ausführung. Brechen Sie sie ab, bevor Sie eine andere Tasksequenz zuweisen."
+
 #: src/machines/AssignDialog.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."
 msgstr "Dieses Gerät hat mehr als einen Datenträger. Melden Sie sich daran an und wählen Sie dort den Datenträger."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.nothingToEnd"
+msgid "This machine has no run that is assigned or running. Load the page again to see its current state."
+msgstr "Dieses Gerät hat keine zugewiesene oder laufende Ausführung. Laden Sie die Seite neu, um seinen aktuellen Zustand zu sehen."
 
 #: src/log/LogPanel.tsx
 msgid "This machine has sent no log lines yet."
@@ -3788,6 +5312,56 @@ msgstr "Damit wird die Ausführung auf {label} beendet, die in seinem installier
 #: src/machines/MachineActions.tsx
 msgid "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
 msgstr "Damit wird die Ausführung auf {label} beendet. Sein Datenträger bleibt halb beschrieben; weisen Sie erneut eine Tasksequenz zu, um es bereitzustellen."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.beingChecked"
+msgid "This upload is being checked or written to. Ask again in a few seconds."
+msgstr "Dieser Upload wird gerade geprüft oder geschrieben. Fragen Sie in einigen Sekunden erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.complete"
+msgid "This upload is complete. Nothing more needs to be sent."
+msgstr "Dieser Upload ist abgeschlossen. Es muss nichts mehr gesendet werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.inUse"
+msgid "This upload is in use. Try again in a few seconds."
+msgstr "Dieser Upload wird gerade verwendet. Versuchen Sie es in einigen Sekunden erneut."
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.gone"
+msgid "This upload no longer exists. Select the file again to upload it."
+msgstr "Dieser Upload existiert nicht mehr. Wählen Sie die Datei erneut aus, um sie hochzuladen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.unknownStep"
+msgid "This version of DDT does not know this kind of step."
+msgstr "Diese Version von DDT kennt diese Art von Schritt nicht."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.versionUnsupported"
+msgid "This version of DDT runs sequences of version 1 to {current}, not {version}."
+msgstr "Diese Version von DDT führt Tasksequenzen der Version 1 bis {current} aus, nicht {version}."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.incomplete"
+msgid "This WIM file is incomplete or damaged."
+msgstr "Diese WIM-Datei ist unvollständig oder beschädigt."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.compressedList"
+msgid "This WIM file stores its image list compressed, which DDT cannot read."
+msgstr "Diese WIM-Datei speichert ihre Imageliste komprimiert, was DDT nicht lesen kann."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.version"
+msgid "This WIM file uses format version 0x{version}, which DDT does not support."
+msgstr "Diese WIM-Datei verwendet die Formatversion 0x{version}, die DDT nicht unterstützt."
+
+#: src/lib/serverMessages.ts
+msgctxt "wim.noX64Image"
+msgid "This WIM holds no x64 Windows image."
+msgstr "Diese WIM-Datei enthält kein x64-Windows-Image."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Time zone"
@@ -3842,6 +5416,11 @@ msgstr "Zweiten Faktor ausschalten"
 msgid "Turn off the second factor of {name}?"
 msgstr "Zweiten Faktor von {name} ausschalten?"
 
+#: src/lib/serverMessages.ts
+msgctxt "user.ownSecondFactor"
+msgid "Turn off your own second factor on the Account page."
+msgstr "Schalten Sie Ihren eigenen zweiten Faktor auf der Seite „Konto“ aus."
+
 #: src/account/AccountPage.tsx
 msgid "Turn on"
 msgstr "Einschalten"
@@ -3894,6 +5473,11 @@ msgstr "Unbenannter Schritt"
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Unpacked before the script runs, and the script's working directory. Packages are under <0>Files</0>."
 msgstr "Wird vor dem Skript entpackt und ist sein Arbeitsverzeichnis. Pakete finden Sie unter <0>Dateien</0>."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.tooLargeUnpacked"
+msgid "Unpacked, the zip would take more than {max} GB."
+msgstr "Entpackt würde die ZIP-Datei mehr als {max} GB belegen."
 
 #: src/sequences/SaveState.tsx
 msgid "Unsaved changes"
@@ -3961,12 +5545,37 @@ msgstr "Verwendet von"
 msgid "User"
 msgstr "Benutzer"
 
+#: src/lib/serverMessages.ts
+msgctxt "identity.userAlreadyHasPassword"
+msgid "User already has a password set."
+msgstr "Der Benutzer hat bereits ein Kennwort."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.userAlreadyInRole"
+msgid "User already in role ''{role}''."
+msgstr "Der Benutzer hat bereits die Rolle ''{role}''."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.userNotInRole"
+msgid "User is not in role ''{role}''."
+msgstr "Der Benutzer hat die Rolle ''{role}'' nicht."
+
 #: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
 #: src/users/DirectoryPanel.tsx
 #: src/users/UserDialogs.tsx
 msgid "User name"
 msgstr "Benutzername"
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.duplicateUserName"
+msgid "Username ''{name}'' is already taken."
+msgstr "Der Benutzername ''{name}'' ist bereits vergeben."
+
+#: src/lib/serverMessages.ts
+msgctxt "identity.invalidUserName"
+msgid "Username ''{name}'' is invalid, can only contain letters or digits."
+msgstr "Der Benutzername ''{name}'' ist ungültig; er darf nur Buchstaben oder Ziffern enthalten."
 
 #: src/audit/auditView.ts
 msgid "Users"
@@ -4002,6 +5611,11 @@ msgid "Version {version}"
 msgstr "Version {version}"
 
 #: src/users/userView.ts
+msgid "Viewer"
+msgstr "Betrachter"
+
+#: src/lib/serverMessages.ts
+msgctxt "role.viewer"
 msgid "Viewer"
 msgstr "Betrachter"
 
@@ -4090,6 +5704,11 @@ msgstr "Windows-Image"
 msgid "Windows PE"
 msgstr "Windows PE"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.restartBeforePartition"
+msgid "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk."
+msgstr "Windows PE kann erst neu starten, nachdem der Datenträger partitioniert ist, weil der Zustand der Ausführung auf dem Datenträger liegt."
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Windows PE, before the hand-over"
 msgstr "Windows PE, vor der Übergabe"
@@ -4150,6 +5769,11 @@ msgstr "cloud-init-Seed schreiben"
 msgid "writes {image}"
 msgstr "schreibt {image}"
 
+#: src/lib/serverMessages.ts
+msgctxt "template.installLinuxDescription"
+msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine."
+msgstr "Schreibt ein Raw-Datenträgerimage, etwa das Cloud-Image einer Distribution, und einen cloud-init-Seed, der das Gerät benennt."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."
 msgstr "Schreibt die Antwortdatei, die das Windows-Setup beim ersten Start liest. Eine leere Einstellung nimmt den Standard des Servers."
@@ -4174,11 +5798,36 @@ msgstr "Sie können ihn später im Editor ändern."
 msgid "You cannot change your own role. Another administrator can."
 msgstr "Sie können Ihre eigene Rolle nicht ändern. Ein anderer Administrator kann das."
 
+#: src/lib/serverMessages.ts
+msgctxt "user.ownDelete"
+msgid "You cannot delete your own account. Another administrator can."
+msgstr "Sie können Ihr eigenes Konto nicht löschen. Ein anderer Administrator kann es."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.ownDisable"
+msgid "You cannot disable your own account. Another administrator can."
+msgstr "Sie können Ihr eigenes Konto nicht deaktivieren. Ein anderer Administrator kann es."
+
+#: src/lib/serverMessages.ts
+msgctxt "user.ownAdministratorRole"
+msgid "You cannot take the Administrator role from your own account. Another administrator can."
+msgstr "Sie können Ihrem eigenen Konto die Rolle Administrator nicht nehmen. Ein anderer Administrator kann es."
+
+#: src/lib/serverMessages.ts
+msgctxt "token.nameTaken"
+msgid "You have a token of that name already. Choose another name, or revoke that token first."
+msgstr "Sie haben bereits ein Token mit diesem Namen. Wählen Sie einen anderen Namen oder widerrufen Sie zuerst dieses Token."
+
 #: src/account/AccountPage.tsx
 msgid "You signed in with a password an administrator was shown. Replace it under Password; until then, DDT shows you nothing but this page."
 msgstr "Sie haben sich mit einem Kennwort angemeldet, das einem Administrator angezeigt wurde. Ersetzen Sie es unter Kennwort; bis dahin zeigt Ihnen DDT nur diese Seite."
 
 #: src/tokens/OwnTokensPanel.tsx
+msgid "Your account has no role, so it cannot have a token."
+msgstr "Ihr Konto hat keine Rolle und kann daher kein Token haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "token.noRole"
 msgid "Your account has no role, so it cannot have a token."
 msgstr "Ihr Konto hat keine Rolle und kann daher kein Token haben."
 

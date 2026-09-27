@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Server.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -20,9 +21,7 @@ public sealed class SessionOnlyEndpointFilter : IEndpointFilter
 
         return Principals.ApiTokenId(context.HttpContext.User) is null
             ? next(context)
-            : ValueTask.FromResult<object?>(TypedResults.Problem(
-                title: "An API token cannot change the account it belongs to. Sign in on the web to do this.",
-                statusCode: StatusCodes.Status403Forbidden));
+            : ValueTask.FromResult<object?>(ServerProblems.Problem(ServerMessages.AccountApiTokenCannotChange.With(), StatusCodes.Status403Forbidden));
     }
 }
 

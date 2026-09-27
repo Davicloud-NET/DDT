@@ -14,6 +14,7 @@ import { isActive } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
 import { LogPanel } from "@/log/LogPanel";
+import { resolutionText } from "@/rules/rules";
 import { useSequenceResolution } from "@/rules/useSequenceResolution";
 import { MachineRuns } from "@/runs/MachineRuns";
 import { RunPanel } from "@/runs/RunPanel";
@@ -83,7 +84,7 @@ export function MachinePage() {
           <MachineHeader
             machine={machine}
             actions={canDecide ? actions : null}
-            resolution={resolution.data?.explanation ?? null}
+            resolution={resolution.data === undefined ? null : resolutionText(resolution.data)}
             now={now}
           />
           <MachineActionErrors actions={actions} />

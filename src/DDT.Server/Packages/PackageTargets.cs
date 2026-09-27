@@ -5,6 +5,7 @@
 using System.Text.Json;
 using DDT.Contracts;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Server.Machines;
 
@@ -32,21 +33,21 @@ public static class PackageTargets
     }
 
     // What is wrong with the targets a request sets, or null. A Files package is chosen by the steps that name it.
-    public static string? Problem(PackageKind kind, IReadOnlyList<HardwareModel?>? targets)
+    public static ServerMessage? Problem(PackageKind kind, IReadOnlyList<HardwareModel?>? targets)
     {
         if (targets is null)
         {
-            return "Send the list of targets, empty for none.";
+            return ServerMessages.PackageTargetsMissing.With();
         }
 
         if (targets.Count > 0 && kind == PackageKind.Files)
         {
-            return "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets.";
+            return ServerMessages.PackageFilesHaveNoTargets.With();
         }
 
         if (targets.Count > PackageLimits.MaxTargets)
         {
-            return $"A package can have at most {PackageLimits.MaxTargets} targets.";
+            return ServerMessages.PackageTooManyTargets.With("max", PackageLimits.MaxTargets);
         }
 
         HashSet<(string?, string?)> seen = [];
@@ -55,7 +56,7 @@ public static class PackageTargets
         {
             if (target is null)
             {
-                return "A target is empty.";
+                return ServerMessages.PackageTargetEmpty.With();
             }
 
             if (HardwareModels.Problem(target.Manufacturer, required: false, wildcard: false) is { } manufacturer)
@@ -70,7 +71,7 @@ public static class PackageTargets
 
             if (!seen.Add((HardwareModels.Normalize(target.Manufacturer), HardwareModels.Normalize(target.Model))))
             {
-                return $"{target.Model} is a target twice.";
+                return ServerMessages.PackageTargetTwice.With("model", target.Model);
             }
         }
 

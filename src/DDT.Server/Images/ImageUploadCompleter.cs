@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Core.Wim;
 using DDT.Server.Data;
@@ -35,10 +36,9 @@ public sealed partial class ImageUploadCompleter(
     IHostApplicationLifetime lifetime,
     ILogger<ImageUploadCompleter> logger)
 {
-    private const string NoX64Image = "This WIM holds no x64 Windows image.";
     private const int HashBufferBytes = 1024 * 1024;
 
-    private readonly ConcurrentDictionary<Guid, (string Reason, DateTimeOffset RefusedUtc)> _refusals = new();
+    private readonly ConcurrentDictionary<Guid, (ServerMessage Reason, DateTimeOffset RefusedUtc)> _refusals = new();
 
     public async Task<UploadCompletion> CompleteAsync(
         Guid uploadId,
@@ -159,7 +159,7 @@ public sealed partial class ImageUploadCompleter(
             return await CompleteRawAsync(database, upload, userId, userName, address, cancellationToken).ConfigureAwait(false);
         }
 
-        (string sha256, List<WimImageInfo> deployable, string? refusal) = await ReadPartAsync(part, cancellationToken).ConfigureAwait(false);
+        (string sha256, List<WimImageInfo> deployable, ServerMessage? refusal) = await ReadPartAsync(part, cancellationToken).ConfigureAwait(false);
 
         if (refusal is not null)
         {
@@ -194,7 +194,7 @@ public sealed partial class ImageUploadCompleter(
             : new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(package));
     }
 
-    private async Task<UploadCompletion> RefuseAsync(DdtDbContext database, ImageUpload upload, string refusal, CancellationToken cancellationToken)
+    private async Task<UploadCompletion> RefuseAsync(DdtDbContext database, ImageUpload upload, ServerMessage refusal, CancellationToken cancellationToken)
     {
         RememberRefusal(upload.Id, refusal);
         database.ImageUploads.Remove(upload);
@@ -205,7 +205,7 @@ public sealed partial class ImageUploadCompleter(
             File.Delete(file);
         }
 
-        LogUploadRefused(upload.Id, upload.FileName, refusal);
+        LogUploadRefused(upload.Id, upload.FileName, refusal.Text);
 
         return new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal);
     }
@@ -241,7 +241,7 @@ public sealed partial class ImageUploadCompleter(
             }
         }
 
-        if (inspection.Refusal is { } refusal)
+        if (inspection.RefusalMessage is { } refusal)
         {
             return await RefuseAsync(database, upload, refusal, cancellationToken).ConfigureAwait(false);
         }
@@ -325,7 +325,7 @@ public sealed partial class ImageUploadCompleter(
         {
             if (import.Retryable)
             {
-                LogUploadKept(upload.Id, upload.FileName, refusal);
+                LogUploadKept(upload.Id, upload.FileName, refusal.Text);
 
                 return new UploadCompletion(UploadCompletionStatus.Kept, [], Refusal: refusal);
             }
@@ -481,7 +481,7 @@ public sealed partial class ImageUploadCompleter(
 
     // The image list is read before the file is hashed. It takes milliseconds, so a refused file is answered before
     // a proxy gives up on the request, and no gigabytes are hashed for it.
-    private static async Task<(string Sha256, List<WimImageInfo> Deployable, string? Refusal)> ReadPartAsync(
+    private static async Task<(string Sha256, List<WimImageInfo> Deployable, ServerMessage? Refusal)> ReadPartAsync(
         string part,
         CancellationToken cancellationToken)
     {
@@ -501,14 +501,14 @@ public sealed partial class ImageUploadCompleter(
         }
         catch (InvalidWimException exception)
         {
-            return ("", [], exception.Message);
+            return ("", [], exception.Reason ?? ServerMessages.WimIncomplete.With());
         }
 
         List<WimImageInfo> deployable = [.. images.Where(i => i.Architecture == DeploymentService.DeployableArchitecture)];
 
         if (deployable.Count == 0)
         {
-            return ("", [], NoX64Image);
+            return ("", [], ServerMessages.WimNoX64Image.With());
         }
 
         stream.Position = 0;
@@ -518,11 +518,11 @@ public sealed partial class ImageUploadCompleter(
 
     // Recorded before the session is removed, so a retry that no longer finds the session finds the reason. Kept as
     // long as the session could have lived.
-    private void RememberRefusal(Guid uploadId, string reason)
+    private void RememberRefusal(Guid uploadId, ServerMessage reason)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
 
-        foreach (KeyValuePair<Guid, (string Reason, DateTimeOffset RefusedUtc)> refusal in _refusals)
+        foreach (KeyValuePair<Guid, (ServerMessage Reason, DateTimeOffset RefusedUtc)> refusal in _refusals)
         {
             if (now - refusal.Value.RefusedUtc >= ImageUploadLimits.SessionLifetime)
             {
@@ -534,7 +534,7 @@ public sealed partial class ImageUploadCompleter(
     }
 
     private UploadCompletion Missing(Guid uploadId) =>
-        _refusals.TryGetValue(uploadId, out (string Reason, DateTimeOffset RefusedUtc) refusal)
+        _refusals.TryGetValue(uploadId, out (ServerMessage Reason, DateTimeOffset RefusedUtc) refusal)
             ? new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal.Reason)
             : new UploadCompletion(UploadCompletionStatus.NotFound, []);
 

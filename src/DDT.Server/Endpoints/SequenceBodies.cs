@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -22,7 +23,7 @@ internal static class SequenceBodies
     {
         if (!request.HasJsonContentType())
         {
-            return (null, TypedResults.Problem(title: "Send the sequence as JSON.", statusCode: StatusCodes.Status415UnsupportedMediaType));
+            return (null, ServerProblems.Problem(ServerMessages.SequenceSendJson.With(), StatusCodes.Status415UnsupportedMediaType));
         }
 
         if (request.ContentLength > SequenceLimits.MaxRequestBytes)
@@ -46,14 +47,12 @@ internal static class SequenceBodies
         }
     }
 
+    // The detail is the reader's own English, for whoever writes a client.
     public static ProblemHttpResult Malformed(string detail) =>
-        TypedResults.Problem(
-            title: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
-            detail: detail,
-            statusCode: StatusCodes.Status400BadRequest);
+        ServerProblems.Problem(ServerMessages.SequenceUnreadable.With(), StatusCodes.Status400BadRequest, detail: detail);
 
     private static ProblemHttpResult TooLarge() =>
-        TypedResults.Problem(
-            title: $"A sequence request can have at most {SequenceLimits.MaxRequestBytes / 1024} KiB.",
-            statusCode: StatusCodes.Status413PayloadTooLarge);
+        ServerProblems.Problem(
+            ServerMessages.SequenceRequestTooLarge.With("max", SequenceLimits.MaxRequestBytes / 1024),
+            StatusCodes.Status413PayloadTooLarge);
 }

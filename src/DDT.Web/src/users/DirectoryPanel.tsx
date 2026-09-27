@@ -15,6 +15,7 @@ import { TextField } from "@/ui/TextField";
 
 import {
   checkDirectoryUser,
+  directoryCheckText,
   directoryQuery,
   findGroups,
   type DirectoryCheck,
@@ -256,7 +257,7 @@ function firstValue(distinguishedName: string): string {
 
 function CheckResult({ result }: { result: DirectoryCheck }) {
   if (!result.found) {
-    return <Notice tone="attention">{result.message}</Notice>;
+    return <Notice tone="attention">{directoryCheckText(result)}</Notice>;
   }
 
   const count = result.groups.length;
@@ -324,7 +325,7 @@ function CheckResult({ result }: { result: DirectoryCheck }) {
           },
         ]}
       />
-      <p className="type-small text-ink">{result.message}</p>
+      <p className="type-small text-ink">{directoryCheckText(result)}</p>
     </div>
   );
 }

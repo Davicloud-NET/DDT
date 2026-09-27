@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Sequences;
@@ -40,16 +41,15 @@ public static class SequenceTemplates
 
         return
         [
-            new SequenceTemplate(
+            Template(
                 InstallWindowsKey,
-                "Install Windows",
-                "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file"
-                    + (domainConfigured ? ", then joins the domain in Windows." : "."),
+                ServerMessages.TemplateInstallWindows.With(),
+                (domainConfigured ? ServerMessages.TemplateInstallWindowsJoinDescription : ServerMessages.TemplateInstallWindowsDescription).With(),
                 new SequenceDefinition(SequenceDefinition.CurrentVersion, steps).Normalised()),
-            new SequenceTemplate(
+            Template(
                 InstallLinuxKey,
-                "Install Linux",
-                "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.",
+                ServerMessages.TemplateInstallLinux.With(),
+                ServerMessages.TemplateInstallLinuxDescription.With(),
                 new SequenceDefinition(
                     SequenceDefinition.CurrentVersion,
                     [
@@ -64,4 +64,7 @@ public static class SequenceTemplates
                     ]).Normalised()),
         ];
     }
+
+    private static SequenceTemplate Template(string key, ServerMessage name, ServerMessage description, SequenceDefinition definition) =>
+        new(key, name.Text, description.Text, definition, name.Code, name.Args, description.Code, description.Args);
 }

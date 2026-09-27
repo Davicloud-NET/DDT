@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using DDT.Contracts.BootImage;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.BootImage;
@@ -61,9 +62,7 @@ public static class BootImageEndpoints
 
         if (!File.Exists(path))
         {
-            return TypedResults.Problem(
-                title: "The package's file is missing from the server's library. Upload it again.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ServerProblems.Problem(ServerMessages.PackageFileMissing.With(), StatusCodes.Status404NotFound);
         }
 
         return TypedResults.PhysicalFile(

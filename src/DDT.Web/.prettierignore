@@ -4,4 +4,6 @@ coverage
 package-lock.json
 src/test/fixtures
 src/styles/theme.css
+src/lib/serverMessages.ts
+scripts/server-messages.json
 src/locales

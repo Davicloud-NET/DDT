@@ -63,7 +63,16 @@ describe("the sequence mirror", () => {
 
   it("has the fields of the server's template and document", () => {
     expect(Object.keys(fixture).sort()).toEqual(
-      ["key", "name", "description", "definition"].sort(),
+      [
+        "key",
+        "name",
+        "description",
+        "definition",
+        "nameCode",
+        "nameArgs",
+        "descriptionCode",
+        "descriptionArgs",
+      ].sort(),
     );
     expect(Object.keys(fixture.definition).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);

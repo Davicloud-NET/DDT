@@ -9,7 +9,7 @@ import { Button as AriaButton } from "react-aria-components";
 import { cx } from "@/ui/cx";
 import { Panel } from "@/ui/Layout";
 
-import { sequenceFindings, stepFindings, type Findings } from "./problems";
+import { findingText, sequenceFindings, stepFindings, type Findings } from "./problems";
 import type { SequenceStep } from "./sequences";
 
 // Every problem and warning the server found, the sequence's own first and then by step. A step's finding takes
@@ -64,12 +64,12 @@ export function FindingsSummary({
                 </span>
                 {general.problems.map((finding, index) => (
                   <span key={`p${String(index)}`} className={toned("fail")}>
-                    {finding.message}
+                    {findingText(finding)}
                   </span>
                 ))}
                 {general.warnings.map((finding, index) => (
                   <span key={`w${String(index)}`} className={toned("attention")}>
-                    {finding.message}
+                    {findingText(finding)}
                   </span>
                 ))}
               </li>
@@ -88,7 +88,7 @@ export function FindingsSummary({
                     ...own.problems.map((finding) => ({ finding, tone: "fail" as const })),
                     ...own.warnings.map((finding) => ({ finding, tone: "attention" as const })),
                   ].map(({ finding, tone }, position) => {
-                    const message = finding.message;
+                    const message = findingText(finding);
 
                     return (
                       <AriaButton

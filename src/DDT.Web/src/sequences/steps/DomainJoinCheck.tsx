@@ -5,7 +5,11 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 
-import { checkDomainJoin, type DomainJoinFindingLevel } from "@/deployments/deployments";
+import {
+  checkDomainJoin,
+  domainFindingText,
+  type DomainJoinFindingLevel,
+} from "@/deployments/deployments";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/ui/Button";
 import { cx } from "@/ui/cx";
@@ -89,7 +93,7 @@ export function DomainJoinCheck({
               <StateTag tone={levelTone[finding.level]} className="h-5 px-1.5">
                 {levelLabel[finding.level]}
               </StateTag>
-              <span className="pt-0.5">{finding.text}</span>
+              <span className="pt-0.5">{domainFindingText(finding)}</span>
             </li>
           ))}
         </ul>

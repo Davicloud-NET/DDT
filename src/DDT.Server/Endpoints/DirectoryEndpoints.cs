@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Ldap;
@@ -103,7 +104,7 @@ public static class DirectoryEndpoints
 
         if (string.IsNullOrEmpty(userName))
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["userName"] = ["Enter the user name to check."] });
+            return ServerProblems.Validation("userName", ServerMessages.DirectoryEnterUserName.With());
         }
 
         if (Unconfigured(directory) is { } refusal)
@@ -125,12 +126,14 @@ public static class DirectoryEndpoints
         directory.Enabled
             ? directory.Configured
                 ? null
-                : Conflict("The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn.")
-            : Conflict("Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first.");
+                : Conflict(ServerMessages.DirectoryIncomplete.With())
+            : Conflict(ServerMessages.DirectoryOff.With());
 
     // DDT stands between the page and the directory here, so a directory that does not answer is a bad gateway.
     private static ProblemHttpResult Unavailable(LdapUnavailableException exception) =>
-        TypedResults.Problem(title: exception.Message, statusCode: StatusCodes.Status502BadGateway);
+        exception.Reason is { } reason
+            ? ServerProblems.Problem(reason, StatusCodes.Status502BadGateway)
+            : TypedResults.Problem(title: exception.Message, statusCode: StatusCodes.Status502BadGateway);
 
-    private static ProblemHttpResult Conflict(string title) => TypedResults.Problem(title: title, statusCode: StatusCodes.Status409Conflict);
+    private static ProblemHttpResult Conflict(ServerMessage message) => ServerProblems.Problem(message, StatusCodes.Status409Conflict);
 }

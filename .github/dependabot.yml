@@ -1,0 +1,29 @@
+# Asks once a month for newer versions: one pull request per ecosystem for the minor and patch updates, and one per
+# package for a new major version. A package that ships still needs its notice, see CONTRIBUTING.md, so a web package
+# update fails the tests until `npm run licences` has run on its branch.
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      nuget:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /src/DDT.Web
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        update-types: [minor, patch]

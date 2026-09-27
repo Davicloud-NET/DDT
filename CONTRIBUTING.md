@@ -9,8 +9,7 @@ planned. Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.m
 
 Open an issue with the bug report form. A report that DDT can act on says:
 
-- the version the About page shows, and where the server runs: the container image, or from
-  source;
+- the commit you built DDT from, and where the server runs: the container image, or from source;
 - the machine, if one is involved: its make and model, and whether Secure Boot is on;
 - what happened and what you expected, and the steps that lead there;
 - the machine's log from the web UI, and the host's log around the time. The README's
@@ -53,7 +52,7 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 | End to end | `dotnet test --project tests/DDT.E2E`, which needs the Visual C++ build tools |
 | Web client | from `src/DDT.Web`: `npm ci`, `npm run lint`, `npm run format`, `npm run build` and `npm test` |
 | Web screenshots | from `src/DDT.Web`: `npm run screens`, in Microsoft Edge on Windows |
-| Container image | `docker build -f build/Dockerfile .` |
+| Container image | `docker build -f build/Dockerfile .`, then the server started in the image |
 
 The server's tests run on Linux as well as on Windows because the server runs on Linux in its
 container. A few of them run only there, and the PostgreSQL tests run only where Docker runs Linux

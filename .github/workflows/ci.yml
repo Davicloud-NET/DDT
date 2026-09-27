@@ -197,12 +197,28 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      # Built to prove that build/Dockerfile still builds; nothing is pushed.
+      # Built to prove that build/Dockerfile still builds and that the server starts in the image; nothing is pushed.
       - name: Build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: build/Dockerfile
-          push: false
+          load: true
+          tags: ddt:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # With the image's defaults the server makes its own certificate and a SQLite database, and answers for the About
+      # page without a sign-in.
+      - name: Start the server in the image
+        run: |
+          docker run --detach --name ddt --publish 8443:8443 ddt:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --insecure https://localhost:8443/api/about; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs ddt
+          exit 1

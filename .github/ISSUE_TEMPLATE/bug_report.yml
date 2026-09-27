@@ -32,7 +32,7 @@ body:
     id: version
     attributes:
       label: DDT version
-      description: The version the About page shows.
+      description: The commit you built DDT from (`git rev-parse --short HEAD`), or the version the About page shows.
     validations:
       required: true
 

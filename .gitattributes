@@ -77,3 +77,4 @@
 *.efi binary
 *.png binary
 *.bin binary
+*.ttf binary

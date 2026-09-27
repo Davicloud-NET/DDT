@@ -64,6 +64,9 @@ public static class LiveEvents
     // applied the pxe section and reported what it found: to administrators.
     public const string PxeInterfacesChanged = "pxeInterfacesChanged";
 
+    // Carries the AgentBinaryView, as GET /api/settings/agent answers it, when an agent was uploaded: to administrators.
+    public const string AgentChanged = "agentChanged";
+
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";

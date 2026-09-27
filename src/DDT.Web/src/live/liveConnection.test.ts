@@ -179,6 +179,8 @@ const resynced = [
   ["settings"],
   ["settings-overview"],
   ["settings-certificate"],
+  ["settings-agent"],
+  ["server-certificate"],
 ];
 
 describe("createLiveConnection", () => {
@@ -262,6 +264,34 @@ describe("createLiveConnection", () => {
 
     expect(queryClient.getQueryData(["settings", "pxe", "interfaces"])).toEqual(hosts);
     expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("takes an uploaded agent from its event, and reads the served certificate again when it changed", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const agent = {
+      sha256: "ab12",
+      size: 4096,
+      uploadedUtc: "2026-09-27T10:00:00Z",
+      uploadedBy: "admin",
+      source: "Uploaded",
+    };
+
+    hub().emit("agentChanged", agent);
+
+    expect(queryClient.getQueryData(["settings-agent"])).toEqual(agent);
+    expect(invalidate).not.toHaveBeenCalled();
+
+    queryClient.setQueryData(["settings-certificate"], { subject: "CN=old", servedHere: true });
+    hub().emit("certificateChanged", { subject: "CN=new" });
+
+    expect(queryClient.getQueryData(["settings-certificate"])).toEqual({
+      subject: "CN=new",
+      servedHere: true,
+    });
+    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["server-certificate"] }]]);
   });
 
   it("takes the rules from their event, and reads again only what the rules choose", async () => {

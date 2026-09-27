@@ -24,7 +24,7 @@ export interface AgentBinaryView {
 // The server takes an agent of at most this size.
 export const maxAgentBytes = 128 * 1024 * 1024;
 
-// No hub event announces an upload, so the page reads it again as other queries are, when it is older than a while.
+// An upload answers with the view, and the hub's agentChanged brings it to other administrators' pages.
 export const agentBinaryQuery = queryOptions({
   queryKey: ["settings-agent"],
   queryFn: () => apiGet<AgentBinaryView>("/api/settings/agent"),

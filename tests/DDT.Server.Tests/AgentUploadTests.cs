@@ -5,8 +5,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading.Channels;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Settings;
+using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +27,8 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
     {
         SignedInClient administrator = await application.AdministratorAsync();
         byte[] agent = [(byte)'M', (byte)'Z', .. RandomNumberGenerator.GetBytes(4096)];
+        await using LiveListener listener = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<JsonElement> changes = listener.Listen<JsonElement>(LiveEvents.AgentChanged);
 
         Assert.Equal(AgentBinarySource.None, (await RegisteredMachine.ReadAsync<AgentBinaryView>(await administrator.GetAsync("/api/settings/agent"))).Source);
 
@@ -43,6 +48,11 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
         Assert.Equal(view.UploadedBy, uploaded.UploadedBy);
         Assert.NotNull(view.UploadedUtc);
         Assert.NotNull(uploaded.UploadedUtc);
+
+        // Other administrators' pages take it from the hub.
+        JsonElement pushed = await LiveListener.NextAsync(changes);
+        Assert.Equal(sha256, pushed.GetProperty("sha256").GetString());
+        Assert.Equal("Uploaded", pushed.GetProperty("source").GetString());
 
         // What agents are told to switch to.
         AgentRelease release = (await application.Services.GetRequiredService<AgentReleaseStore>().CurrentAsync(TestContext.Current.CancellationToken))!;

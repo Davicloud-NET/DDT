@@ -656,8 +656,8 @@ function ServerNames() {
         <Trans>
           The names and addresses browsers and machines reach this server by. Generate issues the
           certificate for them, and an uploaded certificate has to name each of them, so a change
-          takes effect with the next certificate. DDT's automatic renewal still issues for the names
-          in DDT:Https:SubjectAlternativeNames only.
+          takes effect with the next certificate. DDT's automatic renewal keeps every name of the
+          certificate it renews.
         </Trans>
       }
     >

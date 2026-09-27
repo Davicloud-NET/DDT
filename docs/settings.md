@@ -1057,7 +1057,9 @@ m6.5-settings. Where the implementation deliberately differs from the plan above
   to make the root; a Generate from the existing root needs none, as 5.2 says. While a pair waits for
   its confirmation, a connection served another pair is closed after its answer, so the browser's next
   request gets the new pair and can confirm. The deadline is kept in `ddt.provisional`, so a restart
-  keeps it. The automatic renewal still uses the configured names only.
+  keeps it. The automatic renewal issues for the configured names and every name of the certificate
+  it replaces, so the names of a Generate stay; a name saved on the page alone reaches the
+  certificate with the next Generate.
 - **Not built:** upgrade steps for a newer SchemaVersion, of which there is none yet.
 
 ## 8. Open questions for the maintainer

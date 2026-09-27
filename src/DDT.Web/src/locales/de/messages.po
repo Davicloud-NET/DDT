@@ -6058,8 +6058,8 @@ msgid "The name or IPv4 address machines reach DDT by. The boot file offers URLs
 msgstr "Der Name oder die IPv4-Adresse, über die Geräte DDT erreichen. Die Startdatei bietet URLs damit an."
 
 #: src/settings/CertificatePanel.tsx
-msgid "The names and addresses browsers and machines reach this server by. Generate issues the certificate for them, and an uploaded certificate has to name each of them, so a change takes effect with the next certificate. DDT's automatic renewal still issues for the names in DDT:Https:SubjectAlternativeNames only."
-msgstr "Die Namen und Adressen, unter denen Browser und Geräte diesen Server erreichen. „Generieren“ stellt das Zertifikat für sie aus, und ein hochgeladenes Zertifikat muss jeden von ihnen nennen, daher wirkt eine Änderung mit dem nächsten Zertifikat. Die automatische Erneuerung von DDT stellt weiterhin nur für die Namen in DDT:Https:SubjectAlternativeNames aus."
+msgid "The names and addresses browsers and machines reach this server by. Generate issues the certificate for them, and an uploaded certificate has to name each of them, so a change takes effect with the next certificate. DDT's automatic renewal keeps every name of the certificate it renews."
+msgstr "Die Namen und Adressen, unter denen Browser und Geräte diesen Server erreichen. „Generieren“ stellt das Zertifikat für sie aus, und ein hochgeladenes Zertifikat muss jeden von ihnen nennen, daher wirkt eine Änderung mit dem nächsten Zertifikat. Die automatische Erneuerung von DDT behält jeden Namen des Zertifikats, das sie erneuert."
 
 #: src/settings/NetworkBootPage.tsx
 msgid "The network boot settings could not be loaded."

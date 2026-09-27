@@ -217,6 +217,13 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.PxeInterfacesChanged, hosts);
     }
 
+    public void AgentChanged(AgentBinaryView agent)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+
+        _ = PushToAdministratorsAsync(LiveEvents.AgentChanged, agent);
+    }
+
     public void CertificateChanged(object view)
     {
         ArgumentNullException.ThrowIfNull(view);

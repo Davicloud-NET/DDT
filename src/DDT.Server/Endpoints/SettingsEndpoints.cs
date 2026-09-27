@@ -500,6 +500,7 @@ public static class SettingsEndpoints
         UserManager<DdtUser> users,
         DdtDbContext database,
         TimeProvider timeProvider,
+        LiveNotifier live,
         CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(options.Value.BinaryPath))
@@ -590,8 +591,12 @@ public static class SettingsEndpoints
         database.AuditEvents.Add(audit);
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        // As GET /api/settings/agent reads it from now on, so the page shows the answer without reading it again.
-        return TypedResults.Ok(new AgentBinaryView(sha256, size, audit.OccurredUtc, audit.ActorName, AgentBinarySource.Uploaded));
+        // As GET /api/settings/agent reads it from now on, so the page shows the answer without reading it again, and
+        // other administrators' pages take it from the hub.
+        AgentBinaryView uploaded = new(sha256, size, audit.OccurredUtc, audit.ActorName, AgentBinarySource.Uploaded);
+        live.AgentChanged(uploaded);
+
+        return TypedResults.Ok(uploaded);
     }
 
     private static ProblemHttpResult TooLarge() =>

@@ -51,6 +51,8 @@ import {
   settingsOverviewQuery,
   type SettingsSectionView,
 } from "@/settings/settings";
+import { agentBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
+import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
@@ -217,6 +219,8 @@ export function createLiveConnection(
       ["settings"],
       settingsOverviewQuery.queryKey,
       certificateKey,
+      agentBinaryQuery.queryKey,
+      serverCertificateQuery.queryKey,
     ]) {
       invalidate(key);
     }
@@ -338,12 +342,19 @@ export function createLiveConnection(
       queryClient.setQueryData(pxeInterfacesQuery.queryKey, hosts);
     });
 
+    // Administrators receive an uploaded agent.
+    current.on("agentChanged", (agent: AgentBinaryView) => {
+      queryClient.setQueryData(agentBinaryQuery.queryKey, agent);
+    });
+
     current.on("certificateChanged", (view: unknown) => {
       queryClient.setQueryData(certificateKey, (current: unknown) =>
         current !== null && typeof current === "object" && view !== null && typeof view === "object"
           ? { ...view, servedHere: (current as { servedHere?: unknown }).servedHere ?? null }
           : view,
       );
+      // The boot image page shows the served certificate as the server endpoint describes it, in another shape.
+      invalidate(serverCertificateQuery.queryKey);
     });
 
     // Administrators and the token's owner receive it.

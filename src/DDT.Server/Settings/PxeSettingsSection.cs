@@ -25,7 +25,10 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
         new("TftpMaxWindowSize"),
         new("MaxConcurrentTftpTransfers"),
         new("AuthorisedRelayAgents"),
-        new("BootTargets", SettingFieldKind.Collection),
+        new(
+            "BootTargets",
+            SettingFieldKind.Collection,
+            entryMembers: [.. SettingsJsonContext.Default.BootTargetOptions.Properties.Select(member => member.Name)]),
     ])
 {
     protected override JsonTypeInfo<PxeOptions> TypeInfo => SettingsJsonContext.Default.PxeOptions;

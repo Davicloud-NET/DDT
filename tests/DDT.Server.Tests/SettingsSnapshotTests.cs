@@ -238,11 +238,17 @@ public sealed class SettingsSnapshotTests
         Assert.Contains(machines.Warnings, warning => warning.Message.StartsWith("fd00::/32 is wider than a /48.", StringComparison.Ordinal));
     }
 
-    // A field is named on the page as the stored document names it, and an entry of a map in brackets.
+    // A field is named on the page as the stored document names it, and an entry of a map in brackets. A key may hold
+    // colons, as a claim value does, and only a member of the map's entries ends it.
     [Theory]
     [InlineData(SettingsSectionNames.Deployment, "Domain:UserName", "domain.userName")]
     [InlineData(SettingsSectionNames.Pxe, "BootTargets:X64Uefi:Method", "bootTargets[X64Uefi].method")]
+    [InlineData(SettingsSectionNames.Pxe, "BootTargets:X64Uefi:ServerHostName", "bootTargets[X64Uefi].serverHostName")]
+    [InlineData(SettingsSectionNames.Pxe, "BootTargets:X64:Uefi", "bootTargets[X64:Uefi]")]
     [InlineData(SettingsSectionNames.Ldap, "GroupRoleMap:CN=Admins,DC=corp", "groupRoleMap[CN=Admins,DC=corp]")]
+    [InlineData(SettingsSectionNames.Oidc, "GroupRoleMap:urn:example:admins", "groupRoleMap[urn:example:admins]")]
+    [InlineData(SettingsSectionNames.Oidc, "GroupRoleMap:urn:example:method", "groupRoleMap[urn:example:method]")]
+    [InlineData(SettingsSectionNames.Logging, "LogLevel:Microsoft.AspNetCore", "logLevel[Microsoft.AspNetCore]")]
     [InlineData(SettingsSectionNames.Pxe, "HttpBootPort", "httpBootPort")]
     [InlineData(SettingsSectionNames.Ldap, "", "")]
     public void AProblemIsNamedAsThePageNamesItsField(string section, string path, string expected)

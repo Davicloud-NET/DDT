@@ -9,8 +9,9 @@ computers. A flaw in it can reach every machine it deploys, so please report one
 Do not open a public issue, discussion or pull request for a vulnerability. Report it instead
 through GitHub's private vulnerability reporting: on the repository's **Security** tab choose
 **Report a vulnerability**, or go straight to
-https://github.com/Davicloud-NET/DDT/security/advisories/new. Only the maintainer and you can read
-the report. If that does not work for you, write to contact@davicloud.net.
+https://github.com/Davicloud-NET/DDT/security/advisories/new. The report is private, but repository
+owners, organization owners, security managers, and users with the admin role may also have access
+to the security advisory. If that does not work for you, write to contact@davicloud.net.
 
 A useful report says:
 

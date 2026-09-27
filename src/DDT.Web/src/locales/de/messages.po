@@ -660,6 +660,30 @@ msgstr "1 bis 365 Tage."
 msgid "1 to 365 days. It stops working on {expires}."
 msgstr "1 bis 365 Tage. Es läuft am {expires} ab."
 
+#: src/settings/networkBoot.ts
+msgid "32-bit UEFI, over HTTP"
+msgstr "32-Bit-UEFI, über HTTP"
+
+#: src/settings/networkBoot.ts
+msgid "32-bit UEFI, over TFTP"
+msgstr "32-Bit-UEFI, über TFTP"
+
+#: src/settings/networkBoot.ts
+msgid "64-bit Arm UEFI, over HTTP"
+msgstr "64-Bit-Arm-UEFI, über HTTP"
+
+#: src/settings/networkBoot.ts
+msgid "64-bit Arm UEFI, over TFTP"
+msgstr "64-Bit-Arm-UEFI, über TFTP"
+
+#: src/settings/networkBoot.ts
+msgid "64-bit UEFI PCs, over HTTP"
+msgstr "64-Bit-UEFI-PCs, über HTTP"
+
+#: src/settings/networkBoot.ts
+msgid "64-bit UEFI PCs, over TFTP"
+msgstr "64-Bit-UEFI-PCs, über TFTP"
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "Ein #cloud-config-Dokument oder ein Skript, das mit #! beginnt."
@@ -716,6 +740,10 @@ msgstr "Ein Dateipaket wird für die Schritte „Skript ausführen“ entpackt, 
 msgid "A hardware model"
 msgstr "Ein Hardwaremodell"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "A host may have a network adapter on a segment whose DHCP belongs to someone else, so DDT answers on no interface until it is listed. List the interfaces machines reach DDT on, and never a VPN tunnel."
+msgstr "Ein Host kann einen Netzwerkadapter in einem Segment haben, dessen DHCP jemand anderem gehört, daher antwortet DDT auf keiner Schnittstelle, bis sie aufgeführt ist. Führen Sie die Schnittstellen auf, über die Geräte DDT erreichen, und nie einen VPN-Tunnel."
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "A Join the domain step joins the machine online in Windows with this account, which it fetches while the step runs. Left without a domain name, machines stay in a workgroup."
 msgstr "Ein Schritt „Der Domäne beitreten“ lässt das Gerät online in Windows mit diesem Konto beitreten, das er abruft, während er läuft. Ohne Domänennamen bleiben Geräte in einer Arbeitsgruppe."
@@ -724,6 +752,10 @@ msgstr "Ein Schritt „Der Domäne beitreten“ lässt das Gerät online in Wind
 msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
 msgstr "Ein Gerät hat sich geändert, während es entfernt wurde. Sehen Sie es sich erneut an, bevor Sie es entfernen."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "A machine over the limit waits until a transfer ends."
+msgstr "Ein Gerät über der Grenze wartet, bis eine Übertragung endet."
 
 #: src/lib/serverMessages.ts
 msgctxt "model.manufacturerWhole"
@@ -743,6 +775,10 @@ msgstr "Auf diesem Gerät hat eine neue Ausführung begonnen."
 msgctxt "package.tooManyTargets"
 msgid "A package can have at most {max} targets."
 msgstr "Ein Paket darf höchstens {max} Ziele haben."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi, signed by the 2023 one."
+msgstr "Ein Pfad im Startverzeichnis. Geräte, die der Microsoft-CA 2011 nicht mehr vertrauen, brauchen x64/bootmgfw_ex.efi, signiert von der CA 2023."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartAfterRestart"
@@ -1021,6 +1057,10 @@ msgstr "Aktionen für die Regel für {description}"
 msgid "Active"
 msgstr "Aktiv"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Add"
+msgstr "Hinzufügen"
+
 #: src/sequences/StepConditions.tsx
 msgid "Add a condition"
 msgstr "Bedingung hinzufügen"
@@ -1041,6 +1081,10 @@ msgstr "Konto hinzufügen"
 #: src/rules/RuleDialog.tsx
 msgid "Add an assignment rule"
 msgstr "Zuweisungsregel hinzufügen"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Add boot target"
+msgstr "Startziel hinzufügen"
 
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
@@ -1099,6 +1143,10 @@ msgstr "Administrator"
 msgctxt "role.administrator"
 msgid "Administrator"
 msgstr "Administrator"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Advertise boot server discovery"
+msgstr "Suche nach Bootservern ankündigen"
 
 #: src/runs/RunPanel.tsx
 msgid "After {after}"
@@ -1189,6 +1237,14 @@ msgctxt "sequence.exitCodeMeansBoth"
 msgid "An exit code cannot mean both success and a restart: {codes}."
 msgstr "Ein Exitcode kann nicht zugleich Erfolg und Neustart bedeuten: {codes}."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "An http URL on DDT's boot port, below /boot/, where it serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgstr "Eine http-URL auf dem Boot-Port von DDT, unter /boot/, wo es das Startverzeichnis bereitstellt. Geräte, die der Microsoft-CA 2011 nicht mehr vertrauen, brauchen bootmgfw_ex.efi, signiert von der CA 2023."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "An http URL on port {portText}, below /boot/, where DDT serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgstr "Eine http-URL auf Port {portText}, unter /boot/, wo DDT das Startverzeichnis bereitstellt. Geräte, die der Microsoft-CA 2011 nicht mehr vertrauen, brauchen bootmgfw_ex.efi, signiert von der CA 2023."
+
 #: src/packages/PackageDialog.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr "Ein Schritt „Treiber einbinden“ fügt diese Treiber Geräten hinzu, deren Modell auf eines davon passt. Mit * am Ende passt ein Modell auf jedes, das so beginnt; ein leerer Hersteller passt auf jeden."
@@ -1228,6 +1284,10 @@ msgstr "Ein anderer Administrator hat sie um {time} gespeichert"
 msgid "Another administrator saved this sequence while you were editing."
 msgstr "Ein anderer Administrator hat diese Tasksequenz gespeichert, während Sie sie bearbeitet haben."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Another interface name or address"
+msgstr "Weitere Schnittstelle, als Name oder Adresse"
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "another processor"
 msgstr "einen anderen Prozessor"
@@ -1241,6 +1301,18 @@ msgstr "Eine andere Anfrage verwendet diesen Upload. Warten Sie einige Sekunden 
 msgctxt "sequence.nameTaken"
 msgid "Another sequence is already called {name}. Choose another name."
 msgstr "Eine andere Tasksequenz heißt bereits {name}. Wählen Sie einen anderen Namen."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answer as ProxyDHCP"
+msgstr "Als ProxyDHCP antworten"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answer TFTP from port 69"
+msgstr "TFTP von Port 69 aus beantworten"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answering machines that netboot"
+msgstr "Antworten für Geräte, die per Netzwerk starten"
 
 #: src/rules/RuleDialog.tsx
 msgid "Any of the machine's network adapters, with or without separators."
@@ -1332,6 +1404,7 @@ msgid "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgstr "Mit der Freigabe von {label} läuft darauf auch {name}, die {ruleInside} gewählt hat."
 
 #: src/images/ImagesPage.tsx
+#: src/settings/NetworkBootPage.tsx
 msgid "Architecture"
 msgstr "Architektur"
 
@@ -1418,6 +1491,10 @@ msgstr "Code der Authenticator-App"
 msgid "Authenticator code, if you use one"
 msgstr "Code der Authenticator-App, falls Sie eine verwenden"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Authorized relay agents"
+msgstr "Zugelassene Relay-Agents"
+
 #: src/settings/ApprovalPage.tsx
 msgid "Authorizing machines"
 msgstr "Geräte autorisieren"
@@ -1426,9 +1503,21 @@ msgstr "Geräte autorisieren"
 msgid "Back to DDT"
 msgstr "Zurück zu DDT"
 
+#: src/settings/networkBoot.ts
+msgid "BIOS PCs, over TFTP"
+msgstr "BIOS-PCs, über TFTP"
+
 #: src/app/navigation.ts
 msgid "Boot"
 msgstr "Boot"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot directory"
+msgstr "Startverzeichnis"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot file"
+msgstr "Startdatei"
 
 #: src/app/navigation.ts
 #: src/boot/BootImagePage.tsx
@@ -1438,6 +1527,10 @@ msgstr "Bootimage"
 #: src/boot/BootImagePage.tsx
 msgid "Boot manager"
 msgstr "Start-Manager"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot targets"
+msgstr "Startziele"
 
 #: src/boot/BootImagePage.tsx
 msgid "Build command"
@@ -1747,6 +1840,10 @@ msgstr "Dunkel"
 msgid "DDT"
 msgstr "DDT"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
+msgstr "DDT antwortet Geräten, die per Netzwerk starten, nur auf den hier aufgeführten Schnittstellen. ProxyDHCP teilt jedem Gerät mit, welche Startdatei es laden soll, und TFTP oder HTTP liefert sie aus dem Startverzeichnis."
+
 #: src/about/AboutPage.tsx
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr "DDT wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt, soweit das anwendbare Recht es zulässt. Einzelheiten stehen in der GNU General Public License. DDT enthält Software anderer unter deren eigenen Lizenzen."
@@ -1778,6 +1875,10 @@ msgstr "DDT zeigt dieses Kennwort nur jetzt an. Bei der nächsten Anmeldung muss
 #: src/tokens/MakeTokenDialog.tsx
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
 msgstr "DDT zeigt dieses Token nur jetzt an und speichert nur einen Hash davon. Geht es verloren, widerrufen Sie es und erstellen Sie ein neues."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
+msgstr "DDT teilt einem per Netzwerk startenden Gerät seine Startdatei mit, während der eigene DHCP-Server des Standorts weiter die Adressen vergibt. Schalten Sie es aus, wo der DHCP-Server jedes Standorts DDT und die Startdatei selbst nennt; DDT lauscht dann weder auf UDP 67 noch auf 4011."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.noMapNewAccount"
@@ -2165,6 +2266,10 @@ msgstr "Alle Aktionen"
 msgid "Every boot image is built again"
 msgstr "Jedes Startimage ist neu erstellt"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Every host that runs network boot looks for its network adapters again and restarts its listeners with these settings. TFTP transfers in progress end, and those machines start their download again."
+msgstr "Jeder Host, der den Netzwerkboot ausführt, sucht erneut nach seinen Netzwerkadaptern und startet seine Listener mit diesen Einstellungen neu. Laufende TFTP-Übertragungen enden, und diese Geräte beginnen ihren Download von vorn."
+
 #: src/images/ImagesPage.tsx
 msgid "Every image in {file} is already in the library."
 msgstr "Jedes Image aus {file} ist schon in der Bibliothek."
@@ -2281,9 +2386,17 @@ msgstr "Für"
 msgid "For {architecture} only, cannot be written"
 msgstr "Nur für {architecture}, kann nicht geschrieben werden"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "For a network adapter that was added, or an address that changed."
+msgstr "Für einen hinzugefügten Netzwerkadapter oder eine geänderte Adresse."
+
 #: src/users/UsersPage.tsx
 msgid "For an account that lost its authenticator. {name} is signed out within a minute and signs in with the password alone until it sets up an authenticator again on its Account page."
 msgstr "Für ein Konto, dessen Authenticator verloren ging. {name} wird innerhalb einer Minute abgemeldet und meldet sich nur mit dem Kennwort an, bis auf der eigenen Kontoseite wieder ein Authenticator eingerichtet ist."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "For an adapter no host reported, such as one still to come. An IPv4 address picks the interface that has it."
+msgstr "Für einen Adapter, den kein Host gemeldet hat, etwa einen, der erst noch kommt. Eine IPv4-Adresse wählt die Schnittstelle, die sie hat."
 
 #: src/packages/PackageDialog.tsx
 msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
@@ -2365,6 +2478,10 @@ msgstr "An Windows übergeben; nach dem Windows-Setup hat der Agent {took} spät
 msgid "Handing over to Windows"
 msgstr "Übergabe an Windows"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "HTTP boot port"
+msgstr "HTTP-Boot-Port"
+
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
 msgstr "Ich habe sie gespeichert"
@@ -2442,6 +2559,14 @@ msgstr "Windows installieren"
 msgid "Installed"
 msgstr "Installiert"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Interfaces"
+msgstr "Schnittstellen"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Interfaces on {name}"
+msgstr "Schnittstellen auf {name}"
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Interpreter"
 msgstr "Interpreter"
@@ -2486,6 +2611,14 @@ msgstr "Es wartet, bis sich jemand daran anmeldet."
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
 msgstr "Sein Datenträger wird nicht gelöscht."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Its firmware loads the boot file over HTTP, from a URL."
+msgstr "Diese Firmware lädt die Startdatei über HTTP, von einer URL."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Its firmware loads the boot file over TFTP."
+msgstr "Diese Firmware lädt die Startdatei über TFTP."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Join account"
@@ -2541,6 +2674,10 @@ msgstr "Sprache"
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Language and region"
 msgstr "Sprache und Region"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Largest TFTP window"
+msgstr "Größtes TFTP-Fenster"
 
 #: src/boot/BootImagePage.tsx
 msgid "Last build"
@@ -2807,6 +2944,10 @@ msgstr "Zugeordnete Gruppen"
 msgid "Matches"
 msgstr "Passt auf"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Microsoft 2011 CA. The default, which most machines trust."
+msgstr "Microsoft-CA 2011. Die Voreinstellung, der die meisten Geräte vertrauen."
+
 #: src/images/ImagesPage.tsx
 msgid "Microsoft's boot files"
 msgstr "Startdateien von Microsoft"
@@ -2939,6 +3080,7 @@ msgid "Needs your approval"
 msgstr "Wartet auf Ihre Freigabe"
 
 #: src/app/navigation.ts
+#: src/settings/NetworkBootPage.tsx
 msgid "Network boot"
 msgstr "Netzwerkboot"
 
@@ -2987,6 +3129,10 @@ msgstr "Für diese Identität konnte kein Konto angelegt werden. Wenden Sie sich
 #: src/users/UsersPage.tsx
 msgid "No account matches"
 msgstr "Kein Konto passt"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "No boot target yet, so ProxyDHCP answers no machine."
+msgstr "Noch kein Startziel, daher antwortet ProxyDHCP keinem Gerät."
 
 #: src/runs/RunPanel.tsx
 msgid "No contact for {silentFor}, as the machine restarts."
@@ -3056,6 +3202,10 @@ msgstr "Keine Gruppe ist einer Rolle zugeordnet. Daher wählen Administratoren d
 msgid "No group matches."
 msgstr "Keine Gruppe passt."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "No host that runs network boot has reported its interfaces yet. A host reports them when it applies these settings without problems."
+msgstr "Noch kein Host, der den Netzwerkboot ausführt, hat seine Schnittstellen gemeldet. Ein Host meldet sie, wenn er diese Einstellungen ohne Probleme anwendet."
+
 #: src/images/ImagesPage.tsx
 msgid "No image matches"
 msgstr "Kein Image passt"
@@ -3063,6 +3213,10 @@ msgstr "Kein Image passt"
 #: src/images/ImagesPage.tsx
 msgid "No images yet"
 msgstr "Noch keine Images"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "No interface is listed, so DDT answers no machine that netboots. Choose the interfaces below, or type one."
+msgstr "Keine Schnittstelle ist aufgeführt, daher antwortet DDT keinem Gerät, das per Netzwerk startet. Wählen Sie unten die Schnittstellen aus, oder geben Sie eine ein."
 
 #: src/log/LogPanel.tsx
 msgid "No loaded line matches the filter."
@@ -3211,6 +3365,10 @@ msgstr "Nicht bereitstellbar: Nur x64-Images können installiert werden."
 msgid "Not found in the directory"
 msgstr "Nicht im Verzeichnis gefunden"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Not known"
+msgstr "Nicht bekannt"
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Not known whether it is signed for Secure Boot"
 msgstr "Nicht bekannt, ob es für Secure Boot signiert ist"
@@ -3299,9 +3457,17 @@ msgstr "OK"
 msgid "On"
 msgstr "Ein"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "On {name}"
+msgstr "Auf {name}"
+
 #: src/machines/secureBoot.ts
 msgid "On, {note}"
 msgstr "Ein, {note}"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
+msgstr "Eine IPv4-Adresse pro Zeile. DDT beantwortet eine Anfrage, die ein DHCP-Relay von einem anderen Standort weiterleitet, nur, wenn dieses Relay hier aufgeführt ist."
 
 #: src/rules/RuleDialog.tsx
 msgid "One MAC address"
@@ -3341,9 +3507,17 @@ msgstr "Nur Administratoren dürfen das Beitrittskonto prüfen."
 msgid "Only administrators read the audit log."
 msgstr "Nur Administratoren lesen das Änderungsprotokoll."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Only administrators see and change network boot: which interfaces DDT answers on and what machines load."
+msgstr "Nur Administratoren sehen und ändern den Netzwerkboot: auf welchen Schnittstellen DDT antwortet und was Geräte laden."
+
 #: src/tokens/TokensPage.tsx
 msgid "Only administrators see every token. Your own are on the Account and security page in the account menu."
 msgstr "Nur Administratoren sehen alle Token. Ihre eigenen finden Sie auf der Seite Konto und Sicherheit im Kontomenü."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Only ever useful for BIOS machines: UEFI firmware can refuse an answer that carries it."
+msgstr "Nur für BIOS-Geräte nützlich: UEFI-Firmware kann eine Antwort ablehnen, die dies enthält."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Only images for x64 machines can be written."
@@ -3436,6 +3610,10 @@ msgstr "Organisationseinheit"
 #: src/images/ImagesPage.tsx
 msgid "OS images"
 msgstr "Betriebssystem-Images"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Other entries"
+msgstr "Weitere Einträge"
 
 #: src/sequences/StepInspector.tsx
 msgid "Otherwise the run stops at this step."
@@ -3583,6 +3761,14 @@ msgstr "Probleme und Warnungen"
 msgid "Problems and warnings of this step"
 msgstr "Probleme und Warnungen dieses Schritts"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "ProxyDHCP and TFTP"
+msgstr "ProxyDHCP und TFTP"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "ProxyDHCP sends a machine the boot file of the architecture its firmware reports, and answers no architecture without a boot target. A site whose own DHCP server names DDT and the boot file needs none."
+msgstr "ProxyDHCP sendet einem Gerät die Startdatei der Architektur, die seine Firmware meldet, und antwortet keiner Architektur ohne Startziel. Ein Standort, dessen eigener DHCP-Server DDT und die Startdatei nennt, braucht keins."
+
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (Entwicklung)"
@@ -3659,8 +3845,13 @@ msgstr "Abgelehnt"
 
 #: src/machines/MachineActions.tsx
 #: src/sequences/StepInspector.tsx
+#: src/settings/NetworkBootPage.tsx
 msgid "Remove"
 msgstr "Entfernen"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Remove {entry}"
+msgstr "{entry} entfernen"
 
 #: src/sequences/StepInspector.tsx
 msgid "Remove {name}"
@@ -3677,6 +3868,10 @@ msgstr "Bedingung {number} entfernen"
 #: src/packages/PackageDialog.tsx
 msgid "Remove model {position}"
 msgstr "Modell {position} entfernen"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Remove the boot target for {key}"
+msgstr "Startziel für {key} entfernen"
 
 #: src/sequences/RemovedStepNotice.tsx
 msgid "Removed {name} ({kind}). You can bring it back for 10 seconds."
@@ -3931,6 +4126,10 @@ msgstr "Änderungen speichern"
 msgid "Save my version"
 msgstr "Meine Version speichern"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Save or discard your changes first."
+msgstr "Speichern oder verwerfen Sie zuerst Ihre Änderungen."
+
 #: src/packages/PackageDialog.tsx
 msgid "Save package"
 msgstr "Paket speichern"
@@ -3955,9 +4154,25 @@ msgstr "Gespeichert {savedWhen}."
 msgid "Saving"
 msgstr "Wird gespeichert"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Saving restarts the network boot listeners on every host that runs them, which ends the TFTP transfers in progress. Those machines start their download again."
+msgstr "Das Speichern startet die Netzwerkboot-Listener auf jedem Host neu, der sie ausführt, was die laufenden TFTP-Übertragungen beendet. Diese Geräte beginnen ihren Download von vorn."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan again"
+msgstr "Erneut suchen"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan interfaces again"
+msgstr "Schnittstellen erneut suchen"
+
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
 msgstr "Scannen Sie den Code mit Ihrer Authenticator-App oder geben Sie den Schlüssel dort ein. Geben Sie dann den Code ein, den die App anzeigt."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan the interfaces again?"
+msgstr "Schnittstellen erneut suchen?"
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Script"
@@ -4076,14 +4291,34 @@ msgstr "Seriennummer {serial}"
 msgid "Serial number"
 msgstr "Seriennummer"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Serve boot files over TFTP"
+msgstr "Startdateien über TFTP bereitstellen"
+
 #: src/app/navigation.ts
 #: src/users/DirectoryPanel.tsx
 msgid "Server"
 msgstr "Server"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Server address"
+msgstr "Serveradresse"
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Server default"
 msgstr "Standard des Servers"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Server host name"
+msgstr "Server-Hostname"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Server name for the URL"
+msgstr "Servername für die URL"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Serving"
+msgstr "Bedient"
 
 #: src/settings/SettingsParts.tsx
 msgid "Set"
@@ -4096,6 +4331,10 @@ msgstr "Legen Sie zuerst ein eigenes Kennwort fest"
 #: src/users/userView.ts
 msgid "Set by an administrator"
 msgstr "Von einem Administrator festgelegt"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Set in configuration"
+msgstr "In der Konfiguration festgelegt"
 
 #: src/settings/SettingsParts.tsx
 msgid "Set in configuration as {key} ({variable}), which wins over the value stored here. Remove it there to change it on this page."
@@ -4475,6 +4714,10 @@ msgstr "Tasksequenz"
 msgid "Task sequences"
 msgstr "Tasksequenzen"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "TFTP transfers at once"
+msgstr "Gleichzeitige TFTP-Übertragungen"
+
 #: src/auth/SignInPage.tsx
 msgid "That code is not valid."
 msgstr "Dieser Code ist ungültig."
@@ -4568,6 +4811,10 @@ msgstr "Das Startimage enthält jeden für Windows PE markierten Treiber."
 #: src/boot/BootImagePage.tsx
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
 msgstr "Das Startimage enthält nur die eigenen Treiber von Windows PE. Markieren Sie ein Treiberpaket unter <0>Bibliothek, Treiber</0>, wenn ein Gerät in Windows PE das Netzwerk nicht erreicht oder seinen Datenträger nicht sieht."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
+msgstr "Der Name des Bootservers in der Antwort, in ASCII und höchstens 63 Zeichen. Leer gelassen, seine Adresse."
 
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
@@ -4786,6 +5033,10 @@ msgctxt "directory.noImmutableId"
 msgid "The entry has no {attribute} value to key the account on, so a sign-in is refused."
 msgstr "Der Eintrag hat keinen Wert {attribute}, an den das Konto gebunden werden kann, daher wird eine Anmeldung abgelehnt."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The fields marked below say what."
+msgstr "Die markierten Felder unten sagen, welche."
+
 #: src/lib/serverMessages.ts
 msgctxt "gpt.noTable"
 msgid "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image."
@@ -4898,6 +5149,18 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "Der Imagespeicher braucht {required} freien Platz für diesen Upload, hat aber {available}. Schaffen Sie Platz auf dem Speichervolume des Servers oder verwerfen Sie unfertige Uploads, und versuchen Sie es dann erneut."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The interfaces the hosts found could not be read."
+msgstr "Die Schnittstellen, die die Hosts gefunden haben, konnten nicht gelesen werden."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The IPv4 address machines load the boot file from. Left empty, DDT's address on the interface the request arrived on, which suits a host serving several networks."
+msgstr "Die IPv4-Adresse, von der Geräte die Startdatei laden. Leer gelassen, die Adresse von DDT auf der Schnittstelle, auf der die Anfrage eintraf, was zu einem Host passt, der mehrere Netzwerke bedient."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The IPv4 address the answer names as the boot server; the URL decides where the boot file comes from. Left empty, DDT's address on the interface the request arrived on."
+msgstr "Die IPv4-Adresse, die die Antwort als Bootserver nennt; woher die Startdatei kommt, entscheidet die URL. Leer gelassen, die Adresse von DDT auf der Schnittstelle, auf der die Anfrage eintraf."
+
 #: src/lib/serverMessages.ts
 msgctxt "domain.noJoinAccount"
 msgid "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
@@ -4993,6 +5256,10 @@ msgstr "das Gerät mit der MAC {mac}"
 msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 msgstr "Für das Gerät mit der MAC {target} wird {sequence} nicht mehr gewählt; stattdessen wählt eine andere Regel oder ein Operator. Ein Gerät, das schon eine Ausführung hat, behält sie."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The most blocks DDT sends before the machine acknowledges them, whatever the boot image asks for; 1 to 64. 16 was reliable in tests; lower it to 8 or 4 where a link loses packets."
+msgstr "So viele Blöcke sendet DDT höchstens, bevor das Gerät sie bestätigt, gleich, was das Startimage anfordert; 1 bis 64. 16 war in Tests zuverlässig; senken Sie den Wert auf 8 oder 4, wo eine Verbindung Pakete verliert."
+
 #: src/sequences/sequenceDraft.ts
 msgid "the name"
 msgstr "der Name"
@@ -5005,6 +5272,14 @@ msgstr "Der Name, den DDT für das Konto anzeigt, etwa der vollständige Name de
 msgctxt "common.nameLength"
 msgid "The name must have 1 to {max} characters and no control characters."
 msgstr "Der Name muss 1 bis {max} Zeichen und keine Steuerzeichen haben."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The name or IPv4 address machines reach DDT by. The boot file offers URLs with it."
+msgstr "Der Name oder die IPv4-Adresse, über die Geräte DDT erreichen. Die Startdatei bietet URLs damit an."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The network boot settings could not be loaded."
+msgstr "Die Einstellungen für den Netzwerkboot konnten nicht geladen werden."
 
 #: src/account/AccountPage.tsx
 msgid "The new passwords do not match."
@@ -5293,6 +5568,10 @@ msgctxt "upload.conversionOutOfSpace"
 msgid "The store volume ran out of space while the image was converted. Free some space and complete the upload again."
 msgstr "Auf dem Speichervolume war während der Umwandlung des Images kein Platz mehr. Schaffen Sie Platz und schließen Sie den Upload erneut ab."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The stored method does not suit this architecture."
+msgstr "Die gespeicherte Methode passt nicht zu dieser Architektur."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.systemPartitionSize"
 msgid "The system partition needs {min} to {max} MB."
@@ -5365,6 +5644,14 @@ msgstr "Diese Einstellungen konnten nicht geladen werden."
 msgid "These settings decide who signs in and what machines trust, so they need your password again."
 msgstr "Diese Einstellungen entscheiden, wer sich anmeldet und wem Geräte vertrauen, daher brauchen sie erneut Ihr Kennwort."
 
+#: src/settings/NetworkBootPage.tsx
+msgid "These settings have problems, so no host serves network boot until they are fixed."
+msgstr "Diese Einstellungen haben Probleme, daher bedient kein Host den Netzwerkboot, bis sie behoben sind."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory: a port that is taken would stop the server, and everything in the boot directory is served to anyone who asks. A relative boot directory is inside DDT:StorePath."
+msgstr "Diese bleiben in der Konfiguration, als DDT:Pxe:HttpBootPort und DDT:Pxe:BootDirectory: Ein belegter Port würde den Server anhalten, und alles im Startverzeichnis wird jedem bereitgestellt, der danach fragt. Ein relatives Startverzeichnis liegt in DDT:StorePath."
+
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
 msgstr "Dort geändert: {list}."
@@ -5426,6 +5713,10 @@ msgstr "Diese Datei ist weder ein WIM-Image noch ein Datenträgerimage mit GUID-
 msgctxt "wim.notAWim"
 msgid "This file is not a WIM image."
 msgstr "Diese Datei ist kein WIM-Image."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "This host found no interface with an IPv4 address."
+msgstr "Dieser Host hat keine Schnittstelle mit einer IPv4-Adresse gefunden."
 
 #: src/lib/serverMessages.ts
 msgctxt "wim.encrypted"
@@ -5606,6 +5897,14 @@ msgstr "Erneut versuchen"
 msgid "Try now"
 msgstr "Jetzt versuchen"
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Turn it off only when another TFTP server serves them. Every TFTP boot target then needs that server's address."
+msgstr "Schalten Sie es nur aus, wenn ein anderer TFTP-Server sie bereitstellt. Jedes TFTP-Startziel braucht dann die Adresse dieses Servers."
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Turn it on when the log shows a read request arriving but the machine never receives data: a stateful firewall is dropping replies from a fresh port. Replies then leave by the route back to the machine, which has to go through a served interface."
+msgstr "Schalten Sie es ein, wenn das Protokoll eine eintreffende Leseanforderung zeigt, das Gerät aber nie Daten erhält: Eine zustandsbehaftete Firewall verwirft Antworten von einem neuen Port. Antworten gehen dann über die Route zurück zum Gerät, die über eine bediente Schnittstelle führen muss."
+
 #: src/account/AccountPage.tsx
 msgid "Turn off"
 msgstr "Ausschalten"
@@ -5729,6 +6028,14 @@ msgstr "Wiederherstellungscode verwenden"
 #: src/auth/SignInPage.tsx
 msgid "Use an authenticator code"
 msgstr "Code der Authenticator-App verwenden"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Use HTTP"
+msgstr "HTTP verwenden"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Use TFTP"
+msgstr "TFTP verwenden"
 
 #: src/sequences/StepInspector.tsx
 msgid "Use the arrow keys to move the step, and Home or End to move it to the start or the end."
@@ -5942,6 +6249,10 @@ msgstr "Windows PE, vor der Übergabe"
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Windows setup"
 msgstr "Windows-Setup"
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Windows UEFI CA 2023."
+msgstr "Windows UEFI CA 2023."
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Windows, after the hand-over"

@@ -144,7 +144,14 @@ function ApplyStates({ states, version }: { states: SettingsApplyState[]; versio
                   : translate`Applied`}
             </StateTag>
             <span className="type-data text-ink">{host}</span>
-            {state.message !== null ? <span className="text-ink-2">{state.message}</span> : null}
+            {/* A failure's reason can be long, so it reads as a line of its own. */}
+            {state.message !== null ? (
+              <span
+                className={`min-w-0 break-words text-ink-2 ${state.state === "Failed" ? "basis-full" : ""}`}
+              >
+                {state.message}
+              </span>
+            ) : null}
           </li>
         );
       })}

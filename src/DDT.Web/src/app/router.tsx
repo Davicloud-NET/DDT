@@ -24,6 +24,7 @@ import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
+import { NetworkBootPage } from "@/settings/NetworkBootPage";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
@@ -167,7 +168,7 @@ const bootImageRoute = createRoute({
 const networkBootRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/boot/network",
-  component: PendingPage,
+  component: NetworkBootPage,
 });
 const usersRoute = createRoute({
   getParentRoute: () => shellRoute,

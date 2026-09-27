@@ -24,6 +24,9 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
     // every boot image was built again with the root.
     public string ReplacedAnchorPath => Path.Combine(Folder, "ddt-anchor.replaced.pem");
 
+    // Holds when a pair the settings page installed goes back to the one before it, unless it is confirmed first.
+    public string ProvisionalPath => Path.Combine(Folder, "ddt.provisional");
+
     // Taken by every DDT process that writes these files, or may have to, so two of them never renew at once.
     public string LockPath => Path.Combine(Folder, ".lock");
 

@@ -198,6 +198,24 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.UsersRemoved, new UsersRemovedEvent([.. userIds]));
     }
 
+    // View is the section's SettingsSectionView. It holds no secret, only whether each is set.
+    public void SettingsChanged(object view, bool operatorsMayRead)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        _ = PushToGroupsAsync(
+            operatorsMayRead ? [LiveGroups.Administrators, LiveGroups.Operators] : [LiveGroups.Administrators],
+            LiveEvents.SettingsChanged,
+            view);
+    }
+
+    public void CertificateChanged(object view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        _ = PushToAdministratorsAsync(LiveEvents.CertificateChanged, view);
+    }
+
     // Every event carries what changed, so a page patches what it shows rather than loading it again.
     private async Task PushEventAsync(string liveEvent, object payload)
     {

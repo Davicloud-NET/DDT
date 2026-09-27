@@ -8,18 +8,18 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
 // The passwords a run needs, handed to its agent just in time: only for the step that needs them, only while that
-// step runs, and every read audited. They are read from the configuration now and never stored with the run.
+// step runs, and every read audited. They are read from the settings now and never stored with the run.
 // Nothing here logs them. The caller saves the audit row before it answers.
 public sealed class RunSecrets(
     DdtDbContext database,
     UnattendRenderer renderer,
-    IOptions<DeploymentOptions> options,
+    DdtSettings settings,
     TimeProvider timeProvider)
 {
     public async Task<(string? AnswerFile, string? Refusal)> AnswerFileAsync(
@@ -42,7 +42,9 @@ public sealed class RunSecrets(
             return (null, "That step writes no answer file.");
         }
 
-        if (unattend.LocalAdministrator && string.IsNullOrEmpty(options.Value.LocalAdministrator.Password))
+        string? password = settings.Current.Deployment.LocalAdministrator.Password;
+
+        if (unattend.LocalAdministrator && string.IsNullOrEmpty(password))
         {
             return (null, "The step adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more.");
         }
@@ -56,7 +58,7 @@ public sealed class RunSecrets(
 
         Audit(run!, machine, address, $"The answer file of step {step.Name} ({stepId:D}) of {run!.Title}.");
 
-        return (renderer.Render(inputs!, unattend, language), null);
+        return (renderer.Render(inputs!, unattend, language, password), null);
     }
 
     // The domain is the one configured when the run started: a domain named anywhere else could send the join
@@ -88,7 +90,7 @@ public sealed class RunSecrets(
             return (null, "That step joins no domain.");
         }
 
-        DomainOptions domain = options.Value.Domain;
+        DomainOptions domain = settings.Current.Deployment.Domain;
 
         if (string.IsNullOrWhiteSpace(domain.UserName) || string.IsNullOrEmpty(domain.Password))
         {

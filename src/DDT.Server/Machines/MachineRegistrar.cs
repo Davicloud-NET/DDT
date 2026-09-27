@@ -9,9 +9,9 @@ using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Live;
+using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Machines;
@@ -21,7 +21,7 @@ public sealed partial class MachineRegistrar(
     MachineTokenService tokens,
     DeploymentService deployments,
     LiveNotifier live,
-    IOptions<MachineOptions> options,
+    DdtSettings settings,
     TimeProvider timeProvider,
     ILogger<MachineRegistrar> logger)
 {
@@ -243,8 +243,10 @@ public sealed partial class MachineRegistrar(
         IQueryable<Machine> waiting = database.Machines
             .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null);
 
-        return await waiting.CountAsync(m => m.FirstSeenAddress == address, cancellationToken).ConfigureAwait(false) >= options.Value.MaxWaitingPerAddress
-            || await waiting.CountAsync(cancellationToken).ConfigureAwait(false) >= options.Value.MaxWaiting;
+        MachinePolicy policy = settings.Current.Machines;
+
+        return await waiting.CountAsync(m => m.FirstSeenAddress == address, cancellationToken).ConfigureAwait(false) >= policy.MaxWaitingPerAddress
+            || await waiting.CountAsync(cancellationToken).ConfigureAwait(false) >= policy.MaxWaiting;
     }
 
     private bool Resumes(NormalisedRegistration registration, Machine machine) =>

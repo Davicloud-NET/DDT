@@ -10,12 +10,12 @@ using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Endpoints;
@@ -156,15 +156,17 @@ public static class DeploymentEndpoints
             || (mac != null && (row.Machine.PrimaryMac.Contains(mac) || row.Machine.MacAddresses.Contains(mac))));
     }
 
-    private static Ok<DeploymentOptionsView> ReadOptions(
-        DeploymentService deployments,
-        IOptions<MachineOptions> machineOptions,
-        TimeProvider timeProvider) =>
-        TypedResults.Ok(new DeploymentOptionsView(
-            deployments.DomainConfigured,
-            machineOptions.Value.RequireWebApproval,
-            deployments.ZeroTouchEnabled,
+    // Three booleans and the time, from one snapshot, and nothing else of the settings: Viewers read this.
+    private static Ok<DeploymentOptionsView> ReadOptions(DdtSettings settings, TimeProvider timeProvider)
+    {
+        SettingsSnapshot snapshot = settings.Current;
+
+        return TypedResults.Ok(new DeploymentOptionsView(
+            !string.IsNullOrWhiteSpace(snapshot.Deployment.Domain.Name),
+            snapshot.Machines.RequireWebApproval,
+            snapshot.Machines.ZeroTouchEnabled,
             timeProvider.GetUtcNow()));
+    }
 
     private static async Task<Ok<DomainJoinCheckView>> CheckDomainJoinAsync(
         DomainJoinCheckRequest request,

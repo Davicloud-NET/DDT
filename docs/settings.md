@@ -996,15 +996,78 @@ M5 itself added no configuration key. Task sequences, packages and rules are ent
 and a page (rule 2), and its new limits are constants: those that could join a section later are
 listed in section 3, the others are values the agent and the server must agree on (section 2).
 
+## Built in M6.5
+
+The store, the snapshot, the consumers and the API of sections 5 and 6 are built, on branch
+m6.5-settings. Where the implementation deliberately differs from the plan above:
+
+- **The live push carries the view.** `settingsChanged` carries the whole `SettingsSectionView` of
+  the section, as its GET answers it, so other browsers patch what they show; 5.5 planned the
+  section name alone. It goes to the administrators' group, and for deployment and machines also to
+  a group of operators. A host's apply result is pushed the same way.
+- **Views carry two more members.** `section` names the section, and `reauthenticate` lists the
+  fields that need the re-auth token. An unconfirmed warning is reported under `confirm` in the
+  ValidationProblem's errors, as `code: message`, and with its code in the `confirm` extension.
+- **Which warnings need a confirmation.** A save is asked to confirm only the warnings it raises:
+  those that did not hold before the save, such as a new wide network, or that are about the change
+  itself, as `ldap.rekey` is. `auth.noLocalAdministrator` is asked at every ldap or oidc save while it
+  holds. A warning without a confirmation code, such as `pxe.interfaceNotFound`, only informs.
+- **The secrets column keeps a date.** Each secret is stored as its ciphertext and the time it was
+  set, so the view can show `updatedUtc`; a cleared secret keeps its entry with no ciphertext, so
+  that the import does not bring it back from configuration.
+- **The directory administrator's test sign-in is a proof token.** POST /api/settings/ldap/test
+  returns `proof` when the administrator testing signed in with their own directory password and the
+  candidate keeps them Administrator. A directory administrator's save that changes the connection
+  fields or the group map needs it in the `X-DDT-Directory-Proof` header, for exactly those values,
+  within 5 minutes. The password itself is never kept.
+- **A configured problem stops the start only for fields configuration sets.** The configuration
+  check runs every section's rules on configuration alone and keeps the problems of fields that have
+  a key. A problem that only arises together with stored values, such as a domain whose password is
+  on the page, closes the section instead. A configured zero touch network that holds a configured
+  proxy therefore stops the start; a stored one closes the machines section.
+- **Configured lists are read on their own everywhere.** `DDT:Oidc:Scopes:3=groups` used to add a
+  scope; it now is the whole list, which lacks openid and is refused.
+- **PXE.** DDT.Server references DDT.Pxe, so the delegates that connect PxeHost to the snapshot live
+  in DDT.Server (PxeSettingsSource) and DDT.Host only wires them. PxeHost takes a third delegate for
+  each apply result, and a PxeListenerBinding that tests point at loopback ports. The HTTP boot gate
+  reads the setup PxeHost applied last.
+- **The options monitor rebuilds at once.** When the snapshot's change token fires, OptionsMonitor
+  builds the options of every name it follows again immediately, not at the next use. The
+  OpenIdConnectOptions are therefore validated only while single sign-on is on, and a failure in such
+  a callback is logged by DdtSettings.Publish instead of undoing a save that is written.
+- **OIDC.** The scheme and its handler services are registered by the settings, not by
+  AddOpenIdConnect, and only while single sign-on is on and its options build.
+  `/api/auth/external/start` answers 404, and the providers endpoint lists nothing, while the scheme
+  is not registered, which also covers a scheme whose options failed to build.
+- **The agent.** The upload is limited to 128 MB. `uploadedUtc` and `uploadedBy` come from the
+  latest `agent.uploaded` audit row.
+- **Console.** `settings create-admin [user name]`, `admin` by default, also ends a lockout and turns
+  off the second factor of an existing local account.
+- **A process that cannot read the key ring** answers a save with 409 and says so on the overview,
+  in `keyRingReadable`.
+- **The certificate.** The server names are the section certificate, with the one field
+  subjectAlternativeNames that DDT:Https:SubjectAlternativeNames seeds and never locks (a field that
+  seeds). They are saved with PUT /api/settings/certificate/names, because GET
+  /api/settings/certificate answers with the certificate itself, its provisional state, whether this
+  connection was served it, and the names' section view; certificateChanged pushes that view. An
+  upload that does not come from DDT's root needs `certificate.newRoot`, as does a Generate that has
+  to make the root; a Generate from the existing root needs none, as 5.2 says. While a pair waits for
+  its confirmation, a connection served another pair is closed after its answer, so the browser's next
+  request gets the new pair and can confirm. The deadline is kept in `ddt.provisional`, so a restart
+  keeps it. The automatic renewal still uses the configured names only.
+- **Not built:** upgrade steps for a newer SchemaVersion, of which there is none yet.
+
 ## 8. Open questions for the maintainer
 
 1. **Separate processes.** Is running the web and pxe roles as separate processes on different hosts
    a goal? The plan uses the database store and per-host apply states for it. If it is not a goal, a
-   file store under `<StorePath>/settings` is simpler (5.1).
+   file store under `<StorePath>/settings` is simpler (5.1). Answered 2026-09-27: yes, it is a goal,
+   so the database store with SettingsSections, SettingsHostStates and the 15 s poll is built.
 2. **Fail closed.** While the stored deployment section is invalid, new deployments are refused.
-   Is that acceptable?
+   Is that acceptable? Answered 2026-09-27: accepted as proposed.
 3. **PXE bind failures.** A bind failure caused by stored PXE values is reported instead of stopping
-   the host. This reverses the choice at PxeHost.cs:39-40 for stored values only. Confirm.
+   the host. This reverses the choice at PxeHost.cs:39-40 for stored values only. Confirm. Answered
+   2026-09-27: accepted as proposed.
 4. **Cookie SameSite.** It is Strict or Lax depending on Oidc:Enabled at startup
    (DdtAuthenticationExtensions.cs:81-83). Either fix it at Lax (the response mode is already Query,
    line 120), or feed the cookie options from the snapshot. Answered 2026-09-27: always Lax.
@@ -1015,15 +1078,19 @@ listed in section 3, the others are values the agent and the server must agree o
    Renewals and new names need no new boot image and no browser update.
    `DDT:Https:GenerateSelfSignedCertificate` now means that DDT may make that root and issue from it.
 6. **Re-auth scope.** Confirm the list of re-auth fields, and that accounts without a password cannot
-   change them. OIDC step-up with max_age=0 could follow later.
+   change them. OIDC step-up with max_age=0 could follow later. Answered 2026-09-27: accepted as
+   proposed.
 7. **Auto-provisioned roles.** AutoProvisionRole refuses Administrator and needs a confirmation for
    Operator. Confirm. Answered in M6.5: Administrator is refused, at startup until the page exists,
    and Operator stays allowed with a warning in README. Single sign-on group claims map to roles like
-   directory groups (Oidc:GroupRoleMap), which is how an identity becomes an administrator.
+   directory groups (Oidc:GroupRoleMap), which is how an identity becomes an administrator. Answered
+   2026-09-27: accepted as proposed; on the page, Operator needs the confirmation oidc.operatorRole.
 8. **Operators and settings.** Should Operators be able to read (not write) the deployment and
-   machines sections? The plan says no.
+   machines sections? The plan says no. Answered 2026-09-27: Operators may read (GET only) the
+   deployment and machines sections; secrets stay write-only for everyone, and everything else is
+   Administrator only.
 9. **Several PXE hosts.** Interfaces is one global value. If several PXE hosts ever share a database,
-   the pxe section needs one entry per host.
+   the pxe section needs one entry per host. Answered 2026-09-27: accepted as proposed.
 10. **Offline domain join.** Answered in M5 in another way. The domain is joined online in Windows
     by a Join the domain step through NetJoinDomain, which fetches the join account while the step
     runs, so Domain:Password is in no answer file any more. Operators can still obtain it by running
@@ -1031,6 +1098,8 @@ listed in section 3, the others are values the agent and the server must agree o
 11. **The web role.** DDT:Roles cannot turn the web role off (Program.cs:50-57,106-126), so every
     process serves the settings API. Fix this in M5?
 12. **Keyboard layout from the server.** It needs a Windows PE test that switches the agent's own
-    console layout (Build-BootImage.ps1:367-368). Until then it stays in the boot image.
+    console layout (Build-BootImage.ps1:367-368). Until then it stays in the boot image. Answered
+    2026-09-27: accepted as proposed.
 13. **Values this plan chose.** The 15 s poll, the 5 minute re-auth token, the 5 minute certificate
-    confirmation, and the /16 and /48 threshold for wide networks. Change any of them?
+    confirmation, and the /16 and /48 threshold for wide networks. Change any of them? Answered
+    2026-09-27: accepted as proposed.

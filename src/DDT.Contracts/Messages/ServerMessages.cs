@@ -149,6 +149,10 @@ public static class ServerMessages
         "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} " +
         "other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}");
 
+    public static readonly MessageTemplate DeploymentSettingsHaveProblems = Define(
+        "deployment.settingsHaveProblems",
+        "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: {problems}");
+
     public static readonly MessageTemplate DeploymentErasesOneOfManyDisks = Define(
         "deployment.erasesOneOfManyDisks",
         "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there.");

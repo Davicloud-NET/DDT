@@ -10,8 +10,8 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Deployments;
+using DDT.Server.Settings;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -34,15 +34,14 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
     private async Task<HttpResponseMessage> AssignAsync(Guid machineId, Guid sequenceId, string? computerName) =>
         await (await application.AdministratorAsync()).AssignAsync(machineId, sequenceId, computerName);
 
-    // A second binding of the section would be read on first use, from whatever the configuration then holds.
+    // Configuration locks the fields it sets, so the snapshot every deployment reads holds its values.
     [Fact]
-    public void DeploymentsUseTheSettingsCheckedAtStartup()
+    public void DeploymentsUseTheConfiguredSettings()
     {
-        IOptions<DeploymentOptions> options = application.Services.GetRequiredService<IOptions<DeploymentOptions>>();
+        DeploymentOptions options = application.Services.GetRequiredService<DdtSettings>().Current.Deployment;
 
-        Assert.IsType<OptionsWrapper<DeploymentOptions>>(options);
-        Assert.Equal("corp.example", options.Value.Domain.Name);
-        Assert.Equal(DomainDeploymentApplication.JoinPassword, options.Value.Domain.Password);
+        Assert.Equal("corp.example", options.Domain.Name);
+        Assert.Equal(DomainDeploymentApplication.JoinPassword, options.Domain.Password);
     }
 
     [Fact]

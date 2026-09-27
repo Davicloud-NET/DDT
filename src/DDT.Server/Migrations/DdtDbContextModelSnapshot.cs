@@ -195,6 +195,77 @@ namespace DDT.Server.Migrations
                     b.ToTable("AspNetUsers", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Data.SettingsHostState", b =>
+                {
+                    b.Property<string>("Host")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<long>("AppliedVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Detail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Host", "Section");
+
+                    b.ToTable("SettingsHostStates", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Data.SettingsSection", b =>
+                {
+                    b.Property<string>("Section")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("SchemaVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Secrets")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Section");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("SettingsSections", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Deployments.Deployment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1095,6 +1166,14 @@ namespace DDT.Server.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Data.SettingsSection", b =>
+                {
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.Deployment", b =>

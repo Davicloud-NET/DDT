@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Security.Claims;
-using DDT.Core.Configuration;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
@@ -11,15 +9,12 @@ using DDT.Server.Machines;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace DDT.Server.Authentication;
 
@@ -34,10 +29,6 @@ public static class DdtAuthenticationExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
 
-        OidcOptions oidc = configuration.GetSection(OidcOptions.SectionName).Get<OidcOptions>() ?? new OidcOptions();
-        SettingProblem.ThrowIfAny(OidcOptions.SectionName, OidcOptionsValidation.FindProblems(oidc));
-        services.Configure<OidcOptions>(configuration.GetSection(OidcOptions.SectionName));
-        services.Configure<LdapOptions>(configuration.GetSection(LdapOptions.SectionName));
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
         services.AddScoped<DirectorySignInService>();
         services.AddScoped<CredentialVerifier>();
@@ -110,62 +101,11 @@ public static class DdtAuthenticationExtensions
             cookie.SlidingExpiration = true;
         });
 
-        if (oidc.Enabled)
-        {
-            AddOpenIdConnect(authentication, oidc);
-            services.AddHostedService<ExternalSignInSchemeGuard>();
-        }
-
         // The default is 30 minutes, which is how long a disabled account keeps working.
         services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
 
         services.AddHostedService<IdentityBootstrap>();
 
         return services;
-    }
-
-    private static void AddOpenIdConnect(AuthenticationBuilder authentication, OidcOptions oidc)
-    {
-        authentication.AddOpenIdConnect(OidcOptions.SchemeName, oidc.DisplayName, openId =>
-        {
-            // Without this the external principal is signed straight into the application cookie:
-            // no local user, no link row, no roles, no lockout and no second factor.
-            openId.SignInScheme = IdentityConstants.ExternalScheme;
-
-            openId.Authority = oidc.Authority;
-            openId.ClientId = oidc.ClientId;
-            openId.ClientSecret = oidc.ClientSecret;
-
-            // The handler defaults to the implicit flow, which leaves PKCE inert.
-            openId.ResponseType = OpenIdConnectResponseType.Code;
-            openId.ResponseMode = OpenIdConnectResponseMode.Query;
-            openId.UsePkce = true;
-
-            openId.GetClaimsFromUserInfoEndpoint = true;
-            openId.SaveTokens = false;
-            openId.CallbackPath = "/api/auth/external/callback";
-
-            openId.Scope.Clear();
-
-            foreach (string scope in oidc.Scopes)
-            {
-                openId.Scope.Add(scope);
-            }
-
-            // The groups claim is read at the sign-in, from the options of that moment.
-            openId.Events.OnUserInformationReceived = context =>
-            {
-                if (context.Principal?.Identity is ClaimsIdentity identity)
-                {
-                    SingleSignOnGroups.CopyFromUserInformation(
-                        context.User.RootElement,
-                        identity,
-                        context.HttpContext.RequestServices.GetRequiredService<IOptions<OidcOptions>>().Value.GroupsClaim,
-                        context.Options.ClaimsIssuer ?? OidcOptions.SchemeName);
-                }
-
-                return Task.CompletedTask;
-            };
-        });
     }
 }

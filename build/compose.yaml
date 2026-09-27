@@ -21,11 +21,8 @@ services:
       # Every name and address DDT is reached by has to be in the certificate, because the agent
       # validates the hostname against the chain it pins.
       DDT__Https__SubjectAlternativeNames: ${DDT_HOSTNAMES:-}
-      # The interfaces the pxe role answers on. Nothing is served until this is set. Remote sites
-      # reach DDT through their gateway's tunnel, so name the LAN interface here, not a tunnel.
-      DDT__Pxe__Interfaces: ${DDT_PXE_INTERFACES:-}
-      # Off when every site's own DHCP server points option 66 and 67 at DDT.
-      DDT__Pxe__EnableProxyDhcp: ${DDT_PXE_PROXYDHCP:-true}
+      # Everything else is on the settings page. A key set here overrides and locks its field there,
+      # even with an empty value, so no setting is passed through by default.
     volumes:
       - ddt-store:/var/lib/ddt
     depends_on:

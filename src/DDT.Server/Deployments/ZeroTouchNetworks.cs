@@ -8,8 +8,8 @@ using DDT.Server.Machines;
 
 namespace DDT.Server.Deployments;
 
-// DDT:Machines:ZeroTouchNetworks, parsed once at startup so that a typo stops the server instead of silently
-// turning zero touch off.
+// The zero touch networks of the machines section, parsed once per snapshot, so that a typo is refused on save rather
+// than silently turning zero touch off.
 public sealed class ZeroTouchNetworks
 {
     private readonly IPNetwork[] _networks;
@@ -19,6 +19,9 @@ public sealed class ZeroTouchNetworks
         _networks = networks;
     }
 
+    // Zero touch off.
+    public static ZeroTouchNetworks None { get; } = new([]);
+
     public static IReadOnlyList<SettingProblem> FindProblems(string? value) =>
     [
         .. Entries(value)
@@ -27,14 +30,23 @@ public sealed class ZeroTouchNetworks
                 "ZeroTouchNetworks",
                 $"'{entry}' is not a network. Write each one as an address and a prefix length with no address bits set " +
                 "after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine.")),
+        .. Entries(value)
+            .Where(entry => Network(entry) is { PrefixLength: 0 })
+            .Select(entry => new SettingProblem(
+                "ZeroTouchNetworks",
+                $"'{entry}' is every address there is. Name the provisioning networks themselves.")),
     ];
 
     public static ZeroTouchNetworks Parse(string? value)
     {
         SettingProblem.ThrowIfAny(MachineOptions.SectionName, FindProblems(value));
 
-        return new ZeroTouchNetworks([.. Entries(value).Select(entry => Network(entry)!.Value)]);
+        return new ZeroTouchNetworks([.. Networks(value)]);
     }
+
+    // The entries that are networks, for the rules that compare them with other networks.
+    public static IReadOnlyList<IPNetwork> Networks(string? value) =>
+        [.. Entries(value).Select(Network).OfType<IPNetwork>()];
 
     private static string[] Entries(string? value) =>
         (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

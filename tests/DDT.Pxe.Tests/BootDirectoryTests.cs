@@ -89,10 +89,10 @@ public sealed class BootDirectoryTests
     [Fact]
     public void TheHostServesTheBootDirectoryInTheStore()
     {
-        Assert.Equal(Path.Combine(s_store, "boot"), Builder().AddDdtPxe(s_store).Options.BootDirectory);
+        Assert.Equal(Path.Combine(s_store, "boot"), PxeHostingExtensions.ReadBootstrap(Builder().Configuration, s_store).Files.Root);
         Assert.Equal(
             Path.Combine(s_store, "netboot"),
-            Builder(("DDT:Pxe:BootDirectory", "netboot")).AddDdtPxe(s_store).Options.BootDirectory);
+            PxeHostingExtensions.ReadBootstrap(Builder(("DDT:Pxe:BootDirectory", "netboot")).Configuration, s_store).Files.Root);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class BootDirectoryTests
     {
         WebApplicationBuilder builder = Builder(("Kestrel:Certificates:Default:Path", Path.Combine(s_store, "boot", "ddt.pfx")));
 
-        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => builder.AddDdtPxe(s_store));
+        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => builder.AddDdtPxe(s_store, _ => throw new InvalidOperationException("No source is needed.")));
 
         Assert.Contains("holds the folder of the TLS certificate or key", refusal.Message, StringComparison.Ordinal);
     }

@@ -13,13 +13,13 @@ using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Rules;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
 
@@ -80,10 +80,10 @@ public static class SequenceEndpoints
             : TypedResults.Ok(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
     }
 
-    private static Ok<IReadOnlyList<SequenceTemplate>> ReadTemplates(Guid? imageId, IOptions<DeploymentOptions> options) =>
+    private static Ok<IReadOnlyList<SequenceTemplate>> ReadTemplates(Guid? imageId, DdtSettings settings) =>
         TypedResults.Ok(SequenceTemplates.All(
-            !string.IsNullOrWhiteSpace(options.Value.Domain.Name),
-            !string.IsNullOrEmpty(options.Value.LocalAdministrator.Password),
+            !string.IsNullOrWhiteSpace(settings.Current.Deployment.Domain.Name),
+            !string.IsNullOrEmpty(settings.Current.Deployment.LocalAdministrator.Password),
             imageId ?? Guid.Empty));
 
     private static async Task<Results<Ok<SequenceValidation>, ProblemHttpResult>> ValidateAsync(

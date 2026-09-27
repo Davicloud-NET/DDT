@@ -7,9 +7,9 @@ using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Users;
 
@@ -19,8 +19,7 @@ namespace DDT.Server.Users;
 // the account, where Identity itself keeps per-account values such as the authenticator key.
 public sealed class UserViews(
     DdtDbContext database,
-    IOptions<LdapOptions> ldap,
-    IOptions<OidcOptions> oidc,
+    DdtSettings settings,
     TimeProvider timeProvider)
 {
     public const string MarkerProvider = "[DDT]";
@@ -34,8 +33,8 @@ public sealed class UserViews(
 
         return user.Source switch
         {
-            AccountSource.Directory when ldap.Value.GroupRoleMap.Count > 0 => RoleSource.DirectoryGroups,
-            AccountSource.External when oidc.Value.GroupRoleMap.Count > 0 => RoleSource.SingleSignOnGroups,
+            AccountSource.Directory when settings.Current.Ldap.GroupRoleMap.Count > 0 => RoleSource.DirectoryGroups,
+            AccountSource.External when settings.Current.Oidc.GroupRoleMap.Count > 0 => RoleSource.SingleSignOnGroups,
             _ => null,
         };
     }
@@ -133,7 +132,7 @@ public sealed class UserViews(
             .Select(l => new { l.UserId, l.LoginProvider, l.ProviderDisplayName })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        OidcOptions single = oidc.Value;
+        OidcOptions single = settings.Current.Oidc;
 
         return new Facts(
             roles.ToLookup(r => r.UserId, r => r.Name),

@@ -5,6 +5,7 @@
 using System.DirectoryServices.Protocols;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Messages;
+using DDT.Server.Settings;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
@@ -12,11 +13,11 @@ namespace DDT.Server.Deployments;
 // Asks the domain, as the join account, whether a Join the domain step would get its computer account, before a machine
 // finds out an hour into its run. The settings are read on every check, never kept, so a check after they change on the
 // settings page uses the new ones.
-public sealed class DomainJoinCheck(IDomainDirectory directory, IOptions<DeploymentOptions> options, TimeProvider timeProvider)
+public sealed class DomainJoinCheck(IDomainDirectory directory, DdtSettings settings, TimeProvider timeProvider)
 {
     public async Task<DomainJoinCheckView> RunAsync(string? organizationalUnit, CancellationToken cancellationToken)
     {
-        DomainOptions domain = options.Value.Domain;
+        DomainOptions domain = settings.Current.Deployment.Domain;
         DateTimeOffset now = timeProvider.GetUtcNow();
         string? name = Value(domain.Name);
         string? userName = Value(domain.UserName);

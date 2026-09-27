@@ -12,8 +12,9 @@ namespace DDT.Server.Certificates;
 
 // The certificate Kestrel serves, held in memory so a renewal reaches the next connection without a restart. DDT makes
 // its own root, because boot images pin the root: a certificate issued from it can change without a new boot image.
-// Any other certificate is an administrator's: served and loaded again when its files change, never replaced.
-public sealed class ServerCertificates
+// Any other certificate is an administrator's: served and loaded again when its files change, never replaced. The
+// settings page installs a pair of its own, which stays provisional until it is confirmed, see the other part.
+public sealed partial class ServerCertificates
 {
     public static readonly TimeSpan RenewBefore = TimeSpan.FromDays(30);
 
@@ -66,6 +67,9 @@ public sealed class ServerCertificates
 
         try
         {
+            await ResumeProvisionalAsync(cancellationToken).ConfigureAwait(false);
+            await RecoverPreviousAsync(cancellationToken).ConfigureAwait(false);
+
             // An administrator's certificate may sit where DDT cannot write, such as a read-only mount, so the lock is
             // taken only in a folder that holds DDT's root, or once a check finds something to write.
             if ((!_generate || !File.Exists(Files.RootPath)) && Check(_timeProvider.GetUtcNow(), locked: false) is { } check)

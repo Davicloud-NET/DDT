@@ -40,5 +40,5 @@ public sealed class PxeOptions
 
     // Keyed by ClientArchitecture member name as a string. The binder silently drops a dictionary key
     // it cannot convert to an enum, which would leave a machine at a blank screen with no error.
-    public Dictionary<string, BootTargetOptions> BootTargets { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, BootTargetOptions> BootTargets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }

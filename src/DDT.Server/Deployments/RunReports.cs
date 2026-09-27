@@ -9,15 +9,15 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
 // Applies an agent's report to its run. A report names every step that has left Pending, so a report sent again
 // changes nothing, and a step only moves forward: from Pending to Running, and on to Done, Skipped or Failed. The
 // server stamps the times, because the Windows PE clock can be hours off. Nothing here saves, see DeploymentService.
-public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions> options, TimeProvider timeProvider)
+public sealed class RunReports(DdtDbContext database, DdtSettings settings, TimeProvider timeProvider)
 {
     private const string AskAgain = "Ask the server for the current run.";
 
@@ -76,7 +76,11 @@ public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions
         switch (run.State, report.State)
         {
             case (DeploymentState.Assigned, DeploymentState.Running):
-                if (StartProblem(await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)) is { } problem)
+                // One snapshot for the check and for what the run captures, so a save between them cannot start a run
+                // with values nobody checked.
+                SettingsSnapshot snapshot = settings.Current;
+
+                if (StartProblem(snapshot, await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)) is { } problem)
                 {
                     End(machine, run, DeploymentState.Failed, problem, now);
                     machine.State = MachineState.Failed;
@@ -87,7 +91,7 @@ public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions
 
                 run.State = DeploymentState.Running;
                 run.StartedUtc = now;
-                run.Inputs = RunInputs.Capture(machine, options.Value, now).Write();
+                run.Inputs = RunInputs.Capture(machine, snapshot.Deployment, now).Write();
                 machine.State = MachineState.Deploying;
                 database.AuditEvents.Add(Audit(AuditActions.DeploymentStarted, run, machine, now, address, $"{run.Title} on machine {machine.Id:D}."));
 
@@ -194,9 +198,15 @@ public sealed class RunReports(DdtDbContext database, IOptions<DeploymentOptions
 
     // The settings a run needs can go between its assignment and its start, with a restart of the server. The run
     // then fails at once rather than when the agent asks for them, halfway through.
-    private string? StartProblem(SequenceDefinition definition)
+    private static string? StartProblem(SettingsSnapshot snapshot, SequenceDefinition definition)
     {
-        DeploymentOptions deployment = options.Value;
+        // A run's error is the agent's language, English, like every other run error.
+        if (DeploymentService.SettingsProblem(snapshot) is { } closed)
+        {
+            return closed.Text;
+        }
+
+        DeploymentOptions deployment = snapshot.Deployment;
 
         if (definition.Steps.OfType<WriteUnattendStep>().Any(s => s.LocalAdministrator) && string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
         {

@@ -4447,6 +4447,11 @@ msgstr "Der Standardcontainer Computers von {domain} wurde nicht gefunden, oder 
 msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
 msgstr "Die Bereitstellungseinstellungen konnten nicht geladen werden, daher kann DDT nicht sagen, was die Zuweisung bewirkt. Schließen Sie dies und versuchen Sie es erneut."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.settingsHaveProblems"
+msgid "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: {problems}"
+msgstr "Die Bereitstellungseinstellungen haben Probleme, daher startet keine Ausführung, bis ein Administrator sie auf der Einstellungsseite behebt: {problems}"
+
 #: src/sequences/sequenceDraft.ts
 msgid "the description"
 msgstr "die Beschreibung"

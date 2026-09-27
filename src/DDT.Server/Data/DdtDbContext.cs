@@ -48,6 +48,10 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
+    public DbSet<SettingsSection> SettingsSections => Set<SettingsSection>();
+
+    public DbSet<SettingsHostState> SettingsHostStates => Set<SettingsHostState>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -238,6 +242,26 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             // A token acts only for its user, so it goes with the account.
             token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
             token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.RevokedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<SettingsSection>(section =>
+        {
+            section.HasKey(s => s.Section);
+            section.Property(s => s.Section).HasMaxLength(SettingsSection.MaxNameLength);
+
+            // Every save checks the version it read, so two saves of one section never overwrite each other unnoticed.
+            section.Property(s => s.Version).IsConcurrencyToken();
+            section.Property(s => s.UpdatedByName).HasMaxLength(256);
+            section.HasOne<DdtUser>().WithMany().HasForeignKey(s => s.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<SettingsHostState>(state =>
+        {
+            state.HasKey(s => new { s.Host, s.Section });
+            state.Property(s => s.Host).HasMaxLength(SettingsHostState.MaxHostLength);
+            state.Property(s => s.Section).HasMaxLength(SettingsSection.MaxNameLength);
+            state.Property(s => s.State).HasConversion<string>().HasMaxLength(16);
+            state.Property(s => s.Message).HasMaxLength(SettingsHostState.MaxMessageLength);
         });
 
         builder.Entity<AuditEvent>(audit =>

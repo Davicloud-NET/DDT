@@ -7,6 +7,7 @@ using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Security;
+using DDT.Server.Settings;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -15,7 +16,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
 
@@ -27,16 +27,23 @@ public static class ExternalLoginEndpoints
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        group.MapGet("/providers", ListProviders).AllowAnonymous();
-        group.MapGet("/start", Start).AllowAnonymous();
+        group.MapGet("/providers", ListProvidersAsync).AllowAnonymous();
+        group.MapGet("/start", StartAsync).AllowAnonymous();
         group.MapGet("/complete", CompleteAsync).AllowAnonymous();
         group.MapPost("/link", LinkAsync).RequireSession();
 
         return group;
     }
 
-    private static ChallengeHttpResult Start(SignInManager<DdtUser> signInManager)
+    // Not found while single sign-on is off or its values do not start the handler: the scheme is then not registered,
+    // and a challenge to it would fail on the server.
+    private static async Task<Results<ChallengeHttpResult, NotFound>> StartAsync(SignInManager<DdtUser> signInManager, IAuthenticationSchemeProvider schemes)
     {
+        if (await schemes.GetSchemeAsync(OidcOptions.SchemeName).ConfigureAwait(false) is null)
+        {
+            return TypedResults.NotFound();
+        }
+
         AuthenticationProperties properties =
             signInManager.ConfigureExternalAuthenticationProperties(OidcOptions.SchemeName, CompletePath);
 
@@ -47,7 +54,7 @@ public static class ExternalLoginEndpoints
         SignInManager<DdtUser> signInManager,
         UserManager<DdtUser> userManager,
         UserActivity activity,
-        IOptions<OidcOptions> options,
+        DdtSettings settings,
         TimeProvider time,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -59,7 +66,7 @@ public static class ExternalLoginEndpoints
             return TypedResults.Redirect("/sign-in?error=external");
         }
 
-        OidcOptions oidc = options.Value;
+        OidcOptions oidc = settings.Current.Oidc;
         ILogger logger = loggerFactory.CreateLogger(typeof(ExternalLoginEndpoints));
         GroupRoles mapped = GroupRoles.From(SingleSignOnGroups.Read(info.Principal, oidc.GroupsClaim), oidc.GroupRoleMap);
         DdtUser? existing = await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey).ConfigureAwait(false);
@@ -170,11 +177,17 @@ public static class ExternalLoginEndpoints
         return TypedResults.Redirect("/");
     }
 
-    // For the sign-in page, which offers a button for each. The display name is read here, so a change to it shows at
-    // once; the provider itself is registered at startup.
-    private static Ok<IReadOnlyList<ExternalProvider>> ListProviders(IOptions<OidcOptions> options) =>
-        TypedResults.Ok<IReadOnlyList<ExternalProvider>>(
-            options.Value.Enabled ? [new ExternalProvider(OidcOptions.SchemeName, options.Value.DisplayName)] : []);
+    // For the sign-in page, which offers a button for each. Only a provider whose scheme this server registered, so a
+    // button never leads to a sign-in that cannot start.
+    private static async Task<Ok<IReadOnlyList<ExternalProvider>>> ListProvidersAsync(DdtSettings settings, IAuthenticationSchemeProvider schemes)
+    {
+        OidcOptions oidc = settings.Current.Oidc;
+
+        return TypedResults.Ok<IReadOnlyList<ExternalProvider>>(
+            oidc.Enabled && await schemes.GetSchemeAsync(OidcOptions.SchemeName).ConfigureAwait(false) is not null
+                ? [new ExternalProvider(OidcOptions.SchemeName, oidc.DisplayName)]
+                : []);
+    }
 
     private static string Describe(IdentityResult result) => string.Join("; ", result.Errors.Select(error => error.Description));
 

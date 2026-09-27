@@ -5,11 +5,15 @@
 namespace DDT.Server.Live;
 
 // A connection that watches a machine joins its group and receives the events only watchers need. The connections of
-// administrators join one more group for the events only they may receive, and every connection joins its user's group
-// for what concerns only that user, such as their API tokens.
+// administrators join one more group for the events only they may receive, those of operators one for what operators
+// may read besides what everyone may, and every connection joins its user's group for what concerns only that user,
+// such as their API tokens.
 public static class LiveGroups
 {
     public const string Administrators = "administrators";
+
+    // Operators that are not administrators: administrators receive the same events through their own group.
+    public const string Operators = "operators";
 
     public static string Machine(Guid machineId) => $"machine:{machineId:D}";
 

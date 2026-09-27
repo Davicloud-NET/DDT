@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers;
+using System.Globalization;
 using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Core.Unattend;
@@ -17,6 +18,8 @@ public static class DeploymentOptionsValidation
 
     private static readonly SearchValues<char> s_forbiddenInAccountName = SearchValues.Create("\"/\\[]:;|=,+*?<>");
 
+    private static readonly bool s_culturesKnown = KnowsCultures();
+
     public static IReadOnlyList<SettingProblem> FindProblems(DeploymentOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -29,6 +32,13 @@ public static class DeploymentOptionsValidation
                 "TimeZone",
                 $"'{options.TimeZone}' is not a Windows time zone id. Use a name that tzutil /l lists, such as " +
                 "W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale."));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Locale) && !IsCulture(options.Locale.Trim()))
+        {
+            problems.Add(new(
+                "Locale",
+                $"'{options.Locale}' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language."));
         }
 
         if (!string.IsNullOrEmpty(options.LocalAdministrator.Password) && !IsAccountName(options.LocalAdministrator.Name))
@@ -85,6 +95,36 @@ public static class DeploymentOptionsValidation
         }
 
         return problems;
+    }
+
+    // Without the culture data of the operating system, as in a globalization invariant build, no name can be checked,
+    // and every one is let through.
+    private static bool IsCulture(string name)
+    {
+        try
+        {
+            _ = CultureInfo.GetCultureInfo(name, predefinedOnly: true);
+
+            return true;
+        }
+        catch (CultureNotFoundException)
+        {
+            return !s_culturesKnown;
+        }
+    }
+
+    private static bool KnowsCultures()
+    {
+        try
+        {
+            _ = CultureInfo.GetCultureInfo("de-DE", predefinedOnly: true);
+
+            return true;
+        }
+        catch (CultureNotFoundException)
+        {
+            return false;
+        }
     }
 
     private static bool IsAccountName(string? name) =>

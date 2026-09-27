@@ -72,7 +72,7 @@ LICENSE                    GNU General Public License, version 3
 NOTICE                     attribution notice and the additional terms under GPL section 7
 THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
 licenses/                  licence texts of that software, one folder per component
-docs/settings.md           plan for moving admin settings from configuration to a settings page
+docs/settings.md           design of the settings page: its store, sections, rules and API
 docs/roadmap.md            the milestones after M6 and what each one holds
 src/
   DDT.Core/                domain model, image library, hashing, task sequences, GPT, FAT and
@@ -226,17 +226,75 @@ lists the problems with keys and values in one message, each after its full key,
 checked only where the `pxe` role runs. Two checks stop it on their own, outside that message: an
 unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checked later.
 
-What a deployed Windows is set up with comes from `DDT:Deployment`, described under
-[What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
+What a deployed Windows is set up with comes from the deployment section of the settings page,
+described under [What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
 [Joining a domain](#joining-a-domain). Task sequences, packages and rules are not configuration:
 they live in the database and are managed on their pages.
 
+### The settings page
+
+Since M6.5 the settings an admin changes in normal operation are on the settings page, stored in the
+database in `ddt."SettingsSections"`, one row per section: `deployment`, `machines`, `ldap`,
+`oidc`, `proxies`, `pxe`, `logging` and the server names of `certificate`, described under
+[The server certificate](#the-server-certificate). A change there is checked when it is saved, applies without
+a restart and leaves an audit row that names every field it changed. The keys this README names,
+such as `DDT:Machines:ZeroTouchNetworks`, are the fields of those sections, and configuration still
+sets them: [docs/settings.md](docs/settings.md) is the design.
+
+- **Configuration wins, and locks.** A field whose key is present in configuration, from any source
+  and even with an empty value, takes the configured value, and the page shows it locked with both
+  spellings of the key, `DDT:Deployment:Domain:Name` and `DDT__Deployment__Domain__Name`, and
+  whether the page's own value differs. A save leaves a locked field alone, and the page's value
+  applies again once the key is removed. A map or a list, such as `DDT:Ldap:GroupRoleMap` or
+  `DDT:Oidc:Scopes`, is locked as a whole and read on its own: configured entries replace the
+  defaults rather than adding to them, so `DDT:Oidc:Scopes` lists every scope, `openid` first.
+- **Configuration is imported once.** At every start, each field that was never written takes its
+  configured value, if the key is present, secrets encrypted on the way in, and a
+  `settings.imported` audit row names them. So an install upgraded to M6.5 keeps its values; once
+  the keys are removed from the environment, the page edits them.
+- **Secrets are written, never read back.** The deployment passwords, `DDT:Ldap:BindPassword` and
+  `DDT:Oidc:ClientSecret` are encrypted with the Data Protection key ring, for their section and
+  field alone. The page learns only whether one is set, keeps it when a save leaves it out, and sets
+  or clears it on request. The LDAP bind password is kept only while host, port and transport stay
+  the same, and the client secret only while the authority does: a save or a test that points a
+  stored secret at another server is refused and audited as `settings.refused`.
+- **Fields that grant roles or trust need a fresh password.** Zero touch networks, the trusted
+  proxies, the LDAP connection and group map, the OpenID Connect authority, group claim and map
+  and the provisioning of new accounts change only with a token from
+  `POST /api/settings/reauthenticate`, valid for 5 minutes, bound to the account and its security
+  stamp. An account without a password DDT can check, and an API token, cannot get one.
+- **Some saves ask first.** A network wider than a /16 or a /48, unencrypted LDAP, a new
+  immutable-id attribute, a group map without an administrator group, new accounts from single
+  sign-on as operators, a directory or single sign-on save while no local administrator is enabled,
+  and an HTTP boot file outside DDT's `/boot/` are refused until the save confirms them.
+- **Bad stored values close their section, not the server.** A stored value that fails a check,
+  written by an older build or through the database, keeps the server running and the section closed
+  until the page fixes it: no new runs for `deployment`; zero touch off and web approval on for
+  `machines`; no directory sign-in; no single sign-on scheme; no trusted proxy, and no zero touch;
+  no netboot; the default log levels. A configured value that fails a check still stops the start,
+  as before.
+- **Several processes, one database.** A save applies at once in the process that made it. The
+  others read the store every 15 seconds. Every process on one database has to share the key ring
+  in `DDT:StorePath/keys`; one that cannot read it saves nothing and says so on the page. The pxe,
+  oidc and proxies sections are rebuilt inside the running server, and the page shows for each host
+  whether it applied the newest version, in `ddt."SettingsHostStates"`.
+
+When the page cannot fix itself, two commands run next to the running server with only the database
+and the key ring, and write through the store with an audit row by `console`. The servers apply them
+within 15 seconds:
+
+```bash
+docker exec ddt ./DDT.Host settings reset ldap      # the code defaults, secrets cleared
+docker exec ddt ./DDT.Host settings create-admin    # a local administrator, or admin enabled again
+```
+
+`create-admin` prints the new password once. For an existing local account it also ends a lockout
+and turns off its second factor. A configured key still overrides a field after `reset`, so a key such
+as `DDT__Ldap__Enabled=false` is the other way back in.
+
 ### What stays in configuration
 
-Every admin setting is configuration today. With M6.5 the settings an admin changes in normal
-operation move to a settings page in the web UI, where a change is checked when it is saved, applies
-without a restart and leaves an audit row; [docs/settings.md](docs/settings.md) is the plan.
-Configuration then keeps only what the server needs before it can serve that page, and stays
+Configuration keeps only what the server needs before it can serve the settings page, and stays
 available as an override for recovery and for installs managed as code:
 
 | Setting | Why it stays in configuration |
@@ -255,21 +313,28 @@ available as an override for recovery and for installs managed as code:
 | `ASPNETCORE_ENVIRONMENT` | Development switches such as HSTS. Production leaves it unset. |
 
 A standard container install then sets only the connection string, `DDT__Roles` and the names for
-the certificate.
+the certificate. The settings page shows these read-only in its server panel: the values of
+`DDT:Roles`, `DDT:StorePath`, `DDT:RequireHttps`, the Kestrel endpoint URLs and certificate paths,
+`DDT:Pxe:HttpBootPort` and `BootDirectory`, `AllowedHosts`, the environment, the OTLP endpoint without
+user info, and the provider, host and database of the connection string. Every other key shows only
+whether it is set and where; one whose last segment is `Password`, `Secret`, `Key` or `Headers`, and
+every connection string, never shows a value. `DDT:Agent:BinaryPath` stays a configuration override
+for development, see [Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image).
 
 ### Rules for new settings
 
-From M5 on, a new setting follows these rules, so that moving it to the page changes only where it
-is read from:
+A new setting follows these rules:
 
-1. It is designed for a section of the settings page and lives in configuration until M6.5. Only a
-   setting that passes the test above stays in configuration after that, and joins the table.
+1. It is a field of a section of the settings page. Only a setting that passes the test above stays
+   in configuration, and joins the table.
 2. Task sequences, drivers per model and assignment by MAC address or model are database entities
    with an API and a page, never configuration.
-3. It has its own section class with defaults, a known-key check and a pure validator that returns
-   `SettingProblem` values. It is read where it is used, never while the services are registered
-   and never through an `IOptions<T>` a singleton keeps. Secret fields say so in a comment, and the
-   setting is documented here as a future page field.
+3. It is a property of its section's option class with its default, a field of the section's
+   definition in `DDT.Server/Settings`, a member of the section's record in `DDT.Contracts/Settings`,
+   and covered by the section's pure validator, which returns `SettingProblem` values. It is read
+   from `DdtSettings.Current` where it is used, once per request or decision, never while the
+   services are registered and never through an `IOptions<T>`. A secret is `[JsonIgnore]` in the
+   option class and a secret field of the definition.
 4. Values the agent needs travel in server responses, as new members. They never go into
    `agent.json`, which the server cannot rewrite.
 5. Anything built into the boot image says why it cannot come from the server.
@@ -296,7 +361,11 @@ Three sources of accounts, all optional except the first:
   loses the role it had, and is told why by the sign-in page. With the map empty the directory only
   checks the password, and administrators give directory accounts their roles on the Users page. A
   role in the map that DDT does not have, or a map with `DDT:Ldap:ResolveNestedGroups` off, which
-  reads no groups, stops the server at startup. The Users page shows the map with the names the
+  reads no groups, is refused: configured, it stops the server at startup, and on the settings page
+  the save. The page's Test tries the values before they are saved, with a user's password if one
+  is given, and shows the groups and the role a sign-in would get; a directory administrator saves
+  new connection values or a new map only after such a test kept them an administrator. The Users
+  page shows the map with the names the
   directory has for its groups, finds groups by name for it, and checks what a sign-in would give a
   user and why, all with the bind account and without the user's password; these need
   `DDT:Ldap:Host` and `DDT:Ldap:BaseDn`. Groups are Active Directory's `objectClass=group`, as nested
@@ -306,14 +375,18 @@ Three sources of accounts, all optional except the first:
   address, because a provider that does not verify addresses could then take over any account.
   Link from an authenticated session, or turn on `DDT:Oidc:AutoProvision` to create new accounts
   keyed on issuer and subject. They get the role in `DDT:Oidc:AutoProvisionRole`, `Viewer` by
-  default. A role that does not exist stops the server at startup, and so does `Administrator`,
-  which would make every identity the provider signs in an administrator. `Operator` is allowed,
+  default. A role that does not exist is refused, and so is `Administrator`, which would make every
+  identity the provider signs in an administrator: configured, it stops the server at startup. `Operator` is allowed,
   but think before choosing it: every operator can read the deployment passwords by running a
   sequence, so everyone the provider lets sign in could. When linking the identity or granting the
   role fails, the new account is deleted again and the sign in fails. A linked account with an
   authenticator still enters its code after the provider's sign in, and a disabled or locked out
   account is refused as with a password. The sign-in page learns the providers to offer, with
-  `DDT:Oidc:DisplayName`, from the anonymous `GET /api/auth/external/providers`.
+  `DDT:Oidc:DisplayName`, from the anonymous `GET /api/auth/external/providers`. Turning single
+  sign-on on or off on the settings page adds or removes it at once, with no restart; values the
+  provider's handler does not accept leave it off on that host, which the page shows, while local
+  sign-in keeps working. The page's Test reads the provider's discovery document and shows the
+  redirect URI to register there, `/api/auth/external/callback` on DDT's own address.
 
   Group claims map onto roles the same way as directory groups. `DDT:Oidc:GroupsClaim`, `groups` by
   default, names the claim that carries them, one claim per group or one holding a JSON array, in
@@ -325,9 +398,8 @@ Three sources of accounts, all optional except the first:
   `/sign-in?error=no-role`, and loses the role it had; no account is made for one that never had a
   role. A local account linked to an identity keeps the role an administrator gave it. Entra ID
   leaves the groups out of the token when a user is in more than 200 of them; assign the groups
-  that matter to the application and let it send only those. Both are future fields of the `oidc`
-  section of the settings page, and a role in the map that DDT does not have stops the server at
-  startup.
+  that matter to the application and let it send only those. Both are fields of the `oidc` section
+  of the settings page, and a role in the map that DDT does not have is refused.
 
 Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
 carries the passkey table from the first migration so turning them on later needs no migration.
@@ -455,7 +527,8 @@ boot image nor a change in any browser. Its files sit next to `Kestrel:Certifica
 | `ddt-root.pem` | DDT's root certificate, valid for 20 years. Boot images pin it, browsers trust it |
 | `ddt-root-key.pem` | The root's private key. As with `ddt-key.pem`, only the account DDT runs as can read it, and on Windows also SYSTEM and administrators |
 | `ddt.pem`, `ddt-key.pem` | The server certificate and its key, as the two configured paths name them |
-| `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal replaced, to go back to by hand |
+| `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal or the settings page replaced, to go back to |
+| `ddt.provisional` | Only while a pair from the settings page waits for its confirmation: when DDT goes back |
 | `ddt-anchor.replaced.pem` | Only after the upgrade described below: the old self-signed certificate |
 
 The server certificate is valid for 90 days. At startup and every five minutes DDT checks it, and
@@ -488,8 +561,30 @@ certificate of its own, so yours may sit on a read-only mount. A PFX, a key unde
 entirely, as before.
 
 DDT does not start when its root cannot be used with its key, or when a certificate it cannot issue
-again, such as one of your own, does not load at startup; the message says what to do. It never
-makes a new root over an existing one by itself, because that would break every boot image.
+again, such as one of your own, does not load at startup while no previous pair does either; the
+message says what to do. A pair that does not load, such as a certificate next to a key that is not
+its own, gives way to the previous pair at startup. DDT never makes a new root over an existing one
+by itself, because that would break every boot image.
+
+**On the settings page.** With both paths set and no password, the page shows the certificate and
+changes it, with the administrator's password again:
+
+- **Server names**, which `DDT:Https:SubjectAlternativeNames` seeds once, are the names the server is
+  reached by. Generate issues for them, with `localhost` and the computer's name, and an upload has
+  to name them. The configuration key keeps its own meaning above and never locks them.
+- **Generate** issues a certificate from DDT's root. Without a root yet it makes one, which every
+  boot image and every browser then has to learn, so it asks for that first.
+- **Upload** takes a PEM certificate, its intermediates after it, and its key, or a PFX with its
+  password. It has to load with its key, be valid now and name the address the page was loaded from
+  and every server name. One that does not come from DDT's root asks first, because boot images pin
+  that root and have to be built again with the new one.
+
+A new pair is served at once, but provisionally: the page confirms it from a connection that was
+served it, which proves that the browser accepts it, and unless that happens within 5 minutes, DDT
+goes back to the pair before it, which an unreachable page after HSTS would otherwise make
+impossible to fix. While a pair waits, DDT closes a connection served the old one after its answer,
+so the page's next request gets the new pair. Every change is audited: `certificate.replaced`,
+`certificate.confirmed` and `certificate.rolled-back`.
 
 **Limits while DDT serves the certificate.** With both paths set and no password, DDT hands every
 HTTPS endpoint the certificate it holds, its own or yours, and a certificate configured for a single
@@ -552,10 +647,19 @@ yet, and the `BCD` that `Build-BootImage.ps1` writes carries only TFTP settings 
 
 ### Which interfaces are served
 
-`DDT:Pxe:Interfaces` is a comma separated list of interface names or local IPv4 addresses, and it
-has no default. Until it names an interface, DDT logs every candidate interface with its addresses
-and serves nothing, so a host with a NIC on someone else's network never answers PXE there.
-Interfaces and their addresses are read at startup; restart DDT after changing them.
+`DDT:Pxe:Interfaces` is a list of interface names or local IPv4 addresses, and it has no default.
+Until it names an interface, DDT logs every candidate interface with its addresses and serves
+nothing, so a host with a NIC on someone else's network never answers PXE there. The page lists the
+candidates each pxe host found, from `GET /api/settings/pxe/interfaces`, and warns about an entry
+that names nothing on a host.
+
+A save of the pxe section stops the listeners and starts them again with the new values, which ends
+any TFTP transfer in progress; the machine then starts it again. Interfaces and their addresses are
+read again at every apply, so after an address changed, the page's Rescan, which is
+`POST /api/settings/pxe/rescan`, makes every pxe host pick it up. When the new listeners do not
+bind, because another service holds a port, the previous ones run again and the page shows the host
+as failed, with the reason. Only when configuration names the interfaces does such a failure at
+startup still stop the server, as it always did.
 
 ProxyDHCP and TFTP ignore any datagram that did not arrive on a served interface. HTTP boot can only
 check the address a connection was made to, and a Linux host accepts a connection to any of its
@@ -687,8 +791,9 @@ build to open pages, so copying a build into the boot directory is enough.
 - A successful bind proves nothing on Windows: another process holding a specific address on the
   same port silently takes unicast traffic. Each UDP listener logs the first datagram it accepts from
   a served interface, and that line, not the bind, is the evidence DDT is reachable.
-- Set `Logging:LogLevel:DDT.Pxe` to `Debug` to see every DHCP datagram DDT declined to answer and
-  why, or to `Trace` to also see datagrams that arrived on interfaces it does not serve.
+- Set the level of `DDT.Pxe` to `Debug` in the logging section of the settings page, which applies at
+  once, to see every DHCP datagram DDT declined to answer and why, or to `Trace` to also see
+  datagrams that arrived on interfaces it does not serve.
 - `build/New-TestVm.ps1` creates a Generation 2 Hyper-V machine with Secure Boot on, on the Default
   Switch, whose own DHCP server makes it the same shape as a real site. It gives the machine a 64 GB
   disk, a virtual TPM and 4 GB of memory, enough to deploy Windows 11, and keeps the network first in
@@ -737,8 +842,17 @@ once, before the machine registers, and only in an agent built with `dotnet publ
 dry run; `--no-update` turns it off. What the agent from the boot image printed before it switched
 stays on the console and does not reach the machine's log.
 
+The settings page uploads the agent, as `PUT /api/settings/agent/binary` with the executable as the
+body, to that default path: written next to the agent it replaces and renamed over it, so no machine
+downloads half a file, and audited as `agent.uploaded` with its SHA-256. It needs a fresh password,
+like the fields that grant trust, because it turns an administrator's session into code that runs as
+SYSTEM on every netbooting machine. It takes only a Windows executable of at most 128 MB, and is
+refused while `DDT:Agent:BinaryPath` names the file in configuration, which stays for development.
+`GET /api/settings/agent` says which agent machines get, and who uploaded it when.
+
 So a boot image only has to be built again for Windows PE itself, including its PowerShell
-components, drivers, the keyboard layout, the server's URL or a new root. A renewed server
+components, drivers, the keyboard layout, the TFTP block and window size its BCD asks for, the
+server's URL or a new root. A renewed server
 certificate, or one with more names, needs no rebuild, because the boot image pins DDT's root. The
 upgrade to the root needs one rebuild, as
 [Upgrading from the self-signed certificate](#upgrading-from-the-self-signed-certificate) describes.
@@ -1562,7 +1676,7 @@ the operator was shown. Spoofing a MAC address or a model only changes the seque
 that still has to be authorized.
 
 Every operator can obtain the local administrator and domain join passwords by running a sequence
-that needs them on a machine they control, and they sit in DDT's configuration. Treat the local
+that needs them on a machine they control, and they sit in DDT's settings. Treat the local
 administrator password as known to all operators, for example by letting Windows LAPS take the
 account over after the join, and give the join account nothing but the right to create computer
 objects in its OU.
@@ -1587,7 +1701,7 @@ signed for Secure Boot is written to the audit table with the run.
 fetches the answer file while its Write the answer file step runs, and the join account while its
 Join the domain step runs. The server answers only for the machine's running run, only for that
 step while it knows the step runs, with `Cache-Control: no-store`, and writes an audit row for every
-read. The passwords are read from the configuration at that moment and never stored with the run.
+read. The passwords are read from the settings at that moment and never stored with the run.
 The join account goes only to an agent that registered as the service in the installed Windows,
 which is what the agent says of itself, and only for the domain that was configured when the run
 started. It lives in the agent's memory and is never written to disk or logged. The local
@@ -1610,7 +1724,7 @@ whose step has not run yet, report false progress or fail it.
 **In the installed Windows** the agent is an unsigned executable in `C:\DDT`. Microsoft Defender or
 Smart App Control may block it, and so may WDAC or AppLocker rules in the image; the run then makes
 no contact after the hand-over. Where such rules block it, allow `C:\DDT\agent\ddt-agent.exe` in
-them by its path, or sign the agent you put at `DDT:Agent:BinaryPath` and allow its signer: machines
+them by its path, or sign the agent you upload on the settings page and allow its signer: machines
 run that agent in place of the boot image's, as
 [Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image)
 describes. A Group Policy that sets the PowerShell execution policy overrides
@@ -1668,13 +1782,26 @@ without the key, a new root means building every boot image again. Trust the roo
 browsers of the computers that manage DDT. The root carries no name constraints, because the names
 the server is reached by change.
 
+**The settings page is an administrator's.** Every section needs the Administrator role; operators
+may read the deployment and machines sections, which decide what an assignment does. No secret ever
+comes back from it, only whether it is set, and a stored LDAP bind password or client secret goes
+only to the server it was entered for, so a stolen administrator session cannot have one sent to a
+server of its own. The fields that grant roles or trust, and the agent upload, need the
+administrator's password again, at most 5 minutes old: the agent on the page is code that every
+machine that netboots runs as SYSTEM before anyone has authorized it, and the SHA-256 the agent
+checks proves only that it received what the server announced.
+
+The secrets on the page are encrypted with the Data Protection key ring. That protects a copy of
+the database alone, a dump or a database backup; it does not protect the store volume, where the key
+ring is plain files. Keep backups of the key ring apart from those of the database, and protect them
+like the volume.
+
 Not defended, and worth saying out loud: an attacker with layer 2 control who spoofs the identity
-of an already approved machine; anyone who can read the store volume or the database; and anyone
-who can read the Data Protection key ring, which can mint an administrator cookie and any machine
-token, or DDT's root key. Treat that volume as a secret. Anyone who can write to it can also replace
-the boot files and the agent at `DDT:Agent:BinaryPath`, which every machine that netboots runs as
-SYSTEM before anyone has authorized it: the SHA-256 the agent checks proves only that it received
-what the server announced. And until a run ends, whoever can read the machine's disk is that machine
+of an already approved machine; anyone who can read the store volume together with the database;
+and anyone who can read the Data Protection key ring, which can mint an administrator cookie and any
+machine token, decrypts the stored secrets, or DDT's root key. Treat that volume as a secret. Anyone
+who can write to it can also replace the boot files and the agent in it, which every machine that
+netboots runs as SYSTEM before anyone has authorized it. And until a run ends, whoever can read the machine's disk is that machine
 for the run, as the run token above describes.
 
 ## Status

@@ -29,6 +29,7 @@
   "deployment.seedNamesMachine": "The sequence's cloud-init seed gives the machine this name.",
   "deployment.sequenceGone": "The sequence no longer exists. Load the page again and choose another sequence.",
   "deployment.sequenceHasProblems": "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}",
+  "deployment.settingsHaveProblems": "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: {problems}",
   "deployment.signerChooses": "{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence.",
   "deployment.untrustedCaWithSecureBoot": "{image} is signed under {ca}, which this machine's firmware does not trust, and this machine has Secure Boot on. Allow it for this run, or allow that CA or turn Secure Boot off in the machine's firmware first.",
   "directory.accountDisabled": "The DDT account {name} is disabled, so a sign-in is refused.",

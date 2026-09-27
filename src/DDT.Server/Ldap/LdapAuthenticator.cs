@@ -6,17 +6,23 @@ using System.DirectoryServices.Protocols;
 using System.Globalization;
 using System.Net;
 using DDT.Contracts.Messages;
+using DDT.Server.Settings;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Ldap;
 
-public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<LdapAuthenticator> logger) : ILdapAuthenticator
+// Takes the ldap section once, when the scope creates it, so a sign-in uses one version of the settings throughout.
+public sealed class LdapAuthenticator(LdapOptions options, ILogger<LdapAuthenticator> logger) : ILdapAuthenticator
 {
     // LDAP_INVALID_CREDENTIALS, which ResultCode leaves out because only a bind returns it.
     private const int InvalidCredentials = 49;
 
-    private readonly LdapOptions _options = options.Value;
+    private readonly LdapOptions _options = options;
+
+    public LdapAuthenticator(DdtSettings settings, ILogger<LdapAuthenticator> logger)
+        : this(settings?.Current.Ldap ?? throw new ArgumentNullException(nameof(settings)), logger)
+    {
+    }
 
     public Task<LdapIdentity?> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken)
     {
@@ -211,6 +217,65 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
         catch (DirectoryOperationException exception) when (exception.Response?.ResultCode is ResultCode.NoSuchObject or ResultCode.Referral or ResultCode.InvalidDNSyntax)
         {
             return null;
+        }
+    }
+
+    // Each step on its own, for the settings page: the bind as the bind account, the search for the user, their
+    // password, and their groups. The directory's own message is passed on, because only it says what is wrong.
+    public LdapTestOutcome Test(string? userName, string? password)
+    {
+        string server = $"{_options.Host}:{_options.Port.ToString(CultureInfo.InvariantCulture)}";
+        LdapConnection search;
+
+        try
+        {
+            search = CreateConnection();
+            search.Bind(new NetworkCredential(_options.BindDn, _options.BindPassword));
+        }
+        catch (Exception exception) when (exception is LdapException or DirectoryOperationException or InvalidOperationException
+            or ArgumentException or TypeInitializationException or DllNotFoundException)
+        {
+            return new(false, null, null, [], $"The bind as {_options.BindDn} to {server} failed: {exception.Message}");
+        }
+
+        using (search)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                return new(true, null, null, [], $"The bind as {_options.BindDn} to {server} succeeded.");
+            }
+
+            try
+            {
+                (LdapLookupStatus status, SearchResultEntry? entry) = FindUser(search, userName);
+
+                if (entry is null)
+                {
+                    return new(true, false, null, [], status == LdapLookupStatus.Ambiguous
+                        ? $"More than one entry under {_options.BaseDn} matches {userName} with the user filter, so a sign-in is refused."
+                        : $"No entry under {_options.BaseDn} matches {userName} with the user filter.");
+                }
+
+                bool? accepted = string.IsNullOrEmpty(password) ? null : TryVerifyPassword(entry.DistinguishedName, password);
+
+                if (accepted == false)
+                {
+                    return new(true, true, false, [], $"{entry.DistinguishedName} was found, but the directory refused the password.");
+                }
+
+                if (ReadImmutableId(entry) is null)
+                {
+                    return new(true, true, accepted, [], $"{entry.DistinguishedName} has no {_options.ImmutableIdAttribute}, so a sign-in is refused.");
+                }
+
+                List<string> groups = ReadGroups(search, entry.DistinguishedName);
+
+                return new(true, true, accepted, groups, $"{entry.DistinguishedName} was found, in {groups.Count} groups.");
+            }
+            catch (Exception exception) when (exception is LdapException or DirectoryOperationException)
+            {
+                return new(true, null, null, [], $"The search for {userName} under {_options.BaseDn} failed: {exception.Message}");
+            }
         }
     }
 

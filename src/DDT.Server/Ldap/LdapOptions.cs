@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
+
 namespace DDT.Server.Ldap;
 
 public sealed class LdapOptions
@@ -20,6 +22,8 @@ public sealed class LdapOptions
 
     public string BindDn { get; set; } = string.Empty;
 
+    // Secret: stored encrypted, never in the section's values.
+    [JsonIgnore]
     public string BindPassword { get; set; } = string.Empty;
 
     public string UserFilter { get; set; } = "(&(objectClass=user)(sAMAccountName={0}))";
@@ -34,7 +38,7 @@ public sealed class LdapOptions
 
     // Group distinguished name to role. Distinguished names are compared without regard to case, as the directory
     // compares them. While the map is empty, directory groups decide no role and administrators set them.
-    public Dictionary<string, string> GroupRoleMap { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> GroupRoleMap { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 }

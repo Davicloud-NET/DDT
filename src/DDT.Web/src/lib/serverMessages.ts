@@ -129,6 +129,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "deployment.sequenceHasProblems",
     message: "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}",
   }),
+  "deployment.settingsHaveProblems": msg({
+    context: "deployment.settingsHaveProblems",
+    message: "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: {problems}",
+  }),
   "deployment.signerChooses": msg({
     context: "deployment.signerChooses",
     message: "{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence.",

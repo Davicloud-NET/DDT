@@ -33,4 +33,10 @@ public enum CertificateAction
     // A new root and a server certificate from it, in place of the self-signed certificate DDT generated before it had a
     // root. Boot images built before pin that certificate and have to be built again once.
     Migrated,
+
+    // A pair from the settings page, uploaded or generated, served provisionally until it is confirmed.
+    Installed,
+
+    // A provisional pair was not confirmed in time, so the pair before it is served again.
+    RolledBack,
 }

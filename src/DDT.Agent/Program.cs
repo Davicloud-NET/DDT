@@ -64,7 +64,16 @@ using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
 
 AgentLog log = new(TimeProvider.System, Console.Out);
 TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
-ConsoleStatus status = new(text, version, options.ServerUrl, options.KeyboardLayout, options.DryRun);
+
+// The graphical console, where there is one, starts before anything else, so it shows the update check and the
+// connection too. The text console stays underneath it, and takes over should it go away.
+string? consolePath = PipeMachineConsole.PathFor(options, Console.IsInputRedirected, AppContext.BaseDirectory);
+await using PipeMachineConsole? graphical = consolePath is null
+    ? null
+    : new PipeMachineConsole(text, new ProcessConsoleLauncher(consolePath), log, version);
+log.MachineConsole = graphical;
+ConsoleStatus status = new(graphical ?? (IMachineConsole)text, version, options.ServerUrl, options.KeyboardLayout, options.DryRun);
+graphical?.Start();
 
 if (options.DryRun)
 {
@@ -72,7 +81,8 @@ if (options.DryRun)
 }
 
 // A dry run changes nothing on the computer it runs on, and a build run from source would swap itself for the
-// published agent, so neither updates. An agent started by an update never updates again.
+// published agent, so neither updates. An agent started by an update never updates again. The agent it switches to
+// starts a graphical console of its own.
 if (options.DryRun || !AgentBuild.IsPublished)
 {
     log.Information("Not checking for a newer agent in a dry run or an agent that was not published.");
@@ -80,7 +90,12 @@ if (options.DryRun || !AgentBuild.IsPublished)
 else if (!options.NoUpdate)
 {
     string current = await AgentUpdate.Sha256Async(Environment.ProcessPath!, stop.Token).ConfigureAwait(false);
-    AgentUpdate update = new(server, new ProcessAgentRelauncher(server.CloseConnections), log, TimeProvider.System, current, AppContext.BaseDirectory, args, status);
+    ProcessAgentRelauncher relauncher = new(() =>
+    {
+        server.CloseConnections();
+        graphical?.Close();
+    });
+    AgentUpdate update = new(server, relauncher, log, TimeProvider.System, current, AppContext.BaseDirectory, args, status);
 
     if (await update.RunAsync(stop.Token).ConfigureAwait(false) is { } exitCode)
     {

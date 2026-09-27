@@ -27,6 +27,18 @@ public sealed class AgentOptionsTests
     }
 
     [Fact]
+    public void NamesAGraphicalConsoleOnlyWhenAsked()
+    {
+        Assert.True(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run"], out AgentOptions? plain, out string error), error);
+        Assert.True(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--console", @"C:\Tools\ddt-console.exe"], out AgentOptions? named, out error), error);
+
+        Assert.Null(plain!.ConsolePath);
+        Assert.Equal(@"C:\Tools\ddt-console.exe", named!.ConsolePath);
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--console"], out _, out error));
+        Assert.StartsWith("--console needs a value.", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ReadsAnAgentJsonWrittenWhileEnrollmentTokensExisted()
     {
         string path = Path.Combine(Path.GetTempPath(), $"agent-{Guid.NewGuid():N}.json");

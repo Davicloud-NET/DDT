@@ -23,10 +23,15 @@ public sealed record AgentOptions(
 
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], or ddt-agent --licenses";
+        "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], " +
+        "or ddt-agent --licenses";
 
     // The fake machine of a dry run says that Secure Boot is on.
     public bool DryRunSecureBoot { get; init; }
+
+    // The graphical console to start instead of the ddt-console.exe next to the agent, even in a dry run or with input
+    // redirected, as a test or a try on a development computer needs.
+    public string? ConsolePath { get; init; }
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)
@@ -38,6 +43,7 @@ public sealed record AgentOptions(
         string? server = null;
         string? rootPem = null;
         string? keyboardLayout = null;
+        string? consolePath = null;
         bool dryRun = false;
         bool dryRunSecureBoot = false;
         bool noUpdate = false;
@@ -81,6 +87,9 @@ public sealed record AgentOptions(
                     break;
                 case "--server":
                     server = value;
+                    break;
+                case "--console":
+                    consolePath = value;
                     break;
                 case "--root-certificate":
                     if (!TryReadText(value, out rootPem, out error))
@@ -152,7 +161,11 @@ public sealed record AgentOptions(
             }
         }
 
-        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout) { DryRunSecureBoot = dryRunSecureBoot };
+        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout)
+        {
+            DryRunSecureBoot = dryRunSecureBoot,
+            ConsolePath = consolePath,
+        };
         error = string.Empty;
 
         return true;

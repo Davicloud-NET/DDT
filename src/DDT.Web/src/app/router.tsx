@@ -12,7 +12,9 @@ import {
 
 import { AboutPage } from "@/about/AboutPage";
 import { AccountPage } from "@/account/AccountPage";
+import { AuditPage } from "@/audit/AuditPage";
 import { currentUserQuery } from "@/auth/auth";
+import { BootImagePage } from "@/boot/BootImagePage";
 import { ImagesPage } from "@/images/ImagesPage";
 import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
@@ -20,6 +22,8 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
+import { runHistorySearch } from "@/runs/runHistory";
+import { RunHistoryPage } from "@/runs/RunHistoryPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
 import { sequenceSearch, sequencesSearch } from "@/sequences/sequenceSearch";
 import { SequencesPage } from "@/sequences/SequencesPage";
@@ -94,7 +98,8 @@ const machinesRoute = createRoute({
 const runHistoryRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/runs",
-  component: PendingPage,
+  validateSearch: runHistorySearch,
+  component: RunHistoryPage,
 });
 const approvalRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -147,7 +152,7 @@ const filesRoute = createRoute({
 const bootImageRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/boot/image",
-  component: PendingPage,
+  component: BootImagePage,
 });
 const networkBootRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -177,7 +182,7 @@ const serverRoute = createRoute({
 const auditRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/audit",
-  component: PendingPage,
+  component: AuditPage,
 });
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,

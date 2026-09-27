@@ -327,6 +327,10 @@ msgstr "{when} von {by}"
 msgid "{who} saved this sequence at {when} while you were editing."
 msgstr "{who} hat diese Tasksequenz um {when} gespeichert, während Sie sie bearbeitet haben."
 
+#: src/boot/BootImagePage.tsx
+msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
+msgstr "<0>Laden Sie das Stammzertifikat herunter</0> und speichern Sie es als ddt-root.pem. Der Agent vertraut nur Serverzertifikaten, die es signiert hat."
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "Ein #cloud-config-Dokument oder ein Skript, das mit #! beginnt."
@@ -362,6 +366,10 @@ msgstr "Eine Regel für sein Modell"
 #: src/rules/RulesPage.tsx
 msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 msgstr "Eine Regel braucht eine Tasksequenz, die sie wählen kann. Legen Sie zuerst unter Bereitstellung, Tasksequenzen eine an."
+
+#: src/runs/RunHistoryPage.tsx
+msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
+msgstr "Eine Ausführung beginnt, wenn einem Gerät eine Tasksequenz zugewiesen wird, es mit der von einer Regel gewählten freigegeben wird oder jemand am Gerät eine wählt."
 
 #: src/account/AccountPage.tsx
 msgid "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
@@ -413,6 +421,26 @@ msgstr "Konto"
 #: src/app/Shell.tsx
 msgid "Account and security"
 msgstr "Konto und Sicherheit"
+
+#: src/audit/auditView.ts
+msgid "Account changed"
+msgstr "Konto geändert"
+
+#: src/audit/auditView.ts
+msgid "Account created"
+msgstr "Konto angelegt"
+
+#: src/audit/auditView.ts
+msgid "Account deleted"
+msgstr "Konto gelöscht"
+
+#: src/audit/auditView.ts
+msgid "Account disabled"
+msgstr "Konto deaktiviert"
+
+#: src/audit/auditView.ts
+msgid "Account enabled"
+msgstr "Konto aktiviert"
 
 #: src/app/Shell.tsx
 msgid "Account menu"
@@ -496,6 +524,10 @@ msgstr "Legt am Ende des Datenträgers eine Partition mit der Bezeichnung CIDATA
 msgid "Adds the driver packages whose targets match the machine's model to the applied image. The packages are chosen when the sequence is assigned."
 msgstr "Fügt dem angewendeten Image die Treiberpakete hinzu, deren Ziele zum Modell des Geräts passen. Die Pakete werden gewählt, wenn die Tasksequenz zugewiesen wird."
 
+#: src/boot/BootImagePage.tsx
+msgid "ADK"
+msgstr "ADK"
+
 #: src/app/navigation.ts
 msgid "Administration"
 msgstr "Verwaltung"
@@ -512,11 +544,13 @@ msgstr "Nach {after}"
 msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
 msgstr "Nach dem Anwenden des Images geht die Ausführung im installierten Windows weiter, wo der Agent als Dienst läuft, bis die Ausführung endet."
 
+#: src/boot/BootImagePage.tsx
 #: src/machines/MachinePage.tsx
 msgid "Agent"
 msgstr "Agent"
 
 #: src/machines/machineView.ts
+#: src/runs/runHistory.ts
 #: src/sequences/sequenceList.ts
 msgid "All"
 msgstr "Alle"
@@ -591,11 +625,28 @@ msgstr "einen anderen Prozessor"
 msgid "Any of the machine's network adapters, with or without separators."
 msgstr "Einer der Netzwerkadapter des Geräts, mit oder ohne Trennzeichen."
 
+#: src/audit/AuditPage.tsx
+msgid "Any part of a name"
+msgstr "Ein Teil eines Namens"
+
 #: src/sequences/AddStepMenu.tsx
 msgid "Any sequence"
 msgstr "Jede Tasksequenz"
 
+#: src/audit/auditView.ts
+msgid "API token"
+msgstr "API-Token"
+
+#: src/audit/auditView.ts
+msgid "API token made"
+msgstr "API-Token erstellt"
+
+#: src/audit/auditView.ts
+msgid "API token revoked"
+msgstr "API-Token widerrufen"
+
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 msgid "API tokens"
 msgstr "API-Token"
 
@@ -684,9 +735,14 @@ msgid "Assigned on the web"
 msgstr "Im Web zugewiesen"
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/rules/RulesPage.tsx
 msgid "Assignment rules"
 msgstr "Zuweisungsregeln"
+
+#: src/runs/RunHistoryPage.tsx
+msgid "At {failedAt}"
+msgstr "Bei {failedAt}"
 
 #: src/runs/MachineRuns.tsx
 msgid "At {step}"
@@ -697,6 +753,7 @@ msgid "At least 12 characters."
 msgstr "Mindestens 12 Zeichen."
 
 #: src/app/navigation.ts
+#: src/audit/AuditPage.tsx
 msgid "Audit log"
 msgstr "Änderungsprotokoll"
 
@@ -717,8 +774,25 @@ msgid "Boot"
 msgstr "Boot"
 
 #: src/app/navigation.ts
+#: src/boot/BootImagePage.tsx
 msgid "Boot image"
 msgstr "Bootimage"
+
+#: src/boot/BootImagePage.tsx
+msgid "Boot manager"
+msgstr "Start-Manager"
+
+#: src/boot/BootImagePage.tsx
+msgid "Build command"
+msgstr "Build-Befehl"
+
+#: src/boot/BootImagePage.tsx
+msgid "Building it again"
+msgstr "Neu erstellen"
+
+#: src/boot/BootImagePage.tsx
+msgid "Built"
+msgstr "Erstellt"
 
 #: src/sequences/SequencesPage.tsx
 msgid "by {name}"
@@ -750,6 +824,14 @@ msgstr "Zuweisung aufheben"
 #: src/sequences/SequencesPage.tsx
 msgid "Cannot run"
 msgstr "Nicht ausführbar"
+
+#: src/audit/auditView.ts
+msgid "Certificate change acknowledged"
+msgstr "Zertifikatswechsel bestätigt"
+
+#: src/audit/auditView.ts
+msgid "Certificates"
+msgstr "Zertifikate"
 
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
@@ -864,12 +946,17 @@ msgid "contains"
 msgstr "enthält"
 
 #: src/account/AccountPage.tsx
+#: src/boot/BootImagePage.tsx
 msgid "Copied"
 msgstr "Kopiert"
 
 #: src/account/AccountPage.tsx
 msgid "Copy"
 msgstr "Kopieren"
+
+#: src/boot/BootImagePage.tsx
+msgid "Copy command"
+msgstr "Befehl kopieren"
 
 #: src/images/ImagesPage.tsx
 msgid "Copy SHA-256"
@@ -895,6 +982,10 @@ msgstr "Aktuelle Ausführung"
 msgid "Dark"
 msgstr "Dunkel"
 
+#: src/audit/auditView.ts
+msgid "DDT"
+msgstr "DDT"
+
 #: src/about/AboutPage.tsx
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr "DDT wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt, soweit das anwendbare Recht es zulässt. Einzelheiten stehen in der GNU General Public License. DDT enthält Software anderer unter deren eigenen Lizenzen."
@@ -910,6 +1001,10 @@ msgstr "DDT setzt für <0>{placeholders}</0> die Werte des Geräts ein. Setzen S
 #: src/about/AboutPage.tsx
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und verändern, entweder in Version 3 der Lizenz oder nach Ihrer Wahl in jeder späteren Version, zusammen mit zusätzlichen Bedingungen nach Abschnitt 7 dieser Lizenz."
+
+#: src/boot/BootImagePage.tsx
+msgid "DDT replaced the self-signed server certificate that boot images built before it pin. Machines netbooting such an image cannot reach the server until it is built again with DDT's root certificate."
+msgstr "DDT hat das selbstsignierte Serverzertifikat ersetzt, das zuvor erstellte Startimages fest hinterlegt haben. Geräte, die mit einem solchen Image per Netzwerk starten, erreichen den Server erst, wenn es mit dem Stammzertifikat von DDT neu erstellt ist."
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
@@ -966,6 +1061,10 @@ msgstr "Standardwerte der Bereitstellung"
 msgid "Description"
 msgstr "Beschreibung"
 
+#: src/audit/AuditPage.tsx
+msgid "Detail"
+msgstr "Detail"
+
 #: src/images/ImagesPage.tsx
 msgid "Details"
 msgstr "Details"
@@ -1003,9 +1102,18 @@ msgstr "Datenträger"
 msgid "does not equal"
 msgstr "ist nicht gleich"
 
+#: src/audit/auditView.ts
+msgid "Domain join"
+msgstr "Domänenbeitritt"
+
+#: src/audit/auditView.ts
+msgid "Domain join checked"
+msgstr "Domänenbeitritt geprüft"
+
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
+#: src/runs/runHistory.ts
 #: src/runs/runView.ts
 msgid "Done"
 msgstr "Fertig"
@@ -1019,9 +1127,18 @@ msgid "Driver packages and their targets are under Drivers."
 msgstr "Treiberpakete und ihre Ziele finden Sie unter Treiber."
 
 #: src/app/navigation.ts
+#: src/boot/BootImagePage.tsx
 #: src/packages/PackagesPage.tsx
 msgid "Drivers"
 msgstr "Treiber"
+
+#: src/boot/BootImagePage.tsx
+msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory. Build it again to add them."
+msgstr "Treiber sind für Windows PE markiert, aber im Startverzeichnis liegt kein Startimage, das mit dieser Version des Build-Skripts erstellt wurde. Erstellen Sie es neu, um sie hinzuzufügen."
+
+#: src/boot/BootImagePage.tsx
+msgid "Drivers for Windows PE"
+msgstr "Treiber für Windows PE"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Drop {what} here, or choose one."
@@ -1095,6 +1212,14 @@ msgstr "Löscht den gesamten Datenträger und schreibt das Image darauf. Das Ger
 msgid "Errors"
 msgstr "Fehler"
 
+#: src/audit/auditView.ts
+msgid "Every action"
+msgstr "Alle Aktionen"
+
+#: src/boot/BootImagePage.tsx
+msgid "Every boot image is built again"
+msgstr "Jedes Startimage ist neu erstellt"
+
 #: src/images/ImagesPage.tsx
 msgid "Every image in {file} is already in the library."
 msgstr "Jedes Image aus {file} ist schon in der Bibliothek."
@@ -1117,6 +1242,7 @@ msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
+#: src/runs/runHistory.ts
 #: src/runs/runView.ts
 msgid "Failed"
 msgstr "Fehlgeschlagen"
@@ -1154,6 +1280,10 @@ msgstr "Dateipaket suchen"
 msgid "Find a machine"
 msgstr "Gerät suchen"
 
+#: src/runs/RunHistoryPage.tsx
+msgid "Find a run"
+msgstr "Ausführung suchen"
+
 #: src/sequences/SequencesPage.tsx
 msgid "Find a task sequence"
 msgstr "Tasksequenz suchen"
@@ -1181,6 +1311,10 @@ msgstr "Für Netzwerk- und Speichertreiber, die ein Gerät braucht, bevor der Ag
 #: src/packages/PackageDialog.tsx
 msgid "For these hardware models"
 msgstr "Für diese Hardwaremodelle"
+
+#: src/audit/AuditPage.tsx
+msgid "From"
+msgstr "Von"
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "From 260 to 4096 MB."
@@ -1227,10 +1361,19 @@ msgstr "Ich habe sie gespeichert"
 msgid "Image"
 msgstr "Image"
 
+#: src/audit/auditView.ts
 #: src/sequences/steps/RawImageFields.tsx
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Image deleted"
 msgstr "Image gelöscht"
+
+#: src/audit/auditView.ts
+msgid "Image uploaded"
+msgstr "Image hochgeladen"
+
+#: src/boot/BootImagePage.tsx
+msgid "In the image"
+msgstr "Im Image"
 
 #: src/runs/RunPanel.tsx
 #: src/sequences/SequenceEditor.tsx
@@ -1347,6 +1490,10 @@ msgstr "Sprache"
 msgid "Language and region"
 msgstr "Sprache und Region"
 
+#: src/boot/BootImagePage.tsx
+msgid "Last build"
+msgstr "Letzter Build"
+
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Last seen"
@@ -1420,13 +1567,29 @@ msgstr "Lizenztexte der Software anderer"
 msgid "Light"
 msgstr "Hell"
 
+#: src/audit/AuditPage.tsx
+msgid "Load older entries"
+msgstr "Ältere Einträge laden"
+
 #: src/log/LogPanel.tsx
 msgid "Load older lines"
 msgstr "Ältere Zeilen laden"
 
+#: src/runs/RunHistoryPage.tsx
+msgid "Load older runs"
+msgstr "Ältere Ausführungen laden"
+
+#: src/audit/AuditPage.tsx
+msgid "Loading older entries"
+msgstr "Ältere Einträge werden geladen"
+
 #: src/log/LogPanel.tsx
 msgid "Loading older lines"
 msgstr "Ältere Zeilen werden geladen"
+
+#: src/runs/RunHistoryPage.tsx
+msgid "Loading older runs"
+msgstr "Ältere Ausführungen werden geladen"
 
 #: src/account/AccountPage.tsx
 msgid "Local account"
@@ -1458,12 +1621,39 @@ msgstr "MAC {mac}"
 msgid "MAC address"
 msgstr "MAC-Adresse"
 
+#: src/audit/auditView.ts
 #: src/machines/MachinesPage.tsx
+#: src/runs/RunHistoryPage.tsx
 msgid "Machine"
 msgstr "Gerät"
 
+#: src/audit/auditView.ts
+msgid "Machine approved"
+msgstr "Gerät freigegeben"
+
+#: src/audit/auditView.ts
+msgid "Machine registered"
+msgstr "Gerät registriert"
+
+#: src/audit/auditView.ts
+msgid "Machine registered again"
+msgstr "Gerät erneut registriert"
+
+#: src/audit/auditView.ts
+msgid "Machine rejected"
+msgstr "Gerät abgelehnt"
+
+#: src/audit/auditView.ts
+msgid "Machine removed"
+msgstr "Gerät entfernt"
+
+#: src/runs/RunHistoryPage.tsx
+msgid "Machine, model, MAC or sequence"
+msgstr "Gerät, Modell, MAC oder Tasksequenz"
+
 #: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/machines/MachinesPage.tsx
 msgid "Machines"
 msgstr "Geräte"
@@ -1654,6 +1844,14 @@ msgstr "In der Bibliothek ist noch kein Treiberpaket."
 msgid "No driver packages yet"
 msgstr "Noch keine Treiberpakete"
 
+#: src/boot/BootImagePage.tsx
+msgid "No drivers flagged"
+msgstr "Keine Treiber markiert"
+
+#: src/audit/AuditPage.tsx
+msgid "No entry matches"
+msgstr "Kein Eintrag passt"
+
 #: src/packages/PackagesPage.tsx
 msgid "No file packages yet"
 msgstr "Noch keine Dateipakete"
@@ -1713,7 +1911,12 @@ msgstr "Keine Regel, kein Gerät"
 msgid "No rules yet"
 msgstr "Noch keine Regeln"
 
+#: src/runs/RunHistoryPage.tsx
+msgid "No run matches"
+msgstr "Keine Ausführung passt"
+
 #: src/runs/MachineRuns.tsx
+#: src/runs/RunHistoryPage.tsx
 msgid "No runs yet"
 msgstr "Noch keine Ausführungen"
 
@@ -1757,6 +1960,10 @@ msgstr "Keine"
 msgid "None. Nothing keeps this sequence from running."
 msgstr "Keine. Nichts verhindert die Ausführung dieser Tasksequenz."
 
+#: src/boot/BootImagePage.tsx
+msgid "Not built yet"
+msgstr "Noch nicht erstellt"
+
 #: src/images/ImagesPage.tsx
 msgid "Not deployable: only x64 images can be installed."
 msgstr "Nicht bereitstellbar: Nur x64-Images können installiert werden."
@@ -1764,6 +1971,10 @@ msgstr "Nicht bereitstellbar: Nur x64-Images können installiert werden."
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Not known whether it is signed for Secure Boot"
 msgstr "Nicht bekannt, ob es für Secure Boot signiert ist"
+
+#: src/boot/BootImagePage.tsx
+msgid "Not recorded"
+msgstr "Nicht erfasst"
 
 #: src/machines/AssignDialog.tsx
 msgid "not reported"
@@ -1795,6 +2006,8 @@ msgid "Not signed for Secure Boot"
 msgstr "Nicht für Secure Boot signiert"
 
 #: src/runs/MachineRuns.tsx
+#: src/runs/runHistory.ts
+#: src/runs/RunHistoryPage.tsx
 #: src/runs/runView.ts
 msgid "Not started"
 msgstr "Nicht gestartet"
@@ -1810,6 +2023,10 @@ msgstr "Nicht angegeben"
 #: src/app/CommandPalette.tsx
 msgid "Nothing matches."
 msgstr "Nichts passt."
+
+#: src/audit/AuditPage.tsx
+msgid "Nothing recorded yet"
+msgstr "Noch nichts erfasst"
 
 #: src/runs/RunPanel.tsx
 msgid "of the run"
@@ -1844,6 +2061,10 @@ msgstr "Nur Administratoren ändern Tasksequenzen. Sie können sich diese ansehe
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "Only administrators may check the join account."
 msgstr "Nur Administratoren dürfen das Beitrittskonto prüfen."
+
+#: src/audit/AuditPage.tsx
+msgid "Only administrators read the audit log."
+msgstr "Nur Administratoren lesen das Änderungsprotokoll."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Only images for x64 machines can be written."
@@ -1899,6 +2120,7 @@ msgstr "Organisationseinheit"
 
 #: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
 msgstr "Betriebssystem-Images"
@@ -1915,9 +2137,22 @@ msgstr "Sonst ist der Schritt fertig, ohne Treiber hinzuzufügen."
 msgid "Package"
 msgstr "Paket"
 
+#: src/audit/auditView.ts
+msgid "Package changed"
+msgstr "Paket geändert"
+
+#: src/audit/auditView.ts
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Package deleted"
 msgstr "Paket gelöscht"
+
+#: src/audit/auditView.ts
+msgid "Package uploaded"
+msgstr "Paket hochgeladen"
+
+#: src/audit/auditView.ts
+msgid "Packages"
+msgstr "Pakete"
 
 #: src/app/CommandPalette.tsx
 msgid "Pages"
@@ -1936,9 +2171,21 @@ msgstr "Kennwort"
 msgid "Password changed."
 msgstr "Kennwort geändert."
 
+#: src/audit/auditView.ts
+msgid "Password read by a run"
+msgstr "Kennwort von einer Ausführung gelesen"
+
+#: src/audit/auditView.ts
+msgid "Password reset"
+msgstr "Kennwort zurückgesetzt"
+
 #: src/log/LogPanel.tsx
 msgid "Paused"
 msgstr "Angehalten"
+
+#: src/audit/auditView.ts
+msgid "Person"
+msgstr "Person"
 
 #: src/sequences/steps.ts
 msgid "Phase"
@@ -2092,6 +2339,18 @@ msgstr "Revision {revision}"
 msgid "Role"
 msgstr "Rolle"
 
+#: src/audit/auditView.ts
+msgid "Rule added"
+msgstr "Regel hinzugefügt"
+
+#: src/audit/auditView.ts
+msgid "Rule changed"
+msgstr "Regel geändert"
+
+#: src/audit/auditView.ts
+msgid "Rule deleted"
+msgstr "Regel gelöscht"
+
 #: src/sequences/SequencesPage.tsx
 msgid "Rule for {target}"
 msgstr "Regel für {target}"
@@ -2104,7 +2363,16 @@ msgstr "Regeln nach Hardwaremodell"
 msgid "Rules by MAC address"
 msgstr "Regeln nach MAC-Adresse"
 
+#: src/audit/auditView.ts
+msgid "Run done"
+msgstr "Ausführung fertig"
+
+#: src/audit/auditView.ts
+msgid "Run failed"
+msgstr "Ausführung fehlgeschlagen"
+
 #: src/app/navigation.ts
+#: src/runs/RunHistoryPage.tsx
 msgid "Run history"
 msgstr "Verlauf"
 
@@ -2112,6 +2380,27 @@ msgstr "Verlauf"
 msgid "Run script"
 msgstr "Skript ausführen"
 
+#: src/audit/auditView.ts
+msgid "Run started"
+msgstr "Ausführung gestartet"
+
+#: src/audit/auditView.ts
+msgid "Run stopped"
+msgstr "Ausführung beendet"
+
+#: src/boot/BootImagePage.tsx
+msgid "Run this in an elevated PowerShell on a Windows machine with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
+msgstr "Führen Sie dies in einer PowerShell mit Administratorrechten auf einem Windows-Rechner mit dem Windows ADK aus, in einer Kopie des DDT-Repositorys. Es schreibt boot.wim und die Startdateien in das Ziel, das im Startverzeichnis liegen muss; Geräte starten sofort mit dem neuen Image."
+
+#: src/audit/auditView.ts
+msgid "Run token refused"
+msgstr "Ausführungstoken abgelehnt"
+
+#: src/audit/auditView.ts
+msgid "Run went on"
+msgstr "Ausführung fortgesetzt"
+
+#: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
 msgid "Running"
@@ -2128,6 +2417,15 @@ msgstr "läuft seit {running}"
 #: src/runs/RunPanel.tsx
 msgid "Running for {runningFor}"
 msgstr "Läuft seit {runningFor}"
+
+#: src/runs/RunHistoryPage.tsx
+msgid "Running for {took}"
+msgstr "Läuft seit {took}"
+
+#: src/audit/auditView.ts
+#: src/runs/RunHistoryPage.tsx
+msgid "Runs"
+msgstr "Ausführungen"
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
@@ -2189,6 +2487,10 @@ msgstr "Suchen"
 msgid "Search the log"
 msgstr "Protokoll durchsuchen"
 
+#: src/audit/auditView.ts
+msgid "Second factor reset"
+msgstr "Zweiter Faktor zurückgesetzt"
+
 #: src/app/Shell.tsx
 msgid "Sections"
 msgstr "Bereiche"
@@ -2216,9 +2518,26 @@ msgid "Seen"
 msgstr "Gesehen"
 
 #: src/machines/MachinesPage.tsx
+#: src/runs/RunHistoryPage.tsx
 #: src/sequences/SequenceEditor.tsx
 msgid "Sequence"
 msgstr "Tasksequenz"
+
+#: src/audit/auditView.ts
+msgid "Sequence assigned"
+msgstr "Tasksequenz zugewiesen"
+
+#: src/audit/auditView.ts
+msgid "Sequence changed"
+msgstr "Tasksequenz geändert"
+
+#: src/audit/auditView.ts
+msgid "Sequence created"
+msgstr "Tasksequenz angelegt"
+
+#: src/audit/auditView.ts
+msgid "Sequence deleted"
+msgstr "Tasksequenz gelöscht"
 
 #: src/sequences/SequenceEditor.tsx
 msgid "Sequence name"
@@ -2253,6 +2572,10 @@ msgstr "Standard des Servers"
 msgid "Set up an authenticator"
 msgstr "Authenticator einrichten"
 
+#: src/audit/auditView.ts
+msgid "Settings"
+msgstr "Einstellungen"
+
 #: src/images/ImagesPage.tsx
 msgid "SHA-256"
 msgstr "SHA-256"
@@ -2269,6 +2592,10 @@ msgstr "Alle Tasksequenzen anzeigen"
 msgid "Show every step"
 msgstr "Alle Schritte anzeigen"
 
+#: src/audit/AuditPage.tsx
+msgid "Show everything"
+msgstr "Alles anzeigen"
+
 #: src/machines/MachinePage.tsx
 msgid "Show it"
 msgstr "Anzeigen"
@@ -2276,6 +2603,10 @@ msgstr "Anzeigen"
 #: src/machines/MachinesPage.tsx
 msgid "Show machines by state"
 msgstr "Geräte nach Zustand anzeigen"
+
+#: src/runs/RunHistoryPage.tsx
+msgid "Show runs by state"
+msgstr "Ausführungen nach Zustand anzeigen"
 
 #: src/sequences/SequencesPage.tsx
 msgid "Show task sequences by state"
@@ -2308,6 +2639,10 @@ msgstr "Signiert"
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Signed for Secure Boot"
 msgstr "Für Secure Boot signiert"
+
+#: src/audit/auditView.ts
+msgid "Signed in at a machine"
+msgstr "An einem Gerät angemeldet"
 
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
@@ -2371,6 +2706,10 @@ msgstr "Beginnen Sie mit einer Vorlage wie „Install Windows“: Sie partitioni
 msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
 msgstr "Anfang des gespeicherten Protokolls. Der Server behält die neuesten {storedLimit} Zeilen jedes Geräts."
 
+#: src/runs/RunHistoryPage.tsx
+msgid "Started"
+msgstr "Gestartet"
+
 #: src/runs/RunPanel.tsx
 msgid "started {started}"
 msgstr "gestartet {started}"
@@ -2391,6 +2730,7 @@ msgid "starts with"
 msgstr "beginnt mit"
 
 #: src/machines/MachinesPage.tsx
+#: src/runs/RunHistoryPage.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "State"
 msgstr "Zustand"
@@ -2498,6 +2838,7 @@ msgstr "Upload stoppen und verlassen"
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
+#: src/runs/runHistory.ts
 #: src/runs/runView.ts
 msgid "Stopped"
 msgstr "Beendet"
@@ -2531,6 +2872,7 @@ msgstr "Tasksequenz"
 
 #: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/sequences/SequenceEditorPage.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Task sequences"
@@ -2568,6 +2910,22 @@ msgstr "Die Uhr des Agents zeigte {said}, {off} hinter dem Server."
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
 msgstr "Der Urheberhinweis, der Gewährleistungsausschluss und die zusätzlichen Bedingungen"
 
+#: src/audit/AuditPage.tsx
+msgid "The audit log could not be read: {readError}"
+msgstr "Das Änderungsprotokoll konnte nicht gelesen werden: {readError}"
+
+#: src/boot/BootImagePage.tsx
+msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
+msgstr "Das Startverzeichnis enthält keinen Nachweis eines Builds. Ein Build mit dem aktuellen Skript schreibt ddt-boot-image.json neben boot.wim, das DDT hier liest."
+
+#: src/boot/BootImagePage.tsx
+msgid "The boot image has every driver flagged for Windows PE."
+msgstr "Das Startimage enthält jeden für Windows PE markierten Treiber."
+
+#: src/boot/BootImagePage.tsx
+msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
+msgstr "Das Startimage enthält nur die eigenen Treiber von Windows PE. Markieren Sie ein Treiberpaket unter <0>Bibliothek, Treiber</0>, wenn ein Gerät in Windows PE das Netzwerk nicht erreicht oder seinen Datenträger nicht sieht."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "The check did not run: {failure}"
 msgstr "Die Prüfung ist nicht gelaufen: {failure}"
@@ -2579,6 +2937,10 @@ msgstr "Die Bereitstellungseinstellungen konnten nicht geladen werden, daher kan
 #: src/sequences/sequenceDraft.ts
 msgid "the description"
 msgstr "die Beschreibung"
+
+#: src/boot/BootImagePage.tsx
+msgid "The drivers flagged for Windows PE have changed since the boot image was built. Build it again so that machines netboot with them."
+msgstr "Die für Windows PE markierten Treiber haben sich geändert, seit das Startimage erstellt wurde. Erstellen Sie es neu, damit Geräte mit ihnen per Netzwerk starten."
 
 #: src/about/AboutPage.tsx
 msgid "The GNU General Public License, version 3"
@@ -2692,6 +3054,10 @@ msgstr "Die Ausführung ist ohne Angabe eines Grundes fehlgeschlagen."
 msgid "The run failed: {error}"
 msgstr "Die Ausführung ist fehlgeschlagen: {error}"
 
+#: src/runs/RunHistoryPage.tsx
+msgid "The run history could not be loaded."
+msgstr "Der Verlauf konnte nicht geladen werden."
+
 #: src/runs/runs.ts
 msgid "The run is done"
 msgstr "Die Ausführung ist fertig"
@@ -2708,6 +3074,10 @@ msgstr "Die Ausführung ging weiter, weil für diesen Schritt \"Bei Fehler fortf
 msgid "The runs of this machine could not be loaded."
 msgstr "Die Ausführungen dieses Geräts konnten nicht geladen werden."
 
+#: src/boot/BootImagePage.tsx
+msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
+msgstr "Das Skript lädt die markierten Treiber mit einem API-Token eines Administrators herunter. Erstellen Sie eines unter Konto und Sicherheit und legen Sie es in DDT_API_TOKEN ab."
+
 #: src/sequences/FindingsSummary.tsx
 msgid "The sequence"
 msgstr "Die Tasksequenz"
@@ -2719,6 +3089,10 @@ msgstr "Die Tasksequenz konnte nicht geladen werden."
 #: src/sequences/NewSequenceDialog.tsx
 msgid "The sequence was not created. {error}"
 msgstr "Die Tasksequenz wurde nicht angelegt. {error}"
+
+#: src/boot/BootImagePage.tsx
+msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
+msgstr "Die Serveradresse ist die dieser Seite. Verwenden Sie den Namen, unter dem Geräte den Server erreichen, falls er ein anderer ist."
 
 #: src/images/ImagesPage.tsx
 msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
@@ -2763,6 +3137,10 @@ msgstr "Die Anmeldung beim Identitätsanbieter wurde nicht abgeschlossen. Versuc
 #: src/about/AboutPage.tsx
 msgid "The software by others that DDT contains, and its licences"
 msgstr "Die Software anderer, die DDT enthält, und ihre Lizenzen"
+
+#: src/boot/BootImagePage.tsx
+msgid "The state of the boot image could not be read."
+msgstr "Der Zustand des Startimages konnte nicht gelesen werden."
 
 #: src/runs/RunSteps.tsx
 msgid "The step failed without saying why."
@@ -2907,6 +3285,10 @@ msgstr "Zeitlimit in Minuten"
 msgid "took {took}"
 msgstr "Dauer {took}"
 
+#: src/runs/RunHistoryPage.tsx
+msgid "Took {took}"
+msgstr "Dauer {took}"
+
 #: src/machines/MachinesPage.tsx
 msgid "Took {took}, finished {finished}"
 msgstr "Dauerte {took}, beendet {finished}"
@@ -2972,6 +3354,10 @@ msgstr "Wird vor dem Skript entpackt und ist sein Arbeitsverzeichnis. Pakete fin
 msgid "Unsaved changes"
 msgstr "Ungespeicherte Änderungen"
 
+#: src/audit/AuditPage.tsx
+msgid "Until"
+msgstr "Bis"
+
 #: src/machines/AssignDialog.tsx
 msgid "Up to 15 letters A to Z, digits and hyphens."
 msgstr "Bis zu 15 Buchstaben A bis Z, Ziffern und Bindestriche."
@@ -3031,6 +3417,10 @@ msgstr "Verwendet von"
 msgid "User name"
 msgstr "Benutzername"
 
+#: src/audit/auditView.ts
+msgid "Users"
+msgstr "Benutzer"
+
 #: src/app/navigation.ts
 msgid "Users and roles"
 msgstr "Benutzer und Rollen"
@@ -3083,6 +3473,10 @@ msgstr "Warnung"
 msgid "Warnings"
 msgstr "Warnungen"
 
+#: src/audit/AuditPage.tsx
+msgid "What"
+msgstr "Was"
+
 #: src/sequences/SequencesPage.tsx
 msgid "What it does"
 msgstr "Was sie tut"
@@ -3090,6 +3484,10 @@ msgstr "Was sie tut"
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "What the check found"
 msgstr "Was die Prüfung ergab"
+
+#: src/audit/AuditPage.tsx
+msgid "When"
+msgstr "Wann"
 
 #: src/log/LogPanel.tsx
 msgid "Which lines"
@@ -3102,6 +3500,10 @@ msgstr "Für welche Geräte die Regel gilt"
 #: src/packages/packages.ts
 msgid "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
 msgstr "Welche Tasksequenzen es nennen, ist nicht bekannt, weil nicht jede Tasksequenz gelesen werden konnte; diese zeigen ein Problem, bis ein anderes Paket gewählt ist."
+
+#: src/audit/AuditPage.tsx
+msgid "Who"
+msgstr "Wer"
 
 #: src/log/LogPanel.tsx
 msgid "Whole machine"

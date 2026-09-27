@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import { infiniteQueryOptions, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 
 import type { DeploymentState, DeploymentSummary } from "@/deployments/deployments";
@@ -38,6 +40,38 @@ export interface RunHistoryPage {
 export interface RunHistoryFilter {
   states: readonly DeploymentState[];
   query: string;
+}
+
+export type RunFilter = "all" | "running" | "failed" | "done" | "stopped" | "waiting";
+
+// The states the page filters by, with the count of each from the first page.
+export const runFilters: {
+  id: RunFilter;
+  label: MessageDescriptor;
+  states: DeploymentState[];
+  count: keyof RunStateCounts | null;
+  tone?: "fail";
+}[] = [
+  { id: "all", label: msg`All`, states: [], count: null },
+  { id: "running", label: msg`Running`, states: ["Running"], count: "running" },
+  { id: "failed", label: msg`Failed`, states: ["Failed"], count: "failed", tone: "fail" },
+  { id: "done", label: msg`Done`, states: ["Done"], count: "done" },
+  { id: "stopped", label: msg`Stopped`, states: ["Cancelled"], count: "cancelled" },
+  { id: "waiting", label: msg`Not started`, states: ["Assigned"], count: "assigned" },
+];
+
+export interface RunHistorySearch {
+  state?: RunFilter;
+  q?: string;
+}
+
+export function runHistorySearch(search: Record<string, unknown>): RunHistorySearch {
+  const state = runFilters.find((filter) => filter.id === search.state && filter.id !== "all")?.id;
+
+  return {
+    ...(state === undefined ? {} : { state }),
+    ...(typeof search.q === "string" && search.q !== "" ? { q: search.q } : {}),
+  };
 }
 
 export const runHistoryKey = ["run-history"] as const;

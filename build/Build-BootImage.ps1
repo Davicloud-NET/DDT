@@ -98,6 +98,10 @@ alone. They add about 12 MB to boot.wim, 29 MB unpacked. The console speaks one 
 console protocol, and an agent that updates itself to one speaking another falls back to the text
 console until the boot image is built again. Needs -AgentPath.
 
+.PARAMETER ExtraPath
+For development: a folder copied as it is, without .pdb files, to X:\Extra, to try a program in
+Windows PE, such as a candidate for the console. Nothing starts it; run it from the prompt.
+
 .PARAMETER DriverPath
 A folder of drivers to add to boot.wim. DISM adds every .inf below it, with the files each names.
 
@@ -148,6 +152,8 @@ param(
     [string] $WimLibraryPath,
 
     [string] $ConsolePath,
+
+    [string] $ExtraPath,
 
     [string] $DriverPath,
 
@@ -643,6 +649,14 @@ if ($ConsolePath) {
     }
 }
 
+if ($ExtraPath) {
+    if (-not (Test-Path -LiteralPath $ExtraPath -PathType Container)) {
+        throw "Folder not found at $ExtraPath."
+    }
+
+    $ExtraPath = (Resolve-Path -LiteralPath $ExtraPath).ProviderPath
+}
+
 if ($WimLibraryPath) {
     if (-not $AgentPath) {
         throw 'A libwim needs -AgentPath: only the agent uses it.'
@@ -745,6 +759,16 @@ try {
             (Join-Path $Mount 'DDT\agent.json'),
             ($configuration | ConvertTo-Json),
             (New-Object Text.UTF8Encoding $false))
+    }
+
+    if ($ExtraPath) {
+        $extra = Join-Path $Mount 'Extra'
+        New-Item -ItemType Directory -Force -Path $extra | Out-Null
+        Get-ChildItem -LiteralPath $ExtraPath -Recurse -File | Where-Object Extension -ne '.pdb' | ForEach-Object {
+            $target = Join-Path $extra $_.FullName.Substring($ExtraPath.Length).TrimStart('\')
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+            Copy-Item -LiteralPath $_.FullName -Destination $target
+        }
     }
 
     # wpeinit brings up the network. WaitForNetwork is unverified on this WinPE build; if it is not

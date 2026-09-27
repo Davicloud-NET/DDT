@@ -15,6 +15,7 @@ import { NumberField } from "@/ui/Controls";
 import { Dialog } from "@/ui/Dialog";
 import { Panel } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
+import { ListBoxItem, Select } from "@/ui/Select";
 import { StateTag } from "@/ui/StateTag";
 import { TextField } from "@/ui/TextField";
 
@@ -291,6 +292,61 @@ export function SettingSwitch<T>({ form, field, label, hint, canChange }: FieldP
       {errors.length > 0 ? (
         <span className="type-small text-fail-text">{errors.join(" ")}</span>
       ) : null}
+    </FieldFrame>
+  );
+}
+
+export interface SettingOption {
+  // The value as the section stores it, such as "Ldaps".
+  id: string;
+  label: string;
+  description?: ReactNode;
+}
+
+// One value of a closed list, such as a transport or a role. With empty set, the field can also hold null, shown as
+// that option's label.
+export function SettingSelect<T>({
+  form,
+  field,
+  label,
+  hint,
+  canChange,
+  options,
+  empty,
+  className = "max-w-80",
+}: FieldProps<T> & { options: SettingOption[]; empty?: string; className?: string }) {
+  const value = valueAt(form.values, field);
+  const errors = form.fieldErrors(field);
+  const locked = !canChange || form.lockOf(field) !== null;
+  const all = empty === undefined ? options : [{ id: "", label: empty }, ...options];
+
+  return (
+    <FieldFrame form={form} field={field}>
+      <Select
+        label={label}
+        {...(hint === undefined ? {} : { hint })}
+        value={typeof value === "string" ? value : ""}
+        onChange={(key) => {
+          if (key !== null) {
+            form.change(field, key === "" ? null : String(key));
+          }
+        }}
+        isDisabled={locked}
+        isInvalid={errors.length > 0}
+        errorMessage={errors.join(" ")}
+        className={className}
+      >
+        {all.map((option) => (
+          <ListBoxItem
+            key={option.id}
+            id={option.id}
+            textValue={option.label}
+            {...(option.description === undefined ? {} : { description: option.description })}
+          >
+            {option.label}
+          </ListBoxItem>
+        ))}
+      </Select>
     </FieldFrame>
   );
 }

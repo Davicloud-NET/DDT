@@ -160,7 +160,8 @@
   --animate-pop-in: pop-in var(--duration-normal) var(--ease-enter);
   --animate-pop-out: pop-out var(--duration-fast) var(--ease-exit);
   --animate-drawer-in: drawer-in var(--duration-slow) var(--ease-enter);
-  --animate-drawer-out: drawer-out var(--duration-normal) var(--ease-exit);
+  /* As fast as the dimming it sits in, which fades it along. */
+  --animate-drawer-out: drawer-out var(--duration-fast) var(--ease-exit);
   --animate-panel-in: panel-in var(--duration-normal) var(--ease-enter);
   --animate-page-in: fade-in var(--duration-normal) var(--ease-enter);
   /* The same again under another name, so that changing between the two starts it over. */

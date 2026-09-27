@@ -17,7 +17,7 @@ import {
 // A panel that slides in from the right over the page, for details and forms that belong to the page underneath,
 // such as a machine picked in a list on a narrow screen. It is an overlay, so it casts the overlay shadow. Being
 // fixed to that edge, it is the one thing that travels further than the motion distance: in from the edge in slow,
-// and back out in normal.
+// and back out in fast, as the dimming around it fades.
 export function Drawer({
   isOpen,
   onOpenChange,

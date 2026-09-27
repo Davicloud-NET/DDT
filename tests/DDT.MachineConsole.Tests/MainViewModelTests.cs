@@ -293,6 +293,31 @@ public sealed class MainViewModelTests
         Assert.Equal("Eingabeaufforderung", new TestConsole(UiLanguage.German).Model.PromptLabel);
     }
 
+    // A laptop's top row sends mute and volume without Fn. The console says how to reach F1 to F12, and stops saying it
+    // once one of them comes through.
+    [Fact]
+    public void SaysToHoldFnWhenATopRowSendsMediaKeys()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+
+        Assert.False(console.Model.MediaKeysHint);
+        Assert.True(console.Model.Press(Key.VolumeMute));
+        Assert.True(console.Model.MediaKeysHint);
+        Assert.False(console.Model.HasOverlay);
+        Assert.Contains("Fn", console.Model.MediaKeysText, StringComparison.Ordinal);
+
+        Assert.True(console.Model.Press(Key.F2));
+        Assert.False(console.Model.MediaKeysHint);
+        Assert.Equal(Overlay.Machine, console.Model.OverlayShown);
+
+        console.Model.Press(Key.VolumeUp);
+        Assert.True(console.Model.MediaKeysHint);
+        console.Model.Press(Key.Escape);
+        Assert.False(console.Model.MediaKeysHint);
+
+        Assert.StartsWith("Die obere Tastenreihe", new TestConsole(UiLanguage.German).Model.MediaKeysText, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void OpensAndClosesTheLogTheMachineAndTheLicencesOnTheirKeys()
     {

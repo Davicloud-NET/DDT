@@ -39,6 +39,7 @@ public sealed class MainViewModel : ObservableObject
     private LicencesViewModel? _licences;
     private LinkEnd? _ended;
     private bool _confirmingRestart;
+    private bool _mediaKeysHint;
     private bool _isDark = true;
 
     // send takes an answer to the agent; close ends the console.
@@ -242,6 +243,16 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    // Shown when a media key arrives, as a laptop's top row sends them without Fn, until a function key comes through.
+    public bool MediaKeysHint
+    {
+        get => _mediaKeysHint;
+        private set => Set(ref _mediaKeysHint, value);
+    }
+
+    public string MediaKeysText =>
+        _l.T("This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys.");
+
     public string ConfirmTitle => _l.T("Restart this machine now?");
 
     public string ConfirmText => _l.T("It starts again as its firmware says, from the network or from its disk.");
@@ -314,6 +325,19 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
+        if (IsMediaKey(key))
+        {
+            MediaKeysHint = true;
+
+            return true;
+        }
+
+        // A function key came through, so the person has found Fn.
+        if (key is >= Key.F1 and <= Key.F12 || key == Key.Escape)
+        {
+            MediaKeysHint = false;
+        }
+
         if (ConfirmingRestart)
         {
             switch (key)
@@ -357,6 +381,12 @@ public sealed class MainViewModel : ObservableObject
                 return false;
         }
     }
+
+    // What a laptop's top row sends without Fn and Windows PE still turns into keys: sound and media, and the browser keys
+    // some keyboards put there. Brightness and the like go to the firmware and never arrive.
+    private static bool IsMediaKey(Key key) => key is Key.VolumeMute or Key.VolumeDown or Key.VolumeUp
+        or Key.MediaPlayPause or Key.MediaNextTrack or Key.MediaPreviousTrack or Key.MediaStop
+        or Key.BrowserBack or Key.BrowserForward or Key.BrowserRefresh or Key.BrowserSearch or Key.BrowserHome;
 
     private void ReceiveState(ConsoleState state)
     {

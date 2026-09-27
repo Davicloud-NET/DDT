@@ -1018,6 +1018,14 @@ shown once the agent has ended name the key; the keys along the bottom have no r
 1024 × 768. Closing the console itself, with Alt+F4 at any time, leaves the agent running in the
 text console underneath, where Ctrl+C stops it.
 
+Many laptops send mute, volume and media keys from their top row unless Fn is held, and Windows PE
+has no driver of the maker's that would change that. When such a key arrives, the console says to
+hold Fn, or to press Fn and Esc, which locks the row to F1 to F12 on ThinkPads and many others; the
+keys along the bottom can also be clicked. A touchpad on an I2C bus, as most current laptops have,
+needs the platform's I2C controller driver in the boot image, see
+[Drivers in the boot image](#drivers-in-the-boot-image); until then a USB mouse or a pointing stick
+works.
+
 ### Registration and authorization
 
 1. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl` and `-RootCertificatePath` puts the agent

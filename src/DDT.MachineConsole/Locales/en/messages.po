@@ -747,6 +747,10 @@ msgstr "The server's name did not resolve. Check the DNS server the network give
 msgid "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
 msgstr "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
 
+#: ViewModels/MainViewModel.cs
+msgid "This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."
+msgstr "This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."
+
 #: ViewModels/MachineFacts.cs
 msgid "This machine"
 msgstr "This machine"

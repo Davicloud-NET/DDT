@@ -121,6 +121,21 @@
         </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
 
+      <!-- Many laptops send media keys from their top row unless Fn is held; the console says so when one arrives. -->
+      <Border Grid.Row="2"
+              Name="MediaKeysHint"
+              Classes="raised"
+              c:Motion.Shown="{Binding MediaKeysHint}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Margin="36,0,36,20"
+              Padding="18,12">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <c:KeyCap Key="Fn" VerticalAlignment="Center" />
+          <TextBlock Classes="body" Text="{Binding MediaKeysText}" TextWrapping="Wrap" MaxWidth="760" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
       <!-- The log, the machine's details or the licences, over the screen. The window sets what it shows, and keeps it
            while the overlay leaves. -->
       <c:Backdrop Grid.Row="1" Grid.RowSpan="2" Name="OverlayBackdrop" c:Motion.Shown="{Binding HasOverlay}" c:Motion.Rises="False" />

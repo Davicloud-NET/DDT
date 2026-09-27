@@ -80,6 +80,11 @@ public sealed class ScreenshotTests
             console.Model.Ended(LinkEnd.Closed);
             console.Model.Press(Avalonia.Input.Key.F8);
         },
+        ["25-media-keys"] = console =>
+        {
+            console.Show(Scenarios.Running);
+            console.Model.Press(Avalonia.Input.Key.VolumeMute);
+        },
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];

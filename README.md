@@ -2093,11 +2093,20 @@ process in a dry run and carried on with the text console when that process cras
 console itself, `ddt-console.exe`, is built: its screens are drawn by Avalonia's headless platform
 in both themes and both languages in its tests, a stand-in agent drives it over a real pipe through
 a sign-in and a run, and the published console ran on a development computer against a stand-in
-agent, drawing in software. It has not yet run in Windows PE, and no boot image has been built with
-it yet.
+agent, drawing in software.
+
+On 2026-09-27 a boot image with the agent and the console, 533 MB with both and a trial of another UI
+framework, reached the Hyper-V Generation 2 test machine over TFTP in 9 s. The console started in
+Windows PE, drawing in software, and connected to the agent. A technician signed in on it, which
+approved the machine, chose a sequence of a partitioning step and two scripts, typed ERASE for its
+disk, and the run finished and restarted the machine. The console offered no way to the command
+prompt while the agent ran; Alt+F4 closed it and left the agent in the text console. Uno Platform,
+tried from the same image, drew in Windows PE as well, at 64 frames per second in software, after
+its SkiaSharp was raised to 3.119.4, which loads Direct3D only when asked; it chose its light theme
+there, because Windows PE cannot say which theme is set.
 
 Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: the rest of M6.5,
-the graphical console's first runs in Windows PE; M7 the task sequence
+a whole deployment of Windows watched on the console and on the web; M7 the task sequence
 flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
 installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
 lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,

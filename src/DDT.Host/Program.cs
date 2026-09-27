@@ -22,6 +22,14 @@ using DDT.Server.Security;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
 
+// The console verbs run next to a running server and start none of their own.
+if (SettingsConsole.Handles(args))
+{
+    Environment.ExitCode = await SettingsConsole.RunAsync(args, Console.Out);
+
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();

@@ -3,22 +3,28 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
 using DDT.Server.Live;
+using DDT.Server.Machines;
 using DDT.Server.Security;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
 
@@ -27,6 +33,9 @@ namespace DDT.Server.Endpoints;
 // through the hub. Secrets are never sent back: only whether each is set.
 public static class SettingsEndpoints
 {
+    // ddt-agent.exe is about 11 MB. The limit leaves room for a debug build and keeps a stray upload from filling the store.
+    public const long MaxAgentBytes = 128L * 1024 * 1024;
+
     // A subsystem this process rebuilds is quick, so a save waits this long for it before it answers Pending.
     private static readonly TimeSpan s_applyWait = TimeSpan.FromSeconds(5);
 
@@ -55,6 +64,8 @@ public static class SettingsEndpoints
         group.MapPost("/oidc/test", TestOidcAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapGet("/pxe/interfaces", ReadPxeInterfacesAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/pxe/rescan", RescanAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapGet("/agent", ReadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPut("/agent/binary", UploadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
     }
@@ -443,6 +454,141 @@ public static class SettingsEndpoints
             _ => Conflict(api.Name),
         };
     }
+
+    private static async Task<Ok<AgentBinaryView>> ReadAgentAsync(
+        AgentReleaseStore releases,
+        IOptions<AgentReleaseOptions> options,
+        DdtDbContext database,
+        CancellationToken cancellationToken)
+    {
+        AgentRelease? release = await releases.CurrentAsync(cancellationToken).ConfigureAwait(false);
+        bool configured = !string.IsNullOrWhiteSpace(options.Value.BinaryPath);
+
+        AuditEvent? upload = configured || release is null
+            ? null
+            : await database.AuditEvents
+                .AsNoTracking()
+                .Where(audit => audit.Action == AuditActions.AgentUploaded)
+                .OrderByDescending(audit => audit.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+        return TypedResults.Ok(new AgentBinaryView(
+            release?.Sha256,
+            release?.Size,
+            upload?.OccurredUtc,
+            upload?.ActorName,
+            configured ? AgentBinarySource.Configuration : release is null ? AgentBinarySource.None : AgentBinarySource.Uploaded));
+    }
+
+    // Every netbooting machine runs this as SYSTEM before anyone authorized it, and the agent checks only that it got what
+    // the server announced, so the upload needs a fresh proof of identity. Written next to the agent it replaces and
+    // renamed over it, so a machine never downloads half a file.
+    private static async Task<IResult> UploadAgentAsync(
+        HttpContext context,
+        ClaimsPrincipal user,
+        AgentReleaseStore releases,
+        IOptions<AgentReleaseOptions> options,
+        ReauthenticationTokens reauthentication,
+        UserManager<DdtUser> users,
+        DdtDbContext database,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Value.BinaryPath))
+        {
+            return TypedResults.Problem(
+                title: "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (!await reauthentication.ValidAsync(context, user, users).ConfigureAwait(false))
+        {
+            return Reauthenticate(["agent"]);
+        }
+
+        if (context.Request.ContentLength > MaxAgentBytes)
+        {
+            return TooLarge();
+        }
+
+        if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+        {
+            limit.MaxRequestBodySize = MaxAgentBytes;
+        }
+
+        string path = releases.BinaryPath;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        string temporary = $"{path}.{Guid.NewGuid():N}.upload";
+        string sha256;
+        long size = 0;
+
+        try
+        {
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            byte[] header = new byte[2];
+            byte[] buffer = new byte[81920];
+
+            await using (FileStream file = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, buffer.Length, useAsync: true))
+            {
+                int read;
+
+                while ((read = await context.Request.Body.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+                {
+                    for (int index = 0; index < read && size + index < header.Length; index++)
+                    {
+                        header[size + index] = buffer[index];
+                    }
+
+                    size += read;
+
+                    if (size > MaxAgentBytes)
+                    {
+                        return TooLarge();
+                    }
+
+                    hash.AppendData(buffer, 0, read);
+                    await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Every Windows executable starts with the DOS header's MZ.
+            if (size < header.Length || header[0] != (byte)'M' || header[1] != (byte)'Z')
+            {
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["binary"] = ["That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."],
+                });
+            }
+
+            sha256 = Convert.ToHexStringLower(hash.GetHashAndReset());
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temporary);
+        }
+
+        database.AuditEvents.Add(new AuditEvent
+        {
+            OccurredUtc = timeProvider.GetUtcNow(),
+            Action = AuditActions.AgentUploaded,
+            ActorUserId = Principals.UserId(user),
+            ActorName = Principals.ActorName(user),
+            SubjectId = sha256,
+            SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
+            Detail = $"Uploaded the agent with SHA-256 {sha256}, {size} bytes. Netbooting machines run it from their next boot.",
+        });
+
+        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return TypedResults.Ok(new AgentBinaryUploaded(sha256, size));
+    }
+
+    private static ProblemHttpResult TooLarge() =>
+        TypedResults.Problem(
+            title: $"The agent may be at most {MaxAgentBytes / (1024 * 1024)} MB.",
+            statusCode: StatusCodes.Status413PayloadTooLarge);
 
     private static SettingsActor Actor(ClaimsPrincipal user, HttpContext context) =>
         new(Principals.UserId(user), Principals.ActorName(user), context.Connection.RemoteIpAddress?.ToString());

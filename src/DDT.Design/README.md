@@ -16,7 +16,9 @@ The design tokens of DDT's look, Switchgear, and the script that turns them into
   `ddt-logo.ico`, the Windows icon from 16 to 256 pixels that the agent, the console and the server carry. The web
   draws the SVG's paths cropped to the mark (`src/DDT.Web/src/ui/Logo.tsx`) and serves the SVG and the icon as its
   favicon; the console shows `src/DDT.MachineConsole/Assets/ddt-logo.png`, cut from the PNG to the mark and 256
-  pixels high, because Avalonia draws no SVG without another package. The logo keeps its own reds.
+  pixels high, because Avalonia draws no SVG without another package. The logo keeps its own reds. It is under
+  DDT's licence like everything else here, so a work based on DDT may use it; section 7(c) of NOTICE still asks
+  a modified version to say that it is modified.
 - The console cannot vary a font's width, so it carries one static face of Archivo or Martian Mono for every weight
   and width a type uses, named after both, such as "Archivo 750 62". A new weight or width in `type` needs its face:
   run `src/DDT.MachineConsole/Assets/Fonts/cut_fonts.py`, which cuts them all from Google Fonts' variable fonts.

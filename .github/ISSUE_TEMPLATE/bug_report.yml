@@ -1,0 +1,90 @@
+name: Bug report
+description: DDT does something wrong, or fails where it should work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. A vulnerability does not belong here: report it privately, as
+        [SECURITY.md](https://github.com/Davicloud-NET/DDT/blob/master/SECURITY.md) says.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What DDT did, and what you expected it to do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What leads there, step by step, from a state someone else can start from.
+      placeholder: |
+        1. Upload the Windows 11 24H2 image.
+        2. Assign a sequence with a Partition the disk and an Apply image step.
+        3. Netboot the machine.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: DDT version
+      description: The version the About page shows.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: server
+    attributes:
+      label: Where the server runs
+      options:
+        - The container image, with build/compose.yaml
+        - The container image, another way
+        - From source
+    validations:
+      required: true
+
+  - type: dropdown
+    id: part
+    attributes:
+      label: Where it happens
+      multiple: true
+      options:
+        - The web UI
+        - Netboot (ProxyDHCP, TFTP, HTTP boot)
+        - The boot image build
+        - The agent in Windows PE
+        - The console at the machine
+        - The agent in the installed Windows
+        - Linux raw disk images
+        - Something else
+
+  - type: input
+    id: machine
+    attributes:
+      label: The machine
+      description: If a machine is involved, its make and model, and whether Secure Boot is on.
+      placeholder: Lenovo ThinkPad T14 Gen 5, Secure Boot on
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        The machine's log from the web UI, and the host's log around the time. DDT keeps passwords
+        out of its logs, but they name servers, networks, machines and people: replace what you do
+        not want to publish.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open and closed issues for this bug.
+          required: true
+        - label: What I pasted here holds no password, token or key.
+          required: true

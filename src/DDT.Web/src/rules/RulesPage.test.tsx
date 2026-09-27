@@ -68,7 +68,7 @@ function rulesOf(kind: "hardware model" | "MAC address"): HTMLElement {
 
 function row(table: HTMLElement, target: string): HTMLElement {
   return within(table).getByRole("row", {
-    name: new RegExp(`^${target.replace(/[.*]/g, "\\$&")}`),
+    name: new RegExp(`^${target.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}`),
   });
 }
 

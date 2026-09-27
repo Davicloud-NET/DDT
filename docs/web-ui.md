@@ -77,6 +77,33 @@ Every text a person reads goes through Lingui: `t`, `plural` and `msg` from `@li
 German texts use the formal "Sie" and Microsoft's terms: Gerät, Tasksequenz, Bereitstellung, Image, Treiber,
 Datenträger, Ausführung for a run, Freigabe for an approval.
 
+### What the server says
+
+The server's refusals and the texts in its data, such as a sequence's problems or why a machine gets its sequence,
+come with a stable code and the values the text names, beside the English.
+`src/DDT.Contracts/Messages/ServerMessages.cs` lists every code with its English as an ICU message, which the server
+formats for the English it sends.
+
+- A refusal's problem details carry `code` and `args` beside `title`; a validation problem carries `errorCodes`,
+  the codes of its `errors`, field by field and in the same order.
+- A text in the data has sibling fields, such as `message`, `code` and `args` on a sequence problem, or
+  `explanation`, `explanationCode` and `explanationArgs` on a machine's resolution.
+- A value is a string, a number, or a message of its own, `{ code, args }`, for a sentence or a name within the
+  sentence.
+
+`apiErrorFrom` says a refusal's title and field errors in the person's language, so a page reads `error.message`
+and `problem.errors` as they are. A text in the data goes through `serverText(code, args, english)`, or the helper
+beside its type, such as `findingText` or `resolutionText`. A code this build does not know leaves the server's
+English.
+
+The web's catalog, `src/lib/serverMessages.ts`, is written from the server's: a server test writes
+`scripts/server-messages.json` when the list changed, `npm run messages` writes the catalog from it, and tests on
+both sides fail until both are current. Each code is its message's context, so its German is its own even where
+the web says the same English elsewhere. After adding or changing a server message, run the server's tests, then
+`npm run messages` and `npm run i18n`, and translate the new German messages.
+
+Server logs, audit details and what the agent says stay English, since they are searched and pasted into issues.
+
 ## Writing
 
 Texts are plain and specific, in sentence case. A button says what happens ("Delete rule", not "OK"), the result

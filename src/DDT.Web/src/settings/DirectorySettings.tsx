@@ -355,16 +355,8 @@ export function DirectorySettings({ me }: { me: CurrentUser }) {
           )}
         </Notice>
       ) : null}
-      <SectionErrors form={form} />
     </SettingsSection>
   );
-}
-
-// A refusal or a problem that concerns the whole section rather than one field, such as a missing directory proof.
-export function SectionErrors<T>({ form }: { form: SettingsForm<T> }) {
-  const errors = form.fieldErrors("");
-
-  return errors.length > 0 ? <Notice tone="fail">{errors.join(" ")}</Notice> : null;
 }
 
 // A port reads better without the grouping a number field adds, as in 3269 for the global catalog.

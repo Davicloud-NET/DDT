@@ -79,11 +79,7 @@ export function SettingsSection<T>({
         </Notice>
       ) : null}
       {form.refusal?.kind === "other" ? <Notice tone="fail">{form.refusal.message}</Notice> : null}
-      {form.refusal?.kind === "invalid" ? (
-        <Notice tone="fail">
-          <Trans>Nothing was saved. The fields marked below say why.</Trans>
-        </Notice>
-      ) : null}
+      <SectionErrors form={form} />
 
       {view?.apply !== null && view?.apply !== undefined && view.apply.length > 0 ? (
         <ApplyStates states={view.apply} version={view.version} />
@@ -126,6 +122,42 @@ export function SettingsSection<T>({
         onCancel={form.cancelReauth}
       />
     </Panel>
+  );
+}
+
+// What a refused save or a stored problem says about the section as a whole rather than one field, such as a missing
+// directory proof, under the fields and next to the save that was refused.
+function SectionErrors<T>({ form }: { form: SettingsForm<T> }) {
+  const errors = form.fieldErrors("");
+  const refused = form.refusal?.kind === "invalid" ? form.refusal : null;
+  const fieldsRefused = refused !== null && Object.keys(refused.fields).some((key) => key !== "");
+
+  if (refused === null && errors.length === 0) {
+    return null;
+  }
+
+  return (
+    <Notice tone="fail">
+      <span className="flex flex-col gap-1.5">
+        {refused === null ? null : fieldsRefused ? (
+          <span>
+            <Trans>Nothing was saved. The fields marked above say why.</Trans>
+          </span>
+        ) : (
+          <span>
+            <Trans>Nothing was saved.</Trans>
+          </span>
+        )}
+        {errors.length === 1 ? <span>{errors[0]}</span> : null}
+        {errors.length > 1 ? (
+          <ul className="flex list-disc flex-col gap-1 pl-5">
+            {errors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ) : null}
+      </span>
+    </Notice>
   );
 }
 

@@ -202,10 +202,34 @@ describe("ApprovalPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(
-      await screen.findByText("Nothing was saved. The fields marked below say why."),
+      await screen.findByText("Nothing was saved. The fields marked above say why."),
     ).toBeInTheDocument();
     expect(screen.getByText("10.20.0.300/24 is not a network.")).toBeInTheDocument();
     expect(networks()).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("says what a refusal holds against the whole section, next to the save", async () => {
+    serve({
+      "PUT /api/settings/machines": () =>
+        json(
+          {
+            title: "One or more validation errors occurred.",
+            status: 400,
+            errors: { "": ["This server cannot read the key ring, so it saves no settings."] },
+          },
+          400,
+        ),
+    });
+
+    await screen.findByText("Saved 2 hours ago by admin.");
+    fireEvent.change(networks(), { target: { value: "10.20.0.0/24" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Nothing was saved.")).toBeInTheDocument();
+    expect(
+      screen.getByText("This server cannot read the key ring, so it saves no settings."),
+    ).toBeInTheDocument();
+    expect(networks()).not.toHaveAttribute("aria-invalid");
   });
 
   it("takes a change saved elsewhere while nothing is typed, and announces it while something is", async () => {

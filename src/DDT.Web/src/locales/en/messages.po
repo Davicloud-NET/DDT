@@ -3915,8 +3915,12 @@ msgid "Nothing recorded yet"
 msgstr "Nothing recorded yet"
 
 #: src/settings/SettingsParts.tsx
-msgid "Nothing was saved. The fields marked below say why."
-msgstr "Nothing was saved. The fields marked below say why."
+msgid "Nothing was saved."
+msgstr "Nothing was saved."
+
+#: src/settings/SettingsParts.tsx
+msgid "Nothing was saved. The fields marked above say why."
+msgstr "Nothing was saved. The fields marked above say why."
 
 #: src/runs/RunPanel.tsx
 msgid "of the run"

@@ -355,7 +355,7 @@ describe("NetworkBootPage", () => {
     save();
 
     expect(
-      await screen.findByText("Nothing was saved. The fields marked below say why."),
+      await screen.findByText("Nothing was saved. The fields marked above say why."),
     ).toBeInTheDocument();
     expect(
       within(target("X64Uefi")).getByText("'10.0.0' is not an IPv4 address."),

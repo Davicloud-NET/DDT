@@ -366,9 +366,7 @@ describe("SignInSettingsPage", () => {
     press(within(directorySection).getByRole("button", { name: "Save" }));
 
     expect(await within(directorySection).findByText(refusal)).toBeInTheDocument();
-    expect(
-      within(directorySection).getByText("Nothing was saved. The fields marked below say why."),
-    ).toBeInTheDocument();
+    expect(within(directorySection).getByText("Nothing was saved.")).toBeInTheDocument();
     expect(
       puts<LdapSettings>(requests, "ldap").map((one) => one.headers["x-ddt-directory-proof"]),
     ).toEqual([undefined]);

@@ -254,7 +254,7 @@ describe("ServerPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(
-      await screen.findByText("Nothing was saved. The fields marked below say why."),
+      await screen.findByText("Nothing was saved. The fields marked above say why."),
     ).toBeInTheDocument();
     const refused = within(levels).getByDisplayValue("DDT.Pxe");
     expect(refused).toHaveAttribute("aria-invalid", "true");

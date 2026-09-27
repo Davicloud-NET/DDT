@@ -12,7 +12,7 @@ import { Notice } from "@/ui/Notice";
 import { SecretValue } from "@/ui/SecretValue";
 import { StateTag } from "@/ui/StateTag";
 
-import { DirectorySettings, SectionErrors } from "./DirectorySettings";
+import { DirectorySettings } from "./DirectorySettings";
 import { RoleMapEditor } from "./RoleMapEditor";
 import {
   LockNote,
@@ -254,8 +254,6 @@ function SingleSignOnSettings() {
         {mapLock !== null ? <LockNote lock={mapLock} /> : null}
         <MapErrors form={form} />
       </SettingsGroup>
-
-      <SectionErrors form={form} />
     </SettingsSection>
   );
 }

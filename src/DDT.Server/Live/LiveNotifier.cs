@@ -209,6 +209,13 @@ public sealed partial class LiveNotifier(
             view);
     }
 
+    public void CertificateChanged(object view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        _ = PushToAdministratorsAsync(LiveEvents.CertificateChanged, view);
+    }
+
     // Every event carries what changed, so a page patches what it shows rather than loading it again.
     private async Task PushEventAsync(string liveEvent, object payload)
     {

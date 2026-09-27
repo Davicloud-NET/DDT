@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
@@ -21,6 +22,7 @@ namespace DDT.Server.Settings;
 [JsonSerializable(typeof(DdtForwardedHeadersOptions))]
 [JsonSerializable(typeof(PxeOptions))]
 [JsonSerializable(typeof(LoggingOptions))]
+[JsonSerializable(typeof(HttpsOptions))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(Dictionary<string, BootTargetOptions>))]

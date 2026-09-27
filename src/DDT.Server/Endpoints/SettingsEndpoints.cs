@@ -59,6 +59,10 @@ public static class SettingsEndpoints
         MapSection(group, SettingsApi.Pxe);
         MapSection(group, SettingsApi.Logging);
 
+        // The certificate section is read with the certificate it describes, GET /api/settings/certificate.
+        MapSection(group, SettingsApi.Certificate, "/certificate/names", read: false);
+        group.MapSettingsCertificateEndpoints();
+
         // Sends a password to the directory, so it is limited like a sign-in.
         group.MapPost("/ldap/test", TestLdapAsync).RequireAuthorization(DdtPolicies.Administrator).RequireRateLimiting(RateLimitPolicies.SignIn);
         group.MapPost("/oidc/test", TestOidcAsync).RequireAuthorization(DdtPolicies.Administrator);
@@ -70,14 +74,17 @@ public static class SettingsEndpoints
         return group;
     }
 
-    private static void MapSection<TValues>(RouteGroupBuilder group, SettingsSectionApi<TValues> api)
+    private static void MapSection<TValues>(RouteGroupBuilder group, SettingsSectionApi<TValues> api, string? route = null, bool read = true)
         where TValues : class
     {
-        string route = "/" + api.Name;
+        route ??= "/" + api.Name;
 
-        group.MapGet(route, (DdtSettings settings, SettingsViews views, CancellationToken cancellationToken) =>
-                ReadAsync(api, settings, views, cancellationToken))
-            .RequireAuthorization(api.OperatorsMayRead ? DdtPolicies.Operator : DdtPolicies.Administrator);
+        if (read)
+        {
+            group.MapGet(route, (DdtSettings settings, SettingsViews views, CancellationToken cancellationToken) =>
+                    ReadAsync(api, settings, views, cancellationToken))
+                .RequireAuthorization(api.OperatorsMayRead ? DdtPolicies.Operator : DdtPolicies.Administrator);
+        }
 
         group.MapPut(route, (
                 SettingsSectionUpdate<TValues> update,
@@ -196,7 +203,7 @@ public static class SettingsEndpoints
         TypedResults.Problem(title: $"Someone saved {section} since you loaded it. Load it again.", statusCode: StatusCodes.Status409Conflict);
 
     // Fields names what needs the fresh proof, so the page can say what the password is for.
-    private static ProblemHttpResult Reauthenticate(IReadOnlyList<string> fields) =>
+    internal static ProblemHttpResult Reauthenticate(IReadOnlyList<string> fields) =>
         TypedResults.Problem(
             title: $"Enter your password again to change {string.Join(", ", fields)}.",
             statusCode: StatusCodes.Status403Forbidden,
@@ -590,6 +597,6 @@ public static class SettingsEndpoints
             title: $"The agent may be at most {MaxAgentBytes / (1024 * 1024)} MB.",
             statusCode: StatusCodes.Status413PayloadTooLarge);
 
-    private static SettingsActor Actor(ClaimsPrincipal user, HttpContext context) =>
+    internal static SettingsActor Actor(ClaimsPrincipal user, HttpContext context) =>
         new(Principals.UserId(user), Principals.ActorName(user), context.Connection.RemoteIpAddress?.ToString());
 }

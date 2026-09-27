@@ -63,6 +63,14 @@ public abstract class SettingsSectionDefinition
         return configuration.GetSection(ConfigurationKey(field)).Exists();
     }
 
+    // Configuration decides the field: its key is present, and the field is not one configuration only seeds.
+    public bool IsLocked(IConfiguration configuration, SettingField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        return !field.Seeds && IsConfigured(configuration, field);
+    }
+
     // The field a problem's path belongs to, the longest that matches: BootTargets:X64Uefi:Method belongs to BootTargets.
     public SettingField? FieldOf(string path)
     {

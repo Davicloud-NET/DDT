@@ -117,4 +117,9 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<PxeHostInterfaces>))]
 [JsonSerializable(typeof(AgentBinaryView))]
 [JsonSerializable(typeof(AgentBinaryUploaded))]
+[JsonSerializable(typeof(SettingsSectionView<CertificateSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<CertificateSettings>))]
+[JsonSerializable(typeof(CertificateView))]
+[JsonSerializable(typeof(CertificateUpload))]
+[JsonSerializable(typeof(CertificateGenerate))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

@@ -59,4 +59,8 @@ public static class LiveEvents
     // Carries the SettingsSectionView of the section, as GET /api/settings/{section} answers it, whenever it was saved or
     // a host applied it: to administrators, and for the deployment and machines sections also to operators.
     public const string SettingsChanged = "settingsChanged";
+
+    // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
+    // administrators.
+    public const string CertificateChanged = "certificateChanged";
 }

@@ -63,6 +63,7 @@ public static class SettingsServiceCollectionExtensions
 
         // After the settings service, which registers the scheme it checks.
         services.AddHostedService<ExternalSignInSchemeGuard>();
+        services.AddHostedService<CertificateRollbackRecorder>();
 
         return services;
     }

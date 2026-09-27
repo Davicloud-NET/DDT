@@ -70,6 +70,6 @@ public static class ConfiguredSettings
     // own key, such as HttpBootPort, which is no field of the page.
     private static bool IsConfigured(SettingsSectionDefinition definition, IConfiguration configuration, SettingProblem problem) =>
         definition.FieldOf(problem.Field) is { } field
-            ? definition.IsConfigured(configuration, field)
+            ? definition.IsLocked(configuration, field)
             : problem.Field.Length > 0 && configuration.GetSection($"{definition.ConfigurationPath}:{problem.Field}").Exists();
 }

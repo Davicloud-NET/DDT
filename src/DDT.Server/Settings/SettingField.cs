@@ -22,13 +22,14 @@ public enum SettingFieldKind
 // document both name it in camel case, domain.name, so that a field reads the same everywhere but in configuration.
 public sealed class SettingField
 {
-    public SettingField(string path, SettingFieldKind kind = SettingFieldKind.Value, bool reauthenticate = false)
+    public SettingField(string path, SettingFieldKind kind = SettingFieldKind.Value, bool reauthenticate = false, bool seeds = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         Path = path;
         Kind = kind;
         Reauthenticate = reauthenticate;
+        Seeds = seeds;
         Segments = [.. path.Split(':').Select(Camel)];
         Name = string.Join('.', Segments);
     }
@@ -46,6 +47,10 @@ public sealed class SettingField
     public bool Reauthenticate { get; }
 
     public bool IsSecret => Kind == SettingFieldKind.Secret;
+
+    // Configuration only seeds it: its key is imported while the field was never written, but it never locks the field,
+    // because the key means something of its own that stays in configuration.
+    public bool Seeds { get; }
 
     public override string ToString() => Name;
 

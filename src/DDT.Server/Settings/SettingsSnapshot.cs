@@ -168,7 +168,7 @@ public sealed class SettingsSnapshot
 
         foreach (SettingField field in definition.Fields)
         {
-            bool isConfigured = definition.IsConfigured(configuration, field);
+            bool isConfigured = definition.IsLocked(configuration, field);
             string key = definition.ConfigurationKey(field);
 
             if (field.IsSecret)

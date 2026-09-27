@@ -18,6 +18,9 @@ public static class SettingWarningCodes
     public const string WideNetwork = "network.wide";
     public const string PxeBootUrl = "pxe.bootUrl";
 
+    // A certificate that does not come from DDT's root, which every boot image pins, or a new root.
+    public const string CertificateNewRoot = "certificate.newRoot";
+
     // Informs only: an entry of Interfaces names nothing on a host that runs the pxe role.
     public const string PxeInterfaceNotFound = "pxe.interfaceNotFound";
 
@@ -31,5 +34,6 @@ public static class SettingWarningCodes
         NoLocalAdministrator,
         WideNetwork,
         PxeBootUrl,
+        CertificateNewRoot,
     };
 }

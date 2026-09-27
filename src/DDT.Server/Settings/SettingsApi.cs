@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using DDT.Contracts.Settings;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
@@ -250,7 +251,14 @@ public static class SettingsApi
                 .Select(level => KeyValuePair.Create(level.Key.Trim(), level.Value?.Trim() ?? string.Empty))),
         });
 
-    public static IReadOnlyList<SettingsSectionApi> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging];
+    public static SettingsSectionApi<CertificateSettings> Certificate { get; } = new(
+        SettingsDefinitions.Certificate,
+        options => options is HttpsOptions https
+            ? new CertificateSettings(CertificateSettingsSection.Names(https.SubjectAlternativeNames))
+            : throw Unexpected(options),
+        values => new HttpsOptions { SubjectAlternativeNames = Join(values.SubjectAlternativeNames) });
+
+    public static IReadOnlyList<SettingsSectionApi> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
 
     public static SettingsSectionApi? Find(string name) => All.FirstOrDefault(api => api.Name == name);
 

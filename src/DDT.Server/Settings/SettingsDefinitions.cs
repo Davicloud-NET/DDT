@@ -21,7 +21,9 @@ public static class SettingsDefinitions
 
     public static LoggingSettingsSection Logging { get; } = new();
 
-    public static IReadOnlyList<SettingsSectionDefinition> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging];
+    public static CertificateSettingsSection Certificate { get; } = new();
+
+    public static IReadOnlyList<SettingsSectionDefinition> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
 
     public static SettingsSectionDefinition? Find(string name) =>
         All.FirstOrDefault(definition => string.Equals(definition.Name, name, StringComparison.Ordinal));

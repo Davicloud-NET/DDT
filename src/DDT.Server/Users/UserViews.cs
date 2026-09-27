@@ -34,6 +34,7 @@ public sealed class UserViews(
         return user.Source switch
         {
             AccountSource.Directory when ldap.Value.GroupRoleMap.Count > 0 => RoleSource.DirectoryGroups,
+            AccountSource.External when oidc.Value.GroupRoleMap.Count > 0 => RoleSource.SingleSignOnGroups,
             _ => null,
         };
     }

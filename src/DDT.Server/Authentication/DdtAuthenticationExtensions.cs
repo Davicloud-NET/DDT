@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Security.Claims;
 using DDT.Core.Configuration;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
@@ -17,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace DDT.Server.Authentication;
@@ -135,6 +137,21 @@ public static class DdtAuthenticationExtensions
             {
                 openId.Scope.Add(scope);
             }
+
+            // The groups claim is read at the sign-in, from the options of that moment.
+            openId.Events.OnUserInformationReceived = context =>
+            {
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    SingleSignOnGroups.CopyFromUserInformation(
+                        context.User.RootElement,
+                        identity,
+                        context.HttpContext.RequestServices.GetRequiredService<IOptions<OidcOptions>>().Value.GroupsClaim,
+                        context.Options.ClaimsIssuer ?? OidcOptions.SchemeName);
+                }
+
+                return Task.CompletedTask;
+            };
         });
     }
 }

@@ -306,10 +306,28 @@ Three sources of accounts, all optional except the first:
   address, because a provider that does not verify addresses could then take over any account.
   Link from an authenticated session, or turn on `DDT:Oidc:AutoProvision` to create new accounts
   keyed on issuer and subject. They get the role in `DDT:Oidc:AutoProvisionRole`, `Viewer` by
-  default. A role that does not exist stops the server at startup, and `Administrator` is logged as
-  a warning at every start. When linking the identity or granting the role fails, the new account is
-  deleted again and the sign in fails. A linked account with an authenticator still enters its code
-  after the provider's sign in, and a disabled or locked out account is refused as with a password.
+  default. A role that does not exist stops the server at startup, and so does `Administrator`,
+  which would make every identity the provider signs in an administrator. `Operator` is allowed,
+  but think before choosing it: every operator can read the deployment passwords by running a
+  sequence, so everyone the provider lets sign in could. When linking the identity or granting the
+  role fails, the new account is deleted again and the sign in fails. A linked account with an
+  authenticator still enters its code after the provider's sign in, and a disabled or locked out
+  account is refused as with a password. The sign-in page learns the providers to offer, with
+  `DDT:Oidc:DisplayName`, from the anonymous `GET /api/auth/external/providers`.
+
+  Group claims map onto roles the same way as directory groups. `DDT:Oidc:GroupsClaim`, `groups` by
+  default, names the claim that carries them, one claim per group or one holding a JSON array, in
+  the ID token or in the userinfo response. `DDT:Oidc:GroupRoleMap` maps its values, compared
+  without regard to case, to roles: group names or paths as Keycloak and Authentik send them, or
+  the object ids Entra ID sends. While the map has entries, each sign-in of an account single
+  sign-on made gives it the highest role its groups map to and no other, before
+  `DDT:Oidc:AutoProvisionRole`, and an identity in none of them is refused, with
+  `/sign-in?error=no-role`, and loses the role it had; no account is made for one that never had a
+  role. A local account linked to an identity keeps the role an administrator gave it. Entra ID
+  leaves the groups out of the token when a user is in more than 200 of them; assign the groups
+  that matter to the application and let it send only those. Both are future fields of the `oidc`
+  section of the settings page, and a role in the map that DDT does not have stops the server at
+  startup.
 
 Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
 carries the passkey table from the first migration so turning them on later needs no migration.

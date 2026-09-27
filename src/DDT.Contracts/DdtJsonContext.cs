@@ -28,6 +28,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(TwoFactorEnrollment))]
 [JsonSerializable(typeof(TwoFactorVerifyRequest))]
 [JsonSerializable(typeof(RecoveryCodes))]
+[JsonSerializable(typeof(IReadOnlyList<ExternalProvider>))]
 [JsonSerializable(typeof(MachineSummary))]
 [JsonSerializable(typeof(IReadOnlyList<MachineSummary>))]
 [JsonSerializable(typeof(MachineLogPage))]

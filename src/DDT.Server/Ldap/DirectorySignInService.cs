@@ -5,7 +5,6 @@
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
-using DDT.Server.Live;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +18,6 @@ public sealed partial class DirectorySignInService(
     UserManager<DdtUser> userManager,
     SignInManager<DdtUser> signInManager,
     UserActivity activity,
-    LiveConnections connections,
     IOptions<LdapOptions> options,
     ILogger<DirectorySignInService> logger)
 {
@@ -267,25 +265,11 @@ public sealed partial class DirectorySignInService(
         return (Saved(user, await userManager.UpdateAsync(user).ConfigureAwait(false)) ? user : null, false);
     }
 
-    // The one role the groups give, or none. A change closes the account's live connections, which connect again with
-    // the role it holds now.
     private async Task<(bool Saved, bool Changed)> ApplyRoleAsync(DdtUser user, string? role)
     {
-        IList<string> current = await userManager.GetRolesAsync(user).ConfigureAwait(false);
-        string[] toRemove = [.. current.Where(held => !string.Equals(held, role, StringComparison.OrdinalIgnoreCase))];
-        bool toAdd = role is not null && !current.Contains(role, StringComparer.OrdinalIgnoreCase);
+        (IdentityResult result, bool changed) = await activity.ApplyGroupRoleAsync(user, role).ConfigureAwait(false);
 
-        if (toRemove.Length == 0 && !toAdd)
-        {
-            return (true, false);
-        }
-
-        bool saved = (toRemove.Length == 0 || Saved(user, await userManager.RemoveFromRolesAsync(user, toRemove).ConfigureAwait(false)))
-            && (!toAdd || Saved(user, await userManager.AddToRoleAsync(user, role!).ConfigureAwait(false)));
-
-        connections.Close(user.Id);
-
-        return (saved, true);
+        return (Saved(user, result), changed);
     }
 
     private bool Saved(DdtUser user, IdentityResult result)

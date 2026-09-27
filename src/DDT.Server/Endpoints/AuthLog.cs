@@ -37,4 +37,10 @@ internal static partial class AuthLog
 
     [LoggerMessage(EventId = 209, Level = LogLevel.Warning, Message = "No account was created for {UserName} signing in through {Provider}: {Errors}")]
     public static partial void ProvisionFailed(ILogger logger, string provider, string? userName, string errors);
+
+    [LoggerMessage(EventId = 210, Level = LogLevel.Warning, Message = "Sign in through {Provider} refused for {UserName}: in none of the groups DDT:Oidc:GroupRoleMap maps to a role")]
+    public static partial void NoMappedGroup(ILogger logger, string provider, string? userName);
+
+    [LoggerMessage(EventId = 211, Level = LogLevel.Warning, Message = "Could not save the role the groups of {UserName} give through {Provider}: {Errors}")]
+    public static partial void GroupRoleNotSaved(ILogger logger, string provider, string? userName, string errors);
 }

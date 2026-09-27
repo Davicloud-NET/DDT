@@ -1007,7 +1007,7 @@ listed in section 3, the others are values the agent and the server must agree o
    the host. This reverses the choice at PxeHost.cs:39-40 for stored values only. Confirm.
 4. **Cookie SameSite.** It is Strict or Lax depending on Oidc:Enabled at startup
    (DdtAuthenticationExtensions.cs:81-83). Either fix it at Lax (the response mode is already Query,
-   line 120), or feed the cookie options from the snapshot.
+   line 120), or feed the cookie options from the snapshot. Answered 2026-09-27: always Lax.
 5. **Certificate expiry.** Answered in M5, as proposed. The generated certificate was valid for 2
    years and never renewed (ServerCertificateFile.cs:41), so every boot image would have broken when
    it expired. DDT now makes a private root valid for 20 years, which boot images pin, and issues a

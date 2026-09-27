@@ -85,9 +85,11 @@ public static class DdtAuthenticationExtensions
         {
             cookie.Cookie.Name = options.RequireHttps ? "__Host-ddt-auth" : "ddt-auth";
             cookie.Cookie.HttpOnly = true;
-            // An OpenID Connect form_post callback is a cross site POST, so Strict would drop the
-            // cookie on the way back from the provider. Strict stays the default until then.
-            cookie.Cookie.SameSite = oidc.Enabled ? SameSiteMode.Lax : SameSiteMode.Strict;
+            // Lax whether single sign-on is on or not, as the maintainer decided: the provider sends the browser
+            // back with a navigation from its own site, on which Strict would leave the new session behind, and a
+            // value that followed Oidc:Enabled could not change without a restart. Cross site requests that change
+            // something are refused by the same origin and antiforgery filters, which do not rely on SameSite.
+            cookie.Cookie.SameSite = SameSiteMode.Lax;
             cookie.Cookie.SecurePolicy = options.RequireHttps
                 ? CookieSecurePolicy.Always
                 : CookieSecurePolicy.SameAsRequest;

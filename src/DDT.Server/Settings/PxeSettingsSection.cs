@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
@@ -25,7 +26,10 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
         new("TftpMaxWindowSize"),
         new("MaxConcurrentTftpTransfers"),
         new("AuthorisedRelayAgents"),
-        new("BootTargets", SettingFieldKind.Collection),
+        new(
+            "BootTargets",
+            SettingFieldKind.Collection,
+            entryMembers: [.. SettingsJsonContext.Default.BootTargetOptions.Properties.Select(member => member.Name)]),
     ])
 {
     protected override JsonTypeInfo<PxeOptions> TypeInfo => SettingsJsonContext.Default.PxeOptions;
@@ -60,8 +64,7 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
             {
                 warnings.Add(new(
                     $"BootTargets:{architecture}:BootFile",
-                    $"{url} is not where DDT serves boot files, which is http://<server>:{context.HttpBootPort}/boot/. " +
-                    "Keep it only if another server serves this file.",
+                    ServerMessages.SettingsPxeBootUrl.With("url", url.ToString(), "port", context.HttpBootPort),
                     SettingWarningCodes.PxeBootUrl));
             }
         }

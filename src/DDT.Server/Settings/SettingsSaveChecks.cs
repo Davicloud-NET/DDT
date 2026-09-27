@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -41,11 +42,7 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
 
         if (definition.Name is SettingsSectionNames.Ldap or SettingsSectionNames.Oidc && !await HasLocalAdministratorAsync().ConfigureAwait(false))
         {
-            warnings.Add(new(
-                string.Empty,
-                "No local administrator account is enabled. Should the directory or the provider stop granting the Administrator " +
-                "role, only the console command settings create-admin could let anyone in again.",
-                SettingWarningCodes.NoLocalAdministrator));
+            warnings.Add(new(string.Empty, ServerMessages.SettingsNoLocalAdministrator.With(), SettingWarningCodes.NoLocalAdministrator));
         }
 
         if (definition.Name == SettingsSectionNames.Oidc && after.Options is OidcOptions { Enabled: true } oidc && !after.Closed)
@@ -60,10 +57,7 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
             && await users.FindByIdAsync(userId.ToString("D")).ConfigureAwait(false) is { Source: AccountSource.Directory }
             && !proofs.Accepts(update.DirectoryProof, userId, ldap))
         {
-            problems.Add(new(
-                string.Empty,
-                "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with " +
-                "them first; the save is accepted while a test that kept you an administrator is less than 5 minutes old."));
+            problems.Add(new(string.Empty, ServerMessages.SettingsLdapTestOwnSignIn.With()));
         }
 
         return new(problems, warnings);

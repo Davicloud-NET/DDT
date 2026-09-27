@@ -5,6 +5,7 @@
 using System.Net;
 using System.Text;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -76,6 +77,7 @@ public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication applicat
             SettingApplyState state = Assert.Single(failed.Apply!);
             Assert.Equal(SettingApplyStatus.Failed, state.State);
             Assert.Contains("The handler does not start in this test.", state.Message, StringComparison.Ordinal);
+            Assert.Equal(ServerMessages.SettingsApplyOidcFailed.Code, state.Text?.Code);
             Assert.Null(await application.Services.GetRequiredService<IAuthenticationSchemeProvider>().GetSchemeAsync(OidcOptions.SchemeName));
 
             CookieContainer cookies = new();
@@ -133,8 +135,10 @@ public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication applicat
         Assert.Equal(Authority, reached.Issuer);
         Assert.Equal("http://localhost/api/auth/external/callback", reached.RedirectUri);
         Assert.StartsWith($"The provider answered as {Authority}.", reached.Message, StringComparison.Ordinal);
+        Assert.Equal(ServerMessages.SettingsOidcTestReached.Code, reached.Text?.Code);
         Assert.False(elsewhere.Reached);
         Assert.StartsWith("https://idp.example/other/.well-known/openid-configuration answered 404", elsewhere.Message, StringComparison.Ordinal);
+        Assert.Equal(ServerMessages.SettingsOidcTestAnswered.Code, elsewhere.Text?.Code);
         Assert.Equal(HttpStatusCode.BadRequest, plain.StatusCode);
     }
 

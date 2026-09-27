@@ -83,7 +83,8 @@ public abstract class SettingsSectionDefinition
     }
 
     // A problem's path as the page names it. An entry of a map is named in brackets, because its key is free text:
-    // BootTargets:X64Uefi:Method becomes bootTargets[X64Uefi].method.
+    // BootTargets:X64Uefi:Method becomes bootTargets[X64Uefi].method. A key may hold a colon itself, as a claim value such
+    // as urn:example:admins does, so only a member the map's entries have ends it.
     public string PageName(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -112,11 +113,11 @@ public abstract class SettingsSectionDefinition
             return field.Name + "." + string.Join('.', rest.Split(':').Select(SettingField.Camel));
         }
 
-        int separator = rest.IndexOf(':', StringComparison.Ordinal);
+        int separator = rest.LastIndexOf(':');
 
-        return separator < 0
-            ? $"{field.Name}[{rest}]"
-            : $"{field.Name}[{rest[..separator]}]." + string.Join('.', rest[(separator + 1)..].Split(':').Select(SettingField.Camel));
+        return separator > 0 && field.EntryMembers.Contains(rest[(separator + 1)..], StringComparer.OrdinalIgnoreCase)
+            ? $"{field.Name}[{rest[..separator]}].{SettingField.Camel(rest[(separator + 1)..])}"
+            : $"{field.Name}[{rest}]";
     }
 
     // The code defaults, secrets left out.

@@ -90,7 +90,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
         DirectoryCheck missing = await CheckAsync(MissingPrefix + "x");
         Assert.False(missing.Found);
         Assert.Null(missing.Role);
-        Assert.Equal($"No entry under {DirectoryApplication.BaseDn} matches {MissingPrefix}x through DDT:Ldap:UserFilter, so a sign-in with it is refused.", missing.Message);
+        Assert.Equal($"No entry under {DirectoryApplication.BaseDn} matches {MissingPrefix}x with the user filter, so a sign-in with it is refused.", missing.Message);
 
         Assert.StartsWith("More than one entry", (await CheckAsync(TwinPrefix + "x")).Message, StringComparison.Ordinal);
 
@@ -98,7 +98,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
         Assert.True(none.Found);
         Assert.Empty(none.Matches);
         Assert.Null(none.Role);
-        Assert.Equal($"{unmapped} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused.", none.Message);
+        Assert.Equal($"{unmapped} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused.", none.Message);
 
         DirectoryCheck taken = await CheckAsync(local);
         Assert.Null(taken.Role);
@@ -264,7 +264,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
         using HttpResponseMessage role = await administrator.PatchAsync($"/api/users/{id}", new UpdateUserRequest(null, null, DdtRoleNames.Administrator));
         Assert.Equal(HttpStatusCode.Conflict, role.StatusCode);
         Assert.Equal(
-            $"The role of {userName} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map.",
+            $"The role of {userName} comes from its directory groups through the directory's group map, at each sign-in. Change its groups in the directory, or the map on the Sign-in page.",
             await TestDatabase.TitleAsync(role));
 
         using HttpResponseMessage name = await administrator.PatchAsync($"/api/users/{id}", new UpdateUserRequest("Someone Else", null, null));
@@ -282,7 +282,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
 
         using HttpResponseMessage search = await administrator.GetAsync($"{Directory}/groups?query=ddt");
         Assert.Equal(HttpStatusCode.Conflict, search.StatusCode);
-        Assert.Equal("Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first.", await TestDatabase.TitleAsync(search));
+        Assert.Equal("Sign-in through a directory is off. Turn it on and set its connection on the Sign-in page first.", await TestDatabase.TitleAsync(search));
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync($"{Directory}/check", new DirectoryCheckRequest("anyone"))).StatusCode);
         Assert.False((await ReadAsync<DirectoryView>(await administrator.GetAsync(Directory))).Enabled);
     }

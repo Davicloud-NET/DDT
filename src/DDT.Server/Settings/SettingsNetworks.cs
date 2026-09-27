@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Security;
@@ -17,14 +18,15 @@ internal static class SettingsNetworks
     private const int WidestVersion4 = 16;
     private const int WidestVersion6 = 48;
 
-    public static IReadOnlyList<SettingWarning> Wide(IEnumerable<IPNetwork> networks, string field, string use) =>
+    // Wide says what an address in the network counts as, with the network and the widest prefix it may have.
+    public static IReadOnlyList<SettingWarning> Wide(IEnumerable<IPNetwork> networks, string field, MessageTemplate wide) =>
     [
         .. networks
-            .Where(network => network.PrefixLength < (network.BaseAddress.AddressFamily == AddressFamily.InterNetwork ? WidestVersion4 : WidestVersion6))
-            .Select(network => new SettingWarning(
+            .Select(network => (Network: network, Widest: network.BaseAddress.AddressFamily == AddressFamily.InterNetwork ? WidestVersion4 : WidestVersion6))
+            .Where(entry => entry.Network.PrefixLength < entry.Widest)
+            .Select(entry => new SettingWarning(
                 field,
-                $"{network} is wider than a /{(network.BaseAddress.AddressFamily == AddressFamily.InterNetwork ? WidestVersion4 : WidestVersion6)}. " +
-                $"Every address in it counts as a {use} address.",
+                wide.With("network", entry.Network.ToString(), "prefix", entry.Widest),
                 SettingWarningCodes.WideNetwork)),
     ];
 
@@ -42,8 +44,7 @@ internal static class SettingsNetworks
             {
                 problems.Add(new(
                     field ?? "KnownProxies",
-                    $"The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the " +
-                    "client's address would count as one from that network."));
+                    ServerMessages.SettingsMachinesNetworkHoldsProxy.With("network", network.ToString(), "proxy", proxy.ToString())));
             }
         }
 
@@ -53,8 +54,7 @@ internal static class SettingsNetworks
             {
                 problems.Add(new(
                     field ?? "KnownNetworks",
-                    $"The zero touch network {network} overlaps the proxy network {listed}. A request a proxy there forwards " +
-                    "without the client's address would count as one from that network."));
+                    ServerMessages.SettingsMachinesNetworkOverlapsProxies.With("network", network.ToString(), "proxies", listed.ToString())));
             }
         }
 

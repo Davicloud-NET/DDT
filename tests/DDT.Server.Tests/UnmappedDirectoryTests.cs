@@ -23,7 +23,7 @@ public sealed class UnmappedDirectoryTests(UnmappedDirectoryApplication applicat
             await administrator.PostAsync("/api/directory/check", new DirectoryCheckRequest(userName)));
         Assert.Null(before.Role);
         Assert.Empty(before.Matches);
-        Assert.StartsWith("DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in", before.Message, StringComparison.Ordinal);
+        Assert.StartsWith("The directory's group map on the Sign-in page is empty, so administrators set roles. A first sign-in", before.Message, StringComparison.Ordinal);
 
         using (SignedInClient browser = application.Browser())
         {
@@ -44,7 +44,7 @@ public sealed class UnmappedDirectoryTests(UnmappedDirectoryApplication applicat
         using SignedInClient again = await application.SignedInBrowserAsync(userName, DdtApplication.Password);
         Assert.Equal([DdtRoleNames.Operator], (await RegisteredMachine.ReadAsync<CurrentUser>(await again.GetAsync("/api/auth/me"))).Roles);
         Assert.Equal(
-            "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has Operator.",
+            "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has Operator.",
             (await RegisteredMachine.ReadAsync<DirectoryCheck>(await administrator.PostAsync("/api/directory/check", new DirectoryCheckRequest(userName)))).Message);
     }
 }

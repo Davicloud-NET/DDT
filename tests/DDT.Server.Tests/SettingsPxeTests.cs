@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Pxe;
 using DDT.Server.Data;
@@ -71,7 +72,11 @@ public sealed class SettingsPxeTests(DdtApplication application) : IClassFixture
         Assert.Equal(3, stored.Version);
         Assert.False(stored.StopHostOnFailure);
         Assert.Null(broken.Options);
-        Assert.StartsWith("The pxe settings have problems, so nothing is served until they are fixed: DDT:Pxe:TftpMaxWindowSize:", broken.Refusal, StringComparison.Ordinal);
+        Assert.StartsWith(
+            "The pxe settings have problems, so nothing is served until they are fixed: DDT:Pxe:TftpMaxWindowSize:",
+            broken.Refusal?.Text,
+            StringComparison.Ordinal);
+        Assert.Equal(ServerMessages.SettingsApplyPxeClosed.Code, broken.Refusal?.Code);
         Assert.True(configured.StopHostOnFailure);
     }
 

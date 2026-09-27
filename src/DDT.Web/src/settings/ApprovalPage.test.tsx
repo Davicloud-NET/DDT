@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { i18n } from "@lingui/core";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -56,9 +57,16 @@ function networks(): HTMLElement {
   return screen.getByRole("textbox", { name: "Zero touch networks" });
 }
 
+async function inGerman() {
+  const { messages } = await import("../locales/de/messages.po");
+
+  i18n.loadAndActivate({ locale: "de", messages });
+}
+
 describe("ApprovalPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    i18n.loadAndActivate({ locale: "en", messages: {} });
   });
 
   it("shows an operator the settings to read, with nothing to change or save", async () => {
@@ -295,5 +303,118 @@ describe("ApprovalPage", () => {
       ),
     ).toBeInTheDocument();
     expect(networks()).toHaveAttribute("readonly");
+  });
+
+  // The server sends each message as a code beside its English: a problem of the stored section, how a host applied
+  // it, with the problems within the sentence, and a warning to confirm.
+  it("says the server's problems, apply states and warnings in German", async () => {
+    await inGerman();
+    const wide = {
+      field: "zeroTouchNetworks",
+      message:
+        "10.0.0.0/8 is wider than a /16. Every address in it counts as a zero touch address.",
+      code: "network.wide",
+      text: { code: "settings.machines.networkWide", args: { network: "10.0.0.0/8", prefix: 16 } },
+    };
+    serve({
+      "GET /api/settings/machines": () =>
+        json(
+          section({
+            problems: [
+              {
+                field: "maxWaitingPerAddress",
+                message: "Must be between 1 and MaxWaiting, which is 200.",
+                code: null,
+                text: { code: "settings.machines.perAddressRange", args: { max: 200 } },
+              },
+            ],
+            apply: [
+              {
+                host: "ddt1",
+                version: 3,
+                state: "Failed",
+                message:
+                  "No proxy is trusted on this host while the section has problems: Must be at least 1.",
+                updatedUtc: null,
+                text: {
+                  code: "settings.apply.proxiesClosed",
+                  args: { problems: { code: "settings.atLeastOne", args: {} } },
+                },
+              },
+            ],
+          }),
+        ),
+      "PUT /api/settings/machines": () =>
+        json(
+          {
+            title: "One or more validation errors occurred.",
+            status: 400,
+            errors: { confirm: [`${wide.code}: ${wide.message}`] },
+            confirm: [wide],
+          },
+          400,
+        ),
+    });
+
+    expect(
+      await screen.findByText("Muss zwischen 1 und MaxWaiting liegen, das 200 ist."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Auf diesem Host wird keinem Proxy vertraut, solange der Abschnitt Probleme hat: Muss mindestens 1 sein.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Zero-Touch-Netzwerke" }), {
+      target: { value: "10.0.0.0/8" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+
+    const warning = await screen.findByRole("dialog", { name: "Trotzdem speichern?" });
+    expect(
+      within(warning).getByText(
+        "10.0.0.0/8 ist größer als ein /16. Jede Adresse darin gilt als Zero-Touch-Adresse.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // A refusal carries its field errors as codes, and a code this build does not know keeps the server's English.
+  it("says a refused field in German, and the English of a code it does not know", async () => {
+    await inGerman();
+    serve({
+      "GET /api/settings/machines": () =>
+        json(
+          section({
+            problems: [
+              {
+                field: "zeroTouchNetworks",
+                message: "A problem from a newer server.",
+                code: null,
+                text: { code: "settings.machines.fromTheFuture", args: {} },
+              },
+            ],
+          }),
+        ),
+      "PUT /api/settings/machines": () =>
+        json(
+          {
+            title: "One or more validation errors occurred.",
+            status: 400,
+            errors: { maxWaiting: ["Must be at least 1."] },
+            errorCodes: { maxWaiting: [{ code: "settings.atLeastOne", args: {} }] },
+          },
+          400,
+        ),
+    });
+
+    expect(await screen.findByText("A problem from a newer server.")).toBeInTheDocument();
+
+    const waiting = screen.getByRole("textbox", { name: "Wartend insgesamt" });
+    fireEvent.change(waiting, { target: { value: "0" } });
+    fireEvent.blur(waiting);
+    fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+
+    expect(await screen.findByText("Muss mindestens 1 sein.")).toBeInTheDocument();
+    expect(waiting).toHaveAttribute("aria-invalid", "true");
   });
 });

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Authentication;
@@ -53,11 +54,10 @@ public sealed partial class SettingsApplier(
 
             if (proxies.Version != _proxiesVersion)
             {
-                hostStates.Record(
-                    SettingsSectionNames.Proxies,
-                    proxies.Version,
+                Record(
+                    proxies,
                     proxies.Closed ? SettingsApplyResult.Failed : SettingsApplyResult.Applied,
-                    proxies.Closed ? Closed(proxies, "No proxy is trusted") : null);
+                    proxies.Closed ? Closed(proxies, ServerMessages.SettingsApplyProxiesClosed) : null);
                 _proxiesVersion = proxies.Version;
             }
         }
@@ -109,11 +109,10 @@ public sealed partial class SettingsApplier(
 
         if (!snapshot.Oidc.Enabled)
         {
-            hostStates.Record(
-                SettingsSectionNames.Oidc,
-                state.Version,
+            Record(
+                state,
                 state.Closed ? SettingsApplyResult.Failed : SettingsApplyResult.Applied,
-                state.Closed ? Closed(state, "Single sign-on is off") : null);
+                state.Closed ? Closed(state, ServerMessages.SettingsApplyOidcClosed) : null);
 
             return;
         }
@@ -134,16 +133,16 @@ public sealed partial class SettingsApplier(
         {
             // Local sign-in keeps working without the scheme.
             LogOidcFailed(exception);
-            hostStates.Record(
-                SettingsSectionNames.Oidc,
-                state.Version,
-                SettingsApplyResult.Failed,
-                $"Single sign-on is off on this host: {exception.Message}");
+            Record(state, SettingsApplyResult.Failed, ServerMessages.SettingsApplyOidcFailed.With("error", exception.Message));
         }
     }
 
-    private static string Closed(SettingsSectionState state, string consequence) =>
-        $"{consequence} on this host while the section has problems: {string.Join(" ", state.Problems.Select(problem => problem.Message))}";
+    private void Record(SettingsSectionState state, SettingsApplyResult result, ServerMessage? message) =>
+        hostStates.Record(state.Name, state.Version, result, message?.Text, text: message);
+
+    // What is off, and then the section's problems, one after another.
+    private static ServerMessage Closed(SettingsSectionState state, MessageTemplate consequence) =>
+        consequence.With("problems", ServerMessages.Sentences([.. state.Problems.Select(problem => problem.Text)]));
 
     [LoggerMessage(EventId = 970, Level = LogLevel.Error, Message = "Could not apply the settings")]
     private partial void LogApplyFailed(Exception exception);

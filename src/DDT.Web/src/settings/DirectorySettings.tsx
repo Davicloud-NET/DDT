@@ -19,7 +19,7 @@ import { directoryQuery, findGroups } from "@/users/users";
 import { roleLabel } from "@/users/userView";
 
 import { RoleMapEditor } from "./RoleMapEditor";
-import type { SecretAction } from "./settings";
+import { settingsText, type SecretAction } from "./settings";
 import {
   LockNote,
   SettingSecret,
@@ -709,7 +709,7 @@ function TestResult({
             : []),
         ]}
       />
-      <p className="type-small text-ink">{result.message}</p>
+      <p className="type-small text-ink">{settingsText(result)}</p>
       {proven ? (
         <p className="type-small text-ok-text">
           <Trans>

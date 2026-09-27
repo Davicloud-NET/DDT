@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Certificates;
@@ -27,10 +29,6 @@ namespace DDT.Server.Endpoints;
 // minutes from a connection that was served it. These act on the process that serves the page.
 public static class SettingsCertificateEndpoints
 {
-    private const string NotManageable =
-        "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and " +
-        "no Password is set. A PFX, a key under a password, or TLS at a proxy is managed by hand.";
-
     public static RouteGroupBuilder MapSettingsCertificateEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -58,7 +56,7 @@ public static class SettingsCertificateEndpoints
 
         return new CertificateView(
             certificates is not null,
-            certificates is null ? NotManageable : null,
+            certificates is null ? ServerMessages.SettingsCertificateNotManageable.With().Text : null,
             certificates?.Describe(),
             certificates?.Provisional?.DeadlineUtc,
             served is null ? null : string.Equals(served, certificates?.Current?.Thumbprint, StringComparison.OrdinalIgnoreCase),
@@ -91,7 +89,7 @@ public static class SettingsCertificateEndpoints
     {
         if (context.RequestServices.GetService<ServerCertificates>() is not { } certificates)
         {
-            return TypedResults.Problem(title: NotManageable, statusCode: StatusCodes.Status409Conflict);
+            return NotManageable();
         }
 
         if (!await reauthentication.ValidAsync(context, user, users).ConfigureAwait(false))
@@ -99,11 +97,11 @@ public static class SettingsCertificateEndpoints
             return SettingsEndpoints.Reauthenticate(["certificate"]);
         }
 
-        (PemPair? pair, string? field, string? problem) = Read(upload);
+        (PemPair? pair, string? field, ServerMessage? problem) = Read(upload);
 
         if (pair is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field!] = [problem!] });
+            return ServerProblems.Validation(field!, problem!);
         }
 
         using X509Certificate2 certificate = X509Certificate2.CreateFromPem(pair.CertificatePem, pair.KeyPem);
@@ -111,14 +109,12 @@ public static class SettingsCertificateEndpoints
 
         if (Refusal(certificate, context, settings, now) is { } refusal)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["certificate"] = [refusal] });
+            return ServerProblems.Validation("certificate", refusal);
         }
 
         if (!certificates.ChainsToRoot(certificate) && !Confirmed(upload.Confirm))
         {
-            return NewRoot(
-                "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with " +
-                "its root, and trust that root in the browsers that manage DDT.");
+            return NewRoot(ServerMessages.SettingsCertificateNewRootUpload.With());
         }
 
         CertificateCheck check = await certificates.InstallAsync(pair, cancellationToken).ConfigureAwait(false);
@@ -144,14 +140,12 @@ public static class SettingsCertificateEndpoints
     {
         if (context.RequestServices.GetService<ServerCertificates>() is not { } certificates)
         {
-            return TypedResults.Problem(title: NotManageable, statusCode: StatusCodes.Status409Conflict);
+            return NotManageable();
         }
 
         if (!certificates.CanGenerate)
         {
-            return TypedResults.Problem(
-                title: "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certificate. Upload one instead.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.SettingsCertificateGenerateOff.With(), StatusCodes.Status409Conflict);
         }
 
         if (!await reauthentication.ValidAsync(context, user, users).ConfigureAwait(false))
@@ -163,17 +157,14 @@ public static class SettingsCertificateEndpoints
 
         if (!Covers(names, context.Request.Host.Host))
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["subjectAlternativeNames"] = [$"Add {context.Request.Host.Host}, the name this page is reached by, to the server names first."],
-            });
+            return ServerProblems.Validation(
+                "subjectAlternativeNames",
+                ServerMessages.SettingsCertificateAddHostFirst.With("host", context.Request.Host.Host));
         }
 
         if (!certificates.HasRoot && !Confirmed(generate?.Confirm))
         {
-            return NewRoot(
-                "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers " +
-                "that manage DDT.");
+            return NewRoot(ServerMessages.SettingsCertificateNewRootGenerate.With());
         }
 
         CertificateCheck check = await certificates.GenerateAsync(names, cancellationToken).ConfigureAwait(false);
@@ -194,7 +185,7 @@ public static class SettingsCertificateEndpoints
     {
         if (context.RequestServices.GetService<ServerCertificates>() is not { } certificates)
         {
-            return TypedResults.Problem(title: NotManageable, statusCode: StatusCodes.Status409Conflict);
+            return NotManageable();
         }
 
         string? thumbprint = certificates.Provisional?.Thumbprint;
@@ -205,13 +196,10 @@ public static class SettingsCertificateEndpoints
         switch (confirmation)
         {
             case CertificateConfirmation.NothingToConfirm:
-                return TypedResults.Problem(title: "No certificate waits for a confirmation.", statusCode: StatusCodes.Status409Conflict);
+                return ServerProblems.Problem(ServerMessages.SettingsCertificateNothingToConfirm.With(), StatusCodes.Status409Conflict);
 
             case CertificateConfirmation.NotServedTheNewPair:
-                return TypedResults.Problem(
-                    title: "This connection was served the certificate before the new one, so it proves nothing about the new " +
-                        "one. Load the page again, which connects anew, and confirm from there.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ServerProblems.Problem(ServerMessages.SettingsCertificateNotServedNew.With(), StatusCodes.Status409Conflict);
         }
 
         database.AuditEvents.Add(Audit(
@@ -258,11 +246,11 @@ public static class SettingsCertificateEndpoints
     }
 
     // A PEM chain with its key, or a PFX with its password, as the pair of PEM files DDT keeps.
-    private static (PemPair? Pair, string? Field, string? Problem) Read(CertificateUpload? upload)
+    private static (PemPair? Pair, string? Field, ServerMessage? Problem) Read(CertificateUpload? upload)
     {
         if (upload is null)
         {
-            return (null, "certificatePem", "Send the certificate and its key, or a PFX.");
+            return (null, "certificatePem", ServerMessages.SettingsCertificateSendPair.With());
         }
 
         if (!string.IsNullOrWhiteSpace(upload.Pfx))
@@ -275,7 +263,7 @@ public static class SettingsCertificateEndpoints
             }
             catch (FormatException)
             {
-                return (null, "pfx", "Is not base64.");
+                return (null, "pfx", ServerMessages.SettingsCertificateNotBase64.With());
             }
 
             try
@@ -286,14 +274,14 @@ public static class SettingsCertificateEndpoints
                 {
                     if (collection.FirstOrDefault(certificate => certificate.HasPrivateKey) is not { } leaf)
                     {
-                        return (null, "pfx", "Holds no certificate with its private key.");
+                        return (null, "pfx", ServerMessages.SettingsCertificatePfxWithoutKey.With());
                     }
 
                     string? key = leaf.GetRSAPrivateKey()?.ExportPkcs8PrivateKeyPem() ?? leaf.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPem();
 
                     if (key is null)
                     {
-                        return (null, "pfx", "Its key is neither RSA nor ECDSA.");
+                        return (null, "pfx", ServerMessages.SettingsCertificateKeyAlgorithm.With());
                     }
 
                     string chain = string.Join("\n", [leaf.ExportCertificatePem(), .. collection.Where(other => other != leaf).Select(other => other.ExportCertificatePem())]);
@@ -310,13 +298,13 @@ public static class SettingsCertificateEndpoints
             }
             catch (CryptographicException exception)
             {
-                return (null, "pfx", $"Does not open with this password: {exception.Message}");
+                return (null, "pfx", ServerMessages.SettingsCertificatePfxPassword.With("error", exception.Message));
             }
         }
 
         if (string.IsNullOrWhiteSpace(upload.CertificatePem) || string.IsNullOrWhiteSpace(upload.KeyPem))
         {
-            return (null, "certificatePem", "Send the certificate with its intermediates and its key as PEM, or a PFX.");
+            return (null, "certificatePem", ServerMessages.SettingsCertificateSendPem.With());
         }
 
         try
@@ -327,16 +315,20 @@ public static class SettingsCertificateEndpoints
         }
         catch (CryptographicException exception)
         {
-            return (null, "keyPem", $"The certificate does not load with this key: {exception.Message}");
+            return (null, "keyPem", ServerMessages.SettingsCertificateKeyMismatch.With("error", exception.Message));
         }
     }
 
     // Valid now, and for every name the page is reached by: the host of this request and the server names.
-    private static string? Refusal(X509Certificate2 certificate, HttpContext context, DdtSettings settings, DateTimeOffset now)
+    private static ServerMessage? Refusal(X509Certificate2 certificate, HttpContext context, DdtSettings settings, DateTimeOffset now)
     {
         if (now < new DateTimeOffset(certificate.NotBefore.ToUniversalTime()) || now > new DateTimeOffset(certificate.NotAfter.ToUniversalTime()))
         {
-            return $"It is valid from {certificate.NotBefore.ToUniversalTime():u} to {certificate.NotAfter.ToUniversalTime():u}, not now.";
+            return ServerMessages.SettingsCertificateNotValidNow.With(
+                "from",
+                certificate.NotBefore.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture),
+                "until",
+                certificate.NotAfter.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture));
         }
 
         IReadOnlyList<string> serverNames = CertificateSettingsSection.Names(
@@ -347,7 +339,7 @@ public static class SettingsCertificateEndpoints
 
         return missing.Length == 0
             ? null
-            : $"It does not name {string.Join(", ", missing)}, which the server is reached by, so browsers and agents would refuse it.";
+            : ServerMessages.SettingsCertificateMissingNames.With("names", string.Join(", ", missing));
     }
 
     private static bool Covers(IReadOnlyList<string> names, string host) =>
@@ -357,12 +349,16 @@ public static class SettingsCertificateEndpoints
     private static bool Confirmed(IReadOnlyList<string>? confirm) =>
         confirm?.Contains(SettingWarningCodes.CertificateNewRoot, StringComparer.Ordinal) == true;
 
-    private static ValidationProblem NewRoot(string message) =>
+    private static ProblemHttpResult NotManageable() =>
+        ServerProblems.Problem(ServerMessages.SettingsCertificateNotManageable.With(), StatusCodes.Status409Conflict);
+
+    // As a save's warning to confirm: under confirm as "code: message", and whole in the confirm extension.
+    private static ValidationProblem NewRoot(ServerMessage message) =>
         TypedResults.ValidationProblem(
-            new Dictionary<string, string[]> { ["confirm"] = [$"{SettingWarningCodes.CertificateNewRoot}: {message}"] },
+            new Dictionary<string, string[]> { ["confirm"] = [$"{SettingWarningCodes.CertificateNewRoot}: {message.Text}"] },
             extensions: new Dictionary<string, object?>
             {
-                ["confirm"] = new[] { new SettingMessage(string.Empty, message, SettingWarningCodes.CertificateNewRoot) },
+                ["confirm"] = new[] { new SettingMessage(string.Empty, message.Text, SettingWarningCodes.CertificateNewRoot, message) },
             });
 
     private static AuditEvent Audit(string action, string subject, SettingsActor actor, DateTimeOffset now, string detail) => new()

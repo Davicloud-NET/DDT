@@ -87,13 +87,15 @@ formats for the English it sends.
 - A refusal's problem details carry `code` and `args` beside `title`; a validation problem carries `errorCodes`,
   the codes of its `errors`, field by field and in the same order.
 - A text in the data has sibling fields, such as `message`, `code` and `args` on a sequence problem, or
-  `explanation`, `explanationCode` and `explanationArgs` on a machine's resolution.
+  `explanation`, `explanationCode` and `explanationArgs` on a machine's resolution. The settings API's problems,
+  warnings, apply states and test results carry `text`, the message as `{ code, args }`, beside `message`, because a
+  warning's `code` is its confirmation code.
 - A value is a string, a number, or a message of its own, `{ code, args }`, for a sentence or a name within the
   sentence.
 
 `apiErrorFrom` says a refusal's title and field errors in the person's language, so a page reads `error.message`
 and `problem.errors` as they are. A text in the data goes through `serverText(code, args, english)`, or the helper
-beside its type, such as `findingText` or `resolutionText`. A code this build does not know leaves the server's
+beside its type, such as `findingText`, `resolutionText` or `settingsText`. A code this build does not know leaves the server's
 English.
 
 The web's catalog, `src/lib/serverMessages.ts`, is written from the server's: a server test writes

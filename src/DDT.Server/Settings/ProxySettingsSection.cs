@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Server.Deployments;
@@ -42,5 +43,5 @@ public sealed class ProxySettingsSection() : SettingsSectionDefinition<DdtForwar
         DdtForwardedHeadersOptions options,
         DdtForwardedHeadersOptions? current,
         SettingsContext context) =>
-        SettingsNetworks.Wide(DdtForwardedHeadersExtensions.Networks(options.KnownNetworks), "KnownNetworks", "trusted proxy");
+        SettingsNetworks.Wide(DdtForwardedHeadersExtensions.Networks(options.KnownNetworks), "KnownNetworks", ServerMessages.SettingsProxiesNetworkWide);
 }

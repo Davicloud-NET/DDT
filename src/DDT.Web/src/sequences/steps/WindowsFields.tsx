@@ -231,7 +231,8 @@ export function WriteUnattendFields({
         className="sm:col-span-2"
         hint={
           <Trans>
-            The account and its password are configured on the server, never in the sequence.
+            The account and its password are set on the Deployment defaults page, never in the
+            sequence.
           </Trans>
         }
         value={step.localAdministrator}
@@ -255,11 +256,11 @@ export function JoinDomainFields({
     <>
       <p className="text-ink-2 sm:col-span-2">
         {catalog.domainConfigured === false ? (
-          <Trans>No domain is configured on the server, so this step cannot run.</Trans>
+          <Trans>No domain is set on the Deployment defaults page, so this step cannot run.</Trans>
         ) : (
           <Trans>
-            Joins the domain configured on the server, in Windows after the hand-over. The machine
-            needs a computer name.
+            Joins the domain set on the Deployment defaults page, in Windows after the hand-over.
+            The machine needs a computer name.
           </Trans>
         )}
       </p>
@@ -270,10 +271,11 @@ export function JoinDomainFields({
         className="sm:col-span-2"
         hint={
           <Trans>
-            Such as OU=Workstations,DC=example,DC=com. Empty takes the configured default.
+            Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment
+            defaults page.
           </Trans>
         }
-        placeholder={t`Configured default`}
+        placeholder={t`The default`}
         mono
         value={step.organizationalUnit ?? ""}
         onChange={(text) => {

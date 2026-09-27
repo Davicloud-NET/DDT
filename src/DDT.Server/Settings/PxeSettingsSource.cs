@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json;
+using DDT.Contracts.Messages;
 using DDT.Pxe;
 using DDT.Server.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +31,8 @@ public static class PxeSettingsSource
                     result.Version,
                     result.Succeeded ? SettingsApplyResult.Applied : SettingsApplyResult.Failed,
                     result.Message,
-                    Detail(result.Interfaces));
+                    Detail(result.Interfaces),
+                    result.Text);
 
                 return Task.CompletedTask;
             });
@@ -48,8 +50,13 @@ public static class PxeSettingsSource
             state.Version,
             snapshot.Pxe,
             state.Closed
-                ? "The pxe settings have problems, so nothing is served until they are fixed: " +
-                    string.Join(" ", state.Problems.Select(problem => problem.Describe(PxeOptions.SectionName)))
+                ? ServerMessages.SettingsApplyPxeClosed.With(
+                    "problems",
+                    ServerMessages.Sentences([.. state.Problems.Select(problem => ServerMessages.SettingsFieldProblem.With(
+                        "field",
+                        $"{PxeOptions.SectionName}:{problem.Field}",
+                        "problem",
+                        problem.Text))]))
                 : null,
             state.IsLocked(SettingsDefinitions.Pxe.Field("interfaces")!));
     }

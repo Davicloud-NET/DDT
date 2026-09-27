@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
@@ -113,7 +114,7 @@ public sealed class SettingsSnapshot
             }
             catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or FormatException)
             {
-                draft.Problems.Add(new(string.Empty, $"The values cannot be checked: {exception.Message}"));
+                draft.Problems.Add(new(string.Empty, ServerMessages.SettingsValuesCannotBeChecked.With("error", exception.Message)));
             }
 
             sections[name] = new SettingsSectionState
@@ -156,7 +157,9 @@ public sealed class SettingsSnapshot
         catch (InvalidOperationException exception)
         {
             configured = defaults.DeepClone().AsObject();
-            problems.Add(new(string.Empty, $"{definition.ConfigurationPath} cannot be read from configuration: {exception.Message}"));
+            problems.Add(new(
+                string.Empty,
+                ServerMessages.SettingsConfigurationUnreadable.With("section", definition.ConfigurationPath, "error", exception.Message)));
         }
 
         JsonObject document = stored?.Values ?? [];
@@ -188,7 +191,7 @@ public sealed class SettingsSnapshot
 
                 if (unreadable)
                 {
-                    problems.Add(new(field.Path, "The stored value no longer decrypts with this server's key ring. Enter it again."));
+                    problems.Add(new(field.Path, ServerMessages.SettingsStoredSecretUnreadable.With()));
                 }
 
                 continue;
@@ -241,7 +244,7 @@ public sealed class SettingsSnapshot
                 catch (Exception fieldException) when (fieldException is JsonException or NotSupportedException or InvalidOperationException or FormatException)
                 {
                     SettingsJson.Set(values, field, SettingsJson.Get(defaults, field));
-                    problems.Add(new(field.Path, $"The stored value cannot be read, so the default applies: {fieldException.Message}"));
+                    problems.Add(new(field.Path, ServerMessages.SettingsStoredValueUnreadable.With("error", fieldException.Message)));
                 }
             }
 

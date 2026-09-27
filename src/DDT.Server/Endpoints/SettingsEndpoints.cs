@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -138,12 +139,12 @@ public static class SettingsEndpoints
     {
         if (update?.Values is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["values"] = ["Send the values of the section."] });
+            return ServerProblems.Validation("values", ServerMessages.SettingsSendValues.With());
         }
 
         if (update.Secrets?.Keys.FirstOrDefault(name => api.Definition.Field(name) is not { IsSecret: true }) is { } unknown)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [unknown] = [$"{api.Name} has no secret called {unknown}."] });
+            return ServerProblems.Validation(unknown, ServerMessages.SettingsNoSuchSecret.With("section", api.Name, "name", unknown));
         }
 
         SettingsUpdate change = new()
@@ -200,39 +201,43 @@ public static class SettingsEndpoints
     }
 
     private static ProblemHttpResult Conflict(string section) =>
-        TypedResults.Problem(title: $"Someone saved {section} since you loaded it. Load it again.", statusCode: StatusCodes.Status409Conflict);
+        ServerProblems.Problem(ServerMessages.SettingsSavedSince.With("section", section), StatusCodes.Status409Conflict);
 
     // Fields names what needs the fresh proof, so the page can say what the password is for.
     internal static ProblemHttpResult Reauthenticate(IReadOnlyList<string> fields) =>
-        TypedResults.Problem(
-            title: $"Enter your password again to change {string.Join(", ", fields)}.",
-            statusCode: StatusCodes.Status403Forbidden,
-            extensions: new Dictionary<string, object?> { ["fields"] = fields.ToArray() });
+        ServerProblems.Problem(
+            ServerMessages.SettingsEnterPasswordAgain.With("fields", string.Join(", ", fields)),
+            StatusCodes.Status403Forbidden,
+            new Dictionary<string, object?> { ["fields"] = fields.ToArray() });
 
     private static ProblemHttpResult KeyRingUnreadable() =>
-        TypedResults.Problem(
-            title: "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. " +
-                "Every DDT process on one database has to share the key ring in DDT:StorePath/keys.",
-            statusCode: StatusCodes.Status409Conflict);
+        ServerProblems.Problem(ServerMessages.SettingsKeyRingUnreadable.With(), StatusCodes.Status409Conflict);
 
-    // Problems keyed by field; the warnings still to confirm under confirm, and with their codes as an extension, so the
-    // page can ask and send the codes back.
+    // Problems keyed by field, with their codes under errorCodes as every validation problem has them; the warnings still
+    // to confirm under confirm, as "code: message", and whole in the confirm extension, so the page can ask and send the
+    // codes back.
     private static ValidationProblem Invalid(SettingsSaveResult result)
     {
-        Dictionary<string, string[]> errors = (result.Problems ?? [])
-            .GroupBy(problem => problem.Field, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.Select(problem => problem.Message).ToArray(), StringComparer.Ordinal);
+        List<IGrouping<string, SettingMessage>> fields = [.. (result.Problems ?? []).GroupBy(problem => problem.Field, StringComparer.Ordinal)];
+        Dictionary<string, string[]> errors = fields.ToDictionary(
+            group => group.Key,
+            group => group.Select(problem => problem.Message).ToArray(),
+            StringComparer.Ordinal);
+        Dictionary<string, ServerMessage?[]> codes = fields.ToDictionary(
+            group => group.Key,
+            group => group.Select(problem => problem.Text).ToArray(),
+            StringComparer.Ordinal);
 
         IReadOnlyList<SettingMessage> unconfirmed = result.Unconfirmed ?? [];
+        Dictionary<string, object?> extensions = new(StringComparer.Ordinal) { [ServerProblems.ErrorCodesExtension] = codes };
 
         if (unconfirmed.Count > 0)
         {
             errors["confirm"] = [.. unconfirmed.Select(warning => $"{warning.Code}: {warning.Message}")];
+            extensions["confirm"] = unconfirmed.ToArray();
         }
 
-        return TypedResults.ValidationProblem(
-            errors,
-            extensions: unconfirmed.Count > 0 ? new Dictionary<string, object?> { ["confirm"] = unconfirmed.ToArray() } : null);
+        return TypedResults.ValidationProblem(errors, extensions: extensions);
     }
 
     // Checked like a sign-in, lockout and second factor included, but it signs nobody in.
@@ -253,10 +258,7 @@ public static class SettingsEndpoints
 
         if (user.Source == AccountSource.External || (user.Source == AccountSource.Local && !await users.HasPasswordAsync(user).ConfigureAwait(false)))
         {
-            return TypedResults.Problem(
-                title: "This account signs in without a password DDT can check, so it cannot change these settings. Use an account " +
-                    "with a local or directory password.",
-                statusCode: StatusCodes.Status403Forbidden);
+            return ServerProblems.Problem(ServerMessages.SettingsReauthenticateNoPassword.With(), StatusCodes.Status403Forbidden);
         }
 
         (SignInResult result, DdtUser? verified) = await credentials
@@ -265,17 +267,17 @@ public static class SettingsEndpoints
 
         if (result.IsLockedOut)
         {
-            return TypedResults.Problem(title: "The account is locked out. Try again later.", statusCode: StatusCodes.Status403Forbidden);
+            return ServerProblems.Problem(ServerMessages.SettingsReauthenticateLockedOut.With(), StatusCodes.Status403Forbidden);
         }
 
         if (result.RequiresTwoFactor)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["code"] = ["Enter the code of your authenticator as well."] });
+            return ServerProblems.Validation("code", ServerMessages.SettingsReauthenticateCodeNeeded.With());
         }
 
         if (!result.Succeeded || verified?.Id != user.Id)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = ["The password or the code is not right."] });
+            return ServerProblems.Validation("password", ServerMessages.SettingsReauthenticateNotRight.With());
         }
 
         return TypedResults.Ok(tokens.Issue(verified));
@@ -295,7 +297,7 @@ public static class SettingsEndpoints
     {
         if (request?.Values is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["values"] = ["Send the values to test."] });
+            return ServerProblems.Validation("values", ServerMessages.SettingsLdapTestSendValues.With());
         }
 
         SettingsSectionState state = settings.Current[SettingsSectionNames.Ldap];
@@ -326,10 +328,7 @@ public static class SettingsEndpoints
 
         if (password is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [bindPassword.Name] = ["Enter it again for the new server: a stored secret goes only to the server it was entered for."],
-            });
+            return ServerProblems.Validation(bindPassword.Name, ServerMessages.SettingsSecretForNewServer.With());
         }
 
         LdapOptions candidate = definition.ReadOptions(values, new Dictionary<string, string?> { [bindPassword.Name] = password });
@@ -339,19 +338,20 @@ public static class SettingsEndpoints
 
         if (account is not null && userPassword is not null)
         {
-            string? refusal = account switch
+            ServerMessage? refusal = account switch
             {
-                { Source: not AccountSource.Directory } => $"{userName} is not a directory account, so its password is not sent to the directory.",
-                { IsDisabled: true } => $"{userName} is disabled, so a sign-in is refused before the directory is asked.",
-                _ when await users.IsLockedOutAsync(account).ConfigureAwait(false) => $"{userName} is locked out, so a sign-in is refused before the directory is asked.",
+                { Source: not AccountSource.Directory } => ServerMessages.SettingsLdapTestNotDirectoryAccount.With("name", userName!),
+                { IsDisabled: true } => ServerMessages.SettingsLdapTestAccountDisabled.With("name", userName!),
+                _ when await users.IsLockedOutAsync(account).ConfigureAwait(false) => ServerMessages.SettingsLdapTestLockedOut.With("name", userName!),
                 _ => null,
             };
 
             if (refusal is not null)
             {
                 LdapTestOutcome bound = await tester.TestAsync(candidate, null, null, cancellationToken).ConfigureAwait(false);
+                ServerMessage said = bound.Bound ? refusal : bound.Text;
 
-                return TypedResults.Ok(new LdapTestResult(bound.Bound, null, null, [], null, bound.Bound ? refusal : bound.Message, null));
+                return TypedResults.Ok(new LdapTestResult(bound.Bound, null, null, [], null, said.Text, null, said));
             }
         }
 
@@ -364,9 +364,12 @@ public static class SettingsEndpoints
 
         GroupRoles mapped = GroupRoles.From(outcome.Groups, candidate.GroupRoleMap);
         string? role = mapped.Decides ? mapped.Role : null;
-        string message = mapped.Decides && outcome.UserFound == true
-            ? $"{outcome.Message} {(role is null ? "The group map gives no role, so a sign-in is refused." : $"The group map makes the account {role}.")}"
-            : outcome.Message;
+        ServerMessage message = (mapped.Decides && outcome.UserFound == true, role) switch
+        {
+            (false, _) => outcome.Text,
+            (true, null) => ServerMessages.SettingsLdapTestNoRole.With("result", outcome.Text),
+            (true, { } given) => ServerMessages.SettingsLdapTestRole.With("result", outcome.Text, "role", DirectorySignInService.RoleName(given)),
+        };
 
         // Proof that these values keep the administrator who tests them one: a directory account needs it to save them.
         string? proof = Principals.UserId(principal) is { } callerId
@@ -376,7 +379,7 @@ public static class SettingsEndpoints
                 ? proofs.Issue(callerId, candidate)
                 : null;
 
-        return TypedResults.Ok(new LdapTestResult(outcome.Bound, outcome.UserFound, outcome.PasswordAccepted, outcome.Groups, role, message, proof));
+        return TypedResults.Ok(new LdapTestResult(outcome.Bound, outcome.UserFound, outcome.PasswordAccepted, outcome.Groups, role, message.Text, proof, message));
     }
 
     private static async Task<IResult> TestOidcAsync(
@@ -389,13 +392,13 @@ public static class SettingsEndpoints
 
         if (!Uri.TryCreate(request?.Authority?.Trim(), UriKind.Absolute, out Uri? authority) || authority.Scheme != Uri.UriSchemeHttps)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["authority"] = ["Enter the provider's https address, such as https://login.example.com/realms/ddt."],
-            });
+            return ServerProblems.Validation("authority", ServerMessages.SettingsOidcTestAuthorityInvalid.With());
         }
 
         Uri discovery = new(authority.AbsoluteUri.TrimEnd('/') + "/.well-known/openid-configuration");
+        string url = discovery.ToString();
+
+        OidcTestResult Result(bool reached, string? issuer, ServerMessage message) => new(reached, issuer, redirectUri, message.Text, message);
 
         try
         {
@@ -404,7 +407,10 @@ public static class SettingsEndpoints
 
             if (!response.IsSuccessStatusCode)
             {
-                return TypedResults.Ok(new OidcTestResult(false, null, redirectUri, $"{discovery} answered {(int)response.StatusCode} {response.ReasonPhrase}."));
+                return TypedResults.Ok(Result(
+                    false,
+                    null,
+                    ServerMessages.SettingsOidcTestAnswered.With("url", url, "status", (int)response.StatusCode, "reason", response.ReasonPhrase ?? string.Empty)));
             }
 
             await using Stream body = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -417,19 +423,19 @@ public static class SettingsEndpoints
 
             if (issuer is null)
             {
-                return TypedResults.Ok(new OidcTestResult(false, null, redirectUri, $"{discovery} is not the discovery document of an OpenID Connect provider."));
+                return TypedResults.Ok(Result(false, null, ServerMessages.SettingsOidcTestNotDiscovery.With("url", url)));
             }
 
             // Tokens name their issuer, and the handler refuses one that differs from the authority it was given.
-            string message = string.Equals(issuer.TrimEnd('/'), authority.AbsoluteUri.TrimEnd('/'), StringComparison.Ordinal)
-                ? $"The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
-                : $"The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority.";
+            ServerMessage message = string.Equals(issuer.TrimEnd('/'), authority.AbsoluteUri.TrimEnd('/'), StringComparison.Ordinal)
+                ? ServerMessages.SettingsOidcTestReached.With("issuer", issuer, "redirectUri", redirectUri)
+                : ServerMessages.SettingsOidcTestOtherIssuer.With("issuer", issuer, "authority", authority.ToString());
 
-            return TypedResults.Ok(new OidcTestResult(true, issuer, redirectUri, message));
+            return TypedResults.Ok(Result(true, issuer, message));
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or JsonException)
         {
-            return TypedResults.Ok(new OidcTestResult(false, null, redirectUri, $"{discovery} could not be read: {exception.Message}"));
+            return TypedResults.Ok(Result(false, null, ServerMessages.SettingsOidcTestUnreadable.With("url", url, "error", exception.Message)));
         }
     }
 
@@ -505,9 +511,7 @@ public static class SettingsEndpoints
     {
         if (!string.IsNullOrWhiteSpace(options.Value.BinaryPath))
         {
-            return TypedResults.Problem(
-                title: "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.SettingsAgentConfigured.With(), StatusCodes.Status409Conflict);
         }
 
         if (!await reauthentication.ValidAsync(context, user, users).ConfigureAwait(false))
@@ -563,10 +567,7 @@ public static class SettingsEndpoints
             // Every Windows executable starts with the DOS header's MZ.
             if (size < header.Length || header[0] != (byte)'M' || header[1] != (byte)'Z')
             {
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["binary"] = ["That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."],
-                });
+                return ServerProblems.Validation("binary", ServerMessages.SettingsAgentNotExecutable.With());
             }
 
             sha256 = Convert.ToHexStringLower(hash.GetHashAndReset());
@@ -600,9 +601,7 @@ public static class SettingsEndpoints
     }
 
     private static ProblemHttpResult TooLarge() =>
-        TypedResults.Problem(
-            title: $"The agent may be at most {MaxAgentBytes / (1024 * 1024)} MB.",
-            statusCode: StatusCodes.Status413PayloadTooLarge);
+        ServerProblems.Problem(ServerMessages.SettingsAgentTooLarge.With("max", MaxAgentBytes / (1024 * 1024)), StatusCodes.Status413PayloadTooLarge);
 
     internal static SettingsActor Actor(ClaimsPrincipal user, HttpContext context) =>
         new(Principals.UserId(user), Principals.ActorName(user), context.Connection.RemoteIpAddress?.ToString());

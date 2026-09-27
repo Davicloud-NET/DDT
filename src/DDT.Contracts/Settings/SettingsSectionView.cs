@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
+
 namespace DDT.Contracts.Settings;
 
 // One section of the settings page as it applies now. Values holds what applies, a configured value where one is set;
@@ -31,10 +33,19 @@ public sealed record SecretState(bool IsSet, bool Unreadable, DateTimeOffset? Up
 public sealed record SettingLock(string Field, string ConfigurationKey, string EnvironmentVariable, string Source, bool StoredDiffers);
 
 // Field is the field's name on the page, such as domain.name or bootTargets[X64Uefi].method, and empty for the whole
-// section. Code names a warning a save has to confirm, such as network.wide, and is null for a problem.
-public sealed record SettingMessage(string Field, string Message, string? Code);
+// section. Message is English, and Text the same sentence as a code with its values, for a client that says it in the
+// person's language. Code names a warning a save has to confirm, such as network.wide, and is null for a problem.
+public sealed record SettingMessage(string Field, string Message, string? Code, ServerMessage? Text = null);
 
-public sealed record SettingApplyState(string Host, long Version, SettingApplyStatus State, string? Message, DateTimeOffset? UpdatedUtc);
+// Message is English, and Text the same sentence as a code where the host said one DDT knows; an exception's own text
+// has none.
+public sealed record SettingApplyState(
+    string Host,
+    long Version,
+    SettingApplyStatus State,
+    string? Message,
+    DateTimeOffset? UpdatedUtc,
+    ServerMessage? Text = null);
 
 public enum SettingApplyStatus
 {

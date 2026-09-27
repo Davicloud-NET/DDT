@@ -4,6 +4,7 @@
 
 using System.Net;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Ldap;
@@ -38,6 +39,8 @@ public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication applic
         Assert.True(result.PasswordAccepted);
         Assert.Equal(["CN=DDT Admins,DC=corp", "CN=Other,DC=corp"], result.Groups);
         Assert.Equal(DdtRoleNames.Administrator, result.Role);
+        Assert.Equal("cn=jane was found, in 2 groups. The group map makes the account Administrator.", result.Message);
+        Assert.Equal(ServerMessages.SettingsLdapTestRole.Code, result.Text?.Code);
         Assert.Null(result.Proof);
         Assert.Equal("dc9.corp.example", application.Tester.Options!.Host);
         Assert.Equal("typed password", application.Tester.Options.BindPassword);
@@ -93,6 +96,7 @@ public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication applic
 
         Assert.Null(localResult.PasswordAccepted);
         Assert.Equal($"{local} is not a directory account, so its password is not sent to the directory.", localResult.Message);
+        Assert.Equal(ServerMessages.SettingsLdapTestNotDirectoryAccount.Code, localResult.Text?.Code);
         Assert.NotEqual(local, application.Tester.UserName);
     }
 
@@ -188,8 +192,13 @@ public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication applic
             UserName = userName;
 
             return Task.FromResult(userName is null
-                ? new LdapTestOutcome(true, null, null, [], "The bind succeeded.")
-                : new LdapTestOutcome(true, true, password is null ? null : true, Groups, $"cn={userName} was found."));
+                ? new LdapTestOutcome(true, null, null, [], ServerMessages.SettingsLdapTestBound.With("account", options.BindDn, "server", options.Host))
+                : new LdapTestOutcome(
+                    true,
+                    true,
+                    password is null ? null : true,
+                    Groups,
+                    ServerMessages.SettingsLdapTestFound.With("entry", $"cn={userName}", "count", Groups.Count)));
         }
     }
 }

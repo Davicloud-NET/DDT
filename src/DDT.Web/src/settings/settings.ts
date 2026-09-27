@@ -5,6 +5,7 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiErrorFrom, apiFetch, apiGet, apiPost, ApiError } from "@/lib/api";
+import { serverText, type ServerMessage } from "@/lib/serverText";
 
 // The settings the pages edit, as the settings API has them (docs/settings.md, sections 6 and "Built in M6.5"). Each
 // section is one form and one unit of validation; the stored document is the desired state, applied live or by
@@ -30,22 +31,35 @@ export interface SettingsLock {
 }
 
 // A problem keeps the section closed until it is fixed; a warning's code has to be confirmed by the save that raises
-// it. field is the field's name on the page, such as domain.name, and empty for the whole section.
+// it. field is the field's name on the page, such as domain.name, and empty for the whole section. message is the
+// server's English, and text the same sentence as a code, which settingsText says in the person's language.
 export interface SettingsFinding {
   field: string;
   message: string;
   code: string | null;
+  text?: ServerMessage | null;
 }
 
 export type ApplyStateName = "Applied" | "Failed" | "Pending";
 
-// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners.
+// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners. text is the
+// message as a code where the host said a sentence the server knows.
 export interface SettingsApplyState {
   host: string;
   version: number;
   state: ApplyStateName;
   message: string | null;
   updatedUtc: string | null;
+  text?: ServerMessage | null;
+}
+
+// A finding's, a host's or a test's message in the person's language, or the server's English for one without a code
+// or with a code this build does not know.
+export function settingsText(said: {
+  message: string;
+  text?: ServerMessage | null | undefined;
+}): string {
+  return serverText(said.text?.code, said.text?.args, said.message);
 }
 
 export interface SettingsSectionView<T> {

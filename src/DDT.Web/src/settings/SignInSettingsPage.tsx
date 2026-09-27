@@ -24,6 +24,7 @@ import {
   SettingsGroup,
   SettingsSection,
 } from "./SettingsParts";
+import { settingsText } from "./settings";
 import { redirectUri, testOidc, type OidcSettings, type OidcTestResult } from "./signIn";
 import { useSettingsForm, type SettingsForm } from "./useSettingsForm";
 
@@ -309,7 +310,7 @@ function ProviderResult({ result }: { result: OidcTestResult }) {
           { label: <Trans>Redirect URI</Trans>, value: result.redirectUri, mono: true },
         ]}
       />
-      <p className="type-small text-ink">{result.message}</p>
+      <p className="type-small text-ink">{settingsText(result)}</p>
     </div>
   );
 }

@@ -45,6 +45,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "common.nameLength",
     message: "The name must have 1 to {max} characters and no control characters.",
   }),
+  "common.sentences": msg({
+    context: "common.sentences",
+    message: "{first} {rest}",
+  }),
   "computerName.characters": msg({
     context: "computerName.characters",
     message: "A computer name can hold only the letters A to Z, digits and hyphens.",
@@ -145,17 +149,37 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "directory.accountDisabled",
     message: "The DDT account {name} is disabled, so a sign-in is refused.",
   }),
-  "directory.bindRefused": msg({
-    context: "directory.bindRefused",
-    message: "The directory at {server} refused the bind account {bindDn}. Check DDT:Ldap:BindDn and its password.",
+  "directory.baseDnRefused": msg({
+    context: "directory.baseDnRefused",
+    message: "The directory at {server} refused the search under {baseDn}: {detail} Check the base DN on the Sign-in page.",
+  }),
+  "directory.bindAccountRefused": msg({
+    context: "directory.bindAccountRefused",
+    message: "The directory at {server} refused the bind account {bindDn}. Check the bind account and its password on the Sign-in page.",
+  }),
+  "directory.connectionIncomplete": msg({
+    context: "directory.connectionIncomplete",
+    message: "The directory connection is not complete. Enter the directory server and the base DN on the Sign-in page.",
+  }),
+  "directory.emptyMapNewAccount": msg({
+    context: "directory.emptyMapNewAccount",
+    message: "The directory's group map on the Sign-in page is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role.",
+  }),
+  "directory.emptyMapNoRole": msg({
+    context: "directory.emptyMapNoRole",
+    message: "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has none yet, so it reaches nothing.",
+  }),
+  "directory.emptyMapRole": msg({
+    context: "directory.emptyMapRole",
+    message: "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has {role}.",
   }),
   "directory.enterUserName": msg({
     context: "directory.enterUserName",
     message: "Enter the user name to check.",
   }),
-  "directory.incomplete": msg({
-    context: "directory.incomplete",
-    message: "The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn.",
+  "directory.inNoMappedGroup": msg({
+    context: "directory.inNoMappedGroup",
+    message: "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused.",
   }),
   "directory.localAccount": msg({
     context: "directory.localAccount",
@@ -165,37 +189,17 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "directory.lockedOut",
     message: "{reason} The account is locked out for now, so a sign-in waits until the lockout ends.",
   }),
-  "directory.manyEntries": msg({
-    context: "directory.manyEntries",
-    message: "More than one entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused.",
-  }),
-  "directory.noEntry": msg({
-    context: "directory.noEntry",
-    message: "No entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused.",
+  "directory.manyMatchingEntries": msg({
+    context: "directory.manyMatchingEntries",
+    message: "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused.",
   }),
   "directory.noImmutableId": msg({
     context: "directory.noImmutableId",
     message: "The entry has no {attribute} value to key the account on, so a sign-in is refused.",
   }),
-  "directory.noMapNewAccount": msg({
-    context: "directory.noMapNewAccount",
-    message: "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role.",
-  }),
-  "directory.noMapNoRole": msg({
-    context: "directory.noMapNoRole",
-    message: "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing.",
-  }),
-  "directory.noMapRole": msg({
-    context: "directory.noMapRole",
-    message: "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {role}.",
-  }),
-  "directory.noMappedGroup": msg({
-    context: "directory.noMappedGroup",
-    message: "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused.",
-  }),
-  "directory.off": msg({
-    context: "directory.off",
-    message: "Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first.",
+  "directory.noMatchingEntry": msg({
+    context: "directory.noMatchingEntry",
+    message: "No entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused.",
   }),
   "directory.roleFromGroup": msg({
     context: "directory.roleFromGroup",
@@ -205,13 +209,13 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "directory.roleFromGroups",
     message: "{name} is in {count} mapped groups and gets the highest role they give, {role} from {group}.",
   }),
-  "directory.searchRefused": msg({
-    context: "directory.searchRefused",
-    message: "The directory at {server} refused the search under {baseDn}: {detail} Check DDT:Ldap:BaseDn.",
-  }),
   "directory.singleSignOnAccount": msg({
     context: "directory.singleSignOnAccount",
     message: "{name} is a single sign-on account in DDT, so a sign-in with this name and a password is refused.",
+  }),
+  "directory.turnedOff": msg({
+    context: "directory.turnedOff",
+    message: "Sign-in through a directory is off. Turn it on and set its connection on the Sign-in page first.",
   }),
   "directory.unreachable": msg({
     context: "directory.unreachable",
@@ -233,6 +237,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "domain.controllerOf",
     message: "{controller} is a domain controller of {domain}.",
   }),
+  "domain.controllerUnreachable": msg({
+    context: "domain.controllerUnreachable",
+    message: "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS.",
+  }),
+  "domain.controllerUnreachableWithDetail": msg({
+    context: "domain.controllerUnreachableWithDetail",
+    message: "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS.",
+  }),
+  "domain.joinAccountUnknown": msg({
+    context: "domain.joinAccountUnknown",
+    message: "{controller} knows no account {user}. Correct the join account on the Deployment defaults page.",
+  }),
+  "domain.joinPasswordExpired": msg({
+    context: "domain.joinPasswordExpired",
+    message: "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page.",
+  }),
+  "domain.joinPasswordMustChange": msg({
+    context: "domain.joinPasswordMustChange",
+    message: "{user} has to change its password before it can sign in. Give it a new one, in the domain and on the Deployment defaults page.",
+  }),
+  "domain.joinPasswordRefused": msg({
+    context: "domain.joinPasswordRefused",
+    message: "{controller} did not accept the password of {user}. Correct the join account password on the Deployment defaults page.",
+  }),
   "domain.lockedOut": msg({
     context: "domain.lockedOut",
     message: "{user} is locked out.",
@@ -253,41 +281,25 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "domain.mayNotCreateInUnit",
     message: "{user} may not create computer objects in {container}, and the machine account quota does not reach an organizational unit. Delegate \"Create Computer objects\" on it to the account, for example with the Delegation of Control wizard of Active Directory Users and Computers.",
   }),
-  "domain.mustChangePassword": msg({
-    context: "domain.mustChangePassword",
-    message: "{user} has to change its password before it can sign in. Give it a new one, in the domain and in DDT:Deployment:Domain:Password.",
-  }),
   "domain.noComputersContainer": msg({
     context: "domain.noComputersContainer",
     message: "The default Computers container of {domain} was not found, or {user} may not read it.",
   }),
-  "domain.noJoinAccount": msg({
-    context: "domain.noJoinAccount",
-    message: "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server.",
-  }),
-  "domain.noOrganizationalUnit": msg({
-    context: "domain.noOrganizationalUnit",
-    message: "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none.",
+  "domain.noJoinAccountSet": msg({
+    context: "domain.noJoinAccountSet",
+    message: "The join account is not set. Set it and its password on the Deployment defaults page.",
   }),
   "domain.noSecureConnection": msg({
     context: "domain.noSecureConnection",
     message: "{controller} offers no LDAPS on port 636 that this server trusts, and on this operating system only LDAPS keeps the join account's password secret during the check. Give the domain controllers a certificate, for example from Active Directory Certificate Services, and trust its CA on this server. Joining does not depend on this check.",
   }),
-  "domain.noSuchAccount": msg({
-    context: "domain.noSuchAccount",
-    message: "{controller} knows no account {user}. Correct DDT:Deployment:Domain:UserName.",
+  "domain.notSet": msg({
+    context: "domain.notSet",
+    message: "No domain is set. Set the domain and the join account on the Deployment defaults page.",
   }),
-  "domain.notConfigured": msg({
-    context: "domain.notConfigured",
-    message: "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server.",
-  }),
-  "domain.otherDomain": msg({
-    context: "domain.otherDomain",
-    message: "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or point DDT:Deployment:Domain:Controller at a domain controller of that domain.",
-  }),
-  "domain.passwordExpired": msg({
-    context: "domain.passwordExpired",
-    message: "The password of {user} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password.",
+  "domain.organizationalUnitMissing": msg({
+    context: "domain.organizationalUnitMissing",
+    message: "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none.",
   }),
   "domain.quotaLeft": msg({
     context: "domain.quotaLeft",
@@ -301,6 +313,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "domain.quotaUsed",
     message: "{user} may not create computer objects in {container} by a right of its own, and has used its machine account quota: {created} of {quota} (ms-DS-MachineAccountQuota). Delegate \"Create Computer objects\" on the container to the account.",
   }),
+  "domain.servesOtherDomain": msg({
+    context: "domain.servesOtherDomain",
+    message: "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults page, or name a domain controller of that domain for the check there.",
+  }),
   "domain.signInRefused": msg({
     context: "domain.signInRefused",
     message: "{controller} did not accept the user name or password of {user}.",
@@ -312,18 +328,6 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "domain.signedIn": msg({
     context: "domain.signedIn",
     message: "Signed in to {controller} as {user} over {connection}.",
-  }),
-  "domain.unreachable": msg({
-    context: "domain.unreachable",
-    message: "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS.",
-  }),
-  "domain.unreachableWithDetail": msg({
-    context: "domain.unreachableWithDetail",
-    message: "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS.",
-  }),
-  "domain.wrongPassword": msg({
-    context: "domain.wrongPassword",
-    message: "{controller} did not accept the password of {user}. Correct DDT:Deployment:Domain:Password.",
   }),
   "gpt.damaged": msg({
     context: "gpt.damaged",
@@ -841,13 +845,13 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.noAdministratorWarning",
     message: "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then stops at the account page, and the sequence waits there until someone finishes it.",
   }),
-  "sequence.noDomain": msg({
-    context: "sequence.noDomain",
-    message: "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step.",
+  "sequence.noDomainSet": msg({
+    context: "sequence.noDomainSet",
+    message: "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step.",
   }),
-  "sequence.noLocalAdministrator": msg({
-    context: "sequence.noLocalAdministrator",
-    message: "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one.",
+  "sequence.noLocalAdministratorSet": msg({
+    context: "sequence.noLocalAdministratorSet",
+    message: "No local administrator is set on the Deployment defaults page, so the answer file cannot add one.",
   }),
   "sequence.oneDomainJoin": msg({
     context: "sequence.oneDomainJoin",
@@ -1032,6 +1036,486 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",
     message: "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.",
+  }),
+  "settings.agent.configured": msg({
+    context: "settings.agent.configured",
+    message: "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+  }),
+  "settings.agent.notExecutable": msg({
+    context: "settings.agent.notExecutable",
+    message: "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it.",
+  }),
+  "settings.agent.tooLarge": msg({
+    context: "settings.agent.tooLarge",
+    message: "The agent may be at most {max} MB.",
+  }),
+  "settings.apply.oidcClosed": msg({
+    context: "settings.apply.oidcClosed",
+    message: "Single sign-on is off on this host while the section has problems: {problems}",
+  }),
+  "settings.apply.oidcFailed": msg({
+    context: "settings.apply.oidcFailed",
+    message: "Single sign-on is off on this host: {error}",
+  }),
+  "settings.apply.proxiesClosed": msg({
+    context: "settings.apply.proxiesClosed",
+    message: "No proxy is trusted on this host while the section has problems: {problems}",
+  }),
+  "settings.apply.pxeBindFailed": msg({
+    context: "settings.apply.pxeBindFailed",
+    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
+  }),
+  "settings.apply.pxeClosed": msg({
+    context: "settings.apply.pxeClosed",
+    message: "The pxe settings have problems, so nothing is served until they are fixed: {problems}",
+  }),
+  "settings.atLeastOne": msg({
+    context: "settings.atLeastOne",
+    message: "Must be at least 1.",
+  }),
+  "settings.certificate.addHostFirst": msg({
+    context: "settings.certificate.addHostFirst",
+    message: "Add {host}, the name this page is reached by, to the server names first.",
+  }),
+  "settings.certificate.generateOff": msg({
+    context: "settings.certificate.generateOff",
+    message: "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certificate. Upload one instead.",
+  }),
+  "settings.certificate.keyAlgorithm": msg({
+    context: "settings.certificate.keyAlgorithm",
+    message: "Its key is neither RSA nor ECDSA.",
+  }),
+  "settings.certificate.keyMismatch": msg({
+    context: "settings.certificate.keyMismatch",
+    message: "The certificate does not load with this key: {error}",
+  }),
+  "settings.certificate.missingNames": msg({
+    context: "settings.certificate.missingNames",
+    message: "It does not name {names}, which the server is reached by, so browsers and agents would refuse it.",
+  }),
+  "settings.certificate.nameInvalid": msg({
+    context: "settings.certificate.nameInvalid",
+    message: "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5.",
+  }),
+  "settings.certificate.newRootGenerate": msg({
+    context: "settings.certificate.newRootGenerate",
+    message: "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers that manage DDT.",
+  }),
+  "settings.certificate.newRootUpload": msg({
+    context: "settings.certificate.newRootUpload",
+    message: "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT.",
+  }),
+  "settings.certificate.notBase64": msg({
+    context: "settings.certificate.notBase64",
+    message: "Is not base64.",
+  }),
+  "settings.certificate.notManageable": msg({
+    context: "settings.certificate.notManageable",
+    message: "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and no Password is set. A PFX, a key under a password, or TLS at a proxy is managed by hand.",
+  }),
+  "settings.certificate.notServedNew": msg({
+    context: "settings.certificate.notServedNew",
+    message: "This connection was served the certificate before the new one, so it proves nothing about the new one. Load the page again, which connects anew, and confirm from there.",
+  }),
+  "settings.certificate.notValidNow": msg({
+    context: "settings.certificate.notValidNow",
+    message: "It is valid from {from} to {until}, not now.",
+  }),
+  "settings.certificate.nothingToConfirm": msg({
+    context: "settings.certificate.nothingToConfirm",
+    message: "No certificate waits for a confirmation.",
+  }),
+  "settings.certificate.pfxPassword": msg({
+    context: "settings.certificate.pfxPassword",
+    message: "Does not open with this password: {error}",
+  }),
+  "settings.certificate.pfxWithoutKey": msg({
+    context: "settings.certificate.pfxWithoutKey",
+    message: "Holds no certificate with its private key.",
+  }),
+  "settings.certificate.sendPair": msg({
+    context: "settings.certificate.sendPair",
+    message: "Send the certificate and its key, or a PFX.",
+  }),
+  "settings.certificate.sendPem": msg({
+    context: "settings.certificate.sendPem",
+    message: "Send the certificate with its intermediates and its key as PEM, or a PFX.",
+  }),
+  "settings.configurationUnreadable": msg({
+    context: "settings.configurationUnreadable",
+    message: "{section} cannot be read from configuration: {error}",
+  }),
+  "settings.deployment.administratorNameInvalid": msg({
+    context: "settings.deployment.administratorNameInvalid",
+    message: "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.",
+  }),
+  "settings.deployment.administratorPasswordRequired": msg({
+    context: "settings.deployment.administratorPasswordRequired",
+    message: "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account page of its first start.",
+  }),
+  "settings.deployment.controllerInvalid": msg({
+    context: "settings.deployment.controllerInvalid",
+    message: "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port.",
+  }),
+  "settings.deployment.domainUserNameForm": msg({
+    context: "settings.deployment.domainUserNameForm",
+    message: "''{value}'' must be written as DOMAIN\\user or user@domain.example.",
+  }),
+  "settings.deployment.domainUserNameRequired": msg({
+    context: "settings.deployment.domainUserNameRequired",
+    message: "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example.",
+  }),
+  "settings.deployment.localeUnknown": msg({
+    context: "settings.deployment.localeUnknown",
+    message: "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.",
+  }),
+  "settings.deployment.requiredWithDomain": msg({
+    context: "settings.deployment.requiredWithDomain",
+    message: "Required when Domain:Name is set.",
+  }),
+  "settings.deployment.timeZoneUnknown": msg({
+    context: "settings.deployment.timeZoneUnknown",
+    message: "''{value}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale.",
+  }),
+  "settings.enterPasswordAgain": msg({
+    context: "settings.enterPasswordAgain",
+    message: "Enter your password again to change {fields}.",
+  }),
+  "settings.fieldProblem": msg({
+    context: "settings.fieldProblem",
+    message: "{field}: {problem}",
+  }),
+  "settings.keyRingUnreadable": msg({
+    context: "settings.keyRingUnreadable",
+    message: "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys.",
+  }),
+  "settings.ldap.hostRequired": msg({
+    context: "settings.ldap.hostRequired",
+    message: "Required while directory sign-in is on. Name the directory server, such as dc1.corp.example.",
+  }),
+  "settings.ldap.nestedGroupsOff": msg({
+    context: "settings.ldap.nestedGroupsOff",
+    message: "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap.",
+  }),
+  "settings.ldap.noAdministrator": msg({
+    context: "settings.ldap.noAdministrator",
+    message: "No group maps to Administrator, so every directory account that is an administrator loses the role at its next sign-in.",
+  }),
+  "settings.ldap.portInvalid": msg({
+    context: "settings.ldap.portInvalid",
+    message: "{port} is not a port number. LDAPS uses 636, and StartTLS 389.",
+  }),
+  "settings.ldap.rekey": msg({
+    context: "settings.ldap.rekey",
+    message: "Every directory account is keyed on {current}. With {next} each one is taken for a new person at its next sign-in, and its roles and history stay with the old account.",
+  }),
+  "settings.ldap.testOwnSignIn": msg({
+    context: "settings.ldap.testOwnSignIn",
+    message: "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; the save is accepted while a test that kept you an administrator is less than 5 minutes old.",
+  }),
+  "settings.ldap.timeoutNotPositive": msg({
+    context: "settings.ldap.timeoutNotPositive",
+    message: "Must be longer than zero, such as 00:00:10.",
+  }),
+  "settings.ldap.transportInvalid": msg({
+    context: "settings.ldap.transportInvalid",
+    message: "Must be Ldaps, StartTls or UnencryptedDangerous.",
+  }),
+  "settings.ldap.unencrypted": msg({
+    context: "settings.ldap.unencrypted",
+    message: "The bind password and every password typed at sign-in cross the network in clear text.",
+  }),
+  "settings.ldap.userFilterBraces": msg({
+    context: "settings.ldap.userFilterBraces",
+    message: "Is not a valid template: a brace that is not part of {placeholder} has to be written twice, as {open} or {close}.",
+  }),
+  "settings.ldap.userFilterPlaceholder": msg({
+    context: "settings.ldap.userFilterPlaceholder",
+    message: "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder})).",
+  }),
+  "settings.ldapTest.accountDisabled": msg({
+    context: "settings.ldapTest.accountDisabled",
+    message: "{name} is disabled, so a sign-in is refused before the directory is asked.",
+  }),
+  "settings.ldapTest.bindFailed": msg({
+    context: "settings.ldapTest.bindFailed",
+    message: "The bind as {account} to {server} failed: {error}",
+  }),
+  "settings.ldapTest.bound": msg({
+    context: "settings.ldapTest.bound",
+    message: "The bind as {account} to {server} succeeded.",
+  }),
+  "settings.ldapTest.found": msg({
+    context: "settings.ldapTest.found",
+    message: "{entry} was found, in {count, plural, one {# group} other {# groups}}.",
+  }),
+  "settings.ldapTest.lockedOut": msg({
+    context: "settings.ldapTest.lockedOut",
+    message: "{name} is locked out, so a sign-in is refused before the directory is asked.",
+  }),
+  "settings.ldapTest.manyEntries": msg({
+    context: "settings.ldapTest.manyEntries",
+    message: "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in is refused.",
+  }),
+  "settings.ldapTest.noEntry": msg({
+    context: "settings.ldapTest.noEntry",
+    message: "No entry under {baseDn} matches {name} with the user filter.",
+  }),
+  "settings.ldapTest.noImmutableId": msg({
+    context: "settings.ldapTest.noImmutableId",
+    message: "{entry} has no {attribute}, so a sign-in is refused.",
+  }),
+  "settings.ldapTest.noRole": msg({
+    context: "settings.ldapTest.noRole",
+    message: "{result} The group map gives no role, so a sign-in is refused.",
+  }),
+  "settings.ldapTest.notDirectoryAccount": msg({
+    context: "settings.ldapTest.notDirectoryAccount",
+    message: "{name} is not a directory account, so its password is not sent to the directory.",
+  }),
+  "settings.ldapTest.passwordRefused": msg({
+    context: "settings.ldapTest.passwordRefused",
+    message: "{entry} was found, but the directory refused the password.",
+  }),
+  "settings.ldapTest.role": msg({
+    context: "settings.ldapTest.role",
+    message: "{result} The group map makes the account {role}.",
+  }),
+  "settings.ldapTest.searchFailed": msg({
+    context: "settings.ldapTest.searchFailed",
+    message: "The search for {name} under {baseDn} failed: {error}",
+  }),
+  "settings.ldapTest.sendValues": msg({
+    context: "settings.ldapTest.sendValues",
+    message: "Send the values to test.",
+  }),
+  "settings.logging.levelUnknown": msg({
+    context: "settings.logging.levelUnknown",
+    message: "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.",
+  }),
+  "settings.machines.networkEverything": msg({
+    context: "settings.machines.networkEverything",
+    message: "''{value}'' is every address there is. Name the provisioning networks themselves.",
+  }),
+  "settings.machines.networkHoldsProxy": msg({
+    context: "settings.machines.networkHoldsProxy",
+    message: "The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the client's address would count as one from that network.",
+  }),
+  "settings.machines.networkInvalid": msg({
+    context: "settings.machines.networkInvalid",
+    message: "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine.",
+  }),
+  "settings.machines.networkOverlapsProxies": msg({
+    context: "settings.machines.networkOverlapsProxies",
+    message: "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the client's address would count as one from that network.",
+  }),
+  "settings.machines.networkWide": msg({
+    context: "settings.machines.networkWide",
+    message: "{network} is wider than a /{prefix}. Every address in it counts as a zero touch address.",
+  }),
+  "settings.machines.perAddressRange": msg({
+    context: "settings.machines.perAddressRange",
+    message: "Must be between 1 and MaxWaiting, which is {max}.",
+  }),
+  "settings.noLocalAdministrator": msg({
+    context: "settings.noLocalAdministrator",
+    message: "No local administrator account is enabled. Should the directory or the provider stop granting the Administrator role, only the console command settings create-admin could let anyone in again.",
+  }),
+  "settings.noSuchSecret": msg({
+    context: "settings.noSuchSecret",
+    message: "{section} has no secret called {name}.",
+  }),
+  "settings.oidc.authorityRequired": msg({
+    context: "settings.oidc.authorityRequired",
+    message: "Required while single sign-on is on: the provider's https address, such as https://login.example.com/realms/ddt.",
+  }),
+  "settings.oidc.cannotStart": msg({
+    context: "settings.oidc.cannotStart",
+    message: "Single sign-on cannot start with these values: {error}",
+  }),
+  "settings.oidc.clientIdRequired": msg({
+    context: "settings.oidc.clientIdRequired",
+    message: "Required while single sign-on is on: the client id the provider shows for DDT.",
+  }),
+  "settings.oidc.groupsClaimRequired": msg({
+    context: "settings.oidc.groupsClaimRequired",
+    message: "GroupRoleMap needs the claim that carries the groups, such as groups.",
+  }),
+  "settings.oidc.operatorRole": msg({
+    context: "settings.oidc.operatorRole",
+    message: "Every identity the provider signs in that DDT has not seen becomes an operator, and operators can read the deployment passwords by deploying a machine they control.",
+  }),
+  "settings.oidc.provisionAdministrator": msg({
+    context: "settings.oidc.provisionAdministrator",
+    message: "{administrator} would make every identity the provider signs in that DDT has not seen an administrator. Use {viewer} or {operator}, or map a group to {administrator} in GroupRoleMap.",
+  }),
+  "settings.oidc.provisionRoleUnknown": msg({
+    context: "settings.oidc.provisionRoleUnknown",
+    message: "''{role}'' is not a DDT role. Use {viewer} or {operator}.",
+  }),
+  "settings.oidc.scopesWithoutOpenid": msg({
+    context: "settings.oidc.scopesWithoutOpenid",
+    message: "Must contain openid, which is what makes the sign-in OpenID Connect.",
+  }),
+  "settings.oidc.signInScheme": msg({
+    context: "settings.oidc.signInScheme",
+    message: "The handler would sign into ''{scheme}'', which bypasses local account linking entirely.",
+  }),
+  "settings.oidcTest.answered": msg({
+    context: "settings.oidcTest.answered",
+    message: "{url} answered {status} {reason}.",
+  }),
+  "settings.oidcTest.authorityInvalid": msg({
+    context: "settings.oidcTest.authorityInvalid",
+    message: "Enter the provider's https address, such as https://login.example.com/realms/ddt.",
+  }),
+  "settings.oidcTest.notDiscovery": msg({
+    context: "settings.oidcTest.notDiscovery",
+    message: "{url} is not the discovery document of an OpenID Connect provider.",
+  }),
+  "settings.oidcTest.otherIssuer": msg({
+    context: "settings.oidcTest.otherIssuer",
+    message: "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority.",
+  }),
+  "settings.oidcTest.reached": msg({
+    context: "settings.oidcTest.reached",
+    message: "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there.",
+  }),
+  "settings.oidcTest.unreadable": msg({
+    context: "settings.oidcTest.unreadable",
+    message: "{url} could not be read: {error}",
+  }),
+  "settings.proxies.addressInvalid": msg({
+    context: "settings.proxies.addressInvalid",
+    message: "''{value}'' is not an IP address.",
+  }),
+  "settings.proxies.networkEverything": msg({
+    context: "settings.proxies.networkEverything",
+    message: "''{value}'' is every address there is, so any client could claim any address. Name the proxies' own network.",
+  }),
+  "settings.proxies.networkInvalid": msg({
+    context: "settings.proxies.networkInvalid",
+    message: "''{value}'' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length.",
+  }),
+  "settings.proxies.networkWide": msg({
+    context: "settings.proxies.networkWide",
+    message: "{network} is wider than a /{prefix}. Every address in it counts as a trusted proxy address.",
+  }),
+  "settings.pxe.architectureUnknown": msg({
+    context: "settings.pxe.architectureUnknown",
+    message: "''{value}'' is not a client architecture. Use one of: {architectures}.",
+  }),
+  "settings.pxe.asciiMaxLength": msg({
+    context: "settings.pxe.asciiMaxLength",
+    message: "Must be ASCII and at most {max} characters.",
+  }),
+  "settings.pxe.bootDirectoryEmpty": msg({
+    context: "settings.pxe.bootDirectoryEmpty",
+    message: "Must not be empty. Leave it out for the folder boot in DDT:StorePath.",
+  }),
+  "settings.pxe.bootDirectoryHoldsKey": msg({
+    context: "settings.pxe.bootDirectoryHoldsKey",
+    message: "''{directory}'' holds the folder of the TLS certificate or key {file}, which would serve the key. Use a directory of its own, such as {suggested}.",
+  }),
+  "settings.pxe.bootDirectoryHoldsStore": msg({
+    context: "settings.pxe.bootDirectoryHoldsStore",
+    message: "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, such as {suggested}.",
+  }),
+  "settings.pxe.bootDirectoryInKeys": msg({
+    context: "settings.pxe.bootDirectoryInKeys",
+    message: "''{directory}'' is in the key ring folder {keys}, which would serve its keys. Use a directory of its own, such as {suggested}.",
+  }),
+  "settings.pxe.bootDirectoryIsRoot": msg({
+    context: "settings.pxe.bootDirectoryIsRoot",
+    message: "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}.",
+  }),
+  "settings.pxe.bootFileRequired": msg({
+    context: "settings.pxe.bootFileRequired",
+    message: "Must be set.",
+  }),
+  "settings.pxe.bootFileUrl": msg({
+    context: "settings.pxe.bootFileUrl",
+    message: "Must be an absolute http or https URL.",
+  }),
+  "settings.pxe.bootUrl": msg({
+    context: "settings.pxe.bootUrl",
+    message: "{url} is not where DDT serves boot files, which is http://<server>:{port}/boot/. Keep it only if another server serves this file.",
+  }),
+  "settings.pxe.httpBootPortInvalid": msg({
+    context: "settings.pxe.httpBootPortInvalid",
+    message: "{port} is not a port number.",
+  }),
+  "settings.pxe.interfaceNotFound": msg({
+    context: "settings.pxe.interfaceNotFound",
+    message: "''{name}'' names no interface on {host}, which serves nothing for it.",
+  }),
+  "settings.pxe.methodForArchitecture": msg({
+    context: "settings.pxe.methodForArchitecture",
+    message: "Must be {method} for {architecture} clients.",
+  }),
+  "settings.pxe.methodInvalid": msg({
+    context: "settings.pxe.methodInvalid",
+    message: "Must be Tftp or Http.",
+  }),
+  "settings.pxe.notIpv4Address": msg({
+    context: "settings.pxe.notIpv4Address",
+    message: "''{value}'' is not an IPv4 address.",
+  }),
+  "settings.pxe.serverAddressRequired": msg({
+    context: "settings.pxe.serverAddressRequired",
+    message: "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it.",
+  }),
+  "settings.pxe.windowSizeRange": msg({
+    context: "settings.pxe.windowSizeRange",
+    message: "Must be between 1 and {max}.",
+  }),
+  "settings.reauthenticate.codeNeeded": msg({
+    context: "settings.reauthenticate.codeNeeded",
+    message: "Enter the code of your authenticator as well.",
+  }),
+  "settings.reauthenticate.lockedOut": msg({
+    context: "settings.reauthenticate.lockedOut",
+    message: "The account is locked out. Try again later.",
+  }),
+  "settings.reauthenticate.noPassword": msg({
+    context: "settings.reauthenticate.noPassword",
+    message: "This account signs in without a password DDT can check, so it cannot change these settings. Use an account with a local or directory password.",
+  }),
+  "settings.reauthenticate.notRight": msg({
+    context: "settings.reauthenticate.notRight",
+    message: "The password or the code is not right.",
+  }),
+  "settings.roleUnknown": msg({
+    context: "settings.roleUnknown",
+    message: "''{role}'' is not a DDT role. Use {roles}.",
+  }),
+  "settings.savedSince": msg({
+    context: "settings.savedSince",
+    message: "Someone saved {section} since you loaded it. Load it again.",
+  }),
+  "settings.secretCannotBeKept": msg({
+    context: "settings.secretCannotBeKept",
+    message: "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it.",
+  }),
+  "settings.secretForNewServer": msg({
+    context: "settings.secretForNewServer",
+    message: "Enter it again for the new server: a stored secret goes only to the server it was entered for.",
+  }),
+  "settings.sendValues": msg({
+    context: "settings.sendValues",
+    message: "Send the values of the section.",
+  }),
+  "settings.storedSecretUnreadable": msg({
+    context: "settings.storedSecretUnreadable",
+    message: "The stored value no longer decrypts with this server's key ring. Enter it again.",
+  }),
+  "settings.storedValueUnreadable": msg({
+    context: "settings.storedValueUnreadable",
+    message: "The stored value cannot be read, so the default applies: {error}",
+  }),
+  "settings.valuesCannotBeChecked": msg({
+    context: "settings.valuesCannotBeChecked",
+    message: "The values cannot be checked: {error}",
   }),
   "template.installLinux": msg({
     context: "template.installLinux",
@@ -1269,13 +1753,13 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "user.role",
     message: "Choose Administrator, Operator or Viewer.",
   }),
-  "user.roleFromDirectoryGroups": msg({
-    context: "user.roleFromDirectoryGroups",
-    message: "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map.",
+  "user.roleFromDirectoryGroupMap": msg({
+    context: "user.roleFromDirectoryGroupMap",
+    message: "The role of {name} comes from its directory groups through the directory's group map, at each sign-in. Change its groups in the directory, or the map on the Sign-in page.",
   }),
-  "user.roleFromSingleSignOnGroups": msg({
-    context: "user.roleFromSingleSignOnGroups",
-    message: "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map.",
+  "user.roleFromSingleSignOnGroupMap": msg({
+    context: "user.roleFromSingleSignOnGroupMap",
+    message: "The role of {name} comes from its single sign-on groups through the single sign-on group map, at each sign-in. Change its groups at the provider, or the map on the Sign-in page.",
   }),
   "user.singleSignOnPassword": msg({
     context: "user.singleSignOnPassword",

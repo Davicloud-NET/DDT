@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using DDT.Contracts.Messages;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -85,6 +86,8 @@ public sealed class PxeHostTests : IDisposable
         Assert.False(failed.Succeeded);
         Assert.Equal(2, failed.Version);
         Assert.Contains($"could not bind UDP {_binding.DhcpPort} for ProxyDHCP", failed.Message, StringComparison.Ordinal);
+        Assert.Equal(ServerMessages.SettingsApplyPxeBindFailed.Code, failed.Text?.Code);
+        Assert.Equal("proxyDhcp", failed.Text?.Args["protocol"]);
         Assert.Same(running, host.Applied);
         Assert.True(IsBound(_binding.TftpPort));
 
@@ -122,11 +125,13 @@ public sealed class PxeHostTests : IDisposable
         using PxeHost host = Host();
         await host.StartAsync(TestContext.Current.CancellationToken);
 
-        await ChangeAsync(new PxeDesiredSetup(2, null, "The pxe settings have problems.", false), results: 2);
+        ServerMessage refusal = ServerMessages.SettingsApplyPxeClosed.With("problems", ServerMessages.SettingsAtLeastOne.With());
+        await ChangeAsync(new PxeDesiredSetup(2, null, refusal, false), results: 2);
 
         Assert.Null(host.Applied);
         Assert.False(IsBound(_binding.TftpPort));
-        Assert.Equal("The pxe settings have problems.", _results[^1].Message);
+        Assert.Equal("The pxe settings have problems, so nothing is served until they are fixed: Must be at least 1.", _results[^1].Message);
+        Assert.Same(refusal, _results[^1].Text);
         Assert.False(_results[^1].Succeeded);
     }
 

@@ -843,9 +843,12 @@ through environment variables, and the container's appsettings.json is in the re
   - `values`
   - `secrets`: field to `{ isSet, unreadable, updatedUtc }`
   - `locked`: a list of `{ field, configurationKey, environmentVariable, source, storedDiffers }`
-  - `problems` and `warnings`: `{ field, message, code }`
+  - `problems` and `warnings`: `{ field, message, code, text }`
   - `apply`, for subsystem restart sections only: per host
-    `{ host, version, state: Applied | Failed | Pending, message, updatedUtc }`
+    `{ host, version, state: Applied | Failed | Pending, message, updatedUtc, text }`
+  - `text` is the English `message` as a code of the server's message catalog with its values,
+    `{ code, args }`, which the page says in the person's language; `code` stays a warning's
+    confirmation code, and an apply message from an exception has no `text`.
 - `SettingsSectionUpdate<T>`:
   - `version` and `values`
   - `secrets`: field to `{ action: keep | set | clear, value }`
@@ -1015,6 +1018,8 @@ m6.5-settings. Where the implementation deliberately differs from the plan above
 - **Views carry two more members.** `section` names the section, and `reauthenticate` lists the
   fields that need the re-auth token. An unconfirmed warning is reported under `confirm` in the
   ValidationProblem's errors, as `code: message`, and with its code in the `confirm` extension.
+  The field problems carry `errorCodes` as every validation problem does, and the `confirm` entries
+  carry `text`.
 - **Which warnings need a confirmation.** A save is asked to confirm only the warnings it raises:
   those that did not hold before the save, such as a new wide network, or that are about the change
   itself, as `ldap.rekey` is. `auth.noLocalAdministrator` is asked at every ldap or oidc save while it

@@ -93,7 +93,7 @@ public sealed class DomainJoinAssessmentTests
         Assert.False(verdict.CanJoin);
         Assert.Null(verdict.Container);
         Assert.Contains("has no organizational unit OU=Workstations", verdict.Findings[^1].Text, StringComparison.Ordinal);
-        Assert.Contains("DDT:Deployment:Domain:OrganizationalUnit", verdict.Findings[^1].Text, StringComparison.Ordinal);
+        Assert.Contains("or the one on the Deployment defaults page", verdict.Findings[^1].Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class DomainJoinAssessmentTests
     }
 
     [Theory]
-    [InlineData("52e", "did not accept the password of CORP\\ddt-join. Correct DDT:Deployment:Domain:Password.")]
+    [InlineData("52e", "did not accept the password of CORP\\ddt-join. Correct the join account password on the Deployment defaults page.")]
     [InlineData("525", "knows no account CORP\\ddt-join")]
     [InlineData("532", "has expired. Give it a new one")]
     [InlineData("533", "is disabled")]

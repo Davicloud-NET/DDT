@@ -4,6 +4,7 @@
 
 import { apiPost } from "@/lib/api";
 import { equalJson } from "@/lib/equalJson";
+import type { ServerMessage } from "@/lib/serverText";
 
 import type { SecretAction } from "./settings";
 
@@ -51,6 +52,8 @@ export interface LdapTestResult {
   groups: string[];
   role: string | null;
   message: string;
+  // The message as a code with its values, said in the person's language.
+  text?: ServerMessage | null;
   proof: string | null;
 }
 
@@ -59,6 +62,8 @@ export interface OidcTestResult {
   issuer: string | null;
   redirectUri: string;
   message: string;
+  // The message as a code with its values, said in the person's language.
+  text?: ServerMessage | null;
 }
 
 export interface LdapTestRequest {

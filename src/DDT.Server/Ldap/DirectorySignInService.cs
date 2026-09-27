@@ -227,7 +227,7 @@ public sealed partial class DirectorySignInService(
     }
 
     // A role DDT knows as a message, so the web names it as its role pages do; any other as it is.
-    private static object RoleName(string role) => role switch
+    internal static object RoleName(string role) => role switch
     {
         DdtRoleNames.Administrator => ServerMessages.RoleAdministrator.With(),
         DdtRoleNames.Operator => ServerMessages.RoleOperator.With(),

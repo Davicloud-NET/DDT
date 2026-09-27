@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Server.Deployments;
@@ -33,12 +34,12 @@ public sealed class MachineSettingsSection() : SettingsSectionDefinition<Machine
 
         if (options.MaxWaiting < 1)
         {
-            problems.Add(new("MaxWaiting", "Must be at least 1."));
+            problems.Add(new("MaxWaiting", ServerMessages.SettingsAtLeastOne.With()));
         }
 
         if (options.MaxWaitingPerAddress < 1 || options.MaxWaitingPerAddress > Math.Max(options.MaxWaiting, 1))
         {
-            problems.Add(new("MaxWaitingPerAddress", $"Must be between 1 and MaxWaiting, which is {options.MaxWaiting}."));
+            problems.Add(new("MaxWaitingPerAddress", ServerMessages.SettingsMachinesPerAddressRange.With("max", options.MaxWaiting)));
         }
 
         IReadOnlyList<SettingProblem> networks = ZeroTouchNetworks.FindProblems(options.ZeroTouchNetworks);
@@ -53,5 +54,5 @@ public sealed class MachineSettingsSection() : SettingsSectionDefinition<Machine
     }
 
     protected override IReadOnlyList<SettingWarning> FindWarnings(MachineOptions options, MachineOptions? current, SettingsContext context) =>
-        SettingsNetworks.Wide(ZeroTouchNetworks.Networks(options.ZeroTouchNetworks), "ZeroTouchNetworks", "zero touch");
+        SettingsNetworks.Wide(ZeroTouchNetworks.Networks(options.ZeroTouchNetworks), "ZeroTouchNetworks", ServerMessages.SettingsMachinesNetworkWide);
 }

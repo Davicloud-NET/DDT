@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using DDT.Contracts;
+using DDT.Contracts.Messages;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +23,8 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
 
     // A host that has not refreshed its rows for this long is gone, and its rows with it.
     public static readonly TimeSpan Stale = TimeSpan.FromDays(1);
+
+    private const string TextMember = "text";
 
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _writes = new(1, 1);
@@ -38,7 +44,10 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    public void Record(string section, long version, SettingsApplyResult state, string? message, string? detail = null)
+    // Message is English, and text the same sentence as a code, where it is one DDT knows. Detail is a JSON object, such as
+    // the interfaces a pxe host found, and the text goes in it under "text", so the pages other processes serve can say
+    // it in the person's language too.
+    public void Record(string section, long version, SettingsApplyResult state, string? message, string? detail = null, ServerMessage? text = null)
     {
         SettingsHostState row = new()
         {
@@ -47,7 +56,7 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
             AppliedVersion = version,
             State = state,
             Message = StoredText.Bound(message, SettingsHostState.MaxMessageLength),
-            Detail = detail,
+            Detail = WithText(detail, text),
             UpdatedUtc = timeProvider.GetUtcNow(),
         };
 
@@ -187,6 +196,41 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         {
             _writes.Release();
         }
+    }
+
+    // The message a host recorded as a code, or null for none, or for a detail this build cannot read.
+    public static ServerMessage? Text(SettingsHostState row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (row.Detail is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonNode.Parse(row.Detail) is JsonObject detail && detail[TextMember] is JsonObject text
+                ? text.Deserialize(DdtJsonContext.Default.ServerMessage)
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? WithText(string? detail, ServerMessage? text)
+    {
+        if (text is null)
+        {
+            return detail;
+        }
+
+        JsonObject document = detail is null ? [] : JsonNode.Parse(detail)?.AsObject() ?? [];
+        document[TextMember] = JsonSerializer.SerializeToNode(text, DdtJsonContext.Default.ServerMessage);
+
+        return document.ToJsonString();
     }
 
     private static string HostName()

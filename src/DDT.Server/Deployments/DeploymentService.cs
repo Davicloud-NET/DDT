@@ -703,7 +703,11 @@ public sealed class DeploymentService(
             ? null
             : ServerMessages.DeploymentSettingsHaveProblems.With(
                 "problems",
-                string.Join(" ", snapshot.DeploymentProblems.Select(problem => $"{SettingsDefinitions.Deployment.PageName(problem.Field)}: {problem.Message}")));
+                ServerMessages.Sentences([.. snapshot.DeploymentProblems.Select(problem => ServerMessages.SettingsFieldProblem.With(
+                    "field",
+                    SettingsDefinitions.Deployment.PageName(problem.Field),
+                    "problem",
+                    problem.Text))]));
     }
 
     private async Task<(SequenceDefinition Definition, SequenceReferences References, ServerMessage? Problem)> CheckAsync(

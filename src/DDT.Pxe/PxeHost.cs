@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using DDT.Contracts.Messages;
 using DDT.Protocols.Pxe;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -101,8 +102,8 @@ public sealed class PxeHost : IHostedService, IDisposable
             {
                 await StopListenersAsync().ConfigureAwait(false);
                 Volatile.Write(ref _applied, null);
-                PxeLog.Stopped(_logger, desired.Refusal ?? "nothing is configured");
-                result = new PxeApplyResult(desired.Version, desired.Refusal is null, desired.Refusal, null);
+                PxeLog.Stopped(_logger, desired.Refusal?.Text ?? "nothing is configured");
+                result = new PxeApplyResult(desired.Version, desired.Refusal is null, desired.Refusal?.Text, null, desired.Refusal);
             }
             else
             {
@@ -168,7 +169,7 @@ public sealed class PxeHost : IHostedService, IDisposable
                 }
             }
 
-            return new PxeApplyResult(desired.Version, false, failure.Message, next.Interfaces);
+            return new PxeApplyResult(desired.Version, false, failure.Message, next.Interfaces, (failure as PxeBindException)?.Reason);
         }
     }
 
@@ -230,7 +231,7 @@ public sealed class PxeHost : IHostedService, IDisposable
                 handler,
                 interfaces,
                 _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(dhcp.Start, dhcp.StopAsync, "ProxyDHCP", _binding.DhcpPort);
+            Bind(dhcp.Start, dhcp.StopAsync, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
 
             ProxyDhcpListener bootServer = new(
                 ProxyDhcpListenPort.PxeBootServer,
@@ -238,7 +239,7 @@ public sealed class PxeHost : IHostedService, IDisposable
                 handler,
                 interfaces,
                 _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(bootServer.Start, bootServer.StopAsync, "PXE boot server", _binding.BootServerPort);
+            Bind(bootServer.Start, bootServer.StopAsync, "PXE boot server", "bootServer", _binding.BootServerPort);
         }
 
         if (options.EnableTftp)
@@ -252,7 +253,12 @@ public sealed class PxeHost : IHostedService, IDisposable
                 options.TftpSinglePort,
                 _timeProvider,
                 _loggerFactory.CreateLogger<TftpListener>());
-            Bind(tftp.Start, tftp.StopAsync, options.TftpSinglePort ? "TFTP (single port)" : "TFTP", _binding.TftpPort);
+            Bind(
+                tftp.Start,
+                tftp.StopAsync,
+                options.TftpSinglePort ? "TFTP (single port)" : "TFTP",
+                options.TftpSinglePort ? "tftpSinglePort" : "tftp",
+                _binding.TftpPort);
         }
 
         PxeLog.HttpBootListening(_logger, options.HttpBootPort, setup.Files.Root);
@@ -269,7 +275,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         _stops.Clear();
     }
 
-    private void Bind(Action start, Func<Task> stop, string protocol, int port)
+    // Protocol names the listener in the log, and kind in the message, which says the advice for the socket error too.
+    private void Bind(Action start, Func<Task> stop, string protocol, string kind, int port)
     {
         try
         {
@@ -277,17 +284,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
         catch (SocketException exception)
         {
-            string hint = exception.SocketErrorCode switch
-            {
-                SocketError.AccessDenied =>
-                    "The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.",
-                SocketError.AddressAlreadyInUse =>
-                    "Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.",
-                _ => "Check that no other service holds the port.",
-            };
-
-            throw new InvalidOperationException(
-                $"DDT could not bind UDP {port} for {protocol} ({exception.SocketErrorCode}). {hint}",
+            throw new PxeBindException(
+                ServerMessages.SettingsApplyPxeBindFailed.With("port", port, "protocol", kind, "error", exception.SocketErrorCode),
                 exception);
         }
 
@@ -319,10 +317,11 @@ public sealed class PxeHost : IHostedService, IDisposable
 // What the host should serve: the options, or null to serve nothing with Refusal saying why, and the version of the
 // settings they came from. StopHostOnFailure: configuration decided what is served, so a bind failure at startup stops
 // the host rather than being reported.
-public sealed record PxeDesiredSetup(long Version, PxeOptions? Options, string? Refusal, bool StopHostOnFailure);
+public sealed record PxeDesiredSetup(long Version, PxeOptions? Options, ServerMessage? Refusal, bool StopHostOnFailure);
 
-// Interfaces is what the host found when it applied, null when it built no setup.
-public sealed record PxeApplyResult(long Version, bool Succeeded, string? Message, NetworkInterfaceMap? Interfaces);
+// Interfaces is what the host found when it applied, null when it built no setup. Message is English, and Text the same
+// sentence as a code where it is one DDT knows, such as a port that did not bind; an exception's own text has none.
+public sealed record PxeApplyResult(long Version, bool Succeeded, string? Message, NetworkInterfaceMap? Interfaces, ServerMessage? Text = null);
 
 // How the host learns what to serve, when that changes, and where each result goes. DDT.Pxe knows nothing of the
 // settings store; the host wires these to it.

@@ -271,7 +271,9 @@ NativeAOT executable, `ddt-console.exe`, with the two native libraries it draws 
   Public License), RichTextKit (under the Apache License, version 2.0) and others, is listed in
   [licenses/avalonia/NOTICE.md](licenses/avalonia/NOTICE.md). Both files are taken from the
   Avalonia repository at the commit 12.1.3 was built from,
-  `8eeda4f6f546165b3f72e63c9f42247abb306905`, because the packages carry none.
+  `8eeda4f6f546165b3f72e63c9f42247abb306905`, because the packages carry none. The Microsoft
+  Public License is incompatible with the GPL, so [NOTICE](NOTICE) grants, under section 7 of the
+  GPL, the additional permission to convey DDT's console combined with Avalonia.
 - `MicroCom.Runtime` 0.11.6, which Avalonia calls COM with, Copyright (c) 2021 Nikita Tsukanov,
   under the MIT licence in [licenses/microcom/LICENSE](licenses/microcom/LICENSE), taken from the
   MicroCom repository because the package carries none.

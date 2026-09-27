@@ -27,3 +27,18 @@ are part of the licence of this material, and anyone who conveys it must pass th
    present DDT or a work based on it as your own original work. A modified version must be marked
    in reasonable ways as different from the original version, for example by stating in its
    Appropriate Legal Notices that it is modified, by whom and when.
+
+
+Additional permission under section 7 of the GNU General Public License, version 3
+
+DDT's console at the machine, ddt-console.exe, is built from src/DDT.MachineConsole and
+src/DDT.ConsoleProtocol with Avalonia, which contains code under the Microsoft Public License. For
+that console:
+
+If you modify this Program, or any covered work, by linking or combining it with Avalonia (or a
+modified version of that library), containing parts covered by the terms of the Microsoft Public
+License, the licensors of this Program grant you additional permission to convey the resulting
+work.
+
+As section 7 provides, anyone who conveys a copy of this material may remove this permission from
+that copy.

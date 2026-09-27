@@ -2129,6 +2129,12 @@ who passes on DDT or a work based on it to:
 - mark a modified version as modified, for example by saying in its legal notices who changed it
   and when.
 
+The graphical console in Windows PE is built with Avalonia, which contains code from the Silverlight
+Toolkit under the Microsoft Public License, a licence the Free Software Foundation considers
+incompatible with the GPL. NOTICE therefore also grants, as section 7 allows, an additional
+permission to convey the console combined with Avalonia, in the wording the FSF's GPL FAQ gives for
+a GPL-incompatible library.
+
 For users this means: running DDT inside your organisation, changed or not, brings no duties.
 Distributing DDT or a fork of it to others, as source, as a container image, as an agent or in a
 boot image, means passing on its source code and its notices: LICENSE, NOTICE,

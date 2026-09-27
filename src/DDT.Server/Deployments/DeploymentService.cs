@@ -728,7 +728,7 @@ public sealed class DeploymentService(
         SequenceReferences references,
         bool allowed)
     {
-        if (SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is null)
+        if (SequenceChecks.RawImage(definition, references) is not { } image || !NotStarting(machine, image))
         {
             return (false, null);
         }
@@ -748,18 +748,13 @@ public sealed class DeploymentService(
             : (false, ServerMessages.DeploymentNotStartingWithSecureBoot.With(
                 "image",
                 image.Name,
-                "capability",
-                image.BootCapability?.ToString() ?? nameof(ImageBootCapability.Unknown)));
+                "starting",
+                BootCapabilities.NotStartingChoice(image.BootCapability)));
     }
 
-    // Why the machine would not start the image with Secure Boot on, or null when it would.
-    private static string? NotStarting(Machine machine, Image image) => image.BootCapability switch
-    {
-        ImageBootCapability.SecureBootOk when MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder) =>
-            $"is signed under {MicrosoftUefiCa.Describe(image.SignedUnder)}, which this machine's firmware does not trust",
-        ImageBootCapability.SecureBootOk => null,
-        _ => $"{BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on",
-    };
+    // Whether the machine would not start the image with Secure Boot on.
+    private static bool NotStarting(Machine machine, Image image) =>
+        image.BootCapability != ImageBootCapability.SecureBootOk || MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder);
 
     // MicrosoftUefiCa.Describe as a message, for a sentence the web says.
     private static ServerMessage UefiCaName(UefiCa? cas) => ServerMessages.MicrosoftUefiCaName.With("cas", cas switch
@@ -772,7 +767,7 @@ public sealed class DeploymentService(
 
     private static string MismatchNote(Machine machine, SequenceDefinition definition, SequenceReferences references, bool allowed)
     {
-        if (!allowed || SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is null)
+        if (!allowed || SequenceChecks.RawImage(definition, references) is not { } image || !NotStarting(machine, image))
         {
             return "";
         }

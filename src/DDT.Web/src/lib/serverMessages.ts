@@ -107,7 +107,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "deployment.notStartingWithSecureBoot": msg({
     context: "deployment.notStartingWithSecureBoot",
-    message: "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.",
+    message: "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.",
   }),
   "deployment.nothingToEnd": msg({
     context: "deployment.nothingToEnd",
@@ -891,7 +891,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.rawImageNotStarting": msg({
     context: "sequence.rawImageNotStarting",
-    message: "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it.",
+    message: "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it.",
   }),
   "sequence.rebootExitCodes": msg({
     context: "sequence.rebootExitCodes",

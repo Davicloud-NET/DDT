@@ -53,8 +53,8 @@ public static class SequenceChecks
                         Warn("imageId", ServerMessages.SequenceRawImageNotStarting.With(
                             "image",
                             written.Name,
-                            "capability",
-                            written.BootCapability?.ToString() ?? nameof(ImageBootCapability.Unknown),
+                            "starting",
+                            BootCapabilities.NotStartingChoice(written.BootCapability),
                             "detail",
                             written.BootDetail ?? ""));
                     }

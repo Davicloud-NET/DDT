@@ -230,13 +230,13 @@ msgstr "{hours} h {minutes} min"
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.notStartingWithSecureBoot"
-msgid "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
-msgstr "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
+msgstr "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.rawImageNotStarting"
-msgid "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
-msgstr "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
+msgstr "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
 
 #: src/lib/serverMessages.ts
 msgctxt "image.withoutArchitecture"

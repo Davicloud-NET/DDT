@@ -230,13 +230,13 @@ msgstr "{hours} Std. {minutes} Min."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.notStartingWithSecureBoot"
-msgid "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
-msgstr "{image} {capability, select, Unknown {startet mit aktiviertem Secure Boot möglicherweise nicht} other {startet mit aktiviertem Secure Boot nicht}}, und auf diesem Gerät ist Secure Boot aktiviert. Lassen Sie es für diese Ausführung zu, oder deaktivieren Sie zuerst Secure Boot in der Firmware des Geräts."
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
+msgstr "{image} {starting, select, maybe {startet mit aktiviertem Secure Boot möglicherweise nicht} other {startet mit aktiviertem Secure Boot nicht}}, und auf diesem Gerät ist Secure Boot aktiviert. Lassen Sie es für diese Ausführung zu, oder deaktivieren Sie zuerst Secure Boot in der Firmware des Geräts."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.rawImageNotStarting"
-msgid "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
-msgstr "{image} {capability, select, Unknown {startet mit aktiviertem Secure Boot möglicherweise nicht.} other {startet mit aktiviertem Secure Boot nicht.}} {detail} Deaktivieren Sie Secure Boot in der Firmware der Geräte, auf die es kommt, oder registrieren Sie Ihren eigenen Schlüssel. Beim Zuweisen der Tasksequenz werden Sie dann gefragt, ob Sie es zulassen."
+msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it."
+msgstr "{image} {starting, select, maybe {startet mit aktiviertem Secure Boot möglicherweise nicht.} other {startet mit aktiviertem Secure Boot nicht.}} {detail} Deaktivieren Sie Secure Boot in der Firmware der Geräte, auf die es kommt, oder registrieren Sie Ihren eigenen Schlüssel. Beim Zuweisen der Tasksequenz werden Sie dann gefragt, ob Sie es zulassen."
 
 #: src/lib/serverMessages.ts
 msgctxt "image.withoutArchitecture"

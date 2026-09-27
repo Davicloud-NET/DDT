@@ -172,7 +172,7 @@ public static class ServerMessages
 
     public static readonly MessageTemplate DeploymentNotStartingWithSecureBoot = Define(
         "deployment.notStartingWithSecureBoot",
-        "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on, and this machine has Secure " +
+        "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure " +
         "Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.");
 
     public static readonly MessageTemplate DeploymentSignerChooses = Define(
@@ -489,7 +489,7 @@ public static class ServerMessages
 
     public static readonly MessageTemplate SequenceRawImageNotStarting = Define(
         "sequence.rawImageNotStarting",
-        "{image} {capability, select, Unknown {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot " +
+        "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot " +
         "off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it.");
 
     public static readonly MessageTemplate SequenceUnknownPlaceholders = Define(

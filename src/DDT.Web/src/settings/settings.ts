@@ -11,7 +11,7 @@ import { apiErrorFrom, apiFetch, apiGet, apiPost, ApiError } from "@/lib/api";
 // rebuilding a subsystem inside the running server.
 
 export type SettingsSectionName =
-  "deployment" | "machines" | "ldap" | "oidc" | "proxies" | "pxe" | "logging";
+  "deployment" | "machines" | "ldap" | "oidc" | "proxies" | "pxe" | "logging" | "certificate";
 
 // A secret is never sent back: the page learns whether it is set, and whether the key ring can still read it.
 export interface SecretState {
@@ -77,10 +77,17 @@ export function settingsKey(section: string) {
   return ["settings", section] as const;
 }
 
+// The certificate section holds the server names: GET /api/settings/certificate answers with the certificate and the
+// names' view inside it, and the names are saved at /api/settings/certificate/names.
 export function settingsQuery<T>(section: SettingsSectionName) {
   return queryOptions({
     queryKey: settingsKey(section),
-    queryFn: () => apiGet<SettingsSectionView<T>>(`/api/settings/${section}`),
+    queryFn: () =>
+      section === "certificate"
+        ? apiGet<{ names: SettingsSectionView<T> }>("/api/settings/certificate").then(
+            (certificate) => certificate.names,
+          )
+        : apiGet<SettingsSectionView<T>>(`/api/settings/${section}`),
   });
 }
 
@@ -162,7 +169,9 @@ export async function saveSettings<T>(
   headers: Record<string, string> = {},
 ): Promise<SettingsSectionView<T>> {
   const token = reauthenticationToken();
-  const response = await apiFetch(`/api/settings/${section}`, {
+  const path =
+    section === "certificate" ? "/api/settings/certificate/names" : `/api/settings/${section}`;
+  const response = await apiFetch(path, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

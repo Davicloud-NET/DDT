@@ -24,6 +24,8 @@ import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
+import { ServerPage } from "@/settings/ServerPage";
+import { serverSearch } from "@/settings/serverSearch";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
@@ -187,7 +189,8 @@ const tokensRoute = createRoute({
 const serverRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/server",
-  component: PendingPage,
+  validateSearch: serverSearch,
+  component: ServerPage,
 });
 const auditRoute = createRoute({
   getParentRoute: () => shellRoute,

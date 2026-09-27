@@ -10,9 +10,10 @@
 Builds the DDT Windows PE boot files and lays them out as the pxe role serves them.
 
 .DESCRIPTION
-Runs copype from the Windows ADK WinPE add-on, injects DDT.Agent and startnet.cmd into boot.wim,
-writes a BCD that boots boot.wim from a RAM disk over TFTP, and publishes both Microsoft signed
-boot managers. Nothing here is signed by DDT: Secure Boot sees only Microsoft's binaries.
+Runs copype from the Windows ADK WinPE add-on, injects DDT.Agent, its graphical console where one is
+given, and startnet.cmd into boot.wim, writes a BCD that boots boot.wim from a RAM disk over TFTP,
+and publishes both Microsoft signed boot managers. Nothing here is signed by DDT: Secure Boot sees
+only Microsoft's binaries.
 
 It also adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
@@ -89,6 +90,14 @@ A libwim-15.dll of your own, for example one built from modified wimlib source, 
 the GNU LGPL, provides for. It is copied to X:\DDT\libwim-15.dll, next to the agent, which then uses
 it instead of the copy it carries and logs both SHA-256 values. Needs -AgentPath.
 
+.PARAMETER ConsolePath
+The folder Publish-Console.ps1 wrote, with ddt-console.exe, the graphical console, and the two
+libraries it draws with, libSkiaSharp.dll and libHarfBuzzSharp.dll. The three are copied to X:\DDT,
+next to the agent, which starts the console and shows the run on it rather than on the text console
+alone. They add about 12 MB to boot.wim, 29 MB unpacked. The console speaks one version of the
+console protocol, and an agent that updates itself to one speaking another falls back to the text
+console until the boot image is built again. Needs -AgentPath.
+
 .PARAMETER DriverPath
 A folder of drivers to add to boot.wim. DISM adds every .inf below it, with the files each names.
 
@@ -105,6 +114,11 @@ A task sequence step that runs PowerShell in Windows PE cannot run on machines b
 
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
+
+.EXAMPLE
+.\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ConsolePath .\artifacts\console -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
+
+Adds the graphical console that Publish-Console.ps1 published to artifacts\console.
 
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem -ApiToken $env:DDT_API_TOKEN -DriverPath .\drivers\winpe
@@ -132,6 +146,8 @@ param(
     [int] $TftpWindowSize = 16,
 
     [string] $WimLibraryPath,
+
+    [string] $ConsolePath,
 
     [string] $DriverPath,
 
@@ -606,6 +622,27 @@ if ($DriverPath) {
     }
 }
 
+# What Publish-Console.ps1 writes: the console and the native libraries it draws with, which go together.
+$consoleFiles = @('ddt-console.exe', 'libSkiaSharp.dll', 'libHarfBuzzSharp.dll')
+
+if ($ConsolePath) {
+    if (-not $AgentPath) {
+        throw 'The console needs -AgentPath: the agent starts it.'
+    }
+
+    if (-not (Test-Path -LiteralPath $ConsolePath -PathType Container)) {
+        throw "Console folder not found at $ConsolePath. Pass the folder Publish-Console.ps1 wrote."
+    }
+
+    $ConsolePath = (Resolve-Path -LiteralPath $ConsolePath).ProviderPath
+
+    foreach ($file in $consoleFiles) {
+        if (-not (Test-Path -LiteralPath (Join-Path $ConsolePath $file) -PathType Leaf)) {
+            throw "$ConsolePath has no $file. Publish the console again with Publish-Console.ps1."
+        }
+    }
+}
+
 if ($WimLibraryPath) {
     if (-not $AgentPath) {
         throw 'A libwim needs -AgentPath: only the agent uses it.'
@@ -688,6 +725,13 @@ try {
         # The agent uses a libwim-15.dll it finds next to itself instead of writing out its own copy.
         if ($WimLibraryPath) {
             Copy-Item -LiteralPath $WimLibraryPath -Destination (Join-Path $Mount 'DDT\libwim-15.dll')
+        }
+
+        # The agent starts ddt-console.exe when it finds it next to itself.
+        if ($ConsolePath) {
+            foreach ($file in $consoleFiles) {
+                Copy-Item -LiteralPath (Join-Path $ConsolePath $file) -Destination (Join-Path $Mount "DDT\$file")
+            }
         }
 
         $configuration = [ordered]@{

@@ -342,6 +342,7 @@ describe("MachinePage", () => {
 
     await screen.findByRole("list", { name: "Steps" });
     expect(hub?.invocations).toContain(`WatchMachine ${machineId}`);
+    expect(stepRow("Apply Windows 11").className).not.toMatch(/live-/);
 
     act(() => {
       hub?.push("runStepChanged", {
@@ -354,6 +355,9 @@ describe("MachinePage", () => {
     await waitFor(() => {
       expect(within(stepRow("Apply Windows 11")).getByText("Done")).toBeInTheDocument();
     });
+    // The step that finished flashes in the colour of done; the others stay as they were.
+    expect(stepRow("Apply Windows 11")).toHaveClass("live-flash", "live-tone-ok");
+    expect(stepRow("Partition").className).not.toMatch(/live-/);
 
     // An older push that arrives late does not move the step back.
     act(() => {

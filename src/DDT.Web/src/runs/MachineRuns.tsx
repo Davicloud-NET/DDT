@@ -8,13 +8,16 @@ import { Link } from "@tanstack/react-router";
 import { currentStepLabel, type DeploymentSummary } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { formatDuration } from "@/lib/format";
+import { useLiveMarks } from "@/live/useLiveMarks";
+import { machinesQuery } from "@/machines/machines";
 import { cx } from "@/ui/cx";
 import { EmptyState, Panel } from "@/ui/Layout";
 import { StateTag } from "@/ui/StateTag";
 
 import { runSourceLabel, runStateLabel, runStateTone } from "./runView";
 
-// Every run of one machine, newest first. Choosing one shows it above; the shown one is marked.
+// Every run of one machine, newest first. Choosing one shows it above; the shown one is marked. The machine's current
+// run comes from the machine list, so a run that starts enters and one whose state changes flashes.
 export function MachineRuns({
   machineId,
   runs,
@@ -28,6 +31,16 @@ export function MachineRuns({
 }) {
   const { i18n, t } = useLingui();
   const locale = formattingLocale();
+  const mark = useLiveMarks({
+    queryKey: machinesQuery.queryKey,
+    items: (machines) =>
+      machines.flatMap((machine) =>
+        machine.id === machineId && machine.deployment !== null ? [machine.deployment] : [],
+      ),
+    id: (run) => run.id,
+    signature: (run) => run.state,
+    tone: (run) => runStateTone[run.state],
+  });
 
   return (
     <Panel title={<Trans>Runs of this machine</Trans>} flush>
@@ -56,6 +69,7 @@ export function MachineRuns({
                 className={cx(
                   "grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 border-b border-line-soft px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1.4fr)_8rem_minmax(0,1fr)_7rem]",
                   shown && "bg-selected",
+                  mark(run.id),
                 )}
               >
                 <span className="flex min-w-0 flex-col">

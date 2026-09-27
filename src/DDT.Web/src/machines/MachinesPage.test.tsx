@@ -1436,6 +1436,54 @@ describe("MachinesPage", () => {
       expect(server.count("GET /api/machines")).toBe(1);
     });
 
+    it("flashes a machine whose state the hub changed, and lets one that appears enter", async () => {
+      const { hub } = await open([
+        waiting({ assignedName: "PC-042" }),
+        waiting({ id: "m3", assignedName: "PC-QUIET" }),
+      ]);
+
+      await screen.findByRole("link", { name: "PC-042" });
+      expect(row("PC-042").className).not.toMatch(/live-/);
+
+      act(() => {
+        hub?.push("machineChanged", machineSummary({ assignedName: "PC-042" }));
+        hub?.push("machineChanged", machineSummary({ id: "m2", assignedName: "PC-NEW" }));
+        hub?.push(
+          "machineChanged",
+          waiting({ id: "m3", assignedName: "PC-QUIET", signedInBy: "bob" }),
+        );
+      });
+
+      await screen.findByRole("link", { name: "PC-NEW" });
+      // Ready, so it flashes in the quiet tone of that state.
+      expect(row("PC-042")).toHaveClass("live-flash", "live-tone-idle");
+      expect(row("PC-NEW")).toHaveClass("live-new");
+      // Someone signed in at it, but it still waits: its state did not change.
+      expect(row("PC-QUIET").className).not.toMatch(/live-/);
+    });
+
+    it("marks nothing it read again after a reconnect", async () => {
+      const { server, hub } = await open([waiting({ assignedName: "PC-042" })]);
+
+      await screen.findByRole("link", { name: "PC-042" });
+
+      server.routes["GET /api/machines"] = {
+        body: [
+          machineSummary({ assignedName: "PC-042", state: "Failed" }),
+          machineSummary({ id: "m2", assignedName: "PC-NEW" }),
+        ],
+      };
+      act(() => {
+        hub?.loseConnection();
+        hub?.reconnect();
+      });
+
+      await screen.findByRole("link", { name: "PC-NEW" });
+      expect(within(row("PC-042")).getByText("Failed")).toBeInTheDocument();
+      expect(row("PC-042").className).not.toMatch(/live-/);
+      expect(row("PC-NEW").className).not.toMatch(/live-/);
+    });
+
     it("drops the machines the hub says were removed", async () => {
       const { server, hub } = await open(
         [

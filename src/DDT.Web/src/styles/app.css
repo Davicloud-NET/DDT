@@ -234,7 +234,76 @@
   }
 }
 
-/* With "reduce motion", only colour changes remain: nothing travels, fades or runs on its own. */
+/* A value the hub or an action changed while it is on screen flashes its row in its state's colour at low strength,
+   fading over the flash duration, so an operator sees what just changed; a row that was not there before also enters.
+   useLiveMarks in src/live puts these classes on, never for what a page merely read. Two names for the same flash let
+   a second change start it over. */
+@keyframes live-flash-0 {
+  from {
+    background-color: var(--live-tone);
+  }
+}
+
+@keyframes live-flash-1 {
+  from {
+    background-color: var(--live-tone);
+  }
+}
+
+@keyframes live-enter {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--motion-distance) * -1);
+  }
+}
+
+@layer components {
+  .live-tone-run {
+    --live-tone: color-mix(in srgb, var(--color-run) 16%, transparent);
+  }
+
+  .live-tone-attention {
+    --live-tone: color-mix(in srgb, var(--color-attention) 20%, transparent);
+  }
+
+  .live-tone-fail {
+    --live-tone: color-mix(in srgb, var(--color-fail) 16%, transparent);
+  }
+
+  .live-tone-ok {
+    --live-tone: color-mix(in srgb, var(--color-ok) 16%, transparent);
+  }
+
+  .live-tone-idle,
+  .live-tone-retired {
+    --live-tone: color-mix(in srgb, var(--color-control) 18%, transparent);
+  }
+
+  .live-flash {
+    animation: live-flash-0 var(--duration-flash) var(--ease-exit);
+  }
+
+  .live-flash.live-cycle-1 {
+    animation-name: live-flash-1;
+  }
+
+  .live-new {
+    animation: live-enter var(--duration-normal) var(--ease-enter);
+  }
+
+  .live-new.live-flash {
+    animation:
+      live-enter var(--duration-normal) var(--ease-enter),
+      live-flash-0 var(--duration-flash) var(--ease-exit);
+  }
+
+  .live-new.live-flash.live-cycle-1 {
+    animation-name: live-enter, live-flash-1;
+  }
+}
+
+/* With "reduce motion", only colour changes remain: nothing travels, fades or runs on its own, and a flash is the
+   one animation kept, since it changes nothing but a colour. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -243,5 +312,13 @@
     transition-property:
       color, background-color, border-color, text-decoration-color, fill, stroke !important;
     scroll-behavior: auto !important;
+  }
+
+  .live-flash {
+    animation: live-flash-0 var(--duration-flash) var(--ease-exit) !important;
+  }
+
+  .live-flash.live-cycle-1 {
+    animation-name: live-flash-1 !important;
   }
 }

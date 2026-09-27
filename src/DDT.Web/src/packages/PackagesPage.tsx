@@ -15,6 +15,7 @@ import { formattingLocale } from "@/i18n/i18n";
 import { formatBytes } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { SearchField } from "@/ui/Controls";
 import { ConfirmDialog } from "@/ui/Dialog";
 import { EmptyState, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
@@ -49,6 +50,15 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
   const [editing, setEditing] = useState<PackageSummary | null>(null);
   const [deleting, setDeleting] = useState<PackageSummary | null>(null);
   const drivers = kind === "Drivers";
+  // A package that is added enters; one that is changed, as by its dialog, flashes.
+  const mark = useLiveMarks({
+    queryKey: packagesQuery.queryKey,
+    items: (list) => list.filter((item) => item.kind === kind),
+    id: (item) => item.id,
+    signature: (item) =>
+      [item.name, item.description, item.bootImage, item.targets.length].join("|"),
+    tone: () => "idle",
+  });
 
   const remove = useMutation({
     mutationFn: (id: string) => deletePackage(id),
@@ -170,9 +180,12 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
                 </span>
               </TableColumn>
             </TableHeader>
-            <TableBody items={shown} dependencies={[now, canEdit, library.models, library.usersOf]}>
+            <TableBody
+              items={shown}
+              dependencies={[now, canEdit, library.models, library.usersOf, mark]}
+            >
               {(item) => (
-                <TableRow id={item.id} textValue={item.name}>
+                <TableRow id={item.id} textValue={item.name} className={mark(item.id)}>
                   <TableCell className="pl-4">
                     <span className="flex min-w-0 flex-col">
                       <span className="flex min-w-0 items-center gap-2">
@@ -388,7 +401,7 @@ function PackageMenu({
     <MenuTrigger>
       <AriaButton
         aria-label={translate`Actions for ${name}`}
-        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
       >
         <IconDots size={18} stroke={2} />
       </AriaButton>

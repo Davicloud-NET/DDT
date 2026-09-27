@@ -12,6 +12,7 @@ import { currentStepLabel } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { formatDuration } from "@/lib/format";
 import { useNow } from "@/lib/useNow";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { formatMac } from "@/machines/machines";
 import { railFromSummary, railLabel } from "@/machines/machineView";
 import { Button } from "@/ui/Button";
@@ -36,7 +37,8 @@ const deviceKinds: Record<RunHistoryItem["deviceKind"], DeviceKind> = {
 };
 
 // Every run of every machine, newest first, a page at a time. New runs and every change of a run arrive live from the
-// hub; the filter and the search go to the server, which also counts the runs by state.
+// hub: a new run enters at the top, and a run whose state changes flashes. The filter and the search go to the
+// server, which also counts the runs by state.
 export function RunHistoryPage() {
   const { i18n, t: translate } = useLingui();
   const search = useSearch({ from: "/shell/machines/runs" });
@@ -83,6 +85,13 @@ export function RunHistoryPage() {
 
   const states = runFilters.find((candidate) => candidate.id === filter)?.states ?? [];
   const history = useInfiniteQuery(runHistoryQuery({ states, query }));
+  const mark = useLiveMarks({
+    queryKey: runHistoryQuery({ states, query }).queryKey,
+    items: (data) => data.pages.flatMap((page) => page.items),
+    id: (item) => item.run.id,
+    signature: (item) => item.run.state,
+    tone: (item) => runStateTone[item.run.state],
+  });
   // The counts cover every state, so they come from the first page of the unfiltered state.
   const counts = useInfiniteQuery({
     ...runHistoryQuery({ states: [], query }),
@@ -163,14 +172,14 @@ export function RunHistoryPage() {
                 <Trans>Started</Trans>
               </TableColumn>
             </TableHeader>
-            <TableBody items={items} dependencies={[now, i18n.locale]}>
+            <TableBody items={items} dependencies={[now, i18n.locale, mark]}>
               {(item) => {
                 const run = item.run;
                 const failedAt = run.state === "Failed" ? currentStepLabel(run) : null;
                 const rail = railFromSummary(run);
 
                 return (
-                  <TableRow id={run.id} textValue={run.title}>
+                  <TableRow id={run.id} textValue={run.title} className={mark(run.id)}>
                     <TableCell className="pl-4">
                       <span className="flex min-w-0 items-center gap-3">
                         <DeviceGlyph kind={deviceKinds[item.deviceKind]} />

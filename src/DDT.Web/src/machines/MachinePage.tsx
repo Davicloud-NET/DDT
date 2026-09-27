@@ -13,6 +13,7 @@ import { currentUserQuery } from "@/auth/auth";
 import { isActive } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { LogPanel } from "@/log/LogPanel";
 import { resolutionText } from "@/rules/rules";
 import { useSequenceResolution } from "@/rules/useSequenceResolution";
@@ -22,13 +23,14 @@ import { runTimeline } from "@/runs/runs";
 import { RunSteps } from "@/runs/RunSteps";
 import { RunTimeline } from "@/runs/RunTimeline";
 import { useRunDetail } from "@/runs/useRunDetail";
+import { cx } from "@/ui/cx";
 import { DeviceGlyph } from "@/ui/DeviceGlyph";
 import { EmptyState, Facts, Page, Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 import { StateTag } from "@/ui/StateTag";
 
 import { MachineActionErrors, MachineActions } from "./MachineActions";
-import { formatMac, type MachineSummary } from "./machines";
+import { formatMac, machinesQuery, type MachineSummary } from "./machines";
 import { deviceKind, displayName, stateLabel, stateTone } from "./machineView";
 import { secureBootFact } from "./secureBoot";
 import { useMachineActions } from "./useMachineActions";
@@ -125,6 +127,7 @@ export function MachinePage() {
       {summary !== null && view !== null && view.steps.length > 0 && !detail.removed ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <RunSteps
+            runId={view.summary.id}
             steps={view.steps}
             runState={summary.state}
             definition={view.definition}
@@ -175,6 +178,14 @@ function MachineHeader({
   now: number;
 }) {
   const { i18n } = useLingui();
+  // The name and state flash when the state changes while the page is open.
+  const mark = useLiveMarks({
+    queryKey: machinesQuery.queryKey,
+    items: (list) => list.filter((candidate) => candidate.id === machine.id),
+    id: (candidate) => candidate.id,
+    signature: (candidate) => candidate.state,
+    tone: (candidate) => stateTone[candidate.state],
+  });
   const maker = [machine.manufacturer, machine.model].filter((part) => part !== null).join(" ");
   const signedInBy = machine.signedInBy;
   const seen = relativeTime(machine.lastSeenUtc, now);
@@ -188,7 +199,12 @@ function MachineHeader({
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <DeviceGlyph kind={deviceKind(machine)} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-3">
+          <span
+            className={cx(
+              "-mx-2 -my-1 flex w-fit flex-wrap items-center gap-3 rounded-key px-2 py-1",
+              mark(machine.id),
+            )}
+          >
             <h1 className="type-title text-ink">{displayName(machine)}</h1>
             <StateTag tone={stateTone[machine.state]}>{i18n._(stateLabel[machine.state])}</StateTag>
           </span>

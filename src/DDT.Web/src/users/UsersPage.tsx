@@ -12,6 +12,7 @@ import { currentUserQuery, type CurrentUser } from "@/auth/auth";
 import { fullTime, relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
 import { liveListOptions } from "@/live/freshness";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { removeTokensOf } from "@/tokens/tokens";
 import { Button } from "@/ui/Button";
@@ -80,6 +81,21 @@ function UserAdministration({ me }: { me: CurrentUser }) {
   const live = useLiveStatus();
   const users = useQuery({ ...usersQuery, ...liveListOptions(live) });
   const now = useNow(30_000);
+  // An account that appears enters; one whose role, sign-in or state changes flashes, as after an action here.
+  const mark = useLiveMarks({
+    queryKey: usersQuery.queryKey,
+    items: (list) => list,
+    id: (user) => user.id,
+    signature: (user) =>
+      [
+        user.role,
+        user.disabled,
+        user.lockedOutUntil,
+        user.mustChangePassword,
+        user.twoFactorEnabled,
+      ].join("|"),
+    tone: () => "idle",
+  });
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [changing, setChanging] = useState<UserView | null>(null);
@@ -208,9 +224,9 @@ function UserAdministration({ me }: { me: CurrentUser }) {
                 </span>
               </TableColumn>
             </TableHeader>
-            <TableBody items={shown} dependencies={[now, me.id, enable.isPending]}>
+            <TableBody items={shown} dependencies={[now, me.id, enable.isPending, mark]}>
               {(user) => (
-                <TableRow id={user.id} textValue={user.userName}>
+                <TableRow id={user.id} textValue={user.userName} className={mark(user.id)}>
                   <TableCell className="pl-4">
                     <span className="flex min-w-0 flex-col">
                       <span className="flex min-w-0 items-baseline gap-2">
@@ -434,7 +450,7 @@ function UserMenu({
     <MenuTrigger>
       <AriaButton
         aria-label={t`Actions for ${name}`}
-        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
       >
         <IconDots size={18} stroke={2} />
       </AriaButton>

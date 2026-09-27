@@ -15,6 +15,7 @@ import { formatBytes } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
 import { liveListOptions } from "@/live/freshness";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { SearchField } from "@/ui/Controls";
 import { ConfirmDialog } from "@/ui/Dialog";
@@ -46,7 +47,8 @@ const bootTone: Record<NonNullable<ImageSummary["bootCapability"]>, StateTone> =
 };
 
 // The operating system images machines are deployed with: the Windows images of uploaded WIM and ESD files, and
-// whole disk images such as Linux cloud images. The list is live.
+// whole disk images such as Linux cloud images. The list is live: an image that is added enters, and one that is
+// changed flashes.
 export function ImagesPage() {
   const { t: translate } = useLingui();
   const queryClient = useQueryClient();
@@ -55,6 +57,13 @@ export function ImagesPage() {
   const user = useQuery(currentUserQuery).data ?? null;
   const now = useNow(30_000);
   const canEdit = user?.roles.includes("Administrator") === true;
+  const mark = useLiveMarks({
+    queryKey: imagesQuery.queryKey,
+    items: (list) => list,
+    id: (image) => image.id,
+    signature: (image) => [image.name, image.bootCapability].join("|"),
+    tone: () => "idle",
+  });
   const [query, setQuery] = useState("");
   const [shownId, setShownId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<ImageSummary | null>(null);
@@ -172,9 +181,9 @@ export function ImagesPage() {
                 </span>
               </TableColumn>
             </TableHeader>
-            <TableBody items={shown} dependencies={[now, canEdit]}>
+            <TableBody items={shown} dependencies={[now, canEdit, mark]}>
               {(image) => (
-                <TableRow id={image.id} textValue={image.name}>
+                <TableRow id={image.id} textValue={image.name} className={mark(image.id)}>
                   <TableCell className="pl-4">
                     <span className="flex min-w-0 flex-col">
                       <AriaButton
@@ -412,7 +421,7 @@ function ImageMenu({
     <MenuTrigger>
       <AriaButton
         aria-label={translate`Actions for ${name}`}
-        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
       >
         <IconDots size={18} stroke={2} />
       </AriaButton>

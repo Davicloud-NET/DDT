@@ -61,6 +61,33 @@ The pages never reload after an action, and never read a whole list again becaus
 - React Aria collections render a row again only when its item changes. Anything else a row shows, such as the
   clock or the signed-in person's permissions, goes into the collection's `dependencies`.
 
+## Motion
+
+What moves, and how, is in `src/DDT.Design/README.md`; the values are the `motion` tokens, which the theme carries
+as `--duration-*`, `--ease-*` and `--motion-distance`. A page rarely animates anything itself: the components in
+`src/ui` do.
+
+- The controls in `src/ui` already answer hover and press. A control made by hand takes a utility from
+  `src/styles/app.css`: `motion-colors` for a colour change such as a hover, `key-motion` and a `pressed:` colour for
+  a key, `motion-highlight` for a highlight that follows the keyboard through a list, `motion-fill` for a bar whose
+  width is its value. Not `transition-colors`, which fades the focus ring in, nor `transition-all`.
+- Overlays on React Aria (dialogs, the drawer, menus, popovers, tooltips) enter with an `entering:` animation such
+  as `animate-pop-in` and leave with the matching `exiting:` one, `animate-pop-out`; React Aria keeps them mounted
+  until the exit has run. A popover comes from the side of its trigger, by its placement. Toasts leave through
+  `LeavingToastQueue` in `src/ui/toasts.ts`, since React Aria's toasts have no exit of their own.
+- The shell fades a page in when the route changes (`useReplay` in `src/ui/motion.ts`), and a tab panel fades in
+  when another tab is chosen. Pages do not slide.
+- A list the hub keeps current points out what changed with `useLiveMarks` from `src/live/useLiveMarks.ts`: it takes
+  the query key the list shows, how to find the items in its data, an item's id, the signature of what a change
+  should point out (usually the state) and the state's tone. Its result gives the classes for an item's row, and goes
+  into a React Aria collection's `dependencies`. Only data that arrives by `setQueryData` is marked, so a first load,
+  a reconnect, polling and older pages never flash.
+- With "reduce motion", `app.css` turns off every animation and every transition but those of colour; the flash
+  stays, as it changes nothing but a colour. Code that times motion itself takes its durations from
+  `src/ui/motion.ts`, which a test holds to the tokens.
+- jsdom has no Web Animations, so `src/test/setup.ts` gives every element an empty `getAnimations`: entrances and
+  exits end at once in tests. A test that needs an exit to run stubs it, as `src/ui/motion.test.tsx` does.
+
 ## Translations
 
 Every text a person reads goes through Lingui: `t`, `plural` and `msg` from `@lingui/core/macro`, `Trans` and

@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { Button } from "@/ui/Button";
 import { Checkbox, Switch } from "@/ui/Checkbox";
 import { FilterSelector, NumberField, ProgressBar, SearchField } from "@/ui/Controls";
@@ -15,7 +17,7 @@ import { Notice } from "@/ui/Notice";
 import { SecretValue } from "@/ui/SecretValue";
 import { ComboBox, ListBoxItem, Select } from "@/ui/Select";
 import { SequenceRail, SequenceRailStrip, type RailStep } from "@/ui/SequenceRail";
-import { StateTag } from "@/ui/StateTag";
+import { StateTag, type StateTone } from "@/ui/StateTag";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/ui/Table";
 import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
 import { TextField } from "@/ui/TextField";
@@ -59,6 +61,168 @@ const rail: RailStep[] = [
   { state: "failed", name: "Run script: baseline", meta: "failed" },
   { state: "waiting", name: "Restart" },
 ];
+
+// A list patched as the hub patches one, to see the flash of a changed row, a new row entering and the rail filling.
+interface DemoMachine {
+  id: string;
+  name: string;
+  state: "Waiting" | "Deploying" | "Done" | "Failed";
+  step: number;
+  percent: number;
+}
+
+const demoTones: Record<DemoMachine["state"], StateTone> = {
+  Waiting: "attention",
+  Deploying: "run",
+  Done: "ok",
+  Failed: "fail",
+};
+
+const demoSteps = 4;
+
+const demoQuery = queryOptions({
+  queryKey: ["design-live-demo"],
+  queryFn: () =>
+    Promise.resolve<DemoMachine[]>([
+      { id: "a", name: "LAB-PC-014", state: "Deploying", step: 1, percent: 30 },
+      { id: "b", name: "BUILD-VM-02", state: "Deploying", step: 2, percent: 70 },
+    ]),
+  staleTime: Infinity,
+});
+
+function demoRail(machine: DemoMachine): RailStep[] {
+  return Array.from({ length: demoSteps }, (_, index): RailStep => {
+    if (machine.state === "Done" || index < machine.step) {
+      return { state: "done" };
+    }
+
+    if (index > machine.step || machine.state === "Waiting") {
+      return { state: "waiting" };
+    }
+
+    return machine.state === "Failed"
+      ? { state: "failed" }
+      : { state: "running", percent: machine.percent };
+  });
+}
+
+function LiveDemo() {
+  const queryClient = useQueryClient();
+  const machines = useQuery(demoQuery).data ?? [];
+  const mark = useLiveMarks({
+    queryKey: demoQuery.queryKey,
+    items: (list) => list,
+    id: (machine) => machine.id,
+    signature: (machine) => machine.state,
+    tone: (machine) => demoTones[machine.state],
+  });
+
+  const patch = (change: (machine: DemoMachine) => DemoMachine) => {
+    queryClient.setQueryData(demoQuery.queryKey, (list) => list?.map(change));
+  };
+
+  const advance = (machine: DemoMachine): DemoMachine => {
+    if (machine.state !== "Deploying") {
+      return machine;
+    }
+
+    if (machine.percent < 100) {
+      return { ...machine, percent: Math.min(100, machine.percent + 35) };
+    }
+
+    return machine.step + 1 < demoSteps
+      ? { ...machine, step: machine.step + 1, percent: 0 }
+      : { ...machine, state: "Done" };
+  };
+
+  return (
+    <Panel
+      title="Live changes"
+      flush
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onPress={() => {
+              patch(advance);
+            }}
+          >
+            Go on
+          </Button>
+          <Button
+            size="sm"
+            onPress={() => {
+              patch((machine) =>
+                machine.state === "Deploying" ? { ...machine, state: "Failed" } : machine,
+              );
+            }}
+          >
+            Fail
+          </Button>
+          <Button
+            size="sm"
+            onPress={() => {
+              queryClient.setQueryData(demoQuery.queryKey, (list) =>
+                list === undefined
+                  ? list
+                  : [
+                      {
+                        id: String(list.length + 1),
+                        name: `LAB-PC-${String(20 + list.length)}`,
+                        state: "Waiting" as const,
+                        step: 0,
+                        percent: 0,
+                      },
+                      ...list,
+                    ],
+              );
+            }}
+          >
+            A machine appears
+          </Button>
+          <Button
+            size="sm"
+            variant="quiet"
+            onPress={() => {
+              patch((machine) =>
+                machine.state === "Waiting" ? { ...machine, state: "Deploying" } : machine,
+              );
+            }}
+          >
+            Start the waiting
+          </Button>
+        </div>
+      }
+    >
+      <Table aria-label="Machines, patched live" className="table-fixed">
+        <TableHeader>
+          <TableColumn id="name" isRowHeader className="w-48 pl-4">
+            Machine
+          </TableColumn>
+          <TableColumn id="state" className="w-36">
+            State
+          </TableColumn>
+          <TableColumn id="run" className="pr-4">
+            Sequence
+          </TableColumn>
+        </TableHeader>
+        <TableBody items={machines} dependencies={[mark]}>
+          {(machine) => (
+            <TableRow id={machine.id} className={mark(machine.id)}>
+              <TableCell className="pl-4">{machine.name}</TableCell>
+              <TableCell>
+                <StateTag tone={demoTones[machine.state]}>{machine.state}</StateTag>
+              </TableCell>
+              <TableCell className="pr-4">
+                <SequenceRailStrip steps={demoRail(machine)} label={machine.state} />
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </Panel>
+  );
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -339,6 +503,8 @@ export function DesignPage() {
           </TableBody>
         </Table>
       </Panel>
+
+      <LiveDemo />
 
       <Panel title="Tabs">
         <Tabs>

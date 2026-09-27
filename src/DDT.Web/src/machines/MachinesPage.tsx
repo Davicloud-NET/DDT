@@ -14,6 +14,7 @@ import { relativeTime } from "@/lib/relativeTime";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useNow } from "@/lib/useNow";
 import { liveListOptions } from "@/live/freshness";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { isStray, machinesQuery, type MachineSummary } from "@/machines/machines";
 import { useMachineActions } from "@/machines/useMachineActions";
@@ -45,7 +46,8 @@ import {
 } from "./machineView";
 
 // Every machine that netbooted. The list is live: the hub pushes each change of a machine and its run, and the
-// page patches the row in place. It reads the list again on a timer only while the live connection is down.
+// page patches the row in place. A machine whose state changed flashes in its new state's colour, and one that
+// appears enters. It reads the list again on a timer only while the live connection is down.
 export function MachinesPage() {
   const { i18n, t: translate } = useLingui();
   const search = useSearch({ from: "/shell/machines" });
@@ -56,6 +58,13 @@ export function MachinesPage() {
   const now = useNow(5_000);
   const narrow = useMediaQuery("(max-width: 767px)");
   const actions = useMachineActions();
+  const mark = useLiveMarks({
+    queryKey: machinesQuery.queryKey,
+    items: (list) => list,
+    id: (machine) => machine.id,
+    signature: (machine) => machine.state,
+    tone: (machine) => stateTone[machine.state],
+  });
 
   const roles = user?.roles ?? [];
   const canDecide = roles.includes("Administrator") || roles.includes("Operator");
@@ -149,7 +158,10 @@ export function MachinesPage() {
               {shown.map((machine) => (
                 <li
                   key={machine.id}
-                  className="flex flex-col gap-2 border-b border-line-soft px-4 py-3 last:border-b-0"
+                  className={cx(
+                    "flex flex-col gap-2 border-b border-line-soft px-4 py-3 last:border-b-0",
+                    mark(machine.id),
+                  )}
                 >
                   <span className="flex items-start gap-3">
                     <DeviceGlyph kind={deviceKind(machine)} />
@@ -214,10 +226,14 @@ export function MachinesPage() {
               {/* A row renders again only when its machine changes, unless something else it shows is listed here. */}
               <TableBody
                 items={shown}
-                dependencies={[now, canDecide, actions, strays, i18n.locale]}
+                dependencies={[now, canDecide, actions, strays, i18n.locale, mark]}
               >
                 {(machine) => (
-                  <TableRow id={machine.id} textValue={displayName(machine)}>
+                  <TableRow
+                    id={machine.id}
+                    textValue={displayName(machine)}
+                    className={mark(machine.id)}
+                  >
                     <TableCell className="pl-4">
                       <span className="flex min-w-0 items-center gap-3">
                         <DeviceGlyph kind={deviceKind(machine)} />

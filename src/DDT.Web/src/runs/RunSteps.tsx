@@ -4,9 +4,14 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 
-import type { DeploymentState, DeploymentStepView } from "@/deployments/deployments";
+import {
+  deploymentQuery,
+  type DeploymentState,
+  type DeploymentStepView,
+} from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { formatDuration } from "@/lib/format";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceDefinition } from "@/sequences/sequences";
 import { phaseLabel, stepKindLabel } from "@/sequences/steps";
@@ -18,8 +23,11 @@ import { StateTag } from "@/ui/StateTag";
 import { plannedSteps, skipReason, stepDuration, wentOnAfter } from "./runs";
 import { stepStateLabel, stepStateTone } from "./runView";
 
-// Every step of a run in order: what it is, how it stands, when it ran, and why it failed or was skipped.
+// Every step of a run in order: what it is, how it stands, when it ran, and why it failed or was skipped. A step that
+// ends while the page is open flashes in the colour it ended in. The running tint comes and goes at once: fading it
+// would hold the flash back, as a transition of a colour wins over an animation of it.
 export function RunSteps({
+  runId,
   steps,
   runState,
   definition,
@@ -27,6 +35,7 @@ export function RunSteps({
   now,
   onShowLog,
 }: {
+  runId: string;
   steps: readonly DeploymentStepView[];
   runState: DeploymentState;
   definition: SequenceDefinition | null;
@@ -39,6 +48,14 @@ export function RunSteps({
   const ordered = [...steps].sort((a, b) => a.index - b.index);
   const locale = formattingLocale();
   const clock = (utc: string) => new Date(utc).toLocaleTimeString(locale);
+  const mark = useLiveMarks({
+    queryKey: deploymentQuery(runId).queryKey,
+    items: (view) => view.steps,
+    id: (step) => step.stepId,
+    signature: (step) => step.state,
+    tone: (step) =>
+      step.state === "Running" || step.state === "Pending" ? null : stepStateTone[step.state],
+  });
 
   return (
     <Panel title={<Trans>Steps</Trans>} flush>
@@ -59,6 +76,7 @@ export function RunSteps({
               className={cx(
                 "flex gap-4 border-b border-line-soft px-4 py-3 last:border-b-0",
                 step.state === "Running" && "bg-run-soft",
+                mark(step.stepId),
               )}
             >
               <span

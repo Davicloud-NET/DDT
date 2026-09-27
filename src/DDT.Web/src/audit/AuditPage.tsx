@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
 import { formattingLocale } from "@/i18n/i18n";
+import { useLiveMarks } from "@/live/useLiveMarks";
 import { Button } from "@/ui/Button";
 import { SearchField } from "@/ui/Controls";
 import { EmptyState, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
@@ -20,7 +21,7 @@ import { auditQuery, type AuditFilter } from "./audit";
 import { actionGroups, actionLabel, actorKindLabel } from "./auditView";
 
 // Who did what and when: every row of the audit table, newest first, a page at a time. New rows reach the page as
-// they are stored, in the logs whose filter they pass.
+// they are stored, in the logs whose filter they pass, and enter at the top.
 export function AuditPage() {
   const { i18n, t } = useLingui();
   const user = useQuery(currentUserQuery).data ?? null;
@@ -44,6 +45,13 @@ export function AuditPage() {
   const administrator = user?.roles.includes("Administrator") === true;
   const filter: AuditFilter = { action, actor, from, to };
   const log = useInfiniteQuery({ ...auditQuery(filter), enabled: administrator });
+  const mark = useLiveMarks({
+    queryKey: auditQuery(filter).queryKey,
+    items: (data) => data.pages.flatMap((page) => page.items),
+    id: (entry) => String(entry.id),
+    signature: () => "",
+    tone: () => "idle",
+  });
   const entries = log.data?.pages.flatMap((page) => page.items) ?? [];
   const locale = formattingLocale();
   const readError = log.error?.message ?? "";
@@ -153,9 +161,9 @@ export function AuditPage() {
                 <Trans>Detail</Trans>
               </TableColumn>
             </TableHeader>
-            <TableBody items={entries} dependencies={[i18n.locale]}>
+            <TableBody items={entries} dependencies={[i18n.locale, mark]}>
               {(entry) => (
-                <TableRow id={entry.id} textValue={entry.action}>
+                <TableRow id={entry.id} textValue={entry.action} className={mark(String(entry.id))}>
                   <TableCell className="pl-4 type-small">
                     <time dateTime={entry.occurredUtc}>
                       {new Date(entry.occurredUtc).toLocaleString(locale)}

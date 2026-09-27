@@ -21,12 +21,13 @@ public enum Overlay
 // The whole console: what the agent sends, turned into the screen for its stage or the question it asks, with the log,
 // the machine's details and the licences over it on their keys. Every state replaces the one before, log lines add up,
 // and one question shows at a time until it is answered, withdrawn or replaced. When the pipe ends, the last state stays
-// and the console offers to restart the machine or to close, which leaves the command prompt behind it.
-// Everything here runs on the UI thread.
+// and the console offers to restart the machine or to close, which leaves the command prompt behind it. Shift+F10 opens
+// a command prompt in front of the console at any time. Everything here runs on the UI thread.
 public sealed class MainViewModel : ObservableObject
 {
     private readonly Localizer _l;
     private readonly IMachinePower _power;
+    private readonly ICommandPrompt _prompt;
     private readonly Action<int, ConsoleAnswer> _send;
     private readonly Action _close;
     private ConsoleState? _state;
@@ -41,19 +42,22 @@ public sealed class MainViewModel : ObservableObject
     private bool _isDark = true;
 
     // send takes an answer to the agent; close ends the console.
-    public MainViewModel(Localizer localizer, IMachinePower power, Action<int, ConsoleAnswer> send, Action close)
+    public MainViewModel(Localizer localizer, IMachinePower power, ICommandPrompt prompt, Action<int, ConsoleAnswer> send, Action close)
     {
         ArgumentNullException.ThrowIfNull(localizer);
         ArgumentNullException.ThrowIfNull(power);
+        ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(send);
         ArgumentNullException.ThrowIfNull(close);
 
         _l = localizer;
         _power = power;
+        _prompt = prompt;
         _send = send;
         _close = close;
+        OpenPromptCommand = new Command(prompt.Open);
         Log = new LogViewModel(localizer) { Closing = CloseOverlay };
-        Machine = new MachineViewModel(localizer) { Closing = CloseOverlay };
+        Machine = new MachineViewModel(localizer) { Closing = CloseOverlay, PromptCommand = OpenPromptCommand };
         _stageScreen = new ConnectionViewModel(localizer);
         _screen = _stageScreen;
         localizer.Changed += (_, _) => Refresh();
@@ -203,6 +207,12 @@ public sealed class MainViewModel : ObservableObject
 
     public Command CloseCommand { get; }
 
+    // Shift+F10, shown in the machine's details and once the agent has ended: the key strip has no room for it at
+    // 1024 x 768 without cutting off the machine's address.
+    public Command OpenPromptCommand { get; }
+
+    public string PromptLabel => _l.T("Command prompt");
+
     // Once the pipe has ended.
     public bool IsEnded => _ended is not null;
 
@@ -286,9 +296,24 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(Question));
     }
 
-    // A key pressed anywhere. True when the console used it.
-    public bool Press(Key key)
+    // A key pressed anywhere, without modifiers. True when the console used it.
+    public bool Press(Key key) => Press(key, KeyModifiers.None);
+
+    // A key pressed anywhere. Only Shift+F10 takes a modifier; every other key works alone.
+    public bool Press(Key key, KeyModifiers modifiers)
     {
+        if (key == Key.F10 && modifiers == KeyModifiers.Shift)
+        {
+            _prompt.Open();
+
+            return true;
+        }
+
+        if (modifiers != KeyModifiers.None)
+        {
+            return false;
+        }
+
         if (ConfirmingRestart)
         {
             switch (key)

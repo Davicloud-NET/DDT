@@ -247,6 +247,53 @@ public sealed class MainViewModelTests
     }
 
     [Fact]
+    public void OpensTheCommandPromptOnShiftF10WhateverTheConsoleShows()
+    {
+        TestConsole console = new(canRestart: true);
+
+        // Before the agent has said anything.
+        Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
+
+        // Over a question with the log open, which both stay.
+        console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(4, Scenarios.Sequences);
+        console.Model.Press(Key.F1);
+        Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
+        Assert.Equal(Overlay.Log, console.Model.OverlayShown);
+        Assert.IsType<SequenceChoiceViewModel>(console.Model.Screen);
+
+        // Once the agent has ended, even while the restart is asked about, which is still asked.
+        console.Model.Ended(LinkEnd.Closed);
+        console.Model.Press(Key.F8);
+        Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
+        Assert.True(console.Model.ConfirmingRestart);
+
+        // And from the keys that show it.
+        console.Model.OpenPromptCommand.Execute(null);
+        console.Model.Machine.PromptCommand!.Execute(null);
+
+        Assert.Equal(5, console.Prompt.Opened);
+        Assert.Equal(0, console.Power.Restarts);
+        Assert.Equal(0, console.Closed);
+        Assert.Empty(console.Answers);
+    }
+
+    [Fact]
+    public void OpensTheCommandPromptOnlyWithShiftAndTakesNoOtherKeyWithAModifier()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+
+        Assert.False(console.Model.Press(Key.F10));
+        Assert.False(console.Model.Press(Key.F10, KeyModifiers.Shift | KeyModifiers.Control));
+        Assert.False(console.Model.Press(Key.F10, KeyModifiers.Alt));
+        Assert.False(console.Model.Press(Key.F1, KeyModifiers.Shift));
+
+        Assert.Equal(0, console.Prompt.Opened);
+        Assert.False(console.Model.HasOverlay);
+        Assert.Equal("Command prompt", console.Model.PromptLabel);
+        Assert.Equal("Eingabeaufforderung", new TestConsole(UiLanguage.German).Model.PromptLabel);
+    }
+
+    [Fact]
     public void OpensAndClosesTheLogTheMachineAndTheLicencesOnTheirKeys()
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);

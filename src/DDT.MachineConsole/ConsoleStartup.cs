@@ -30,6 +30,7 @@ public sealed class ConsoleStartup(IAgentConnection connection)
         MainViewModel model = new(
             localizer,
             power,
+            new CommandPrompt(),
             (id, answer) => _ = link.AnswerAsync(id, answer),
             () => desktop.Shutdown(Program.Closed));
 

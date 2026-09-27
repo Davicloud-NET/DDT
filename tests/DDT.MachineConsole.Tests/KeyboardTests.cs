@@ -140,6 +140,64 @@ public sealed class KeyboardTests
         window.Close();
     });
 
+    [Fact]
+    public Task OpensTheCommandPromptWithShiftF10AndTypesOnInTheField() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole()
+            .Show(Scenarios.State(ConsoleStage.WaitingForAuthorization))
+            .Ask(1, new SignInQuestion(SignInField.UserName, null, null));
+        MainWindow window = Open(console);
+
+        Press(window, Key.F10, RawInputModifiers.Shift);
+        Assert.Equal(1, console.Prompt.Opened);
+
+        // F10 alone is nothing, and the field still takes what is typed.
+        Press(window, Key.F10);
+        Type(window, "anna");
+        Press(window, Key.Enter);
+
+        Assert.Equal(1, console.Prompt.Opened);
+        Assert.Equal([(1, new ConsoleAnswer(Text: "anna"))], console.Answers);
+        window.Close();
+    });
+
+    [Fact]
+    public Task ShowsThePromptKeyInTheMachinesDetailsAndOnceTheAgentHasEnded() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+        MainWindow window = Open(console);
+
+        Assert.False(window.Find<Button>("EndedPrompt").IsEffectivelyVisible);
+
+        Press(window, Key.F2);
+        Button details = window.Find<Button>("Prompt");
+        Assert.True(details.IsEffectivelyVisible);
+        details.Command!.Execute(null);
+
+        Press(window, Key.Escape);
+        console.Model.Ended(Agent.LinkEnd.Closed);
+        Settle();
+        Button ended = window.Find<Button>("EndedPrompt");
+        Assert.True(ended.IsEffectivelyVisible);
+        ended.Command!.Execute(null);
+
+        Assert.Equal(2, console.Prompt.Opened);
+        window.Close();
+    });
+
+    [Fact]
+    public Task FillsTheScreenWithoutStayingInFrontOfOtherWindows() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+        MainWindow window = new(console.Model, fullScreen: true);
+        window.Show();
+        Settle();
+
+        Assert.Equal(WindowState.FullScreen, window.WindowState);
+        Assert.False(window.Topmost);
+        window.Close();
+    });
+
     private static MainWindow Open(TestConsole console)
     {
         MainWindow window = new(console.Model, fullScreen: false) { Width = 1024, Height = 768 };
@@ -162,10 +220,10 @@ public sealed class KeyboardTests
         Settle();
     }
 
-    private static void Press(Window window, Key key)
+    private static void Press(Window window, Key key, RawInputModifiers modifiers = RawInputModifiers.None)
     {
-        window.KeyPress(key, RawInputModifiers.None, PhysicalKey.None, null);
-        window.KeyRelease(key, RawInputModifiers.None, PhysicalKey.None, null);
+        window.KeyPress(key, modifiers, PhysicalKey.None, null);
+        window.KeyRelease(key, modifiers, PhysicalKey.None, null);
         Settle();
     }
 }

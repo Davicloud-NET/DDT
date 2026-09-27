@@ -60,6 +60,15 @@
             <TextBlock Classes="small muted" Text="{Binding RestartUnavailable}" IsVisible="{Binding !CanRestart}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="20,0,0,0">
+            <Button Name="EndedPrompt" Classes="quiet" Command="{Binding OpenPromptCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <c:KeyCap Key="Shift" />
+                  <c:KeyCap Key="F10" />
+                </StackPanel>
+                <TextBlock Text="{Binding PromptLabel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
             <Button Name="CloseConsole" Command="{Binding CloseCommand}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:KeyCap Key="F9" />

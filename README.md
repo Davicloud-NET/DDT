@@ -995,6 +995,14 @@ which leaves the command prompt behind it, and in Windows PE F8 restarts the mac
 restarts a machine only when the system drive is `X:`, Windows PE's `MiniNT` key is set and
 `wpeutil.exe` is there, so a console started on a development computer never restarts it.
 
+Shift+F10 opens a command prompt at any time, as it does in Windows Setup: `cmd.exe` in a window of
+its own, in front of the console and with the keyboard, in `X:\DDT`, while the agent goes on. The
+console fills the screen but does not stay on top, and it never takes the keyboard back, so the
+prompt stays in front until it is closed or clicked away. The machine's details (F2) and the band
+shown once the agent has ended name the key; the keys along the bottom have no room for it at
+1024 × 768. Closing the console itself, with Alt+F4 at any time, leaves the agent running in the
+text console underneath, where Ctrl+C stops it.
+
 ### Registration and authorization
 
 1. `Build-BootImage.ps1` with `-AgentPath`, `-ServerUrl` and `-RootCertificatePath` puts the agent

@@ -17,6 +17,11 @@ public sealed class MachineViewModel(Localizer localizer) : OverlayViewModel(loc
 
     public override string CloseLabel => T("Close the details");
 
+    // Set by the console, which opens the command prompt on Shift+F10 wherever it is.
+    public Command? PromptCommand { get; set; }
+
+    public string PromptLabel => T("Command prompt");
+
     public string IdentityTitle => T("Identity");
 
     public string NetworkTitle => T("Network");

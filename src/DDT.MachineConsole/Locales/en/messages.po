@@ -147,6 +147,10 @@ msgstr "Close the licences"
 msgid "Close the log"
 msgstr "Close the log"
 
+#: ViewModels/MainViewModel.cs
+msgid "Command prompt"
+msgstr "Command prompt"
+
 #: ViewModels/ComputerNameViewModel.cs
 msgid "Computer name"
 msgstr "Computer name"

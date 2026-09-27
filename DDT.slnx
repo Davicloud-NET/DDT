@@ -12,6 +12,7 @@
   <Folder Name="/src/">
     <Project Path="src/DDT.Agent/DDT.Agent.csproj" />
     <Project Path="src/DDT.AppHost/DDT.AppHost.csproj" />
+    <Project Path="src/DDT.ConsoleProtocol/DDT.ConsoleProtocol.csproj" />
     <Project Path="src/DDT.Contracts/DDT.Contracts.csproj" />
     <Project Path="src/DDT.Core/DDT.Core.csproj" />
     <Project Path="src/DDT.Host/DDT.Host.csproj" />

@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DDT.ConsoleProtocol\DDT.ConsoleProtocol.csproj" />
     <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
     <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
   </ItemGroup>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The messages between the agent and ddt-console.exe, its graphical console in Windows PE. The console references
+       only this, not the agent, and both ends are NativeAOT. -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Audit;
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Builder;
@@ -45,10 +46,7 @@ public static class AuditEndpoints
     {
         if (from is { } start && to is { } end && end <= start)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["to"] = ["The end of the range must come after its start."],
-            });
+            return ServerProblems.Validation("to", ServerMessages.AuditRangeEnd.With());
         }
 
         int take = Math.Clamp(limit ?? DefaultPage, 1, MaxPage);

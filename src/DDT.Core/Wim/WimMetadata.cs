@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using DDT.Contracts.Messages;
 
 namespace DDT.Core.Wim;
 
@@ -28,10 +29,6 @@ public static class WimMetadata
     // Real image lists are kilobytes; the cap keeps a forged header from allocating gigabytes.
     private const int MaxXmlLength = 16 * 1024 * 1024;
 
-    private const string NotAWim = "This file is not a WIM image.";
-    private const string Incomplete = "This WIM file is incomplete or damaged.";
-    private const string DamagedXml = "The image list in this WIM file is damaged.";
-    private const string XmlDoesNotMatchHeader = "The image list in this WIM file does not match its header.";
 
     public static async Task<IReadOnlyList<WimImageInfo>> ReadAsync(Stream wim, CancellationToken cancellationToken)
     {
@@ -44,7 +41,7 @@ public static class WimMetadata
 
         if (wim.Length < HeaderLength)
         {
-            throw new InvalidWimException(NotAWim);
+            throw new InvalidWimException(ServerMessages.WimNotAWim.With());
         }
 
         byte[] header = new byte[HeaderLength];
@@ -66,24 +63,24 @@ public static class WimMetadata
 
         if (magic.SequenceEqual("WLPWM\0\0\0"u8))
         {
-            throw new InvalidWimException("Pipable WIM files are not supported. Export the image into a regular WIM first.");
+            throw new InvalidWimException(ServerMessages.WimPipable.With());
         }
 
         if (!magic.SequenceEqual("MSWIM\0\0\0"u8) || BinaryPrimitives.ReadUInt32LittleEndian(header[HeaderLengthOffset..]) != HeaderLength)
         {
-            throw new InvalidWimException(NotAWim);
+            throw new InvalidWimException(ServerMessages.WimNotAWim.With());
         }
 
         uint version = BinaryPrimitives.ReadUInt32LittleEndian(header[VersionOffset..]);
 
         if (version is not (DefaultVersion or SolidVersion))
         {
-            throw new InvalidWimException($"This WIM file uses format version 0x{version:X}, which DDT does not support.");
+            throw new InvalidWimException(ServerMessages.WimVersion.With("version", version.ToString("X", CultureInfo.InvariantCulture)));
         }
 
         if (BinaryPrimitives.ReadUInt16LittleEndian(header[TotalPartsOffset..]) != 1)
         {
-            throw new InvalidWimException("Split WIM files (.swm) are not supported. Export the image into a single WIM first.");
+            throw new InvalidWimException(ServerMessages.WimSplit.With());
         }
 
         uint imageCount = BinaryPrimitives.ReadUInt32LittleEndian(header[ImageCountOffset..]);
@@ -97,17 +94,17 @@ public static class WimMetadata
 
         if ((flags & (CompressedResource | SolidResource)) != 0)
         {
-            throw new InvalidWimException("This WIM file stores its image list compressed, which DDT cannot read.");
+            throw new InvalidWimException(ServerMessages.WimCompressedList.With());
         }
 
         if (length == 0 || offset > (ulong)fileLength || length > (ulong)fileLength - offset)
         {
-            throw new InvalidWimException(Incomplete);
+            throw new InvalidWimException(ServerMessages.WimIncomplete.With());
         }
 
         if (length > MaxXmlLength)
         {
-            throw new InvalidWimException("The image list in this WIM file is too large.");
+            throw new InvalidWimException(ServerMessages.WimListTooLarge.With());
         }
 
         return (imageCount, (long)offset, (int)length);
@@ -117,7 +114,7 @@ public static class WimMetadata
     {
         if (xml.Length < 2 || xml.Length % 2 != 0 || xml[0] != 0xFF || xml[1] != 0xFE)
         {
-            throw new InvalidWimException("The image list in this WIM file is not UTF-16 text, which DDT cannot read.");
+            throw new InvalidWimException(ServerMessages.WimListNotUtf16.With());
         }
 
         return Encoding.Unicode.GetString(xml, 2, xml.Length - 2);
@@ -129,12 +126,12 @@ public static class WimMetadata
 
         if (root.Name.LocalName != "WIM")
         {
-            throw new InvalidWimException(DamagedXml);
+            throw new InvalidWimException(ServerMessages.WimListDamaged.With());
         }
 
         if (root.Elements("ESD").Elements("ENCRYPTED").Any())
         {
-            throw new InvalidWimException("This image is encrypted (an ESD from Windows Update) and cannot be applied.");
+            throw new InvalidWimException(ServerMessages.WimEncrypted.With());
         }
 
         List<WimImageInfo> images = [];
@@ -143,7 +140,7 @@ public static class WimMetadata
         {
             if (!int.TryParse((string?)image.Attribute("INDEX"), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
             {
-                throw new InvalidWimException(XmlDoesNotMatchHeader);
+                throw new InvalidWimException(ServerMessages.WimListMismatch.With());
             }
 
             images.Add(ReadImage(image, index));
@@ -151,7 +148,7 @@ public static class WimMetadata
 
         if (images.Count != imageCount)
         {
-            throw new InvalidWimException(XmlDoesNotMatchHeader);
+            throw new InvalidWimException(ServerMessages.WimListMismatch.With());
         }
 
         images.Sort((left, right) => left.Index.CompareTo(right.Index));
@@ -160,7 +157,7 @@ public static class WimMetadata
         {
             if (images[position].Index != position + 1)
             {
-                throw new InvalidWimException(XmlDoesNotMatchHeader);
+                throw new InvalidWimException(ServerMessages.WimListMismatch.With());
             }
         }
 
@@ -180,11 +177,11 @@ public static class WimMetadata
             using StringReader text = new(xml);
             using XmlReader reader = XmlReader.Create(text, settings);
 
-            return XDocument.Load(reader).Root ?? throw new InvalidWimException(DamagedXml);
+            return XDocument.Load(reader).Root ?? throw new InvalidWimException(ServerMessages.WimListDamaged.With());
         }
         catch (XmlException exception)
         {
-            throw new InvalidWimException(DamagedXml, exception);
+            throw new InvalidWimException(ServerMessages.WimListDamaged.With(), exception);
         }
     }
 

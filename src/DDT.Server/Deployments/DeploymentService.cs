@@ -7,6 +7,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Boot;
 using DDT.Core.Unattend;
@@ -168,11 +169,11 @@ public sealed class DeploymentService(
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(request);
 
-        string? refusal = machine.State switch
+        ServerMessage? refusal = machine.State switch
         {
-            MachineState.Deploying => "The machine is running a task sequence. Stop that run before assigning another sequence.",
-            MachineState.Rejected => "The machine was rejected, so it cannot be given a sequence. Assign the sequence to another machine.",
-            MachineState.Retired => "The machine was retired, so it cannot be given a sequence. Assign the sequence to another machine.",
+            MachineState.Deploying => ServerMessages.DeploymentMachineRunning.With(),
+            MachineState.Rejected => ServerMessages.DeploymentMachineRejected.With(),
+            MachineState.Retired => ServerMessages.DeploymentMachineRetired.With(),
             _ => null,
         };
 
@@ -183,7 +184,7 @@ public sealed class DeploymentService(
 
         if (machine.ActiveDeploymentId is not null)
         {
-            return DeploymentDecision.Conflict("This machine already has a run. Cancel it before assigning another sequence.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentAlreadyHasRun.With());
         }
 
         TaskSequence? sequence = await database.TaskSequences
@@ -193,10 +194,10 @@ public sealed class DeploymentService(
 
         if (sequence is null)
         {
-            return DeploymentDecision.NotFound("The sequence no longer exists. Load the page again and choose another sequence.");
+            return DeploymentDecision.NotFound(ServerMessages.DeploymentSequenceGone.With());
         }
 
-        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+        (SequenceDefinition definition, SequenceReferences references, ServerMessage? problem) = await CheckAsync(sequence, cancellationToken)
             .ConfigureAwait(false);
 
         if (problem is not null)
@@ -208,8 +209,7 @@ public sealed class DeploymentService(
         // and its agent refuses the run itself if it finds more than one.
         if (Erases(definition) && machine.EligibleDiskCount > 1)
         {
-            return DeploymentDecision.Conflict(
-                $"{sequence.Name} erases a disk, and this machine has more than one. Sign in at it and choose the disk there.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentErasesOneOfManyDisks.With("sequence", sequence.Name));
         }
 
         if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition)) is { } nameProblem)
@@ -217,7 +217,7 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
-        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
+        (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
 
         if (secureBootProblem is not null)
         {
@@ -296,18 +296,17 @@ public sealed class DeploymentService(
 
         if (machine.SignedInUserName is { } signer)
         {
-            return DeploymentDecision.Conflict($"{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentSignerChooses.With("signer", signer));
         }
 
         SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
 
         if (resolution.Rule is not { } rule || resolution.Sequence is not { } sequence || sequence.Id != expectedSequenceId)
         {
-            return DeploymentDecision.Conflict(
-                $"The rules no longer choose that sequence for this machine. {resolution.Explanation} Look at the machine again.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentRulesNoLongerChoose.With("explanation", resolution.Explanation));
         }
 
-        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+        (SequenceDefinition definition, SequenceReferences references, ServerMessage? problem) = await CheckAsync(sequence, cancellationToken)
             .ConfigureAwait(false);
 
         if (problem is not null)
@@ -317,19 +316,17 @@ public sealed class DeploymentService(
 
         if (Erases(definition) && machine.EligibleDiskCount > 1)
         {
-            return DeploymentDecision.Conflict(
-                $"{sequence.Name} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentApproveThenChooseDisk.With("sequence", sequence.Name));
         }
 
         if (SequenceChecks.ComputerNameUse(definition) is not null && string.IsNullOrWhiteSpace(machine.AssignedName))
         {
-            string names = definition.Steps.Any(step => step is JoinDomainStep) ? "joins the domain" : "names the machine in its cloud-init seed";
+            string use = definition.Steps.Any(step => step is JoinDomainStep) ? "domain" : "seed";
 
-            return DeploymentDecision.Conflict(
-                $"{sequence.Name} {names}, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.");
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentApproveThenName.With("sequence", sequence.Name, "use", use));
         }
 
-        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, allowSecureBootMismatch);
+        (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, allowSecureBootMismatch);
 
         if (secureBootProblem is not null)
         {
@@ -391,7 +388,7 @@ public sealed class DeploymentService(
             return DeploymentDecision.NotFound("The sequence no longer exists. Choose another sequence.");
         }
 
-        (SequenceDefinition definition, SequenceReferences references, string? problem) = await CheckAsync(sequence, cancellationToken)
+        (SequenceDefinition definition, SequenceReferences references, ServerMessage? problem) = await CheckAsync(sequence, cancellationToken)
             .ConfigureAwait(false);
 
         if (problem is not null)
@@ -428,7 +425,7 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("computerName", nameProblem);
         }
 
-        (bool allowMismatch, string? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
+        (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
 
         if (secureBootProblem is not null)
         {
@@ -551,8 +548,7 @@ public sealed class DeploymentService(
                 return DeploymentDecision.Accepted(active);
 
             default:
-                return DeploymentDecision.Conflict(
-                    "This machine has no run that is assigned or running. Load the page again to see its current state.");
+                return DeploymentDecision.Conflict(ServerMessages.DeploymentNothingToEnd.With());
         }
     }
 
@@ -682,31 +678,30 @@ public sealed class DeploymentService(
 
     // A raw disk image whose boot file DDT could not read may still start, so only a known other processor keeps it
     // from being written.
-    internal static string? NotDeployable(Image image) => (image.Kind, image.Architecture) switch
+    internal static ServerMessage? NotDeployable(Image image) => (image.Kind, image.Architecture) switch
     {
         (_, DeployableArchitecture) => null,
         (ImageKind.RawDisk, null) => null,
         (ImageKind.RawDisk, string architecture) =>
-            $"{image.Name} starts {architecture} machines, and DDT writes images for x64 machines. Choose an x64 image.",
-        (_, null) => $"{image.Name} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
-        (_, string architecture) => $"{image.Name} is an {architecture} image, and DDT deploys only x64 Windows. Choose an x64 image.",
+            ServerMessages.ImageRawForOtherArchitecture.With("image", image.Name, "architecture", architecture),
+        (_, null) => ServerMessages.ImageWithoutArchitecture.With("image", image.Name),
+        (_, string architecture) => ServerMessages.ImageOtherArchitecture.With("image", image.Name, "architecture", architecture),
     };
 
     private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);
 
     // A sequence runs only without problems, which depend on the library and the settings of the moment.
-    private async Task<(SequenceDefinition Definition, SequenceReferences References, string? Problem)> CheckAsync(
+    private async Task<(SequenceDefinition Definition, SequenceReferences References, ServerMessage? Problem)> CheckAsync(
         TaskSequence sequence,
         CancellationToken cancellationToken)
     {
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
         SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
 
-        string? problem = SequenceChecks.Check(definition, references).Problems.Count switch
+        ServerMessage? problem = SequenceChecks.Check(definition, references).Problems.Count switch
         {
             0 => null,
-            1 => $"{sequence.Name} has a problem, so it cannot run. Fix it on the sequence's page first.",
-            int count => $"{sequence.Name} has {count} problems, so it cannot run. Fix them on the sequence's page first.",
+            int count => ServerMessages.DeploymentSequenceHasProblems.With("sequence", sequence.Name, "count", count),
         };
 
         return (definition, references, problem);
@@ -727,13 +722,13 @@ public sealed class DeploymentService(
     // image signed for Secure Boot is such an image on a machine whose firmware does not trust Microsoft's third-party
     // UEFI CA. The allowance is kept only where it matters. Returns it, and the refusal when the machine said Secure Boot
     // is on and nobody allowed the image.
-    private static (bool Allow, string? Problem) SecureBootDecision(
+    private static (bool Allow, ServerMessage? Problem) SecureBootDecision(
         Machine machine,
         SequenceDefinition definition,
         SequenceReferences references,
         bool allowed)
     {
-        if (SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is not { } why)
+        if (SequenceChecks.RawImage(definition, references) is not { } image || NotStarting(machine, image) is null)
         {
             return (false, null);
         }
@@ -743,9 +738,18 @@ public sealed class DeploymentService(
             return (true, null);
         }
 
-        return machine.SecureBootEnabled == true
-            ? (false, $"{image.Name} {why}, and this machine has Secure Boot on. Allow it for this run, or {Remedy(machine, image)} first.")
-            : (false, null);
+        if (machine.SecureBootEnabled != true)
+        {
+            return (false, null);
+        }
+
+        return image.BootCapability == ImageBootCapability.SecureBootOk
+            ? (false, ServerMessages.DeploymentUntrustedCaWithSecureBoot.With("image", image.Name, "ca", UefiCaName(image.SignedUnder)))
+            : (false, ServerMessages.DeploymentNotStartingWithSecureBoot.With(
+                "image",
+                image.Name,
+                "capability",
+                image.BootCapability?.ToString() ?? nameof(ImageBootCapability.Unknown)));
     }
 
     // Why the machine would not start the image with Secure Boot on, or null when it would.
@@ -757,10 +761,14 @@ public sealed class DeploymentService(
         _ => $"{BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on",
     };
 
-    private static string Remedy(Machine machine, Image image) =>
-        image.BootCapability == ImageBootCapability.SecureBootOk && MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder)
-            ? "allow that CA or turn Secure Boot off in the machine's firmware"
-            : "turn Secure Boot off in the machine's firmware";
+    // MicrosoftUefiCa.Describe as a message, for a sentence the web says.
+    private static ServerMessage UefiCaName(UefiCa? cas) => ServerMessages.MicrosoftUefiCaName.With("cas", cas switch
+    {
+        UefiCa.Microsoft2011 => "ca2011",
+        UefiCa.Microsoft2023 => "ca2023",
+        UefiCa.Microsoft2011 | UefiCa.Microsoft2023 => "both",
+        _ => "other",
+    });
 
     private static string MismatchNote(Machine machine, SequenceDefinition definition, SequenceReferences references, bool allowed)
     {
@@ -776,14 +784,16 @@ public sealed class DeploymentService(
 
     // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.
     // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none.
-    private static string? ComputerNameProblem(Machine machine, string? computerName, string? use)
+    private static ServerMessage? ComputerNameProblem(Machine machine, string? computerName, ServerMessage? use)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
         {
-            return ComputerNames.IsValid(computerName.Trim(), out string error) ? null : error;
+            return ComputerNames.Problem(computerName.Trim());
         }
 
-        return use is not null && string.IsNullOrWhiteSpace(machine.AssignedName) ? $"Enter a computer name. {use}" : null;
+        return use is not null && string.IsNullOrWhiteSpace(machine.AssignedName)
+            ? ServerMessages.DeploymentEnterComputerName.With("use", use)
+            : null;
     }
 
     // Off: only a machine seen moments ago is at the prompt now; whoever holds the tokens of one seen earlier may

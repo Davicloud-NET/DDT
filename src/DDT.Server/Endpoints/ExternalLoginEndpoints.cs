@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Security;
@@ -197,17 +198,14 @@ public static class ExternalLoginEndpoints
 
         if (info is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                ["external"] = ["No external sign in is in progress."],
-            });
+            return ServerProblems.Validation("external", ServerMessages.AccountNoExternalSignIn.With());
         }
 
         IdentityResult result = await userManager.AddLoginAsync(user, info).ConfigureAwait(false);
 
         if (!result.Succeeded)
         {
-            return TypedResults.ValidationProblem(result.ToProblemDictionary());
+            return result.ToValidationProblem();
         }
 
         await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);

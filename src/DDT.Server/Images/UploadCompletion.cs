@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 
 namespace DDT.Server.Images;
@@ -14,5 +15,5 @@ public sealed record UploadCompletion(
     UploadCompletionStatus Status,
     IReadOnlyList<ImageSummary> Images,
     long Offset = 0,
-    string? Refusal = null,
+    ServerMessage? Refusal = null,
     PackageSummary? Package = null);

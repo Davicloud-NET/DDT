@@ -7,7 +7,8 @@ namespace DDT.Contracts.Users;
 // What a directory sign-in with this user name would give, found with the bind account and without the user's
 // password. Groups are the distinguished names of every group the user is in, nested ones included, as a sign-in reads
 // them. Matches are those the map names, with the role each gives. Role is what a sign-in would give, null when it
-// would give none or be refused, and Message says why in a sentence.
+// would give none or be refused, and Message says why in a sentence, in English; MessageCode and MessageArgs are the
+// same sentence for a client that says it in the person's language.
 public sealed record DirectoryCheck(
     bool Found,
     string? DistinguishedName,
@@ -15,4 +16,6 @@ public sealed record DirectoryCheck(
     IReadOnlyList<string> Groups,
     IReadOnlyList<DirectoryGroupMatch> Matches,
     string? Role,
-    string Message);
+    string Message,
+    string? MessageCode = null,
+    IReadOnlyDictionary<string, object>? MessageArgs = null);

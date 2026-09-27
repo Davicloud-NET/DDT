@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
 using DDT.Server.Deployments;
 using DDT.Server.Sequences;
@@ -14,4 +15,4 @@ public sealed record SequenceResolution(
     TaskSequence? Sequence,
     AssignmentRule? Rule,
     Deployment? Deployment,
-    string Explanation);
+    ServerMessage Explanation);

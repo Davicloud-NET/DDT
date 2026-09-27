@@ -3,8 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers;
-using System.Globalization;
 using System.IO.Compression;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Core;
 
@@ -42,7 +42,7 @@ public static class PackageArchiveCheck
         }
         catch (Exception exception) when (exception is InvalidDataException or EndOfStreamException)
         {
-            return Refused("The file is not a zip archive, or it is damaged. Upload a zip file.");
+            return Refused(ServerMessages.PackageNotZip.With());
         }
     }
 
@@ -50,7 +50,7 @@ public static class PackageArchiveCheck
     {
         if (entries.Count > PackageLimits.MaxEntries)
         {
-            return Refused($"The zip holds {entries.Count} entries. A package can hold at most {PackageLimits.MaxEntries}.");
+            return Refused(ServerMessages.PackageTooManyEntries.With("count", entries.Count, "max", PackageLimits.MaxEntries));
         }
 
         HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
@@ -64,22 +64,22 @@ public static class PackageArchiveCheck
 
             if (NameProblem(name) is { } problem)
             {
-                return Refused($"The entry {Shown(name)} {problem}");
+                return Refused(problem);
             }
 
             if (entry.IsEncrypted)
             {
-                return Refused($"The entry {Shown(name)} is encrypted. Upload a zip without a password.");
+                return Refused(ServerMessages.PackageEntryEncrypted.With("entry", Shown(name)));
             }
 
             if (((entry.ExternalAttributes >> 16) & UnixTypeMask) == UnixSymbolicLink)
             {
-                return Refused($"The entry {Shown(name)} is a symbolic link. Put the file itself in the zip.");
+                return Refused(ServerMessages.PackageEntrySymbolicLink.With("entry", Shown(name)));
             }
 
             if (!names.Add(PathOf(name)))
             {
-                return Refused($"The entry {Shown(name)} is in the zip twice, if case is ignored as Windows ignores it.");
+                return Refused(ServerMessages.PackageEntryTwice.With("entry", Shown(name)));
             }
 
             if (IsFolder(name))
@@ -90,7 +90,7 @@ public static class PackageArchiveCheck
             // Checked before adding, so no sum of declared sizes can overflow.
             if (entry.Length < 0 || entry.Length > PackageLimits.MaxExpandedBytes - declared)
             {
-                return Refused($"Unpacked, the zip would take more than {PackageLimits.MaxExpandedBytes / (1024 * 1024 * 1024)} GB.");
+                return Refused(ServerMessages.PackageTooLargeUnpacked.With("max", PackageLimits.MaxExpandedBytes / (1024 * 1024 * 1024)));
             }
 
             declared += entry.Length;
@@ -104,14 +104,14 @@ public static class PackageArchiveCheck
             {
                 if (filePaths.Contains(path[..slash]))
                 {
-                    return Refused($"The zip has a file {Shown(path[..slash])} and a folder of the same name.");
+                    return Refused(ServerMessages.PackageFileAndFolder.With("entry", Shown(path[..slash])));
                 }
             }
         }
 
         if (kind == PackageKind.Drivers && !files.Any(f => f.FullName.EndsWith(".inf", StringComparison.OrdinalIgnoreCase)))
         {
-            return Refused("A driver package needs at least one .inf file. Zip the folder that holds the drivers' .inf files.");
+            return Refused(ServerMessages.PackageNoInf.With());
         }
 
         return Inflate(files, declared, cancellationToken);
@@ -146,23 +146,21 @@ public static class PackageArchiveCheck
                 }
                 catch (Exception exception) when (exception is InvalidDataException or EndOfStreamException)
                 {
-                    return Refused($"The entry {Shown(file.FullName)} is damaged. Create the zip again.");
+                    return Refused(ServerMessages.PackageEntryDamaged.With("entry", Shown(file.FullName)));
                 }
                 catch (NotSupportedException)
                 {
-                    return Refused($"The entry {Shown(file.FullName)} is compressed in a way DDT cannot unpack. Create the zip with Deflate.");
+                    return Refused(ServerMessages.PackageEntryCompression.With("entry", Shown(file.FullName)));
                 }
 
                 if (actual != file.Length)
                 {
-                    return Refused(string.Create(
-                        CultureInfo.InvariantCulture,
-                        $"The entry {Shown(file.FullName)} unpacks to {actual} bytes, but the zip says {file.Length}. Create the zip again."));
+                    return Refused(ServerMessages.PackageEntrySize.With("entry", Shown(file.FullName), "actual", actual, "declared", file.Length));
                 }
 
                 if (crc != file.Crc32)
                 {
-                    return Refused($"The entry {Shown(file.FullName)} does not unpack to the bytes the zip says it holds. Create the zip again.");
+                    return Refused(ServerMessages.PackageEntryChecksum.With("entry", Shown(file.FullName)));
                 }
             }
         }
@@ -175,50 +173,52 @@ public static class PackageArchiveCheck
     }
 
     // Each part of the name has to be one Windows can create, inside the folder the package is unpacked to.
-    private static string? NameProblem(string name)
+    private static ServerMessage? NameProblem(string name)
     {
+        string entry = Shown(name);
+
         if (name.Length > PackageLimits.MaxEntryNameLength)
         {
-            return $"has a name longer than {PackageLimits.MaxEntryNameLength} characters.";
+            return ServerMessages.PackageEntryNameTooLong.With("entry", entry, "max", PackageLimits.MaxEntryNameLength);
         }
 
         if (name.Any(char.IsControl))
         {
-            return "has a control character in its name.";
+            return ServerMessages.PackageEntryControlCharacter.With("entry", entry);
         }
 
         if (name.StartsWith('/') || name.StartsWith('\\'))
         {
-            return "starts at the root of a drive.";
+            return ServerMessages.PackageEntryAtRoot.With("entry", entry);
         }
 
         string[] parts = PathOf(name).Split('/');
 
         if (parts.Length > PackageLimits.MaxDepth)
         {
-            return $"is more than {PackageLimits.MaxDepth} folders deep.";
+            return ServerMessages.PackageEntryTooDeep.With("entry", entry, "max", PackageLimits.MaxDepth);
         }
 
         foreach (string part in parts)
         {
             if (part.Length == 0 || part is "." or "..")
             {
-                return "has an empty name, or a folder name that points out of the package.";
+                return ServerMessages.PackageEntryEmptyName.With("entry", entry);
             }
 
             if (part.IndexOfAny(s_forbidden) >= 0)
             {
-                return "has a character Windows does not allow in names, such as : for a drive or a data stream.";
+                return ServerMessages.PackageEntryForbiddenCharacter.With("entry", entry);
             }
 
             if (part[^1] is '.' or ' ')
             {
-                return "has a name that ends in a dot or a space, which Windows cannot create.";
+                return ServerMessages.PackageEntryTrailingDot.With("entry", entry);
             }
 
             if (s_deviceNames.Contains(part.Split('.')[0].TrimEnd()))
             {
-                return "has a name Windows keeps for a device, such as CON or NUL.";
+                return ServerMessages.PackageEntryDeviceName.With("entry", entry);
             }
         }
 
@@ -237,5 +237,5 @@ public static class PackageArchiveCheck
         return printable.Length <= 120 ? printable : printable[..120] + "...";
     }
 
-    private static PackageInspection Refused(string reason) => new(0, 0, reason);
+    private static PackageInspection Refused(ServerMessage reason) => new(0, 0, reason.Text, reason);
 }

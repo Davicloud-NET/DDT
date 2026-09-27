@@ -4,6 +4,7 @@
 
 using System.Security.Claims;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -66,10 +67,7 @@ public static class DeploymentEndpoints
         {
             if (!Guid.TryParseExact(before, "N", out Guid parsed))
             {
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["before"] = ["The cursor is not one this server handed out. Start again from the first page."],
-                });
+                return ServerProblems.Validation("before", ServerMessages.DeploymentHistoryCursor.With());
             }
 
             cursor = parsed;

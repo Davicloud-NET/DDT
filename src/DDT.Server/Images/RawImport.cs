@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Core.Disks;
 
 namespace DDT.Server.Images;
@@ -11,7 +12,7 @@ namespace DDT.Server.Images;
 // instead, and then nothing else is set. Retryable says the cause lies with the server, such as a missing tool or a
 // full volume, so the upload is kept for another attempt once that is fixed.
 public sealed record RawImport(
-    string? Refusal,
+    ServerMessage? Refusal,
     string CompressedPath = "",
     string Sha256 = "",
     long SizeBytes = 0,

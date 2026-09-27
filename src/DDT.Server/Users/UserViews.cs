@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -40,15 +41,12 @@ public sealed class UserViews(
     }
 
     // Says where to change a role that DDT may not change, for the refusal.
-    public static string ManagedMessage(DdtUser user, RoleSource managedBy)
+    public static ServerMessage ManagedMessage(DdtUser user, RoleSource managedBy)
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        return managedBy == RoleSource.DirectoryGroups
-            ? $"The role of {user.UserName} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. " +
-              "Change its groups in the directory, or the map."
-            : $"The role of {user.UserName} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. " +
-              "Change its groups at the provider, or the map.";
+        return (managedBy == RoleSource.DirectoryGroups ? ServerMessages.UserRoleFromDirectoryGroups : ServerMessages.UserRoleFromSingleSignOnGroups)
+            .With("name", user.UserName ?? "");
     }
 
     public async Task<IReadOnlyList<UserView>> ListAsync(CancellationToken cancellationToken)

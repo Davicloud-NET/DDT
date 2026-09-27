@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -115,12 +116,9 @@ public static class MachineEndpoints
         int problems = resolution.Sequence is { } sequence
             ? (await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false)).Problems.Count
             : 0;
-        string explanation = problems switch
-        {
-            0 => resolution.Explanation,
-            1 => $"{resolution.Explanation} {resolution.Sequence!.Name} has 1 problem, so it cannot run until it is fixed.",
-            _ => $"{resolution.Explanation} {resolution.Sequence!.Name} has {problems} problems, so it cannot run until they are fixed.",
-        };
+        ServerMessage explanation = problems == 0
+            ? resolution.Explanation
+            : ServerMessages.ResolutionCannotRun.With("explanation", resolution.Explanation, "sequence", resolution.Sequence!.Name, "count", problems);
 
         return TypedResults.Ok(new MachineSequenceResolution(
             resolution.Source,
@@ -128,7 +126,9 @@ public static class MachineEndpoints
             resolution.Sequence?.Name,
             resolution.Rule?.Id,
             problems,
-            explanation));
+            explanation.Text,
+            explanation.Code,
+            explanation.Args));
     }
 
     // Without a cursor, the newest lines. Before pages back from the first line a page showed; after catches up from
@@ -204,10 +204,10 @@ public static class MachineEndpoints
         IOptions<MachineOptions> options,
         CancellationToken cancellationToken)
     {
-        string? Refusal(Machine machine) => machine.State != MachineState.Pending
-            ? $"The machine is {machine.State}."
+        ServerMessage? Refusal(Machine machine) => machine.State != MachineState.Pending
+            ? ServerMessages.MachineInState.With("state", StateName(machine.State))
             : options.Value.RequireWebApproval && machine.SignedInByUserId is null
-                ? "Nobody has signed in at this machine yet."
+                ? ServerMessages.MachineNobodySignedIn.With()
                 : null;
 
         if (request?.ExpectedSequenceId is not { } expected)
@@ -241,7 +241,7 @@ public static class MachineEndpoints
 
         if (Refusal(machine) is { } reason)
         {
-            return TypedResults.Problem(title: reason, statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(reason, StatusCodes.Status409Conflict);
         }
 
         Deployment run;
@@ -265,7 +265,7 @@ public static class MachineEndpoints
 
             if (decision.Outcome != DeploymentOutcome.Accepted)
             {
-                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
+                return DecisionProblem(decision, StatusCodes.Status409Conflict);
             }
 
             run = decision.Deployment!;
@@ -288,9 +288,7 @@ public static class MachineEndpoints
             }
             catch (DbUpdateConcurrencyException)
             {
-                return TypedResults.Problem(
-                    title: "The machine changed while this decision was made. Look at it again before deciding.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ServerProblems.Problem(ServerMessages.MachineChangedWhileDeciding.With(), StatusCodes.Status409Conflict);
             }
         }
         finally
@@ -357,7 +355,7 @@ public static class MachineEndpoints
             AuditActions.MachineRejected,
             machine => machine.State is MachineState.Pending or MachineState.Approved or MachineState.Deploying or MachineState.Failed
                 ? null
-                : $"The machine is {machine.State}.",
+                : ServerMessages.MachineInState.With("state", StateName(machine.State)),
             (machine, active, _) =>
             {
                 // The generation bump kills every token already issued, so a rejected machine stops
@@ -412,7 +410,7 @@ public static class MachineEndpoints
                 database,
                 live,
                 loggerFactory,
-                "The machine changed while the sequence was assigned. Look at it again before assigning.",
+                ServerMessages.MachineChangedWhileAssigning.With(),
                 cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -451,7 +449,7 @@ public static class MachineEndpoints
             database,
             live,
             loggerFactory,
-            "The run changed while it was being stopped. Look at the machine again.",
+            ServerMessages.MachineRunChangedWhileStopping.With(),
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -462,17 +460,19 @@ public static class MachineEndpoints
         DdtDbContext database,
         LiveNotifier live,
         ILoggerFactory loggerFactory,
-        string conflict,
+        ServerMessage conflict,
         CancellationToken cancellationToken)
     {
         switch (decision.Outcome)
         {
             case DeploymentOutcome.NotFound:
-                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
+                return DecisionProblem(decision, StatusCodes.Status404NotFound);
             case DeploymentOutcome.Conflict:
-                return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
+                return DecisionProblem(decision, StatusCodes.Status409Conflict);
             case DeploymentOutcome.Invalid:
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+                return decision.Message is { } invalid
+                    ? ServerProblems.Validation(decision.Field!, invalid)
+                    : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
         }
 
         Deployment deployment = decision.Deployment!;
@@ -484,7 +484,7 @@ public static class MachineEndpoints
         }
         catch (DbUpdateConcurrencyException)
         {
-            return TypedResults.Problem(title: conflict, statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(conflict, StatusCodes.Status409Conflict);
         }
 
         DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(MachineEndpoints)), deployment, before);
@@ -514,9 +514,7 @@ public static class MachineEndpoints
         // registers as a new machine at its next netboot.
         if (!IsStray(machine) && machine.State != MachineState.Rejected)
         {
-            return TypedResults.Problem(
-                title: "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.MachineCannotBeRemoved.With(), StatusCodes.Status409Conflict);
         }
 
         return await RemoveStraysAsync([machine], user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
@@ -581,9 +579,7 @@ public static class MachineEndpoints
         }
         catch (DbUpdateConcurrencyException)
         {
-            return TypedResults.Problem(
-                title: "A machine changed while it was being removed. Look at it again before removing it.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.MachineChangedWhileRemoving.With(), StatusCodes.Status409Conflict);
         }
 
         if (machines.Count > 0)
@@ -604,7 +600,7 @@ public static class MachineEndpoints
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory,
         string action,
-        Func<Machine, string?> refusal,
+        Func<Machine, ServerMessage?> refusal,
         Func<Machine, Deployment?, DateTimeOffset, Task> apply,
         CancellationToken cancellationToken)
     {
@@ -617,7 +613,7 @@ public static class MachineEndpoints
 
         if (refusal(machine) is { } reason)
         {
-            return TypedResults.Problem(title: reason, statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(reason, StatusCodes.Status409Conflict);
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
@@ -648,9 +644,7 @@ public static class MachineEndpoints
         }
         catch (DbUpdateConcurrencyException)
         {
-            return TypedResults.Problem(
-                title: "The machine changed while this decision was made. Look at it again before deciding.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.MachineChangedWhileDeciding.With(), StatusCodes.Status409Conflict);
         }
 
         if (active is not null)
@@ -665,4 +659,22 @@ public static class MachineEndpoints
 
         return TypedResults.Ok(MachineSummaries.From(machine, shown));
     }
+
+    private static ServerMessage StateName(MachineState state) => (state switch
+    {
+        MachineState.Pending => ServerMessages.MachineStatePending,
+        MachineState.Approved => ServerMessages.MachineStateApproved,
+        MachineState.Deploying => ServerMessages.MachineStateDeploying,
+        MachineState.Done => ServerMessages.MachineStateDone,
+        MachineState.Failed => ServerMessages.MachineStateFailed,
+        MachineState.Rejected => ServerMessages.MachineStateRejected,
+        MachineState.Retired => ServerMessages.MachineStateRetired,
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
+    }).With();
+
+    // Every decision the web can get has a message; one without keeps its English alone.
+    private static ProblemHttpResult DecisionProblem(DeploymentDecision decision, int statusCode) =>
+        decision.Message is { } message
+            ? ServerProblems.Problem(message, statusCode)
+            : TypedResults.Problem(title: decision.Reason, statusCode: statusCode);
 }

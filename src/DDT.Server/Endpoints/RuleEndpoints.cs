@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security.Claims;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -147,7 +148,7 @@ public static class RuleEndpoints
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string? mac = null;
         string? manufacturer = null;
         string? model = null;
@@ -159,19 +160,19 @@ public static class RuleEndpoints
 
             if (mac is null)
             {
-                problems["mac"] = ["Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03."];
+                problems.Add("mac", ServerMessages.MacEnterFull.With());
             }
         }
         else if (request.Kind == AssignmentRuleKind.Model)
         {
             if (HardwareModels.Problem(request.Manufacturer, required: false, wildcard: false) is { } manufacturerProblem)
             {
-                problems["manufacturer"] = [manufacturerProblem];
+                problems.Add("manufacturer", manufacturerProblem);
             }
 
             if (HardwareModels.Problem(request.Model, required: true, wildcard: true) is { } modelProblem)
             {
-                problems["model"] = [modelProblem];
+                problems.Add("model", modelProblem);
             }
 
             manufacturer = HardwareModels.Clean(request.Manufacturer);
@@ -179,12 +180,12 @@ public static class RuleEndpoints
         }
         else
         {
-            problems["kind"] = ["Choose a rule by MAC address or by model."];
+            problems.Add("kind", ServerMessages.RuleChooseKind.With());
         }
 
         if (description?.Length > AssignmentRuleKeys.MaxDescriptionLength)
         {
-            problems["description"] = [$"The description can have at most {AssignmentRuleKeys.MaxDescriptionLength} characters."];
+            problems.Add("description", ServerMessages.DescriptionLength.With("max", AssignmentRuleKeys.MaxDescriptionLength));
         }
 
         TaskSequence? sequence = await database.TaskSequences
@@ -194,12 +195,12 @@ public static class RuleEndpoints
 
         if (sequence is null)
         {
-            problems["sequenceId"] = ["The sequence no longer exists. Choose another one."];
+            problems.Add("sequenceId", ServerMessages.RuleSequenceGone.With());
         }
 
         if (problems.Count > 0)
         {
-            return TypedResults.ValidationProblem(problems);
+            return problems.ToResult();
         }
 
         string matchKey = AssignmentRuleKeys.MatchKey(request.Kind, mac, manufacturer, model);
@@ -270,10 +271,10 @@ public static class RuleEndpoints
 
         string sequence = (await AssignmentRuleViews.SequenceNamesAsync(database, cancellationToken).ConfigureAwait(false))[existing.TaskSequenceId];
 
-        return TypedResults.Problem(
-            title: $"There is a rule for {AssignmentRuleKeys.Describe(existing)} already. It chooses {sequence}; change that rule instead.",
-            statusCode: StatusCodes.Status409Conflict,
-            extensions: new Dictionary<string, object?> { ["ruleId"] = existing.Id });
+        return ServerProblems.Problem(
+            ServerMessages.RuleExists.With("rule", AssignmentRuleKeys.DescribeMessage(existing), "sequence", sequence),
+            StatusCodes.Status409Conflict,
+            new Dictionary<string, object?> { ["ruleId"] = existing.Id });
     }
 
     private static AuditEvent Audit(

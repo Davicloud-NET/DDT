@@ -4,6 +4,7 @@
 
 using System.Security.Claims;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Messages;
 using DDT.Server.Data;
 using DDT.Server.Security;
 using DDT.Server.Users;
@@ -86,10 +87,7 @@ public static class TwoFactorEndpoints
 
         if (!valid)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                ["code"] = ["That code is not valid. Check the time on the device generating it."],
-            });
+            return ServerProblems.Validation("code", ServerMessages.AccountCodeNotValidCheckTime.With());
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, enabled: true).ConfigureAwait(false);
@@ -135,10 +133,7 @@ public static class TwoFactorEndpoints
 
         if (!valid)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                ["code"] = ["That code is not valid."],
-            });
+            return ServerProblems.Validation("code", ServerMessages.AccountCodeNotValid.With());
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, enabled: false).ConfigureAwait(false);

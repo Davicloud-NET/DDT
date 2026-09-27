@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.BootImage;
@@ -72,33 +73,33 @@ public static class PackageEndpoints
             return TypedResults.NotFound();
         }
 
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string name = request.Name?.Trim() ?? "";
         string? description = request.Description?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim();
 
         if (name.Length is 0 or > PackageLimits.MaxNameLength || name.Any(char.IsControl))
         {
-            problems["name"] = [$"The name must have 1 to {PackageLimits.MaxNameLength} characters and no control characters."];
+            problems.Add("name", ServerMessages.NameLength.With("max", PackageLimits.MaxNameLength));
         }
 
         if (description?.Length > PackageLimits.MaxDescriptionLength)
         {
-            problems["description"] = [$"The description can have at most {PackageLimits.MaxDescriptionLength} characters."];
+            problems.Add("description", ServerMessages.DescriptionLength.With("max", PackageLimits.MaxDescriptionLength));
         }
 
         if (PackageTargets.Problem(package.Kind, request.Targets) is { } targetProblem)
         {
-            problems["targets"] = [targetProblem];
+            problems.Add("targets", targetProblem);
         }
 
         if (request.BootImage == true && package.Kind != PackageKind.Drivers)
         {
-            problems["bootImage"] = ["Only a driver package can go into the Windows PE boot image."];
+            problems.Add("bootImage", ServerMessages.PackageBootImageDriversOnly.With());
         }
 
         if (problems.Count > 0)
         {
-            return TypedResults.ValidationProblem(problems);
+            return problems.ToResult();
         }
 
         IReadOnlyList<HardwareModel> targets = PackageTargets.Clean(request.Targets);
@@ -172,9 +173,7 @@ public static class PackageEndpoints
 
             if (inUse)
             {
-                return TypedResults.Problem(
-                    title: "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ServerProblems.Problem(ServerMessages.PackageInUse.With(), StatusCodes.Status409Conflict);
             }
 
             wasInBootImage = package.BootImage;

@@ -4,6 +4,7 @@
 
 using System.Security.Claims;
 using DDT.Contracts;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -303,11 +304,7 @@ public static class SequenceEndpoints
 
         if (rules > 0)
         {
-            return TypedResults.Problem(
-                title: rules == 1
-                    ? "A rule chooses this sequence. Delete the rule or let it choose another sequence, then delete this one."
-                    : $"{rules} rules choose this sequence. Delete them or let them choose another sequence, then delete this one.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.SequenceChosenByRules.With("count", rules), StatusCodes.Status409Conflict);
         }
 
         database.TaskSequences.Remove(sequence);
@@ -326,9 +323,7 @@ public static class SequenceEndpoints
         // A save raises the revision, and a rule created meanwhile holds the sequence by its foreign key.
         catch (DbUpdateException)
         {
-            return TypedResults.Problem(
-                title: "The sequence changed, or a rule chose it, while it was being deleted. Look at it again before deleting it.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ServerProblems.Problem(ServerMessages.SequenceChangedWhileDeleting.With(), StatusCodes.Status409Conflict);
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, null, user.Identity?.Name));
@@ -343,24 +338,24 @@ public static class SequenceEndpoints
         string? description,
         CancellationToken cancellationToken)
     {
-        Dictionary<string, string[]> problems = [];
+        FieldProblems problems = new();
         string trimmed = name?.Trim() ?? "";
 
         if (trimmed.Length is 0 or > SequenceLimits.MaxNameLength || trimmed.Any(char.IsControl))
         {
-            problems["name"] = [$"The name must have 1 to {SequenceLimits.MaxNameLength} characters and no control characters."];
+            problems.Add("name", ServerMessages.NameLength.With("max", SequenceLimits.MaxNameLength));
         }
         else if (await NameTakenAsync(database, id, trimmed, cancellationToken).ConfigureAwait(false))
         {
-            problems["name"] = [$"Another sequence is already called {trimmed}. Choose another name."];
+            problems.Add("name", ServerMessages.SequenceNameTaken.With("name", trimmed));
         }
 
         if (Description(description)?.Length > SequenceLimits.MaxDescriptionLength)
         {
-            problems["description"] = [$"The description can have at most {SequenceLimits.MaxDescriptionLength} characters."];
+            problems.Add("description", ServerMessages.DescriptionLength.With("max", SequenceLimits.MaxDescriptionLength));
         }
 
-        return problems.Count > 0 ? TypedResults.ValidationProblem(problems) : null;
+        return problems.Count > 0 ? problems.ToResult() : null;
     }
 
     private static Task<bool> NameTakenAsync(DdtDbContext database, Guid? id, string name, CancellationToken cancellationToken)
@@ -388,10 +383,7 @@ public static class SequenceEndpoints
                 throw;
             }
 
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["name"] = [$"Another sequence is already called {sequence.Name}. Choose another name."],
-            });
+            return ServerProblems.Validation("name", ServerMessages.SequenceNameTaken.With("name", sequence.Name));
         }
     }
 

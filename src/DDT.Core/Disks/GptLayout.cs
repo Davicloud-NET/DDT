@@ -5,6 +5,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
+using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
@@ -18,14 +19,11 @@ public sealed class GptLayout
     // Where partitioning tools start partitions, and where DDT starts the ones it adds.
     public const long AlignmentSectors = 1024 * 1024 / SectorSize;
 
-    public const string NoTableMessage =
-        "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image.";
+    public static readonly string NoTableMessage = ServerMessages.GptNoTable.With().Text;
 
-    public const string FourKilobyteSectorsMessage =
-        "The disk image is made for disks with 4 KiB sectors. DDT writes images for disks with 512-byte sectors, which is what " +
-        "distributions publish.";
+    public static readonly string FourKilobyteSectorsMessage = ServerMessages.GptFourKilobyteSectors.With().Text;
 
-    public const string DamagedMessage = "The GUID partition table of the disk image is damaged.";
+    public static readonly string DamagedMessage = ServerMessages.GptDamaged.With().Text;
 
     private const ulong Signature = 0x5452415020494645;
     private const uint Revision = 0x00010000;
@@ -131,7 +129,7 @@ public sealed class GptLayout
     {
         if (firstSectors.Length < 2 * SectorSize || !HasSignatureAt(firstSectors, SectorSize))
         {
-            throw new InvalidGptException(SectorSizeOf(firstSectors) == 4096 ? FourKilobyteSectorsMessage : NoTableMessage);
+            throw new InvalidGptException((SectorSizeOf(firstSectors) == 4096 ? ServerMessages.GptFourKilobyteSectors : ServerMessages.GptNoTable).With());
         }
 
         ReadOnlySpan<byte> header = firstSectors.Slice(SectorSize, SectorSize);
@@ -166,12 +164,12 @@ public sealed class GptLayout
 
         if (Crc32.Append(0, entries.AsSpan(0, count * size)) != BinaryPrimitives.ReadUInt32LittleEndian(header[88..]))
         {
-            throw new InvalidGptException(DamagedMessage);
+            throw new InvalidGptException(ServerMessages.GptDamaged.With());
         }
 
         if (entriesLba + entrySectors > firstUsable || firstUsable > lastUsable + 1 || lastUsable >= backup)
         {
-            throw new InvalidGptException($"{DamagedMessage} Its usable range does not fit its own headers.");
+            throw new InvalidGptException(ServerMessages.GptDamagedUsableRange.With());
         }
 
         GptLayout layout = new(new Guid(header.Slice(56, 16)), firstUsable, lastUsable, backup, entriesLba, count, size, entries);
@@ -190,7 +188,7 @@ public sealed class GptLayout
 
         if (read < first.Length)
         {
-            throw new InvalidGptException(NoTableMessage);
+            throw new InvalidGptException(ServerMessages.GptNoTable.With());
         }
 
         byte[] head = new byte[HeadBytesFor(first)];
@@ -198,7 +196,7 @@ public sealed class GptLayout
 
         if (await disk.ReadAtLeastAsync(head, head.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) < head.Length)
         {
-            throw new InvalidGptException($"{DamagedMessage} The file ends inside the partition table.");
+            throw new InvalidGptException(ServerMessages.GptDamagedEndsInTable.With());
         }
 
         return Read(head);
@@ -343,7 +341,7 @@ public sealed class GptLayout
 
         if (BinaryPrimitives.ReadUInt32LittleEndian(header[8..]) != Revision || headerSize is < HeaderSize or > SectorSize)
         {
-            throw new InvalidGptException($"{DamagedMessage} Its header has a revision or size DDT does not know.");
+            throw new InvalidGptException(ServerMessages.GptDamagedHeader.With());
         }
 
         Span<byte> copy = stackalloc byte[(int)headerSize];
@@ -353,7 +351,7 @@ public sealed class GptLayout
         if (Crc32.Append(0, copy) != BinaryPrimitives.ReadUInt32LittleEndian(header[16..])
             || BinaryPrimitives.ReadUInt64LittleEndian(header[24..]) != 1)
         {
-            throw new InvalidGptException(DamagedMessage);
+            throw new InvalidGptException(ServerMessages.GptDamaged.With());
         }
 
         ulong entriesLba = BinaryPrimitives.ReadUInt64LittleEndian(header[72..]);
@@ -366,7 +364,7 @@ public sealed class GptLayout
             || size % 8 != 0
             || (long)count * size > MaxEntryBytes)
         {
-            throw new InvalidGptException($"{DamagedMessage} Its partition entries are laid out in a way DDT does not read.");
+            throw new InvalidGptException(ServerMessages.GptDamagedEntries.With());
         }
     }
 
@@ -380,12 +378,12 @@ public sealed class GptLayout
                 || partition.FirstLba < layout.FirstUsableLba
                 || partition.LastLba > layout.LastUsableLba)
             {
-                throw new InvalidGptException($"{DamagedMessage} Partition {partition.Number} lies outside the usable sectors.");
+                throw new InvalidGptException(ServerMessages.GptDamagedPartitionOutside.With("number", partition.Number));
             }
 
             if (previous is not null && partition.FirstLba <= previous.LastLba)
             {
-                throw new InvalidGptException($"{DamagedMessage} Partitions {previous.Number} and {partition.Number} overlap.");
+                throw new InvalidGptException(ServerMessages.GptDamagedOverlap.With("first", previous.Number, "second", partition.Number));
             }
 
             previous = partition;
@@ -429,7 +427,7 @@ public sealed class GptLayout
     {
         ulong value = BinaryPrimitives.ReadUInt64LittleEndian(header[offset..]);
 
-        return value > long.MaxValue / SectorSize ? throw new InvalidGptException(DamagedMessage) : (long)value;
+        return value > long.MaxValue / SectorSize ? throw new InvalidGptException(ServerMessages.GptDamaged.With()) : (long)value;
     }
 
     private static bool HasSignatureAt(ReadOnlySpan<byte> head, int offset) =>

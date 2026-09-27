@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -153,45 +154,45 @@ public sealed partial class DirectorySignInService(
         switch (lookup.Status)
         {
             case LdapLookupStatus.NotFound:
-                return new DirectoryCheck(false, null, null, [], [], null,
-                    $"No entry under {_options.BaseDn} matches {userName} through DDT:Ldap:UserFilter, so a sign-in with it is refused.");
+                return NotFound(ServerMessages.DirectoryNoEntry.With("baseDn", _options.BaseDn, "name", userName));
             case LdapLookupStatus.Ambiguous:
-                return new DirectoryCheck(false, null, null, [], [], null,
-                    $"More than one entry under {_options.BaseDn} matches {userName} through DDT:Ldap:UserFilter, so a sign-in with it is refused.");
+                return NotFound(ServerMessages.DirectoryManyEntries.With("baseDn", _options.BaseDn, "name", userName));
         }
 
         GroupRoles mapped = GroupRoles.From(lookup.GroupDns, _options.GroupRoleMap);
-        DirectoryCheck Found(string? role, string message) => new(
+        DirectoryCheck Found(string? role, ServerMessage message) => new(
             true,
             lookup.DistinguishedName,
             lookup.DisplayName,
             lookup.GroupDns,
             [.. mapped.Matches.Select(match => new DirectoryGroupMatch(match.Group, match.Role))],
             role,
-            message);
+            message.Text,
+            message.Code,
+            message.Args);
 
         DdtUser? account = await userManager.FindByNameAsync(userName).ConfigureAwait(false);
 
         if (account?.Source == AccountSource.Local)
         {
-            return Found(null, $"{userName} is a local account in DDT, so a sign-in with this name checks its DDT password and never asks the directory.");
+            return Found(null, ServerMessages.DirectoryLocalAccount.With("name", userName));
         }
 
         if (account?.Source == AccountSource.External)
         {
-            return Found(null, $"{userName} is a single sign-on account in DDT, so a sign-in with this name and a password is refused.");
+            return Found(null, ServerMessages.DirectorySingleSignOnAccount.With("name", userName));
         }
 
         if (lookup.ImmutableId is null)
         {
-            return Found(null, $"The entry has no {_options.ImmutableIdAttribute} value to key the account on, so a sign-in is refused.");
+            return Found(null, ServerMessages.DirectoryNoImmutableId.With("attribute", _options.ImmutableIdAttribute));
         }
 
         DdtUser? known = await KnownAsync(lookup.ImmutableId, account).ConfigureAwait(false);
 
         if (known?.IsDisabled == true)
         {
-            return Found(null, $"The DDT account {known.UserName} is disabled, so a sign-in is refused.");
+            return Found(null, ServerMessages.DirectoryAccountDisabled.With("name", known.UserName ?? ""));
         }
 
         if (!mapped.Decides)
@@ -200,28 +201,41 @@ public sealed partial class DirectorySignInService(
 
             return Found(held, (known, held) switch
             {
-                (null, _) => "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role.",
-                (_, null) => "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing.",
-                _ => $"DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {held}.",
+                (null, _) => ServerMessages.DirectoryNoMapNewAccount.With(),
+                (_, null) => ServerMessages.DirectoryNoMapNoRole.With(),
+                _ => ServerMessages.DirectoryNoMapRole.With("role", RoleName(held)),
             });
         }
 
         if (mapped.Role is null)
         {
-            return Found(null, $"{userName} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused.");
+            return Found(null, ServerMessages.DirectoryNoMappedGroup.With("name", userName));
         }
 
         GroupRole best = mapped.Matches.First(match => match.Role == mapped.Role);
-        string reason = mapped.Matches.Count == 1
-            ? $"{userName} gets {mapped.Role} from {DistinguishedNames.FirstValue(best.Group)}."
-            : $"{userName} is in {mapped.Matches.Count} mapped groups and gets the highest role they give, {mapped.Role} from {DistinguishedNames.FirstValue(best.Group)}.";
+        string group = DistinguishedNames.FirstValue(best.Group);
+        ServerMessage reason = mapped.Matches.Count == 1
+            ? ServerMessages.DirectoryRoleFromGroup.With("name", userName, "role", RoleName(mapped.Role), "group", group)
+            : ServerMessages.DirectoryRoleFromGroups.With("name", userName, "count", mapped.Matches.Count, "role", RoleName(mapped.Role), "group", group);
 
         return Found(
             mapped.Role,
             known is not null && await userManager.IsLockedOutAsync(known).ConfigureAwait(false)
-                ? $"{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
+                ? ServerMessages.DirectoryLockedOut.With("reason", reason)
                 : reason);
     }
+
+    // A role DDT knows as a message, so the web names it as its role pages do; any other as it is.
+    private static object RoleName(string role) => role switch
+    {
+        DdtRoleNames.Administrator => ServerMessages.RoleAdministrator.With(),
+        DdtRoleNames.Operator => ServerMessages.RoleOperator.With(),
+        DdtRoleNames.Viewer => ServerMessages.RoleViewer.With(),
+        _ => role,
+    };
+
+    private static DirectoryCheck NotFound(ServerMessage message) =>
+        new(false, null, null, [], [], null, message.Text, message.Code, message.Args);
 
     // Keyed on the directory's immutable identifier, never on the user name or the distinguished
     // name: both of those change when someone is renamed or moved between organisational units.

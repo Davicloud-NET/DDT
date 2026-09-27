@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
+
 namespace DDT.Core.Wim;
 
 // The message is a sentence for the operator saying why the file was refused.
@@ -20,4 +22,19 @@ public sealed class InvalidWimException : Exception
         : base(message, innerException)
     {
     }
+
+    public InvalidWimException(ServerMessage reason)
+        : base(reason?.Text)
+    {
+        Reason = reason;
+    }
+
+    public InvalidWimException(ServerMessage reason, Exception innerException)
+        : base(reason?.Text, innerException)
+    {
+        Reason = reason;
+    }
+
+    // The message as a code, for the web to say in the person's language.
+    public ServerMessage? Reason { get; }
 }

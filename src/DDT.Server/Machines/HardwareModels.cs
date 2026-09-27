@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text;
+using DDT.Contracts.Messages;
 
 namespace DDT.Server.Machines;
 
@@ -53,35 +54,34 @@ public static class HardwareModels
 
     // What is wrong with a manufacturer or model an administrator entered to match machines by, or null. Only a model
     // can end in the wildcard.
-    public static string? Problem(string? value, bool required, bool wildcard)
+    public static ServerMessage? Problem(string? value, bool required, bool wildcard)
     {
         string? cleaned = Clean(value);
 
         if (cleaned is null)
         {
-            return required ? "Enter the model as the machine reports it." : null;
+            return required ? ServerMessages.ModelEnter.With() : null;
         }
 
         if (cleaned.Length > MaxLength || cleaned.Any(char.IsControl))
         {
-            return $"A name here has at most {MaxLength} characters and no control characters.";
+            return ServerMessages.ModelNameLength.With("max", MaxLength);
         }
 
         int position = cleaned.IndexOf(Wildcard, StringComparison.Ordinal);
+        string shown = new(Wildcard, 1);
 
         if (position >= 0 && (!wildcard || position != cleaned.Length - 1))
         {
-            return wildcard ? $"Only the last character can be {Wildcard}." : $"A manufacturer is matched whole, without {Wildcard}.";
+            return (wildcard ? ServerMessages.ModelWildcardLast : ServerMessages.ModelManufacturerWhole).With("wildcard", shown);
         }
 
         if (position >= 0 && position < MinPrefixLength)
         {
-            return $"Put at least {MinPrefixLength} characters before {Wildcard}, so it matches only one family of models.";
+            return ServerMessages.ModelWildcardPrefix.With("min", MinPrefixLength, "wildcard", shown);
         }
 
-        return IsPlaceholder(cleaned.TrimEnd(Wildcard))
-            ? $"{cleaned} is what firmware reports when the field was never filled in. It says nothing about the machine."
-            : null;
+        return IsPlaceholder(cleaned.TrimEnd(Wildcard)) ? ServerMessages.ModelPlaceholder.With("value", cleaned) : null;
     }
 
     // A null pattern matches anything. A value that is unknown or a placeholder matches no pattern.

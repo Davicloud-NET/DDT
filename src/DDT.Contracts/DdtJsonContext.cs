@@ -10,6 +10,7 @@ using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
@@ -19,7 +20,8 @@ using DDT.Contracts.Users;
 
 namespace DDT.Contracts;
 
-// Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties.
+// Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties. A message's
+// values are objects, so the types they can be are listed too, for the problem details that carry a message's code.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,
@@ -92,4 +94,9 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<DirectoryGroup>))]
 [JsonSerializable(typeof(DirectoryCheckRequest))]
 [JsonSerializable(typeof(DirectoryCheck))]
+[JsonSerializable(typeof(ServerMessage))]
+[JsonSerializable(typeof(Dictionary<string, object>))]
+[JsonSerializable(typeof(Dictionary<string, ServerMessage[]>))]
+[JsonSerializable(typeof(int))]
+[JsonSerializable(typeof(long))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

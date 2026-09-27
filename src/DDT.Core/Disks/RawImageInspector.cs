@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
+using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
@@ -34,9 +34,7 @@ public static class RawImageInspector
 
         if (end > length)
         {
-            throw new InvalidGptException(string.Create(
-                CultureInfo.InvariantCulture,
-                $"The disk image holds {length} bytes, but its partitions reach to byte {end}. The file is incomplete."));
+            throw new InvalidGptException(ServerMessages.GptIncomplete.With("length", length, "end", end));
         }
 
         GptPartition? system = table.Partitions.FirstOrDefault(partition => partition.Type == GptPartitionTypes.EfiSystem);
@@ -124,7 +122,7 @@ public static class RawImageInspector
 
         if (image.ReadAtLeast(head, head.Length, throwOnEndOfStream: false) < head.Length)
         {
-            throw new InvalidGptException(GptLayout.NoTableMessage);
+            throw new InvalidGptException(ServerMessages.GptNoTable.With());
         }
 
         return head;

@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using DDT.Contracts.Messages;
 using DDT.Core.Disks;
 using Microsoft.Extensions.Logging;
 using ZstdSharp;
@@ -20,12 +21,9 @@ namespace DDT.Server.Images;
 // import that stops leaves them for the next attempt or the sweeper.
 public sealed partial class RawImageImporter(ImageStore store, ConversionTools tools, ILogger<RawImageImporter> logger)
 {
-    public const string NotAnImageMessage =
-        "This file is neither a WIM image nor a disk image with a GUID partition table. Upload a WIM or ESD file, or a disk " +
-        "image such as a distribution's cloud image.";
+    public static readonly string NotAnImageMessage = ServerMessages.UploadNotAnImage.With().Text;
 
-    public const string OutOfSpaceMessage =
-        "The store volume ran out of space while the image was converted. Free some space and complete the upload again.";
+    public static readonly string OutOfSpaceMessage = ServerMessages.UploadConversionOutOfSpace.With().Text;
 
     private const int BufferBytes = 4 * 1024 * 1024;
     private const int HeadBytes = 512;
@@ -109,7 +107,9 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
                 catch (InvalidGptException exception)
                 {
                     return new RawImport(
-                        format == DiskImageFormat.Raw && exception.Message == GptLayout.NoTableMessage ? NotAnImageMessage : exception.Message);
+                        format == DiskImageFormat.Raw && exception.Reason?.Code == ServerMessages.GptNoTable.Code
+                            ? ServerMessages.UploadNotAnImage.With()
+                            : exception.Reason ?? ServerMessages.GptDamaged.With());
                 }
             }
 
@@ -122,15 +122,15 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
         catch (Exception exception) when (IsDiskFull(exception))
         {
-            return new RawImport(OutOfSpaceMessage, Retryable: true);
+            return new RawImport(ServerMessages.UploadConversionOutOfSpace.With(), Retryable: true);
         }
         catch (ConversionFailedException exception)
         {
-            return new RawImport($"The image could not be converted. {exception.Message}", Retryable: true);
+            return new RawImport(ServerMessages.UploadConversionFailed.With("detail", exception.Message), Retryable: true);
         }
         catch (Exception exception) when (exception is InvalidDataException or ZstdException or EndOfStreamException)
         {
-            return new RawImport($"The compressed file is damaged: {exception.Message}");
+            return new RawImport(ServerMessages.UploadCompressedDamaged.With("detail", exception.Message));
         }
         finally
         {
@@ -143,11 +143,10 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
     }
 
-    private static string? Unsupported(DiskImageFormat format) => format switch
+    private static ServerMessage? Unsupported(DiskImageFormat format) => format switch
     {
         DiskImageFormat.Vhdx or DiskImageFormat.Vmdk or DiskImageFormat.Vdi =>
-            $"This is a {format.ToString().ToUpperInvariant()} disk image, which DDT does not read. Convert it with " +
-            "qemu-img convert -O raw <file> disk.raw and upload disk.raw, or upload the distribution's raw or qcow2 image.",
+            ServerMessages.UploadUnreadableFormat.With("format", format.ToString().ToUpperInvariant()),
         _ => null,
     };
 
@@ -178,10 +177,7 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             case DiskImageFormat.Xz:
                 if (tools.Find(ConversionTools.Xz) is not { } xz)
                 {
-                    return new RawImport(
-                        "This file is compressed with xz, which is not installed on the server. Install xz there and complete the " +
-                        "upload again, or unpack the file with xz -d and upload the disk image it holds.",
-                        Retryable: true);
+                    return new RawImport(ServerMessages.UploadNoXz.With(), Retryable: true);
                 }
 
                 LogConverting(uploadId, format, xz);
@@ -197,10 +193,7 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
                 if (tools.Find(ConversionTools.QemuImg) is not { } qemuImg)
                 {
-                    return new RawImport(
-                        "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete " +
-                        "the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw.",
-                        Retryable: true);
+                    return new RawImport(ServerMessages.UploadNoQemuImg.With(), Retryable: true);
                 }
 
                 LogConverting(uploadId, format, qemuImg);
@@ -216,11 +209,11 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
     // qemu-img would read a backing file or an external data file from the server's own disk, wherever the upload's
     // header points, into the image.
-    private static string? Qcow2Problem(ReadOnlySpan<byte> head)
+    private static ServerMessage? Qcow2Problem(ReadOnlySpan<byte> head)
     {
         if (head.Length < 104)
         {
-            return "The qcow2 image is too short to be one.";
+            return ServerMessages.UploadQcow2TooShort.With();
         }
 
         uint version = BinaryPrimitives.ReadUInt32BigEndian(head[4..]);
@@ -230,18 +223,17 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
         if (backingFile != 0)
         {
-            return "The qcow2 image depends on a backing file. Make a standalone image with qemu-img convert -O qcow2 <file> " +
-                "standalone.qcow2 and upload that.";
+            return ServerMessages.UploadQcow2Backing.With();
         }
 
         if (encryption != 0)
         {
-            return "The qcow2 image is encrypted. Upload an image that is not.";
+            return ServerMessages.UploadQcow2Encrypted.With();
         }
 
         // Bit 2: the data lives in an external file.
         return (incompatible & 0x4) != 0
-            ? "The qcow2 image keeps its data in an external file. Convert it with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+            ? ServerMessages.UploadQcow2ExternalData.With()
             : null;
     }
 

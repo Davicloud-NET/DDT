@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Security.Claims;
 using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.Images;
@@ -54,26 +55,17 @@ public static class ImageUploadEndpoints
             || request.FileName.Length > ImageUploadLimits.MaxFileNameLength
             || request.FileName.Any(char.IsControl))
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["fileName"] = [$"The file name must have 1 to {ImageUploadLimits.MaxFileNameLength} characters and no control characters."],
-            });
+            return ServerProblems.Validation("fileName", ServerMessages.UploadFileName.With("max", ImageUploadLimits.MaxFileNameLength));
         }
 
         if (!Enum.IsDefined(request.Kind))
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["kind"] = ["Choose an image, a driver package or a files package."],
-            });
+            return ServerProblems.Validation("kind", ServerMessages.UploadKind.With());
         }
 
         if (request.Length <= 0 || request.Length > store.Volume().TotalSize)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["length"] = ["The file must not be empty and must fit on the server's store volume."],
-            });
+            return ServerProblems.Validation("length", ServerMessages.UploadLength.With());
         }
 
         UploadCreation creation = await sessions
@@ -82,10 +74,9 @@ public static class ImageUploadEndpoints
 
         if (creation.Session is not { } session)
         {
-            return TypedResults.Problem(
-                title: $"The image store needs {Gigabytes(creation.RequiredBytes)} free for this upload but has {Gigabytes(creation.AvailableBytes)}. "
-                    + "Free space on the server's store volume or discard unfinished uploads, then try again.",
-                statusCode: StatusCodes.Status507InsufficientStorage);
+            return ServerProblems.Problem(
+                ServerMessages.UploadNoSpace.With("required", Gigabytes(creation.RequiredBytes), "available", Gigabytes(creation.AvailableBytes)),
+                StatusCodes.Status507InsufficientStorage);
         }
 
         return creation.Created
@@ -106,23 +97,17 @@ public static class ImageUploadEndpoints
 
         if (request.ContentLength is not { } length)
         {
-            return TypedResults.Problem(
-                title: "Send every chunk with a Content-Length header.",
-                statusCode: StatusCodes.Status411LengthRequired);
+            return ServerProblems.Problem(ServerMessages.UploadContentLength.With(), StatusCodes.Status411LengthRequired);
         }
 
         if (length is <= 0 or > ImageUploadLimits.ChunkBytes)
         {
-            return TypedResults.Problem(
-                title: $"A chunk holds 1 to {ImageUploadLimits.ChunkBytes} bytes. Send the file in smaller chunks.",
-                statusCode: StatusCodes.Status413PayloadTooLarge);
+            return ServerProblems.Problem(ServerMessages.UploadChunkSize.With("max", ImageUploadLimits.ChunkBytes), StatusCodes.Status413PayloadTooLarge);
         }
 
         if (!long.TryParse(request.Headers[UploadOffsetHeader], NumberStyles.None, CultureInfo.InvariantCulture, out long offset))
         {
-            return TypedResults.Problem(
-                title: "Send the position of the chunk in the file in the Upload-Offset header.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return ServerProblems.Problem(ServerMessages.UploadOffsetHeader.With(), StatusCodes.Status400BadRequest);
         }
 
         UploadAppend result = await sessions.AppendAsync(id, offset, length, request.Body, cancellationToken).ConfigureAwait(false);
@@ -137,24 +122,14 @@ public static class ImageUploadEndpoints
         return result.Status switch
         {
             UploadAppendStatus.Appended => TypedResults.NoContent(),
-            UploadAppendStatus.BeyondLength => Refusal(
-                "This chunk ends past the end of the file. Upload the file this session was created for.",
-                StatusCodes.Status400BadRequest),
-            UploadAppendStatus.Completed => Refusal("This upload is complete. Nothing more needs to be sent.", StatusCodes.Status409Conflict),
-            UploadAppendStatus.Busy => RetryLater(context, "Another request is using this upload. Wait a few seconds, then send the chunk again."),
-            UploadAppendStatus.OffsetMismatch => Refusal(
-                "The server holds a different part of this file. Continue from the offset in the Upload-Offset header.",
-                StatusCodes.Status409Conflict),
-            UploadAppendStatus.Restarted => Refusal(
-                "The server lost part of this upload. Send the file again from the start.",
-                StatusCodes.Status409Conflict),
-            UploadAppendStatus.CutOff => Refusal("The chunk ended before all of it arrived. Send it again.", StatusCodes.Status400BadRequest),
-            UploadAppendStatus.Stalled => Refusal(
-                "The chunk stopped arriving for too long. Send it again.",
-                StatusCodes.Status408RequestTimeout),
-            UploadAppendStatus.DiskFull => Refusal(
-                "The image store is full. Free space on the server's store volume, then continue the upload.",
-                StatusCodes.Status507InsufficientStorage),
+            UploadAppendStatus.BeyondLength => Refusal(ServerMessages.UploadBeyondLength, StatusCodes.Status400BadRequest),
+            UploadAppendStatus.Completed => Refusal(ServerMessages.UploadComplete, StatusCodes.Status409Conflict),
+            UploadAppendStatus.Busy => RetryLater(context, ServerMessages.UploadChunkBusy),
+            UploadAppendStatus.OffsetMismatch => Refusal(ServerMessages.UploadOffsetMismatch, StatusCodes.Status409Conflict),
+            UploadAppendStatus.Restarted => Refusal(ServerMessages.UploadRestarted, StatusCodes.Status409Conflict),
+            UploadAppendStatus.CutOff => Refusal(ServerMessages.UploadCutOff, StatusCodes.Status400BadRequest),
+            UploadAppendStatus.Stalled => Refusal(ServerMessages.UploadStalled, StatusCodes.Status408RequestTimeout),
+            UploadAppendStatus.DiskFull => Refusal(ServerMessages.UploadDiskFull, StatusCodes.Status507InsufficientStorage),
             _ => throw new UnreachableException(),
         };
     }
@@ -197,29 +172,25 @@ public static class ImageUploadEndpoints
             case UploadCompletionStatus.Existing:
                 return TypedResults.Ok(completion.Images);
             case UploadCompletionStatus.NotFound:
-                return Refusal("This upload no longer exists. Select the file again to upload it.", StatusCodes.Status404NotFound);
+                return Refusal(ServerMessages.UploadGone, StatusCodes.Status404NotFound);
             case UploadCompletionStatus.Busy:
-                return RetryLater(context, "This upload is being checked or written to. Ask again in a few seconds.");
+                return RetryLater(context, ServerMessages.UploadBeingChecked);
             case UploadCompletionStatus.Incomplete:
                 context.Response.Headers[UploadOffsetHeader] = completion.Offset.ToString(CultureInfo.InvariantCulture);
 
-                return Refusal(
-                    "Not all of the file has arrived. Continue the upload from the offset in the Upload-Offset header.",
-                    StatusCodes.Status409Conflict);
+                return Refusal(ServerMessages.UploadIncomplete, StatusCodes.Status409Conflict);
             case UploadCompletionStatus.Refused:
-                return Refusal(completion.Refusal!, StatusCodes.Status422UnprocessableEntity);
+                return ServerProblems.Problem(completion.Refusal!, StatusCodes.Status422UnprocessableEntity);
             case UploadCompletionStatus.Kept:
-                return Refusal(
+                return ServerProblems.Problem(
                     completion.Refusal!,
-                    completion.Refusal == RawImageImporter.OutOfSpaceMessage
+                    completion.Refusal!.Code == ServerMessages.UploadConversionOutOfSpace.Code
                         ? StatusCodes.Status507InsufficientStorage
                         : StatusCodes.Status422UnprocessableEntity);
             case UploadCompletionStatus.Failed:
-                return Refusal(
-                    "The upload could not be added to the library. Look at the server log, then complete the upload again.",
-                    StatusCodes.Status500InternalServerError);
+                return Refusal(ServerMessages.UploadFailed, StatusCodes.Status500InternalServerError);
             case UploadCompletionStatus.Stopping:
-                return Refusal("The server is stopping. Complete the upload again once it is back.", StatusCodes.Status503ServiceUnavailable);
+                return Refusal(ServerMessages.UploadServerStopping, StatusCodes.Status503ServiceUnavailable);
             default:
                 throw new UnreachableException();
         }
@@ -234,17 +205,17 @@ public static class ImageUploadEndpoints
         {
             UploadDiscardStatus.Discarded => TypedResults.NoContent(),
             UploadDiscardStatus.NotFound => TypedResults.NotFound(),
-            UploadDiscardStatus.Busy => RetryLater(context, "This upload is in use. Try again in a few seconds."),
+            UploadDiscardStatus.Busy => RetryLater(context, ServerMessages.UploadInUse),
             _ => throw new UnreachableException(),
         };
 
-    private static ProblemHttpResult Refusal(string title, int statusCode) => TypedResults.Problem(title: title, statusCode: statusCode);
+    private static ProblemHttpResult Refusal(MessageTemplate message, int statusCode) => ServerProblems.Problem(message.With(), statusCode);
 
-    private static ProblemHttpResult RetryLater(HttpContext context, string title)
+    private static ProblemHttpResult RetryLater(HttpContext context, MessageTemplate message)
     {
         context.Response.Headers.RetryAfter = ImageUploadLimits.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
 
-        return TypedResults.Problem(title: title, statusCode: StatusCodes.Status409Conflict);
+        return ServerProblems.Problem(message.With(), StatusCodes.Status409Conflict);
     }
 
     // Binary gigabytes, labelled GB like every other size the operator sees.

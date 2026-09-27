@@ -4,6 +4,7 @@
 
 using System.DirectoryServices.Protocols;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Messages;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
@@ -22,19 +23,19 @@ public sealed class DomainJoinCheck(IDomainDirectory directory, IOptions<Deploym
 
         if (name is null)
         {
-            return Stopped(now, null, null, null, "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server.");
+            return Stopped(now, null, null, null, ServerMessages.DomainNotConfigured.With());
         }
 
         string controller = Value(domain.Controller) ?? name;
 
         if (userName is null || string.IsNullOrEmpty(domain.Password))
         {
-            return Stopped(now, name, userName, controller, "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server.");
+            return Stopped(now, name, userName, controller, ServerMessages.DomainNoJoinAccount.With());
         }
 
         string? unit = Value(organizationalUnit) ?? Value(domain.OrganizationalUnit);
 
-        if (unit is not null && DeploymentOptionsValidation.OrganizationalUnitProblem(unit) is { } unitProblem)
+        if (unit is not null && DeploymentOptionsValidation.OrganizationalUnitMessage(unit) is { } unitProblem)
         {
             return Stopped(now, name, userName, controller, unitProblem);
         }
@@ -51,14 +52,14 @@ public sealed class DomainJoinCheck(IDomainDirectory directory, IOptions<Deploym
         {
             return Stopped(now, name, userName, controller, exception.Failure switch
             {
-                DomainDirectoryFailure.SignInRefused => DomainJoinAssessment.DescribeRefusal(exception.Detail, controller, userName),
-                DomainDirectoryFailure.NoSecureConnection => DomainJoinAssessment.DescribeNoSecureConnection(controller),
-                _ => DomainJoinAssessment.DescribeUnreachable(controller, name, exception.Detail),
+                DomainDirectoryFailure.SignInRefused => DomainJoinAssessment.RefusalMessage(exception.Detail, controller, userName),
+                DomainDirectoryFailure.NoSecureConnection => DomainJoinAssessment.NoSecureConnectionMessage(controller),
+                _ => DomainJoinAssessment.UnreachableMessage(controller, name, exception.Detail),
             });
         }
         catch (DirectoryException exception)
         {
-            return Stopped(now, name, userName, controller, $"{controller} answered the check with an error: {exception.Message}");
+            return Stopped(now, name, userName, controller, ServerMessages.DomainCheckError.With("controller", controller, "detail", exception.Message));
         }
 
         DomainJoinAssessment.Verdict verdict = DomainJoinAssessment.Assess(name, userName, controller, unit, facts);
@@ -66,8 +67,8 @@ public sealed class DomainJoinCheck(IDomainDirectory directory, IOptions<Deploym
         return new DomainJoinCheckView(verdict.CanJoin, name, userName, controller, verdict.Container, verdict.Findings, now);
     }
 
-    private static DomainJoinCheckView Stopped(DateTimeOffset now, string? domain, string? userName, string? controller, string problem) =>
-        new(false, domain, userName, controller, null, [new DomainJoinFinding(DomainJoinFindingLevel.Problem, problem)], now);
+    private static DomainJoinCheckView Stopped(DateTimeOffset now, string? domain, string? userName, string? controller, ServerMessage problem) =>
+        new(false, domain, userName, controller, null, [DomainJoinFinding.From(DomainJoinFindingLevel.Problem, problem)], now);
 
     private static string? Value(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

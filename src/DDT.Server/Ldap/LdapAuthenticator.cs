@@ -5,6 +5,7 @@
 using System.DirectoryServices.Protocols;
 using System.Globalization;
 using System.Net;
+using DDT.Contracts.Messages;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -157,18 +158,16 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
         {
             LdapLog.ServiceBindFailed(logger, _options.Host, _options.Port, exception);
 
-            throw new LdapUnavailableException(
-                $"The directory at {server} refused the bind account {_options.BindDn}. Check DDT:Ldap:BindDn and its password.",
-                exception);
+            throw new LdapUnavailableException(ServerMessages.DirectoryBindRefused.With("server", server, "bindDn", _options.BindDn), exception);
         }
         catch (LdapException exception)
         {
-            throw new LdapUnavailableException($"The directory at {server} could not be reached: {exception.Message}", exception);
+            throw new LdapUnavailableException(ServerMessages.DirectoryUnreachable.With("server", server, "detail", exception.Message), exception);
         }
         catch (DirectoryOperationException exception)
         {
             throw new LdapUnavailableException(
-                $"The directory at {server} refused the search under {_options.BaseDn}: {exception.Message} Check DDT:Ldap:BaseDn.",
+                ServerMessages.DirectorySearchRefused.With("server", server, "baseDn", _options.BaseDn, "detail", exception.Message),
                 exception);
         }
     }

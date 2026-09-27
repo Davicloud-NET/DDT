@@ -101,6 +101,12 @@ public static class AuthEndpoints
             return TypedResults.Ok(new LoginResponse(LoginStatus.LockedOut));
         }
 
+        // Only a directory sign-in with the right password gets here, so saying why tells nobody anything new.
+        if (result is NoRoleSignInResult)
+        {
+            return TypedResults.Ok(new LoginResponse(LoginStatus.NoRole));
+        }
+
         if (!result.Succeeded)
         {
             AuthLog.SignInFailed(logger, userName, address);

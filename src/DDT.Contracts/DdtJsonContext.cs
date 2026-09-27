@@ -72,4 +72,8 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(CreatedUser))]
 [JsonSerializable(typeof(OneTimePassword))]
 [JsonSerializable(typeof(UsersRemovedEvent))]
+[JsonSerializable(typeof(DirectoryView))]
+[JsonSerializable(typeof(IReadOnlyList<DirectoryGroup>))]
+[JsonSerializable(typeof(DirectoryCheckRequest))]
+[JsonSerializable(typeof(DirectoryCheck))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

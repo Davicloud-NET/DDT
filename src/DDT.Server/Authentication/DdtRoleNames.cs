@@ -24,5 +24,19 @@ public static class DdtRoleNames
         return All.FirstOrDefault(held.Contains);
     }
 
+    // 0 for Administrator, the highest. A name that is not a DDT role comes after every role.
+    public static int Rank(string? role)
+    {
+        for (int rank = 0; rank < All.Count; rank++)
+        {
+            if (string.Equals(All[rank], role, StringComparison.OrdinalIgnoreCase))
+            {
+                return rank;
+            }
+        }
+
+        return All.Count;
+    }
+
     public static string? Canonical(string? role) => All.FirstOrDefault(known => string.Equals(known, role?.Trim(), StringComparison.OrdinalIgnoreCase));
 }

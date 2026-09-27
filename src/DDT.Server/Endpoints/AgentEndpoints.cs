@@ -261,6 +261,13 @@ public static class AgentEndpoints
             return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.LockedOut));
         }
 
+        if (result is NoRoleSignInResult)
+        {
+            AuthLog.MachineSignInNotPermitted(logger, request.UserName, id, address);
+
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.NotPermitted));
+        }
+
         if (!result.Succeeded || account is null)
         {
             AuthLog.MachineSignInFailed(logger, id, request.UserName, address);

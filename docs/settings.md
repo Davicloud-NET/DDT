@@ -233,8 +233,13 @@ instance (LdapAuthenticator.cs:15, DirectorySignInService.cs:20).
 
 Notes on these sections:
 
-- GroupRoleMap keys are compared case-insensitively. Today the lookup is exact
-  (DirectorySignInService.cs:160).
+- GroupRoleMap keys are compared case-insensitively. Done in M6.5 (LdapOptions.GroupRoleMap), where the
+  highest mapped role also became the only one an account gets, and a directory user in none of the
+  mapped groups is refused.
+- The Users page already reads the ldap section as it is: the map with the names of its groups
+  (GET /api/directory), groups found by name (GET /api/directory/groups) and what a sign-in would give
+  a user (POST /api/directory/check). The ldap test endpoint in section 6 does the same for candidate
+  values.
 - Scopes can remove defaults. Today the list is get-only and configuration can only add to it
   (OidcOptions.cs:23).
 - The page shows the redirect URI to register at the provider: `{origin}/api/auth/external/callback`
@@ -585,6 +590,8 @@ Field is a path relative to the section.
   - ResolveNestedGroups=false together with a non-empty GroupRoleMap is refused. With that combination
     no groups are read at all (LdapAuthenticator.cs:179-182), so every directory user would lose all
     roles (DirectorySignInService.cs:149-178).
+  - Both are in LdapOptionsValidation since M6.5, and stop the server at startup until the store
+    exists.
   - When the saving admin is a directory account, a change to GroupRoleMap or to the connection fields
     needs a successful test sign-in with the candidate that keeps them Administrator.
 - **oidc:**

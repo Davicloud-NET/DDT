@@ -4,7 +4,18 @@
 
 namespace DDT.Server.Ldap;
 
+// The directory as DDT uses it: to sign people in, and to explain a sign-in to an administrator. The lookups use the
+// bind account and the same searches as a sign-in, so what they report is what a sign-in would see. They throw
+// LdapUnavailableException when the directory cannot be asked.
 public interface ILdapAuthenticator
 {
     Task<LdapIdentity?> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken);
+
+    Task<LdapLookup> LookUpAsync(string userName, CancellationToken cancellationToken);
+
+    // Groups under the base DN whose name starts with the text first, then those that contain it.
+    Task<IReadOnlyList<LdapGroup>> SearchGroupsAsync(string text, int limit, CancellationToken cancellationToken);
+
+    // The common name of each group, or null for one the directory does not have.
+    Task<IReadOnlyDictionary<string, string?>> GroupNamesAsync(IReadOnlyCollection<string> distinguishedNames, CancellationToken cancellationToken);
 }

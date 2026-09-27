@@ -32,7 +32,9 @@ public sealed class LdapOptions
 
     public bool ResolveNestedGroups { get; set; } = true;
 
-    public Dictionary<string, string> GroupRoleMap { get; } = [];
+    // Group distinguished name to role. Distinguished names are compared without regard to case, as the directory
+    // compares them. While the map is empty, directory groups decide no role and administrators set them.
+    public Dictionary<string, string> GroupRoleMap { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 }

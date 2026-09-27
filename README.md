@@ -289,8 +289,18 @@ Three sources of accounts, all optional except the first:
 - **LDAP.** Set `DDT:Ldap:Enabled`. Accounts are keyed on the directory's immutable identifier
   (`objectGUID` on Active Directory, `entryUUID` on OpenLDAP), never on the user name or the
   distinguished name, because both change when someone is renamed or moved. Group membership maps
-  onto DDT roles through `DDT:Ldap:GroupRoleMap` and the directory stays authoritative: a role
-  removed there is removed here on the next sign in.
+  onto DDT roles through `DDT:Ldap:GroupRoleMap`, from the group's distinguished name, compared
+  without regard to case, to a role; nested groups count. While the map has entries the directory
+  stays authoritative: each sign-in gives the account the highest role its groups map to and no
+  other, a role removed there is removed here, and a user in none of the mapped groups is refused,
+  loses the role it had, and is told why by the sign-in page. With the map empty the directory only
+  checks the password, and administrators give directory accounts their roles on the Users page. A
+  role in the map that DDT does not have, or a map with `DDT:Ldap:ResolveNestedGroups` off, which
+  reads no groups, stops the server at startup. The Users page shows the map with the names the
+  directory has for its groups, finds groups by name for it, and checks what a sign-in would give a
+  user and why, all with the bind account and without the user's password; these need
+  `DDT:Ldap:Host` and `DDT:Ldap:BaseDn`. Groups are Active Directory's `objectClass=group`, as nested
+  groups are read with Active Directory's matching rule.
 - **OpenID Connect.** Set `DDT:Oidc:Enabled` to point DDT at Entra ID, Keycloak, Authentik or any
   other provider. DDT never links an external identity to an existing local account by email
   address, because a provider that does not verify addresses could then take over any account.

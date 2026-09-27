@@ -90,6 +90,10 @@ public sealed class ScreenshotTests
             console.Show(Scenarios.Running);
             console.Model.RefuseClose();
         },
+        ["27-logo"] = console => console.Show(Scenarios.Running with
+        {
+            Logo = LogoTests.Write(Path.Combine(Path.GetTempPath(), $"ddt-console-logo-{Guid.NewGuid():N}.png")),
+        }),
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];

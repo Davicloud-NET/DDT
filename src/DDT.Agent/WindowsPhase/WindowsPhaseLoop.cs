@@ -41,7 +41,8 @@ public sealed class WindowsPhaseLoop(
     string agentVersion,
     bool dryRun,
     IDeploySession? session = null,
-    ConsoleStatus? status = null)
+    ConsoleStatus? status = null,
+    ConsoleLogo? logo = null)
 {
     public const string StateGoneMessage = "The run's state in the installed Windows is gone, so the run cannot go on there.";
 
@@ -129,6 +130,12 @@ public sealed class WindowsPhaseLoop(
             Guid machineId = registration.MachineId;
             status?.Registered(machineId);
             status?.SetLanguage(registration.ConsoleLanguage);
+
+            if (logo is not null)
+            {
+                await logo.ShowAsync(registration.ConsoleLogoSha256, cancellationToken).ConfigureAwait(false);
+            }
+
             runToken = registration.RunToken ?? runToken;
             DeploymentTokens tokens = new(token, resumeToken, runToken);
             AgentRun? run;

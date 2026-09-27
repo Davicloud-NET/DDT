@@ -72,6 +72,7 @@ public static class SettingsEndpoints
         group.MapGet("/agent", ReadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPut("/agent/binary", UploadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapSettingsConsoleEndpoints();
+        group.MapSettingsConsoleLogoEndpoints();
 
         return group;
     }

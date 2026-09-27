@@ -187,6 +187,9 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     public Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken) =>
         DownloadAsync(AgentRoutes.ConsoleReleaseFile(name), destination, cancellationToken);
 
+    public Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken) =>
+        DownloadAsync(AgentRoutes.ConsoleLogo, destination, cancellationToken);
+
     // A download can wait in the server's queue behind a whole lab for longer than a request may take, so only its own
     // deadline bounds it.
     private async Task DownloadAsync(string route, Stream destination, CancellationToken cancellationToken)

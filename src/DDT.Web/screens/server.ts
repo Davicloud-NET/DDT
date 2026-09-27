@@ -42,7 +42,10 @@ export async function serve(
         return;
       }
 
-      await route.fulfill({ json: answer });
+      // A Buffer is a picture, such as the console's logo; anything else is JSON.
+      await (Buffer.isBuffer(answer)
+        ? route.fulfill({ body: answer, contentType: "image/png" })
+        : route.fulfill({ json: answer }));
     },
   );
 

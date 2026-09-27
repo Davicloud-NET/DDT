@@ -27,7 +27,8 @@ public sealed class AgentLoop(
     LocalRunLocator locator,
     AgentLog log,
     TimeProvider timeProvider,
-    string agentVersion)
+    string agentVersion,
+    ConsoleLogo? logo = null)
 {
     private MachineIdentity? _lastIdentity;
     private string? _resumeToken;
@@ -111,6 +112,11 @@ public sealed class AgentLoop(
             KeepOrDiscardLocalRun(registration);
 
             status.SetLanguage(registration.ConsoleLanguage);
+
+            if (logo is not null)
+            {
+                await logo.ShowAsync(registration.ConsoleLogoSha256, cancellationToken).ConfigureAwait(false);
+            }
 
             if (registration.Token is null)
             {

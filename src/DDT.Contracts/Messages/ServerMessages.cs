@@ -1776,6 +1776,16 @@ public static class ServerMessages
         "settings.console.tooLarge",
         "The console may be at most {max} MB, zipped and unpacked.");
 
+    public static readonly MessageTemplate SettingsConsoleLogoNotPng = Define(
+        "settings.consoleLogo.notPng",
+        "That is not a PNG image. Upload the logo as a PNG file.");
+
+    public static readonly MessageTemplate SettingsConsoleLogoDimensions = Define(
+        "settings.consoleLogo.dimensions",
+        "The logo is {width} by {height} pixels. It may be at most {max} pixels wide and high.");
+
+    public static readonly MessageTemplate SettingsConsoleLogoTooLarge = Define("settings.consoleLogo.tooLarge", "The logo may be at most {max} KB.");
+
     // Settings: how a host applied a section that rebuilds a subsystem. An exception's own text stays English, as a value.
 
     public static readonly MessageTemplate SettingsApplyProxiesClosed = Define(

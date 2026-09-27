@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using Avalonia;
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
 using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Agent;
 using DDT.MachineConsole.Machine;
@@ -49,6 +51,9 @@ public sealed class MainViewModel : ObservableObject
     private ConsoleNotice _shownNotice;
     private bool _isDark = true;
     private bool _languageChosen;
+
+    // The path of the logo the header shows, as the agent last named it.
+    private string? _logoPath;
 
     // send takes an answer to the agent; close ends the console, or in DDT's session signs out. session is the console
     // as the shell of DDT's session in the installed Windows.
@@ -160,6 +165,12 @@ public sealed class MainViewModel : ObservableObject
     };
 
     public bool IsDryRun => _state?.DryRun == true;
+
+    // The logo the server has the console show at the right end of the header, which is dark in both themes; null
+    // without one, or when the file is not a picture the console can draw.
+    public Bitmap? Logo { get; private set; }
+
+    public bool HasLogo => Logo is not null;
 
     public Tag DryRunTag => Tag.Of(_l.T("Dry run"), TagTone.Attention);
 
@@ -530,6 +541,52 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(ShowsEndBand));
         Raise(nameof(CanClose));
         SpeakAsTheServerSays(state.Language);
+        ShowLogo(state.Logo);
+    }
+
+    // Read once for each path the agent names, since the agent names a new path for a new logo. A picture taller than the
+    // header ever draws it is kept smaller, which also bounds what a large one costs.
+    private void ShowLogo(string? path)
+    {
+        if (path == _logoPath)
+        {
+            return;
+        }
+
+        _logoPath = path;
+        Bitmap? previous = Logo;
+        Logo = path is null ? null : ReadLogo(path);
+        Raise(nameof(Logo));
+        Raise(nameof(HasLogo));
+        previous?.Dispose();
+    }
+
+    private static Bitmap? ReadLogo(string path)
+    {
+        const int MaxHeight = 128;
+
+        try
+        {
+            using FileStream file = File.OpenRead(path);
+            Bitmap full = new(file);
+
+            if (full.PixelSize.Height <= MaxHeight)
+            {
+                return full;
+            }
+
+            using (full)
+            {
+                int width = Math.Max(1, (int)((long)full.PixelSize.Width * MaxHeight / full.PixelSize.Height));
+
+                return full.CreateScaledBitmap(new PixelSize(width, MaxHeight), BitmapInterpolationMode.HighQuality);
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Not a picture, or gone: the header shows none, and the run goes on.
+            return null;
+        }
     }
 
     // The language the server has the console speak, once the agent has registered, unless someone at the machine chose

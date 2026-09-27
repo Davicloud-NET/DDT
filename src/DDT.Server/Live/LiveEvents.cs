@@ -71,6 +71,10 @@ public static class LiveEvents
     // administrators.
     public const string ConsoleChanged = "consoleChanged";
 
+    // Carries the ConsoleLogoView, as GET /api/settings/console-logo answers it, when the console's logo was uploaded or
+    // removed: to administrators and operators, who read the Deployment defaults page it is on.
+    public const string ConsoleLogoChanged = "consoleLogoChanged";
+
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";

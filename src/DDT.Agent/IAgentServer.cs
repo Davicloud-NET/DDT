@@ -27,6 +27,9 @@ public interface IAgentServer
     // One of the files the console release names.
     Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken);
 
+    // The logo the console shows, whose hash the registration names.
+    Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken);
 
     // Starts the sequence the technician picked at the machine.

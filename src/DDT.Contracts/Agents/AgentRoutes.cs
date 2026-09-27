@@ -52,4 +52,6 @@ public static class AgentRoutes
     public const string ConsoleRelease = "api/agents/release/console";
 
     public static string ConsoleReleaseFile(string name) => $"api/agents/release/console/{Uri.EscapeDataString(name)}";
+
+    public const string ConsoleLogo = "api/agents/console/logo";
 }

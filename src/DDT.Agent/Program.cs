@@ -171,7 +171,8 @@ AgentLoop loop = new(
     new LocalRunLocator(LocalRunLocator.FixedDrives()),
     log,
     TimeProvider.System,
-    version);
+    version,
+    graphical is null ? null : new ConsoleLogo(server, status, AppContext.BaseDirectory, log));
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);
 

@@ -77,6 +77,11 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
+        // The logo that console shows, whose hash every registration names.
+        group.MapGet("/console/logo", GetConsoleLogo)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
+
         return group;
     }
 
@@ -85,6 +90,7 @@ public static class AgentEndpoints
         AgentRegistration registration,
         HttpContext context,
         MachineRegistrar registrar,
+        ConsoleLogoStore logos,
         CancellationToken cancellationToken)
     {
         if (!RegistrationValidator.TryNormalise(registration, out NormalisedRegistration? normalised, out string error))
@@ -104,7 +110,10 @@ public static class AgentEndpoints
             RegistrationRefusal.NothingToContinue => TypedResults.Problem(
                 title: "This machine has no run for the DDT service to continue. The service removes itself.",
                 statusCode: StatusCodes.Status409Conflict),
-            _ => TypedResults.Ok(registered.Result!),
+            _ => TypedResults.Ok(registered.Result! with
+            {
+                ConsoleLogoSha256 = (await logos.CurrentAsync(cancellationToken).ConfigureAwait(false))?.Sha256,
+            }),
         };
     }
 
@@ -125,6 +134,9 @@ public static class AgentEndpoints
             ? TypedResults.PhysicalFile(path, "application/octet-stream")
             : TypedResults.NotFound();
     }
+
+    private static Results<PhysicalFileHttpResult, NotFound> GetConsoleLogo(ConsoleLogoStore logos) =>
+        File.Exists(logos.Path) ? TypedResults.PhysicalFile(logos.Path, "image/png") : TypedResults.NotFound();
 
     private static async Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
         ConsoleReleaseStore consoles,

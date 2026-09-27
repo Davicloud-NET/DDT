@@ -568,6 +568,7 @@ msgid "{name} is disabled, so a sign-in is refused before the directory is asked
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "{name} is empty."
 msgstr ""
@@ -590,6 +591,10 @@ msgstr ""
 msgid "{name} is larger than {limit}, the most the server takes for the console."
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "{name} is larger than {limit}, the most the server takes for the logo."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.lockedOut"
 msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
@@ -598,6 +603,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.notDirectoryAccount"
 msgid "{name} is not a directory account, so its password is not sent to the directory."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "{name} is not a PNG image. Upload the logo as a PNG file."
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -624,6 +633,7 @@ msgid "{name} was not added. {reason}"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 msgid "{name} was not uploaded. {reason}"
 msgstr ""
 
@@ -791,6 +801,7 @@ msgid "{stepName} moved to position {position} of {count}."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 msgid "{uploadedWhen} by {uploadedBy}"
 msgstr ""
 
@@ -1047,6 +1058,10 @@ msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
 msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi, signed by the 2023 one."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "A PNG of at most 512 KB and 2048 by 2048 pixels."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2021,6 +2036,7 @@ msgid "Choose {file} again to resume at {percent}%."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Choose a file"
 msgstr ""
@@ -2079,6 +2095,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.chooseImage"
 msgid "Choose the image to apply."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Choose the logo first."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2191,6 +2211,10 @@ msgstr ""
 #: src/auth/SignInPage.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Confirm it is you"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Connected to the server"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -2590,6 +2614,10 @@ msgstr ""
 msgid "Drop a file to upload"
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Drop another logo here to replace it, or choose one."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "Drop ddt-agent.exe here, or choose it."
 msgstr ""
@@ -2600,6 +2628,14 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Drop the console to upload it"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Drop the logo here, or choose it."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Drop the logo to upload it"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -3572,6 +3608,10 @@ msgstr ""
 msgid "Logging"
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Logo on the console"
+msgstr ""
+
 #: src/rules/rules.ts
 #: src/sequences/sequenceList.ts
 msgid "MAC {mac}"
@@ -3658,6 +3698,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Machines show"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Machines show no logo on their console from their next registration. Upload it again to bring it back."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -4119,6 +4163,10 @@ msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "No log lines for this run yet. The agent sends its log while it runs."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "No logo"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4753,9 +4801,17 @@ msgstr ""
 msgid "Phase"
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Picture"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "wim.pipable"
 msgid "Pipable WIM files are not supported. Export the image into a regular WIM first."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "PNG, {width} by {height} pixels"
 msgstr ""
 
 #: src/settings/DirectorySettings.tsx
@@ -4939,12 +4995,24 @@ msgstr ""
 msgid "Remove condition {number}"
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Remove logo"
+msgstr ""
+
 #: src/packages/PackageDialog.tsx
 msgid "Remove model {position}"
 msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Remove the boot target for {key}"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Remove the logo"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Remove the logo?"
 msgstr ""
 
 #: src/settings/LoggingPanel.tsx
@@ -4955,8 +5023,16 @@ msgstr ""
 msgid "Removed {name} ({kind}). You can bring it back for 10 seconds."
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Removed. Machines show no logo when they next register."
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Removing the logo"
 msgstr ""
 
 #: src/settings/CertificatePanel.tsx
@@ -5695,6 +5771,7 @@ msgstr ""
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 msgid "Size"
 msgstr ""
 
@@ -5997,6 +6074,11 @@ msgid "That did not work."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.consoleLogo.notPng"
+msgid "That is not a PNG image. Upload the logo as a PNG file."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.agent.notExecutable"
 msgid "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."
 msgstr ""
@@ -6186,6 +6268,10 @@ msgstr ""
 msgid "The console at the machine"
 msgstr ""
 
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "The console at the machine shows this logo at the right end of its header, in Windows PE and in DDT's session, at most 32 pixels high and 200 wide. The header is dark in both of the console's themes, so a logo in white or light colours on a transparent background suits it. Machines take a new logo when they next register."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "The console in their boot image, since none was uploaded"
 msgstr ""
@@ -6209,6 +6295,14 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "The console you upload runs as SYSTEM in Windows PE on every machine that netboots from now on, and as the shell of DDT's session in the installed Windows. Upload only a zip of the folder Publish-Console.ps1 writes, from a DDT release or as the script builds it."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "The console's header with the logo"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "The console's logo could not be read."
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -6598,6 +6692,20 @@ msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "The log could not be read: {readError}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.consoleLogo.dimensions"
+msgid "The logo is {width} by {height} pixels. It may be at most {max} pixels wide and high."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.consoleLogo.tooLarge"
+msgid "The logo may be at most {max} KB."
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "The logo was not removed. {reason}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7627,7 +7735,12 @@ msgstr ""
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 msgid "Uploaded"
+msgstr ""
+
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Uploaded. Machines show the logo when they next register."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -7643,6 +7756,7 @@ msgid "Uploading {file}"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/ConsoleLogoPanel.tsx
 msgid "Uploading {name}"
 msgstr ""
 

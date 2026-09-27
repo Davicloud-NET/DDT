@@ -52,6 +52,7 @@ import {
   type SettingsSectionView,
 } from "@/settings/settings";
 import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
+import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
@@ -221,6 +222,7 @@ export function createLiveConnection(
       certificateKey,
       agentBinaryQuery.queryKey,
       consoleBinaryQuery.queryKey,
+      consoleLogoQuery.queryKey,
       serverCertificateQuery.queryKey,
     ]) {
       invalidate(key);
@@ -351,6 +353,11 @@ export function createLiveConnection(
     // And an uploaded console.
     current.on("consoleChanged", (console: AgentBinaryView) => {
       queryClient.setQueryData(consoleBinaryQuery.queryKey, console);
+    });
+
+    // Administrators and operators receive the console's logo when it was uploaded or removed.
+    current.on("consoleLogoChanged", (logo: ConsoleLogoView) => {
+      queryClient.setQueryData(consoleLogoQuery.queryKey, logo);
     });
 
     current.on("certificateChanged", (view: unknown) => {

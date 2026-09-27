@@ -284,7 +284,8 @@ unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checke
 
 What a deployed Windows is set up with comes from the Deployment defaults page,
 described under [What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
-[Joining a domain](#joining-a-domain). Task sequences, packages and rules are not configuration:
+[Joining a domain](#joining-a-domain), as do the language and the logo of the console at the machine,
+see [The console at the machine](#the-console-at-the-machine). Task sequences, packages and rules are not configuration:
 they live in the database and are managed on their pages.
 
 ### Settings in the web UI
@@ -1056,6 +1057,16 @@ chosen at the machine. Everything the
 console says comes from its own catalogs in `src/DDT.MachineConsole/Locales`, in the web's PO
 format; what the agent sends, such as its problems, the step names and the log, shows as it was
 sent.
+
+The organisation's logo can stand at the right end of the console's header, after the connection:
+the Deployment defaults page uploads it, a PNG of at most 512 KB and 2048 by 2048 pixels, as
+`PUT /api/settings/console-logo`, and removes it again; operators see it there too. The server keeps
+it at `console/logo.png` in the store and names its SHA-256 in every registration. The agent
+downloads it from `api/agents/console/logo`, checks the hash, and hands the console its path; in
+the installed Windows it keeps it in `C:\DDT\console`, which the account of DDT's session may
+read. The header is dark in both themes, so a logo in white or light colours on a transparent
+background suits it. The console draws it at most 32 pixels high and 200 wide, beside DDT's own mark,
+which stays. Machines take a new logo, or its removal, when they next register.
 
 When the agent ends, or its pipe breaks, the console keeps the last screen and says so. F9 closes it,
 which leaves the command prompt behind it, and in Windows PE F8 restarts the machine after asking. It

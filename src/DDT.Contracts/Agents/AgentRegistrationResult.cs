@@ -11,7 +11,8 @@ namespace DDT.Contracts.Agents;
 // whoever signed in at the machine, so an agent that is waiting for a web approval does not ask again. RunId is set
 // when the registration continued that running run, with its RunToken or its ResumeToken, and RunToken is then the
 // one to keep. ConsoleLanguage is the language the console at the machine starts in, en or de, or null for the
-// language of Windows PE.
+// language of Windows PE. ConsoleLogoSha256 is the SHA-256 of the logo the console shows, which the agent downloads from
+// AgentRoutes.ConsoleLogo, or null when there is none.
 public sealed record AgentRegistrationResult(
     Guid MachineId,
     MachineState State,
@@ -21,4 +22,5 @@ public sealed record AgentRegistrationResult(
     string? SignedInBy,
     Guid? RunId = null,
     string? RunToken = null,
-    string? ConsoleLanguage = null);
+    string? ConsoleLanguage = null,
+    string? ConsoleLogoSha256 = null);

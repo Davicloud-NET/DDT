@@ -14,6 +14,7 @@ import {
   SettingsGroup,
   SettingsSection,
 } from "./SettingsParts";
+import { ConsoleLogoPanel } from "./ConsoleLogoPanel";
 import { useCanChangeSettings, useSettingsForm, valueAt } from "./useSettingsForm";
 
 export interface DeploymentSettings {
@@ -199,6 +200,7 @@ export function DeploymentDefaultsPage() {
           </SettingsGroup>
         </SettingsSection>
       )}
+      <ConsoleLogoPanel canChange={canChange} />
     </Page>
   );
 }

@@ -162,6 +162,15 @@ Domain:Controller is used only by the join account check on the page (POST
 /api/deployments/domain-check), which reads the section at every check, so the page can offer the
 check next to the fields it tests.
 
+The same page holds the console's logo, which is a file rather than a value of the section: a PNG of
+at most 512 KB and 2048 by 2048 pixels, uploaded as `PUT /api/settings/console-logo` (image/png) and
+removed with `DELETE`, by administrators; `GET /api/settings/console-logo` and
+`GET /api/settings/console-logo/image` are open to operators as well. It is stored at
+`<StorePath>/console/logo.png` (ConsoleLogoStore.cs), audited as `console.logo.uploaded` and
+`console.logo.removed`, pushed as `consoleLogoChanged`, and named by its SHA-256 in every
+registration, so machines take it at their next one. It needs no fresh password: the console only
+draws it, and the server takes only a whole PNG.
+
 ### Machines and zero touch (section `machines`, keys under DDT:Machines)
 
 | Key | Type | Default | Secret | Applies | Who |

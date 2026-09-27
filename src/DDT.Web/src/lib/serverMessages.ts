@@ -1157,6 +1157,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.console.tooLarge",
     message: "The console may be at most {max} MB, zipped and unpacked.",
   }),
+  "settings.consoleLogo.dimensions": msg({
+    context: "settings.consoleLogo.dimensions",
+    message: "The logo is {width} by {height} pixels. It may be at most {max} pixels wide and high.",
+  }),
+  "settings.consoleLogo.notPng": msg({
+    context: "settings.consoleLogo.notPng",
+    message: "That is not a PNG image. Upload the logo as a PNG file.",
+  }),
+  "settings.consoleLogo.tooLarge": msg({
+    context: "settings.consoleLogo.tooLarge",
+    message: "The logo may be at most {max} KB.",
+  }),
   "settings.deployment.administratorNameInvalid": msg({
     context: "settings.deployment.administratorNameInvalid",
     message: "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.",

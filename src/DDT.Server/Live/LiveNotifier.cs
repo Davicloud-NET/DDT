@@ -231,6 +231,13 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.ConsoleChanged, console);
     }
 
+    public void ConsoleLogoChanged(ConsoleLogoView logo)
+    {
+        ArgumentNullException.ThrowIfNull(logo);
+
+        _ = PushToGroupsAsync([LiveGroups.Administrators, LiveGroups.Operators], LiveEvents.ConsoleLogoChanged, logo);
+    }
+
     public void CertificateChanged(object view)
     {
         ArgumentNullException.ThrowIfNull(view);

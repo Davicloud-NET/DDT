@@ -19,6 +19,7 @@ import {
 } from "@/test/builders";
 
 import installWindows from "../src/test/fixtures/install-windows.sequence.json" with { type: "json" };
+import { sampleLogo } from "./sampleLogo";
 import { serve } from "./server";
 
 // A few pages as a browser draws them, in both themes: the design system's colours, type and spacing, which the page
@@ -224,48 +225,73 @@ test("a task sequence", async ({ page }) => {
   await expect(page).toHaveScreenshot("sequence-light.png");
 });
 
+// The deployment defaults, and the console's logo on their page.
+const deploymentDefaults = {
+  "GET /api/settings/deployment": {
+    section: "deployment",
+    version: 4,
+    updatedUtc: "2026-09-15T16:20:00Z",
+    updatedBy: "admin",
+    values: {
+      timeZone: "W. Europe Standard Time",
+      locale: "de-DE",
+      keyboard: "0407:00000407",
+      consoleLanguage: "de",
+      localAdministrator: { name: "Admin" },
+      domain: {
+        name: "corp.example",
+        organizationalUnit: "OU=Workstations,DC=corp,DC=example",
+        userName: "CORP\\ddt-join",
+        controller: null,
+      },
+    },
+    secrets: {
+      "localAdministrator.password": {
+        isSet: true,
+        unreadable: false,
+        updatedUtc: "2026-09-15T16:20:00Z",
+      },
+      "domain.password": { isSet: true, unreadable: false, updatedUtc: "2026-09-15T16:20:00Z" },
+    },
+    locked: [],
+    problems: [],
+    warnings: [],
+    apply: null,
+    reauthenticate: [],
+  },
+  "GET /api/settings/console-logo": {
+    sha256: "5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592",
+    size: 1_804,
+    width: 240,
+    height: 64,
+    uploadedUtc: "2026-09-15T16:24:00Z",
+    uploadedBy: "admin",
+  },
+  "GET /api/settings/console-logo/image": sampleLogo(),
+};
+
 test.describe("dark", () => {
   test.use({ colorScheme: "dark" });
 
   test("deployment defaults", async ({ page }) => {
-    await show(page, "/deployment/defaults", {
-      "GET /api/settings/deployment": {
-        section: "deployment",
-        version: 4,
-        updatedUtc: "2026-09-15T16:20:00Z",
-        updatedBy: "admin",
-        values: {
-          timeZone: "W. Europe Standard Time",
-          locale: "de-DE",
-          keyboard: "0407:00000407",
-          consoleLanguage: "de",
-          localAdministrator: { name: "Admin" },
-          domain: {
-            name: "corp.example",
-            organizationalUnit: "OU=Workstations,DC=corp,DC=example",
-            userName: "CORP\\ddt-join",
-            controller: null,
-          },
-        },
-        secrets: {
-          "localAdministrator.password": {
-            isSet: true,
-            unreadable: false,
-            updatedUtc: "2026-09-15T16:20:00Z",
-          },
-          "domain.password": { isSet: true, unreadable: false, updatedUtc: "2026-09-15T16:20:00Z" },
-        },
-        locked: [],
-        problems: [],
-        warnings: [],
-        apply: null,
-        reauthenticate: [],
-      },
-    });
+    await show(page, "/deployment/defaults", deploymentDefaults);
     await expect(page.getByText("The console at the machine")).toBeVisible();
 
     await expect(page).toHaveScreenshot("deployment-defaults-dark.png");
   });
+});
+
+test("the console's logo", async ({ page }) => {
+  await show(page, "/deployment/defaults", deploymentDefaults);
+  const panel = page
+    .getByRole("heading", { name: "Logo on the console" })
+    .locator("xpath=ancestor::section[1]");
+  await panel.scrollIntoViewIfNeeded();
+  await expect(
+    panel.getByRole("img", { name: "The console's header with the logo" }).locator("img"),
+  ).toHaveJSProperty("complete", true);
+
+  await expect(panel).toHaveScreenshot("console-logo-light.png");
 });
 
 test.describe("phone", () => {

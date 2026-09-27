@@ -130,7 +130,8 @@ public static class WindowsPhaseService
             version,
             dryRun: false,
             session,
-            status);
+            status,
+            new ConsoleLogo(server, status, Path.Combine(windowsRoot, "DDT", WindowsHandOver.ConsoleDirectory), log));
 
         // The control manager only needs to know whether the service failed.
         return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch

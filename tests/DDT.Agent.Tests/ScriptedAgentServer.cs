@@ -252,6 +252,22 @@ internal sealed class ScriptedAgentServer : IAgentServer
         await destination.WriteAsync(content, cancellationToken);
     }
 
+    // What every download of the logo answers; without one, the download fails as a missing file does.
+    public byte[]? ConsoleLogo { get; set; }
+
+    public async Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken)
+    {
+        byte[] content;
+
+        lock (_lock)
+        {
+            _calls.Add("console-logo");
+            content = ConsoleLogo ?? throw new HttpRequestException("Not found.", null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        await destination.WriteAsync(content, cancellationToken);
+    }
+
     public Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken) =>
         Answer($"sequences {token}", _sequences, response => response());
 

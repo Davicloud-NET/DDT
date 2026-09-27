@@ -8,7 +8,7 @@ indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{json,yml,yaml,js,jsx,ts,tsx,scss,css,html,md}]
+[*.{json,yml,yaml,js,mjs,cjs,jsx,ts,mts,cts,tsx,scss,css,html,md}]
 indent_size = 2
 
 [*.md]

@@ -119,6 +119,9 @@ public sealed class ConsoleStatus
             Restart = null,
         });
 
+    // The language the server has the console speak, from the registration: en, de, or null for the language of Windows.
+    public void SetLanguage(string? language) => Change(state => state with { Language = language });
+
     // The agent in the installed Windows registered again to go on with its run, which it shows next.
     public void Registered(Guid machineId) =>
         Change(state => state with { Server = state.Server with { Problem = null, FailedStage = null, Failures = 0 }, MachineId = machineId });

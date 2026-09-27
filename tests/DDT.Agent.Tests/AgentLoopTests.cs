@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using Xunit;
@@ -74,6 +75,21 @@ public sealed class AgentLoopTests : IDisposable
         Assert.Null(server.Registrations[0].ResumeToken);
         Assert.Equal("resume-2", server.Registrations[1].ResumeToken);
         Assert.Equal([TimeSpan.FromSeconds(10), AgentLimits.MinRetryDelay], time.Delays);
+    }
+
+    // The deployment setting the registration carries, which the console starts in once it knows it.
+    [Fact]
+    public async Task TheConsoleSpeaksTheLanguageTheServerNames()
+    {
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Registered(MachineState.Rejected, token: null, resumeToken: null) with { ConsoleLanguage = "de" });
+        ImmediateTimeProvider time = new();
+        AgentLog log = new(time, TextWriter.Null);
+        ConsoleStatus status = TestAgents.Status(new ScriptedSignInPrompt() { IsAvailable = false }, log);
+
+        await TestAgents.Loop(server, status, _tools, log, time).RunAsync(server.Stop.Token);
+
+        Assert.Equal("de", status.State.Language);
     }
 
     [Fact]

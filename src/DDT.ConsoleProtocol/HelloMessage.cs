@@ -9,5 +9,7 @@ namespace DDT.ConsoleProtocol;
 // as "DDT agent 1.4.0", for the log. This message never changes, so two versions can always tell each other apart.
 public sealed record HelloMessage(int Version, string Program) : ConsoleMessage
 {
-    public const int CurrentVersion = 1;
+    // 2: the console can be the shell of DDT's session in the installed Windows, and the state names the language it is
+    // to speak.
+    public const int CurrentVersion = 2;
 }

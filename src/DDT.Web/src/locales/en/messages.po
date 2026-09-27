@@ -93,6 +93,11 @@ msgid "''{value}'' is not a host name or an address. Name the domain controller 
 msgstr "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.deployment.consoleLanguageUnknown"
+msgid "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
+msgstr "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.logging.levelUnknown"
 msgid "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None."
 msgstr "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None."
@@ -3318,6 +3323,7 @@ msgstr "Kind"
 
 #: src/app/Shell.tsx
 #: src/images/ImagesPage.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Language"
 msgstr "Language"
 
@@ -6118,6 +6124,10 @@ msgctxt "sequence.conditionsMissing"
 msgid "The conditions are missing."
 msgstr "The conditions are missing."
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The console at the machine"
+msgstr "The console at the machine"
+
 #: src/users/UsersPage.tsx
 msgid "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
 msgstr "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
@@ -6474,6 +6484,14 @@ msgstr "The join account is not set. Set it and its password on the Deployment d
 #: src/settings/AgentPanel.tsx
 msgid "The key is set <0/>."
 msgstr "The key is set <0/>."
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The language of Windows PE"
+msgstr "The language of Windows PE"
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
+msgstr "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."

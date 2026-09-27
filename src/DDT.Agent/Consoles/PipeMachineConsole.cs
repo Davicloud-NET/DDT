@@ -50,6 +50,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     private bool _fellBack;
     private bool _closing;
     private bool _endConsole;
+    private bool _greeted;
     private int _lastQuestionId;
     private Task _running = Task.CompletedTask;
 
@@ -97,6 +98,19 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
             lock (_lock)
             {
                 return _fellBack;
+            }
+        }
+    }
+
+    // True once the console has said hello in this agent's version of the protocol, so it can show a run of this agent
+    // anywhere, the installed Windows included.
+    public bool Greeted
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _greeted;
             }
         }
     }
@@ -440,6 +454,11 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
 
         _log.Information($"The graphical console, {hello.Program}, is connected.");
+
+        lock (_lock)
+        {
+            _greeted = true;
+        }
 
         return null;
     }

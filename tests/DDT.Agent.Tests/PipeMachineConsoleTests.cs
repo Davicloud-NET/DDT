@@ -49,6 +49,9 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
         Assert.Equal(new ConsoleAnswer(Text: "bob"), answer);
         Assert.False(console.FellBack);
 
+        // So it may go into the installed Windows with the run.
+        Assert.True(console.Greeted);
+
         // What changes after the console connected reaches it too, in order.
         status.Registering();
         log.Warning("Written after.");
@@ -132,6 +135,9 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
                 $"{HelloMessage.CurrentVersion}. The agent carries on with the text console.",
                 StringComparison.Ordinal));
         Assert.Empty(graphical.Received);
+
+        // Nor does it go into the installed Windows, where it could not show DDT's session.
+        Assert.False(console.Greeted);
     }
 
     [Fact]

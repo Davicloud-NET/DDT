@@ -2,17 +2,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { DomainJoinCheck } from "@/sequences/steps/DomainJoinCheck";
 import { Page, PageHeader, Skeleton } from "@/ui/Layout";
 
-import { SettingSecret, SettingText, SettingsGroup, SettingsSection } from "./SettingsParts";
+import {
+  SettingSecret,
+  SettingSelect,
+  SettingText,
+  SettingsGroup,
+  SettingsSection,
+} from "./SettingsParts";
 import { useCanChangeSettings, useSettingsForm, valueAt } from "./useSettingsForm";
 
 export interface DeploymentSettings {
   timeZone: string | null;
   locale: string | null;
   keyboard: string | null;
+  consoleLanguage: string | null;
   localAdministrator: { name: string };
   domain: {
     name: string | null;
@@ -80,6 +88,26 @@ export function DeploymentDefaultsPage() {
                 mono
               />
             </div>
+          </SettingsGroup>
+
+          <SettingsGroup title={<Trans>The console at the machine</Trans>}>
+            <SettingSelect
+              form={form}
+              field="consoleLanguage"
+              canChange={canChange}
+              label={<Trans>Language</Trans>}
+              hint={
+                <Trans>
+                  The language the console starts in, in Windows PE and in the installed Windows.
+                  Someone at the machine can switch with F5.
+                </Trans>
+              }
+              empty={t`The language of Windows PE`}
+              options={[
+                { id: "en", label: "English" },
+                { id: "de", label: "Deutsch" },
+              ]}
+            />
           </SettingsGroup>
 
           <SettingsGroup title={<Trans>Local administrator</Trans>}>

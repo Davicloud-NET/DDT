@@ -10,7 +10,8 @@ namespace DDT.Contracts.Agents;
 // tokens are null when the machine has been rejected: it gets nothing further to present. SignedInBy names
 // whoever signed in at the machine, so an agent that is waiting for a web approval does not ask again. RunId is set
 // when the registration continued that running run, with its RunToken or its ResumeToken, and RunToken is then the
-// one to keep.
+// one to keep. ConsoleLanguage is the language the console at the machine starts in, en or de, or null for the
+// language of Windows PE.
 public sealed record AgentRegistrationResult(
     Guid MachineId,
     MachineState State,
@@ -19,4 +20,5 @@ public sealed record AgentRegistrationResult(
     int PollAfterSeconds,
     string? SignedInBy,
     Guid? RunId = null,
-    string? RunToken = null);
+    string? RunToken = null,
+    string? ConsoleLanguage = null);

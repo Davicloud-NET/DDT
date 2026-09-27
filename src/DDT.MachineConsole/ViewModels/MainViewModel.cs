@@ -48,6 +48,7 @@ public sealed class MainViewModel : ObservableObject
     private ConsoleNotice _notice;
     private ConsoleNotice _shownNotice;
     private bool _isDark = true;
+    private bool _languageChosen;
 
     // send takes an answer to the agent; close ends the console, or in DDT's session signs out. session is the console
     // as the shell of DDT's session in the installed Windows.
@@ -528,6 +529,24 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(IsRunOver));
         Raise(nameof(ShowsEndBand));
         Raise(nameof(CanClose));
+        SpeakAsTheServerSays(state.Language);
+    }
+
+    // The language the server has the console speak, once the agent has registered, unless someone at the machine chose
+    // one with F5 already: that choice stands.
+    private void SpeakAsTheServerSays(string? language)
+    {
+        UiLanguage? wanted = language switch
+        {
+            "de" => UiLanguage.German,
+            "en" => UiLanguage.English,
+            _ => null,
+        };
+
+        if (!_languageChosen && wanted is { } chosen && chosen != _l.Language)
+        {
+            _l.Switch(chosen);
+        }
     }
 
     private void Ask(int id, ConsoleQuestion question)
@@ -627,7 +646,11 @@ public sealed class MainViewModel : ObservableObject
 
     private void Toggle(Overlay overlay) => OverlayShown = OverlayShown == overlay ? Overlay.None : overlay;
 
-    private void ToggleLanguage() => _l.Switch(_l.Language == UiLanguage.German ? UiLanguage.English : UiLanguage.German);
+    private void ToggleLanguage()
+    {
+        _languageChosen = true;
+        _l.Switch(_l.Language == UiLanguage.German ? UiLanguage.English : UiLanguage.German);
+    }
 
     private void RestartNow()
     {

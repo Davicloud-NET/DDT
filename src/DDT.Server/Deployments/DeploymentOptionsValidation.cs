@@ -36,6 +36,11 @@ public static class DeploymentOptionsValidation
             problems.Add(new("Locale", ServerMessages.SettingsDeploymentLocaleUnknown.With("value", options.Locale)));
         }
 
+        if (!string.IsNullOrWhiteSpace(options.ConsoleLanguage) && options.ConsoleLanguage.Trim() is not ("en" or "de"))
+        {
+            problems.Add(new("ConsoleLanguage", ServerMessages.SettingsDeploymentConsoleLanguageUnknown.With("value", options.ConsoleLanguage)));
+        }
+
         if (!string.IsNullOrEmpty(options.LocalAdministrator.Password) && !IsAccountName(options.LocalAdministrator.Name))
         {
             problems.Add(new(

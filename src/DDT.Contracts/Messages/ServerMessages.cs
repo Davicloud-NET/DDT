@@ -1308,6 +1308,11 @@ public static class ServerMessages
         "settings.deployment.localeUnknown",
         "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.");
 
+    public static readonly MessageTemplate SettingsDeploymentConsoleLanguageUnknown = Define(
+        "settings.deployment.consoleLanguageUnknown",
+        "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of " +
+        "Windows PE.");
+
     public static readonly MessageTemplate SettingsDeploymentAdministratorNameInvalid = Define(
         "settings.deployment.administratorNameInvalid",
         "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.");

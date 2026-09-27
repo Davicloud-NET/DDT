@@ -13,6 +13,7 @@ namespace DDT.Server.Tests;
 public sealed class DomainDeploymentApplication() : SettingsApplication(
     ("DDT:Deployment:TimeZone", "W. Europe Standard Time"),
     ("DDT:Deployment:Keyboard", "0407:00000407"),
+    ("DDT:Deployment:ConsoleLanguage", "de"),
     ("DDT:Deployment:LocalAdministrator:Password", DomainDeploymentApplication.AdministratorPassword),
     ("DDT:Deployment:Domain:Name", "corp.example"),
     ("DDT:Deployment:Domain:OrganizationalUnit", "OU=Workstations,DC=corp,DC=example"),

@@ -110,6 +110,8 @@ public sealed class AgentLoop(
 
             KeepOrDiscardLocalRun(registration);
 
+            status.SetLanguage(registration.ConsoleLanguage);
+
             if (registration.Token is null)
             {
                 log.Error($"An administrator rejected machine {registration.MachineId}. The agent stops here.");

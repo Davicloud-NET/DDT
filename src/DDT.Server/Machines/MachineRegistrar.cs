@@ -29,6 +29,8 @@ public sealed partial class MachineRegistrar(
 
     private const int MaxAttempts = 3;
 
+    private string? ConsoleLanguage => settings.Current.Deployment.ConsoleLanguage;
+
     public async Task<MachineRegistration> RegisterAsync(
         NormalisedRegistration registration,
         IPAddress? remoteAddress,
@@ -175,7 +177,7 @@ public sealed partial class MachineRegistrar(
 
         return new MachineRegistration(
             machine.State == MachineState.Rejected
-                ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null)
+                ? new AgentRegistrationResult(machine.Id, machine.State, null, null, PollAfterSeconds, null, ConsoleLanguage: ConsoleLanguage)
                 : new AgentRegistrationResult(
                     machine.Id,
                     machine.State,
@@ -184,7 +186,8 @@ public sealed partial class MachineRegistrar(
                     PollAfterSeconds,
                     machine.SignedInUserName,
                     continued?.Id,
-                    continued is null ? null : tokens.IssueRunToken(machine, continued.Id)),
+                    continued is null ? null : tokens.IssueRunToken(machine, continued.Id),
+                    ConsoleLanguage),
             RegistrationRefusal.None);
     }
 

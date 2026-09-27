@@ -14,15 +14,16 @@ namespace DDT.Agent.Sequences;
 // directory as <Windows volume>\DDT\agent\ddt-agent.exe, with configuration as its agent.json, which holds only the
 // server's URL and root certificate; the service that starts the agent there is registered; and the run's state is
 // saved as in the Windows phase, with the run token. The agent's own file, not the boot image's: the running one may
-// be a newer one it updated itself to. The graphical console, when consoleDirectory holds one, goes into
-// <Windows volume>\DDT\console, where DDT's session in Windows starts it as its shell.
+// be a newer one it updated itself to. The graphical console goes into <Windows volume>\DDT\console, where DDT's
+// session in Windows starts it as its shell, when consoleDirectory names where it is: asked at the hand-over, as only
+// then is it known whether the console that ran speaks this agent's version of the protocol.
 public sealed class WindowsHandOver(
     OfflineServiceRegistration service,
     string agentPath,
     AgentConfiguration configuration,
     AgentLog log,
     bool dryRun,
-    string? consoleDirectory = null)
+    Func<string?>? consoleDirectory = null)
 {
     public const string AgentDirectory = "agent";
     public const string AgentFileName = "ddt-agent.exe";
@@ -71,16 +72,16 @@ public sealed class WindowsHandOver(
     // Without all of its files there is no console, and the run in Windows shows only on the server. True once staged.
     private bool StageConsole(string runDirectory)
     {
-        if (consoleDirectory is null)
+        if (consoleDirectory?.Invoke() is not { } source)
         {
             return false;
         }
 
-        string[] missing = [.. ConsolePipe.Files.Where(file => !File.Exists(Path.Combine(consoleDirectory, file)))];
+        string[] missing = [.. ConsolePipe.Files.Where(file => !File.Exists(Path.Combine(source, file)))];
 
         if (missing.Length > 0)
         {
-            log.Warning($"{consoleDirectory} lacks {string.Join(", ", missing)}, so the console does not come into Windows.");
+            log.Warning($"{source} lacks {string.Join(", ", missing)}, so the console does not come into Windows.");
 
             return false;
         }
@@ -100,7 +101,7 @@ public sealed class WindowsHandOver(
 
         foreach (string file in ConsolePipe.Files)
         {
-            File.Copy(Path.Combine(consoleDirectory, file), Path.Combine(directory, file), overwrite: true);
+            File.Copy(Path.Combine(source, file), Path.Combine(directory, file), overwrite: true);
         }
 
         log.Information($"The console is in {directory}, to show the run in Windows.");

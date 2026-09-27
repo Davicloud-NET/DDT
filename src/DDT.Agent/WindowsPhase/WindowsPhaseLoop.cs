@@ -128,6 +128,7 @@ public sealed class WindowsPhaseLoop(
 
             Guid machineId = registration.MachineId;
             status?.Registered(machineId);
+            status?.SetLanguage(registration.ConsoleLanguage);
             runToken = registration.RunToken ?? runToken;
             DeploymentTokens tokens = new(token, resumeToken, runToken);
             AgentRun? run;

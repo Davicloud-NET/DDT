@@ -51,6 +51,19 @@ public sealed class DeploymentOptionsValidationTests
         Assert.All(problems, problem => Assert.Equal("TimeZone", problem.Field));
     }
 
+    [Theory]
+    [InlineData("en", true)]
+    [InlineData("de", true)]
+    [InlineData("fr", false)]
+    [InlineData("de-DE", false)]
+    public void TheConsoleSpeaksOnlyTheLanguagesItCarries(string language, bool valid)
+    {
+        IReadOnlyList<SettingProblem> problems = DeploymentOptionsValidation.FindProblems(new DeploymentOptions { ConsoleLanguage = language });
+
+        Assert.Equal(valid, problems.Count == 0);
+        Assert.All(problems, problem => Assert.Equal("ConsoleLanguage", problem.Field));
+    }
+
     [Fact]
     public void ADomainNeedsItsAccountAndALocalAdministrator()
     {

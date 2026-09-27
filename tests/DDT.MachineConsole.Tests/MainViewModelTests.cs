@@ -15,6 +15,26 @@ namespace DDT.MachineConsole.Tests;
 // kept once the pipe ends.
 public sealed class MainViewModelTests
 {
+    // The deployment setting, which the agent passes on once it has registered. What someone at the machine chose with F5
+    // stands.
+    [Fact]
+    public void SpeaksTheLanguageTheServerNamesUnlessSomeoneChoseOne()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running);
+
+        Assert.Equal(UiLanguage.English, console.Model.Localizer.Language);
+
+        console.Show(Scenarios.Running with { Language = "de" });
+
+        Assert.Equal(UiLanguage.German, console.Model.Localizer.Language);
+        Assert.Equal("Protokoll", console.Model.Keys[0].Label);
+
+        console.Model.Press(Key.F5);
+        console.Show(Scenarios.Running with { Language = "de" });
+
+        Assert.Equal(UiLanguage.English, console.Model.Localizer.Language);
+    }
+
     public static TheoryData<ConsoleStage, string> StageScreens => new()
     {
         { ConsoleStage.Starting, nameof(ConnectionViewModel) },

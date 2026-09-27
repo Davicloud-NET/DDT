@@ -144,7 +144,7 @@ SequenceRunner runner = new(
         staged,
         log,
         dryRun: false,
-        consolePath is null ? null : Path.GetDirectoryName(consolePath)),
+        ConsoleForWindows),
     log,
     TimeProvider.System,
     RunHeartbeat.DefaultInterval,
@@ -164,3 +164,22 @@ AgentLoop loop = new(
     version);
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);
+
+// The console that goes into the installed Windows with the run: the one that ran here, and only when it spoke this
+// agent's version of the protocol, as a console of another version could not show DDT's session there.
+string? ConsoleForWindows()
+{
+    if (graphical is null || consolePath is null)
+    {
+        return null;
+    }
+
+    if (!graphical.Greeted)
+    {
+        log.Information("The graphical console did not speak this agent's version of the console protocol, so it does not come into Windows.");
+
+        return null;
+    }
+
+    return Path.GetDirectoryName(consolePath);
+}

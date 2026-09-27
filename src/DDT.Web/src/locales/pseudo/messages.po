@@ -93,6 +93,11 @@ msgid "''{value}'' is not a host name or an address. Name the domain controller 
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.deployment.consoleLanguageUnknown"
+msgid "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.logging.levelUnknown"
 msgid "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None."
 msgstr ""
@@ -3318,6 +3323,7 @@ msgstr ""
 
 #: src/app/Shell.tsx
 #: src/images/ImagesPage.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Language"
 msgstr ""
 
@@ -6118,6 +6124,10 @@ msgctxt "sequence.conditionsMissing"
 msgid "The conditions are missing."
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The console at the machine"
+msgstr ""
+
 #: src/users/UsersPage.tsx
 msgid "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
 msgstr ""
@@ -6473,6 +6483,14 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "The key is set <0/>."
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The language of Windows PE"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx

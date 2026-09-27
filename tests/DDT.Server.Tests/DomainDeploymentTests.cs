@@ -58,6 +58,19 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.True((await RegisteredMachine.ReadAsync<DeploymentOptionsView>(await administrator.GetAsync("/api/deployments/options"))).DomainConfigured);
     }
 
+    // The console at the machine starts in the language the deployment defaults name, even while the machine waits.
+    [Fact]
+    public async Task TheRegistrationSaysWhichLanguageTheConsoleSpeaks()
+    {
+        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
+
+        using HttpResponseMessage response = await agent.RegisterAsync(AgentClient.Registration(Guid.NewGuid().ToString("D"), "02DD0000C0DE"));
+        AgentRegistrationResult registration = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(response);
+
+        Assert.Equal(MachineState.Pending, registration.State);
+        Assert.Equal("de", registration.ConsoleLanguage);
+    }
+
     // Anyone who presents a waiting machine's UUID and MAC polls as it, so it learns neither its name nor the domain.
     [Fact]
     public async Task AWaitingMachineLearnsItsNameAndTheDomainOnlyOnceAuthorized()

@@ -149,6 +149,7 @@ has no domain field, because the join password is bound to Domain:Name (rule 6 i
 | TimeZone | Windows time zone id | unset: Windows picks from the locale | | live | Admin |
 | Locale | culture name | unset: image language, else en-US | | live | Admin |
 | Keyboard | input locale | unset: the locale | | live | Admin |
+| ConsoleLanguage | en or de | unset: the language of Windows PE | | live, from the next registration | Admin |
 | LocalAdministrator:Name | 1 to 20 characters | Admin | | live | Admin |
 | LocalAdministrator:Password | text | unset: no account, Windows asks | yes | live | Admin |
 | Domain:Name | DNS name | unset: workgroup | | live | Admin |

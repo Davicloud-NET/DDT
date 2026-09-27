@@ -1153,6 +1153,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.deployment.administratorPasswordRequired",
     message: "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account page of its first start.",
   }),
+  "settings.deployment.consoleLanguageUnknown": msg({
+    context: "settings.deployment.consoleLanguageUnknown",
+    message: "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE.",
+  }),
   "settings.deployment.controllerInvalid": msg({
     context: "settings.deployment.controllerInvalid",
     message: "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port.",

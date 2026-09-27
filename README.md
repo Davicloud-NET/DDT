@@ -985,7 +985,9 @@ one ends its console, and the newer agent starts its own, so an agent that updat
 version of the protocol uses the text console until the boot image has a console of that version.
 
 The service in the installed Windows does not start the console: Windows does, as the shell of DDT's
-session, see [DDT's session at the machine](#ddts-session-at-the-machine). A dry run and an agent
+session, see [DDT's session at the machine](#ddts-session-at-the-machine). The hand-over takes only
+a console that said it speaks the agent's version of the protocol into Windows, so a boot image with
+an older console runs the rest in Windows without one. A dry run and an agent
 whose input is redirected have no console, unless `--console <path>` names one to start, which is how
 a development computer tries one.
 
@@ -1024,7 +1026,10 @@ or from the password to the user name. The keys for `ERASE` and `ANYWAY` work on
 typed exactly, and send what was typed. F1 opens the log, F2 the machine's details, F3 the licences,
 with DDT's attribution notice and every licence text the console carries, F4 switches between the
 dark and the light theme, and F5 between English and German. The console starts dark, in the
-language of Windows PE's user interface, which is English in the image copype makes. Everything the
+language the deployment defaults name for it (`DDT:Deployment:ConsoleLanguage`, `en` or `de`), and
+without one in the language of Windows PE's user interface, which is English in the image copype
+makes. It learns the setting once the agent has registered, and after F5 it keeps the language
+chosen at the machine. Everything the
 console says comes from its own catalogs in `src/DDT.MachineConsole/Locales`, in the web's PO
 format; what the agent sends, such as its problems, the step names and the log, shows as it was
 sent.
@@ -1705,6 +1710,7 @@ the server checks at startup. It lists every problem at once, and a misspelled k
 | `TimeZone` | A Windows time zone id such as `W. Europe Standard Time`. Empty: Windows picks one from the locale. A step can set its own. |
 | `Locale` | Formats and system locale, such as `de-DE`. Empty: the image's language. A step can set its own. |
 | `Keyboard` | Input locale, such as `0407:00000407` or `de-DE`. Empty: the locale. A step can set its own. |
+| `ConsoleLanguage` | The language the console at the machine starts in, `en` or `de`, in Windows PE and in DDT's session. Empty: the language of Windows PE. Not in the answer file. |
 | `LocalAdministrator:Name`, `LocalAdministrator:Password` | The local administrator a step with "Add the local administrator" creates. The name defaults to `Admin`. |
 | `Domain:Name`, `Domain:OrganizationalUnit`, `Domain:UserName`, `Domain:Password` | The Active Directory domain a Join the domain step joins, the OU as a distinguished name, which a step can override (empty for the default Computers container, which cannot be named), and the join account as `DOMAIN\user` or `user@domain`. |
 | `Domain:Controller` | The domain controller DDT asks when an administrator checks the join account, as a host name or an address. Unset, DDT asks the domain's name, which works when the server's DNS knows the domain. The machines never use it. |

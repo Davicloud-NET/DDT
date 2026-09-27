@@ -19,6 +19,10 @@ public sealed class DeploymentOptions
     // An input locale such as 0407:00000407 or de-DE. Unset, the locale.
     public string? Keyboard { get; set; }
 
+    // The language the console at the machine starts in, en or de; the person there can still switch with F5. Unset,
+    // the language of Windows PE, which is English in the image copype makes. It is not in the answer file.
+    public string? ConsoleLanguage { get; set; }
+
     public LocalAdministratorOptions LocalAdministrator { get; set; } = new();
 
     public DomainOptions Domain { get; set; } = new();

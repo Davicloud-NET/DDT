@@ -81,7 +81,13 @@ internal static class TestAgents
         AgentLog log,
         bool dryRun = false,
         string? consoleDirectory = null) =>
-        new(new OfflineServiceRegistration(toolRunner, log, dryRun), AgentSource(tools), Configuration, log, dryRun, consoleDirectory);
+        new(
+            new OfflineServiceRegistration(toolRunner, log, dryRun),
+            AgentSource(tools),
+            Configuration,
+            log,
+            dryRun,
+            consoleDirectory is null ? null : () => consoleDirectory);
 
     // The running agent, as the self-update may have named it.
     public static string AgentSource(FakeDeploymentTools tools)

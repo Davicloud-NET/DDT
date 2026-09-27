@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Data;
 using DDT.Server.Live;
@@ -123,7 +124,8 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
                     ? SettingApplyStatus.Pending
                     : row.State == SettingsApplyResult.Applied ? SettingApplyStatus.Applied : SettingApplyStatus.Failed,
                 row.Message,
-                row.UpdatedUtc))];
+                row.UpdatedUtc,
+                SettingsHostStates.Text(row)))];
 
     // An interface name that matches nothing is only logged by the host, so the page says which host did not find it.
     private static List<SettingMessage> Warnings(SettingsSectionState state, List<SettingsHostState> rows) =>
@@ -132,10 +134,12 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
             : [.. rows
                 .Select(row => (row.Host, Detail: Detail(row)))
                 .Where(entry => entry.Detail is not null)
-                .SelectMany(entry => entry.Detail!.Unmatched.Select(name => new SettingMessage(
+                .SelectMany(entry => entry.Detail!.Unmatched.Select(name => Message(
                     "interfaces",
-                    $"'{name}' names no interface on {entry.Host}, which serves nothing for it.",
+                    ServerMessages.SettingsPxeInterfaceNotFound.With("name", name, "host", entry.Host),
                     SettingWarningCodes.PxeInterfaceNotFound)))];
+
+    private static SettingMessage Message(string field, ServerMessage text, string? code) => new(field, text.Text, code, text);
 
     private static PxeHostDetail? Detail(SettingsHostState row)
     {

@@ -125,7 +125,7 @@ public sealed class DomainJoinCheckTests(DomainJoinCheckApplication application)
             Assert.False(result.CanJoin);
             DomainJoinFinding finding = Assert.Single(result.Findings);
             Assert.Equal(DomainJoinFindingLevel.Problem, finding.Level);
-            Assert.Equal(@"dc1.corp.example did not accept the password of CORP\ddt-join. Correct DDT:Deployment:Domain:Password.", finding.Text);
+            Assert.Equal(@"dc1.corp.example did not accept the password of CORP\ddt-join. Correct the join account password on the Deployment defaults page.", finding.Text);
 
             AuditEvent audit = (await AuditAsync())[^1];
             Assert.Equal("corp.example", audit.SubjectId);
@@ -148,7 +148,7 @@ public sealed class DomainJoinCheckTests(DomainJoinCheckApplication application)
             DomainJoinCheckView result = await CheckAsync(null);
 
             Assert.Contains("dc1.corp.example could not be reached over LDAP (The LDAP server is unavailable)", result.Findings[0].Text, StringComparison.Ordinal);
-            Assert.Contains("DDT:Deployment:Domain:Controller", result.Findings[0].Text, StringComparison.Ordinal);
+            Assert.Contains("for the check on the Deployment defaults page", result.Findings[0].Text, StringComparison.Ordinal);
         }
         finally
         {
@@ -190,6 +190,6 @@ public sealed class DomainJoinCheckWithoutDomainTests(DdtApplication application
         DomainJoinCheckView result = await RegisteredMachine.ReadAsync<DomainJoinCheckView>(response);
 
         Assert.False(result.CanJoin);
-        Assert.Equal("No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server.", Assert.Single(result.Findings).Text);
+        Assert.Equal("No domain is set. Set the domain and the join account on the Deployment defaults page.", Assert.Single(result.Findings).Text);
     }
 }

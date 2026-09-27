@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Server.Authentication;
@@ -58,11 +59,7 @@ public sealed class OidcSettingsSection() : SettingsSectionDefinition<OidcOption
         && string.Equals(options.AutoProvisionRole, DdtRoleNames.Operator, StringComparison.OrdinalIgnoreCase)
             ?
             [
-                new(
-                    "AutoProvisionRole",
-                    "Every identity the provider signs in that DDT has not seen becomes an operator, and operators can read the " +
-                    "deployment passwords by deploying a machine they control.",
-                    SettingWarningCodes.OidcOperatorRole),
+                new("AutoProvisionRole", ServerMessages.SettingsOidcOperatorRole.With(), SettingWarningCodes.OidcOperatorRole),
             ]
             : [];
 }

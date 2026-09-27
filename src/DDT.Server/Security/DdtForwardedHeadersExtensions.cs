@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
@@ -64,17 +65,13 @@ public static class DdtForwardedHeadersExtensions
         [
             .. Split(configured.KnownProxies)
                 .Where(proxy => TryParseAddress(proxy) is null)
-                .Select(proxy => new SettingProblem("KnownProxies", $"'{proxy}' is not an IP address.")),
+                .Select(proxy => new SettingProblem("KnownProxies", ServerMessages.SettingsProxiesAddressInvalid.With("value", proxy))),
             .. Split(configured.KnownNetworks)
                 .Where(network => TryParseNetwork(network) is null)
-                .Select(network => new SettingProblem(
-                    "KnownNetworks",
-                    $"'{network}' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length.")),
+                .Select(network => new SettingProblem("KnownNetworks", ServerMessages.SettingsProxiesNetworkInvalid.With("value", network))),
             .. Split(configured.KnownNetworks)
                 .Where(network => TryParseNetwork(network) is { PrefixLength: 0 })
-                .Select(network => new SettingProblem(
-                    "KnownNetworks",
-                    $"'{network}' is every address there is, so any client could claim any address. Name the proxies' own network.")),
+                .Select(network => new SettingProblem("KnownNetworks", ServerMessages.SettingsProxiesNetworkEverything.With("value", network))),
         ];
     }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Server.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -27,7 +28,7 @@ internal static class OidcCandidate
         }
         catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
         {
-            return [new("Authority", $"Single sign-on cannot start with these values: {exception.Message}")];
+            return [new("Authority", ServerMessages.SettingsOidcCannotStart.With("error", exception.Message))];
         }
         finally
         {
@@ -36,6 +37,6 @@ internal static class OidcCandidate
 
         return string.Equals(openId.SignInScheme, IdentityConstants.ExternalScheme, StringComparison.Ordinal)
             ? []
-            : [new(string.Empty, $"The handler would sign into '{openId.SignInScheme}', which bypasses local account linking entirely.")];
+            : [new(string.Empty, ServerMessages.SettingsOidcSignInScheme.With("scheme", openId.SignInScheme ?? string.Empty))];
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Protocols.Dhcp;
 using DDT.Protocols.Pxe;
@@ -71,17 +72,17 @@ public sealed class PxeSetup
         // Resolved against the store, an empty value would be the store itself.
         if (string.IsNullOrWhiteSpace(options.BootDirectory))
         {
-            return [new("BootDirectory", "Must not be empty. Leave it out for the folder boot in DDT:StorePath.")];
+            return [new("BootDirectory", ServerMessages.SettingsPxeBootDirectoryEmpty.With())];
         }
 
         string boot = BootDirectoryIn(options.BootDirectory, storePath);
         string store = Path.TrimEndingDirectorySeparator(Path.GetFullPath(storePath));
         string keys = Path.Combine(store, "keys");
-        string suggestion = $"Use a directory of its own, such as {Path.Combine(store, "boot")}.";
+        string suggested = Path.Combine(store, "boot");
 
         if (string.Equals(boot, Path.GetPathRoot(boot), StringComparison.OrdinalIgnoreCase))
         {
-            return [new("BootDirectory", $"'{boot}' is the root of a filesystem, which would serve every file on it. {suggestion}")];
+            return [new("BootDirectory", ServerMessages.SettingsPxeBootDirectoryIsRoot.With("directory", boot, "suggested", suggested))];
         }
 
         List<SettingProblem> problems = [];
@@ -90,11 +91,13 @@ public sealed class PxeSetup
         {
             problems.Add(new(
                 "BootDirectory",
-                $"'{boot}' holds DDT:StorePath, {store}, which would serve the database and the key ring. {suggestion}"));
+                ServerMessages.SettingsPxeBootDirectoryHoldsStore.With("directory", boot, "store", store, "suggested", suggested)));
         }
         else if (IsSameOrInside(boot, keys))
         {
-            problems.Add(new("BootDirectory", $"'{boot}' is in the key ring folder {keys}, which would serve its keys. {suggestion}"));
+            problems.Add(new(
+                "BootDirectory",
+                ServerMessages.SettingsPxeBootDirectoryInKeys.With("directory", boot, "keys", keys, "suggested", suggested)));
         }
 
         foreach (string file in CertificateFilesIn(configuration))
@@ -104,7 +107,7 @@ public sealed class PxeSetup
             {
                 problems.Add(new(
                     "BootDirectory",
-                    $"'{boot}' holds the folder of the TLS certificate or key {file}, which would serve the key. {suggestion}"));
+                    ServerMessages.SettingsPxeBootDirectoryHoldsKey.With("directory", boot, "file", file, "suggested", suggested)));
             }
         }
 
@@ -159,7 +162,7 @@ public sealed class PxeSetup
             }
             else
             {
-                problems.Add(new("AuthorisedRelayAgents", $"'{relay}' is not an IPv4 address."));
+                problems.Add(new("AuthorisedRelayAgents", ServerMessages.SettingsPxeNotIpv4Address.With("value", relay)));
             }
         }
 
@@ -171,26 +174,24 @@ public sealed class PxeSetup
             {
                 if (target.Method == BootMethod.Tftp && target.ServerAddress is null)
                 {
-                    problems.Add(new(
-                        $"BootTargets:{architecture}:ServerAddress",
-                        "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it."));
+                    problems.Add(new($"BootTargets:{architecture}:ServerAddress", ServerMessages.SettingsPxeServerAddressRequired.With()));
                 }
             }
         }
 
         if (options.HttpBootPort is < 1 or > 65535)
         {
-            problems.Add(new("HttpBootPort", $"{options.HttpBootPort} is not a port number."));
+            problems.Add(new("HttpBootPort", ServerMessages.SettingsPxeHttpBootPortInvalid.With("port", options.HttpBootPort)));
         }
 
         if (options.TftpMaxWindowSize is < 1 or > MaxWindowSize)
         {
-            problems.Add(new("TftpMaxWindowSize", $"Must be between 1 and {MaxWindowSize}."));
+            problems.Add(new("TftpMaxWindowSize", ServerMessages.SettingsPxeWindowSizeRange.With("max", MaxWindowSize)));
         }
 
         if (options.MaxConcurrentTftpTransfers < 1)
         {
-            problems.Add(new("MaxConcurrentTftpTransfers", "Must be at least 1."));
+            problems.Add(new("MaxConcurrentTftpTransfers", ServerMessages.SettingsAtLeastOne.With()));
         }
 
         return (targets, relays.ToImmutable());
@@ -208,7 +209,7 @@ public sealed class PxeSetup
         {
             problems.Add(new(
                 field,
-                $"'{key}' is not a client architecture. Use one of: {string.Join(", ", Enum.GetNames<ClientArchitecture>())}."));
+                ServerMessages.SettingsPxeArchitectureUnknown.With("value", key, "architectures", string.Join(", ", Enum.GetNames<ClientArchitecture>()))));
 
             return null;
         }
@@ -225,7 +226,7 @@ public sealed class PxeSetup
 
         if (method is null)
         {
-            problems.Add(new($"{field}:Method", "Must be Tftp or Http."));
+            problems.Add(new($"{field}:Method", ServerMessages.SettingsPxeMethodInvalid.With()));
         }
 
         // The architecture already says which one the firmware speaks: a PXE client never accepts a
@@ -234,22 +235,24 @@ public sealed class PxeSetup
 
         if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
         {
-            problems.Add(new($"{field}:Method", $"Must be {(httpArchitecture ? "Http" : "Tftp")} for {name} clients."));
+            problems.Add(new(
+                $"{field}:Method",
+                ServerMessages.SettingsPxeMethodForArchitecture.With("method", httpArchitecture ? "Http" : "Tftp", "architecture", name)));
         }
 
         string bootFile = target.BootFile?.Trim() ?? string.Empty;
 
         if (bootFile.Length == 0)
         {
-            problems.Add(new($"{field}:BootFile", "Must be set."));
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileRequired.With()));
         }
         else if (bootFile.Length > MaxBootFileLength || !Ascii.IsValid(bootFile))
         {
-            problems.Add(new($"{field}:BootFile", $"Must be ASCII and at most {MaxBootFileLength} characters."));
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxBootFileLength)));
         }
         else if (method == BootMethod.Http && !IsHttpUrl(bootFile))
         {
-            problems.Add(new($"{field}:BootFile", "Must be an absolute http or https URL."));
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileUrl.With()));
         }
 
         IPAddress? serverAddress = null;
@@ -260,14 +263,14 @@ public sealed class PxeSetup
 
             if (serverAddress is null)
             {
-                problems.Add(new($"{field}:ServerAddress", $"'{target.ServerAddress}' is not an IPv4 address."));
+                problems.Add(new($"{field}:ServerAddress", ServerMessages.SettingsPxeNotIpv4Address.With("value", target.ServerAddress)));
             }
         }
 
         if (target.ServerHostName is { } hostName
             && (hostName.Length > MaxServerHostNameLength || !Ascii.IsValid(hostName)))
         {
-            problems.Add(new($"{field}:ServerHostName", $"Must be ASCII and at most {MaxServerHostNameLength} characters."));
+            problems.Add(new($"{field}:ServerHostName", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxServerHostNameLength)));
         }
 
         if (problems.Count > problemsBefore || method is null)

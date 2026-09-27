@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Nodes;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
@@ -135,7 +136,7 @@ public sealed partial class SettingsStore(
 
         // A stored secret goes only to the server it was entered for, or an administrator could have it sent to their own.
         List<SettingProblem> refused = [.. kept.Where(field => DestinationChanged(definition, field, before, after))
-            .Select(field => new SettingProblem(field.Path, "Enter it again for the new server: a stored secret goes only to the server it was entered for."))];
+            .Select(field => new SettingProblem(field.Path, ServerMessages.SettingsSecretForNewServer.With()))];
 
         if (refused.Count > 0)
         {
@@ -167,7 +168,7 @@ public sealed partial class SettingsStore(
         {
             return new(
                 SettingsSaveOutcome.Invalid,
-                Unconfirmed: [.. unconfirmed.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code))]);
+                Unconfirmed: [.. unconfirmed.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code, warning.Text))]);
         }
 
         List<string> reauthenticate = [.. definition.Fields
@@ -334,7 +335,7 @@ public sealed partial class SettingsStore(
                 default:
                     if (held?.Unreadable == true)
                     {
-                        problems.Add(new(field.Path, "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."));
+                        problems.Add(new(field.Path, ServerMessages.SettingsSecretCannotBeKept.With()));
                     }
                     else if (!string.IsNullOrEmpty(held?.Value))
                     {
@@ -389,7 +390,7 @@ public sealed partial class SettingsStore(
     }
 
     private static List<SettingMessage> Messages(SettingsSectionDefinition definition, IEnumerable<SettingProblem> problems) =>
-        [.. problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null))];
+        [.. problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null, problem.Text))];
 
     private async Task ImportAsync(SettingsSectionDefinition definition, CancellationToken cancellationToken)
     {

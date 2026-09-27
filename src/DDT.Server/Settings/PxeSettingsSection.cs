@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
@@ -63,8 +64,7 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
             {
                 warnings.Add(new(
                     $"BootTargets:{architecture}:BootFile",
-                    $"{url} is not where DDT serves boot files, which is http://<server>:{context.HttpBootPort}/boot/. " +
-                    "Keep it only if another server serves this file.",
+                    ServerMessages.SettingsPxeBootUrl.With("url", url.ToString(), "port", context.HttpBootPort),
                     SettingWarningCodes.PxeBootUrl));
             }
         }

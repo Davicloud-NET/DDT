@@ -235,14 +235,19 @@ public sealed class LdapAuthenticator(LdapOptions options, ILogger<LdapAuthentic
         catch (Exception exception) when (exception is LdapException or DirectoryOperationException or InvalidOperationException
             or ArgumentException or TypeInitializationException or DllNotFoundException)
         {
-            return new(false, null, null, [], $"The bind as {_options.BindDn} to {server} failed: {exception.Message}");
+            return new(
+                false,
+                null,
+                null,
+                [],
+                ServerMessages.SettingsLdapTestBindFailed.With("account", _options.BindDn, "server", server, "error", exception.Message));
         }
 
         using (search)
         {
             if (string.IsNullOrWhiteSpace(userName))
             {
-                return new(true, null, null, [], $"The bind as {_options.BindDn} to {server} succeeded.");
+                return new(true, null, null, [], ServerMessages.SettingsLdapTestBound.With("account", _options.BindDn, "server", server));
             }
 
             try
@@ -251,30 +256,40 @@ public sealed class LdapAuthenticator(LdapOptions options, ILogger<LdapAuthentic
 
                 if (entry is null)
                 {
-                    return new(true, false, null, [], status == LdapLookupStatus.Ambiguous
-                        ? $"More than one entry under {_options.BaseDn} matches {userName} with the user filter, so a sign-in is refused."
-                        : $"No entry under {_options.BaseDn} matches {userName} with the user filter.");
+                    return new(true, false, null, [], (status == LdapLookupStatus.Ambiguous
+                        ? ServerMessages.SettingsLdapTestManyEntries
+                        : ServerMessages.SettingsLdapTestNoEntry).With("baseDn", _options.BaseDn, "name", userName));
                 }
 
                 bool? accepted = string.IsNullOrEmpty(password) ? null : TryVerifyPassword(entry.DistinguishedName, password);
 
                 if (accepted == false)
                 {
-                    return new(true, true, false, [], $"{entry.DistinguishedName} was found, but the directory refused the password.");
+                    return new(true, true, false, [], ServerMessages.SettingsLdapTestPasswordRefused.With("entry", entry.DistinguishedName));
                 }
 
                 if (ReadImmutableId(entry) is null)
                 {
-                    return new(true, true, accepted, [], $"{entry.DistinguishedName} has no {_options.ImmutableIdAttribute}, so a sign-in is refused.");
+                    return new(
+                        true,
+                        true,
+                        accepted,
+                        [],
+                        ServerMessages.SettingsLdapTestNoImmutableId.With("entry", entry.DistinguishedName, "attribute", _options.ImmutableIdAttribute));
                 }
 
                 List<string> groups = ReadGroups(search, entry.DistinguishedName);
 
-                return new(true, true, accepted, groups, $"{entry.DistinguishedName} was found, in {groups.Count} groups.");
+                return new(true, true, accepted, groups, ServerMessages.SettingsLdapTestFound.With("entry", entry.DistinguishedName, "count", groups.Count));
             }
             catch (Exception exception) when (exception is LdapException or DirectoryOperationException)
             {
-                return new(true, null, null, [], $"The search for {userName} under {_options.BaseDn} failed: {exception.Message}");
+                return new(
+                    true,
+                    null,
+                    null,
+                    [],
+                    ServerMessages.SettingsLdapTestSearchFailed.With("name", userName, "baseDn", _options.BaseDn, "error", exception.Message));
             }
         }
     }

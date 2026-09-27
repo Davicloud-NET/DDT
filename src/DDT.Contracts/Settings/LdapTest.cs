@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Messages;
+
 namespace DDT.Contracts.Settings;
 
 // The values and secrets as the form holds them, not yet saved. UserName and Password also sign that user in, without a
@@ -15,7 +17,8 @@ public sealed record LdapTestRequest(
 // Bound: the bind with BindDn succeeded. UserFound and PasswordAccepted are null when no user was named. Role is the one
 // the groups would give, the highest of those GroupRoleMap maps them to, and null for none. Proof is set when the user
 // was the administrator testing, signed in with these values and kept the Administrator role: a directory administrator
-// sends it as X-DDT-Directory-Proof with a save of exactly these values, within 5 minutes.
+// sends it as X-DDT-Directory-Proof with a save of exactly these values, within 5 minutes. Message is English, and Text
+// the same sentence as a code with its values, for a client that says it in the person's language.
 public sealed record LdapTestResult(
     bool Bound,
     bool? UserFound,
@@ -23,4 +26,5 @@ public sealed record LdapTestResult(
     IReadOnlyList<string> Groups,
     string? Role,
     string Message,
-    string? Proof);
+    string? Proof,
+    ServerMessage? Text = null);

@@ -301,8 +301,8 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
             new(unattend, "timeZone", "'Middle Earth Standard Time' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time."),
             new(unattend, "locale", "'de' is not a language and region that Windows knows. Use a name such as de-DE."),
             new(unattend, "keyboard", "'de-DE;0407:0000040X' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407."),
-            new(unattend, "localAdministrator", "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one."),
-            new(join, null, "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step."),
+            new(unattend, "localAdministrator", "No local administrator is set on the Deployment defaults page, so the answer file cannot add one."),
+            new(join, null, "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step."),
             new(join, "organizationalUnit", "Must be a distinguished name without the LDAP:// prefix, such as OU=Workstations,DC=example,DC=com."),
         ];
         Assert.Equal(expected, validation.Problems);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
 using DDT.Contracts.Audit;
@@ -22,7 +23,8 @@ using DDT.Contracts.Users;
 namespace DDT.Contracts;
 
 // Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties. A message's
-// values are objects, so the types they can be are listed too, for the problem details that carry a message's code.
+// values are objects, so the types they can be are listed too, for the problem details that carry a message's code. A
+// message read back from JSON, such as how a host applied the settings, has its values as JsonElement.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,
@@ -100,6 +102,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(Dictionary<string, ServerMessage[]>))]
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(long))]
+[JsonSerializable(typeof(JsonElement))]
 [JsonSerializable(typeof(SettingsSectionView<DeploymentSettings>))]
 [JsonSerializable(typeof(SettingsSectionUpdate<DeploymentSettings>))]
 [JsonSerializable(typeof(SettingsSectionView<MachineSettings>))]

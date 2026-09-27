@@ -101,8 +101,8 @@ public sealed class SingleSignOnGroupTests(GroupMappedSignInApplication applicat
         using HttpResponseMessage refused = await administrator.PatchAsync($"{UserRequests.UsersApi}/{id}", new UpdateUserRequest(null, null, DdtRoleNames.Operator));
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
         Assert.Equal(
-            $"The role of {FakeOidcHandler.UserNameOf(subject)} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. " +
-            "Change its groups at the provider, or the map.",
+            $"The role of {FakeOidcHandler.UserNameOf(subject)} comes from its single sign-on groups through the single sign-on group map, at each sign-in. " +
+            "Change its groups at the provider, or the map on the Sign-in page.",
             await TestDatabase.TitleAsync(refused));
 
         Assert.Equal(("/sign-in?error=no-role", false), await SignInAsync(subject));

@@ -3,7 +3,11 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using DDT.Contracts;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
 using DDT.Server.Machines;
@@ -221,6 +225,12 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         Assert.Equal([SettingWarningCodes.WideNetwork], await SettingsRequests.UnconfirmedAsync(unconfirmed));
         Assert.StartsWith("network.wide: 172.16.0.0/12 is wider than a /16.", Assert.Single((await SettingsRequests.ProblemsAsync(unconfirmed)).Errors["confirm"]), StringComparison.Ordinal);
 
+        // The warning to confirm carries its message as a code too, which the confirmation code is not.
+        JsonNode warning = (await JsonAsync(unconfirmed))["confirm"]![0]!;
+        Assert.Equal(ServerMessages.SettingsProxiesNetworkWide.Code, (string?)warning["text"]!["code"]);
+        Assert.Equal("""{"network":"172.16.0.0/12","prefix":16}""", warning["text"]!["args"]!.ToJsonString());
+        Assert.StartsWith("172.16.0.0/12 is wider than a /16.", (string?)warning["message"], StringComparison.Ordinal);
+
         SettingsSectionView<ProxySettings> saved = await RegisteredMachine.ReadAsync<SettingsSectionView<ProxySettings>>(
             await administrator.SaveAsync(SettingsSectionNames.Proxies, loaded.Version, values, confirm: [SettingWarningCodes.WideNetwork], reauthentication: token));
 
@@ -288,4 +298,54 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal([SettingWarningCodes.LdapRekey], await SettingsRequests.UnconfirmedAsync(response));
     }
+
+    // A refused save says each field's problems as codes beside the English, as every validation problem does. A claim
+    // value with colons is one entry of the group map, named as the page names the entry.
+    [Fact]
+    public async Task ARefusalCarriesTheCodesOfItsProblemsByField()
+    {
+        const string entry = "groupRoleMap[urn:example:admins]";
+        SignedInClient administrator = await application.AdministratorAsync();
+        SettingsSectionView<OidcSettings> loaded = await administrator.SectionAsync<OidcSettings>(SettingsSectionNames.Oidc);
+
+        HttpResponseMessage refused = await administrator.SaveAsync(
+            SettingsSectionNames.Oidc,
+            loaded.Version,
+            loaded.Values with { GroupsClaim = string.Empty, GroupRoleMap = new Dictionary<string, string> { ["urn:example:admins"] = "Owner" } });
+        JsonObject problem = await JsonAsync(refused);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Equal("'Owner' is not a DDT role. Use Administrator, Operator, Viewer.", (string?)problem["errors"]![entry]![0]);
+        Assert.Equal(ServerMessages.SettingsRoleUnknown.Code, (string?)problem["errorCodes"]![entry]![0]!["code"]);
+        Assert.Equal("""{"role":"Owner","roles":"Administrator, Operator, Viewer"}""", problem["errorCodes"]![entry]![0]!["args"]!.ToJsonString());
+        Assert.Equal("GroupRoleMap needs the claim that carries the groups, such as groups.", (string?)problem["errors"]!["groupsClaim"]![0]);
+        Assert.Equal("""[{"code":"settings.oidc.groupsClaimRequired","args":{}}]""", problem["errorCodes"]!["groupsClaim"]!.ToJsonString());
+        Assert.Null(problem["confirm"]);
+    }
+
+    // The problems of a stored section carry their message beside the English, and a warning a save confirms its
+    // confirmation code as well.
+    [Fact]
+    public void AViewsProblemsAndWarningsCarryTheirMessages()
+    {
+        SettingsSnapshot snapshot = SettingsSnapshotTests.Build(
+        [
+            SettingsSnapshotTests.Stored(SettingsSectionNames.Machines, """{"maxWaiting":0,"zeroTouchNetworks":"10.0.0.0/8"}"""),
+        ]);
+
+        SettingsSectionView<MachineSettings> view = SettingsApi.Machines.TypedView(snapshot[SettingsSectionNames.Machines], [], null);
+        JsonObject json = JsonSerializer.SerializeToNode(view, DdtJsonContext.Default.SettingsSectionViewMachineSettings)!.AsObject();
+
+        Assert.Equal(
+            """{"field":"maxWaiting","message":"Must be at least 1.","code":null,"text":{"code":"settings.atLeastOne","args":{}}}""",
+            json["problems"]!.AsArray().Single(problem => (string?)problem!["field"] == "maxWaiting")!.ToJsonString());
+
+        JsonNode wide = json["warnings"]!.AsArray().Single()!;
+        Assert.Equal(SettingWarningCodes.WideNetwork, (string?)wide["code"]);
+        Assert.Equal(ServerMessages.SettingsMachinesNetworkWide.Code, (string?)wide["text"]!["code"]);
+        Assert.Equal("10.0.0.0/8 is wider than a /16. Every address in it counts as a zero touch address.", (string?)wide["message"]);
+    }
+
+    private static async Task<JsonObject> JsonAsync(HttpResponseMessage response) =>
+        JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))!.AsObject();
 }

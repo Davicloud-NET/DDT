@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Server.Configuration;
@@ -29,9 +30,7 @@ public sealed class CertificateSettingsSection() : SettingsSectionDefinition<Htt
     [
         .. Names(options.SubjectAlternativeNames)
             .Where(name => Uri.CheckHostName(name) == UriHostNameType.Unknown)
-            .Select(name => new SettingProblem(
-                "SubjectAlternativeNames",
-                $"'{name}' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5.")),
+            .Select(name => new SettingProblem("SubjectAlternativeNames", ServerMessages.SettingsCertificateNameInvalid.With("name", name))),
     ];
 
     public static IReadOnlyList<string> Names(string value) =>

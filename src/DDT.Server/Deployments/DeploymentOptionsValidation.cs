@@ -28,25 +28,23 @@ public static class DeploymentOptionsValidation
 
         if (!string.IsNullOrWhiteSpace(options.TimeZone) && !WindowsTimeZones.IsValidId(options.TimeZone))
         {
-            problems.Add(new(
-                "TimeZone",
-                $"'{options.TimeZone}' is not a Windows time zone id. Use a name that tzutil /l lists, such as " +
-                "W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale."));
+            problems.Add(new("TimeZone", ServerMessages.SettingsDeploymentTimeZoneUnknown.With("value", options.TimeZone)));
         }
 
         if (!string.IsNullOrWhiteSpace(options.Locale) && !IsCulture(options.Locale.Trim()))
         {
-            problems.Add(new(
-                "Locale",
-                $"'{options.Locale}' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language."));
+            problems.Add(new("Locale", ServerMessages.SettingsDeploymentLocaleUnknown.With("value", options.Locale)));
         }
 
         if (!string.IsNullOrEmpty(options.LocalAdministrator.Password) && !IsAccountName(options.LocalAdministrator.Name))
         {
             problems.Add(new(
                 "LocalAdministrator:Name",
-                $"'{options.LocalAdministrator.Name}' is not a valid account name. Use 1 to {MaxAdministratorNameLength} " +
-                "characters and none of \" / \\ [ ] : ; | = , + * ? < >."));
+                ServerMessages.SettingsDeploymentAdministratorNameInvalid.With(
+                    "value",
+                    options.LocalAdministrator.Name ?? string.Empty,
+                    "max",
+                    MaxAdministratorNameLength)));
         }
 
         if (string.IsNullOrWhiteSpace(options.Domain.Name))
@@ -58,40 +56,31 @@ public static class DeploymentOptionsValidation
 
         if (string.IsNullOrWhiteSpace(domain.UserName))
         {
-            problems.Add(new(
-                "Domain:UserName",
-                "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or " +
-                "user@domain.example."));
+            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameRequired.With()));
         }
         else if (!IsQualifiedUserName(domain.UserName))
         {
-            problems.Add(new("Domain:UserName", $"'{domain.UserName}' must be written as DOMAIN\\user or user@domain.example."));
+            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameForm.With("value", domain.UserName)));
         }
 
         if (string.IsNullOrEmpty(domain.Password))
         {
-            problems.Add(new("Domain:Password", "Required when Domain:Name is set."));
+            problems.Add(new("Domain:Password", ServerMessages.SettingsDeploymentRequiredWithDomain.With()));
         }
 
         if (string.IsNullOrEmpty(options.LocalAdministrator.Password))
         {
-            problems.Add(new(
-                "LocalAdministrator:Password",
-                "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account " +
-                "page of its first start."));
+            problems.Add(new("LocalAdministrator:Password", ServerMessages.SettingsDeploymentAdministratorPasswordRequired.With()));
         }
 
-        if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitProblem(domain.OrganizationalUnit) is { } problem)
+        if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitMessage(domain.OrganizationalUnit) is { } problem)
         {
             problems.Add(new("Domain:OrganizationalUnit", problem));
         }
 
         if (!string.IsNullOrWhiteSpace(domain.Controller) && Uri.CheckHostName(domain.Controller.Trim()) == UriHostNameType.Unknown)
         {
-            problems.Add(new(
-                "Domain:Controller",
-                $"'{domain.Controller}' is not a host name or an address. Name the domain controller alone, such as " +
-                "dc1.corp.example or 10.0.0.10, without a scheme or a port."));
+            problems.Add(new("Domain:Controller", ServerMessages.SettingsDeploymentControllerInvalid.With("value", domain.Controller)));
         }
 
         return problems;
@@ -141,8 +130,6 @@ public static class DeploymentOptionsValidation
         return (down.Length == 2 && !string.IsNullOrWhiteSpace(down[0]) && !string.IsNullOrWhiteSpace(down[1]) && upn.Length == 1)
             || (upn.Length == 2 && !string.IsNullOrWhiteSpace(upn[0]) && !string.IsNullOrWhiteSpace(upn[1]) && down.Length == 1);
     }
-
-    internal static string? OrganizationalUnitProblem(string organizationalUnit) => OrganizationalUnitMessage(organizationalUnit)?.Text;
 
     internal static ServerMessage? OrganizationalUnitMessage(string organizationalUnit)
     {

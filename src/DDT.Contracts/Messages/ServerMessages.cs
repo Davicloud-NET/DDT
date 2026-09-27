@@ -522,12 +522,12 @@ public static class ServerMessages
         "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407.");
 
     public static readonly MessageTemplate SequenceNoLocalAdministrator = Define(
-        "sequence.noLocalAdministrator",
-        "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one.");
+        "sequence.noLocalAdministratorSet",
+        "No local administrator is set on the Deployment defaults page, so the answer file cannot add one.");
 
     public static readonly MessageTemplate SequenceNoDomain = Define(
-        "sequence.noDomain",
-        "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step.");
+        "sequence.noDomainSet",
+        "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step.");
 
     public static readonly MessageTemplate SequenceNoAdministratorWarning = Define(
         "sequence.noAdministratorWarning",
@@ -725,14 +725,14 @@ public static class ServerMessages
         "sign-in.");
 
     public static readonly MessageTemplate UserRoleFromDirectoryGroups = Define(
-        "user.roleFromDirectoryGroups",
-        "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the " +
-        "directory, or the map.");
+        "user.roleFromDirectoryGroupMap",
+        "The role of {name} comes from its directory groups through the directory's group map, at each sign-in. Change its groups in " +
+        "the directory, or the map on the Sign-in page.");
 
     public static readonly MessageTemplate UserRoleFromSingleSignOnGroups = Define(
-        "user.roleFromSingleSignOnGroups",
-        "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at " +
-        "the provider, or the map.");
+        "user.roleFromSingleSignOnGroupMap",
+        "The role of {name} comes from its single sign-on groups through the single sign-on group map, at each sign-in. Change its " +
+        "groups at the provider, or the map on the Sign-in page.");
 
     public static readonly MessageTemplate UserOwnAdministratorRole = Define(
         "user.ownAdministratorRole",
@@ -892,32 +892,32 @@ public static class ServerMessages
     public static readonly MessageTemplate DirectoryEnterUserName = Define("directory.enterUserName", "Enter the user name to check.");
 
     public static readonly MessageTemplate DirectoryIncomplete = Define(
-        "directory.incomplete",
-        "The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn.");
+        "directory.connectionIncomplete",
+        "The directory connection is not complete. Enter the directory server and the base DN on the Sign-in page.");
 
     public static readonly MessageTemplate DirectoryOff = Define(
-        "directory.off",
-        "Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first.");
+        "directory.turnedOff",
+        "Sign-in through a directory is off. Turn it on and set its connection on the Sign-in page first.");
 
     public static readonly MessageTemplate DirectoryBindRefused = Define(
-        "directory.bindRefused",
-        "The directory at {server} refused the bind account {bindDn}. Check DDT:Ldap:BindDn and its password.");
+        "directory.bindAccountRefused",
+        "The directory at {server} refused the bind account {bindDn}. Check the bind account and its password on the Sign-in page.");
 
     public static readonly MessageTemplate DirectoryUnreachable = Define(
         "directory.unreachable",
         "The directory at {server} could not be reached: {detail}");
 
     public static readonly MessageTemplate DirectorySearchRefused = Define(
-        "directory.searchRefused",
-        "The directory at {server} refused the search under {baseDn}: {detail} Check DDT:Ldap:BaseDn.");
+        "directory.baseDnRefused",
+        "The directory at {server} refused the search under {baseDn}: {detail} Check the base DN on the Sign-in page.");
 
     public static readonly MessageTemplate DirectoryNoEntry = Define(
-        "directory.noEntry",
-        "No entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused.");
+        "directory.noMatchingEntry",
+        "No entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused.");
 
     public static readonly MessageTemplate DirectoryManyEntries = Define(
-        "directory.manyEntries",
-        "More than one entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused.");
+        "directory.manyMatchingEntries",
+        "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused.");
 
     public static readonly MessageTemplate DirectoryLocalAccount = Define(
         "directory.localAccount",
@@ -936,21 +936,22 @@ public static class ServerMessages
         "The DDT account {name} is disabled, so a sign-in is refused.");
 
     public static readonly MessageTemplate DirectoryNoMapNewAccount = Define(
-        "directory.noMapNewAccount",
-        "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches " +
-        "nothing until an administrator gives it a role.");
+        "directory.emptyMapNewAccount",
+        "The directory's group map on the Sign-in page is empty, so administrators set roles. A first sign-in makes an account without " +
+        "one, which reaches nothing until an administrator gives it a role.");
 
     public static readonly MessageTemplate DirectoryNoMapNoRole = Define(
-        "directory.noMapNoRole",
-        "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing.");
+        "directory.emptyMapNoRole",
+        "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has none yet, so it reaches " +
+        "nothing.");
 
     public static readonly MessageTemplate DirectoryNoMapRole = Define(
-        "directory.noMapRole",
-        "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {role}.");
+        "directory.emptyMapRole",
+        "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has {role}.");
 
     public static readonly MessageTemplate DirectoryNoMappedGroup = Define(
-        "directory.noMappedGroup",
-        "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused.");
+        "directory.inNoMappedGroup",
+        "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused.");
 
     public static readonly MessageTemplate DirectoryRoleFromGroup = Define("directory.roleFromGroup", "{name} gets {role} from {group}.");
 
@@ -963,12 +964,12 @@ public static class ServerMessages
         "{reason} The account is locked out for now, so a sign-in waits until the lockout ends.");
 
     public static readonly MessageTemplate DomainNotConfigured = Define(
-        "domain.notConfigured",
-        "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server.");
+        "domain.notSet",
+        "No domain is set. Set the domain and the join account on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainNoJoinAccount = Define(
-        "domain.noJoinAccount",
-        "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server.");
+        "domain.noJoinAccountSet",
+        "The join account is not set. Set it and its password on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainCheckError = Define(
         "domain.checkError",
@@ -979,9 +980,9 @@ public static class ServerMessages
         "Signed in to {controller} as {user} over {connection}.");
 
     public static readonly MessageTemplate DomainOtherDomain = Define(
-        "domain.otherDomain",
-        "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or point " +
-        "DDT:Deployment:Domain:Controller at a domain controller of that domain.");
+        "domain.servesOtherDomain",
+        "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults " +
+        "page, or name a domain controller of that domain for the check there.");
 
     public static readonly MessageTemplate DomainControllerOf = Define(
         "domain.controllerOf",
@@ -992,9 +993,9 @@ public static class ServerMessages
         "The default Computers container of {domain} was not found, or {user} may not read it.");
 
     public static readonly MessageTemplate DomainNoOrganizationalUnit = Define(
-        "domain.noOrganizationalUnit",
+        "domain.organizationalUnitMissing",
         "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the " +
-        "Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none.");
+        "Join the domain step, or the one on the Deployment defaults page when the step names none.");
 
     public static readonly MessageTemplate DomainMayCreate = Define(
         "domain.mayCreate",
@@ -1024,12 +1025,12 @@ public static class ServerMessages
         "account to join more.");
 
     public static readonly MessageTemplate DomainNoSuchAccount = Define(
-        "domain.noSuchAccount",
-        "{controller} knows no account {user}. Correct DDT:Deployment:Domain:UserName.");
+        "domain.joinAccountUnknown",
+        "{controller} knows no account {user}. Correct the join account on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainWrongPassword = Define(
-        "domain.wrongPassword",
-        "{controller} did not accept the password of {user}. Correct DDT:Deployment:Domain:Password.");
+        "domain.joinPasswordRefused",
+        "{controller} did not accept the password of {user}. Correct the join account password on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainLogonHours = Define(
         "domain.logonHours",
@@ -1040,17 +1041,16 @@ public static class ServerMessages
         "{user} may not sign in from the DDT server (Log On To workstations).");
 
     public static readonly MessageTemplate DomainPasswordExpired = Define(
-        "domain.passwordExpired",
-        "The password of {user} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password.");
+        "domain.joinPasswordExpired",
+        "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainAccountDisabled = Define("domain.accountDisabled", "{user} is disabled.");
 
     public static readonly MessageTemplate DomainAccountExpired = Define("domain.accountExpired", "{user} has expired.");
 
     public static readonly MessageTemplate DomainMustChangePassword = Define(
-        "domain.mustChangePassword",
-        "{user} has to change its password before it can sign in. Give it a new one, in the domain and in " +
-        "DDT:Deployment:Domain:Password.");
+        "domain.joinPasswordMustChange",
+        "{user} has to change its password before it can sign in. Give it a new one, in the domain and on the Deployment defaults page.");
 
     public static readonly MessageTemplate DomainLockedOut = Define("domain.lockedOut", "{user} is locked out.");
 
@@ -1063,14 +1063,14 @@ public static class ServerMessages
         "{controller} did not accept the user name or password of {user} (reason {reason}).");
 
     public static readonly MessageTemplate DomainUnreachable = Define(
-        "domain.unreachable",
-        "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller " +
-        "to a domain controller's name or address. The machines find their domain controller through their own DNS.");
+        "domain.controllerUnreachable",
+        "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, enter a domain controller's name or " +
+        "address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS.");
 
     public static readonly MessageTemplate DomainUnreachableWithDetail = Define(
-        "domain.unreachableWithDetail",
-        "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, set " +
-        "DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller " +
+        "domain.controllerUnreachableWithDetail",
+        "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, enter a domain " +
+        "controller's name or address for the check on the Deployment defaults page. The machines find their domain controller " +
         "through their own DNS.");
 
     public static readonly MessageTemplate DomainNoSecureConnection = Define(
@@ -1284,6 +1284,524 @@ public static class ServerMessages
     public static readonly MessageTemplate PackageEntryChecksum = Define(
         "package.entryChecksum",
         "The entry {entry} does not unpack to the bytes the zip says it holds. Create the zip again.");
+
+    // Several sentences said as one, such as the problems of a settings section within a sentence that lists them, and
+    // a problem after the field it is about. See Sentences.
+
+    public static readonly MessageTemplate CommonSentences = Define("common.sentences", "{first} {rest}");
+
+    public static readonly MessageTemplate SettingsFieldProblem = Define("settings.fieldProblem", "{field}: {problem}");
+
+    // Settings: what a section's fields may not hold, worded for someone looking at the field. The names of settings,
+    // such as Domain:Name, are those of configuration.
+
+    public static readonly MessageTemplate SettingsAtLeastOne = Define("settings.atLeastOne", "Must be at least 1.");
+
+    public static readonly MessageTemplate SettingsRoleUnknown = Define("settings.roleUnknown", "''{role}'' is not a DDT role. Use {roles}.");
+
+    public static readonly MessageTemplate SettingsDeploymentTimeZoneUnknown = Define(
+        "settings.deployment.timeZoneUnknown",
+        "''{value}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time, or leave it " +
+        "empty so that Windows picks the zone of the locale.");
+
+    public static readonly MessageTemplate SettingsDeploymentLocaleUnknown = Define(
+        "settings.deployment.localeUnknown",
+        "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.");
+
+    public static readonly MessageTemplate SettingsDeploymentAdministratorNameInvalid = Define(
+        "settings.deployment.administratorNameInvalid",
+        "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.");
+
+    public static readonly MessageTemplate SettingsDeploymentDomainUserNameRequired = Define(
+        "settings.deployment.domainUserNameRequired",
+        "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example.");
+
+    public static readonly MessageTemplate SettingsDeploymentDomainUserNameForm = Define(
+        "settings.deployment.domainUserNameForm",
+        "''{value}'' must be written as DOMAIN\\user or user@domain.example.");
+
+    public static readonly MessageTemplate SettingsDeploymentRequiredWithDomain = Define(
+        "settings.deployment.requiredWithDomain",
+        "Required when Domain:Name is set.");
+
+    public static readonly MessageTemplate SettingsDeploymentAdministratorPasswordRequired = Define(
+        "settings.deployment.administratorPasswordRequired",
+        "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account page of its first start.");
+
+    public static readonly MessageTemplate SettingsDeploymentControllerInvalid = Define(
+        "settings.deployment.controllerInvalid",
+        "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, " +
+        "without a scheme or a port.");
+
+    public static readonly MessageTemplate SettingsMachinesPerAddressRange = Define(
+        "settings.machines.perAddressRange",
+        "Must be between 1 and MaxWaiting, which is {max}.");
+
+    public static readonly MessageTemplate SettingsMachinesNetworkInvalid = Define(
+        "settings.machines.networkInvalid",
+        "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, " +
+        "such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine.");
+
+    public static readonly MessageTemplate SettingsMachinesNetworkEverything = Define(
+        "settings.machines.networkEverything",
+        "''{value}'' is every address there is. Name the provisioning networks themselves.");
+
+    public static readonly MessageTemplate SettingsMachinesNetworkHoldsProxy = Define(
+        "settings.machines.networkHoldsProxy",
+        "The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the client's address " +
+        "would count as one from that network.");
+
+    public static readonly MessageTemplate SettingsMachinesNetworkOverlapsProxies = Define(
+        "settings.machines.networkOverlapsProxies",
+        "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the " +
+        "client's address would count as one from that network.");
+
+    public static readonly MessageTemplate SettingsProxiesAddressInvalid = Define(
+        "settings.proxies.addressInvalid",
+        "''{value}'' is not an IP address.");
+
+    public static readonly MessageTemplate SettingsProxiesNetworkInvalid = Define(
+        "settings.proxies.networkInvalid",
+        "''{value}'' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length.");
+
+    public static readonly MessageTemplate SettingsProxiesNetworkEverything = Define(
+        "settings.proxies.networkEverything",
+        "''{value}'' is every address there is, so any client could claim any address. Name the proxies' own network.");
+
+    public static readonly MessageTemplate SettingsLdapHostRequired = Define(
+        "settings.ldap.hostRequired",
+        "Required while directory sign-in is on. Name the directory server, such as dc1.corp.example.");
+
+    public static readonly MessageTemplate SettingsLdapPortInvalid = Define(
+        "settings.ldap.portInvalid",
+        "{port} is not a port number. LDAPS uses 636, and StartTLS 389.");
+
+    public static readonly MessageTemplate SettingsLdapTransportInvalid = Define(
+        "settings.ldap.transportInvalid",
+        "Must be Ldaps, StartTls or UnencryptedDangerous.");
+
+    // The placeholder is {0}, which the catalog cannot say itself: its web tests take a number in braces for an argument
+    // that was never named.
+    public static readonly MessageTemplate SettingsLdapUserFilterPlaceholder = Define(
+        "settings.ldap.userFilterPlaceholder",
+        "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder})).");
+
+    public static readonly MessageTemplate SettingsLdapUserFilterBraces = Define(
+        "settings.ldap.userFilterBraces",
+        "Is not a valid template: a brace that is not part of {placeholder} has to be written twice, as {open} or {close}.");
+
+    public static readonly MessageTemplate SettingsLdapTimeoutNotPositive = Define(
+        "settings.ldap.timeoutNotPositive",
+        "Must be longer than zero, such as 00:00:10.");
+
+    public static readonly MessageTemplate SettingsLdapNestedGroupsOff = Define(
+        "settings.ldap.nestedGroupsOff",
+        "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap.");
+
+    public static readonly MessageTemplate SettingsOidcProvisionRoleUnknown = Define(
+        "settings.oidc.provisionRoleUnknown",
+        "''{role}'' is not a DDT role. Use {viewer} or {operator}.");
+
+    public static readonly MessageTemplate SettingsOidcProvisionAdministrator = Define(
+        "settings.oidc.provisionAdministrator",
+        "{administrator} would make every identity the provider signs in that DDT has not seen an administrator. Use {viewer} or " +
+        "{operator}, or map a group to {administrator} in GroupRoleMap.");
+
+    public static readonly MessageTemplate SettingsOidcGroupsClaimRequired = Define(
+        "settings.oidc.groupsClaimRequired",
+        "GroupRoleMap needs the claim that carries the groups, such as groups.");
+
+    public static readonly MessageTemplate SettingsOidcScopesWithoutOpenid = Define(
+        "settings.oidc.scopesWithoutOpenid",
+        "Must contain openid, which is what makes the sign-in OpenID Connect.");
+
+    public static readonly MessageTemplate SettingsOidcAuthorityRequired = Define(
+        "settings.oidc.authorityRequired",
+        "Required while single sign-on is on: the provider's https address, such as https://login.example.com/realms/ddt.");
+
+    public static readonly MessageTemplate SettingsOidcClientIdRequired = Define(
+        "settings.oidc.clientIdRequired",
+        "Required while single sign-on is on: the client id the provider shows for DDT.");
+
+    public static readonly MessageTemplate SettingsOidcCannotStart = Define(
+        "settings.oidc.cannotStart",
+        "Single sign-on cannot start with these values: {error}");
+
+    public static readonly MessageTemplate SettingsOidcSignInScheme = Define(
+        "settings.oidc.signInScheme",
+        "The handler would sign into ''{scheme}'', which bypasses local account linking entirely.");
+
+    public static readonly MessageTemplate SettingsPxeBootDirectoryEmpty = Define(
+        "settings.pxe.bootDirectoryEmpty",
+        "Must not be empty. Leave it out for the folder boot in DDT:StorePath.");
+
+    public static readonly MessageTemplate SettingsPxeBootDirectoryIsRoot = Define(
+        "settings.pxe.bootDirectoryIsRoot",
+        "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}.");
+
+    public static readonly MessageTemplate SettingsPxeBootDirectoryHoldsStore = Define(
+        "settings.pxe.bootDirectoryHoldsStore",
+        "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, " +
+        "such as {suggested}.");
+
+    public static readonly MessageTemplate SettingsPxeBootDirectoryInKeys = Define(
+        "settings.pxe.bootDirectoryInKeys",
+        "''{directory}'' is in the key ring folder {keys}, which would serve its keys. Use a directory of its own, such as {suggested}.");
+
+    public static readonly MessageTemplate SettingsPxeBootDirectoryHoldsKey = Define(
+        "settings.pxe.bootDirectoryHoldsKey",
+        "''{directory}'' holds the folder of the TLS certificate or key {file}, which would serve the key. Use a directory of its own, " +
+        "such as {suggested}.");
+
+    public static readonly MessageTemplate SettingsPxeNotIpv4Address = Define(
+        "settings.pxe.notIpv4Address",
+        "''{value}'' is not an IPv4 address.");
+
+    public static readonly MessageTemplate SettingsPxeServerAddressRequired = Define(
+        "settings.pxe.serverAddressRequired",
+        "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it.");
+
+    public static readonly MessageTemplate SettingsPxeHttpBootPortInvalid = Define(
+        "settings.pxe.httpBootPortInvalid",
+        "{port} is not a port number.");
+
+    public static readonly MessageTemplate SettingsPxeWindowSizeRange = Define("settings.pxe.windowSizeRange", "Must be between 1 and {max}.");
+
+    public static readonly MessageTemplate SettingsPxeArchitectureUnknown = Define(
+        "settings.pxe.architectureUnknown",
+        "''{value}'' is not a client architecture. Use one of: {architectures}.");
+
+    public static readonly MessageTemplate SettingsPxeMethodInvalid = Define("settings.pxe.methodInvalid", "Must be Tftp or Http.");
+
+    public static readonly MessageTemplate SettingsPxeMethodForArchitecture = Define(
+        "settings.pxe.methodForArchitecture",
+        "Must be {method} for {architecture} clients.");
+
+    public static readonly MessageTemplate SettingsPxeBootFileRequired = Define("settings.pxe.bootFileRequired", "Must be set.");
+
+    public static readonly MessageTemplate SettingsPxeAsciiMaxLength = Define(
+        "settings.pxe.asciiMaxLength",
+        "Must be ASCII and at most {max} characters.");
+
+    public static readonly MessageTemplate SettingsPxeBootFileUrl = Define("settings.pxe.bootFileUrl", "Must be an absolute http or https URL.");
+
+    public static readonly MessageTemplate SettingsLoggingLevelUnknown = Define(
+        "settings.logging.levelUnknown",
+        "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.");
+
+    public static readonly MessageTemplate SettingsCertificateNameInvalid = Define(
+        "settings.certificate.nameInvalid",
+        "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5.");
+
+    // Settings: stored values and secrets this server cannot read, and a save that needs more than the values.
+
+    public static readonly MessageTemplate SettingsValuesCannotBeChecked = Define(
+        "settings.valuesCannotBeChecked",
+        "The values cannot be checked: {error}");
+
+    public static readonly MessageTemplate SettingsConfigurationUnreadable = Define(
+        "settings.configurationUnreadable",
+        "{section} cannot be read from configuration: {error}");
+
+    public static readonly MessageTemplate SettingsStoredSecretUnreadable = Define(
+        "settings.storedSecretUnreadable",
+        "The stored value no longer decrypts with this server's key ring. Enter it again.");
+
+    public static readonly MessageTemplate SettingsStoredValueUnreadable = Define(
+        "settings.storedValueUnreadable",
+        "The stored value cannot be read, so the default applies: {error}");
+
+    public static readonly MessageTemplate SettingsSecretCannotBeKept = Define(
+        "settings.secretCannotBeKept",
+        "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it.");
+
+    public static readonly MessageTemplate SettingsSecretForNewServer = Define(
+        "settings.secretForNewServer",
+        "Enter it again for the new server: a stored secret goes only to the server it was entered for.");
+
+    public static readonly MessageTemplate SettingsLdapTestOwnSignIn = Define(
+        "settings.ldap.testOwnSignIn",
+        "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; " +
+        "the save is accepted while a test that kept you an administrator is less than 5 minutes old.");
+
+    // Settings: warnings. A save asks to confirm those with a confirmation code; the others only inform.
+
+    public static readonly MessageTemplate SettingsNoLocalAdministrator = Define(
+        "settings.noLocalAdministrator",
+        "No local administrator account is enabled. Should the directory or the provider stop granting the Administrator role, only " +
+        "the console command settings create-admin could let anyone in again.");
+
+    public static readonly MessageTemplate SettingsMachinesNetworkWide = Define(
+        "settings.machines.networkWide",
+        "{network} is wider than a /{prefix}. Every address in it counts as a zero touch address.");
+
+    public static readonly MessageTemplate SettingsProxiesNetworkWide = Define(
+        "settings.proxies.networkWide",
+        "{network} is wider than a /{prefix}. Every address in it counts as a trusted proxy address.");
+
+    public static readonly MessageTemplate SettingsLdapUnencrypted = Define(
+        "settings.ldap.unencrypted",
+        "The bind password and every password typed at sign-in cross the network in clear text.");
+
+    public static readonly MessageTemplate SettingsLdapRekey = Define(
+        "settings.ldap.rekey",
+        "Every directory account is keyed on {current}. With {next} each one is taken for a new person at its next sign-in, and its " +
+        "roles and history stay with the old account.");
+
+    public static readonly MessageTemplate SettingsLdapNoAdministrator = Define(
+        "settings.ldap.noAdministrator",
+        "No group maps to Administrator, so every directory account that is an administrator loses the role at its next sign-in.");
+
+    public static readonly MessageTemplate SettingsOidcOperatorRole = Define(
+        "settings.oidc.operatorRole",
+        "Every identity the provider signs in that DDT has not seen becomes an operator, and operators can read the deployment " +
+        "passwords by deploying a machine they control.");
+
+    public static readonly MessageTemplate SettingsPxeBootUrl = Define(
+        "settings.pxe.bootUrl",
+        "{url} is not where DDT serves boot files, which is http://<server>:{port}/boot/. Keep it only if another server serves this file.");
+
+    public static readonly MessageTemplate SettingsPxeInterfaceNotFound = Define(
+        "settings.pxe.interfaceNotFound",
+        "''{name}'' names no interface on {host}, which serves nothing for it.");
+
+    // Settings: saving a section, and proving who you are again.
+
+    public static readonly MessageTemplate SettingsSendValues = Define("settings.sendValues", "Send the values of the section.");
+
+    public static readonly MessageTemplate SettingsNoSuchSecret = Define("settings.noSuchSecret", "{section} has no secret called {name}.");
+
+    public static readonly MessageTemplate SettingsSavedSince = Define(
+        "settings.savedSince",
+        "Someone saved {section} since you loaded it. Load it again.");
+
+    public static readonly MessageTemplate SettingsEnterPasswordAgain = Define(
+        "settings.enterPasswordAgain",
+        "Enter your password again to change {fields}.");
+
+    public static readonly MessageTemplate SettingsKeyRingUnreadable = Define(
+        "settings.keyRingUnreadable",
+        "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT " +
+        "process on one database has to share the key ring in DDT:StorePath/keys.");
+
+    public static readonly MessageTemplate SettingsReauthenticateNoPassword = Define(
+        "settings.reauthenticate.noPassword",
+        "This account signs in without a password DDT can check, so it cannot change these settings. Use an account with a local or " +
+        "directory password.");
+
+    public static readonly MessageTemplate SettingsReauthenticateLockedOut = Define(
+        "settings.reauthenticate.lockedOut",
+        "The account is locked out. Try again later.");
+
+    public static readonly MessageTemplate SettingsReauthenticateCodeNeeded = Define(
+        "settings.reauthenticate.codeNeeded",
+        "Enter the code of your authenticator as well.");
+
+    public static readonly MessageTemplate SettingsReauthenticateNotRight = Define(
+        "settings.reauthenticate.notRight",
+        "The password or the code is not right.");
+
+    // Settings: testing the directory and the single sign-on provider with values not yet saved.
+
+    public static readonly MessageTemplate SettingsLdapTestSendValues = Define("settings.ldapTest.sendValues", "Send the values to test.");
+
+    public static readonly MessageTemplate SettingsLdapTestNotDirectoryAccount = Define(
+        "settings.ldapTest.notDirectoryAccount",
+        "{name} is not a directory account, so its password is not sent to the directory.");
+
+    public static readonly MessageTemplate SettingsLdapTestAccountDisabled = Define(
+        "settings.ldapTest.accountDisabled",
+        "{name} is disabled, so a sign-in is refused before the directory is asked.");
+
+    public static readonly MessageTemplate SettingsLdapTestLockedOut = Define(
+        "settings.ldapTest.lockedOut",
+        "{name} is locked out, so a sign-in is refused before the directory is asked.");
+
+    public static readonly MessageTemplate SettingsLdapTestBindFailed = Define(
+        "settings.ldapTest.bindFailed",
+        "The bind as {account} to {server} failed: {error}");
+
+    public static readonly MessageTemplate SettingsLdapTestBound = Define(
+        "settings.ldapTest.bound",
+        "The bind as {account} to {server} succeeded.");
+
+    public static readonly MessageTemplate SettingsLdapTestManyEntries = Define(
+        "settings.ldapTest.manyEntries",
+        "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in is refused.");
+
+    public static readonly MessageTemplate SettingsLdapTestNoEntry = Define(
+        "settings.ldapTest.noEntry",
+        "No entry under {baseDn} matches {name} with the user filter.");
+
+    public static readonly MessageTemplate SettingsLdapTestPasswordRefused = Define(
+        "settings.ldapTest.passwordRefused",
+        "{entry} was found, but the directory refused the password.");
+
+    public static readonly MessageTemplate SettingsLdapTestNoImmutableId = Define(
+        "settings.ldapTest.noImmutableId",
+        "{entry} has no {attribute}, so a sign-in is refused.");
+
+    public static readonly MessageTemplate SettingsLdapTestFound = Define(
+        "settings.ldapTest.found",
+        "{entry} was found, in {count, plural, one {# group} other {# groups}}.");
+
+    public static readonly MessageTemplate SettingsLdapTestSearchFailed = Define(
+        "settings.ldapTest.searchFailed",
+        "The search for {name} under {baseDn} failed: {error}");
+
+    // Result is the directory's answer, a message of its own.
+    public static readonly MessageTemplate SettingsLdapTestNoRole = Define(
+        "settings.ldapTest.noRole",
+        "{result} The group map gives no role, so a sign-in is refused.");
+
+    public static readonly MessageTemplate SettingsLdapTestRole = Define(
+        "settings.ldapTest.role",
+        "{result} The group map makes the account {role}.");
+
+    public static readonly MessageTemplate SettingsOidcTestAuthorityInvalid = Define(
+        "settings.oidcTest.authorityInvalid",
+        "Enter the provider's https address, such as https://login.example.com/realms/ddt.");
+
+    public static readonly MessageTemplate SettingsOidcTestAnswered = Define(
+        "settings.oidcTest.answered",
+        "{url} answered {status} {reason}.");
+
+    public static readonly MessageTemplate SettingsOidcTestNotDiscovery = Define(
+        "settings.oidcTest.notDiscovery",
+        "{url} is not the discovery document of an OpenID Connect provider.");
+
+    public static readonly MessageTemplate SettingsOidcTestReached = Define(
+        "settings.oidcTest.reached",
+        "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there.");
+
+    public static readonly MessageTemplate SettingsOidcTestOtherIssuer = Define(
+        "settings.oidcTest.otherIssuer",
+        "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority.");
+
+    public static readonly MessageTemplate SettingsOidcTestUnreadable = Define(
+        "settings.oidcTest.unreadable",
+        "{url} could not be read: {error}");
+
+    // Settings: the server certificate, and the agent that netbooting machines run.
+
+    public static readonly MessageTemplate SettingsCertificateNotManageable = Define(
+        "settings.certificate.notManageable",
+        "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and no Password " +
+        "is set. A PFX, a key under a password, or TLS at a proxy is managed by hand.");
+
+    public static readonly MessageTemplate SettingsCertificateGenerateOff = Define(
+        "settings.certificate.generateOff",
+        "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certificate. Upload one instead.");
+
+    public static readonly MessageTemplate SettingsCertificateAddHostFirst = Define(
+        "settings.certificate.addHostFirst",
+        "Add {host}, the name this page is reached by, to the server names first.");
+
+    public static readonly MessageTemplate SettingsCertificateNewRootUpload = Define(
+        "settings.certificate.newRootUpload",
+        "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and " +
+        "trust that root in the browsers that manage DDT.");
+
+    public static readonly MessageTemplate SettingsCertificateNewRootGenerate = Define(
+        "settings.certificate.newRootGenerate",
+        "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers that manage DDT.");
+
+    public static readonly MessageTemplate SettingsCertificateNothingToConfirm = Define(
+        "settings.certificate.nothingToConfirm",
+        "No certificate waits for a confirmation.");
+
+    public static readonly MessageTemplate SettingsCertificateNotServedNew = Define(
+        "settings.certificate.notServedNew",
+        "This connection was served the certificate before the new one, so it proves nothing about the new one. Load the page again, " +
+        "which connects anew, and confirm from there.");
+
+    public static readonly MessageTemplate SettingsCertificateSendPair = Define(
+        "settings.certificate.sendPair",
+        "Send the certificate and its key, or a PFX.");
+
+    public static readonly MessageTemplate SettingsCertificateNotBase64 = Define("settings.certificate.notBase64", "Is not base64.");
+
+    public static readonly MessageTemplate SettingsCertificatePfxWithoutKey = Define(
+        "settings.certificate.pfxWithoutKey",
+        "Holds no certificate with its private key.");
+
+    public static readonly MessageTemplate SettingsCertificateKeyAlgorithm = Define(
+        "settings.certificate.keyAlgorithm",
+        "Its key is neither RSA nor ECDSA.");
+
+    public static readonly MessageTemplate SettingsCertificatePfxPassword = Define(
+        "settings.certificate.pfxPassword",
+        "Does not open with this password: {error}");
+
+    public static readonly MessageTemplate SettingsCertificateSendPem = Define(
+        "settings.certificate.sendPem",
+        "Send the certificate with its intermediates and its key as PEM, or a PFX.");
+
+    public static readonly MessageTemplate SettingsCertificateKeyMismatch = Define(
+        "settings.certificate.keyMismatch",
+        "The certificate does not load with this key: {error}");
+
+    public static readonly MessageTemplate SettingsCertificateNotValidNow = Define(
+        "settings.certificate.notValidNow",
+        "It is valid from {from} to {until}, not now.");
+
+    public static readonly MessageTemplate SettingsCertificateMissingNames = Define(
+        "settings.certificate.missingNames",
+        "It does not name {names}, which the server is reached by, so browsers and agents would refuse it.");
+
+    public static readonly MessageTemplate SettingsAgentConfigured = Define(
+        "settings.agent.configured",
+        "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.");
+
+    public static readonly MessageTemplate SettingsAgentNotExecutable = Define(
+        "settings.agent.notExecutable",
+        "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it.");
+
+    public static readonly MessageTemplate SettingsAgentTooLarge = Define("settings.agent.tooLarge", "The agent may be at most {max} MB.");
+
+    // Settings: how a host applied a section that rebuilds a subsystem. An exception's own text stays English, as a value.
+
+    public static readonly MessageTemplate SettingsApplyProxiesClosed = Define(
+        "settings.apply.proxiesClosed",
+        "No proxy is trusted on this host while the section has problems: {problems}");
+
+    public static readonly MessageTemplate SettingsApplyOidcClosed = Define(
+        "settings.apply.oidcClosed",
+        "Single sign-on is off on this host while the section has problems: {problems}");
+
+    public static readonly MessageTemplate SettingsApplyOidcFailed = Define(
+        "settings.apply.oidcFailed",
+        "Single sign-on is off on this host: {error}");
+
+    public static readonly MessageTemplate SettingsApplyPxeClosed = Define(
+        "settings.apply.pxeClosed",
+        "The pxe settings have problems, so nothing is served until they are fixed: {problems}");
+
+    // Error is the name of the socket error, which also chooses the advice.
+    public static readonly MessageTemplate SettingsApplyPxeBindFailed = Define(
+        "settings.apply.pxeBindFailed",
+        "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} " +
+        "tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a " +
+        "privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP " +
+        "service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other " +
+        "service holds the port.}}");
+
+    // The sentences one after another, as one message, which the web says in the person's language as a whole: the
+    // first, then the rest as a message of its own.
+    public static ServerMessage Sentences(IReadOnlyList<ServerMessage> sentences)
+    {
+        ArgumentNullException.ThrowIfNull(sentences);
+        ArgumentOutOfRangeException.ThrowIfZero(sentences.Count);
+
+        ServerMessage said = sentences[^1];
+
+        for (int index = sentences.Count - 2; index >= 0; index--)
+        {
+            said = CommonSentences.With("first", sentences[index], "rest", said);
+        }
+
+        return said;
+    }
 
     private static MessageTemplate Define(string code, string english)
     {

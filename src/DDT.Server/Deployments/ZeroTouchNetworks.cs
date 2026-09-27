@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Server.Machines;
 
@@ -26,15 +27,10 @@ public sealed class ZeroTouchNetworks
     [
         .. Entries(value)
             .Where(entry => Network(entry) is null)
-            .Select(entry => new SettingProblem(
-                "ZeroTouchNetworks",
-                $"'{entry}' is not a network. Write each one as an address and a prefix length with no address bits set " +
-                "after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine.")),
+            .Select(entry => new SettingProblem("ZeroTouchNetworks", ServerMessages.SettingsMachinesNetworkInvalid.With("value", entry))),
         .. Entries(value)
             .Where(entry => Network(entry) is { PrefixLength: 0 })
-            .Select(entry => new SettingProblem(
-                "ZeroTouchNetworks",
-                $"'{entry}' is every address there is. Name the provisioning networks themselves.")),
+            .Select(entry => new SettingProblem("ZeroTouchNetworks", ServerMessages.SettingsMachinesNetworkEverything.With("value", entry))),
     ];
 
     public static ZeroTouchNetworks Parse(string? value)

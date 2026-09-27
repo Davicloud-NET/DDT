@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -35,9 +36,7 @@ public sealed class LoggingSettingsSection() : SettingsSectionDefinition<Logging
     [
         .. options.LogLevel
             .Where(level => TryParse(level.Value) is null)
-            .Select(level => new SettingProblem(
-                $"LogLevel:{level.Key}",
-                $"'{level.Value}' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.")),
+            .Select(level => new SettingProblem($"LogLevel:{level.Key}", ServerMessages.SettingsLoggingLevelUnknown.With("value", level.Value ?? string.Empty))),
     ];
 
     // By name only: Enum.TryParse also takes a number, and "7" is no level.

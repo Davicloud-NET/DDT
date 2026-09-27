@@ -71,8 +71,11 @@ public sealed class SettingsSectionApi<TValues>(
                 SettingsSectionDefinition.EnvironmentVariable(settingLock.ConfigurationKey),
                 settingLock.Source,
                 settingLock.StoredDiffers))],
-            [.. state.Problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null))],
-            [.. state.Warnings.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code)), .. warnings],
+            [.. state.Problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null, problem.Text))],
+            [
+                .. state.Warnings.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code, warning.Text)),
+                .. warnings,
+            ],
             apply,
             [.. definition.Fields.Where(field => field.Reauthenticate).Select(field => field.Name)]);
     }

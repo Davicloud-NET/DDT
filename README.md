@@ -2267,8 +2267,10 @@ the answer file. Since then the console's language is a deployment setting, the 
 only a console that speaks the agent's version of the protocol into Windows, and the server updates
 the console like the agent; the image `Build-BootImage.ps1` built afterwards carries all three.
 
-That completes M6.5. A machine has not yet switched to a console the server offers, since the test
-image carries the same console the server does; the tests cover that switch. The later milestones,
+Last came the organisation's logo on the console, uploaded on the Deployment defaults page. That
+completes M6.5. The rebuilt image predates the logo, so the server offers it a newer agent and
+console; a machine has not yet been seen switching to a console the server offers, which the tests
+cover. The later milestones,
 in order, as [docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
 model it shows; M8 the Linux phase, in which a run goes on in the installed Linux; M9 applications
 and Windows configuration; M10 golden images and the machine lifecycle; M11 reach beyond netboot

@@ -7,6 +7,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
+using DDT.Server.BootImage;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -51,13 +52,15 @@ public static class PackageEndpoints
         ]);
     }
 
-    // The last save wins: packages are edited rarely, and only by administrators.
+    // The last save wins: packages are edited rarely, and only by administrators. Only drivers go into the boot image:
+    // Windows PE loads drivers, and nothing runs a files package there before a sequence does.
     private static async Task<Results<Ok<PackageSummary>, NotFound, ValidationProblem>> UpdateAsync(
         Guid id,
         UpdatePackageRequest request,
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
+        BootImageCatalog bootImage,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -88,16 +91,31 @@ public static class PackageEndpoints
             problems["targets"] = [targetProblem];
         }
 
+        if (request.BootImage == true && package.Kind != PackageKind.Drivers)
+        {
+            problems["bootImage"] = ["Only a driver package can go into the Windows PE boot image."];
+        }
+
         if (problems.Count > 0)
         {
             return TypedResults.ValidationProblem(problems);
         }
 
         IReadOnlyList<HardwareModel> targets = PackageTargets.Clean(request.Targets);
+        bool wasInBootImage = package.BootImage;
+        string previousName = package.Name;
 
         package.Name = name;
         package.Description = string.IsNullOrEmpty(description) ? null : description;
         package.Targets = PackageTargets.Write(targets);
+        package.BootImage = request.BootImage ?? package.BootImage;
+
+        string bootImageChange = (wasInBootImage, package.BootImage) switch
+        {
+            (false, true) => " Added to the Windows PE boot image.",
+            (true, false) => " Taken out of the Windows PE boot image.",
+            _ => "",
+        };
 
         database.AuditEvents.Add(Audit(
             AuditActions.PackageChanged,
@@ -105,12 +123,18 @@ public static class PackageEndpoints
             user,
             context,
             timeProvider.GetUtcNow(),
-            targets.Count == 0
+            (targets.Count == 0
                 ? $"{package.Name}, no targets."
-                : $"{package.Name}, for {string.Join("; ", targets.Select(t => $"{t.Manufacturer ?? "any maker"} {t.Model}"))}."));
+                : $"{package.Name}, for {string.Join("; ", targets.Select(t => $"{t.Manufacturer ?? "any maker"} {t.Model}"))}.") + bootImageChange));
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         live.PackagesChanged();
+
+        // The boot image page lists the flagged packages by name.
+        if (wasInBootImage != package.BootImage || (package.BootImage && previousName != package.Name))
+        {
+            live.BootImageChanged(await bootImage.ViewAsync(database, cancellationToken).ConfigureAwait(false));
+        }
 
         return TypedResults.Ok(PackageSummaries.From(package));
     }
@@ -121,10 +145,13 @@ public static class PackageEndpoints
         HttpContext context,
         DdtDbContext database,
         ImageStore store,
+        BootImageCatalog bootImage,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
+        bool wasInBootImage;
+
         // Under the library lock, so an upload of the same file cannot add a row for the stored file while it goes.
         await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -148,6 +175,7 @@ public static class PackageEndpoints
                     statusCode: StatusCodes.Status409Conflict);
             }
 
+            wasInBootImage = package.BootImage;
             database.Packages.Remove(package);
             database.AuditEvents.Add(Audit(
                 AuditActions.PackageDeleted,
@@ -168,6 +196,11 @@ public static class PackageEndpoints
         }
 
         live.PackagesChanged();
+
+        if (wasInBootImage)
+        {
+            live.BootImageChanged(await bootImage.ViewAsync(database, cancellationToken).ConfigureAwait(false));
+        }
 
         return TypedResults.NoContent();
     }

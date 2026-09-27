@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Audit;
+using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
@@ -119,6 +120,13 @@ public sealed partial class LiveNotifier(
     public void PackagesChanged() => _ = PushEventAsync(LiveEvents.PackagesChanged);
 
     public void RulesChanged() => _ = PushEventAsync(LiveEvents.RulesChanged);
+
+    public void BootImageChanged(BootImageView bootImage)
+    {
+        ArgumentNullException.ThrowIfNull(bootImage);
+
+        _ = PushEventAsync(LiveEvents.BootImageChanged, bootImage);
+    }
 
     // Audit rows are for administrators only.
     public void AuditAppended(AuditEntry[] entries)

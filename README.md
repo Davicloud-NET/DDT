@@ -543,6 +543,7 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
 | `Boot/boot.wim` | Windows PE with `DDT.Agent`, and PowerShell unless left out |
+| `Boot/ddt-boot-image.json` | What the build holds, for the boot image page, see below |
 | `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
 | `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
 
@@ -571,6 +572,34 @@ logged with the name the client asked for.
 A normal boot also logs a dozen refused reads, and none of them is a fault. The boot manager tries
 `\BCD` before `\Boot\BCD`, and it and the Windows loader look for optional Secure Boot policy files
 such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on without them.
+
+#### Drivers in the boot image
+
+Windows PE carries drivers for common network and storage controllers only. A machine whose
+controller it does not know cannot reach DDT, or cannot see its disk, before any sequence runs, so
+the driver has to be in `boot.wim`. There are two ways to put it there, and a build can use both:
+
+- **From DDT.** On the Packages page an administrator flags a driver package for the boot image
+  (`bootImage` in `PUT /api/packages/{id}`; only a driver package can have it). Build with
+  `-ServerUrl`, `-RootCertificatePath` and `-ApiToken`, an administrator's API token, see
+  [API tokens](#api-tokens). The script asks `GET /api/boot-image` for the flagged packages,
+  downloads each from `GET /api/boot-image/drivers/{packageId}/content` over a connection that
+  trusts the pinned root and no other, checks its SHA-256 and unpacks it. The token only authorizes
+  the download; it goes into neither the image nor the file below. Pass it from an environment
+  variable rather than typing it, so it stays out of the shell's history.
+- **From a folder.** `-DriverPath` names a folder of drivers on the build computer.
+
+DISM adds every `.inf` below each folder with `/Add-Driver /Recurse`, and refuses a driver that is
+not signed, which Windows PE could not load with Secure Boot on anyway.
+
+Every build writes `Boot/ddt-boot-image.json` next to `boot.wim`: when it was built, the DDT
+packages it holds with their SHA-256, the ADK version, the version of the boot managers and that of
+the agent. DDT reads it on each request, and `GET /api/boot-image` compares the flagged packages
+with it: `stale` says the boot image must be built again to carry them, or no longer carries one
+that was taken out. A missing or unreadable file counts as a build without DDT's drivers, which is
+what a boot image built before this is. The file holds no secret; like everything in the boot
+directory, anyone who can netboot can read it. DDT looks at it every 10 seconds and pushes a new
+build to open pages, so copying a build into the boot directory is enough.
 
 ### TFTP tuning
 
@@ -894,7 +923,8 @@ it on the Packages page as one of two kinds, in resumable chunks like an image.
   such as a Lenovo machine type, and needs at least three characters there. Case and spacing are
   ignored, and the placeholders firmware leaves in unset fields, such as "To Be Filled By O.E.M.",
   are refused and never match. An Inject drivers step adds every driver package whose targets match
-  the machine.
+  the machine. A driver package can also go into the Windows PE boot image, for a controller Windows
+  PE lacks, see [Drivers in the boot image](#drivers-in-the-boot-image).
 - A **files package** has no targets. A Run script step that names it has it unpacked into a folder
   of its own, which becomes the script's working directory and is named in `DDT_PACKAGE`.
 

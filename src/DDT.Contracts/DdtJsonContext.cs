@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
 using DDT.Contracts.Audit;
+using DDT.Contracts.BootImage;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
@@ -74,4 +75,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<ApiTokenView>))]
 [JsonSerializable(typeof(CreateApiTokenRequest))]
 [JsonSerializable(typeof(CreatedApiToken))]
+[JsonSerializable(typeof(BootImageView))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

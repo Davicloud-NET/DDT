@@ -1,0 +1,102 @@
+# What Build-BootImage.ps1 removes from boot.wim, which a PXE netboot fetches over TFTP, so every megabyte here
+# is time at every netboot. -SkipTrim keeps everything.
+#
+# A line is a path in the image from its root. * stands for any characters within one name, and a path takes
+# everything below it. A line that starts with ! keeps what it matches. Most files in Windows PE have a second
+# name, their copy in a WinSxS component folder. A file leaves the image only when all its names are removed or
+# are such copies. A file that a kept folder shares, such as System32\locale.nls, which SysWOW64 links to,
+# stays, and only the removed name goes.
+#
+# Every group was tried on its own and all of them together, on the ADK 10.1.26100.2454 image with the
+# PowerShell components, the agent and the console. That image booted, partitioned a disk, and ran cmd,
+# PowerShell 5.1, CIM, Get-Disk, ConvertTo-Json, [xml], Add-Type, HttpUtility and dism.exe. The sizes are
+# what each group saved alone, in megabytes of 1,048,576 bytes of boot.wim. They overlap, so together they took
+# boot.wim from 486 MB to 305 MB, 181 MB less, not their sum.
+
+# 32-bit Windows, 67 MB. The ADK's Windows PE has no WOW64 layer: wow64.dll, wow64cpu.dll and wow64win.dll
+# are not in it, so no 32-bit program can start, and nothing ever reads SysWOW64. Windows still maps
+# SysWOW64\ntdll.dll while it starts, so that one file stays.
+\Windows\SysWOW64
+\Windows\WinSxS\x86_*
+\Windows\WinSxS\wow64_*
+\Windows\Microsoft.NET\Framework
+\Windows\Microsoft.NET\assembly\GAC_32
+\Windows\assembly\GAC_32
+\Windows\assembly\NativeImages_v4.0.30319_32
+!\Windows\SysWOW64\ntdll.dll
+
+# Precompiled .NET Framework assemblies, 30 MB. PowerShell compiles the assemblies it loads as it loads them,
+# which makes its first command in a run take a second or two longer.
+\Windows\assembly\NativeImages_*
+\Windows\Microsoft.NET\Framework64\v4.0.30319\NativeImages
+
+# The servicing stack, 23 MB. It adds packages to this Windows PE, which the build does before it trims and
+# nobody can do afterwards. Servicing another Windows, as the Inject drivers step does with dism.exe, uses the
+# DISM in System32 and that Windows' own servicing stack. The catalogs stay: they sign the drivers Windows
+# PE loads.
+\Windows\WinSxS\*servicingstack*
+\Windows\WinSxS\*_microsoft-windows-s..ck-mof-onecoreadmin_*
+\Windows\WinSxS\*_microsoft-windows-s..-installers-onecore_*
+\Windows\WinSxS\*_microsoft-windows-s..llers-onecore-extra_*
+\Windows\WinSxS\Backup
+\Windows\servicing\Packages\*.mum
+\Windows\System32\AdvancedInstallers
+
+# Icons and other shell resources, 22 MB. Windows PE has no shell.
+\Windows\SystemResources\*.mun
+\Windows\System32\imageres.dll
+
+# .NET Framework assemblies no PowerShell script in Windows PE loads, 20 MB: WPF, the WinForms designers,
+# ASP.NET, WCF, Workflow, Entity Framework, speech, and the compilers other than csc.exe, which Add-Type
+# compiles C# with. ConvertTo-Json needs System.Web.Extensions, HttpUtility is in the 64-bit System.Web, and
+# New-WebServiceProxy uses System.Web.Services, so those stay.
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Presentation*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\ReachFramework
+\Windows\Microsoft.NET\assembly\GAC_MSIL\UIAutomation*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Web*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.ServiceModel*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Workflow*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Activities*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Data.Entity*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Data.Services*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Data.Linq
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Speech
+\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Xaml
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.Build*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.VisualBasic*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.VisualC*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.JScript
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.Workflow*
+\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.Activities*
+\Windows\Microsoft.NET\assembly\GAC_64\PresentationCore
+\Windows\Microsoft.NET\assembly\GAC_64\System.Printing
+\Windows\Microsoft.NET\assembly\GAC_64\System.EnterpriseServices
+\Windows\Microsoft.NET\Framework64\v4.0.30319\vbc.exe
+\Windows\Microsoft.NET\Framework64\v4.0.30319\jsc.exe
+\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild*
+\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF
+\Windows\Microsoft.NET\Framework64\v4.0.30319\ASP.NETWebAdminFiles
+\Windows\System32\jscript9.dll
+!\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Web.Extensions
+!\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Web.Services
+
+# The boot files bcdboot copies, 18 MB. The netboot uses the boot managers from the ADK's media folder, and
+# the agent makes a disk bootable with the applied Windows' own bcdboot and boot files.
+\Windows\Boot
+
+# ICU, 11 MB. .NET Framework, and so PowerShell 5.1, uses Windows' own NLS, and the agent and the console
+# fall back to it too.
+\Windows\Globalization\ICU
+
+# The debugger engine, JavaScript's Chakra engine and telemetry, 9 MB.
+\Windows\System32\dbgeng.dll
+\Windows\System32\Chakra.dll
+\Windows\System32\diagtrack.dll
+\Windows\DiagTrack
+
+# Fonts for emoji, symbols, historic scripts and Armenian and Georgian, 8 MB. The console carries its own
+# fonts.
+\Windows\Fonts\seguiemj.ttf
+\Windows\Fonts\seguisym.ttf
+\Windows\Fonts\seguihis.ttf
+\Windows\Fonts\sylfaen.ttf

@@ -768,7 +768,7 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 | `x64/bootmgfw_ex.efi` | Boot manager signed by Windows UEFI CA 2023 |
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
-| `Boot/boot.wim` | Windows PE with `DDT.Agent`, its graphical console with `-ConsolePath`, and PowerShell unless left out |
+| `Boot/boot.wim` | Windows PE, trimmed, with `DDT.Agent`, its graphical console with `-ConsolePath`, and PowerShell unless left out |
 | `Boot/ddt-boot-image.json` | What the build holds, for the boot image page, see below |
 | `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
 | `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
@@ -776,15 +776,38 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 The script adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
 with their en-us language packages, so task sequence steps can run PowerShell scripts in Windows PE.
-Components cannot be added to a running Windows PE, so they have to be in `boot.wim`. On the test
-machine they took it from 347,838,990 to 496,342,317 bytes. The script prints the size at the end,
-in megabytes of 1,048,576 bytes, which makes 331.7 MB and 473.3 MB, about 142 MB more. How much
-longer the larger image takes to netboot has not been measured yet. `-SkipPowerShell` builds the
-lean image for sites where netboot time matters more. On it the agent refuses a run with a
-PowerShell script in Windows PE before it touches the disk, and says to build the image without
-`-SkipPowerShell`. Either way the script exports `boot.wim` at the end, which drops what servicing
-left behind in the file. A build needs an elevated prompt, the Windows ADK and its Windows PE
-add-on.
+Components cannot be added to a running Windows PE, so they have to be in `boot.wim`.
+`-SkipPowerShell` builds the lean image for sites where netboot time matters more. On it the agent
+refuses a run with a PowerShell script in Windows PE before it touches the disk, and says to build
+the image without `-SkipPowerShell`.
+
+Then the script removes what DDT's Windows PE never uses, by the list in
+[`build/boot-image-trim.txt`](build/boot-image-trim.txt), which says for each group why it can go:
+
+- 32-bit Windows. The ADK's Windows PE has no WOW64 layer, so no 32-bit program can run in it anyway.
+- The .NET Framework's precompiled native images. PowerShell compiles what it loads instead, which
+  makes its first command a second or two slower.
+- The servicing stack, which only adds packages to this Windows PE. The Inject drivers step services
+  the applied Windows with the DISM in System32 and that Windows' own servicing stack.
+- Shell resources, .NET assemblies no PowerShell script loads (WPF, ASP.NET, WCF, Workflow, the
+  compilers other than `csc.exe`), the boot files bcdboot would copy from Windows PE, ICU, the
+  debugger engine, Chakra, telemetry, and the emoji, symbol and historic script fonts.
+
+A file leaves the image only when every one of its names goes, other than its copy in WinSxS, so a
+file that a kept folder shares stays. The build stops if the list removes a file Windows PE needs to
+start. `-SkipTrim` keeps everything, and `-TrimListPath` takes a list of your own.
+
+On the test machine, with the PowerShell components, the agent and the console, the trim took
+`boot.wim` from 509,665,817 to 319,483,402 bytes. The script prints the size at the end, in megabytes
+of 1,048,576 bytes: 486.0 MB and 304.7 MB. TFTP sent the trimmed image to a Hyper-V virtual machine in
+5.2 to 6.4 seconds instead of 8.4. The untrimmed one took 9.9 to 12.5 seconds to a laptop on the
+LAN. The trimmed image booted, partitioned a disk, and ran cmd, PowerShell 5.1 with CIM, `Get-Disk`,
+`ConvertTo-Json`, `[xml]`, `Add-Type` and `HttpUtility`, and `dism.exe`. Without the PowerShell
+components, the trimmed image comes to about 237 MB: Windows PE from the ADK trims from 324 MB to
+220 MB, and the agent and the console add 17 MB.
+
+The script exports `boot.wim` at the end, which drops what servicing and the trim left behind in the
+file. A build needs an elevated prompt, the Windows ADK and its Windows PE add-on.
 
 Both boot manager paths are stable, because a site DHCP server picks one by name. Neither file is
 dual signed. The 2011 one is the default: firmware ignores certificate expiry, and most machines

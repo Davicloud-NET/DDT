@@ -18,10 +18,21 @@ only Microsoft's binaries.
 It also adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
 WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
 with their en-us language packages, so task sequences can run PowerShell scripts in Windows PE.
-Components cannot be added to a running Windows PE, so they have to be in the image. They make
-boot.wim, which a PXE netboot fetches over TFTP, about 140 MB larger: 473 MB against 332 MB on the
-test machine. -SkipPowerShell leaves them out. Either way boot.wim is exported at the end, which
-drops what servicing left behind in it, and its size is printed, in megabytes of 1,048,576 bytes.
+Components cannot be added to a running Windows PE, so they have to be in the image. -SkipPowerShell
+leaves them out.
+
+Then it removes what DDT's Windows PE never uses, by the list in boot-image-trim.txt next to this
+script, which says for each group why it can go: 32-bit Windows, which the ADK's Windows PE cannot run
+anyway, precompiled .NET assemblies, the servicing stack, shell resources, .NET assemblies no script
+loads, boot files, ICU, the debugger engine and a few fonts. boot.wim is what a PXE netboot fetches
+over TFTP, so this is time saved at every netboot. On the test machine, with the PowerShell
+components, the agent and the console, boot.wim went from 486 MB to 305 MB, and TFTP sent it to a
+virtual machine in 5.2 to 6.4 seconds instead of 8.4. Without the PowerShell components it comes to
+about 237 MB. The trim runs last, as it removes the servicing stack, so nothing can be added to the image
+afterwards. -SkipTrim keeps everything, and -TrimListPath takes a list of your own.
+
+Either way boot.wim is exported at the end, which drops what servicing and the trim left behind in
+it, and its size is printed, in megabytes of 1,048,576 bytes.
 
 Output layout, relative to -Destination, which is what DDT:Pxe:BootDirectory should contain:
 
@@ -116,6 +127,14 @@ enough, and revoking it afterwards costs nothing.
 Builds the lean image without the PowerShell components, for sites where netboot time matters more.
 A task sequence step that runs PowerShell in Windows PE cannot run on machines booted from it.
 
+.PARAMETER TrimListPath
+The list of what to remove from boot.wim, by default boot-image-trim.txt next to this script. Its
+first lines explain the format. The build stops when a list removes a file Windows PE needs to
+start, such as ntoskrnl.exe.
+
+.PARAMETER SkipTrim
+Keeps every file of Windows PE, for example to find out whether the trim is behind a problem.
+
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
 
@@ -159,7 +178,11 @@ param(
 
     [string] $ApiToken,
 
-    [switch] $SkipPowerShell
+    [switch] $SkipPowerShell,
+
+    [string] $TrimListPath,
+
+    [switch] $SkipTrim
 )
 
 Set-StrictMode -Version Latest
@@ -169,6 +192,7 @@ $ErrorActionPreference = 'Stop'
 # there when the script is started with powershell -File.
 if (-not $Destination) { $Destination = Join-Path $PSScriptRoot '..\artifacts\boot' }
 if (-not $WorkDirectory) { $WorkDirectory = Join-Path $PSScriptRoot '..\artifacts\winpe' }
+if (-not $TrimListPath) { $TrimListPath = Join-Path $PSScriptRoot 'boot-image-trim.txt' }
 
 # Resolved against the PowerShell location. [IO.Path]::GetFullPath uses the process directory, which
 # Set-Location does not change, and the work directory is deleted recursively further down.
@@ -341,6 +365,421 @@ function New-Bcd {
     Invoke-Native $bcdedit /store $Path /set '{bootmgr}' timeout 0 | Out-Null
     Invoke-Native $bcdedit /store $Path /set '{bootmgr}' default $entry | Out-Null
     Invoke-Native $bcdedit /store $Path /displayorder $entry /addlast | Out-Null
+}
+
+function Remove-TrimmedFiles {
+    param(
+        [Parameter(Mandatory)][string] $MountDirectory,
+        [Parameter(Mandatory)][string] $ListPath
+    )
+
+    # Compiled rather than a script, for the privileges, the hard links and the tens of thousands of files. C# 5, which
+    # Windows PowerShell 5.1 compiles. Windows PE's files belong to TrustedInstaller and many are read-only, so they are
+    # opened for backup, which the backup and restore privileges of an administrator allow, and deleted as they are:
+    # their owner and permissions stay, which matters for a file that keeps another name. Paths go to Windows with the
+    # \\?\ prefix, as some in WinSxS pass 260 characters below the mount directory.
+    if (-not ('DdtBootImageTrim' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.Win32.SafeHandles;
+
+public static class DdtBootImageTrim
+{
+    private const uint Delete = 0x00010000;
+    private const uint ShareAll = 0x7;
+    private const uint OpenExisting = 3;
+    private const uint BackupSemantics = 0x02000000;
+    private const uint OpenReparsePoint = 0x00200000;
+    private const int FileDispositionInfoEx = 21;
+    private const uint DispositionFlags = 0x1 | 0x2 | 0x10; // delete, POSIX semantics, ignore the read-only attribute
+    private const uint DirectoryAttribute = 0x10;
+    private const uint ReparsePointAttribute = 0x400;
+    private const int ErrorNoMoreFiles = 18;
+    private const int ErrorHandleEof = 38;
+    private const int ErrorMoreData = 234;
+    private const int ErrorDirNotEmpty = 145;
+    private const int ErrorNotAllAssigned = 1300;
+    private static readonly IntPtr InvalidHandle = new IntPtr(-1);
+
+    // A copy in a WinSxS component folder, the second name most files in Windows PE have.
+    private static readonly Regex ComponentCopy = new Regex(@"^\\Windows\\WinSxS\\(amd64|x86|wow64|msil)_[^\\]+\\", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct TokenPrivilege
+    {
+        public uint Count;
+        public long Luid;
+        public uint Attributes;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct FindData
+    {
+        public uint Attributes;
+        public uint CreationLow, CreationHigh, AccessLow, AccessHigh, WriteLow, WriteHigh;
+        public uint SizeHigh, SizeLow, Reserved0, Reserved1;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string Name;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)] public string AlternateName;
+    }
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool LookupPrivilegeValue(string system, string name, out long luid);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref TokenPrivilege state, uint length, out TokenPrivilege previous, out uint returned);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentProcess();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindFirstFileExW(string name, int infoLevel, out FindData data, int searchOp, IntPtr filter, int flags);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool FindNextFileW(IntPtr find, out FindData data);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindFirstFileNameW(string name, uint flags, ref uint length, StringBuilder linkName);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool FindNextFileNameW(IntPtr find, ref uint length, StringBuilder linkName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool FindClose(IntPtr find);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetFileInformationByHandle(SafeFileHandle file, int infoClass, ref uint info, uint length);
+
+    // Removes what the lines name from the Windows PE mounted at mount and returns how many files and folders went.
+    // A line is a path in the image; * stands for any characters within one name, and a path takes everything below
+    // it. A line starting with ! keeps what it matches. A file whose other names are all removed or copies in a WinSxS
+    // component folder goes with all its names; one that has a name anywhere else keeps it and loses only the others.
+    public static int[] Trim(string mount, string[] lines)
+    {
+        List<string> removes = new List<string>();
+        List<string> keeps = new List<string>();
+        foreach (string raw in lines)
+        {
+            string line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("#"))
+            {
+                continue;
+            }
+
+            bool keep = line.StartsWith("!");
+            string path = keep ? line.Substring(1) : line;
+            if (!path.StartsWith("\\") || path.Contains("/"))
+            {
+                throw new ArgumentException("'" + line + "' is not a path in the image from its root, such as \\Windows\\Fonts\\sylfaen.ttf.");
+            }
+
+            (keep ? keeps : removes).Add(Regex.Escape(path.TrimEnd('\\')).Replace(@"\*", @"[^\\]*"));
+        }
+
+        Regex removed = Pattern(removes);
+        Regex kept = Pattern(keeps);
+
+        string root = Path.GetFullPath(mount).TrimEnd('\\');
+        // Names of a file come back relative to its volume's root, without the drive.
+        string volumeRelative = root.Substring(Path.GetPathRoot(root).Length - 1);
+
+        List<string> files = new List<string>();
+        List<string> folders = new List<string>();
+
+        long[] previous = Enable("SeBackupPrivilege", "SeRestorePrivilege");
+        try
+        {
+            List(root, "", files, folders);
+
+            HashSet<string> doomed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string file in files)
+            {
+                if (!Taken(file, removed, kept) || doomed.Contains(file))
+                {
+                    continue;
+                }
+
+                List<string> names = Names(root, volumeRelative, file);
+                bool whole = true;
+                foreach (string name in names)
+                {
+                    if (name == null || !(Taken(name, removed, kept) || ComponentCopy.IsMatch(name)))
+                    {
+                        whole = false;
+                        break;
+                    }
+                }
+
+                if (whole)
+                {
+                    doomed.UnionWith(names);
+                }
+                else
+                {
+                    doomed.Add(file);
+                }
+            }
+
+            foreach (string file in doomed)
+            {
+                Remove(root + file);
+            }
+
+            // Deepest first, so a folder's folders are gone before it is tried. One that still holds a kept file stays.
+            folders.Sort(delegate (string a, string b) { return b.Length.CompareTo(a.Length); });
+            int folderCount = 0;
+            foreach (string folder in folders)
+            {
+                if (Taken(folder, removed, kept) && Remove(root + folder))
+                {
+                    folderCount++;
+                }
+            }
+
+            return new int[] { doomed.Count, folderCount };
+        }
+        finally
+        {
+            Restore(previous);
+        }
+    }
+
+    private static Regex Pattern(List<string> patterns)
+    {
+        if (patterns.Count == 0)
+        {
+            return null;
+        }
+
+        return new Regex(@"^(" + string.Join("|", patterns.ToArray()) + @")(\\.*)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private static bool Taken(string path, Regex removed, Regex kept)
+    {
+        return removed != null && removed.IsMatch(path) && (kept == null || !kept.IsMatch(path));
+    }
+
+    // Every file and folder below the root, as paths in the image. A junction or other reparse point is listed and
+    // never followed.
+    private static void List(string root, string folder, List<string> files, List<string> folders)
+    {
+        FindData data;
+        // FindExInfoBasic, FIND_FIRST_EX_LARGE_FETCH.
+        IntPtr find = FindFirstFileExW(@"\\?\" + root + folder + @"\*", 1, out data, 0, IntPtr.Zero, 2);
+        if (find == InvalidHandle)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot list " + root + folder);
+        }
+
+        try
+        {
+            do
+            {
+                if (data.Name == "." || data.Name == "..")
+                {
+                    continue;
+                }
+
+                string path = folder + "\\" + data.Name;
+                if ((data.Attributes & DirectoryAttribute) == 0)
+                {
+                    files.Add(path);
+                }
+                else
+                {
+                    folders.Add(path);
+                    if ((data.Attributes & ReparsePointAttribute) == 0)
+                    {
+                        List(root, path, files, folders);
+                    }
+                }
+            }
+            while (FindNextFileW(find, out data));
+
+            int error = Marshal.GetLastWin32Error();
+            if (error != ErrorNoMoreFiles)
+            {
+                throw new Win32Exception(error, "Cannot list " + root + folder);
+            }
+        }
+        finally
+        {
+            FindClose(find);
+        }
+    }
+
+    // Every name of the file, as paths in the image; null for a name outside the mount, which keeps the file.
+    private static List<string> Names(string root, string volumeRelative, string file)
+    {
+        List<string> names = new List<string>();
+        StringBuilder name = new StringBuilder(1024);
+        uint length = (uint)name.Capacity;
+        IntPtr find = FindFirstFileNameW(@"\\?\" + root + file, 0, ref length, name);
+        if (find == InvalidHandle && Marshal.GetLastWin32Error() == ErrorMoreData)
+        {
+            name = new StringBuilder((int)length);
+            find = FindFirstFileNameW(@"\\?\" + root + file, 0, ref length, name);
+        }
+
+        if (find == InvalidHandle)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot list the names of " + root + file);
+        }
+
+        try
+        {
+            while (true)
+            {
+                string found = name.ToString();
+                names.Add(found.StartsWith(volumeRelative + "\\", StringComparison.OrdinalIgnoreCase) ? found.Substring(volumeRelative.Length) : null);
+
+                length = (uint)name.Capacity;
+                if (FindNextFileNameW(find, ref length, name))
+                {
+                    continue;
+                }
+
+                int error = Marshal.GetLastWin32Error();
+                if (error == ErrorMoreData)
+                {
+                    name = new StringBuilder((int)length);
+                    if (FindNextFileNameW(find, ref length, name))
+                    {
+                        continue;
+                    }
+
+                    error = Marshal.GetLastWin32Error();
+                }
+
+                if (error != ErrorHandleEof)
+                {
+                    throw new Win32Exception(error, "Cannot list the names of " + root + file);
+                }
+
+                return names;
+            }
+        }
+        finally
+        {
+            FindClose(find);
+        }
+    }
+
+    // Deletes one name of a file, or an empty folder; false for a folder that is not empty.
+    private static bool Remove(string path)
+    {
+        using (SafeFileHandle handle = CreateFileW(@"\\?\" + path, Delete, ShareAll, IntPtr.Zero, OpenExisting, BackupSemantics | OpenReparsePoint, IntPtr.Zero))
+        {
+            if (handle.IsInvalid)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot open " + path + " to delete it");
+            }
+
+            uint flags = DispositionFlags;
+            if (SetFileInformationByHandle(handle, FileDispositionInfoEx, ref flags, 4))
+            {
+                return true;
+            }
+
+            int error = Marshal.GetLastWin32Error();
+            if (error == ErrorDirNotEmpty)
+            {
+                return false;
+            }
+
+            throw new Win32Exception(error, "Cannot delete " + path);
+        }
+    }
+
+    private static long[] Enable(params string[] names)
+    {
+        long[] previous = new long[names.Length * 2];
+        IntPtr token;
+        // TOKEN_ADJUST_PRIVILEGES, TOKEN_QUERY.
+        if (!OpenProcessToken(GetCurrentProcess(), 0x20 | 0x8, out token))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        try
+        {
+            for (int index = 0; index < names.Length; index++)
+            {
+                TokenPrivilege state = new TokenPrivilege();
+                state.Count = 1;
+                state.Attributes = 0x2;
+                if (!LookupPrivilegeValue(null, names[index], out state.Luid))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+
+                TokenPrivilege old;
+                uint returned;
+                if (!AdjustTokenPrivileges(token, false, ref state, 16, out old, out returned) || Marshal.GetLastWin32Error() == ErrorNotAllAssigned)
+                {
+                    throw new InvalidOperationException("This account does not hold " + names[index] + ", which removing files from Windows PE needs.");
+                }
+
+                // What to put back: Windows reports the state before only for a privilege it changed, so none means
+                // it was enabled already.
+                previous[index * 2] = state.Luid;
+                previous[index * 2 + 1] = old.Count == 0 ? 0x2 : old.Attributes;
+            }
+        }
+        finally
+        {
+            CloseHandle(token);
+        }
+
+        return previous;
+    }
+
+    private static void Restore(long[] previous)
+    {
+        IntPtr token;
+        if (!OpenProcessToken(GetCurrentProcess(), 0x20 | 0x8, out token))
+        {
+            return;
+        }
+
+        try
+        {
+            for (int index = 0; index < previous.Length; index += 2)
+            {
+                TokenPrivilege state = new TokenPrivilege();
+                state.Count = 1;
+                state.Luid = previous[index];
+                state.Attributes = (uint)previous[index + 1];
+                TokenPrivilege old;
+                uint returned;
+                AdjustTokenPrivileges(token, false, ref state, 16, out old, out returned);
+            }
+        }
+        finally
+        {
+            CloseHandle(token);
+        }
+    }
+}
+'@
+    }
+
+    $lines = [IO.File]::ReadAllLines($ListPath)
+    return [DdtBootImageTrim]::Trim($MountDirectory, $lines)
 }
 
 function Get-AdkVersion {
@@ -657,6 +1096,14 @@ if ($ExtraPath) {
     $ExtraPath = (Resolve-Path -LiteralPath $ExtraPath).ProviderPath
 }
 
+if (-not $SkipTrim) {
+    if (-not (Test-Path -LiteralPath $TrimListPath -PathType Leaf)) {
+        throw "Trim list not found at $TrimListPath."
+    }
+
+    $TrimListPath = (Resolve-Path -LiteralPath $TrimListPath).ProviderPath
+}
+
 if ($WimLibraryPath) {
     if (-not $AgentPath) {
         throw 'A libwim needs -AgentPath: only the agent uses it.'
@@ -803,6 +1250,22 @@ try {
         Invoke-Native $dism "/Image:$Mount" /Cleanup-Image /StartComponentCleanup /ResetBase "/ScratchDir:$($scratch.FullName)" | Out-Null
     }
 
+    # Last, because it takes the servicing stack that DISM used above. The export below then leaves out what no
+    # name refers to any more. A list edited too far could take what Windows PE starts with, so these must stay.
+    if (-not $SkipTrim) {
+        $essential = @('Windows\System32\ntoskrnl.exe', 'Windows\System32\winload.efi', 'Windows\System32\ucrtbase.dll',
+                       'Windows\SysWOW64\ntdll.dll') | Where-Object { Test-Path -LiteralPath (Join-Path $Mount $_) }
+
+        $trimmed = Remove-TrimmedFiles -MountDirectory $Mount -ListPath $TrimListPath
+        Write-Host "Removed $($trimmed[0]) files and $($trimmed[1]) folders by $TrimListPath"
+
+        foreach ($file in $essential) {
+            if (-not (Test-Path -LiteralPath (Join-Path $Mount $file))) {
+                throw "$TrimListPath removes $file, which Windows PE needs to start."
+            }
+        }
+    }
+
     Invoke-Native $dism /Unmount-Image "/MountDir:$Mount" /Commit | Out-Null
     $committed = $true
 }
@@ -866,4 +1329,5 @@ Get-ChildItem -LiteralPath $Destination -Recurse -File |
 
 # A PXE netboot fetches boot.wim over TFTP, so its size is most of what the netboot takes.
 $variant = if ($SkipPowerShell) { 'without PowerShell' } else { 'with PowerShell' }
+$variant += if ($SkipTrim) { ', untrimmed' } else { ', trimmed' }
 Write-Host ('boot.wim, {0}: {1:N1} MB' -f $variant, ((Get-Item -LiteralPath (Join-Path $Destination 'Boot\boot.wim')).Length / 1MB))

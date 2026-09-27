@@ -17,6 +17,8 @@ A graphical console in Windows PE, a new web UI, and the settings page that
   [Boot image drivers from selection profiles]
 - **API tokens**, so scripts use the API the web UI uses without a browser sign-in. [The MDT
   PowerShell provider]
+- **A smaller boot image.** The build removes what DDT's Windows PE never uses, 37 % of `boot.wim`
+  with PowerShell, which a netboot no longer has to fetch. [LiteTouchPE_x64.wim]
 
 ## M7 The flow builder and the sequence model
 

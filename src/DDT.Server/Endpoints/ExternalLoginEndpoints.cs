@@ -181,7 +181,9 @@ public static class ExternalLoginEndpoints
     private static async Task<Results<Ok, ValidationProblem, UnauthorizedHttpResult>> LinkAsync(
         System.Security.Claims.ClaimsPrincipal principal,
         SignInManager<DdtUser> signInManager,
-        UserManager<DdtUser> userManager)
+        UserManager<DdtUser> userManager,
+        UserActivity activity,
+        CancellationToken cancellationToken)
     {
         DdtUser? user = await userManager.GetUserAsync(principal).ConfigureAwait(false);
 
@@ -206,6 +208,8 @@ public static class ExternalLoginEndpoints
         {
             return TypedResults.ValidationProblem(result.ToProblemDictionary());
         }
+
+        await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok();
     }

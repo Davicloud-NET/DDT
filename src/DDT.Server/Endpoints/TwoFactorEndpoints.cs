@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -58,7 +59,9 @@ public static class TwoFactorEndpoints
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
         UserManager<DdtUser> userManager,
-        ILoggerFactory loggerFactory)
+        UserActivity activity,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -92,6 +95,8 @@ public static class TwoFactorEndpoints
             await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount).ConfigureAwait(false)
             ?? [];
 
+        await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);
+
         return TypedResults.Ok(new RecoveryCodes([.. codes]));
     }
 
@@ -99,7 +104,9 @@ public static class TwoFactorEndpoints
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
         UserManager<DdtUser> userManager,
-        ILoggerFactory loggerFactory)
+        UserActivity activity,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -131,6 +138,7 @@ public static class TwoFactorEndpoints
         ILogger logger = loggerFactory.CreateLogger(typeof(TwoFactorEndpoints));
         string userName = user.UserName ?? string.Empty;
         AuthLog.TwoFactorDisabled(logger, userName);
+        await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok();
     }

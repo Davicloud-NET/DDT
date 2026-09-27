@@ -97,6 +97,7 @@ public static class AuthEndpoints
         if (result.IsLockedOut)
         {
             AuthLog.LockedOut(logger, userName);
+            await LockedOutAsync(userName, userManager, activity, context.RequestAborted).ConfigureAwait(false);
 
             return TypedResults.Ok(new LoginResponse(LoginStatus.LockedOut));
         }
@@ -123,6 +124,15 @@ public static class AuthEndpoints
         }
 
         return TypedResults.Ok(new LoginResponse(LoginStatus.Succeeded));
+    }
+
+    // The Users page shows how long a lockout lasts.
+    internal static async Task LockedOutAsync(string userName, UserManager<DdtUser> userManager, UserActivity activity, CancellationToken cancellationToken)
+    {
+        if (await userManager.FindByNameAsync(userName).ConfigureAwait(false) is { } account)
+        {
+            await activity.ChangedAsync(account, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static async Task<SignInResult> CredentialSignInAsync(

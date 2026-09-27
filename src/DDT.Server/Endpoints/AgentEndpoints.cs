@@ -11,6 +11,7 @@ using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -197,6 +198,7 @@ public static class AgentEndpoints
         DdtDbContext database,
         CredentialVerifier credentials,
         UserManager<DdtUser> users,
+        UserActivity activity,
         IOptions<MachineOptions> options,
         DeploymentService deployments,
         LiveNotifier live,
@@ -257,6 +259,7 @@ public static class AgentEndpoints
         if (result.IsLockedOut)
         {
             AuthLog.MachineSignInLockedOut(logger, id, request.UserName, address);
+            await AuthEndpoints.LockedOutAsync(request.UserName, users, activity, cancellationToken).ConfigureAwait(false);
 
             return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.LockedOut));
         }

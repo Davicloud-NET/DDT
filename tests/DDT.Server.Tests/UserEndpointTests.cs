@@ -309,6 +309,34 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.False(overheard.TryRead(out _));
     }
 
+    // What an account does to itself reaches the Users page too.
+    [Fact]
+    public async Task AdministratorsSeeASecondFactorAndALockoutAsTheyHappen()
+    {
+        string userName = await application.CreateUserAsync(DdtRoleNames.Viewer);
+        Guid id = await IdOfAsync(userName);
+        await using LiveListener live = await LiveListener.StartAsync(application, await application.AdministratorAsync());
+        ChannelReader<UserView> changes = live.Listen<UserView>(LiveEvents.UserChanged);
+        using SignedInClient browser = await application.SignedInBrowserAsync(userName, DdtApplication.Password);
+
+        TwoFactorEnrollment enrollment = await ReadAsync<TwoFactorEnrollment>(await browser.PostAsync("/api/auth/2fa/enroll"));
+        string code = Totp.Code(enrollment.SharedKey.Replace(" ", string.Empty, StringComparison.Ordinal), DateTimeOffset.UtcNow);
+        (await browser.PostAsync("/api/auth/2fa/enable", new TwoFactorVerifyRequest(code))).EnsureSuccessStatusCode();
+
+        Assert.True((await LiveListener.NextAsync(changes, user => user.Id == id && user.TwoFactorEnabled)).TwoFactorEnabled);
+
+        using SignedInClient guesser = application.Browser();
+        LoginStatus? status = null;
+
+        for (int attempt = 0; attempt < 5 && status != LoginStatus.LockedOut; attempt++)
+        {
+            status = await guesser.SignInAsync(userName, "not the password");
+        }
+
+        Assert.Equal(LoginStatus.LockedOut, status);
+        Assert.NotNull((await LiveListener.NextAsync(changes, user => user.Id == id && user.LockedOutUntil is not null)).LockedOutUntil);
+    }
+
     [Fact]
     public async Task OnlyAdministratorsUseTheUsersApi()
     {

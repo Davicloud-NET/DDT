@@ -34,6 +34,10 @@ public sealed partial class LiveNotifier(
     // An agent flushes its log every few seconds, and a watcher reads what is new with each push.
     public static readonly TimeSpan LogPushInterval = TimeSpan.FromSeconds(1);
 
+    private const int RememberedRuns = 1024;
+
+    private const int RememberedRemovals = 256;
+
     private readonly PushThrottle _machines = new(timeProvider, MachinePushInterval, lifetime.ApplicationStopping);
 
     private readonly PushThrottle _logs = new(timeProvider, LogPushInterval, lifetime.ApplicationStopping);
@@ -51,9 +55,6 @@ public sealed partial class LiveNotifier(
     // registers under a new id, so remembering the last few hundred is enough.
     private readonly Queue<Guid> _removedOrder = [];
     private readonly HashSet<Guid> _removed = [];
-
-    private const int RememberedRuns = 1024;
-    private const int RememberedRemovals = 256;
 
     // The deployment the Machines page shows for this machine, see MachineSummaries.From. Taken now, so a push the
     // throttle delays still carries the latest state. The run history gets the same deployment as a row of its own.

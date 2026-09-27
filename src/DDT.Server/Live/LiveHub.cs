@@ -8,9 +8,10 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
 
-// Server to client: clients receive small change events and patch or refetch their queries. A page that shows one
-// machine watches it, to receive also what only it needs, such as new log lines and step changes. Groups do not
-// survive a reconnect, so a client watches again after one.
+// Server to client: every event carries what changed, and clients patch what they show with it rather than loading it
+// again, see LiveEvents. A page that shows one machine watches it, to receive also what only it needs, such as new log
+// lines and step changes. Groups do not survive a reconnect, so a client watches again after one. A script may connect
+// with an API token too, and receives what its token's role may read.
 public sealed class LiveHub : Hub
 {
     // A connection is one browser tab, which shows a machine or a few.

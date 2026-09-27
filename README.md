@@ -1,4 +1,8 @@
-<img src="src/DDT.Design/brand/ddt-logo.svg" alt="DDT logo" width="96">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="src/DDT.Design/brand/readme-banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="src/DDT.Design/brand/readme-banner-light.png">
+  <img src="src/DDT.Design/brand/readme-banner-light.png" alt="DDT logo over screens of the machine console" width="100%">
+</picture>
 
 # DDT, the Davicloud Deployment Toolkit
 

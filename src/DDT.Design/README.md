@@ -19,6 +19,9 @@ The design tokens of DDT's look, Switchgear, and the script that turns them into
   pixels high, because Avalonia draws no SVG without another package. The logo keeps its own reds. It is under
   DDT's licence like everything else here, so a work based on DDT may use it; section 7(c) of NOTICE still asks
   a modified version to say that it is modified.
+  `readme-banner-dark.png` and `readme-banner-light.png` head the repository's README, one for each GitHub theme:
+  the logo on a tile over the console's screens, as `tests/DDT.MachineConsole.Tests/ScreenshotTests.cs` saves them,
+  at 1920 by 600 pixels.
 - The console cannot vary a font's width, so it carries one static face of Archivo or Martian Mono for every weight
   and width a type uses, named after both, such as "Archivo 750 62". A new weight or width in `type` needs its face:
   run `src/DDT.MachineConsole/Assets/Fonts/cut_fonts.py`, which cuts them all from Google Fonts' variable fonts.

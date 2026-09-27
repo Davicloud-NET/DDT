@@ -78,7 +78,7 @@ function TopBar({
         to="/machines"
         className="flex shrink-0 items-center gap-2.5 pr-6 outline-none focus-visible:outline-2 max-sm:pr-3"
       >
-        <Logo size={24} className="text-frame-logo" />
+        <Logo size={22} />
         <span className="type-wordmark text-frame-text">DDT</span>
       </Link>
       <nav

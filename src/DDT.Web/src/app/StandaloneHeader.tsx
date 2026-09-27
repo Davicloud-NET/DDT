@@ -8,7 +8,7 @@ import { Logo } from "@/ui/Logo";
 export function StandaloneHeader() {
   return (
     <header className="flex h-13 shrink-0 items-center gap-2.5 bg-frame px-5">
-      <Logo size={24} className="text-frame-logo" />
+      <Logo size={22} />
       <span className="type-wordmark text-frame-text">DDT</span>
     </header>
   );

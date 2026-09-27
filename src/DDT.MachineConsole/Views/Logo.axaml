@@ -2,24 +2,12 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The Davicloud mark, as the web draws it: a red sphere with a swept orbital ring in the frame's logo tone. -->
+<!-- DDT's mark, cut from src/DDT.Design/brand/ddt-logo.png to the mark and 256 pixels high. Avalonia draws no SVG
+     without another package, and an image keeps the mark's gradients exactly as drawn. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DDT.MachineConsole.Views.Logo">
-  <Viewbox Stretch="Uniform">
-    <Canvas Width="32" Height="32">
-      <Canvas.RenderTransform>
-        <RotateTransform Angle="-22" />
-      </Canvas.RenderTransform>
-      <Path Data="M1 16a15 5.25 0 0 1 30 0"
-            Stroke="{DynamicResource SgFrameLogo}"
-            StrokeThickness="2.5"
-            StrokeLineCap="Round" />
-      <Ellipse Canvas.Left="5.5" Canvas.Top="5.5" Width="21" Height="21" Fill="#E0484A" />
-      <Path Data="M1 16a15 5.25 0 0 0 30 0"
-            Stroke="{DynamicResource SgFrameLogo}"
-            StrokeThickness="2.5"
-            StrokeLineCap="Round" />
-    </Canvas>
-  </Viewbox>
+  <Image Source="avares://ddt-console/Assets/ddt-logo.png"
+         Stretch="Uniform"
+         RenderOptions.BitmapInterpolationMode="HighQuality" />
 </UserControl>

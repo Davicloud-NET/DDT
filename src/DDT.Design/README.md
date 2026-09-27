@@ -12,6 +12,11 @@ The design tokens of DDT's look, Switchgear, and the script that turns them into
   letter spacing in pixels. Run it from `src/DDT.Web` with `npm run tokens` after changing the tokens; a web test
   fails while either written file is out of date, and a test of the console compares its resources with the tokens
   from the .NET side.
+- `brand` holds DDT's logo as it was drawn: `ddt-logo.svg`, the source, `ddt-logo.png` at 1024 pixels, and
+  `ddt-logo.ico`, the Windows icon from 16 to 256 pixels that the agent, the console and the server carry. The web
+  draws the SVG's paths cropped to the mark (`src/DDT.Web/src/ui/Logo.tsx`) and serves the SVG and the icon as its
+  favicon; the console shows `src/DDT.MachineConsole/Assets/ddt-logo.png`, cut from the PNG to the mark and 256
+  pixels high, because Avalonia draws no SVG without another package. The logo keeps its own reds.
 - The console cannot vary a font's width, so it carries one static face of Archivo or Martian Mono for every weight
   and width a type uses, named after both, such as "Archivo 750 62". A new weight or width in `type` needs its face:
   run `src/DDT.MachineConsole/Assets/Fonts/cut_fonts.py`, which cuts them all from Google Fonts' variable fonts.

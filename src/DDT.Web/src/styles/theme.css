@@ -11,7 +11,6 @@
   --sg-frame-muted: #AAB1B3;
   --sg-frame-line: #3C4245;
   --sg-frame-hover: #34393C;
-  --sg-frame-logo: #F08A8A;
   --sg-page: #DCDFDB;
   --sg-panel: #F7F8F6;
   --sg-raised: #FFFFFF;
@@ -59,7 +58,6 @@
   --sg-edge-panel: rgb(31 36 38 / 0.09);
   --sg-edge-overlay: rgb(31 36 38 / 0.08);
   --sg-shadow-overlay: rgb(31 36 38 / 0.20);
-  --sg-logo-ring: #981F28;
 }
 
 :root.dark {
@@ -69,7 +67,6 @@
   --sg-frame-muted: #A0A8AC;
   --sg-frame-line: #2A2F32;
   --sg-frame-hover: #1F2326;
-  --sg-frame-logo: #F08A8A;
   --sg-page: #1D2123;
   --sg-panel: #262B2E;
   --sg-raised: #30363A;
@@ -117,7 +114,6 @@
   --sg-edge-panel: rgb(255 255 255 / 0.06);
   --sg-edge-overlay: rgb(255 255 255 / 0.08);
   --sg-shadow-overlay: rgb(0 0 0 / 0.55);
-  --sg-logo-ring: #F08A8A;
 }
 
 /* Only the tokens exist: Tailwind's own palette, fonts, sizes, radii and shadows are cleared. */
@@ -138,7 +134,6 @@
   --color-frame-muted: var(--sg-frame-muted);
   --color-frame-line: var(--sg-frame-line);
   --color-frame-hover: var(--sg-frame-hover);
-  --color-frame-logo: var(--sg-frame-logo);
   --color-page: var(--sg-page);
   --color-panel: var(--sg-panel);
   --color-raised: var(--sg-raised);
@@ -186,7 +181,6 @@
   --color-edge-panel: var(--sg-edge-panel);
   --color-edge-overlay: var(--sg-edge-overlay);
   --color-shadow-overlay: var(--sg-shadow-overlay);
-  --color-logo-ring: var(--sg-logo-ring);
 
   --font-sans: "Archivo Variable", Archivo, "Segoe UI", "system-ui", "sans-serif";
   --font-mono: "Martian Mono Variable", "Martian Mono", "Cascadia Mono", Consolas, monospace;

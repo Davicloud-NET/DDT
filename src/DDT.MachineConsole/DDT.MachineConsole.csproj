@@ -16,6 +16,7 @@
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <OptimizationPreference>Size</OptimizationPreference>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>..\DDT.Design\brand\ddt-logo.ico</ApplicationIcon>
     <!-- Required by the LibraryImport source generator. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -38,6 +39,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\Fonts\*.ttf" />
+    <AvaloniaResource Include="Assets\ddt-logo.png" />
     <!-- What the console says, in the names Catalogs.ResourceName gives the catalogs. -->
     <EmbeddedResource Include="Locales\en\messages.po" LogicalName="locales/en/messages.po" />
     <EmbeddedResource Include="Locales\de\messages.po" LogicalName="locales/de/messages.po" />

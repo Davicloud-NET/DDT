@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
+    <ApplicationIcon>..\DDT.Design\brand\ddt-logo.ico</ApplicationIcon>
     <UserSecretsId>aspnet-DDT_Host-a077d2f4-d71b-4918-bf26-a74c1cb9a3c4</UserSecretsId>
   </PropertyGroup>
 

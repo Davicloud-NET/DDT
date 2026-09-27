@@ -1,3 +1,5 @@
+<img src="src/DDT.Design/brand/ddt-logo.svg" alt="DDT logo" width="96">
+
 # DDT, the Davicloud Deployment Toolkit
 
 DDT is a self-hostable, open-source replacement for the Microsoft Deployment Toolkit, aimed at small

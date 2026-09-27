@@ -17,8 +17,6 @@
       <SolidColorBrush x:Key="SgFrameLine" Color="#FF3C4245" />
       <Color x:Key="SgFrameHoverColor">#FF34393C</Color>
       <SolidColorBrush x:Key="SgFrameHover" Color="#FF34393C" />
-      <Color x:Key="SgFrameLogoColor">#FFF08A8A</Color>
-      <SolidColorBrush x:Key="SgFrameLogo" Color="#FFF08A8A" />
       <Color x:Key="SgPageColor">#FFDCDFDB</Color>
       <SolidColorBrush x:Key="SgPage" Color="#FFDCDFDB" />
       <Color x:Key="SgPanelColor">#FFF7F8F6</Color>
@@ -113,8 +111,6 @@
       <SolidColorBrush x:Key="SgEdgeOverlay" Color="#141F2426" />
       <Color x:Key="SgShadowOverlayColor">#331F2426</Color>
       <SolidColorBrush x:Key="SgShadowOverlay" Color="#331F2426" />
-      <Color x:Key="SgLogoRingColor">#FF981F28</Color>
-      <SolidColorBrush x:Key="SgLogoRing" Color="#FF981F28" />
       <BoxShadows x:Key="SgOverlayShadow">0 14 36 -8 #331F2426</BoxShadows>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
@@ -128,8 +124,6 @@
       <SolidColorBrush x:Key="SgFrameLine" Color="#FF2A2F32" />
       <Color x:Key="SgFrameHoverColor">#FF1F2326</Color>
       <SolidColorBrush x:Key="SgFrameHover" Color="#FF1F2326" />
-      <Color x:Key="SgFrameLogoColor">#FFF08A8A</Color>
-      <SolidColorBrush x:Key="SgFrameLogo" Color="#FFF08A8A" />
       <Color x:Key="SgPageColor">#FF1D2123</Color>
       <SolidColorBrush x:Key="SgPage" Color="#FF1D2123" />
       <Color x:Key="SgPanelColor">#FF262B2E</Color>
@@ -224,8 +218,6 @@
       <SolidColorBrush x:Key="SgEdgeOverlay" Color="#14FFFFFF" />
       <Color x:Key="SgShadowOverlayColor">#8C000000</Color>
       <SolidColorBrush x:Key="SgShadowOverlay" Color="#8C000000" />
-      <Color x:Key="SgLogoRingColor">#FFF08A8A</Color>
-      <SolidColorBrush x:Key="SgLogoRing" Color="#FFF08A8A" />
       <BoxShadows x:Key="SgOverlayShadow">0 14 36 -8 #8C000000</BoxShadows>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>

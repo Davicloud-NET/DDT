@@ -8,6 +8,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <IsAotCompatible>true</IsAotCompatible>
     <AssemblyName>ddt-agent</AssemblyName>
+    <ApplicationIcon>..\DDT.Design\brand\ddt-logo.ico</ApplicationIcon>
     <!-- Required by the LibraryImport source generator. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(_IsPublishing)' == 'true'">$(DefineConstants);DDT_PUBLISHED</DefineConstants>

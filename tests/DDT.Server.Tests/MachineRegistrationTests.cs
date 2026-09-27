@@ -508,13 +508,21 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
             .AddJsonProtocol(json => json.PayloadSerializerOptions = TestJson.Options)
             .Build();
 
+        // A push of an earlier test's machine can still be on its way, held back by the throttle, so only this test's
+        // machine counts.
+        string uuid = NewUuid();
         TaskCompletionSource<MachineSummary> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        connection.On<MachineSummary>("machineChanged", machine => received.TrySetResult(machine));
+        connection.On<MachineSummary>("machineChanged", machine =>
+        {
+            if (machine.SmbiosUuid == uuid)
+            {
+                received.TrySetResult(machine);
+            }
+        });
 
         await connection.StartAsync(TestContext.Current.CancellationToken);
 
         using AgentClient agent = Agent();
-        string uuid = NewUuid();
         (await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac()))).EnsureSuccessStatusCode();
 
         MachineSummary pushed = await received.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);

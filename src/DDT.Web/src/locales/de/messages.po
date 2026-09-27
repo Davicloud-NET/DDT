@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: de\n"
 
+#: src/sequences/SequencesPage.tsx
+msgid "{activeRuns, plural, one {Assigned to or running on # machine} other {Assigned to or running on # machines}}"
+msgstr "{activeRuns, plural, one {Zugewiesen oder in Ausführung auf # Gerät} other {Zugewiesen oder in Ausführung auf # Geräten}}"
+
+#: src/sequences/sequenceList.ts
+msgid "{activeRuns, plural, one {The machine it is assigned to or running on keeps the copy it got and finishes with it.} other {The # machines it is assigned to or running on keep the copy they got and finish with it.}}"
+msgstr "{activeRuns, plural, one {Das Gerät, dem sie zugewiesen ist oder auf dem sie läuft, behält seine Kopie und schließt damit ab.} other {Die # Geräte, denen sie zugewiesen ist oder auf denen sie läuft, behalten ihre Kopie und schließen damit ab.}}"
+
 #: src/machines/MachinesPage.tsx
 msgid "{activity}, last contact {contact}"
 msgstr "{activity}, letzter Kontakt {contact}"
@@ -23,6 +31,10 @@ msgstr "{by} hat das Gerät im Web freigegeben, um {title} auszuführen, das ein
 msgid "{by} assigned {title} on the web"
 msgstr "{by} hat {title} im Web zugewiesen"
 
+#: src/sequences/SaveState.tsx
+msgid "{by} saved it at {time}"
+msgstr "{by} hat sie um {time} gespeichert"
+
 #: src/machines/MachinesPage.tsx
 msgid "{by} signed in at the machine"
 msgstr "{by} hat sich am Gerät angemeldet"
@@ -30,6 +42,10 @@ msgstr "{by} hat sich am Gerät angemeldet"
 #: src/runs/runs.ts
 msgid "{by} signed in at the machine and chose {title} there"
 msgstr "{by} hat sich am Gerät angemeldet und dort {title} gewählt"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
+msgstr "{count, plural, one {# Treiberpaket liegt in der Bibliothek, für die Modelle, die seine Ziele nennen.} other {# Treiberpakete liegen in der Bibliothek, jedes für die Modelle, die seine Ziele nennen.}}"
 
 #: src/rules/RulesPage.tsx
 msgid "{count, plural, one {# machine} other {# machines}}"
@@ -39,6 +55,10 @@ msgstr "{count, plural, one {# Gerät} other {# Geräte}}"
 #: src/machines/AssignDialog.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
 msgstr "{count, plural, one {# Problem} other {# Probleme}}"
+
+#: src/sequences/SequencesPage.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr "{count, plural, one {# Schritt} other {# Schritte}}"
 
 #: src/machines/AssignDialog.tsx
 msgid "{count, plural, one {# warning} other {# warnings}}"
@@ -56,6 +76,10 @@ msgstr "{count, plural, one {Passt auf # registriertes Gerät.} other {Passt auf
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
 
+#: src/sequences/sequenceList.ts
+msgid "{count, plural, one {The rule for {list} chooses {name}. Delete that rule or let it choose another sequence, then delete this one.} other {The rules for {list} choose {name}. Delete those rules or let them choose another sequence, then delete this one.}}"
+msgstr "{count, plural, one {Die Regel für {list} wählt {name}. Löschen Sie diese Regel oder lassen Sie sie eine andere Tasksequenz wählen, und löschen Sie dann diese.} other {Die Regeln für {list} wählen {name}. Löschen Sie diese Regeln oder lassen Sie sie eine andere Tasksequenz wählen, und löschen Sie dann diese.}}"
+
 #: src/packages/packages.ts
 msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
 msgstr "{count, plural, one {Die Tasksequenz {names} nennt es in einem Schritt „Skript ausführen“ und zeigt ein Problem, bis ein anderes Paket gewählt ist.} other {Die Tasksequenzen {names} nennen es in einem Schritt „Skript ausführen“ und zeigen ein Problem, bis ein anderes Paket gewählt ist.}}"
@@ -67,6 +91,10 @@ msgstr "{count} Bytes"
 #: src/runs/runs.ts
 msgid "{described}, and the machine reports \"{value}\""
 msgstr "{described}, und das Gerät meldet \"{value}\""
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "{facts}, cannot be installed"
+msgstr "{facts}, kann nicht installiert werden"
 
 #: src/packages/PackagesPage.tsx
 msgid "{file} is already in the library as {name}."
@@ -124,6 +152,10 @@ msgstr "{kind}, {phase}, {started} bis {ended}, Dauer {took}"
 msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr "{kind}, {phase}, gestartet {started}, läuft seit {took}"
 
+#: src/sequences/StepInspector.tsx
+msgid "{kind}, in {phaseName}"
+msgstr "{kind}, in {phaseName}"
+
 #: src/runs/RunPanel.tsx
 msgid "{kind}: {file}, {size}"
 msgstr "{kind}: {file}, {size}"
@@ -149,6 +181,14 @@ msgstr "{maker}, Seriennummer {serial}"
 msgid "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{matching, plural, one {Passt auf # registriertes Gerät.} other {Passt auf # registrierte Geräte.}}"
 
+#: src/sequences/FindingsSummary.tsx
+msgid "{message} Go to step {number}, {name}."
+msgstr "{message} Zu Schritt {number}, {name} wechseln."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "{message} Your latest changes are not saved, and leaving throws them away."
+msgstr "{message} Ihre letzten Änderungen sind nicht gespeichert, und beim Verlassen gehen sie verloren."
+
 #: src/lib/format.ts
 msgid "{minutes} min {seconds} s"
 msgstr "{minutes} Min. {seconds} s"
@@ -173,6 +213,10 @@ msgstr "{name} ({size}) wird aus der Bibliothek entfernt und kann von keiner Tas
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} hat {warnings}. Sie läuft, aber sehen Sie sich die Tasksequenz vorher an."
 
+#: src/sequences/sequenceList.ts
+msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
+msgstr "{name} wird gelöscht und kann nicht mehr zugewiesen oder an einem Gerät gewählt werden."
+
 #: src/uploads/UploadPanel.tsx
 msgid "{name} is empty."
 msgstr "{name} ist leer."
@@ -185,6 +229,14 @@ msgstr "{name} wurde nicht hinzugefügt. {reason}"
 msgid "{newLines, plural, one {Paused, # new line} other {Paused, # new lines}}"
 msgstr "{newLines, plural, one {Angehalten, # neue Zeile} other {Angehalten, # neue Zeilen}}"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "{otherName} (raw disk image)"
+msgstr "{otherName} (Raw-Datenträgerimage)"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "{otherName} (Windows image)"
+msgstr "{otherName} (Windows-Image)"
+
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
 msgstr "{percent} % von {total} mit {speed}/s, bisher {took}"
@@ -192,6 +244,14 @@ msgstr "{percent} % von {total} mit {speed}/s, bisher {took}"
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent} % von {total}, bisher {took}"
+
+#: src/sequences/FindingsSummary.tsx
+msgid "{problemCount, plural, one {# problem keeps it from running.} other {# problems keep it from running.}}"
+msgstr "{problemCount, plural, one {# Problem verhindert die Ausführung.} other {# Probleme verhindern die Ausführung.}}"
+
+#: src/sequences/sequenceList.ts
+msgid "{problemCount, plural, one {# problem} other {# problems}}"
+msgstr "{problemCount, plural, one {# Problem} other {# Probleme}}"
 
 #: src/machines/AssignDialog.tsx
 msgid "{problems}, cannot run"
@@ -241,15 +301,35 @@ msgstr "{signedInBy} hat sich hier angemeldet"
 msgid "{step} {percent}%"
 msgstr "{step} {percent} %"
 
+#: src/sequences/SequenceEditor.tsx
+msgid "{stepName} moved to position {position} of {count}."
+msgstr "{stepName} ist jetzt an Position {position} von {count}."
+
 #: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
+
+#: src/sequences/FindingsSummary.tsx
+msgid "{warningCount, plural, one {# warning, which does not.} other {# warnings, which do not.}}"
+msgstr "{warningCount, plural, one {# Warnung, die sie nicht verhindert.} other {# Warnungen, die sie nicht verhindern.}}"
+
+#: src/sequences/sequenceList.ts
+msgid "{warningCount, plural, one {# warning} other {# warnings}}"
+msgstr "{warningCount, plural, one {# Warnung} other {# Warnungen}}"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "{when} by {by}"
 msgstr "{when} von {by}"
+
+#: src/sequences/SequenceConflict.tsx
+msgid "{who} saved this sequence at {when} while you were editing."
+msgstr "{who} hat diese Tasksequenz um {when} gespeichert, während Sie sie bearbeitet haben."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "A #cloud-config document, or a script that starts with #!."
+msgstr "Ein #cloud-config-Dokument oder ein Skript, das mit #! beginnt."
 
 #: src/rules/RuleDialog.tsx
 msgid "A hardware model"
@@ -291,9 +371,21 @@ msgstr "Ein zweiter Faktor schützt dieses Konto, auch wenn sein Kennwort gesehe
 msgid "a sequence"
 msgstr "eine Tasksequenz"
 
+#: src/sequences/SequenceEditor.tsx
+msgid "A sequence that installs Windows starts by partitioning the disk and then applies an image. One for Linux writes a raw disk image and its cloud-init seed."
+msgstr "Eine Tasksequenz, die Windows installiert, partitioniert zuerst den Datenträger und wendet dann ein Image an. Eine für Linux schreibt ein Raw-Datenträgerimage und seinen cloud-init-Seed."
+
+#: src/sequences/SequencesPage.tsx
+msgid "A task sequence is the list of steps a machine runs, such as partitioning the disk, applying an image and running scripts. One with problems is kept as a draft and cannot run until they are fixed."
+msgstr "Eine Tasksequenz ist die Liste der Schritte, die ein Gerät ausführt, etwa den Datenträger partitionieren, ein Image anwenden und Skripte ausführen. Eine Tasksequenz mit Problemen bleibt ein Entwurf und kann erst ausgeführt werden, wenn sie behoben sind."
+
 #: src/images/ImagesPage.tsx
 msgid "a WIM, ESD or disk image file"
 msgstr "eine WIM-, ESD- oder Datenträgerimage-Datei"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "A Windows time zone id as tzutil /l lists it, such as W. Europe Standard Time."
+msgstr "Eine Windows-Zeitzonen-ID, wie tzutil /l sie auflistet, etwa W. Europe Standard Time."
 
 #: src/packages/PackagesPage.tsx
 msgid "a zip file"
@@ -334,6 +426,7 @@ msgstr "Kontomenü für {name}"
 #: src/machines/MachinesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Actions"
 msgstr "Aktionen"
 
@@ -350,6 +443,10 @@ msgstr "Aktionen für {name}"
 msgid "Actions for the rule for {description}"
 msgstr "Aktionen für die Regel für {description}"
 
+#: src/sequences/StepConditions.tsx
+msgid "Add a condition"
+msgstr "Bedingung hinzufügen"
+
 #: src/packages/PackageDialog.tsx
 msgid "Add a model"
 msgstr "Modell hinzufügen"
@@ -363,6 +460,22 @@ msgstr "Zuweisungsregel hinzufügen"
 msgid "Add rule"
 msgstr "Regel hinzufügen"
 
+#: src/sequences/SequenceEditor.tsx
+msgid "Add step"
+msgstr "Schritt hinzufügen"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Add step at the end"
+msgstr "Schritt hinzufügen, am Ende"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Add the first step"
+msgstr "Ersten Schritt hinzufügen"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Add the local administrator"
+msgstr "Lokalen Administrator hinzufügen"
+
 #: src/packages/PackagesPage.tsx
 msgid "Added {name} from {file}."
 msgstr "{name} aus {file} hinzugefügt."
@@ -370,6 +483,14 @@ msgstr "{name} aus {file} hinzugefügt."
 #: src/machines/MachinePanel.tsx
 msgid "Address"
 msgstr "Adresse"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Adds a partition labelled CIDATA at the end of the disk, where cloud-init finds these files at the machine's first start. Everyone who can sign in to DDT can read them, so passwords go in hashed."
+msgstr "Legt am Ende des Datenträgers eine Partition mit der Bezeichnung CIDATA an, auf der cloud-init diese Dateien beim ersten Start des Geräts findet. Jeder, der sich bei DDT anmelden kann, kann sie lesen, daher gehören Kennwörter nur als Hash hinein."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Adds the driver packages whose targets match the machine's model to the applied image. The packages are chosen when the sequence is assigned."
+msgstr "Fügt dem angewendeten Image die Treiberpakete hinzu, deren Ziele zum Modell des Geräts passen. Die Pakete werden gewählt, wenn die Tasksequenz zugewiesen wird."
 
 #: src/app/navigation.ts
 msgid "Administration"
@@ -392,12 +513,21 @@ msgid "Agent"
 msgstr "Agent"
 
 #: src/machines/machineView.ts
+#: src/sequences/sequenceList.ts
 msgid "All"
 msgstr "Alle"
 
 #: src/machines/machineView.ts
 msgid "All {count} steps done"
 msgstr "Alle {count} Schritte erledigt"
+
+#: src/sequences/SaveState.tsx
+msgid "All changes saved"
+msgstr "Alle Änderungen gespeichert"
+
+#: src/sequences/SaveState.tsx
+msgid "All changes saved at {time}"
+msgstr "Alle Änderungen um {time} gespeichert"
 
 #: src/machines/approval.ts
 msgid "All data on its disk is erased."
@@ -421,17 +551,45 @@ msgstr "Darf ihr Raw-Datenträgerimage schreiben, obwohl es mit aktiviertem Secu
 msgid "An administrator adds images by uploading WIM files or disk images here."
 msgstr "Ein Administrator fügt hier Images hinzu, indem er WIM-Dateien oder Datenträgerimages hochlädt."
 
+#: src/sequences/SequencesPage.tsx
+msgid "An administrator creates task sequences here. Until then, no machine can be given one."
+msgstr "Ein Administrator legt hier Tasksequenzen an. Bis dahin kann keinem Gerät eine zugewiesen werden."
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "An empty sequence, to which you add the steps in the editor."
+msgstr "Eine leere Tasksequenz, der Sie die Schritte im Editor hinzufügen."
+
 #: src/packages/PackageDialog.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr "Ein Schritt „Treiber einbinden“ fügt diese Treiber Geräten hinzu, deren Modell auf eines davon passt. Mit * am Ende passt ein Modell auf jedes, das so beginnt; ein leerer Hersteller passt auf jeden."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "An input locale such as de-DE or 0407:00000407."
+msgstr "Ein Eingabegebietsschema wie de-DE oder 0407:00000407."
 
 #: src/runs/runs.ts
 msgid "an operator"
 msgstr "ein Operator"
 
+#: src/sequences/SaveState.tsx
+msgid "Another administrator saved it at {time}"
+msgstr "Ein anderer Administrator hat sie um {time} gespeichert"
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Another administrator saved this sequence while you were editing."
+msgstr "Ein anderer Administrator hat diese Tasksequenz gespeichert, während Sie sie bearbeitet haben."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "another processor"
+msgstr "einen anderen Prozessor"
+
 #: src/rules/RuleDialog.tsx
 msgid "Any of the machine's network adapters, with or without separators."
 msgstr "Einer der Netzwerkadapter des Geräts, mit oder ohne Trennzeichen."
+
+#: src/sequences/AddStepMenu.tsx
+msgid "Any sequence"
+msgstr "Jede Tasksequenz"
 
 #: src/app/navigation.ts
 msgid "API tokens"
@@ -480,6 +638,10 @@ msgstr "Mit der Freigabe von {label} läuft darauf auch {name}, die {ruleInside}
 #: src/images/ImagesPage.tsx
 msgid "Architecture"
 msgstr "Architektur"
+
+#: src/sequences/StepInspector.tsx
+msgid "Arrow keys move the step; Home and End, to the ends."
+msgstr "Die Pfeiltasten verschieben den Schritt, Pos1 und Ende an den Anfang oder das Ende."
 
 #: src/machines/MachineActions.tsx
 msgid "Assign"
@@ -554,6 +716,10 @@ msgstr "Boot"
 msgid "Boot image"
 msgstr "Bootimage"
 
+#: src/sequences/SequencesPage.tsx
+msgid "by {name}"
+msgstr "von {name}"
+
 #: src/rules/RulesPage.tsx
 msgid "By hardware model"
 msgstr "Nach Hardwaremodell"
@@ -566,6 +732,7 @@ msgstr "Nach MAC-Adresse"
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
+#: src/sequences/NewSequenceDialog.tsx
 #: src/ui/Dialog.tsx
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -573,6 +740,12 @@ msgstr "Abbrechen"
 #: src/machines/MachineActions.tsx
 msgid "Cancel the assignment"
 msgstr "Zuweisung aufheben"
+
+#: src/sequences/SequenceEditor.tsx
+#: src/sequences/sequenceList.ts
+#: src/sequences/SequencesPage.tsx
+msgid "Cannot run"
+msgstr "Nicht ausführbar"
 
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
@@ -592,12 +765,21 @@ msgid "Change the rule"
 msgstr "Regel ändern"
 
 #: src/rules/RulesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Changed"
 msgstr "Geändert"
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "Check the join account"
+msgstr "Beitrittskonto prüfen"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Checking {file}"
 msgstr "{file} wird geprüft"
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "Checking the join account"
+msgstr "Beitrittskonto wird geprüft"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Choose {file} again to resume at {percent}%."
@@ -610,6 +792,11 @@ msgstr "Datei wählen"
 #: src/rules/RuleDialog.tsx
 msgid "Choose a sequence"
 msgstr "Tasksequenz wählen"
+
+#: src/sequences/steps/RawImageFields.tsx
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Choose an image"
+msgstr "Image wählen"
 
 #: src/deployments/deployments.ts
 #: src/runs/runView.ts
@@ -642,10 +829,26 @@ msgstr "Zeile schließen"
 msgid "Code from the authenticator app"
 msgstr "Code aus der Authenticator-App"
 
+#: src/sequences/StepConditions.tsx
+msgid "Comparison"
+msgstr "Vergleich"
+
+#: src/sequences/StepConditions.tsx
+msgid "Comparison of condition {number}"
+msgstr "Vergleich von Bedingung {number}"
+
 #: src/machines/AssignDialog.tsx
 #: src/sequences/steps.ts
 msgid "Computer name"
 msgstr "Computername"
+
+#: src/sequences/StepConditions.tsx
+msgid "Conditions"
+msgstr "Bedingungen"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Configured default"
+msgstr "Konfigurierter Standard"
 
 #: src/auth/SignInPage.tsx
 msgid "Confirm it is you"
@@ -672,6 +875,10 @@ msgstr "SHA-256 kopieren"
 msgid "Could not reach the server."
 msgstr "Der Server ist nicht erreichbar."
 
+#: src/sequences/NewSequenceDialog.tsx
+msgid "Create and open"
+msgstr "Anlegen und öffnen"
+
 #: src/account/AccountPage.tsx
 msgid "Current password"
 msgstr "Aktuelles Kennwort"
@@ -692,6 +899,10 @@ msgstr "DDT wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt, soweit das anwendbare
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
 msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und dieser Computer ihn erreicht, und versuchen Sie es dann erneut."
 
+#: src/sequences/steps/RawImageFields.tsx
+msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgstr "DDT setzt für <0>{placeholders}</0> die Werte des Geräts ein. Setzen Sie sie in doppelte Anführungszeichen, etwa <1>{example}</1>. Alles andere in doppelten geschweiften Klammern bleibt, wie es ist, für die eigenen Vorlagen von cloud-init."
+
 #: src/about/AboutPage.tsx
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und verändern, entweder in Version 3 der Lizenz oder nach Ihrer Wahl in jeder späteren Version, zusammen mit zusätzlichen Bedingungen nach Abschnitt 7 dieser Lizenz."
@@ -699,11 +910,17 @@ msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU Ge
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Delete"
 msgstr "Löschen"
 
+#: src/sequences/SequencesPage.tsx
+msgid "Delete {name}"
+msgstr "{name} löschen"
+
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/sequences/DeleteSequenceDialog.tsx
 msgid "Delete {name}?"
 msgstr "{name} löschen?"
 
@@ -718,6 +935,10 @@ msgstr "Paket löschen"
 #: src/rules/RulesPage.tsx
 msgid "Delete rule"
 msgstr "Regel löschen"
+
+#: src/sequences/DeleteSequenceDialog.tsx
+msgid "Delete sequence"
+msgstr "Tasksequenz löschen"
 
 #: src/rules/RulesPage.tsx
 msgid "Delete the rule for {description}?"
@@ -737,6 +958,7 @@ msgstr "Standardwerte der Bereitstellung"
 
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
+#: src/sequences/SequenceEditor.tsx
 msgid "Description"
 msgstr "Beschreibung"
 
@@ -788,6 +1010,10 @@ msgstr "Fertig"
 msgid "Driver packages"
 msgstr "Treiberpakete"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Driver packages and their targets are under Drivers."
+msgstr "Treiberpakete und ihre Ziele finden Sie unter Treiber."
+
 #: src/app/navigation.ts
 #: src/packages/PackagesPage.tsx
 msgid "Drivers"
@@ -809,9 +1035,17 @@ msgstr "Jeder Code meldet Sie einmal an, falls Sie den Authenticator verlieren. 
 msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 msgstr "Jedes x64-Windows-Image in einer WIM- oder ESD-Datei wird ein Eintrag. Ein Datenträgerimage, etwa ein Linux-Cloud-Image, wird einer: roh, mit gzip, zstd oder xz komprimiert, oder qcow2. Wandeln Sie VHDX, VMDK oder VDI zuerst mit qemu-img in ein Rohformat um."
 
+#: src/sequences/StepInspector.tsx
+msgid "Earlier"
+msgstr "Nach vorn"
+
 #: src/images/ImagesPage.tsx
 msgid "Edition"
 msgstr "Edition"
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "Empty sequence"
+msgstr "Leere Tasksequenz"
 
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
@@ -833,9 +1067,25 @@ msgstr "Geben Sie einen Ihrer gespeicherten Wiederherstellungscodes ein."
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr "Geben Sie die sechs Ziffern ein, die Ihre Authenticator-App für DDT anzeigt."
 
+#: src/sequences/fields.tsx
+msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
+msgstr "Geben Sie ganze Zahlen von -2147483648 bis 2147483647 ein, durch Kommas getrennt. Bis dahin bleibt die letzte Liste."
+
 #: src/sequences/steps.ts
 msgid "equals"
 msgstr "ist gleich"
+
+#: src/sequences/sequenceList.ts
+msgid "Erases the disk"
+msgstr "Löscht den Datenträger"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Erases the whole disk and creates the EFI system, MSR, Windows and recovery partitions."
+msgstr "Löscht den gesamten Datenträger und legt die EFI-System-, MSR-, Windows- und Wiederherstellungspartition an."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Erases the whole disk and writes the image onto it. The machine then starts the image's <0>\\EFI\\BOOT\\BOOTX64.EFI</0>, which DDT puts first in the firmware's boot order."
+msgstr "Löscht den gesamten Datenträger und schreibt das Image darauf. Das Gerät startet dann <0>\\EFI\\BOOT\\BOOTX64.EFI</0> des Images, das DDT in der Startreihenfolge der Firmware an die erste Stelle setzt."
 
 #: src/log/LogPanel.tsx
 msgid "Errors"
@@ -848,6 +1098,18 @@ msgstr "Jedes Image aus {file} ist schon in der Bibliothek."
 #: src/machines/AssignDialog.tsx
 msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 msgstr "Jede Tasksequenz hat Probleme, daher kann keine laufen. Ein Administrator behebt sie unter Bereitstellung, Tasksequenzen."
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Exit codes that ask for a restart"
+msgstr "Exitcodes, die einen Neustart anfordern"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Exit codes that mean success"
+msgstr "Exitcodes für Erfolg"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Fail when no driver package matches the model"
+msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
@@ -872,6 +1134,10 @@ msgstr "Dateipakete"
 msgid "Files"
 msgstr "Dateien"
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Files package"
+msgstr "Dateipaket"
+
 #: src/packages/PackagesPage.tsx
 msgid "Find a driver package"
 msgstr "Treiberpaket suchen"
@@ -883,6 +1149,10 @@ msgstr "Dateipaket suchen"
 #: src/machines/MachinesPage.tsx
 msgid "Find a machine"
 msgstr "Gerät suchen"
+
+#: src/sequences/SequencesPage.tsx
+msgid "Find a task sequence"
+msgstr "Tasksequenz suchen"
 
 #: src/images/ImagesPage.tsx
 msgid "Find an image"
@@ -896,17 +1166,41 @@ msgstr "Wird abgeschlossen"
 msgid "For"
 msgstr "Für"
 
+#: src/sequences/steps/RawImageFields.tsx
+msgid "For {architecture} only, cannot be written"
+msgstr "Nur für {architecture}, kann nicht geschrieben werden"
+
 #: src/packages/PackageDialog.tsx
 msgid "For these hardware models"
 msgstr "Für diese Hardwaremodelle"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "From 260 to 4096 MB."
+msgstr "Von 260 bis 4096 MB."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "From 300 to 65536 MB."
+msgstr "Von 300 bis 65536 MB."
+
+#: src/sequences/StepInspector.tsx
+msgid "Go on when this step fails"
+msgstr "Bei Fehler fortfahren"
 
 #: src/app/CommandPalette.tsx
 msgid "Go to a page, machine, sequence or image"
 msgstr "Zu einer Seite, einem Gerät, einer Tasksequenz oder einem Image"
 
+#: src/sequences/DeleteSequenceDialog.tsx
+msgid "Go to the assignment rules"
+msgstr "Zu den Zuweisungsregeln"
+
 #: src/app/CommandPalette.tsx
 msgid "Go to…"
 msgstr "Gehe zu…"
+
+#: src/sequences/sequenceList.ts
+msgid "goes on in the installed Windows"
+msgstr "läuft im installierten Windows weiter"
 
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
@@ -921,14 +1215,22 @@ msgid "I have saved them"
 msgstr "Ich habe sie gespeichert"
 
 #: src/images/ImagesPage.tsx
+#: src/sequences/steps/WindowsFields.tsx
 msgid "Image"
 msgstr "Image"
 
+#: src/sequences/steps/RawImageFields.tsx
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Image deleted"
+msgstr "Image gelöscht"
+
 #: src/runs/RunPanel.tsx
+#: src/sequences/SequenceEditor.tsx
 msgid "In the installed Windows"
 msgstr "Im installierten Windows"
 
 #: src/runs/RunPanel.tsx
+#: src/sequences/SequenceEditor.tsx
 msgid "In Windows PE"
 msgstr "In Windows PE"
 
@@ -940,9 +1242,25 @@ msgstr "Informationen"
 msgid "Inject drivers"
 msgstr "Treiber einbinden"
 
+#: src/sequences/StepInspector.tsx
+msgid "Insert after"
+msgstr "Dahinter einfügen"
+
+#: src/sequences/StepInspector.tsx
+msgid "Insert after {name}"
+msgstr "Dahinter einfügen: nach {name}"
+
+#: src/sequences/AddStepMenu.tsx
+msgid "Install Windows"
+msgstr "Windows installieren"
+
 #: src/images/ImagesPage.tsx
 msgid "Installed"
 msgstr "Installiert"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Interpreter"
+msgstr "Interpreter"
 
 #: src/runs/runs.ts
 msgid "is"
@@ -951,6 +1269,18 @@ msgstr "ist"
 #: src/runs/runs.ts
 msgid "is not"
 msgstr "ist nicht"
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "It can join machines here."
+msgstr "Es kann hier Geräte in die Domäne aufnehmen."
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "It cannot join machines here."
+msgstr "Es kann hier keine Geräte in die Domäne aufnehmen."
+
+#: src/lib/autosave.ts
+msgid "It no longer exists on the server, so nothing more is saved."
+msgstr "Das gibt es auf dem Server nicht mehr, daher wird nichts mehr gespeichert."
 
 #: src/machines/MachinePage.tsx
 msgid "It registers as a new machine at its next netboot."
@@ -972,13 +1302,29 @@ msgstr "Sein Datenträger wird nicht gelöscht."
 msgid "Join the domain"
 msgstr "Der Domäne beitreten"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Joins the domain configured on the server, in Windows after the hand-over. The machine needs a computer name."
+msgstr "Tritt der auf dem Server konfigurierten Domäne bei, in Windows nach der Übergabe. Das Gerät braucht einen Computernamen."
+
 #: src/log/LogPanel.tsx
 msgid "Jump to the newest"
 msgstr "Zur neuesten Zeile"
 
+#: src/sequences/SequenceConflict.tsx
+msgid "Keep mine"
+msgstr "Meine behalten"
+
+#: src/sequences/sequenceList.ts
+msgid "Keeps the disk"
+msgstr "Behält den Datenträger"
+
 #: src/account/AccountPage.tsx
 msgid "Key"
 msgstr "Schlüssel"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Keyboard"
+msgstr "Tastatur"
 
 #: src/images/ImagesPage.tsx
 msgid "Kind"
@@ -988,6 +1334,10 @@ msgstr "Art"
 #: src/images/ImagesPage.tsx
 msgid "Language"
 msgstr "Sprache"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Language and region"
+msgstr "Sprache und Region"
 
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
@@ -1010,6 +1360,10 @@ msgstr "Zuletzt gesehen {when} von {from}; niemand hat sich daran angemeldet."
 msgid "Last seen from {from} {when}; signed in by {by}."
 msgstr "Zuletzt gesehen {when} von {from}; angemeldet von {by}."
 
+#: src/sequences/StepInspector.tsx
+msgid "Later"
+msgstr "Nach hinten"
+
 #: src/uploads/UploadPanel.tsx
 msgid "Leave page"
 msgstr "Seite verlassen"
@@ -1017,6 +1371,14 @@ msgstr "Seite verlassen"
 #: src/uploads/UploadPanel.tsx
 msgid "Leave while {file} is checked?"
 msgstr "Seite verlassen, während {file} geprüft wird?"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Leave without saving"
+msgstr "Ohne Speichern verlassen"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Leave without saving?"
+msgstr "Ohne Speichern verlassen?"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Leaving this page stops the upload of {file} at {percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there."
@@ -1076,6 +1438,7 @@ msgid "Log lines"
 msgstr "Protokollzeilen"
 
 #: src/rules/rules.ts
+#: src/sequences/sequenceList.ts
 msgid "MAC {mac}"
 msgstr "MAC {mac}"
 
@@ -1151,6 +1514,7 @@ msgid "Model"
 msgstr "Modell"
 
 #: src/rules/rules.ts
+#: src/sequences/sequenceList.ts
 msgid "model {model}"
 msgstr "Modell {model}"
 
@@ -1178,10 +1542,32 @@ msgstr "Mehr"
 msgid "More for {label}"
 msgstr "Mehr für {label}"
 
+#: src/sequences/StepInspector.tsx
+msgid "Move"
+msgstr "Verschieben"
+
+#: src/sequences/StepInspector.tsx
+msgid "Move {name}"
+msgstr "{name} verschieben"
+
+#: src/sequences/StepInspector.tsx
+msgid "Move {name} earlier"
+msgstr "{name} nach vorn verschieben"
+
+#: src/sequences/StepInspector.tsx
+msgid "Move {name} later"
+msgstr "{name} nach hinten verschieben"
+
 #: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
+#: src/sequences/NewSequenceDialog.tsx
+#: src/sequences/StepInspector.tsx
 msgid "Name"
 msgstr "Name"
+
+#: src/sequences/SequencesPage.tsx
+msgid "Name or description"
+msgstr "Name oder Beschreibung"
 
 #: src/packages/PackagesPage.tsx
 msgid "Name or file"
@@ -1199,6 +1585,10 @@ msgstr "Name, MAC, Seriennummer oder Adresse"
 msgid "Name, model or file"
 msgstr "Name, Modell oder Datei"
 
+#: src/sequences/sequenceList.ts
+msgid "needs a computer name"
+msgstr "braucht einen Computernamen"
+
 #: src/machines/MachinesPage.tsx
 msgid "Needs your approval"
 msgstr "Wartet auf Ihre Freigabe"
@@ -1214,6 +1604,15 @@ msgstr "Neues Kennwort"
 #: src/account/AccountPage.tsx
 msgid "New password again"
 msgstr "Neues Kennwort wiederholen"
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "New sequence"
+msgstr "Neue Tasksequenz"
+
+#: src/sequences/NewSequenceDialog.tsx
+#: src/sequences/SequencesPage.tsx
+msgid "New task sequence"
+msgstr "Neue Tasksequenz"
 
 #: src/auth/SignInPage.tsx
 msgid "No account could be created for that identity. Ask an administrator."
@@ -1234,6 +1633,14 @@ msgstr "Mit dieser Identität ist kein DDT-Konto verknüpft. Wenden Sie sich an 
 #: src/machines/MachinePage.tsx
 msgid "No disk DDT can install on"
 msgstr "Kein Datenträger, auf dem DDT installieren kann"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "No domain is configured on the server, so this step cannot run."
+msgstr "Auf dem Server ist keine Domäne konfiguriert, daher kann dieser Schritt nicht ausgeführt werden."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "No driver package is in the library yet."
+msgstr "In der Bibliothek ist noch kein Treiberpaket."
 
 #: src/packages/PackagesPage.tsx
 msgid "No driver packages yet"
@@ -1272,6 +1679,10 @@ msgstr "Noch keine Geräte"
 msgid "No model yet: no machine gets these drivers."
 msgstr "Noch kein Modell: Kein Gerät erhält diese Treiber."
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "No package"
+msgstr "Kein Paket"
+
 #: src/packages/PackagesPage.tsx
 msgid "No package matches"
 msgstr "Kein Paket passt"
@@ -1285,6 +1696,10 @@ msgstr "Kein registriertes Gerät"
 #: src/rules/RuleDialog.tsx
 msgid "No registered machine matches yet."
 msgstr "Noch passt kein registriertes Gerät."
+
+#: src/sequences/SequencesPage.tsx
+msgid "No rule, no machine"
+msgstr "Keine Regel, kein Gerät"
 
 #: src/rules/RulesPage.tsx
 msgid "No rules yet"
@@ -1306,9 +1721,21 @@ msgstr "Keine Tasksequenz nennt es"
 msgid "No sequence names it."
 msgstr "Keine Tasksequenz nennt es."
 
+#: src/sequences/SequenceEditor.tsx
+msgid "No steps yet"
+msgstr "Noch keine Schritte"
+
 #: src/machines/AssignDialog.tsx
 msgid "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
 msgstr "Es gibt noch keine Tasksequenz. Ein Administrator legt eine unter Bereitstellung, Tasksequenzen an."
+
+#: src/sequences/SequencesPage.tsx
+msgid "No task sequence matches"
+msgstr "Keine Tasksequenz passt"
+
+#: src/sequences/SequencesPage.tsx
+msgid "No task sequences yet"
+msgstr "Noch keine Tasksequenzen"
 
 #: src/machines/MachinesPage.tsx
 msgid "Nobody has signed in yet"
@@ -1318,9 +1745,17 @@ msgstr "Noch niemand angemeldet"
 msgid "None"
 msgstr "Keine"
 
+#: src/sequences/FindingsSummary.tsx
+msgid "None. Nothing keeps this sequence from running."
+msgstr "Keine. Nichts verhindert die Ausführung dieser Tasksequenz."
+
 #: src/images/ImagesPage.tsx
 msgid "Not deployable: only x64 images can be installed."
 msgstr "Nicht bereitstellbar: Nur x64-Images können installiert werden."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Not known whether it is signed for Secure Boot"
+msgstr "Nicht bekannt, ob es für Secure Boot signiert ist"
 
 #: src/machines/AssignDialog.tsx
 msgid "not reported"
@@ -1331,9 +1766,25 @@ msgstr "nicht gemeldet"
 msgid "Not reported"
 msgstr "Nicht gemeldet"
 
+#: src/sequences/SaveState.tsx
+msgid "Not saved: {message}"
+msgstr "Nicht gespeichert: {message}"
+
+#: src/sequences/SaveState.tsx
+msgid "Not saved: {message} Trying again in {seconds} s."
+msgstr "Nicht gespeichert: {message} Neuer Versuch in {seconds} s."
+
+#: src/sequences/SaveState.tsx
+msgid "Not saved: another administrator saved this sequence"
+msgstr "Nicht gespeichert: Ein anderer Administrator hat diese Tasksequenz gespeichert"
+
 #: src/images/images.ts
 msgid "Not signed"
 msgstr "Nicht signiert"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Not signed for Secure Boot"
+msgstr "Nicht für Secure Boot signiert"
 
 #: src/runs/MachineRuns.tsx
 #: src/runs/runView.ts
@@ -1361,6 +1812,10 @@ msgstr "der Ausführung"
 msgid "Off"
 msgstr "Aus"
 
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "OK"
+msgstr "OK"
+
 #: src/account/AccountPage.tsx
 #: src/machines/secureBoot.ts
 msgid "On"
@@ -1374,9 +1829,25 @@ msgstr "Ein, {note}"
 msgid "One MAC address"
 msgstr "Eine MAC-Adresse"
 
+#: src/sequences/SequenceEditor.tsx
+msgid "Only administrators change task sequences. You can look at this one."
+msgstr "Nur Administratoren ändern Tasksequenzen. Sie können sich diese ansehen."
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "Only administrators may check the join account."
+msgstr "Nur Administratoren dürfen das Beitrittskonto prüfen."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Only images for x64 machines can be written."
+msgstr "Nur Images für x64-Geräte können geschrieben werden."
+
 #: src/log/LogPanel.tsx
 msgid "Only the lines of {filteredStep}."
 msgstr "Nur die Zeilen von {filteredStep}."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Only x64 images can be installed."
+msgstr "Nur x64-Images können installiert werden."
 
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
@@ -1414,15 +1885,31 @@ msgstr "Optional. Ohne Namen wählt das Image einen."
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Ohne Namen wählt Windows einen."
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Organizational unit"
+msgstr "Organisationseinheit"
+
 #: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
 msgstr "Betriebssystem-Images"
 
+#: src/sequences/StepInspector.tsx
+msgid "Otherwise the run stops at this step."
+msgstr "Sonst hält die Ausführung bei diesem Schritt an."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Otherwise the step is done without adding drivers."
+msgstr "Sonst ist der Schritt fertig, ohne Treiber hinzuzufügen."
+
 #: src/packages/PackagesPage.tsx
 msgid "Package"
 msgstr "Paket"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Package deleted"
+msgstr "Paket gelöscht"
 
 #: src/app/CommandPalette.tsx
 msgid "Pages"
@@ -1453,6 +1940,18 @@ msgstr "Phase"
 msgid "Preparing"
 msgstr "Wird vorbereitet"
 
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "Problem"
+msgstr "Problem"
+
+#: src/sequences/FindingsSummary.tsx
+msgid "Problems and warnings"
+msgstr "Probleme und Warnungen"
+
+#: src/sequences/StepInspector.tsx
+msgid "Problems and warnings of this step"
+msgstr "Probleme und Warnungen dieses Schritts"
+
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr "Pseudo (Entwicklung)"
@@ -1462,6 +1961,7 @@ msgid "QR code for your authenticator app"
 msgstr "QR-Code für Ihre Authenticator-App"
 
 #: src/images/images.ts
+#: src/sequences/steps/RawImageFields.tsx
 msgid "Raw disk image"
 msgstr "Raw-Datenträgerimage"
 
@@ -1469,9 +1969,19 @@ msgstr "Raw-Datenträgerimage"
 msgid "Reading every {pollSeconds} s, because the live connection is down."
 msgstr "Alle {pollSeconds} s neu gelesen, da die Live-Verbindung unterbrochen ist."
 
+#: src/sequences/SequenceConflict.tsx
+msgid "Reading their version."
+msgstr "Die andere Version wird gelesen."
+
 #: src/machines/machineView.ts
 msgid "Ready"
 msgstr "Bereit"
+
+#: src/sequences/SequenceEditor.tsx
+#: src/sequences/sequenceList.ts
+#: src/sequences/SequencesPage.tsx
+msgid "Ready to run"
+msgstr "Ausführbar"
 
 #: src/log/LogPanel.tsx
 msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
@@ -1480,6 +1990,10 @@ msgstr "Verbindung wird wiederhergestellt. Zeilen, die inzwischen gesendet werde
 #: src/auth/SignInPage.tsx
 msgid "Recovery code"
 msgstr "Wiederherstellungscode"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Recovery partition in MB"
+msgstr "Wiederherstellungspartition in MB"
 
 #: src/machines/MachinesPage.tsx
 msgid "Registered {registered}"
@@ -1494,16 +2008,29 @@ msgid "Rejected"
 msgstr "Abgelehnt"
 
 #: src/machines/MachineActions.tsx
+#: src/sequences/StepInspector.tsx
 msgid "Remove"
 msgstr "Entfernen"
+
+#: src/sequences/StepInspector.tsx
+msgid "Remove {name}"
+msgstr "{name} entfernen"
 
 #: src/machines/MachineActions.tsx
 msgid "Remove all {count} waiting from {address}"
 msgstr "Alle {count} wartenden von {address} entfernen"
 
+#: src/sequences/StepConditions.tsx
+msgid "Remove condition {number}"
+msgstr "Bedingung {number} entfernen"
+
 #: src/packages/PackageDialog.tsx
 msgid "Remove model {position}"
 msgstr "Modell {position} entfernen"
+
+#: src/sequences/RemovedStepNotice.tsx
+msgid "Removed {name} ({kind}). You can bring it back for 10 seconds."
+msgstr "{name} ({kind}) entfernt. Sie können den Schritt 10 Sekunden lang zurückholen."
 
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
@@ -1521,6 +2048,10 @@ msgstr "Erforderlich, weil {name} unter diesem Namen der Domäne beitritt."
 msgid "Restart"
 msgstr "Neu starten"
 
+#: src/sequences/StepInspector.tsx
+msgid "Restart after this step"
+msgstr "Nach diesem Schritt neu starten"
+
 #: src/runs/runs.ts
 msgid "Restarted after step {number}, {name}"
 msgstr "Nach Schritt {number}, {name}, neu gestartet"
@@ -1532,6 +2063,10 @@ msgstr "Nach Schritt {number}, {name}, neu gestartet; nach {took} zurück"
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr "Wird neu gestartet"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
+msgstr "Startet das Gerät neu, und die Tasksequenz fährt mit dem Schritt nach {name} fort. In Windows PE braucht das einen partitionierten Datenträger, auf dem der Stand der Ausführung gespeichert wird."
 
 #: src/app/CommandPalette.tsx
 msgid "Results"
@@ -1548,6 +2083,10 @@ msgstr "Revision {revision}"
 #: src/account/AccountPage.tsx
 msgid "Role"
 msgstr "Rolle"
+
+#: src/sequences/SequencesPage.tsx
+msgid "Rule for {target}"
+msgstr "Regel für {target}"
 
 #: src/rules/RulesPage.tsx
 msgid "Rules by hardware model"
@@ -1582,13 +2121,33 @@ msgstr "läuft seit {running}"
 msgid "Running for {runningFor}"
 msgstr "Läuft seit {runningFor}"
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Läuft als SYSTEM auf dem Gerät. Jeder, der sich bei DDT anmelden kann, kann das Skript lesen, daher darf es keine Kennwörter enthalten."
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Runs in"
+msgstr "Läuft in"
+
 #: src/runs/MachineRuns.tsx
 msgid "Runs of this machine"
 msgstr "Ausführungen dieses Geräts"
 
+#: src/sequences/StepConditions.tsx
+msgid "Runs on every machine. Add a condition to run it only where every condition holds."
+msgstr "Läuft auf jedem Gerät. Fügen Sie eine Bedingung hinzu, damit der Schritt nur dort läuft, wo jede Bedingung zutrifft."
+
+#: src/sequences/sequenceList.ts
+msgid "Runs that already ended keep their history."
+msgstr "Bereits beendete Ausführungen behalten ihren Verlauf."
+
 #: src/app/Shell.tsx
 msgid "Same as the system"
 msgstr "Wie das System"
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Save my version"
+msgstr "Meine Version speichern"
 
 #: src/packages/PackageDialog.tsx
 msgid "Save package"
@@ -1598,9 +2157,21 @@ msgstr "Paket speichern"
 msgid "Save rule"
 msgstr "Regel speichern"
 
+#: src/sequences/SequenceConflict.tsx
+msgid "Save your version over theirs?"
+msgstr "Ihre Version über die andere speichern?"
+
+#: src/sequences/SaveState.tsx
+msgid "Saving"
+msgstr "Wird gespeichert"
+
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
 msgstr "Scannen Sie den Code mit Ihrer Authenticator-App oder geben Sie den Schlüssel dort ein. Geben Sie dann den Code ein, den die App anzeigt."
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Script"
+msgstr "Skript"
 
 #: src/app/CommandPalette.tsx
 msgid "Search"
@@ -1637,8 +2208,17 @@ msgid "Seen"
 msgstr "Gesehen"
 
 #: src/machines/MachinesPage.tsx
+#: src/sequences/SequenceEditor.tsx
 msgid "Sequence"
 msgstr "Tasksequenz"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Sequence name"
+msgstr "Name der Tasksequenz"
+
+#: src/sequences/SequenceEditorPage.tsx
+msgid "Sequence not found"
+msgstr "Tasksequenz nicht gefunden"
 
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
@@ -1657,6 +2237,10 @@ msgstr "Seriennummer"
 msgid "Server"
 msgstr "Server"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Server default"
+msgstr "Standard des Servers"
+
 #: src/account/AccountPage.tsx
 msgid "Set up an authenticator"
 msgstr "Authenticator einrichten"
@@ -1669,6 +2253,10 @@ msgstr "SHA-256"
 msgid "Show all machines"
 msgstr "Alle Geräte anzeigen"
 
+#: src/sequences/SequencesPage.tsx
+msgid "Show all task sequences"
+msgstr "Alle Tasksequenzen anzeigen"
+
 #: src/log/LogPanel.tsx
 msgid "Show every step"
 msgstr "Alle Schritte anzeigen"
@@ -1680,6 +2268,18 @@ msgstr "Anzeigen"
 #: src/machines/MachinesPage.tsx
 msgid "Show machines by state"
 msgstr "Geräte nach Zustand anzeigen"
+
+#: src/sequences/SequencesPage.tsx
+msgid "Show task sequences by state"
+msgstr "Tasksequenzen nach Zustand anzeigen"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Shown in the list of task sequences."
+msgstr "Wird in der Liste der Tasksequenzen angezeigt."
+
+#: src/sequences/StepInspector.tsx
+msgid "Shown on the rail, in the run and in the log."
+msgstr "Wird in der Schrittleiste, in der Ausführung und im Protokoll angezeigt."
 
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
@@ -1696,6 +2296,10 @@ msgstr "Anmeldung"
 #: src/images/images.ts
 msgid "Signed"
 msgstr "Signiert"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Signed for Secure Boot"
+msgstr "Für Secure Boot signiert"
 
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
@@ -1731,6 +2335,14 @@ msgstr "Übersprungen."
 msgid "SMBIOS UUID"
 msgstr "SMBIOS-UUID"
 
+#: src/sequences/SequenceEditor.tsx
+msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
+msgstr "Jemand hat sie gelöscht, während sie hier geöffnet war, daher wird nichts mehr gespeichert. <0>Zu den Tasksequenzen</0>."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
+msgstr "Jemand anderes hat diese Tasksequenz gespeichert, daher sind Ihre Änderungen seit Ihrem letzten Speichern nicht gespeichert. Beim Verlassen gehen sie verloren."
+
 #: src/app/RouteError.tsx
 msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
 msgstr "Beim Laden dieser Seite ist ein Fehler aufgetreten. Versuchen Sie es erneut; wenn es weiter fehlschlägt, steht der Grund im Serverprotokoll."
@@ -1738,6 +2350,14 @@ msgstr "Beim Laden dieser Seite ist ein Fehler aufgetreten. Versuchen Sie es ern
 #: src/about/AboutPage.tsx
 msgid "Source code"
 msgstr "Quellcode"
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "Start from"
+msgstr "Ausgangspunkt"
+
+#: src/sequences/SequencesPage.tsx
+msgid "Start from a template, such as Install Windows: it partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file. Or start empty and add the steps yourself."
+msgstr "Beginnen Sie mit einer Vorlage wie „Install Windows“: Sie partitioniert den Datenträger, wendet ein Image an, fügt die Treiber für das Modell des Geräts hinzu und schreibt die Antwortdatei. Oder beginnen Sie leer und fügen die Schritte selbst hinzu."
 
 #: src/log/LogPanel.tsx
 msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
@@ -1763,8 +2383,13 @@ msgid "starts with"
 msgstr "beginnt mit"
 
 #: src/machines/MachinesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "State"
 msgstr "Zustand"
+
+#: src/sequences/sequenceView.ts
+msgid "Step {number}"
+msgstr "Schritt {number}"
 
 #: src/machines/MachinesPage.tsx
 msgid "Step {number} failed"
@@ -1835,8 +2460,13 @@ msgid "step {position}, {name}"
 msgstr "Schritt {position}, {name}"
 
 #: src/runs/RunSteps.tsx
+#: src/sequences/SequenceEditor.tsx
 msgid "Steps"
 msgstr "Schritte"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Steps of {name}"
+msgstr "Schritte von {name}"
 
 #: src/machines/MachineActions.tsx
 msgid "Stop the run"
@@ -1872,14 +2502,29 @@ msgstr "Beendet {when}"
 msgid "Stopped at step {number} of {count}"
 msgstr "Beendet bei Schritt {number} von {count}"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Such as de-DE."
+msgstr "Etwa de-DE."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Such as OU=Workstations,DC=example,DC=com. Empty takes the configured default."
+msgstr "Etwa OU=Workstations,DC=example,DC=com. Leer nimmt den konfigurierten Standard."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "System partition in MB"
+msgstr "Systempartition in MB"
+
 #: src/machines/AssignDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Task sequence"
 msgstr "Tasksequenz"
 
 #: src/app/CommandPalette.tsx
 #: src/app/navigation.ts
+#: src/sequences/SequenceEditorPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Task sequences"
 msgstr "Tasksequenzen"
 
@@ -1894,6 +2539,10 @@ msgstr "Benutzername oder Kennwort ist falsch."
 #: src/uploads/UploadPanel.tsx
 msgid "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
 msgstr "Die bisher hochgeladenen {sent} von {file} werden vom Server gelöscht. Wenn Sie die Datei erneut wählen, beginnt der Upload von vorn."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "The account and its password are configured on the server, never in the sequence."
+msgstr "Das Konto und sein Kennwort werden auf dem Server konfiguriert, nie in der Tasksequenz."
 
 #: src/runs/runs.ts
 msgid "The agent started the run"
@@ -1911,9 +2560,17 @@ msgstr "Die Uhr des Agents zeigte {said}, {off} hinter dem Server."
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
 msgstr "Der Urheberhinweis, der Gewährleistungsausschluss und die zusätzlichen Bedingungen"
 
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "The check did not run: {failure}"
+msgstr "Die Prüfung ist nicht gelaufen: {failure}"
+
 #: src/machines/AssignDialog.tsx
 msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
 msgstr "Die Bereitstellungseinstellungen konnten nicht geladen werden, daher kann DDT nicht sagen, was die Zuweisung bewirkt. Schließen Sie dies und versuchen Sie es erneut."
+
+#: src/sequences/sequenceDraft.ts
+msgid "the description"
+msgstr "die Beschreibung"
 
 #: src/about/AboutPage.tsx
 msgid "The GNU General Public License, version 3"
@@ -1926,6 +2583,14 @@ msgstr "Die Übergabe an Windows hat begonnen"
 #: src/images/ImagesPage.tsx
 msgid "The image list could not be loaded."
 msgstr "Die Liste der Images konnte nicht geladen werden."
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
+msgstr "Die Bibliothek hat noch keine Raw-Datenträgerimages. Laden Sie das Cloud-Image einer Distribution unter <0>Betriebssystem-Images</0> hoch."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "The library has no Windows images yet. Upload a WIM file under <0>OS images</0>."
+msgstr "Die Bibliothek hat noch keine Windows-Images. Laden Sie eine WIM-Datei unter <0>Betriebssystem-Images</0> hoch."
 
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
@@ -1963,6 +2628,14 @@ msgstr "Das Gerät hat sich zum ersten Mal registriert, von {from}"
 msgid "The machine reported no disk DDT can install on, so the run will fail."
 msgstr "Das Gerät hat keinen Datenträger gemeldet, auf dem DDT installieren kann, daher wird die Ausführung fehlschlagen."
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "The machine restarts and the sequence goes on with the next step."
+msgstr "Das Gerät startet neu, und die Tasksequenz fährt mit dem nächsten Schritt fort."
+
+#: src/sequences/StepInspector.tsx
+msgid "The machine restarts once the step is done."
+msgstr "Das Gerät startet neu, sobald der Schritt fertig ist."
+
 #: src/machines/machines.ts
 msgid "the machine with MAC {mac}"
 msgstr "das Gerät mit der MAC {mac}"
@@ -1971,9 +2644,21 @@ msgstr "das Gerät mit der MAC {mac}"
 msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 msgstr "Für das Gerät mit der MAC {target} wird {sequence} nicht mehr gewählt; stattdessen wählt eine andere Regel oder ein Operator. Ein Gerät, das schon eine Ausführung hat, behält sie."
 
+#: src/sequences/sequenceDraft.ts
+msgid "the name"
+msgstr "der Name"
+
 #: src/account/AccountPage.tsx
 msgid "The new passwords do not match."
 msgstr "Die neuen Kennwörter stimmen nicht überein."
+
+#: src/sequences/sequenceDraft.ts
+msgid "the order of the steps"
+msgstr "die Reihenfolge der Schritte"
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "The organizational unit changed since, so check again."
+msgstr "Die Organisationseinheit hat sich seitdem geändert, prüfen Sie daher erneut."
 
 #: src/packages/PackagesPage.tsx
 msgid "The packages could not be loaded."
@@ -2015,6 +2700,18 @@ msgstr "Die Ausführung ging weiter, weil für diesen Schritt \"Bei Fehler fortf
 msgid "The runs of this machine could not be loaded."
 msgstr "Die Ausführungen dieses Geräts konnten nicht geladen werden."
 
+#: src/sequences/FindingsSummary.tsx
+msgid "The sequence"
+msgstr "Die Tasksequenz"
+
+#: src/sequences/SequenceEditorPage.tsx
+msgid "The sequence could not be loaded."
+msgstr "Die Tasksequenz konnte nicht geladen werden."
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "The sequence was not created. {error}"
+msgstr "Die Tasksequenz wurde nicht angelegt. {error}"
+
 #: src/images/ImagesPage.tsx
 msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
 msgstr "Der Server prüft die Datei, liest die Images darin und komprimiert ein Datenträgerimage. Bei einer großen Datei dauert das einige Minuten."
@@ -2022,6 +2719,14 @@ msgstr "Der Server prüft die Datei, liest die Images darin und komprimiert ein 
 #: src/packages/PackagesPage.tsx
 msgid "The server checks the zip and counts what is in it."
 msgstr "Der Server prüft die ZIP-Datei und zählt, was sie enthält."
+
+#: src/lib/autosave.ts
+msgid "The server did not answer."
+msgstr "Der Server hat nicht geantwortet."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "The server did not save your latest changes: {message} Leaving throws them away."
+msgstr "Der Server hat Ihre letzten Änderungen nicht gespeichert: {message} Beim Verlassen gehen sie verloren."
 
 #: src/app/RouteError.tsx
 msgid "The server does not answer"
@@ -2055,9 +2760,18 @@ msgstr "Die Software anderer, die DDT enthält, und ihre Lizenzen"
 msgid "The step failed without saying why."
 msgstr "Der Schritt ist ohne Angabe eines Grundes fehlgeschlagen."
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "The step fails when the script runs longer."
+msgstr "Der Schritt schlägt fehl, wenn das Skript länger läuft."
+
 #: src/machines/AssignDialog.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "The task sequence list could not be loaded."
 msgstr "Die Liste der Tasksequenzen konnte nicht geladen werden."
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "The templates could not be loaded. You can still start with an empty sequence."
+msgstr "Die Vorlagen konnten nicht geladen werden. Sie können trotzdem mit einer leeren Tasksequenz beginnen."
 
 #: src/uploads/UploadPanel.tsx
 msgid "The upload failed."
@@ -2070,6 +2784,14 @@ msgstr "Der Upload von {name} wurde gestoppt. Wählen Sie die Datei erneut, um f
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Their changes to {list} are lost."
+msgstr "Die dortigen Änderungen gehen verloren: {list}."
+
+#: src/sequences/SequenceConflict.tsx
+msgid "They changed {list}."
+msgstr "Dort geändert: {list}."
 
 #: src/account/AccountPage.tsx
 msgid "This account comes from the directory. Change its password there."
@@ -2100,12 +2822,14 @@ msgid "This deployment ran before task sequences, so it has no steps to show."
 msgstr "Diese Bereitstellung lief vor den Tasksequenzen und hat daher keine Schritte."
 
 #: src/images/images.ts
+#: src/sequences/steps/RawImageFields.tsx
 msgid "This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
-msgstr "Dieses Image startet mit aktiviertem Secure Boot möglicherweise nicht, da DDT nicht feststellen konnte, ob es dafür signiert ist. Deaktivieren Sie Secure Boot im Firmware-Setup des Geräts oder registrieren Sie Ihren eigenen Schlüssel."
+msgstr "Dieses Image startet mit eingeschaltetem Secure Boot vielleicht nicht, da DDT nicht feststellen konnte, ob es dafür signiert ist. Schalten Sie Secure Boot im Firmware-Setup des Geräts aus, oder registrieren Sie Ihren eigenen Schlüssel."
 
 #: src/images/images.ts
+#: src/sequences/steps/RawImageFields.tsx
 msgid "This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
-msgstr "Dieses Image startet nicht mit aktiviertem Secure Boot. Deaktivieren Sie Secure Boot im Firmware-Setup des Geräts oder registrieren Sie Ihren eigenen Schlüssel."
+msgstr "Dieses Image startet nicht mit eingeschaltetem Secure Boot. Schalten Sie Secure Boot im Firmware-Setup des Geräts aus, oder registrieren Sie Ihren eigenen Schlüssel."
 
 #: src/machines/AssignDialog.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."
@@ -2135,6 +2859,22 @@ msgstr "Diese Seite wird gerade auf dem neuen Designsystem neu gebaut."
 msgid "This run"
 msgstr "Diese Ausführung"
 
+#: src/sequences/SequenceEditorPage.tsx
+msgid "This sequence does not exist. It may have been deleted."
+msgstr "Diese Tasksequenz gibt es nicht. Vielleicht wurde sie gelöscht."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This sequence does nothing yet."
+msgstr "Diese Tasksequenz tut noch nichts."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This sequence was deleted"
+msgstr "Diese Tasksequenz wurde gelöscht"
+
+#: src/sequences/useSequenceEditor.ts
+msgid "This sequence was deleted, so nothing more is saved."
+msgstr "Diese Tasksequenz wurde gelöscht, daher wird nichts mehr gespeichert."
+
 #: src/machines/MachineActions.tsx
 msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
 msgstr "Damit wird die Ausführung auf {label} beendet, die in seinem installierten Windows läuft. Der Agent dort hält bei seinem nächsten Kontakt mit dem Server an und entfernt sich; Windows bleibt so installiert, wie es ist, mit den bisher erledigten Schritten."
@@ -2143,9 +2883,17 @@ msgstr "Damit wird die Ausführung auf {label} beendet, die in seinem installier
 msgid "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
 msgstr "Damit wird die Ausführung auf {label} beendet. Sein Datenträger bleibt halb beschrieben; weisen Sie erneut eine Tasksequenz zu, um es bereitzustellen."
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Time zone"
+msgstr "Zeitzone"
+
 #: src/runs/RunTimeline.tsx
 msgid "Timeline"
 msgstr "Zeitverlauf"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Timeout in minutes"
+msgstr "Zeitlimit in Minuten"
 
 #: src/runs/RunPanel.tsx
 msgid "took {took}"
@@ -2159,6 +2907,10 @@ msgstr "Dauerte {took}, beendet {finished}"
 msgid "Try again"
 msgstr "Erneut versuchen"
 
+#: src/sequences/SaveState.tsx
+msgid "Try now"
+msgstr "Jetzt versuchen"
+
 #: src/account/AccountPage.tsx
 msgid "Turn off"
 msgstr "Ausschalten"
@@ -2171,6 +2923,10 @@ msgstr "Einschalten"
 msgid "Type {typedWord} to go on"
 msgstr "Geben Sie {typedWord} ein, um fortzufahren"
 
+#: src/sequences/RemovedStepNotice.tsx
+msgid "Undo"
+msgstr "Rückgängig"
+
 #: src/uploads/UploadPanel.tsx
 msgid "Unfinished uploads"
 msgstr "Unvollständige Uploads"
@@ -2179,6 +2935,10 @@ msgstr "Unvollständige Uploads"
 msgid "Unknown"
 msgstr "Unbekannt"
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "unknown architecture"
+msgstr "unbekannte Architektur"
+
 #: src/images/ImagesPage.tsx
 msgid "Unknown file"
 msgstr "Unbekannte Datei"
@@ -2186,6 +2946,23 @@ msgstr "Unbekannte Datei"
 #: src/machines/machineView.ts
 msgid "Unknown model"
 msgstr "Unbekanntes Modell"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Unnamed sequence"
+msgstr "Unbenannte Tasksequenz"
+
+#: src/sequences/sequenceView.ts
+#: src/sequences/StepInspector.tsx
+msgid "Unnamed step"
+msgstr "Unbenannter Schritt"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Unpacked before the script runs, and the script's working directory. Packages are under <0>Files</0>."
+msgstr "Wird vor dem Skript entpackt und ist sein Arbeitsverzeichnis. Pakete finden Sie unter <0>Dateien</0>."
+
+#: src/sequences/SaveState.tsx
+msgid "Unsaved changes"
+msgstr "Ungespeicherte Änderungen"
 
 #: src/machines/AssignDialog.tsx
 msgid "Up to 15 letters A to Z, digits and hyphens."
@@ -2224,7 +3001,20 @@ msgstr "Wiederherstellungscode verwenden"
 msgid "Use an authenticator code"
 msgstr "Code der Authenticator-App verwenden"
 
+#: src/sequences/StepInspector.tsx
+msgid "Use the arrow keys to move the step, and Home or End to move it to the start or the end."
+msgstr "Verschieben Sie den Schritt mit den Pfeiltasten, mit Pos1 oder Ende an den Anfang oder das Ende."
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Use theirs"
+msgstr "Andere übernehmen"
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Use theirs throws your unsaved changes away. Keep mine saves your version over theirs."
+msgstr "„Andere übernehmen“ verwirft Ihre ungespeicherten Änderungen. „Meine behalten“ speichert Ihre Version über die andere."
+
 #: src/packages/PackagesPage.tsx
+#: src/sequences/SequencesPage.tsx
 msgid "Used by"
 msgstr "Verwendet von"
 
@@ -2236,6 +3026,22 @@ msgstr "Benutzername"
 #: src/app/navigation.ts
 msgid "Users and roles"
 msgstr "Benutzer und Rollen"
+
+#: src/sequences/StepConditions.tsx
+msgid "Value"
+msgstr "Wert"
+
+#: src/sequences/StepConditions.tsx
+msgid "Value of condition {number}"
+msgstr "Wert von Bedingung {number}"
+
+#: src/sequences/StepConditions.tsx
+msgid "Variable"
+msgstr "Variable"
+
+#: src/sequences/StepConditions.tsx
+msgid "Variable of condition {number}"
+msgstr "Variable von Bedingung {number}"
 
 #: src/images/ImagesPage.tsx
 msgid "Version"
@@ -2261,9 +3067,21 @@ msgstr "Wartet auf das Windows-Setup"
 msgid "Waiting to start"
 msgstr "Wartet auf den Start"
 
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "Warning"
+msgstr "Warnung"
+
 #: src/log/LogPanel.tsx
 msgid "Warnings"
 msgstr "Warnungen"
+
+#: src/sequences/SequencesPage.tsx
+msgid "What it does"
+msgstr "Was sie tut"
+
+#: src/sequences/steps/DomainJoinCheck.tsx
+msgid "What the check found"
+msgstr "Was die Prüfung ergab"
 
 #: src/log/LogPanel.tsx
 msgid "Which lines"
@@ -2281,6 +3099,10 @@ msgstr "Welche Tasksequenzen es nennen, ist nicht bekannt, weil nicht jede Tasks
 msgid "Whole machine"
 msgstr "Ganzes Gerät"
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Whole numbers, separated by commas."
+msgstr "Ganze Zahlen, durch Kommas getrennt."
+
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
@@ -2293,9 +3115,25 @@ msgstr "Windows-Image"
 msgid "Windows PE"
 msgstr "Windows PE"
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Windows PE, before the hand-over"
+msgstr "Windows PE, vor der Übergabe"
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Windows, after the hand-over"
+msgstr "Windows, nach der Übergabe"
+
+#: src/sequences/StepConditions.tsx
+msgid "WindowsPE or Windows"
+msgstr "WindowsPE oder Windows"
+
 #: src/machines/secureBoot.ts
 msgid "with {cas} only"
 msgstr "nur mit {cas}"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Without it, the image configures its network itself, usually by DHCP."
+msgstr "Ohne sie richtet das Image sein Netzwerk selbst ein, meist per DHCP."
 
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"
@@ -2313,6 +3151,14 @@ msgstr "Ohne Regeln weist ein Operator jedem Gerät eine Tasksequenz zu. Ein Adm
 msgid "Write {image} anyway"
 msgstr "{image} trotzdem schreiben"
 
+#: src/sequences/AddStepMenu.tsx
+msgid "Write a disk image"
+msgstr "Datenträgerimage schreiben"
+
+#: src/sequences/steps/RawImageFields.tsx
+msgid "Write network-config"
+msgstr "network-config schreiben"
+
 #: src/sequences/steps.ts
 msgid "Write raw disk image"
 msgstr "Raw-Datenträgerimage schreiben"
@@ -2325,10 +3171,46 @@ msgstr "Antwortdatei schreiben"
 msgid "Write the cloud-init seed"
 msgstr "cloud-init-Seed schreiben"
 
+#: src/sequences/sequenceList.ts
+msgid "writes {image}"
+msgstr "schreibt {image}"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."
+msgstr "Schreibt die Antwortdatei, die das Windows-Setup beim ersten Start liest. Eine leere Einstellung nimmt den Standard des Servers."
+
 #: src/account/AccountPage.tsx
 msgid "You"
 msgstr "Sie"
 
+#: src/lib/autosave.ts
+msgid "You are signed out, so nothing more is saved. Sign in again and reload the page."
+msgstr "Sie sind abgemeldet, daher wird nichts mehr gespeichert. Melden Sie sich erneut an, und laden Sie die Seite neu."
+
+#: src/sequences/NewSequenceDialog.tsx
+msgid "You can change it later in the editor."
+msgstr "Sie können ihn später im Editor ändern."
+
+#: src/lib/autosave.ts
+msgid "Your account may not change this, so nothing more is saved."
+msgstr "Ihr Konto darf das nicht ändern, daher wird nichts mehr gespeichert."
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Your changes since your last save are not saved."
+msgstr "Ihre Änderungen seit Ihrem letzten Speichern sind nicht gespeichert."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "Your latest changes are not saved yet. Leaving throws them away."
+msgstr "Ihre letzten Änderungen sind noch nicht gespeichert. Beim Verlassen gehen sie verloren."
+
 #: src/account/AccountPage.tsx
 msgid "Your recovery codes"
 msgstr "Ihre Wiederherstellungscodes"
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Your version replaces the one {who} saved at {when}."
+msgstr "Ihre Version ersetzt die, die {who} um {when} gespeichert hat."
+
+#: src/sequences/SequenceConflict.tsx
+msgid "Your version replaces the one saved by another administrator."
+msgstr "Ihre Version ersetzt die, die ein anderer Administrator gespeichert hat."

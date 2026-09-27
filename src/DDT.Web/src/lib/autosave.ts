@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
 import { ApiError, type ApiProblem } from "./api";
 
 // "refused": the server refused this value, for example a name another sequence has; the next edit tries
@@ -83,11 +85,11 @@ function isTransient(status: number): boolean {
 function stoppedMessage(status: number, fallback: string): string {
   switch (status) {
     case 401:
-      return "You are signed out, so nothing more is saved. Sign in again and reload the page.";
+      return t`You are signed out, so nothing more is saved. Sign in again and reload the page.`;
     case 403:
-      return "Your account may not change this, so nothing more is saved.";
+      return t`Your account may not change this, so nothing more is saved.`;
     case 404:
-      return "It no longer exists on the server, so nothing more is saved.";
+      return t`It no longer exists on the server, so nothing more is saved.`;
     default:
       return fallback;
   }
@@ -299,7 +301,7 @@ export function createAutosaver<T, R>(options: AutosaveOptions<T, R>): Autosaver
         kind: "retrying",
         attempt: failures,
         nextAt: Date.now() + delay,
-        message: error instanceof ApiError ? error.message : "The server did not answer.",
+        message: error instanceof ApiError ? error.message : t`The server did not answer.`,
       };
 
       if (open) {

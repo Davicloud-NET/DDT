@@ -15,15 +15,18 @@ const tones: Record<NoticeTone, string> = {
   info: "bg-panel text-ink shadow-panel",
 };
 
+// Its actions are the keys that answer it, such as Undo, and sit under its text.
 export function Notice({
   tone = "info",
   title,
   children,
+  actions,
   className,
 }: {
   tone?: NoticeTone;
   title?: ReactNode;
   children?: ReactNode;
+  actions?: ReactNode;
   className?: string;
 }) {
   return (
@@ -33,6 +36,7 @@ export function Notice({
     >
       {title ? <span className="type-label">{title}</span> : null}
       {children ? <span className="type-small">{children}</span> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 pt-1.5">{actions}</div> : null}
     </div>
   );
 }

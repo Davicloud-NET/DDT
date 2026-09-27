@@ -10,8 +10,6 @@ export interface Findings {
   warnings: SequenceProblem[];
 }
 
-export const noFindings: Findings = { problems: [], warnings: [] };
-
 // The fields each kind of step shows, besides name, the flags and the conditions. A problem with another
 // field, or none, is shown for the whole step.
 const kindFields: Record<StepKind, readonly string[]> = {
@@ -81,11 +79,24 @@ export function unplacedFindings(findings: Findings, step: SequenceStep): Findin
   };
 }
 
-// The messages of one field, such as "script" or "conditions[1].value", problems first.
-export function fieldMessages(findings: Findings, field: string): string[] {
-  return [...findings.problems, ...findings.warnings]
-    .filter((problem) => problem.field === field)
-    .map((problem) => problem.message);
+// The messages of one field, such as "script" or "conditions[1].value", kept apart: a problem marks the field
+// invalid, a warning only tells.
+export function fieldFindings(
+  findings: Findings,
+  field: string,
+): { problems: string[]; warnings: string[] } {
+  const of = (list: SequenceProblem[]) =>
+    list.filter((problem) => problem.field === field).map((problem) => problem.message);
+
+  return { problems: of(findings.problems), warnings: of(findings.warnings) };
+}
+
+// The findings with those of one field shown at another, such as a whole condition's at its value.
+export function withFieldAt(findings: Findings, from: string, to: string): Findings {
+  const moved = (problem: SequenceProblem) =>
+    problem.field === from ? { ...problem, field: to } : problem;
+
+  return { problems: findings.problems.map(moved), warnings: findings.warnings.map(moved) };
 }
 
 // The phase each step runs in, as the server worked it out for the copy it holds. A step the server has not

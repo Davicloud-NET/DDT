@@ -23,15 +23,18 @@ public static class DdtAuthorizationExtensions
             .AddPolicy(DdtPolicies.Administrator, policy => policy
                 .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
                 .RequireAuthenticatedUser()
-                .RequireRole(DdtRoleNames.Administrator))
+                .RequireRole(DdtRoleNames.Administrator)
+                .RequireAssertion(HasOwnPassword))
             .AddPolicy(DdtPolicies.Operator, policy => policy
                 .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
                 .RequireAuthenticatedUser()
-                .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator))
+                .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator)
+                .RequireAssertion(HasOwnPassword))
             .AddPolicy(DdtPolicies.Viewer, policy => policy
                 .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
                 .RequireAuthenticatedUser()
-                .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator, DdtRoleNames.Viewer))
+                .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator, DdtRoleNames.Viewer)
+                .RequireAssertion(HasOwnPassword))
             .AddPolicy(DdtPolicies.Machine, policy => policy
                 .AddAuthenticationSchemes(DdtAuthenticationSchemes.Machine)
                 .RequireAuthenticatedUser()
@@ -42,4 +45,9 @@ public static class DdtAuthorizationExtensions
 
         return services;
     }
+
+    // An account signed in with a password an administrator was shown reaches only what the fallback policy guards,
+    // which is the Account page's own endpoints, until it has set a password nobody else knows.
+    private static bool HasOwnPassword(AuthorizationHandlerContext context) =>
+        !context.User.HasClaim(claim => claim.Type == DdtClaimTypes.MustChangePassword);
 }

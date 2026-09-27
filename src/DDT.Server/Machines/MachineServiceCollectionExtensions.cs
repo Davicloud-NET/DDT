@@ -23,6 +23,7 @@ public static class MachineServiceCollectionExtensions
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
         services.AddScoped<MachineRegistrar>();
         services.AddSingleton<LiveNotifier>();
+        services.AddSingleton<LiveConnections>();
 
         // The context's own option reaches only its own options, not these.
         services.AddSignalR()

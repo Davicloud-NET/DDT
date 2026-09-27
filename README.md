@@ -289,23 +289,85 @@ Three sources of accounts, all optional except the first:
 - **LDAP.** Set `DDT:Ldap:Enabled`. Accounts are keyed on the directory's immutable identifier
   (`objectGUID` on Active Directory, `entryUUID` on OpenLDAP), never on the user name or the
   distinguished name, because both change when someone is renamed or moved. Group membership maps
-  onto DDT roles through `DDT:Ldap:GroupRoleMap` and the directory stays authoritative: a role
-  removed there is removed here on the next sign in.
+  onto DDT roles through `DDT:Ldap:GroupRoleMap`, from the group's distinguished name, compared
+  without regard to case, to a role; nested groups count. While the map has entries the directory
+  stays authoritative: each sign-in gives the account the highest role its groups map to and no
+  other, a role removed there is removed here, and a user in none of the mapped groups is refused,
+  loses the role it had, and is told why by the sign-in page. With the map empty the directory only
+  checks the password, and administrators give directory accounts their roles on the Users page. A
+  role in the map that DDT does not have, or a map with `DDT:Ldap:ResolveNestedGroups` off, which
+  reads no groups, stops the server at startup. The Users page shows the map with the names the
+  directory has for its groups, finds groups by name for it, and checks what a sign-in would give a
+  user and why, all with the bind account and without the user's password; these need
+  `DDT:Ldap:Host` and `DDT:Ldap:BaseDn`. Groups are Active Directory's `objectClass=group`, as nested
+  groups are read with Active Directory's matching rule.
 - **OpenID Connect.** Set `DDT:Oidc:Enabled` to point DDT at Entra ID, Keycloak, Authentik or any
   other provider. DDT never links an external identity to an existing local account by email
   address, because a provider that does not verify addresses could then take over any account.
   Link from an authenticated session, or turn on `DDT:Oidc:AutoProvision` to create new accounts
   keyed on issuer and subject. They get the role in `DDT:Oidc:AutoProvisionRole`, `Viewer` by
-  default. A role that does not exist stops the server at startup, and `Administrator` is logged as
-  a warning at every start. When linking the identity or granting the role fails, the new account is
-  deleted again and the sign in fails. A linked account with an authenticator still enters its code
-  after the provider's sign in, and a disabled or locked out account is refused as with a password.
+  default. A role that does not exist stops the server at startup, and so does `Administrator`,
+  which would make every identity the provider signs in an administrator. `Operator` is allowed,
+  but think before choosing it: every operator can read the deployment passwords by running a
+  sequence, so everyone the provider lets sign in could. When linking the identity or granting the
+  role fails, the new account is deleted again and the sign in fails. A linked account with an
+  authenticator still enters its code after the provider's sign in, and a disabled or locked out
+  account is refused as with a password. The sign-in page learns the providers to offer, with
+  `DDT:Oidc:DisplayName`, from the anonymous `GET /api/auth/external/providers`.
+
+  Group claims map onto roles the same way as directory groups. `DDT:Oidc:GroupsClaim`, `groups` by
+  default, names the claim that carries them, one claim per group or one holding a JSON array, in
+  the ID token or in the userinfo response. `DDT:Oidc:GroupRoleMap` maps its values, compared
+  without regard to case, to roles: group names or paths as Keycloak and Authentik send them, or
+  the object ids Entra ID sends. While the map has entries, each sign-in of an account single
+  sign-on made gives it the highest role its groups map to and no other, before
+  `DDT:Oidc:AutoProvisionRole`, and an identity in none of them is refused, with
+  `/sign-in?error=no-role`, and loses the role it had; no account is made for one that never had a
+  role. A local account linked to an identity keeps the role an administrator gave it. Entra ID
+  leaves the groups out of the token when a user is in more than 200 of them; assign the groups
+  that matter to the application and let it send only those. Both are future fields of the `oidc`
+  section of the settings page, and a role in the map that DDT does not have stops the server at
+  startup.
 
 Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
 carries the passkey table from the first migration so turning them on later needs no migration.
 
 Roles are Administrator, Operator and Viewer. Endpoints deny by default: a new endpoint is closed
 until it explicitly opts out.
+
+### Users and roles
+
+Administrators manage the accounts on Administration > Users and roles, through `/api/users`. The
+page lists every account with its source (local, directory or single sign-on), its role and where
+the role comes from: an administrator set it, the account's directory or single sign-on groups
+decide it at each sign-in, or DDT gave it when single sign-on created the account and no
+administrator has changed it since. An account shows the highest role it holds, and a role set on
+the page is then the only one it has. A role that groups decide is not changed on the page: the
+request is refused with the place to change it instead, the groups or the group map.
+
+A new account is a local one. DDT makes up its password and shows it once; the account has to
+change it at its first sign-in, and until then it reaches nothing but its Account page and
+authorizes no machine, so only its owner knows the password it then uses. A password reset works
+the same way, and also ends a lockout. A reset of the second factor turns it off with a new key, for
+an account that lost its authenticator.
+
+Disabling an account changes its security stamp, which ends its sessions at their next check,
+within a minute, and closes its live connections at once. Taking a role away also closes them, and
+the page connects again with what the account holds now, because the live connection reads the
+account when it connects rather than trusting the cookie. Deleting a directory or single sign-on
+account only lasts until its next sign-in; disabling it is what keeps it out.
+
+DDT never leaves itself without an enabled administrator: disabling, deleting or demoting the last
+one is refused, and so is an administrator disabling, deleting or demoting their own account, or
+resetting their own password or second factor there, which the Account page does with the current
+password or code. Every change is written to the audit table (`user.created`, `user.changed` with
+each field and the role before and after, `user.disabled`, `user.enabled`, `user.deleted`,
+`user.password-reset` and `user.two-factor-reset`), and reaches the pages of the other
+administrators as it happens, as does every sign-in.
+
+Single sign-on accounts were stored as directory accounts before M6.5. DDT tells them apart at
+start, since a directory account always carries the directory's identifier, so that a password
+typed for one no longer goes to the directory.
 
 ### The first administrator
 
@@ -1513,7 +1575,7 @@ is being checked does not receive it.
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
 operator is written to the audit table with the actor and source address, and so is every run that
 is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
-sequence, package or rule. Waiting machines removed after a day unseen are only counted in the
+sequence, package, rule or account. Waiting machines removed after a day unseen are only counted in the
 server log. Since anyone can register, approve on the page only a machine you can tie to a real PC,
 by its address or by someone signing in at it.
 

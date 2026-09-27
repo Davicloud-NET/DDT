@@ -49,6 +49,13 @@ public sealed partial class IdentityBootstrap(
             }
         }
 
+        // Single sign-on stored its accounts as directory accounts before M6.5. A password typed for one of them then
+        // went to the directory, which could have taken the account over for a directory user of the same name.
+        await database.Users
+            .Where(u => u.Source == AccountSource.Directory && u.DirectoryObjectId == null)
+            .ExecuteUpdateAsync(user => user.SetProperty(u => u.Source, AccountSource.External), cancellationToken)
+            .ConfigureAwait(false);
+
         if (await database.Users.AnyAsync(cancellationToken).ConfigureAwait(false))
         {
             return;

@@ -23,6 +23,8 @@ public sealed class SignedInClient(HttpClient client, CookieContainer cookies) :
 
     public Task<HttpResponseMessage> PutAsync(string path, object? body) => SendAsync(HttpMethod.Put, path, body);
 
+    public Task<HttpResponseMessage> PatchAsync(string path, object? body) => SendAsync(HttpMethod.Patch, path, body);
+
     public Task<HttpResponseMessage> DeleteAsync(string path) => SendAsync(HttpMethod.Delete, path, null);
 
     // Any request with its own content and headers, such as an upload chunk; the antiforgery token is added here.

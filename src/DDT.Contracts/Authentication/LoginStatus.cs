@@ -4,10 +4,13 @@
 
 namespace DDT.Contracts.Authentication;
 
+// NoRole: the password was right, but the account is in none of the groups the directory map gives a role, so it
+// may not sign in. The page says so, since the password is not what to fix.
 public enum LoginStatus
 {
     Succeeded,
     RequiresTwoFactor,
     LockedOut,
     Failed,
+    NoRole,
 }

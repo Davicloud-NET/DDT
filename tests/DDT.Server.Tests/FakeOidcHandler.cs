@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -12,13 +13,18 @@ using Microsoft.Extensions.Options;
 namespace DDT.Server.Tests;
 
 // Stands in for the OpenID Connect handler and its provider: a challenge signs the subject named in the query into the
-// external cookie and redirects to the address the challenge names, as the real handler does at its callback.
+// external cookie and redirects to the address the challenge names, as the real handler does at its callback. The
+// groups in the query become groups claims, one per group, or one that holds them as a JSON array.
 public sealed class FakeOidcHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory loggerFactory,
     UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, loggerFactory, encoder)
 {
     public const string SubjectParameter = "subject";
+
+    public const string GroupsParameter = "groups";
+
+    public const string GroupsArrayParameter = "groupsArray";
 
     public static string UserNameOf(string subject) => "sso-" + subject;
 
@@ -29,9 +35,21 @@ public sealed class FakeOidcHandler(
         ArgumentNullException.ThrowIfNull(properties);
 
         string subject = Request.Query[SubjectParameter].ToString();
-        ClaimsPrincipal principal = new(new ClaimsIdentity(
+        ClaimsIdentity identity = new(
             [new Claim(ClaimTypes.NameIdentifier, subject), new Claim(ClaimTypes.Name, UserNameOf(subject))],
-            Scheme.Name));
+            Scheme.Name);
+
+        foreach (string group in Request.Query[GroupsParameter].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            identity.AddClaim(new Claim("groups", group));
+        }
+
+        if (Request.Query[GroupsArrayParameter].ToString() is { Length: > 0 } array)
+        {
+            identity.AddClaim(new Claim("groups", JsonSerializer.Serialize(array.Split(','))));
+        }
+
+        ClaimsPrincipal principal = new(identity);
 
         await Context.SignInAsync(IdentityConstants.ExternalScheme, principal, properties);
         Response.Redirect(properties.RedirectUri!);

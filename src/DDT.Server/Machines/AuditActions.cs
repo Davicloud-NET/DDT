@@ -33,4 +33,11 @@ public static class AuditActions
     public const string RuleCreated = "rule.created";
     public const string RuleChanged = "rule.changed";
     public const string RuleDeleted = "rule.deleted";
+    public const string UserCreated = "user.created";
+    public const string UserChanged = "user.changed";
+    public const string UserDisabled = "user.disabled";
+    public const string UserEnabled = "user.enabled";
+    public const string UserDeleted = "user.deleted";
+    public const string UserPasswordReset = "user.password-reset";
+    public const string UserTwoFactorReset = "user.two-factor-reset";
 }

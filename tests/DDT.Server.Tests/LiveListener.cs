@@ -15,7 +15,21 @@ public sealed class LiveListener : IAsyncDisposable
 {
     private readonly HubConnection _connection;
 
-    private LiveListener(HubConnection connection) => _connection = connection;
+    private readonly TaskCompletionSource _closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private LiveListener(HubConnection connection)
+    {
+        _connection = connection;
+        _connection.Closed += _ =>
+        {
+            _closed.TrySetResult();
+
+            return Task.CompletedTask;
+        };
+    }
+
+    // Completes when the server closes the connection.
+    public Task Closed => _closed.Task;
 
     public static async Task<LiveListener> StartAsync(DdtApplication application, SignedInClient client)
     {
@@ -33,6 +47,10 @@ public sealed class LiveListener : IAsyncDisposable
             .Build();
 
         await connection.StartAsync(TestContext.Current.CancellationToken);
+
+        // The start completes with the handshake, before the hub has put the connection in its groups. The hub answers
+        // calls only after that, so the answer to one means that events to administrators reach it too.
+        await connection.InvokeAsync("UnwatchMachine", Guid.Empty, TestContext.Current.CancellationToken);
 
         return new LiveListener(connection);
     }

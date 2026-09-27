@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security.Claims;
+using DDT.Contracts.Authentication;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Identity;
@@ -64,12 +65,25 @@ public sealed class ExternalAccountsTests(DdtApplication application) : IClassFi
     [Theory]
     [InlineData("Viewer", true)]
     [InlineData("operator", true)]
-    [InlineData("Administrator", true)]
+    [InlineData("Administrator", false)]
     [InlineData("Viewers", false)]
     [InlineData("", false)]
-    public void TheRoleForNewAccountsMustExist(string role, bool valid)
+    public void TheRoleForNewAccountsMustExistAndNotBeAdministrator(string role, bool valid)
     {
         Assert.Equal(valid, OidcOptionsValidation.FindProblems(new OidcOptions { AutoProvisionRole = role }).Count == 0);
+    }
+
+    [Fact]
+    public void TheGroupMapNeedsRolesDdtHasAndAClaimToReadThemFrom()
+    {
+        OidcOptions options = new() { GroupsClaim = " " };
+        options.GroupRoleMap["DDT-Admins"] = "Administrator";
+        options.GroupRoleMap["ddt-owners"] = "Owner";
+
+        Assert.Equal(
+            ["GroupRoleMap:ddt-owners", "GroupsClaim"],
+            OidcOptionsValidation.FindProblems(options).Select(problem => problem.Field));
+        Assert.Equal("Administrator", options.GroupRoleMap["ddt-admins"]);
     }
 
     [Fact]
@@ -82,22 +96,40 @@ public sealed class ExternalAccountsTests(DdtApplication application) : IClassFi
         Assert.Contains("DDT:Oidc:AutoProvisionRole: 'Viewers' is not a DDT role.", refusal.Message, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData("true", "Administrator", true)]
-    [InlineData("false", "Administrator", false)]
-    [InlineData("true", "Viewer", false)]
-    public void NewAdministratorsAreAWarningAtEveryStart(string autoProvision, string role, bool warned)
+    // Every identity the provider signs in that DDT has not seen would become an administrator.
+    [Fact]
+    public void AnAdministratorRoleForNewAccountsStopsTheServer()
     {
-        using LoggedApplication host = new(
+        using SettingsApplication misconfigured = new(
             ("DDT:Oidc:Enabled", "true"),
             ("DDT:Oidc:Authority", "https://idp.example"),
             ("DDT:Oidc:ClientId", "ddt"),
-            ("DDT:Oidc:AutoProvision", autoProvision),
-            ("DDT:Oidc:AutoProvisionRole", role));
+            ("DDT:Oidc:AutoProvision", "true"),
+            ("DDT:Oidc:AutoProvisionRole", "Administrator"));
 
-        _ = host.Services;
+        InvalidOperationException refusal = Assert.Throws<InvalidOperationException>(() => misconfigured.CreateClient());
 
-        Assert.Equal(warned, host.Log.Logged(880, LogLevel.Warning));
+        Assert.Contains("DDT:Oidc:AutoProvisionRole: Administrator would make every identity", refusal.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheSignInPageIsToldWhichProvidersThereAre()
+    {
+        using SettingsApplication off = new();
+        using SettingsApplication on = new(
+            ("DDT:Oidc:Enabled", "true"),
+            ("DDT:Oidc:Authority", "https://idp.example"),
+            ("DDT:Oidc:ClientId", "ddt"),
+            ("DDT:Oidc:DisplayName", "Contoso"));
+        using HttpClient offClient = off.CreateClient();
+        using HttpClient onClient = on.CreateClient();
+
+        Assert.Empty(await RegisteredMachine.ReadAsync<List<ExternalProvider>>(
+            await offClient.GetAsync(new Uri("/api/auth/external/providers", UriKind.Relative), TestContext.Current.CancellationToken)));
+        Assert.Equal(
+            [new ExternalProvider(OidcOptions.SchemeName, "Contoso")],
+            await RegisteredMachine.ReadAsync<List<ExternalProvider>>(
+                await onClient.GetAsync(new Uri("/api/auth/external/providers", UriKind.Relative), TestContext.Current.CancellationToken)));
     }
 
     private static (DdtUser User, ExternalLoginInfo Info) Identity()

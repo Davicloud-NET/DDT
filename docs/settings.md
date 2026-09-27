@@ -230,17 +230,26 @@ instance (LdapAuthenticator.cs:15, DirectorySignInService.cs:20).
 | Oidc:Scopes | list | openid, profile, email | | restart: scheme | Admin |
 | Oidc:AutoProvision | bool | false | | live | Admin, re-auth |
 | Oidc:AutoProvisionRole | Viewer or Operator | Viewer | | live | Admin, re-auth |
+| Oidc:GroupsClaim | claim type | groups | | live | Admin, re-auth |
+| Oidc:GroupRoleMap | claim value to role | empty: groups decide nothing | | live | Admin, re-auth |
 
 Notes on these sections:
 
-- GroupRoleMap keys are compared case-insensitively. Today the lookup is exact
-  (DirectorySignInService.cs:160).
+- GroupRoleMap keys are compared case-insensitively. Done in M6.5 (LdapOptions.GroupRoleMap), where the
+  highest mapped role also became the only one an account gets, and a directory user in none of the
+  mapped groups is refused.
+- The Users page already reads the ldap section as it is: the map with the names of its groups
+  (GET /api/directory), groups found by name (GET /api/directory/groups) and what a sign-in would give
+  a user (POST /api/directory/check). The ldap test endpoint in section 6 does the same for candidate
+  values.
 - Scopes can remove defaults. Today the list is get-only and configuration can only add to it
   (OidcOptions.cs:23).
 - The page shows the redirect URI to register at the provider: `{origin}/api/auth/external/callback`
   (DdtAuthenticationExtensions.cs:125).
-- DisplayName has no reader today. The sign-in page gets it from an anonymous providers endpoint
-  (section 6).
+- DisplayName is read by the anonymous providers endpoint of section 6, which exists since M6.5.
+- GroupsClaim and GroupRoleMap were added in M6.5 with their final shape (section 7): defaults in
+  OidcOptions, OidcOptionsValidation, and read at each sign-in. The userinfo response is read for the
+  groups claim through an event of the handler, which also reads GroupsClaim at the sign-in.
 
 ### Certificates and proxies (sections `certificate` and `proxies`)
 
@@ -585,13 +594,18 @@ Field is a path relative to the section.
   - ResolveNestedGroups=false together with a non-empty GroupRoleMap is refused. With that combination
     no groups are read at all (LdapAuthenticator.cs:179-182), so every directory user would lose all
     roles (DirectorySignInService.cs:149-178).
+  - Both are in LdapOptionsValidation since M6.5, and stop the server at startup until the store
+    exists.
   - When the saving admin is a directory account, a change to GroupRoleMap or to the connection fields
     needs a successful test sign-in with the candidate that keeps them Administrator.
 - **oidc:**
   - When enabled, Authority is an absolute https URL and ClientId is set.
   - Scopes contain openid.
   - The candidate options pass the checks in 5.2.
-  - AutoProvisionRole is in `DdtRoleNames.All` and is not Administrator.
+  - AutoProvisionRole is in `DdtRoleNames.All` and is not Administrator. In OidcOptionsValidation since
+    M6.5.
+  - Every GroupRoleMap role is in `DdtRoleNames.All`, and GroupsClaim is set while the map has entries.
+    In OidcOptionsValidation since M6.5.
 - **pxe:**
   - `PxeSetup.FindProblems`.
   - An interface name that matches nothing on a host is a warning. Today it is only logged
@@ -969,8 +983,8 @@ Each item here is useful on its own. Items marked done are in the M5 groundwork 
     fails (ExternalLoginEndpoints.cs:83-91).
   - Validate AutoProvisionRole at startup.
 
-  Done. A role that does not exist stops startup. Administrator is logged as warning 880 until
-  question 7 is answered.
+  Done. A role that does not exist stops startup. Administrator was logged as warning 880 until
+  question 7 was answered; since M6.5 it stops startup as well.
 - **(g) Container defaults** in build/Dockerfile (section 2). Done.
 - **(h) Wording:**
   - The comment at DeploymentOptions.cs:7-8 becomes "configuration until the M6.5 settings page".
@@ -993,7 +1007,7 @@ listed in section 3, the others are values the agent and the server must agree o
    the host. This reverses the choice at PxeHost.cs:39-40 for stored values only. Confirm.
 4. **Cookie SameSite.** It is Strict or Lax depending on Oidc:Enabled at startup
    (DdtAuthenticationExtensions.cs:81-83). Either fix it at Lax (the response mode is already Query,
-   line 120), or feed the cookie options from the snapshot.
+   line 120), or feed the cookie options from the snapshot. Answered 2026-09-27: always Lax.
 5. **Certificate expiry.** Answered in M5, as proposed. The generated certificate was valid for 2
    years and never renewed (ServerCertificateFile.cs:41), so every boot image would have broken when
    it expired. DDT now makes a private root valid for 20 years, which boot images pin, and issues a
@@ -1003,7 +1017,9 @@ listed in section 3, the others are values the agent and the server must agree o
 6. **Re-auth scope.** Confirm the list of re-auth fields, and that accounts without a password cannot
    change them. OIDC step-up with max_age=0 could follow later.
 7. **Auto-provisioned roles.** AutoProvisionRole refuses Administrator and needs a confirmation for
-   Operator. Confirm.
+   Operator. Confirm. Answered in M6.5: Administrator is refused, at startup until the page exists,
+   and Operator stays allowed with a warning in README. Single sign-on group claims map to roles like
+   directory groups (Oidc:GroupRoleMap), which is how an identity becomes an administrator.
 8. **Operators and settings.** Should Operators be able to read (not write) the deployment and
    machines sections? The plan says no.
 9. **Several PXE hosts.** Interfaces is one global value. If several PXE hosts ever share a database,

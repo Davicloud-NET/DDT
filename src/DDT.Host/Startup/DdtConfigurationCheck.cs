@@ -71,9 +71,10 @@ public static class DdtConfigurationCheck
         }
 
         _ = Read(configuration, HttpsOptions.SectionName, problems, (section, binder) => section.Get<HttpsOptions>(binder));
-        _ = Read(configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder));
         _ = Read(configuration, AgentReleaseOptions.SectionName, problems, (section, binder) => section.Get<AgentReleaseOptions>(binder));
 
+        LdapOptions? ldap = Read(
+            configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder) ?? new());
         OidcOptions? oidc = Read(
             configuration, OidcOptions.SectionName, problems, (section, binder) => section.Get<OidcOptions>(binder) ?? new());
         DeploymentOptions? deployment = Read(
@@ -87,6 +88,11 @@ public static class DdtConfigurationCheck
             (section, binder) => section.Get<DdtForwardedHeadersOptions>(binder) ?? new());
         PxeOptions? pxe = Read(
             configuration, PxeOptions.SectionName, problems, (section, binder) => section.Get<PxeOptions>(binder) ?? new());
+
+        if (ldap is not null)
+        {
+            Add(problems, LdapOptions.SectionName, LdapOptionsValidation.FindProblems(ldap));
+        }
 
         if (oidc is not null)
         {

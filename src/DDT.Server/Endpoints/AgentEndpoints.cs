@@ -11,6 +11,7 @@ using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -197,6 +198,7 @@ public static class AgentEndpoints
         DdtDbContext database,
         CredentialVerifier credentials,
         UserManager<DdtUser> users,
+        UserActivity activity,
         IOptions<MachineOptions> options,
         DeploymentService deployments,
         LiveNotifier live,
@@ -257,8 +259,16 @@ public static class AgentEndpoints
         if (result.IsLockedOut)
         {
             AuthLog.MachineSignInLockedOut(logger, id, request.UserName, address);
+            await AuthEndpoints.LockedOutAsync(request.UserName, users, activity, cancellationToken).ConfigureAwait(false);
 
             return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.LockedOut));
+        }
+
+        if (result is NoRoleSignInResult)
+        {
+            AuthLog.MachineSignInNotPermitted(logger, request.UserName, id, address);
+
+            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.NotPermitted));
         }
 
         if (!result.Succeeded || account is null)
@@ -270,8 +280,10 @@ public static class AgentEndpoints
 
         string userName = account.UserName ?? request.UserName;
 
-        if (!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
-            && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
+        // A password an administrator was shown authorizes nothing until the account has set its own, here as on the web.
+        if ((!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
+                && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
+            || (await users.GetClaimsAsync(account).ConfigureAwait(false)).Any(claim => claim.Type == DdtClaimTypes.MustChangePassword))
         {
             AuthLog.MachineSignInNotPermitted(logger, userName, id, address);
 

@@ -5,6 +5,7 @@
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Users;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
@@ -89,6 +90,20 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.SequenceChanged, change);
     }
 
+    public void UserChanged(UserView user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        _ = PushToAdministratorsAsync(LiveEvents.UserChanged, user);
+    }
+
+    public void UsersRemoved(IEnumerable<Guid> userIds)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        _ = PushToAdministratorsAsync(LiveEvents.UsersRemoved, new UsersRemovedEvent([.. userIds]));
+    }
+
     private async Task PushEventAsync(string liveEvent, object? payload = null)
     {
         try
@@ -109,6 +124,18 @@ public sealed partial class LiveNotifier(
         try
         {
             await hub.Clients.Group(LiveGroups.Machine(machineId)).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            LogEventPushFailed(liveEvent, exception);
+        }
+    }
+
+    private async Task PushToAdministratorsAsync(string liveEvent, object payload)
+    {
+        try
+        {
+            await hub.Clients.Group(LiveGroups.Administrators).SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

@@ -12,6 +12,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
+using DDT.Contracts.Users;
 
 namespace DDT.Contracts;
 
@@ -27,6 +28,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(TwoFactorEnrollment))]
 [JsonSerializable(typeof(TwoFactorVerifyRequest))]
 [JsonSerializable(typeof(RecoveryCodes))]
+[JsonSerializable(typeof(IReadOnlyList<ExternalProvider>))]
 [JsonSerializable(typeof(MachineSummary))]
 [JsonSerializable(typeof(IReadOnlyList<MachineSummary>))]
 [JsonSerializable(typeof(MachineLogPage))]
@@ -64,4 +66,15 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(SaveAssignmentRuleRequest))]
 [JsonSerializable(typeof(MachineSequenceResolution))]
 [JsonSerializable(typeof(IReadOnlyList<HardwareModelCount>))]
+[JsonSerializable(typeof(UserView))]
+[JsonSerializable(typeof(IReadOnlyList<UserView>))]
+[JsonSerializable(typeof(CreateUserRequest))]
+[JsonSerializable(typeof(UpdateUserRequest))]
+[JsonSerializable(typeof(CreatedUser))]
+[JsonSerializable(typeof(OneTimePassword))]
+[JsonSerializable(typeof(UsersRemovedEvent))]
+[JsonSerializable(typeof(DirectoryView))]
+[JsonSerializable(typeof(IReadOnlyList<DirectoryGroup>))]
+[JsonSerializable(typeof(DirectoryCheckRequest))]
+[JsonSerializable(typeof(DirectoryCheck))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

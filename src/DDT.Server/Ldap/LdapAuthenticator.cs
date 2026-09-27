@@ -12,6 +12,9 @@ namespace DDT.Server.Ldap;
 
 public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<LdapAuthenticator> logger) : ILdapAuthenticator
 {
+    // LDAP_INVALID_CREDENTIALS, which ResultCode leaves out because only a bind returns it.
+    private const int InvalidCredentials = 49;
+
     private readonly LdapOptions _options = options.Value;
 
     public Task<LdapIdentity?> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken)
@@ -41,7 +44,7 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
             return null;
         }
 
-        SearchResultEntry? entry = FindUser(search, userName);
+        (_, SearchResultEntry? entry) = FindUser(search, userName);
         if (entry is null)
         {
             return null;
@@ -66,6 +69,150 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
             ReadString(entry, _options.DisplayNameAttribute),
             ReadString(entry, _options.EmailAttribute),
             ReadGroups(search, entry.DistinguishedName));
+    }
+
+    public Task<LdapLookup> LookUpAsync(string userName, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Ask(search =>
+        {
+            (LdapLookupStatus status, SearchResultEntry? entry) = FindUser(search, userName);
+
+            return entry is null
+                ? LdapLookup.Missing(status)
+                : new LdapLookup(
+                    status,
+                    entry.DistinguishedName,
+                    ReadString(entry, _options.DisplayNameAttribute),
+                    ReadImmutableId(entry),
+                    ReadGroups(search, entry.DistinguishedName));
+        }));
+    }
+
+    // A search for the text anywhere in a name cannot use the directory's indexes and stops at the size limit, so the
+    // names that start with it, which are what someone typing a name is after, are searched for first.
+    public Task<IReadOnlyList<LdapGroup>> SearchGroupsAsync(string text, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+
+        string value = LdapFilter.EscapeValue(text.Trim());
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Ask<IReadOnlyList<LdapGroup>>(search =>
+        {
+            if (value.Length == 0)
+            {
+                return SearchGroups(search, "(objectClass=group)", limit);
+            }
+
+            List<LdapGroup> found = SearchGroups(search, $"(&(objectClass=group)(|(cn={value}*)(sAMAccountName={value}*)))", limit);
+
+            if (found.Count < limit)
+            {
+                HashSet<string> seen = new(found.Select(group => group.DistinguishedName), StringComparer.OrdinalIgnoreCase);
+
+                found.AddRange(SearchGroups(search, $"(&(objectClass=group)(|(cn=*{value}*)(name=*{value}*)(sAMAccountName=*{value}*)))", limit + found.Count)
+                    .Where(group => seen.Add(group.DistinguishedName)));
+            }
+
+            return [.. found.Take(limit)];
+        }));
+    }
+
+    public Task<IReadOnlyDictionary<string, string?>> GroupNamesAsync(IReadOnlyCollection<string> distinguishedNames, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(distinguishedNames);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Ask<IReadOnlyDictionary<string, string?>>(search =>
+        {
+            Dictionary<string, string?> names = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string distinguishedName in distinguishedNames)
+            {
+                names[distinguishedName] = ReadCommonName(search, distinguishedName);
+            }
+
+            return names;
+        }));
+    }
+
+    // Signed in as the bind account, as a sign-in searches. Whatever keeps the directory from answering becomes one
+    // exception with a message for an administrator.
+    private T Ask<T>(Func<LdapConnection, T> question)
+    {
+        string server = $"{_options.Host}:{_options.Port.ToString(CultureInfo.InvariantCulture)}";
+
+        try
+        {
+            using LdapConnection search = CreateConnection();
+            search.Bind(new NetworkCredential(_options.BindDn, _options.BindPassword));
+
+            return question(search);
+        }
+        catch (LdapException exception) when (exception.ErrorCode == InvalidCredentials)
+        {
+            LdapLog.ServiceBindFailed(logger, _options.Host, _options.Port, exception);
+
+            throw new LdapUnavailableException(
+                $"The directory at {server} refused the bind account {_options.BindDn}. Check DDT:Ldap:BindDn and its password.",
+                exception);
+        }
+        catch (LdapException exception)
+        {
+            throw new LdapUnavailableException($"The directory at {server} could not be reached: {exception.Message}", exception);
+        }
+        catch (DirectoryOperationException exception)
+        {
+            throw new LdapUnavailableException(
+                $"The directory at {server} refused the search under {_options.BaseDn}: {exception.Message} Check DDT:Ldap:BaseDn.",
+                exception);
+        }
+    }
+
+    private List<LdapGroup> SearchGroups(LdapConnection connection, string filter, int limit)
+    {
+        SearchRequest request = new(_options.BaseDn, filter, SearchScope.Subtree, "cn", "description") { SizeLimit = limit };
+
+        return [.. Entries(connection, request)
+            .Select(entry => new LdapGroup(entry.DistinguishedName, ReadString(entry, "cn"), ReadString(entry, "description")))
+            .OrderBy(group => group.Name ?? group.DistinguishedName, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    // A search that reaches its size limit fails, with the entries it found up to there.
+    private static List<SearchResultEntry> Entries(LdapConnection connection, SearchRequest request)
+    {
+        SearchResponse response;
+
+        try
+        {
+            response = (SearchResponse)connection.SendRequest(request);
+        }
+        catch (DirectoryOperationException exception) when (exception.Response is SearchResponse { ResultCode: ResultCode.SizeLimitExceeded } partial)
+        {
+            response = partial;
+        }
+
+        return [.. response.Entries.Cast<SearchResultEntry>()];
+    }
+
+    // Null when the entry does not exist, or lies outside what the directory serves, as a referral.
+    private static string? ReadCommonName(LdapConnection connection, string distinguishedName)
+    {
+        try
+        {
+            SearchResponse response = (SearchResponse)connection.SendRequest(
+                new SearchRequest(distinguishedName, "(objectClass=*)", SearchScope.Base, "cn"));
+
+            return response.Entries.Count == 1 ? ReadString(response.Entries[0], "cn") : null;
+        }
+        catch (DirectoryOperationException exception) when (exception.Response?.ResultCode is ResultCode.NoSuchObject or ResultCode.Referral or ResultCode.InvalidDNSyntax)
+        {
+            return null;
+        }
     }
 
     private LdapConnection CreateConnection()
@@ -100,7 +247,8 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
         return connection;
     }
 
-    private SearchResultEntry? FindUser(LdapConnection connection, string userName)
+    // A second match is enough to refuse, so the search stops there; the directory answers that with a size limit error.
+    private (LdapLookupStatus Status, SearchResultEntry? Entry) FindUser(LdapConnection connection, string userName)
     {
         string filter = string.Format(CultureInfo.InvariantCulture, _options.UserFilter, LdapFilter.EscapeValue(userName));
         SearchRequest request = new(
@@ -114,20 +262,20 @@ public sealed class LdapAuthenticator(IOptions<LdapOptions> options, ILogger<Lda
             SizeLimit = 2,
         };
 
-        SearchResponse response = (SearchResponse)connection.SendRequest(request);
-        if (response.Entries.Count == 0)
+        List<SearchResultEntry> entries = Entries(connection, request);
+        if (entries.Count == 0)
         {
             LdapLog.UserNotFound(logger, userName, _options.BaseDn);
-            return null;
+            return (LdapLookupStatus.NotFound, null);
         }
 
-        if (response.Entries.Count > 1)
+        if (entries.Count > 1)
         {
-            LdapLog.AmbiguousMatch(logger, userName, response.Entries.Count);
-            return null;
+            LdapLog.AmbiguousMatch(logger, userName, entries.Count);
+            return (LdapLookupStatus.Ambiguous, null);
         }
 
-        return response.Entries[0];
+        return (LdapLookupStatus.Found, entries[0]);
     }
 
     private bool TryVerifyPassword(string distinguishedName, string password)

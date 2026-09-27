@@ -7,9 +7,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using DDT.Contracts.Authentication;
+using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
 using DDT.Server.Security;
+using DDT.Server.Users;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -56,6 +58,7 @@ public static class AuthEndpoints
         SignInManager<DdtUser> signInManager,
         UserManager<DdtUser> userManager,
         DirectorySignInService directory,
+        UserActivity activity,
         HttpContext context,
         IAntiforgery antiforgery,
         ILoggerFactory loggerFactory)
@@ -94,8 +97,15 @@ public static class AuthEndpoints
         if (result.IsLockedOut)
         {
             AuthLog.LockedOut(logger, userName);
+            await LockedOutAsync(userName, userManager, activity, context.RequestAborted).ConfigureAwait(false);
 
             return TypedResults.Ok(new LoginResponse(LoginStatus.LockedOut));
+        }
+
+        // Only a directory sign-in with the right password gets here, so saying why tells nobody anything new.
+        if (result is NoRoleSignInResult)
+        {
+            return TypedResults.Ok(new LoginResponse(LoginStatus.NoRole));
         }
 
         if (!result.Succeeded)
@@ -108,7 +118,21 @@ public static class AuthEndpoints
         AuthLog.SignedIn(logger, userName);
         RefreshAntiforgeryToken(context, antiforgery);
 
+        if ((codeAccount ?? await userManager.FindByNameAsync(userName).ConfigureAwait(false)) is { } account)
+        {
+            await activity.SignedInAsync(account, context.RequestAborted).ConfigureAwait(false);
+        }
+
         return TypedResults.Ok(new LoginResponse(LoginStatus.Succeeded));
+    }
+
+    // The Users page shows how long a lockout lasts.
+    internal static async Task LockedOutAsync(string userName, UserManager<DdtUser> userManager, UserActivity activity, CancellationToken cancellationToken)
+    {
+        if (await userManager.FindByNameAsync(userName).ConfigureAwait(false) is { } account)
+        {
+            await activity.ChangedAsync(account, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static async Task<SignInResult> CredentialSignInAsync(
@@ -127,8 +151,9 @@ public static class AuthEndpoints
         }
 
         // An unknown user and a wrong password must be indistinguishable in both body and timing,
-        // so the password is hashed anyway rather than returning early.
-        if (user is null)
+        // so the password is hashed anyway rather than returning early. An account of single sign-on has no password,
+        // and a password typed for it must not count towards a lockout that would also stop its single sign-on.
+        if (user is null or { Source: AccountSource.External })
         {
             _ = userManager.PasswordHasher.HashPassword(new DdtUser { UserName = request.UserName }, request.Password);
 
@@ -173,6 +198,7 @@ public static class AuthEndpoints
         }
 
         IList<string> roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
+        IList<Claim> claims = await userManager.GetClaimsAsync(user).ConfigureAwait(false);
 
         return TypedResults.Ok(new CurrentUser(
             user.Id,
@@ -180,14 +206,17 @@ public static class AuthEndpoints
             user.DisplayName,
             user.Source.ToString(),
             user.TwoFactorEnabled,
-            [.. roles]));
+            [.. roles],
+            claims.Any(claim => claim.Type == DdtClaimTypes.MustChangePassword)));
     }
 
     private static async Task<Results<Ok, ValidationProblem, UnauthorizedHttpResult>> ChangePasswordAsync(
         ChangePasswordRequest request,
         ClaimsPrincipal principal,
         UserManager<DdtUser> userManager,
-        SignInManager<DdtUser> signInManager)
+        SignInManager<DdtUser> signInManager,
+        UserActivity activity,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -206,6 +235,14 @@ public static class AuthEndpoints
             });
         }
 
+        if (user.Source == AccountSource.External)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
+            {
+                ["source"] = ["This account signs in through single sign-on and has no password in DDT."],
+            });
+        }
+
         IdentityResult result = await userManager
             .ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)
             .ConfigureAwait(false);
@@ -215,7 +252,22 @@ public static class AuthEndpoints
             return TypedResults.ValidationProblem(result.ToProblemDictionary());
         }
 
+        // The new password is one nobody else was shown, so the account reaches everything its role allows again. The
+        // refreshed cookie no longer carries the claim.
+        Claim[] mustChange = [.. (await userManager.GetClaimsAsync(user).ConfigureAwait(false)).Where(claim => claim.Type == DdtClaimTypes.MustChangePassword)];
+
+        if (mustChange.Length > 0)
+        {
+            result = await userManager.RemoveClaimsAsync(user, mustChange).ConfigureAwait(false);
+
+            if (!result.Succeeded)
+            {
+                return TypedResults.ValidationProblem(result.ToProblemDictionary());
+            }
+        }
+
         await signInManager.RefreshSignInAsync(user).ConfigureAwait(false);
+        await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok();
     }

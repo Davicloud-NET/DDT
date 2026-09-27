@@ -4,8 +4,8 @@
 
 namespace DDT.Server.Deployments;
 
-// What every deployed machine's answer file carries. Configuration until the M6.5 settings page, and checked at
-// startup by DeploymentOptionsValidation.
+// What every deployed machine's answer file carries: the deployment section of the settings page, which configuration
+// can override, checked by DeploymentOptionsValidation.
 public sealed class DeploymentOptions
 {
     public const string SectionName = "DDT:Deployment";

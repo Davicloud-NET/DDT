@@ -10,6 +10,7 @@ using DDT.Server.Deployments;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
 using DDT.Server.Security;
+using DDT.Server.Settings;
 
 namespace DDT.Host.Startup;
 
@@ -73,15 +74,11 @@ public static class DdtConfigurationCheck
         _ = Read(configuration, HttpsOptions.SectionName, problems, (section, binder) => section.Get<HttpsOptions>(binder));
         _ = Read(configuration, AgentReleaseOptions.SectionName, problems, (section, binder) => section.Get<AgentReleaseOptions>(binder));
 
-        LdapOptions? ldap = Read(
-            configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder) ?? new());
-        OidcOptions? oidc = Read(
-            configuration, OidcOptions.SectionName, problems, (section, binder) => section.Get<OidcOptions>(binder) ?? new());
-        DeploymentOptions? deployment = Read(
-            configuration, DeploymentOptions.SectionName, problems, (section, binder) => section.Get<DeploymentOptions>(binder) ?? new());
-        MachineOptions? machines = Read(
-            configuration, MachineOptions.SectionName, problems, (section, binder) => section.Get<MachineOptions>(binder) ?? new());
-        DdtForwardedHeadersOptions? forwardedHeaders = Read(
+        _ = Read(configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder) ?? new());
+        _ = Read(configuration, OidcOptions.SectionName, problems, (section, binder) => section.Get<OidcOptions>(binder) ?? new());
+        _ = Read(configuration, DeploymentOptions.SectionName, problems, (section, binder) => section.Get<DeploymentOptions>(binder) ?? new());
+        _ = Read(configuration, MachineOptions.SectionName, problems, (section, binder) => section.Get<MachineOptions>(binder) ?? new());
+        _ = Read(
             configuration,
             DdtForwardedHeadersOptions.SectionName,
             problems,
@@ -89,35 +86,12 @@ public static class DdtConfigurationCheck
         PxeOptions? pxe = Read(
             configuration, PxeOptions.SectionName, problems, (section, binder) => section.Get<PxeOptions>(binder) ?? new());
 
-        if (ldap is not null)
-        {
-            Add(problems, LdapOptions.SectionName, LdapOptionsValidation.FindProblems(ldap));
-        }
+        // The values of every settings section, as far as configuration sets them. The rest is on the settings page.
+        problems.AddRange(ConfiguredSettings.FindProblems(configuration, roles.Contains(DeploymentRole.Pxe)));
 
-        if (oidc is not null)
-        {
-            Add(problems, OidcOptions.SectionName, OidcOptionsValidation.FindProblems(oidc));
-        }
-
-        if (deployment is not null)
-        {
-            Add(problems, DeploymentOptions.SectionName, DeploymentOptionsValidation.FindProblems(deployment));
-        }
-
-        if (machines is not null)
-        {
-            Add(problems, MachineOptions.SectionName, ZeroTouchNetworks.FindProblems(machines.ZeroTouchNetworks));
-        }
-
-        if (forwardedHeaders is not null)
-        {
-            Add(problems, DdtForwardedHeadersOptions.SectionName, DdtForwardedHeadersExtensions.FindProblems(forwardedHeaders));
-        }
-
-        // Its values matter only to a process that serves netboot. Its keys are checked in every process.
+        // What configuration alone decides for netboot, checked only where it is served.
         if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
         {
-            Add(problems, PxeOptions.SectionName, PxeSetup.FindProblems(pxe));
             Add(problems, PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(pxe, options.StorePath, configuration));
         }
 

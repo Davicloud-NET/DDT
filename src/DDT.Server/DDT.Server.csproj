@@ -26,6 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
     <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
+    <!-- For the pxe section's options and checks. DDT.Pxe stays free of EF and of this project. -->
+    <ProjectReference Include="..\DDT.Pxe\DDT.Pxe.csproj" />
   </ItemGroup>
 
 </Project>

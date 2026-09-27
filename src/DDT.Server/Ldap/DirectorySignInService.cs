@@ -5,11 +5,11 @@
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Settings;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Ldap;
 
@@ -18,10 +18,11 @@ public sealed partial class DirectorySignInService(
     UserManager<DdtUser> userManager,
     SignInManager<DdtUser> signInManager,
     UserActivity activity,
-    IOptions<LdapOptions> options,
+    DdtSettings settings,
     ILogger<DirectorySignInService> logger)
 {
-    private readonly LdapOptions _options = options.Value;
+    // Once per scope, as the authenticator takes it: a change applies at the next sign-in.
+    private readonly LdapOptions _options = settings.Current.Ldap;
 
     public bool Enabled => _options.Enabled;
 

@@ -30,11 +30,13 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
     {
         Guid? userId;
         bool administrator;
+        bool @operator;
 
         if (Context.User is { } token && Principals.ApiTokenId(token) is not null)
         {
             userId = Principals.UserId(token);
             administrator = token.IsInRole(DdtRoleNames.Administrator);
+            @operator = token.IsInRole(DdtRoleNames.Operator);
         }
         else
         {
@@ -51,6 +53,7 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
 
             userId = user.Id;
             administrator = await userManager.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false);
+            @operator = await userManager.IsInRoleAsync(user, DdtRoleNames.Operator).ConfigureAwait(false);
         }
 
         if (userId is not { } id)
@@ -65,6 +68,10 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
         if (administrator)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Administrators, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        else if (@operator)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Operators, Context.ConnectionAborted).ConfigureAwait(false);
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.User(id), Context.ConnectionAborted).ConfigureAwait(false);

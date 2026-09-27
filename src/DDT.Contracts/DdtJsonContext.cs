@@ -14,6 +14,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Server;
+using DDT.Contracts.Settings;
 using DDT.Contracts.Tokens;
 using DDT.Contracts.Users;
 
@@ -92,4 +93,28 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<DirectoryGroup>))]
 [JsonSerializable(typeof(DirectoryCheckRequest))]
 [JsonSerializable(typeof(DirectoryCheck))]
+[JsonSerializable(typeof(SettingsSectionView<DeploymentSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<DeploymentSettings>))]
+[JsonSerializable(typeof(SettingsSectionView<MachineSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<MachineSettings>))]
+[JsonSerializable(typeof(SettingsSectionView<LdapSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<LdapSettings>))]
+[JsonSerializable(typeof(SettingsSectionView<OidcSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<OidcSettings>))]
+[JsonSerializable(typeof(SettingsSectionView<ProxySettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<ProxySettings>))]
+[JsonSerializable(typeof(SettingsSectionView<PxeSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<PxeSettings>))]
+[JsonSerializable(typeof(SettingsSectionView<LoggingSettings>))]
+[JsonSerializable(typeof(SettingsSectionUpdate<LoggingSettings>))]
+[JsonSerializable(typeof(SettingsOverview))]
+[JsonSerializable(typeof(ReauthenticateRequest))]
+[JsonSerializable(typeof(ReauthenticationToken))]
+[JsonSerializable(typeof(LdapTestRequest))]
+[JsonSerializable(typeof(LdapTestResult))]
+[JsonSerializable(typeof(OidcTestRequest))]
+[JsonSerializable(typeof(OidcTestResult))]
+[JsonSerializable(typeof(IReadOnlyList<PxeHostInterfaces>))]
+[JsonSerializable(typeof(AgentBinaryView))]
+[JsonSerializable(typeof(AgentBinaryUploaded))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

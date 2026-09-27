@@ -14,7 +14,8 @@ namespace DDT.Pxe;
 // index from IP_PKTINFO. This resolves that index to a local address for siaddr and option 54, and
 // it is what enforces the configured allowlist: an index that is not served is never answered.
 //
-// A snapshot taken at startup. Changing the address of a served interface needs a restart.
+// A snapshot taken whenever the pxe settings are applied. A changed address is picked up by the next apply, which a
+// save of the section or its Rescan action starts.
 public sealed class NetworkInterfaceMap
 {
     private readonly FrozenDictionary<int, ServedInterface> _served;

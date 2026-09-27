@@ -5,9 +5,11 @@
 using System.Net;
 using System.Net.Sockets;
 using DDT.Core.Configuration;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using IPNetwork = System.Net.IPNetwork;
 
@@ -15,22 +17,14 @@ namespace DDT.Server.Security;
 
 public static class DdtForwardedHeadersExtensions
 {
-    // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
-    // middleware in front of everything with them.
-    internal const string OptionsName = "DDT";
-
     public static IServiceCollection AddDdtForwardedHeaders(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddOptions<DdtForwardedHeadersOptions>()
-            .BindConfiguration(DdtForwardedHeadersOptions.SectionName, binder => binder.ErrorOnUnknownConfiguration = true);
-
-        services.AddOptions<ForwardedHeadersOptions>(OptionsName)
-            .PostConfigure<IOptions<DdtForwardedHeadersOptions>>((options, configured) => TrustOnly(options, configured.Value));
-
-        // The switch's own setup clears both lists, so the host's copy would trust every address and take the entry of
-        // X-Forwarded-For the proxy added, leaving the client's to DDT's copy. PostConfigure runs after that setup.
+        // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
+        // middleware in front of everything with them. The switch's own setup clears both lists, so the host's copy would
+        // trust every address and take the entry of X-Forwarded-For the proxy added, leaving the client's to DDT's copy.
+        // PostConfigure runs after that setup.
         services.PostConfigure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.None);
 
         services.AddSingleton<ListedProxies>();
@@ -38,19 +32,28 @@ public static class DdtForwardedHeadersExtensions
         return services;
     }
 
+    // The proxies section can change while the server runs, so the framework's middleware is built again for each
+    // snapshot, and only its ApplyForwarders is used, rather than one instance for the life of the process.
     public static IApplicationBuilder UseDdtForwardedHeaders(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        ForwardedHeadersOptions options = app.ApplicationServices
-            .GetRequiredService<IOptionsMonitor<ForwardedHeadersOptions>>()
-            .Get(OptionsName);
+        DdtSettings settings = app.ApplicationServices.GetRequiredService<DdtSettings>();
+        Forwarders forwarders = new(app.ApplicationServices.GetRequiredService<ILoggerFactory>());
 
-        // The middleware takes the first entry from a connection with no address, such as a Unix socket or a named
-        // pipe, as if a listed proxy had sent it.
-        return options.ForwardedHeaders == ForwardedHeaders.None
-            ? app
-            : app.UseWhen(context => context.Connection.RemoteIpAddress is not null, proxied => proxied.UseForwardedHeaders(options));
+        return app.Use((context, next) =>
+        {
+            ForwardedHeadersOptions options = settings.Current.ForwardedHeaders;
+
+            // The middleware takes the first entry from a connection with no address, such as a Unix socket or a named
+            // pipe, as if a listed proxy had sent it.
+            if (options.ForwardedHeaders != ForwardedHeaders.None && context.Connection.RemoteIpAddress is not null)
+            {
+                forwarders.For(options).ApplyForwarders(context);
+            }
+
+            return next(context);
+        });
     }
 
     public static IReadOnlyList<SettingProblem> FindProblems(DdtForwardedHeadersOptions configured)
@@ -67,6 +70,11 @@ public static class DdtForwardedHeadersExtensions
                 .Select(network => new SettingProblem(
                     "KnownNetworks",
                     $"'{network}' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length.")),
+            .. Split(configured.KnownNetworks)
+                .Where(network => TryParseNetwork(network) is { PrefixLength: 0 })
+                .Select(network => new SettingProblem(
+                    "KnownNetworks",
+                    $"'{network}' is every address there is, so any client could claim any address. Name the proxies' own network.")),
         ];
     }
 
@@ -100,6 +108,11 @@ public static class DdtForwardedHeadersExtensions
         options.ForwardLimit = 1;
     }
 
+    // The entries that are addresses and networks, for the rules that compare them with other networks.
+    public static IReadOnlyList<IPAddress> Proxies(string configured) => [.. Split(configured).Select(TryParseAddress).OfType<IPAddress>()];
+
+    public static IReadOnlyList<IPNetwork> Networks(string configured) => [.. Split(configured).Select(TryParseNetwork).OfType<IPNetwork>()];
+
     private static string[] Split(string configured) =>
         configured.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -121,5 +134,26 @@ public static class DdtForwardedHeadersExtensions
             && network.BaseAddress.Equals(address)
                 ? network
                 : null;
+    }
+
+    // The middleware of the last snapshot, built again only when the proxies changed.
+    private sealed class Forwarders(ILoggerFactory loggerFactory)
+    {
+        private Built? _built;
+
+        public ForwardedHeadersMiddleware For(ForwardedHeadersOptions options)
+        {
+            Built? built = Volatile.Read(ref _built);
+
+            if (built is null || !ReferenceEquals(built.Options, options))
+            {
+                built = new Built(options, new ForwardedHeadersMiddleware(_ => Task.CompletedTask, loggerFactory, Options.Create(options)));
+                Volatile.Write(ref _built, built);
+            }
+
+            return built.Middleware;
+        }
+
+        private sealed record Built(ForwardedHeadersOptions Options, ForwardedHeadersMiddleware Middleware);
     }
 }

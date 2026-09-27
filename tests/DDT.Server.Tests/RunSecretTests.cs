@@ -12,9 +12,9 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
+using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Xunit;
 using static DDT.Server.Tests.TestReports;
 
@@ -59,7 +59,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         (await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }))).Token!;
 
-    private DeploymentOptions Settings => application.Services.GetRequiredService<IOptions<DeploymentOptions>>().Value;
+    private DeploymentOptions Settings => application.Services.GetRequiredService<DdtSettings>().Current.Deployment;
 
     private Task<List<string?>> SecretReadsAsync(Guid runId)
     {

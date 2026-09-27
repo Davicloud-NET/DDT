@@ -18,10 +18,10 @@ internal static partial class PxeLog
     [LoggerMessage(
         EventId = 501,
         Level = LogLevel.Warning,
-        Message = "The pxe role is active but DDT:Pxe:Interfaces names no interface on this host, so nothing is served. Candidates: {Candidates}")]
+        Message = "The pxe role is active but the interfaces of the pxe settings name no interface on this host, so nothing is served. Candidates: {Candidates}")]
     public static partial void NoInterfaces(ILogger logger, string candidates);
 
-    [LoggerMessage(EventId = 502, Level = LogLevel.Warning, Message = "DDT:Pxe:Interfaces names {Name}, which is not an active interface on this host")]
+    [LoggerMessage(EventId = 502, Level = LogLevel.Warning, Message = "The pxe settings name the interface {Name}, which is not an active interface on this host")]
     public static partial void InterfaceNotFound(ILogger logger, string name);
 
     [LoggerMessage(EventId = 503, Level = LogLevel.Information, Message = "Boot target {Architecture}: {Method} {BootFile}")]
@@ -38,6 +38,18 @@ internal static partial class PxeLog
 
     [LoggerMessage(EventId = 507, Level = LogLevel.Information, Message = "HTTP boot listening on port {Port}, serving {BootDirectory}")]
     public static partial void HttpBootListening(ILogger logger, int port, string bootDirectory);
+
+    [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
+    public static partial void Stopped(ILogger logger, string reason);
+
+    [LoggerMessage(EventId = 521, Level = LogLevel.Error, Message = "The pxe settings could not be applied: {Reason}")]
+    public static partial void ApplyFailed(ILogger logger, string reason);
+
+    [LoggerMessage(EventId = 522, Level = LogLevel.Warning, Message = "The listeners of the pxe settings applied before are running again")]
+    public static partial void RolledBack(ILogger logger);
+
+    [LoggerMessage(EventId = 523, Level = LogLevel.Error, Message = "Applying the pxe settings failed")]
+    public static partial void ApplyCrashed(ILogger logger, Exception exception);
 
     // A successful bind proves nothing on Windows: another process holding a specific address on the
     // same port silently takes the unicast traffic. The first datagram is the real readiness signal.

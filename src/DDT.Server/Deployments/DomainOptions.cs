@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
+
 namespace DDT.Server.Deployments;
 
 // With a name, a sequence's Join the domain step joins the machine to this domain in Windows. The account needs only
@@ -15,7 +17,8 @@ public sealed class DomainOptions
     // DOMAIN\user or user@suffix, passed to the join whole.
     public string? UserName { get; set; }
 
-    // Secret.
+    // Secret: stored encrypted, never in the section's values.
+    [JsonIgnore]
     public string? Password { get; set; }
 
     // The domain controller the server asks when an administrator checks the join account, as a host name or an

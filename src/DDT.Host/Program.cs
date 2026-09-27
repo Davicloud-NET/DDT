@@ -20,6 +20,7 @@ using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,13 +63,14 @@ builder.Services.AddAntiforgery(antiforgery =>
 });
 
 builder.Services.AddDdtData(builder.Configuration, options);
+builder.Services.AddDdtSettings();
 builder.Services.AddDdtAuthentication(builder.Configuration, options);
 builder.Services.AddDdtAuthorization();
 builder.Services.AddDdtRateLimiting();
 builder.Services.AddDdtForwardedHeaders();
 builder.Services.AddDdtMachines();
 builder.Services.AddDdtImages();
-builder.Services.AddDdtDeployments(builder.Configuration);
+builder.Services.AddDdtDeployments();
 builder.Services.AddDdtSequences();
 
 string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
@@ -76,7 +78,7 @@ builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext
 
 // After the data services, so hosted services start in dependency order, and before the endpoint
 // check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
-PxeSetup? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe(options.StorePath) : null;
+PxeBootstrap? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe(options.StorePath, PxeSettingsSource.Create) : null;
 
 HttpsConfigurationCheck.Validate(builder.Configuration, options, roles);
 
@@ -139,6 +141,7 @@ api.MapGroup("/directory").MapDirectoryEndpoints();
 api.MapGroup("/audit").MapAuditEndpoints();
 api.MapGroup("/tokens").MapApiTokenEndpoints();
 api.MapGroup("/boot-image").MapBootImageEndpoints();
+api.MapGroup("/settings").MapSettingsEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 

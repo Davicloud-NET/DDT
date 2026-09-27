@@ -6,7 +6,6 @@ using DDT.Contracts.Sequences;
 using DDT.Core.Unattend;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -22,7 +21,7 @@ public sealed class UnattendRendererTests
             options,
             DateTimeOffset.UtcNow);
 
-        return new UnattendRenderer(Options.Create(options)).Settings(inputs, step ?? s_step, imageLanguage);
+        return new UnattendRenderer().Settings(inputs, step ?? s_step, imageLanguage, options.LocalAdministrator.Password);
     }
 
     [Fact]

@@ -14,13 +14,13 @@ using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Rules;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Endpoints;
@@ -201,12 +201,14 @@ public static class MachineEndpoints
         LiveNotifier live,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory,
-        IOptions<MachineOptions> options,
+        DdtSettings settings,
         CancellationToken cancellationToken)
     {
+        bool requireWebApproval = settings.Current.Machines.RequireWebApproval;
+
         string? Refusal(Machine machine) => machine.State != MachineState.Pending
             ? $"The machine is {machine.State}."
-            : options.Value.RequireWebApproval && machine.SignedInByUserId is null
+            : requireWebApproval && machine.SignedInByUserId is null
                 ? "Nobody has signed in at this machine yet."
                 : null;
 

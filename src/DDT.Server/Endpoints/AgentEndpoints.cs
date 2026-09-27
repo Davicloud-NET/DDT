@@ -11,6 +11,7 @@ using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
+using DDT.Server.Settings;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using IdentitySignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace DDT.Server.Endpoints;
@@ -199,7 +199,7 @@ public static class AgentEndpoints
         CredentialVerifier credentials,
         UserManager<DdtUser> users,
         UserActivity activity,
-        IOptions<MachineOptions> options,
+        DdtSettings settings,
         DeploymentService deployments,
         LiveNotifier live,
         TimeProvider timeProvider,
@@ -298,7 +298,9 @@ public static class AgentEndpoints
         machine.SignedInUtc = now;
         database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineSignedIn, account, userName, machine, address, "Signed in at the machine."));
 
-        if (!options.Value.RequireWebApproval || DeploymentService.CountsAsWebApproval(active))
+        bool requireWebApproval = settings.Current.Machines.RequireWebApproval;
+
+        if (!requireWebApproval || DeploymentService.CountsAsWebApproval(active))
         {
             machine.State = MachineState.Approved;
             machine.ApprovedByUserId = account.Id;
@@ -311,7 +313,7 @@ public static class AgentEndpoints
                 userName,
                 machine,
                 address,
-                options.Value.RequireWebApproval
+                requireWebApproval
                     ? $"Was Pending. Signed in at the machine, which {active!.RequestedByName} had assigned {active.Title} on the web."
                     : "Was Pending. Signed in at the machine."));
         }

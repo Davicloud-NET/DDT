@@ -42,4 +42,12 @@ public static class AuditActions
     public const string UserTwoFactorReset = "user.two-factor-reset";
     public const string TokenCreated = "token.created";
     public const string TokenRevoked = "token.revoked";
+    public const string SettingsImported = "settings.imported";
+    public const string SettingsChanged = "settings.changed";
+    public const string SettingsRefused = "settings.refused";
+    public const string SettingsReset = "settings.reset";
+    public const string SettingsApplied = "settings.applied";
+    public const string SettingsApplyFailed = "settings.apply-failed";
+    public const string AgentUploaded = "agent.uploaded";
+    public const string AdministratorCreated = "administrator.created";
 }

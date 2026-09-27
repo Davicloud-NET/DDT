@@ -7,19 +7,19 @@ using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
+using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Sequences;
 
 // Reads stored sequences with their problems, which depend on the library and the settings of the moment.
-public sealed class SequenceCatalog(DdtDbContext database, IOptions<DeploymentOptions> options)
+public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings)
 {
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        DeploymentOptions deployment = options.Value;
+        DeploymentOptions deployment = settings.Current.Deployment;
 
         return new SequenceReferences(
             images.ToDictionary(i => i.Id),

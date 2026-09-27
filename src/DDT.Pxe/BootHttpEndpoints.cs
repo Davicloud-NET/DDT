@@ -27,6 +27,18 @@ public static class BootHttpEndpoints
         int bootPort,
         NetworkInterfaceMap interfaces)
     {
+        ArgumentNullException.ThrowIfNull(interfaces);
+
+        return app.UseBootListenerIsolation(bootPort, () => interfaces);
+    }
+
+    // Interfaces is read on every request, so the gate follows the setup the listeners were last started with. Null
+    // serves nothing.
+    public static IApplicationBuilder UseBootListenerIsolation(
+        this IApplicationBuilder app,
+        int bootPort,
+        Func<NetworkInterfaceMap?> interfaces)
+    {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(interfaces);
 
@@ -36,7 +48,7 @@ public static class BootHttpEndpoints
             bool bootEndpoint = context.GetEndpoint()?.Metadata.GetMetadata<BootEndpointMarker>() is not null;
 
             if (onBootPort != bootEndpoint
-                || (onBootPort && (context.Connection.LocalIpAddress is not { } local || !interfaces.IsServedAddress(local))))
+                || (onBootPort && (context.Connection.LocalIpAddress is not { } local || interfaces() is not { } served || !served.IsServedAddress(local))))
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
 

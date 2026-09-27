@@ -5,11 +5,11 @@
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Ldap;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Endpoints;
 
@@ -36,12 +36,12 @@ public static class DirectoryEndpoints
     // The names are the directory's, so a map entry for a group the directory does not have shows without one. The page
     // still shows the map while the directory cannot be asked.
     private static async Task<Ok<DirectoryView>> ReadAsync(
-        IOptions<LdapOptions> options,
+        DdtSettings settings,
         DirectorySignInService directory,
         ILdapAuthenticator authenticator,
         CancellationToken cancellationToken)
     {
-        LdapOptions ldap = options.Value;
+        LdapOptions ldap = settings.Current.Ldap;
         IReadOnlyDictionary<string, string?> names = new Dictionary<string, string?>();
 
         if (directory.Configured && ldap.GroupRoleMap.Count > 0)

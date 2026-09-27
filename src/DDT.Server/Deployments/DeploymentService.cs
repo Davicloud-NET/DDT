@@ -17,9 +17,9 @@ using DDT.Server.Machines;
 using DDT.Server.Rules;
 using DDT.Server.Security;
 using DDT.Server.Sequences;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
@@ -33,10 +33,7 @@ public sealed class DeploymentService(
     UserManager<DdtUser> users,
     SequenceCatalog catalog,
     SequenceResolver resolver,
-    IOptions<MachineOptions> machineOptions,
-    IOptions<DeploymentOptions> deploymentOptions,
-    ZeroTouchNetworks zeroTouchNetworks,
-    ListedProxies listedProxies,
+    DdtSettings settings,
     TimeProvider timeProvider)
 {
     // The agent runs in x64 WinPE and starts bcdboot from the applied image, which fails for any other image.
@@ -44,10 +41,10 @@ public sealed class DeploymentService(
 
     private const string SomeOperator = "an operator";
 
-    public bool DomainConfigured => !string.IsNullOrWhiteSpace(deploymentOptions.Value.Domain.Name);
+    public bool DomainConfigured => !string.IsNullOrWhiteSpace(settings.Current.Deployment.Domain.Name);
 
     // Under RequireWebApproval a netboot always waits for a sign-in, whatever networks are listed.
-    public bool ZeroTouchEnabled => !machineOptions.Value.RequireWebApproval && !zeroTouchNetworks.IsEmpty;
+    public bool ZeroTouchEnabled => settings.Current.Machines.ZeroTouchEnabled;
 
     public async Task<Deployment?> ActiveAsync(Machine machine, CancellationToken cancellationToken)
     {
@@ -608,11 +605,16 @@ public sealed class DeploymentService(
 
     // Zero touch: the web assignment authorizes the machine's next netboot, but only from a listed network. A request
     // still at a listed proxy's address carried no client address, so it proves nothing about the network.
-    public bool KeepsApprovalOnNetboot(Deployment? active, IPAddress? remoteAddress) =>
-        CountsAsWebApproval(active)
-        && ZeroTouchEnabled
-        && zeroTouchNetworks.Contains(remoteAddress)
-        && !listedProxies.Contains(remoteAddress);
+    // The networks and the proxies come from one snapshot, so a save of either cannot fall between the two checks.
+    public bool KeepsApprovalOnNetboot(Deployment? active, IPAddress? remoteAddress)
+    {
+        SettingsSnapshot snapshot = settings.Current;
+
+        return CountsAsWebApproval(active)
+            && snapshot.Machines.ZeroTouchEnabled
+            && snapshot.Machines.ZeroTouchNetworks.Contains(remoteAddress)
+            && !ListedProxies.Contains(snapshot, remoteAddress);
+    }
 
     // A registration that does not continue the machine's run means the agent that had it is gone. A running run
     // fails. A run chosen at the machine or by a rule is cancelled: the disk and the ERASE typed there, and the
@@ -695,6 +697,18 @@ public sealed class DeploymentService(
     private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);
 
     // A sequence runs only without problems, which depend on the library and the settings of the moment.
+    // While the stored deployment settings have problems, no run starts: every run would carry values nobody checked.
+    // Runs that started already keep the values they started with.
+    public static string? SettingsProblem(SettingsSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        return snapshot.DeploymentProblems.Count == 0
+            ? null
+            : "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: " +
+                string.Join(" ", snapshot.DeploymentProblems.Select(problem => $"{SettingsDefinitions.Deployment.PageName(problem.Field)}: {problem.Message}"));
+    }
+
     private async Task<(SequenceDefinition Definition, SequenceReferences References, string? Problem)> CheckAsync(
         TaskSequence sequence,
         CancellationToken cancellationToken)
@@ -704,7 +718,7 @@ public sealed class DeploymentService(
 
         string? problem = SequenceChecks.Check(definition, references).Problems.Count switch
         {
-            0 => null,
+            0 => SettingsProblem(settings.Current),
             1 => $"{sequence.Name} has a problem, so it cannot run. Fix it on the sequence's page first.",
             int count => $"{sequence.Name} has {count} problems, so it cannot run. Fix them on the sequence's page first.",
         };
@@ -789,7 +803,7 @@ public sealed class DeploymentService(
     // Off: only a machine seen moments ago is at the prompt now; whoever holds the tokens of one seen earlier may
     // not be. On: the sign-in at the machine happened already, and the assignment is the web approval.
     private bool AuthorizesWaitingMachine(Machine machine, DateTimeOffset now) =>
-        machineOptions.Value.RequireWebApproval
+        settings.Current.Machines.RequireWebApproval
             ? machine.SignedInByUserId is not null
             : now - machine.LastSeenUtc <= DeploymentLimits.WaitingAtPrompt;
 

@@ -2239,8 +2239,10 @@ The boot image was then cut down: `build/boot-image-trim.txt` removes, after DIS
 neither Windows PE nor DDT uses, which took the image with PowerShell, the agent and the console
 from 486.0 MB to 304.7 MB, and its transfer to the test machine over TFTP from 8.4 s to between
 5.2 s and 6.4 s. An image trimmed by that list booted, partitioned a disk, and ran the command
-prompt and the parts of PowerShell the steps use. The comparison with MDT's LiteTouchPE waits for an
-MDT installer, since Microsoft took its download down.
+prompt and the parts of PowerShell the steps use. `Build-BootImage.ps1` itself then built such an
+image, 305.0 MB, which reached the test machine in 5.0 s and netbooted it. A standard MDT
+LiteTouchPE, as an administrator who runs MDT reported it, is 466.5 MB, so DDT's image is about a
+third smaller; that image was not built here, on the same ADK.
 
 A whole deployment of Windows then ran on the test machine, and the rest of its run moved from
 Windows' out-of-box screens onto DDT's session, see
@@ -2252,11 +2254,11 @@ restarts Windows once more after its first user's update check, and that writing
 automatic sign-in during setup breaks setup's own, which is why the first sign-in now comes from
 the answer file. Since then the console's language is a deployment setting, the hand-over takes
 only a console that speaks the agent's version of the protocol into Windows, and the server updates
-the console like the agent; these have been tested, but have not run on a machine yet.
+the console like the agent; the image `Build-BootImage.ps1` built afterwards carries all three.
 
-What M6.5 still needs is a boot image built by `Build-BootImage.ps1` with the trim list, a run with
-a console the server offers, and the size comparison with MDT. The later milestones, in order, as
-[docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
+That completes M6.5. A machine has not yet switched to a console the server offers, since the test
+image carries the same console the server does; the tests cover that switch. The later milestones,
+in order, as [docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
 model it shows; M8 the Linux phase, in which a run goes on in the installed Linux; M9 applications
 and Windows configuration; M10 golden images and the machine lifecycle; M11 reach beyond netboot
 and a single site; M12 the documentation of the whole project,

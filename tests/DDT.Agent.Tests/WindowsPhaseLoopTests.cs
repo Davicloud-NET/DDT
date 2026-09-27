@@ -3,7 +3,9 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.ConsoleProtocol;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
@@ -286,6 +288,30 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), waiting.Steps.Select(step => step.State));
         Assert.Equal(RunActivity.Step, server.RunReports[1].Activity);
         Assert.False(File.Exists(AnswerFile));
+    }
+
+    // What the console of DDT's session shows while the service waits: the run, waiting for Windows setup.
+    [Fact]
+    public async Task TheConsoleShowsTheRunWaitingForWindowsSetup()
+    {
+        _tools.SetupRuns("Windows still sets up its first user");
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        List<ConsoleState> shown = [];
+        ConsoleStatus status = TestAgents.Status(new RecordingConsole(shown));
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run));
+
+        ManualTimeProvider time = new();
+        Task<int> running = RunAsync(server, time, status: status);
+        await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
+
+        Assert.Equal(AgentExitCodes.Deployed, await running);
+        ConsoleState waiting = shown.First(state => state.Run is not null);
+        Assert.Equal((ConsoleStage.Running, ConsoleActivity.WaitingForWindowsSetup), (waiting.Stage, waiting.Run!.Activity));
+        Assert.Equal(s_machineId, waiting.MachineId);
+        Assert.Equal(ConsoleStage.Finished, shown[^1].Stage);
     }
 
     [Fact]
@@ -887,7 +913,8 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         AgentLog? log = null,
         bool dryRun = false,
         IAgentRemoval? removal = null,
-        IDeploySession? session = null)
+        IDeploySession? session = null,
+        ConsoleStatus? status = null)
     {
         time ??= new ImmediateTimeProvider();
         log ??= new AgentLog(time, TextWriter.Null);
@@ -898,9 +925,30 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             time,
             toolRunner: _toolRunner,
             systemDirectory: TestAgents.SystemDirectory(_tools),
-            dryRun: false);
+            dryRun: false,
+            status: status);
 
-        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal, session).RunAsync(server.Stop.Token);
+        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal, session, status).RunAsync(server.Stop.Token);
+    }
+
+    // Keeps every state the console is shown, and asks nothing.
+    private sealed class RecordingConsole(List<ConsoleState> shown) : IMachineConsole
+    {
+        public bool CanAsk => false;
+
+        public void Show(ConsoleState state)
+        {
+            lock (shown)
+            {
+                shown.Add(state);
+            }
+        }
+
+        public void Write(ConsoleLogLine line)
+        {
+        }
+
+        public Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken) => Task.FromResult<ConsoleAnswer?>(null);
     }
 
     // Notes what the loop asks of DDT's session among the tools' calls. ends says whether an end completes, as a stop

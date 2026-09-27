@@ -185,7 +185,7 @@ public sealed class WindowsPhaseLoop(
                 return await EndAsync(final, cancellationToken).ConfigureAwait(false);
             }
 
-            if (!await WaitForSetupAsync(machineId, local, tokens, cancellationToken).ConfigureAwait(false))
+            if (!await WaitForSetupAsync(machineId, run, local, tokens, cancellationToken).ConfigureAwait(false))
             {
                 continue;
             }
@@ -270,7 +270,7 @@ public sealed class WindowsPhaseLoop(
 
     // False when the wait ended before setup finished because the server did not take the machine's report, which the
     // next registration sorts out.
-    private async Task<bool> WaitForSetupAsync(Guid machineId, LocalRun local, DeploymentTokens tokens, CancellationToken cancellationToken)
+    private async Task<bool> WaitForSetupAsync(Guid machineId, AgentRun run, LocalRun local, DeploymentTokens tokens, CancellationToken cancellationToken)
     {
         if (setup.Pending() is not { } pending)
         {
@@ -278,6 +278,7 @@ public sealed class WindowsPhaseLoop(
         }
 
         log.Information($"Waiting for Windows setup to finish: {pending}. The run goes on once it has, however long that takes.");
+        status?.WaitingForSetup(run, local.State);
 
         FileRunStateStore store = new(tokens);
         await store.AttachAsync(local.Files, cancellationToken).ConfigureAwait(false);

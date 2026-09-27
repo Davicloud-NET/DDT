@@ -119,7 +119,8 @@ internal static class TestAgents
         TimeProvider timeProvider,
         bool dryRun = false,
         IAgentRemoval? removal = null,
-        IDeploySession? session = null)
+        IDeploySession? session = null,
+        ConsoleStatus? status = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
@@ -137,7 +138,8 @@ internal static class TestAgents
             tools.Volumes.Windows,
             Version,
             dryRun,
-            session);
+            session,
+            status);
     }
 
     // With the text console, asking through prompt.

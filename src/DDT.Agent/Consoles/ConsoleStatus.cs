@@ -152,6 +152,21 @@ public sealed class ConsoleStatus
         });
     }
 
+    // In the installed Windows, before the run goes on: Windows setup has yet to finish.
+    public void WaitingForSetup(AgentRun run, SequenceState sequenceState)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(sequenceState);
+
+        Change(state => state with
+        {
+            Stage = ConsoleStage.Running,
+            Run = new ConsoleRun(run.Id, run.SequenceName, Steps(sequenceState), null, null, ConsoleActivity.WaitingForWindowsSetup),
+            Restart = null,
+            Problem = null,
+        });
+    }
+
     public void RunChanged(RunHeartbeat heartbeat)
     {
         ArgumentNullException.ThrowIfNull(heartbeat);

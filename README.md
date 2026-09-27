@@ -72,8 +72,9 @@ LICENSE                    GNU General Public License, version 3
 NOTICE                     attribution notice and the additional terms under GPL section 7
 THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
 licenses/                  licence texts of that software, one folder per component
-docs/settings.md           design of the settings page: its store, sections, rules and API
+docs/settings.md           design of the settings: their store, sections, rules and API
 docs/roadmap.md            the milestones after M6 and what each one holds
+docs/web-ui.md             how the web UI is built, for anyone changing it
 src/
   DDT.Core/                domain model, image library, hashing, task sequences, GPT, FAT and
                            cloud-init seeds. No ASP.NET, no EF
@@ -262,18 +263,27 @@ lists the problems with keys and values in one message, each after its full key,
 checked only where the `pxe` role runs. Two checks stop it on their own, outside that message: an
 unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checked later.
 
-What a deployed Windows is set up with comes from the deployment section of the settings page,
+What a deployed Windows is set up with comes from the Deployment defaults page,
 described under [What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
 [Joining a domain](#joining-a-domain). Task sequences, packages and rules are not configuration:
 they live in the database and are managed on their pages.
 
-### The settings page
+### Settings in the web UI
 
-Since M6.5 the settings an admin changes in normal operation are on the settings page, stored in the
-database in `ddt."SettingsSections"`, one row per section: `deployment`, `machines`, `ldap`,
-`oidc`, `proxies`, `pxe`, `logging` and the server names of `certificate`, described under
-[The server certificate](#the-server-certificate). A change there is checked when it is saved, applies without
-a restart and leaves an audit row that names every field it changed. The keys this README names,
+Since M6.5 the settings an admin changes in normal operation are edited in the web UI, each on the
+page of what it configures, and stored in the database in `ddt."SettingsSections"`, one row per
+section:
+
+| Section | Page |
+|---|---|
+| `deployment` | Deployment, Deployment defaults |
+| `machines` | Machines, Approval and zero touch |
+| `pxe` | Boot, Network boot |
+| `ldap`, `oidc` | Administration, Sign-in |
+| `certificate` (the server names, see [The server certificate](#the-server-certificate)), `proxies`, `logging` | Administration, Server, which also shows the state of every section and uploads the agent |
+
+A change there is checked when it is saved, applies without a restart and leaves an audit row that
+names every field it changed. The keys this README names,
 such as `DDT:Machines:ZeroTouchNetworks`, are the fields of those sections, and configuration still
 sets them: [docs/settings.md](docs/settings.md) is the design.
 
@@ -311,7 +321,7 @@ sets them: [docs/settings.md](docs/settings.md) is the design.
   as before.
 - **Several processes, one database.** A save applies at once in the process that made it. The
   others read the store every 15 seconds. Every process on one database has to share the key ring
-  in `DDT:StorePath/keys`; one that cannot read it saves nothing and says so on the page. The pxe,
+  in `DDT:StorePath/keys`; one that cannot read it saves nothing and says so on the Server page. The pxe,
   oidc and proxies sections are rebuilt inside the running server, and the page shows for each host
   whether it applied the newest version, in `ddt."SettingsHostStates"`.
 
@@ -330,7 +340,7 @@ as `DDT__Ldap__Enabled=false` is the other way back in.
 
 ### What stays in configuration
 
-Configuration keeps only what the server needs before it can serve the settings page, and stays
+Configuration keeps only what the server needs before it can serve the web UI, and stays
 available as an override for recovery and for installs managed as code:
 
 | Setting | Why it stays in configuration |
@@ -349,7 +359,7 @@ available as an override for recovery and for installs managed as code:
 | `ASPNETCORE_ENVIRONMENT` | Development switches such as HSTS. Production leaves it unset. |
 
 A standard container install then sets only the connection string, `DDT__Roles` and the names for
-the certificate. The settings page shows these read-only in its server panel: the values of
+the certificate. The Server page shows these read-only on its overview: the values of
 `DDT:Roles`, `DDT:StorePath`, `DDT:RequireHttps`, the Kestrel endpoint URLs and certificate paths,
 `DDT:Pxe:HttpBootPort` and `BootDirectory`, `AllowedHosts`, the environment, the OTLP endpoint without
 user info, and the provider, host and database of the connection string. Every other key shows only
@@ -361,8 +371,8 @@ for development, see [Updating the agent without a new boot image](#updating-the
 
 A new setting follows these rules:
 
-1. It is a field of a section of the settings page. Only a setting that passes the test above stays
-   in configuration, and joins the table.
+1. It is a field of a settings section, on the page of what it configures. Only a setting that
+   passes the test above stays in configuration, and joins the table.
 2. Task sequences, drivers per model and assignment by MAC address or model are database entities
    with an API and a page, never configuration.
 3. It is a property of its section's option class with its default, a field of the section's
@@ -387,7 +397,7 @@ Three sources of accounts, all optional except the first:
 
 - **Local accounts.** Passwords are PBKDF2-HMAC-SHA512 at 210,000 iterations, above the framework
   default of 100,000. Raising it later is safe, because Identity rehashes on the next sign in.
-- **LDAP.** Set `DDT:Ldap:Enabled`. Accounts are keyed on the directory's immutable identifier
+- **LDAP.** Turn it on on the Sign-in page, or set `DDT:Ldap:Enabled`. Accounts are keyed on the directory's immutable identifier
   (`objectGUID` on Active Directory, `entryUUID` on OpenLDAP), never on the user name or the
   distinguished name, because both change when someone is renamed or moved. Group membership maps
   onto DDT roles through `DDT:Ldap:GroupRoleMap`, from the group's distinguished name, compared
@@ -397,7 +407,7 @@ Three sources of accounts, all optional except the first:
   loses the role it had, and is told why by the sign-in page. With the map empty the directory only
   checks the password, and administrators give directory accounts their roles on the Users page. A
   role in the map that DDT does not have, or a map with `DDT:Ldap:ResolveNestedGroups` off, which
-  reads no groups, is refused: configured, it stops the server at startup, and on the settings page
+  reads no groups, is refused: configured, it stops the server at startup, and on the Sign-in page
   the save. The page's Test tries the values before they are saved, with a user's password if one
   is given, and shows the groups and the role a sign-in would get; a directory administrator saves
   new connection values or a new map only after such a test kept them an administrator. The Users
@@ -406,9 +416,10 @@ Three sources of accounts, all optional except the first:
   user and why, all with the bind account and without the user's password; these need
   `DDT:Ldap:Host` and `DDT:Ldap:BaseDn`. Groups are Active Directory's `objectClass=group`, as nested
   groups are read with Active Directory's matching rule.
-- **OpenID Connect.** Set `DDT:Oidc:Enabled` to point DDT at Entra ID, Keycloak, Authentik or any
-  other provider. DDT never links an external identity to an existing local account by email
-  address, because a provider that does not verify addresses could then take over any account.
+- **OpenID Connect.** Turn it on on the Sign-in page, or set `DDT:Oidc:Enabled`, to point DDT at
+  Entra ID, Keycloak, Authentik or any other provider. DDT never links an external identity to an
+  existing local account by email address, because a provider that does not verify addresses could
+  then take over any account.
   Link from an authenticated session, or turn on `DDT:Oidc:AutoProvision` to create new accounts
   keyed on issuer and subject. They get the role in `DDT:Oidc:AutoProvisionRole`, `Viewer` by
   default. A role that does not exist is refused, and so is `Administrator`, which would make every
@@ -419,7 +430,7 @@ Three sources of accounts, all optional except the first:
   authenticator still enters its code after the provider's sign in, and a disabled or locked out
   account is refused as with a password. The sign-in page learns the providers to offer, with
   `DDT:Oidc:DisplayName`, from the anonymous `GET /api/auth/external/providers`. Turning single
-  sign-on on or off on the settings page adds or removes it at once, with no restart; values the
+  sign-on on or off on the Sign-in page adds or removes it at once, with no restart; values the
   provider's handler does not accept leave it off on that host, which the page shows, while local
   sign-in keeps working. The page's Test reads the provider's discovery document and shows the
   redirect URI to register there, `/api/auth/external/callback` on DDT's own address.
@@ -435,7 +446,7 @@ Three sources of accounts, all optional except the first:
   role. A local account linked to an identity keeps the role an administrator gave it. Entra ID
   leaves the groups out of the token when a user is in more than 200 of them; assign the groups
   that matter to the application and let it send only those. Both are fields of the `oidc` section
-  of the settings page, and a role in the map that DDT does not have is refused.
+  on the Sign-in page, and a role in the map that DDT does not have is refused.
 
 Two factor authentication is TOTP with recovery codes. Passkeys are not enabled, but the schema
 carries the passkey table from the first migration so turning them on later needs no migration.
@@ -563,8 +574,8 @@ boot image nor a change in any browser. Its files sit next to `Kestrel:Certifica
 | `ddt-root.pem` | DDT's root certificate, valid for 20 years. Boot images pin it, browsers trust it |
 | `ddt-root-key.pem` | The root's private key. As with `ddt-key.pem`, only the account DDT runs as can read it, and on Windows also SYSTEM and administrators |
 | `ddt.pem`, `ddt-key.pem` | The server certificate and its key, as the two configured paths name them |
-| `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal or the settings page replaced, to go back to |
-| `ddt.provisional` | Only while a pair from the settings page waits for its confirmation: when DDT goes back |
+| `ddt.previous.pem`, `ddt-key.previous.pem` | The pair the last renewal or the Server page replaced, to go back to |
+| `ddt.provisional` | Only while a pair from the Server page waits for its confirmation: when DDT goes back |
 | `ddt-anchor.replaced.pem` | Only after the upgrade described below: the old self-signed certificate |
 
 The server certificate is valid for 90 days. At startup and every five minutes DDT checks it, and
@@ -602,7 +613,7 @@ message says what to do. A pair that does not load, such as a certificate next t
 its own, gives way to the previous pair at startup. DDT never makes a new root over an existing one
 by itself, because that would break every boot image.
 
-**On the settings page.** With both paths set and no password, the page shows the certificate and
+**On the Server page.** With both paths set and no password, the page shows the certificate and
 changes it, with the administrator's password again:
 
 - **Server names**, which `DDT:Https:SubjectAlternativeNames` seeds once, are the names the server is
@@ -685,8 +696,8 @@ yet, and the `BCD` that `Build-BootImage.ps1` writes carries only TFTP settings 
 
 `DDT:Pxe:Interfaces` is a list of interface names or local IPv4 addresses, and it has no default.
 Until it names an interface, DDT logs every candidate interface with its addresses and serves
-nothing, so a host with a NIC on someone else's network never answers PXE there. The page lists the
-candidates each pxe host found, from `GET /api/settings/pxe/interfaces`, and warns about an entry
+nothing, so a host with a NIC on someone else's network never answers PXE there. The Network boot page
+lists the candidates each pxe host found, from `GET /api/settings/pxe/interfaces`, and warns about an entry
 that names nothing on a host.
 
 A save of the pxe section stops the listeners and starts them again with the new values, which ends
@@ -827,7 +838,7 @@ build to open pages, so copying a build into the boot directory is enough.
 - A successful bind proves nothing on Windows: another process holding a specific address on the
   same port silently takes unicast traffic. Each UDP listener logs the first datagram it accepts from
   a served interface, and that line, not the bind, is the evidence DDT is reachable.
-- Set the level of `DDT.Pxe` to `Debug` in the logging section of the settings page, which applies at
+- Set the level of `DDT.Pxe` to `Debug` on the Logging tab of the Server page, which applies at
   once, to see every DHCP datagram DDT declined to answer and why, or to `Trace` to also see
   datagrams that arrived on interfaces it does not serve.
 - `build/New-TestVm.ps1` creates a Generation 2 Hyper-V machine with Secure Boot on, on the Default
@@ -878,7 +889,7 @@ once, before the machine registers, and only in an agent built with `dotnet publ
 dry run; `--no-update` turns it off. What the agent from the boot image printed before it switched
 stays on the console and does not reach the machine's log.
 
-The settings page uploads the agent, as `PUT /api/settings/agent/binary` with the executable as the
+The Server page uploads the agent, as `PUT /api/settings/agent/binary` with the executable as the
 body, to that default path: written next to the agent it replaces and renamed over it, so no machine
 downloads half a file, and audited as `agent.uploaded` with its SHA-256. It needs a fresh password,
 like the fields that grant trust, because it turns an administrator's session into code that runs as
@@ -1760,7 +1771,7 @@ whose step has not run yet, report false progress or fail it.
 **In the installed Windows** the agent is an unsigned executable in `C:\DDT`. Microsoft Defender or
 Smart App Control may block it, and so may WDAC or AppLocker rules in the image; the run then makes
 no contact after the hand-over. Where such rules block it, allow `C:\DDT\agent\ddt-agent.exe` in
-them by its path, or sign the agent you upload on the settings page and allow its signer: machines
+them by its path, or sign the agent you upload on the Server page and allow its signer: machines
 run that agent in place of the boot image's, as
 [Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image)
 describes. A Group Policy that sets the PowerShell execution policy overrides
@@ -1818,16 +1829,16 @@ without the key, a new root means building every boot image again. Trust the roo
 browsers of the computers that manage DDT. The root carries no name constraints, because the names
 the server is reached by change.
 
-**The settings page is an administrator's.** Every section needs the Administrator role; operators
-may read the deployment and machines sections, which decide what an assignment does. No secret ever
+**Settings are an administrator's.** Every section needs the Administrator role; operators may
+read the deployment and machines sections, which decide what an assignment does. No secret ever
 comes back from it, only whether it is set, and a stored LDAP bind password or client secret goes
 only to the server it was entered for, so a stolen administrator session cannot have one sent to a
 server of its own. The fields that grant roles or trust, and the agent upload, need the
-administrator's password again, at most 5 minutes old: the agent on the page is code that every
+administrator's password again, at most 5 minutes old: the uploaded agent is code that every
 machine that netboots runs as SYSTEM before anyone has authorized it, and the SHA-256 the agent
 checks proves only that it received what the server announced.
 
-The secrets on the page are encrypted with the Data Protection key ring. That protects a copy of
+The secrets of the settings are encrypted with the Data Protection key ring. That protects a copy of
 the database alone, a dump or a database backup; it does not protect the store volume, where the key
 ring is plain files. Keep backups of the key ring apart from those of the database, and protect them
 like the volume.

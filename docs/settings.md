@@ -1001,6 +1001,11 @@ listed in section 3, the others are values the agent and the server must agree o
 The store, the snapshot, the consumers and the API of sections 5 and 6 are built, on branch
 m6.5-settings. Where the implementation deliberately differs from the plan above:
 
+- **Several pages, not one.** Each section is edited on the page of what it configures, as the
+  navigation of M6.5 places settings: deployment on Deployment defaults, machines on Approval and
+  zero touch, pxe on Network boot, ldap and oidc on Sign-in, and the certificate's names, proxies,
+  logging and the agent on Server, whose overview also shows every section and the class A values.
+  "The settings page" in the sections above means these pages.
 - **The live push carries the view.** `settingsChanged` carries the whole `SettingsSectionView` of
   the section, as its GET answers it, so other browsers patch what they show; 5.5 planned the
   section name alone. It goes to the administrators' group, and for deployment and machines also to

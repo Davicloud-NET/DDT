@@ -5,6 +5,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import type { ServerArguments } from "@/lib/serverText";
 import type { ImageBootCapability } from "@/images/images";
 
 export type SequencePhase = "WindowsPE" | "Windows";
@@ -141,11 +142,14 @@ export interface SequenceSummary {
 export const SEQUENCE_VERSION = 2;
 
 // stepId is null for a problem of the whole sequence. field is the camelCase name within the step, such as
-// "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not.
+// "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not. message is
+// the server's English, code and args the same sentence to say in the person's language (findingText).
 export interface SequenceProblem {
   stepId: string | null;
   field: string | null;
   message: string;
+  code?: string | null;
+  args?: ServerArguments | null;
 }
 
 // stepPhases holds the phase each step runs in, in step order, as the engine decides it. Problems and warnings
@@ -164,11 +168,16 @@ export interface SequenceView {
 }
 
 // A starting point for a new sequence.
+// name and description are the server's English; their codes and values say them in the person's language.
 export interface SequenceTemplate {
   key: string;
   name: string;
   description: string;
   definition: SequenceDefinition;
+  nameCode?: string | null;
+  nameArgs?: ServerArguments | null;
+  descriptionCode?: string | null;
+  descriptionArgs?: ServerArguments | null;
 }
 
 export interface CreateSequenceRequest {

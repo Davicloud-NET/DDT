@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { serverText } from "@/lib/serverText";
+
 import type { SequencePhase, SequenceProblem, SequenceStep, StepKind } from "./sequences";
 
 // Problems keep a sequence from running; warnings are shown the same way but do not.
@@ -79,6 +81,11 @@ export function unplacedFindings(findings: Findings, step: SequenceStep): Findin
   };
 }
 
+// What a problem or a warning says, in the person's language.
+export function findingText(finding: SequenceProblem): string {
+  return serverText(finding.code, finding.args, finding.message);
+}
+
 // The messages of one field, such as "script" or "conditions[1].value", kept apart: a problem marks the field
 // invalid, a warning only tells.
 export function fieldFindings(
@@ -86,7 +93,7 @@ export function fieldFindings(
   field: string,
 ): { problems: string[]; warnings: string[] } {
   const of = (list: SequenceProblem[]) =>
-    list.filter((problem) => problem.field === field).map((problem) => problem.message);
+    list.filter((problem) => problem.field === field).map(findingText);
 
   return { problems: of(findings.problems), warnings: of(findings.warnings) };
 }

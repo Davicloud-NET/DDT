@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Form } from "react-aria-components";
 
 import { ApiError } from "@/lib/api";
+import { serverText } from "@/lib/serverText";
 import { Button } from "@/ui/Button";
 import { Dialog } from "@/ui/Dialog";
 import { Notice } from "@/ui/Notice";
@@ -56,7 +57,16 @@ export function NewSequenceDialog({
     },
   });
 
-  const list = templates.data ?? [];
+  // The server's templates, their name and description in the person's language; a new sequence takes both.
+  const list = (templates.data ?? []).map((candidate) => ({
+    ...candidate,
+    name: serverText(candidate.nameCode, candidate.nameArgs, candidate.name),
+    description: serverText(
+      candidate.descriptionCode,
+      candidate.descriptionArgs,
+      candidate.description,
+    ),
+  }));
   const chosen = choice ?? list[0]?.key ?? EMPTY;
   const template = list.find((candidate) => candidate.key === chosen) ?? null;
   const name = typedName ?? uniqueName(template?.name ?? t`New sequence`, taken);

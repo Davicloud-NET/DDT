@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { i18n } from "@lingui/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError, apiPut } from "./api";
@@ -39,6 +40,12 @@ function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), { status });
 }
 
+async function inGerman() {
+  const { messages } = await import("../locales/de/messages.po");
+
+  i18n.loadAndActivate({ locale: "de", messages });
+}
+
 async function refusal(promise: Promise<unknown>): Promise<ApiError> {
   const error = await promise.then(
     () => null,
@@ -55,6 +62,7 @@ async function refusal(promise: Promise<unknown>): Promise<ApiError> {
 describe("apiPut", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    i18n.loadAndActivate({ locale: "en", messages: {} });
   });
 
   it("sends the body as JSON with the CSRF token and returns the answer", async () => {
@@ -116,6 +124,64 @@ describe("apiPut", () => {
       mac: ["A rule for this MAC already exists."],
       model: ["Enter a model."],
     });
+  });
+
+  it("says a refusal in the person's language from its code", async () => {
+    await inGerman();
+    serve(() =>
+      json(
+        {
+          title: "The machine is Rejected.",
+          code: "machine.inState",
+          args: { state: { code: "machineState.rejected", args: {} } },
+        },
+        409,
+      ),
+    );
+
+    const error = await refusal(apiPut("/api/machines/1/approve", {}));
+
+    expect(error.message).toBe("Das Gerät hat den Zustand „Abgelehnt“.");
+    expect(error.problem?.title).toBe("Das Gerät hat den Zustand „Abgelehnt“.");
+  });
+
+  it("says each field's errors in the person's language from their codes", async () => {
+    await inGerman();
+    serve(() =>
+      json(
+        {
+          title: "One or more validation errors occurred.",
+          errors: {
+            name: ["The name must have 1 to 128 characters and no control characters."],
+            description: ["The description can have at most 1000 characters.", "Not coded."],
+          },
+          errorCodes: {
+            name: [{ code: "common.nameLength", args: { max: 128 } }],
+            description: [{ code: "common.descriptionLength", args: { max: 1000 } }, null],
+          },
+        },
+        400,
+      ),
+    );
+
+    const error = await refusal(apiPut("/api/sequences/1", {}));
+
+    expect(error.message).toBe("Der Name muss 1 bis 128 Zeichen und keine Steuerzeichen haben.");
+    expect(error.problem?.errors).toEqual({
+      name: ["Der Name muss 1 bis 128 Zeichen und keine Steuerzeichen haben."],
+      description: ["Die Beschreibung darf höchstens 1000 Zeichen haben.", "Not coded."],
+    });
+  });
+
+  it("keeps the server's English for a code this page does not know", async () => {
+    await inGerman();
+    serve(() =>
+      json({ title: "Something new went wrong.", code: "machine.fromTheFuture", args: {} }, 409),
+    );
+
+    const error = await refusal(apiPut("/api/machines/1", {}));
+
+    expect(error.message).toBe("Something new went wrong.");
   });
 
   it("falls back to the status when the refusal has no problem details", async () => {

@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "tokens": "node ../DDT.Design/generate.mjs",
+    "messages": "node scripts/server-messages.mjs",
     "i18n": "lingui extract --clean",
     "licences": "node scripts/web-licences.mjs"
   },

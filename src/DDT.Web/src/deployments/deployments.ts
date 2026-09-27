@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { serverText, type ServerArguments } from "@/lib/serverText";
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceDefinition, SequencePhase, StepState } from "@/sequences/sequences";
 
@@ -178,9 +179,16 @@ export function isSilentActivity(activity: RunActivity | null): boolean {
 
 export type DomainJoinFindingLevel = "Passed" | "Warning" | "Problem";
 
+// text is the server's English, which domainFindingText says in the person's language.
 export interface DomainJoinFinding {
   level: DomainJoinFindingLevel;
   text: string;
+  code?: string | null;
+  args?: ServerArguments | null;
+}
+
+export function domainFindingText(finding: DomainJoinFinding): string {
+  return serverText(finding.code, finding.args, finding.text);
 }
 
 // What the domain said about the join account, in the order it was asked. Container is the organizational unit or

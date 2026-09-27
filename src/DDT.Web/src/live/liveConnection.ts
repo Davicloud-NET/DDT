@@ -45,6 +45,12 @@ import {
   sequencesQuery,
   type SequenceChanged,
 } from "@/sequences/sequences";
+import {
+  certificateKey,
+  putSection,
+  settingsOverviewQuery,
+  type SettingsSectionView,
+} from "@/settings/settings";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
   removeUsers,
@@ -205,6 +211,9 @@ export function createLiveConnection(
       usersQuery.queryKey,
       ["tokens"],
       bootImageQuery.queryKey,
+      ["settings"],
+      settingsOverviewQuery.queryKey,
+      certificateKey,
     ]) {
       invalidate(key);
     }
@@ -307,6 +316,21 @@ export function createLiveConnection(
     current.on("usersRemoved", (event: UsersRemoved) => {
       removeUsers(queryClient, event.userIds);
       removeTokensOf(queryClient, event.userIds);
+    });
+
+    // Administrators receive every section; operators the deployment and machine sections they may read. The
+    // overview counts problems and locks, so it is read again.
+    current.on("settingsChanged", (view: SettingsSectionView<unknown>) => {
+      putSection(queryClient, view);
+      invalidate(settingsOverviewQuery.queryKey);
+    });
+
+    current.on("certificateChanged", (view: unknown) => {
+      queryClient.setQueryData(certificateKey, (current: unknown) =>
+        current !== null && typeof current === "object" && view !== null && typeof view === "object"
+          ? { ...view, servedHere: (current as { servedHere?: unknown }).servedHere ?? null }
+          : view,
+      );
     });
 
     // Administrators and the token's owner receive it.

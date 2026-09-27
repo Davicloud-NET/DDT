@@ -664,6 +664,10 @@ msgstr ""
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "A change applies to runs that start after it. A Write the answer file step can set its own time zone, language and keyboard, and a Join the domain step its own organizational unit."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "upload.chunkSize"
 msgid "A chunk holds 1 to {max} bytes. Send the file in smaller chunks."
@@ -689,6 +693,10 @@ msgctxt "computerName.startsWithHyphen"
 msgid "A computer name cannot start with a hyphen."
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "A culture name. Left empty, the image's language."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "user.displayNameTooLong"
 msgid "A display name can have at most {max} characters."
@@ -706,6 +714,10 @@ msgstr ""
 
 #: src/rules/RuleDialog.tsx
 msgid "A hardware model"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "A Join the domain step joins the machine online in Windows with this account, which it fetches while the step runs. Left without a domain name, machines stay in a workgroup."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -909,6 +921,14 @@ msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "A Windows time zone id as tzutil /l lists it, such as W. Europe Standard Time."
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "A Windows time zone id. Left empty, Windows picks one from the language."
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "A Write the answer file step with \"Add the local administrator\" creates this account. Operators can read the password by deploying a machine they control, so it should be one for deployed machines only."
 msgstr ""
 
 #: src/packages/PackagesPage.tsx
@@ -1134,6 +1154,10 @@ msgstr ""
 msgid "Allowed to write its raw disk image although it may not start with Secure Boot on."
 msgstr ""
 
+#: src/settings/ApprovalPage.tsx
+msgid "Also approve every machine on the web"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "role.anAdministrator"
 msgid "an Administrator"
@@ -1171,6 +1195,10 @@ msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "An input locale such as de-DE or 0407:00000407."
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "An input locale. Left empty, the language's."
 msgstr ""
 
 #: src/runs/runs.ts
@@ -1226,6 +1254,10 @@ msgstr ""
 msgid "Any sequence"
 msgstr ""
 
+#: src/settings/ApprovalPage.tsx
+msgid "Anyone who reaches the server can register a machine, so the number waiting for approval is capped, for each address and in all. A machine over the cap is refused until others are approved or removed."
+msgstr ""
+
 #: src/audit/auditView.ts
 msgid "API token"
 msgstr ""
@@ -1249,11 +1281,16 @@ msgstr ""
 msgid "Appearance"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Applied"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "Apply image"
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/settings/ApprovalPage.tsx
 msgid "Approval and zero touch"
 msgstr ""
 
@@ -1377,6 +1414,14 @@ msgstr ""
 msgid "Authenticator code"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Authenticator code, if you use one"
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "Authorizing machines"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr ""
@@ -1410,6 +1455,10 @@ msgstr ""
 msgid "by {name}"
 msgstr ""
 
+#: src/settings/ApprovalPage.tsx
+msgid "By default, a person who signs in at a netbooting machine authorizes it for the sequence they choose, and an operator can approve a waiting machine on the web. Zero touch skips both on the networks listed here."
+msgstr ""
+
 #: src/rules/RulesPage.tsx
 msgid "By hardware model"
 msgstr ""
@@ -1423,6 +1472,7 @@ msgstr ""
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/sequences/NewSequenceDialog.tsx
+#: src/settings/SettingsParts.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/ui/Dialog.tsx
 #: src/users/UserDialogs.tsx
@@ -1456,6 +1506,10 @@ msgstr ""
 msgid "Change {name}"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Change it"
+msgstr ""
+
 #: src/users/UsersPage.tsx
 msgid "Change name, email or role"
 msgstr ""
@@ -1480,6 +1534,10 @@ msgstr ""
 #: src/rules/RulesPage.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Changed"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "changed {changed}"
 msgstr ""
 
 #: src/users/userView.ts
@@ -1581,6 +1639,14 @@ msgstr ""
 msgid "Chosen by a rule, approved on the web"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Clear"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Cleared on save"
+msgstr ""
+
 #: src/ui/Dialog.tsx
 #: src/ui/Drawer.tsx
 #: src/ui/Toast.tsx
@@ -1620,7 +1686,12 @@ msgstr ""
 msgid "Configured default"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Confirm and save"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
+#: src/settings/SettingsParts.tsx
 msgid "Confirm it is you"
 msgstr ""
 
@@ -1723,6 +1794,10 @@ msgctxt "directory.noMapNoRole"
 msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing."
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Defaults for every run"
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/rules/RulesPage.tsx
@@ -1780,6 +1855,7 @@ msgid "Deployment"
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Deployment defaults"
 msgstr ""
 
@@ -1825,6 +1901,7 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Discard"
 msgstr ""
@@ -1852,6 +1929,14 @@ msgstr ""
 
 #: src/sequences/steps.ts
 msgid "does not equal"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Domain"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Domain controller for the check"
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -2114,6 +2199,7 @@ msgstr ""
 #: src/machines/machineView.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/settings/SettingsParts.tsx
 msgid "Failed"
 msgstr ""
 
@@ -2201,6 +2287,10 @@ msgstr ""
 
 #: src/packages/PackageDialog.tsx
 msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "For places that need two people: a sign-in at the machine then only records who is there, and an operator approves it on the web. Zero touch is off while this is on."
 msgstr ""
 
 #: src/packages/PackageDialog.tsx
@@ -2397,6 +2487,14 @@ msgstr ""
 msgid "Its disk is not erased."
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Join account"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Join account password"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "Join the domain"
 msgstr ""
@@ -2413,6 +2511,10 @@ msgstr ""
 msgid "Keep mine"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Keep the stored one"
+msgstr ""
+
 #: src/sequences/sequenceList.ts
 msgid "Keeps the disk"
 msgstr ""
@@ -2422,6 +2524,7 @@ msgid "Key"
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Keyboard"
 msgstr ""
 
@@ -2435,6 +2538,7 @@ msgid "Language"
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Language and region"
 msgstr ""
 
@@ -2561,6 +2665,10 @@ msgstr ""
 
 #: src/users/userView.ts
 msgid "Local account"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Local administrator"
 msgstr ""
 
 #: src/users/UsersPage.tsx
@@ -2791,6 +2899,7 @@ msgstr ""
 #: src/packages/PackageDialog.tsx
 #: src/sequences/NewSequenceDialog.tsx
 #: src/sequences/StepInspector.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/DirectoryPanel.tsx
 #: src/users/UserDialogs.tsx
@@ -2838,6 +2947,10 @@ msgstr ""
 msgid "Never"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Never changed on this page."
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "New password"
 msgstr ""
@@ -2861,6 +2974,10 @@ msgstr ""
 #: src/sequences/NewSequenceDialog.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "New task sequence"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "New value"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -3123,6 +3240,10 @@ msgstr ""
 msgid "Not saved: another administrator saved this sequence"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Not set"
+msgstr ""
+
 #: src/images/images.ts
 msgid "Not signed"
 msgstr ""
@@ -3154,6 +3275,10 @@ msgstr ""
 msgid "Nothing recorded yet"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Nothing was saved. The fields marked below say why."
+msgstr ""
+
 #: src/runs/RunPanel.tsx
 msgid "of the run"
 msgstr ""
@@ -3180,6 +3305,10 @@ msgstr ""
 
 #: src/rules/RuleDialog.tsx
 msgid "One MAC address"
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
 msgstr ""
 
 #: src/users/UserDialogs.tsx
@@ -3218,6 +3347,10 @@ msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Only images for x64 machines can be written."
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Only the check below uses it. Left empty, the domain's name."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3293,6 +3426,7 @@ msgid "or"
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Organizational unit"
 msgstr ""
 
@@ -3352,6 +3486,8 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
+#: src/settings/SettingsParts.tsx
 msgid "Password"
 msgstr ""
 
@@ -3407,6 +3543,10 @@ msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "Paused"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Pending"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3544,6 +3684,10 @@ msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Replace"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
@@ -3767,6 +3911,18 @@ msgstr ""
 msgid "Same as the system"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Save"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Save anyway"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Save anyway?"
+msgstr ""
+
 #: src/users/UserDialogs.tsx
 msgid "Save changes"
 msgstr ""
@@ -3785,6 +3941,14 @@ msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Save your version over theirs?"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Saved {savedWhen} by {savedBy}."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Saved {savedWhen}."
 msgstr ""
 
 #: src/sequences/SaveState.tsx
@@ -3921,12 +4085,24 @@ msgstr ""
 msgid "Server default"
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "Set"
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "Set a password of your own first"
 msgstr ""
 
 #: src/users/userView.ts
 msgid "Set by an administrator"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Set in configuration as {key} ({variable}), which wins over the value stored here. Remove it there to change it on this page."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Set in configuration as {key} ({variable}). Remove it there to change it on this page."
 msgstr ""
 
 #: src/account/AccountPage.tsx
@@ -3975,6 +4151,10 @@ msgstr ""
 
 #: src/sequences/SequencesPage.tsx
 msgid "Show task sequences by state"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Show theirs"
 msgstr ""
 
 #: src/tokens/TokensPage.tsx
@@ -4071,6 +4251,10 @@ msgstr ""
 
 #: src/sequences/SequenceEditor.tsx
 msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Someone else saved these settings while you were changing them."
 msgstr ""
 
 #: src/sequences/SequenceEditor.tsx
@@ -4303,6 +4487,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "account.codeNotValidCheckTime"
 msgid "That code is not valid. Check the time on the device generating it."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "That did not work."
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -5169,6 +5357,14 @@ msgctxt "user.nameTaken"
 msgid "There is an account named {name} already."
 msgstr ""
 
+#: src/settings/SettingsParts.tsx
+msgid "These settings could not be loaded."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "These settings decide who signs in and what machines trust, so they need your password again."
+msgstr ""
+
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
 msgstr ""
@@ -5369,6 +5565,7 @@ msgid "This WIM holds no x64 Windows image."
 msgstr ""
 
 #: src/sequences/steps/WindowsFields.tsx
+#: src/settings/DeploymentDefaultsPage.tsx
 msgid "Time zone"
 msgstr ""
 
@@ -5482,6 +5679,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "package.tooLargeUnpacked"
 msgid "Unpacked, the zip would take more than {max} GB."
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Unreadable"
 msgstr ""
 
 #: src/sequences/SaveState.tsx
@@ -5632,6 +5833,18 @@ msgstr ""
 msgid "Waiting for Windows setup"
 msgstr ""
 
+#: src/settings/ApprovalPage.tsx
+msgid "Waiting from one address"
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "Waiting in all"
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "Waiting machines"
+msgstr ""
+
 #: src/machines/MachinePanel.tsx
 msgid "Waiting to start"
 msgstr ""
@@ -5670,6 +5883,14 @@ msgstr ""
 
 #: src/audit/AuditPage.tsx
 msgid "When"
+msgstr ""
+
+#: src/settings/SettingsParts.tsx
+msgid "Where it applies"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Where new computer accounts go. Left empty, the domain's default."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -5718,6 +5939,10 @@ msgstr ""
 msgid "Windows PE, before the hand-over"
 msgstr ""
 
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Windows setup"
+msgstr ""
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Windows, after the hand-over"
 msgstr ""
@@ -5736,6 +5961,10 @@ msgstr ""
 
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"
+msgstr ""
+
+#: src/settings/DeploymentDefaultsPage.tsx
+msgid "Without one, the step cannot add the account and the run fails."
 msgstr ""
 
 #: src/rules/RulesPage.tsx
@@ -5874,4 +6103,8 @@ msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Your version replaces the one saved by another administrator."
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "Zero touch networks"
 msgstr ""

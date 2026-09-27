@@ -22,6 +22,8 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
+import { ApprovalPage } from "@/settings/ApprovalPage";
+import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
@@ -112,7 +114,7 @@ const runHistoryRoute = createRoute({
 const approvalRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/approval",
-  component: PendingPage,
+  component: ApprovalPage,
 });
 const machineRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -140,7 +142,7 @@ const rulesRoute = createRoute({
 const deploymentDefaultsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/defaults",
-  component: PendingPage,
+  component: DeploymentDefaultsPage,
 });
 const imagesRoute = createRoute({
   getParentRoute: () => shellRoute,

@@ -25,6 +25,8 @@ export interface Sent {
   method: string;
   path: string;
   body: unknown;
+  // Lower-case names, as Headers keeps them.
+  headers: Record<string, string>;
 }
 
 export type Handler = (request: Sent) => Response;
@@ -79,6 +81,7 @@ export function stubServer(user: CurrentUser | null, handlers: Record<string, Ha
         method: init?.method ?? "GET",
         path: url.replace("http://localhost", ""),
         body: typeof init?.body === "string" ? JSON.parse(init.body) : null,
+        headers: Object.fromEntries(new Headers(init?.headers).entries()),
       };
 
       requests.push(request);

@@ -23,8 +23,8 @@ function agentFile(name = "ddt-agent.exe", bytes = [0x4d, 0x5a, 0x90, 0x00]): Fi
   return new File([new Uint8Array(bytes)], name, { type: "application/x-msdownload" });
 }
 
-async function choose(file: File): Promise<void> {
-  const input = (await screen.findByRole("heading", { name: "Upload the agent" }))
+async function choose(file: File, panel = "Upload the agent"): Promise<void> {
+  const input = (await screen.findByRole("heading", { name: panel }))
     .closest("section")
     ?.querySelector('input[type="file"]');
 
@@ -177,6 +177,85 @@ describe("AgentPanel", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
     expect(sent(requests, "PUT", "/api/settings/agent/binary")).toEqual([]);
+    await expectAccessible();
+  });
+});
+
+describe("ConsolePanel", () => {
+  const consoleSha256 = "9b1d7e3c5a0f2e4d6b8c0a2e4f6d8b0c2a4e6f8d0b2c4a6e8f0d2b4c6a8e0f2d";
+
+  function consoleZip(): File {
+    return new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "console.zip", {
+      type: "application/zip",
+    });
+  }
+
+  it("uploads the zip of the console beside the agent, and shows what machines show", async () => {
+    const { requests } = serveServer(
+      {
+        "GET /api/settings/agent": () => json(agentView()),
+        "POST /api/settings/reauthenticate": () => proof("console-proof"),
+        "PUT /api/settings/agent/console": () =>
+          json(
+            agentView({
+              sha256: consoleSha256,
+              size: 30_408_704,
+              uploadedUtc: new Date().toISOString(),
+              uploadedBy: "admin",
+              source: "Uploaded",
+            }),
+          ),
+      },
+      { tab: "agent" },
+    );
+
+    expect(
+      await screen.findByText("The console in their boot image, since none was uploaded"),
+    ).toBeInTheDocument();
+
+    await choose(consoleZip(), "Upload the console");
+    fireEvent.click(
+      within(
+        await screen.findByRole("dialog", { name: "Upload console.zip as the console?" }),
+      ).getByRole("button", { name: "Upload console" }),
+    );
+
+    // A proof an earlier test left is still held; without it, the password comes first.
+    if (screen.queryByRole("dialog", { name: "Confirm it is you" }) !== null) {
+      await typePassword();
+    }
+
+    expect(
+      await screen.findByText(
+        `Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 ${consoleSha256}.`,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("The console uploaded here")).toBeInTheDocument();
+    expect(screen.getByText(consoleSha256)).toBeInTheDocument();
+    expect(
+      sent(requests, "PUT", "/api/settings/agent/console").map((request) => request.headers),
+    ).toEqual([expect.objectContaining({ "content-type": "application/zip" })]);
+    expect(sent(requests, "PUT", "/api/settings/agent/binary")).toEqual([]);
+    expect(reads(requests, "/api/settings/agent/console")).toBe(1);
+  });
+
+  it("offers no console upload while configuration names it", async () => {
+    serveServer(
+      {
+        "GET /api/settings/agent": () => json(agentView()),
+        "GET /api/settings/agent/console": () =>
+          json(agentView({ sha256: consoleSha256, size: 30_408_704, source: "Configuration" })),
+      },
+      { tab: "agent" },
+    );
+
+    expect(
+      await screen.findByText("The zip DDT:Agent:ConsolePath names in configuration"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Uploads are off")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Upload the agent" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Upload the console" })).not.toBeInTheDocument();
+
     await expectAccessible();
   });
 });

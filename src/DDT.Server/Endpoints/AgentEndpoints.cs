@@ -68,6 +68,15 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
+        // The graphical console those agents show, as anonymous as the agent and for the same reason.
+        group.MapGet("/release/console", GetConsoleReleaseAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
+
+        group.MapGet("/release/console/{name}", GetConsoleFileAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentDownload);
+
         return group;
     }
 
@@ -115,6 +124,36 @@ public static class AgentEndpoints
         return File.Exists(path)
             ? TypedResults.PhysicalFile(path, "application/octet-stream")
             : TypedResults.NotFound();
+    }
+
+    private static async Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
+        ConsoleReleaseStore consoles,
+        CancellationToken cancellationToken)
+    {
+        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
+
+        return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
+    }
+
+    // Only the files the release names, with the length it names, so the agent's download ends where the file does.
+    private static async Task<Results<PushStreamHttpResult, NotFound>> GetConsoleFileAsync(
+        string name,
+        HttpContext context,
+        ConsoleReleaseStore consoles,
+        CancellationToken cancellationToken)
+    {
+        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
+
+        if (release?.Files.FirstOrDefault(file => file.Name == name) is not { } file)
+        {
+            return TypedResults.NotFound();
+        }
+
+        context.Response.ContentLength = file.Size;
+
+        return TypedResults.Stream(
+            body => consoles.CopyFileAsync(file.Name, body, context.RequestAborted),
+            "application/octet-stream");
     }
 
     private static async Task<Results<Ok<AgentNextResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound>> NextAsync(

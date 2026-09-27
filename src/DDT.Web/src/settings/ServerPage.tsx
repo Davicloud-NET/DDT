@@ -15,7 +15,7 @@ import { Notice } from "@/ui/Notice";
 import { StateTag } from "@/ui/StateTag";
 import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
 
-import { AgentPanel } from "./AgentPanel";
+import { AgentPanel, ConsolePanel } from "./AgentPanel";
 import { CertificatePanel } from "./CertificatePanel";
 import { ConfigurationOrigin } from "./ConfigurationOrigin";
 import { LoggingPanel } from "./LoggingPanel";
@@ -122,6 +122,7 @@ function ServerSettings() {
         </TabPanel>
         <TabPanel id="agent" className="flex flex-col gap-4">
           <AgentPanel />
+          <ConsolePanel />
         </TabPanel>
         <TabPanel id="logging" className="flex flex-col gap-4">
           <LoggingPanel />

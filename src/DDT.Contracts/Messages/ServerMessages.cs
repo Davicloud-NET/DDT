@@ -1764,6 +1764,18 @@ public static class ServerMessages
 
     public static readonly MessageTemplate SettingsAgentTooLarge = Define("settings.agent.tooLarge", "The agent may be at most {max} MB.");
 
+    public static readonly MessageTemplate SettingsConsoleConfigured = Define(
+        "settings.console.configured",
+        "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.");
+
+    public static readonly MessageTemplate SettingsConsoleNotAPackage = Define(
+        "settings.console.notAPackage",
+        "That is not the console. Upload a zip of the folder Publish-Console.ps1 writes, with ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll and nothing else.");
+
+    public static readonly MessageTemplate SettingsConsoleTooLarge = Define(
+        "settings.console.tooLarge",
+        "The console may be at most {max} MB, zipped and unpacked.");
+
     // Settings: how a host applied a section that rebuilds a subsystem. An exception's own text stays English, as a value.
 
     public static readonly MessageTemplate SettingsApplyProxiesClosed = Define(

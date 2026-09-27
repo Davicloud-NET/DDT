@@ -377,8 +377,9 @@ the certificate. The Server page shows these read-only on its overview: the valu
 `DDT:Pxe:HttpBootPort` and `BootDirectory`, `AllowedHosts`, the environment, the OTLP endpoint without
 user info, and the provider, host and database of the connection string. Every other key shows only
 whether it is set and where; one whose last segment is `Password`, `Secret`, `Key` or `Headers`, and
-every connection string, never shows a value. `DDT:Agent:BinaryPath` stays a configuration override
-for development, see [Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image).
+every connection string, never shows a value. `DDT:Agent:BinaryPath` and `DDT:Agent:ConsolePath` stay
+configuration overrides for development, see
+[Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image).
 
 ### Rules for new settings
 
@@ -933,6 +934,20 @@ SYSTEM on every netbooting machine. It takes only a Windows executable of at mos
 refused while `DDT:Agent:BinaryPath` names the file in configuration, which stays for development.
 `GET /api/settings/agent` says which agent machines get, and who uploaded it when.
 
+The graphical console is updated the same way, in the same check. `.\build\Publish-Console.ps1` also
+zips its three files into `artifacts\ddt-console.zip`, and the Server page uploads that zip as
+`PUT /api/settings/agent/console`, stored at `DDT:Agent:ConsolePath`, by default
+`agent/ddt-console.zip` in the store. The server takes a zip with exactly `ddt-console.exe`,
+`libSkiaSharp.dll` and `libHarfBuzzSharp.dll`, at its root or in one folder, each a Windows
+executable, at most 128 MB zipped and unpacked, and stores them at the zip's root; the upload needs a
+fresh password as well and is audited as `console.uploaded`. The agent asks for the console's files
+and their SHA-256 hashes, and when they differ from the console beside it, downloads them into
+`X:\DDT\console-<hash>`, checks each, and starts again with `--console` naming the new one, together
+with a new agent when there is one. A console named with `--console` stays. A console that cannot be
+downloaded leaves the machine on the console from the boot image, and it is the new console that the
+hand-over copies into Windows for DDT's session. So an agent that brings a new version of the
+console protocol brings its console along.
+
 So a boot image only has to be built again for Windows PE itself, including its PowerShell
 components, drivers, the keyboard layout, the TFTP block and window size its BCD asks for, the
 server's URL or a new root. A renewed server
@@ -981,8 +996,10 @@ connect in time, speaks another version, sends what is not a console message, ta
 The agent ends a console that went wrong, so the text console is seen, but leaves its console
 running when the agent itself ends, to show how the run ended. Without `ddt-console.exe` the agent
 uses the text console alone and prints what it always printed. An agent that switches to a newer
-one ends its console, and the newer agent starts its own, so an agent that updated itself to a new
-version of the protocol uses the text console until the boot image has a console of that version.
+one ends its console, and the newer agent starts its own: the server's console when it offers one,
+see [Updating the agent without a new boot image](#updating-the-agent-without-a-new-boot-image). An
+agent that updated itself to a new version of the protocol without the server offering a console of
+that version uses the text console.
 
 The service in the installed Windows does not start the console: Windows does, as the shell of DDT's
 session, see [DDT's session at the machine](#ddts-session-at-the-machine). The hand-over takes only

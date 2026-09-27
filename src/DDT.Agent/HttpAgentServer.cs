@@ -165,16 +165,38 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
     }
 
+    public Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken) =>
+        DownloadAsync(AgentRoutes.ReleaseBinary, destination, cancellationToken);
+
+    public async Task<ConsoleRelease?> GetConsoleReleaseAsync(CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ConsoleRelease);
+
+        try
+        {
+            using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            return await ReadAsync(response, AgentJsonContext.Default.ConsoleRelease, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken) =>
+        DownloadAsync(AgentRoutes.ConsoleReleaseFile(name), destination, cancellationToken);
+
     // A download can wait in the server's queue behind a whole lab for longer than a request may take, so only its own
     // deadline bounds it.
-    public async Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken)
+    private async Task DownloadAsync(string route, Stream destination, CancellationToken cancellationToken)
     {
         using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(_downloadTimeout);
 
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.ReleaseBinary);
+            using HttpRequestMessage request = new(HttpMethod.Get, route);
             using HttpResponseMessage response = await SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,

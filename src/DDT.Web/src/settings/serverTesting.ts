@@ -113,6 +113,7 @@ export function overview(overrides: Partial<SettingsOverview> = {}): SettingsOve
         secret: false,
       },
       { key: "DDT:Agent:BinaryPath", value: null, isSet: false, source: null, secret: false },
+      { key: "DDT:Agent:ConsolePath", value: null, isSet: false, source: null, secret: false },
     ],
     keyRingReadable: true,
     ...overrides,
@@ -197,7 +198,11 @@ export function serveServer(
     path: "/admin/server",
     search: tab === "overview" ? "" : `?tab=${tab}`,
     component: ServerPage,
-    handlers: { "GET /api/settings": () => json(overview()), ...handlers },
+    handlers: {
+      "GET /api/settings": () => json(overview()),
+      "GET /api/settings/agent/console": () => json(agentView()),
+      ...handlers,
+    },
   });
 }
 

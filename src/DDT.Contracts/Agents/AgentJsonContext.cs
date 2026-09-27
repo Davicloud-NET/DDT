@@ -20,6 +20,7 @@ namespace DDT.Contracts.Agents;
 [JsonSerializable(typeof(AgentSignInRequest))]
 [JsonSerializable(typeof(AgentSignInResult))]
 [JsonSerializable(typeof(AgentRelease))]
+[JsonSerializable(typeof(ConsoleRelease))]
 [JsonSerializable(typeof(IReadOnlyList<AgentImageChoice>))]
 [JsonSerializable(typeof(AgentPickRequest))]
 [JsonSerializable(typeof(AgentDeployment))]

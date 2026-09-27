@@ -49,6 +49,7 @@ public static class AuditActions
     public const string SettingsApplied = "settings.applied";
     public const string SettingsApplyFailed = "settings.apply-failed";
     public const string AgentUploaded = "agent.uploaded";
+    public const string ConsoleUploaded = "console.uploaded";
     public const string AdministratorCreated = "administrator.created";
     public const string CertificateReplaced = "certificate.replaced";
     public const string CertificateConfirmed = "certificate.confirmed";

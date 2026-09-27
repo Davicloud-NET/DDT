@@ -16,8 +16,8 @@ boot image pins the root, so it also keeps working when DDT renews the certifica
 Deleting the certs folder makes a new root, and every boot image then has to be built again.
 
 Serves artifacts\agent\ddt-agent.exe, which Publish-Agent.ps1 writes, as the agent every netbooting
-machine switches to, so a published change reaches the test machine at its next boot without a new
-boot image.
+machine switches to, and artifacts\ddt-console.zip, which Publish-Console.ps1 writes, as the console it
+shows, so a published change reaches the test machine at its next boot without a new boot image.
 
 Prints the -ServerUrl and -RootCertificatePath to build the boot image with.
 
@@ -71,6 +71,7 @@ $arguments = @(
     "--Kestrel:Certificates:Default:KeyPath=$(Join-Path $StorePath 'certs\ddt-key.pem')"
     "--DDT:Https:SubjectAlternativeNames=$name"
     "--DDT:Agent:BinaryPath=$(Join-Path $repository 'artifacts\agent\ddt-agent.exe')"
+    "--DDT:Agent:ConsolePath=$(Join-Path $repository 'artifacts\ddt-console.zip')"
 )
 
 Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $root"

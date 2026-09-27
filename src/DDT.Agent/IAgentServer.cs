@@ -21,6 +21,12 @@ public interface IAgentServer
 
     Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken);
 
+    // Null when the server offers no console, or is too old to offer one.
+    Task<ConsoleRelease?> GetConsoleReleaseAsync(CancellationToken cancellationToken);
+
+    // One of the files the console release names.
+    Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken);
 
     // Starts the sequence the technician picked at the machine.

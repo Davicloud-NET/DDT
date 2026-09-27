@@ -71,6 +71,7 @@ public static class SettingsEndpoints
         group.MapPost("/pxe/rescan", RescanAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapGet("/agent", ReadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPut("/agent/binary", UploadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapSettingsConsoleEndpoints();
 
         return group;
     }

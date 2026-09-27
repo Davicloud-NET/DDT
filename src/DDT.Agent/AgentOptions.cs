@@ -21,6 +21,9 @@ public sealed record AgentOptions(
     // Frozen: an agent from an older boot image passes this, last, to the newer agent it starts.
     public const string NoUpdateArgument = "--no-update";
 
+    // Frozen as well: an agent passes it, before NoUpdateArgument, with the console the server offers.
+    public const string ConsoleArgument = "--console";
+
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
         "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], " +
@@ -88,7 +91,7 @@ public sealed record AgentOptions(
                 case "--server":
                     server = value;
                     break;
-                case "--console":
+                case ConsoleArgument:
                     consolePath = value;
                     break;
                 case "--root-certificate":

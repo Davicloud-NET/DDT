@@ -22,6 +22,8 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Queue<Func<AgentSignInRequest, AgentSignInResult>> _signIns = new();
     private readonly Queue<Func<AgentRelease?>> _releases = new();
     private readonly Queue<byte[]> _downloads = new();
+    private readonly Queue<Func<ConsoleRelease?>> _consoleReleases = new();
+    private readonly Dictionary<string, byte[]> _consoleFiles = new(StringComparer.Ordinal);
     private readonly Queue<Func<IReadOnlyList<AgentSequenceChoice>>> _sequences = new();
     private readonly Queue<Func<AgentRunRequest, AgentRun>> _sequencePicks = new();
     private readonly Dictionary<DeploymentState, Queue<Func<AgentRunReport, AgentRunReportResult>>> _runReports = [];
@@ -81,6 +83,19 @@ internal sealed class ScriptedAgentServer : IAgentServer
     public ScriptedAgentServer OnSignIn(Func<AgentSignInRequest, AgentSignInResult> response) => Enqueue(_signIns, response);
 
     public ScriptedAgentServer OnRelease(Func<AgentRelease?> response) => Enqueue(_releases, response);
+
+    public ScriptedAgentServer OnConsoleRelease(Func<ConsoleRelease?> response) => Enqueue(_consoleReleases, response);
+
+    // What every download of the file answers.
+    public ScriptedAgentServer WithConsoleFile(string name, byte[] content)
+    {
+        lock (_lock)
+        {
+            _consoleFiles[name] = content;
+        }
+
+        return this;
+    }
 
     public ScriptedAgentServer OnDownload(byte[] content) => Enqueue(_downloads, content);
 
@@ -205,6 +220,33 @@ internal sealed class ScriptedAgentServer : IAgentServer
         {
             _calls.Add("download");
             content = _downloads.Dequeue();
+        }
+
+        await destination.WriteAsync(content, cancellationToken);
+    }
+
+    // As for the agent, running out of answers means the server offers no console.
+    public Task<ConsoleRelease?> GetConsoleReleaseAsync(CancellationToken cancellationToken)
+    {
+        Func<ConsoleRelease?>? response;
+
+        lock (_lock)
+        {
+            _calls.Add("console-release");
+            _consoleReleases.TryDequeue(out response);
+        }
+
+        return Task.FromResult(response?.Invoke());
+    }
+
+    public async Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken)
+    {
+        byte[] content;
+
+        lock (_lock)
+        {
+            _calls.Add($"console-download {name}");
+            content = _consoleFiles[name];
         }
 
         await destination.WriteAsync(content, cancellationToken);

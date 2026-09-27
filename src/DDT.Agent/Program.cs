@@ -82,7 +82,7 @@ if (options.DryRun)
 
 // A dry run changes nothing on the computer it runs on, and a build run from source would swap itself for the
 // published agent, so neither updates. An agent started by an update never updates again. The agent it switches to
-// starts a graphical console of its own.
+// starts a graphical console of its own, the server's when it offered another one.
 if (options.DryRun || !AgentBuild.IsPublished)
 {
     log.Information("Not checking for a newer agent in a dry run or an agent that was not published.");
@@ -95,7 +95,17 @@ else if (!options.NoUpdate)
         server.CloseConnections();
         graphical?.Close();
     });
-    AgentUpdate update = new(server, relauncher, log, TimeProvider.System, current, AppContext.BaseDirectory, args, status);
+    // A console named with --console stays; the one beside the agent gives way to the server's.
+    AgentUpdate update = new(
+        server,
+        relauncher,
+        log,
+        TimeProvider.System,
+        current,
+        AppContext.BaseDirectory,
+        args,
+        status,
+        options.ConsolePath is null ? consolePath : null);
 
     if (await update.RunAsync(stop.Token).ConfigureAwait(false) is { } exitCode)
     {

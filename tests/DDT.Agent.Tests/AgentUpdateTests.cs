@@ -30,6 +30,54 @@ public sealed class AgentUpdateTests : IDisposable
         return (new AgentUpdate(server, relauncher, new AgentLog(time, TextWriter.Null), time, CurrentSha256, _directory, arguments), time);
     }
 
+    private string AgentPath => Path.Combine(_directory, "ddt-agent.exe");
+
+    // As a boot image has it: the console beside the agent, with contents of its own.
+    private string BootConsole(IReadOnlyList<byte[]> contents)
+    {
+        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(contents))
+        {
+            File.WriteAllBytes(Path.Combine(_directory, name), content);
+        }
+
+        return Path.Combine(_directory, ConsolePipe.FileName);
+    }
+
+    private static byte[][] ConsoleContents() => [.. ConsolePipe.Files.Select(_ => RandomNumberGenerator.GetBytes(2000))];
+
+    private static ConsoleRelease ConsoleOf(IReadOnlyList<byte[]> contents) =>
+        new([.. ConsolePipe.Files.Zip(contents, (name, content) => new ConsoleReleaseFile(name, Convert.ToHexStringLower(SHA256.HashData(content)), content.Length))]);
+
+    private static ScriptedAgentServer Offering(IReadOnlyList<byte[]> console, Func<AgentRelease?>? agent = null)
+    {
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRelease(agent ?? (() => new AgentRelease(CurrentSha256, 10)))
+            .OnConsoleRelease(() => ConsoleOf(console));
+
+        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(console))
+        {
+            server.WithConsoleFile(name, content);
+        }
+
+        return server;
+    }
+
+    private AgentUpdate WithConsole(ScriptedAgentServer server, IAgentRelauncher relauncher, string consolePath, params string[] arguments)
+    {
+        ImmediateTimeProvider time = new();
+
+        return new AgentUpdate(
+            server,
+            relauncher,
+            new AgentLog(time, TextWriter.Null),
+            time,
+            CurrentSha256,
+            _directory,
+            arguments,
+            consolePath: consolePath,
+            agentPath: AgentPath);
+    }
+
     [Fact]
     public async Task CarriesOnWhenTheServerOffersNoAgentOrThisOne()
     {
@@ -231,5 +279,108 @@ public sealed class AgentUpdateTests : IDisposable
 
         // Outlasts the server's one minute window, so a lab that asked all at once gets its turn.
         Assert.True(busyTime.Delays.Aggregate(TimeSpan.Zero, (total, delay) => total + delay) > TimeSpan.FromMinutes(1));
+    }
+
+    // The server takes a console of exactly these files and names them in this order.
+    [Fact]
+    public void TheConsoleIsMadeOfTheFilesTheServerTakes()
+    {
+        Assert.Equal(ConsoleRelease.FileNames, ConsolePipe.Files);
+    }
+
+    // A newer console alone starts this agent again, with the console downloaded next to it.
+    [Fact]
+    public async Task StartsAgainWithTheConsoleTheServerOffers()
+    {
+        byte[][] offered = ConsoleContents();
+        ScriptedAgentServer server = Offering(offered);
+        ScriptedRelauncher relauncher = new(() => AgentExitCodes.Rejected);
+        AgentUpdate update = WithConsole(server, relauncher, BootConsole(ConsoleContents()), "--config", "agent.json");
+
+        Assert.Equal(AgentExitCodes.Rejected, await update.RunAsync(TestContext.Current.CancellationToken));
+
+        string folder = Path.Combine(_directory, $"console-{ConsoleOf(offered).Files[0].Sha256[..12]}");
+        (string path, IReadOnlyList<string> arguments) = Assert.Single(relauncher.Started);
+        Assert.Equal(AgentPath, path);
+        Assert.Equal(["--config", "agent.json", AgentOptions.ConsoleArgument, Path.Combine(folder, ConsolePipe.FileName), AgentOptions.NoUpdateArgument], arguments);
+
+        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(offered))
+        {
+            Assert.Equal(content, await File.ReadAllBytesAsync(Path.Combine(folder, name), TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
+    public async Task SwitchesAgentAndConsoleInOneStart()
+    {
+        byte[] agent = RandomNumberGenerator.GetBytes(3000);
+        ScriptedAgentServer server = Offering(ConsoleContents(), () => ReleaseOf(agent)).OnDownload(agent);
+        ScriptedRelauncher relauncher = new(() => 0);
+        AgentUpdate update = WithConsole(server, relauncher, BootConsole(ConsoleContents()));
+
+        Assert.Equal(0, await update.RunAsync(TestContext.Current.CancellationToken));
+
+        (string path, IReadOnlyList<string> arguments) = Assert.Single(relauncher.Started);
+        Assert.Equal(Path.Combine(_directory, $"ddt-agent-{ReleaseOf(agent).Sha256[..12]}.exe"), path);
+        Assert.Equal(AgentOptions.ConsoleArgument, arguments[0]);
+        Assert.Equal(AgentOptions.NoUpdateArgument, arguments[^1]);
+    }
+
+    [Fact]
+    public async Task KeepsTheConsoleWhenTheServerOffersTheSameOrNone()
+    {
+        byte[][] current = ConsoleContents();
+        string console = BootConsole(current);
+        ScriptedRelauncher relauncher = new(() => 0);
+
+        ScriptedAgentServer same = Offering(current);
+        Assert.Null(await WithConsole(same, relauncher, console).RunAsync(TestContext.Current.CancellationToken));
+        Assert.DoesNotContain(same.Calls, call => call.StartsWith("console-download", StringComparison.Ordinal));
+
+        ScriptedAgentServer none = new ScriptedAgentServer().OnRelease(() => null);
+        Assert.Null(await WithConsole(none, relauncher, console).RunAsync(TestContext.Current.CancellationToken));
+        Assert.Contains("console-release", none.Calls);
+
+        Assert.Empty(relauncher.Started);
+    }
+
+    // A console named on the command line is the one someone wanted.
+    [Fact]
+    public async Task KeepsAConsoleNamedOnTheCommandLine()
+    {
+        ScriptedAgentServer server = Offering(ConsoleContents());
+        (AgentUpdate update, _) = Create(server, new ScriptedRelauncher(() => 0));
+
+        Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
+        Assert.DoesNotContain("console-release", server.Calls);
+    }
+
+    [Fact]
+    public async Task NeverStartsAConsoleThatDoesNotMatch()
+    {
+        byte[][] offered = ConsoleContents();
+        ScriptedAgentServer server = Offering(offered).WithConsoleFile(ConsolePipe.Files[1], RandomNumberGenerator.GetBytes(2000));
+        ScriptedRelauncher relauncher = new(() => 0);
+        AgentUpdate update = WithConsole(server, relauncher, BootConsole(ConsoleContents()));
+
+        Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
+        Assert.Empty(relauncher.Started);
+        Assert.Empty(Directory.GetFiles(_directory, "*.part", SearchOption.AllDirectories));
+    }
+
+    // The names become paths next to the agent, so a release that names anything else is not downloaded at all.
+    [Fact]
+    public async Task DownloadsOnlyTheConsolesOwnFiles()
+    {
+        ConsoleRelease release = ConsoleOf(ConsoleContents());
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRelease(() => new AgentRelease(CurrentSha256, 10))
+            .OnConsoleRelease(() => release with { Files = [release.Files[0], release.Files[1], release.Files[2] with { Name = @"..\startnet.cmd" }] });
+        ScriptedRelauncher relauncher = new(() => 0);
+        AgentUpdate update = WithConsole(server, relauncher, BootConsole(ConsoleContents()));
+
+        Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
+        Assert.DoesNotContain(server.Calls, call => call.StartsWith("console-download", StringComparison.Ordinal));
+        Assert.Empty(relauncher.Started);
     }
 }

@@ -272,11 +272,16 @@ Certificate actions have these limits:
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
 | Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | none: machines keep the boot image agent | | live: next netboot | Admin, re-auth |
+| Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | none: machines keep the boot image console | | live: next netboot | Admin, re-auth |
 
 - The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs:19-21).
   That file is hashed again whenever it changes (AgentReleaseStore.cs:12-13,34).
 - DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1:71).
   While it is set, uploads answer 409.
+- The console goes to `<StorePath>/agent/ddt-console.zip`, repacked with the three files at its root
+  (ConsoleReleaseStore.cs, SettingsConsoleEndpoints.cs). DDT:Agent:ConsolePath is its development
+  override, which Start-DevHost.ps1 points at the zip Publish-Console.ps1 writes; while it is set,
+  uploads answer 409.
 
 ### Logging (section `logging`)
 
@@ -893,6 +898,8 @@ ring, so it also works for the streamed agent upload.
 | POST /api/settings/certificate/confirm | Makes a provisional pair permanent. Accepted only from a connection that was served the new pair. |
 | GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source }`. |
 | PUT /api/settings/agent/binary | Streamed application/octet-stream with a size limit and an MZ header check. Written to a temporary file, then renamed. Returns `{ sha256, size }` and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| GET /api/settings/agent/console | The same view for the console: the SHA-256 of ddt-console.exe and the size of the three files. |
+| PUT /api/settings/agent/console | A zip of the console's three files, at the root or in one folder, each starting with MZ, at most 128 MB zipped and unpacked. Repacked to a temporary file, then renamed. Returns the view and audits `console.uploaded` with the hash of ddt-console.exe. Answers 409 while DDT:Agent:ConsolePath is set in configuration. Needs re-auth. |
 | GET /api/auth/external/providers | Anonymous. The enabled providers with their DisplayName, for the sign-in page. |
 
 Example values for the deployment section:

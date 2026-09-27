@@ -1145,6 +1145,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.configurationUnreadable",
     message: "{section} cannot be read from configuration: {error}",
   }),
+  "settings.console.configured": msg({
+    context: "settings.console.configured",
+    message: "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+  }),
+  "settings.console.notAPackage": msg({
+    context: "settings.console.notAPackage",
+    message: "That is not the console. Upload a zip of the folder Publish-Console.ps1 writes, with ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll and nothing else.",
+  }),
+  "settings.console.tooLarge": msg({
+    context: "settings.console.tooLarge",
+    message: "The console may be at most {max} MB, zipped and unpacked.",
+  }),
   "settings.deployment.administratorNameInvalid": msg({
     context: "settings.deployment.administratorNameInvalid",
     message: "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.",

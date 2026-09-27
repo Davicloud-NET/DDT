@@ -14,6 +14,7 @@ public sealed class AgentReleaseTests(AgentReleaseApplication application) : ICl
     // Literal paths and property names on purpose: agents in boot images built long ago ask exactly these.
     private const string Release = "api/agents/release";
     private const string ReleaseBinary = "api/agents/release/binary";
+    private const string ConsoleRelease = "api/agents/release/console";
 
     [Fact]
     public async Task ServesTheConfiguredAgentAndNoticesWhenItIsReplaced()
@@ -43,6 +44,35 @@ public sealed class AgentReleaseTests(AgentReleaseApplication application) : ICl
         await File.WriteAllBytesAsync(application.BinaryPath, third, cancellationToken);
         File.SetLastWriteTimeUtc(application.BinaryPath, written.AddSeconds(10));
         await AssertReleaseAsync(agent, third);
+    }
+
+    // A zip that is not a console leaves machines with the console of their boot image, as no zip does.
+    [Fact]
+    public async Task ServesTheConfiguredConsoleFileByFile()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
+
+        File.Delete(application.ConsolePath);
+        Assert.Equal(HttpStatusCode.NotFound, (await agent.GetAsync(ConsoleRelease)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await agent.GetAsync($"{ConsoleRelease}/ddt-console.exe")).StatusCode);
+
+        (string Path, byte[] Content)[] files = ConsolePackages.Files();
+        await File.WriteAllBytesAsync(application.ConsolePath, ConsolePackages.Zip(files[..2]), cancellationToken);
+        Assert.Equal(HttpStatusCode.NotFound, (await agent.GetAsync(ConsoleRelease)).StatusCode);
+
+        await File.WriteAllBytesAsync(application.ConsolePath, ConsolePackages.Zip(files), cancellationToken);
+        File.SetLastWriteTimeUtc(application.ConsolePath, DateTime.UtcNow.AddSeconds(10));
+
+        using JsonDocument release = await ReadJsonAsync(await agent.GetAsync(ConsoleRelease));
+        JsonElement[] released = [.. release.RootElement.GetProperty("files").EnumerateArray()];
+
+        Assert.Equal(["ddt-console.exe", "libSkiaSharp.dll", "libHarfBuzzSharp.dll"], released.Select(file => file.GetProperty("name").GetString()));
+        Assert.Equal(files.Select(file => ConsolePackages.Sha256(file.Content)), released.Select(file => file.GetProperty("sha256").GetString()));
+        Assert.Equal(files.Select(file => (long)file.Content.Length), released.Select(file => file.GetProperty("size").GetInt64()));
+
+        HttpResponseMessage library = await agent.GetAsync($"{ConsoleRelease}/libSkiaSharp.dll");
+        Assert.Equal(files[1].Content, await library.Content.ReadAsByteArrayAsync(cancellationToken));
     }
 
     private static async Task AssertReleaseAsync(AgentClient agent, byte[] content)

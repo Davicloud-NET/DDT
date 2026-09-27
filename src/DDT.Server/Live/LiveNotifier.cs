@@ -224,6 +224,13 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.AgentChanged, agent);
     }
 
+    public void ConsoleChanged(AgentBinaryView console)
+    {
+        ArgumentNullException.ThrowIfNull(console);
+
+        _ = PushToAdministratorsAsync(LiveEvents.ConsoleChanged, console);
+    }
+
     public void CertificateChanged(object view)
     {
         ArgumentNullException.ThrowIfNull(view);

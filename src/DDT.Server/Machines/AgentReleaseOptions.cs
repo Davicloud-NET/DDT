@@ -10,4 +10,8 @@ public sealed class AgentReleaseOptions
 
     // The published agent every netbooting machine switches to. Empty means agent/ddt-agent.exe in the store.
     public string BinaryPath { get; set; } = string.Empty;
+
+    // The graphical console those agents switch to, as a zip with the files Publish-Console.ps1 writes at its root. Empty
+    // means agent/ddt-console.zip in the store.
+    public string ConsolePath { get; set; } = string.Empty;
 }

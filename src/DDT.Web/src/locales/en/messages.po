@@ -586,6 +586,10 @@ msgstr "{name} is in none of the groups the directory's group map on the Sign-in
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr "{name} is larger than {limit}, the most the server takes for the agent."
 
+#: src/settings/AgentPanel.tsx
+msgid "{name} is larger than {limit}, the most the server takes for the console."
+msgstr "{name} is larger than {limit}, the most the server takes for the console."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.lockedOut"
 msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
@@ -626,6 +630,10 @@ msgstr "{name} was not uploaded. {reason}"
 #: src/settings/AgentPanel.tsx
 msgid "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
 msgstr "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
+
+#: src/settings/AgentPanel.tsx
+msgid "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
+msgstr "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.proxies.networkWide"
@@ -1239,6 +1247,10 @@ msgstr "A Write the answer file step with \"Add the local administrator\" create
 #: src/packages/PackagesPage.tsx
 msgid "a zip file"
 msgstr "a zip file"
+
+#: src/settings/AgentPanel.tsx
+msgid "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
+msgstr "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
 
 #: src/packages/PackagesPage.tsx
 msgid "A zip of driver folders with their .inf files. Choose the hardware models it is for once it is added."
@@ -2060,6 +2072,10 @@ msgstr "Choose one of the variables {variables}."
 msgid "Choose the agent first."
 msgstr "Choose the agent first."
 
+#: src/settings/AgentPanel.tsx
+msgid "Choose the console first."
+msgstr "Choose the console first."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.chooseImage"
 msgid "Choose the image to apply."
@@ -2176,6 +2192,10 @@ msgstr "Confirm and upload"
 #: src/settings/SettingsParts.tsx
 msgid "Confirm it is you"
 msgstr "Confirm it is you"
+
+#: src/settings/AgentPanel.tsx
+msgid "Console for netbooting machines"
+msgstr "Console for netbooting machines"
 
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
@@ -2317,6 +2337,15 @@ msgstr "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be u
 msgctxt "settings.agent.configured"
 msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+
+#: src/settings/AgentPanel.tsx
+msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the console on this page."
+msgstr "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the console on this page."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.console.configured"
+msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+msgstr "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 
 #: src/settings/CertificatePanel.tsx
 msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
@@ -2568,6 +2597,14 @@ msgstr "Drop ddt-agent.exe here, or choose it."
 #: src/settings/AgentPanel.tsx
 msgid "Drop the agent to upload it"
 msgstr "Drop the agent to upload it"
+
+#: src/settings/AgentPanel.tsx
+msgid "Drop the console to upload it"
+msgstr "Drop the console to upload it"
+
+#: src/settings/AgentPanel.tsx
+msgid "Drop the zip with ddt-console.exe here, or choose it."
+msgstr "Drop the zip with ddt-console.exe here, or choose it."
 
 #: src/account/AccountPage.tsx
 msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
@@ -3618,6 +3655,14 @@ msgstr "Machines of model {target} no longer get {sequence} chosen for them; ano
 #: src/settings/AgentPanel.tsx
 msgid "Machines run"
 msgstr "Machines run"
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines show"
+msgstr "Machines show"
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines take it at their next netboot: the agent downloads it and shows it instead of the console in the boot image, in Windows PE and in DDT's session. A machine that cannot download it keeps the console in its boot image."
+msgstr "Machines take it at their next netboot: the agent downloads it and shows it instead of the console in the boot image, in Windows PE and in DDT's session. A machine that cannot download it keeps the console in its boot image."
 
 #: src/settings/AgentPanel.tsx
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
@@ -5505,6 +5550,10 @@ msgstr "Settings sections"
 msgid "SHA-256"
 msgstr "SHA-256"
 
+#: src/settings/AgentPanel.tsx
+msgid "SHA-256 of ddt-console.exe"
+msgstr "SHA-256 of ddt-console.exe"
+
 #: src/machines/MachinesPage.tsx
 msgid "Show all machines"
 msgstr "Show all machines"
@@ -5648,6 +5697,10 @@ msgstr "Single sign-on is off on this host: {error}"
 #: src/settings/AgentPanel.tsx
 msgid "Size"
 msgstr "Size"
+
+#: src/settings/AgentPanel.tsx
+msgid "Size of its files"
+msgstr "Size of its files"
 
 #: src/runs/runView.ts
 msgid "Skipped"
@@ -5948,6 +6001,11 @@ msgctxt "settings.agent.notExecutable"
 msgid "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."
 msgstr "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.console.notAPackage"
+msgid "That is not the console. Upload a zip of the folder Publish-Console.ps1 writes, with ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll and nothing else."
+msgstr "That is not the console. Upload a zip of the folder Publish-Console.ps1 writes, with ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll and nothing else."
+
 #: src/auth/SignInPage.tsx
 msgid "That user name or password is not correct."
 msgstr "That user name or password is not correct."
@@ -6127,6 +6185,31 @@ msgstr "The conditions are missing."
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "The console at the machine"
 msgstr "The console at the machine"
+
+#: src/settings/AgentPanel.tsx
+msgid "The console in their boot image, since none was uploaded"
+msgstr "The console in their boot image, since none was uploaded"
+
+#: src/settings/AgentPanel.tsx
+msgid "The console machines netboot with could not be read."
+msgstr "The console machines netboot with could not be read."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.console.tooLarge"
+msgid "The console may be at most {max} MB, zipped and unpacked."
+msgstr "The console may be at most {max} MB, zipped and unpacked."
+
+#: src/settings/AgentPanel.tsx
+msgid "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+msgstr "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+
+#: src/settings/AgentPanel.tsx
+msgid "The console uploaded here"
+msgstr "The console uploaded here"
+
+#: src/settings/AgentPanel.tsx
+msgid "The console you upload runs as SYSTEM in Windows PE on every machine that netboots from now on, and as the shell of DDT's session in the installed Windows. Upload only a zip of the folder Publish-Console.ps1 writes, from a DDT release or as the script builds it."
+msgstr "The console you upload runs as SYSTEM in Windows PE on every machine that netboots from now on, and as the shell of DDT's session in the installed Windows. Upload only a zip of the folder Publish-Console.ps1 writes, from a DDT release or as the script builds it."
 
 #: src/users/UsersPage.tsx
 msgid "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
@@ -7042,6 +7125,10 @@ msgctxt "settings.machines.networkOverlapsProxies"
 msgid "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the client's address would count as one from that network."
 msgstr "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the client's address would count as one from that network."
 
+#: src/settings/AgentPanel.tsx
+msgid "The zip DDT:Agent:ConsolePath names in configuration"
+msgstr "The zip DDT:Agent:ConsolePath names in configuration"
+
 #: src/lib/serverMessages.ts
 msgctxt "package.fileAndFolder"
 msgid "The zip has a file {entry} and a folder of the same name."
@@ -7497,6 +7584,10 @@ msgstr "Upload"
 msgid "Upload {name} as the agent?"
 msgstr "Upload {name} as the agent?"
 
+#: src/settings/AgentPanel.tsx
+msgid "Upload {name} as the console?"
+msgstr "Upload {name} as the console?"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Upload a certificate"
 msgstr "Upload a certificate"
@@ -7522,8 +7613,16 @@ msgid "Upload certificate"
 msgstr "Upload certificate"
 
 #: src/settings/AgentPanel.tsx
+msgid "Upload console"
+msgstr "Upload console"
+
+#: src/settings/AgentPanel.tsx
 msgid "Upload the agent"
 msgstr "Upload the agent"
+
+#: src/settings/AgentPanel.tsx
+msgid "Upload the console"
+msgstr "Upload the console"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
@@ -7534,6 +7633,10 @@ msgstr "Uploaded"
 #: src/settings/AgentPanel.tsx
 msgid "Uploaded. Machines that netboot from now on run the agent with SHA-256 {uploaded}."
 msgstr "Uploaded. Machines that netboot from now on run the agent with SHA-256 {uploaded}."
+
+#: src/settings/AgentPanel.tsx
+msgid "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
+msgstr "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
 
 #: src/uploads/UploadPanel.tsx
 msgid "Uploading {file}"

@@ -51,7 +51,7 @@ import {
   settingsOverviewQuery,
   type SettingsSectionView,
 } from "@/settings/settings";
-import { agentBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
+import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
@@ -220,6 +220,7 @@ export function createLiveConnection(
       settingsOverviewQuery.queryKey,
       certificateKey,
       agentBinaryQuery.queryKey,
+      consoleBinaryQuery.queryKey,
       serverCertificateQuery.queryKey,
     ]) {
       invalidate(key);
@@ -345,6 +346,11 @@ export function createLiveConnection(
     // Administrators receive an uploaded agent.
     current.on("agentChanged", (agent: AgentBinaryView) => {
       queryClient.setQueryData(agentBinaryQuery.queryKey, agent);
+    });
+
+    // And an uploaded console.
+    current.on("consoleChanged", (console: AgentBinaryView) => {
+      queryClient.setQueryData(consoleBinaryQuery.queryKey, console);
     });
 
     current.on("certificateChanged", (view: unknown) => {

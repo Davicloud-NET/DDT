@@ -14,12 +14,18 @@ This needs the Visual C++ build tools. Next to ddt-console.exe the folder holds 
 with, libSkiaSharp.dll and libHarfBuzzSharp.dll; the three files go together. Pass the folder to Build-BootImage.ps1
 with -ConsolePath, which copies them to X:\DDT next to the agent.
 
+It also zips the three files, at the zip's root, into -Package. Uploaded on the server's settings page, or named with
+DDT:Agent:ConsolePath, the zip is the console the agents of netbooting machines switch to, so a new console needs no
+new boot image.
+
 .EXAMPLE
 .\build\Publish-Console.ps1
 #>
 [CmdletBinding()]
 param(
-    [string] $Output
+    [string] $Output,
+
+    [string] $Package
 )
 
 Set-StrictMode -Version Latest
@@ -28,8 +34,10 @@ $ErrorActionPreference = 'Stop'
 # Defaults are resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Output) { $Output = Join-Path $PSScriptRoot '..\artifacts\console' }
+if (-not $Package) { $Package = Join-Path $PSScriptRoot '..\artifacts\ddt-console.zip' }
 
 $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output)
+$Package = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Package)
 $project = Join-Path $PSScriptRoot '..\src\DDT.MachineConsole\DDT.MachineConsole.csproj'
 
 # Visual Studio's VsDevCmd.bat runs vswhere.exe by bare name from the installer folder, which fails in a
@@ -59,6 +67,14 @@ foreach ($file in 'ddt-console.exe', 'libSkiaSharp.dll', 'libHarfBuzzSharp.dll')
     }
 }
 
+# ZipFile rather than Compress-Archive, which in Windows PowerShell 5.1 writes backslashes into the entry names.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+if (Test-Path -LiteralPath $Package) {
+    Remove-Item -LiteralPath $Package -Force
+}
+[System.IO.Compression.ZipFile]::CreateFromDirectory($Output, $Package, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+
 $files = Get-ChildItem -LiteralPath $Output -File
 $files | Select-Object Name, @{ Name = 'MB'; Expression = { [math]::Round($_.Length / 1MB, 1) } } | Format-Table -AutoSize
 Write-Host ("Published {0} ({1:N1} MB in {2} files)" -f $Output, (($files | Measure-Object Length -Sum).Sum / 1MB), $files.Count)
+Write-Host ("Zipped it to {0} ({1:N1} MB)" -f $Package, ((Get-Item -LiteralPath $Package).Length / 1MB))

@@ -67,6 +67,10 @@ public static class LiveEvents
     // Carries the AgentBinaryView, as GET /api/settings/agent answers it, when an agent was uploaded: to administrators.
     public const string AgentChanged = "agentChanged";
 
+    // The same for the console, as GET /api/settings/agent/console answers it, when a console was uploaded: to
+    // administrators.
+    public const string ConsoleChanged = "consoleChanged";
+
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";

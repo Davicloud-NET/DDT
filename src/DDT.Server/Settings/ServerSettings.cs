@@ -33,6 +33,7 @@ public static class ServerSettings
         "DDT:Https:SubjectAlternativeNames",
         "Kestrel:Certificates:Default:Password",
         "DDT:Agent:BinaryPath",
+        "DDT:Agent:ConsolePath",
         "ASPNETCORE_URLS",
         "Urls",
         "ASPNETCORE_HTTP_PORTS",

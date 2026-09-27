@@ -18,6 +18,7 @@ public static class MachineServiceCollectionExtensions
         services.AddOptions<AgentReleaseOptions>().BindConfiguration(AgentReleaseOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<AgentReleaseStore>();
+        services.AddSingleton<ConsoleReleaseStore>();
         services.AddSingleton<WaitingMachineSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
         services.AddScoped<MachineRegistrar>();

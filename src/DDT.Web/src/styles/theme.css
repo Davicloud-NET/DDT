@@ -225,6 +225,14 @@
   --shadow-overlay: 0 0 0 1px var(--sg-edge-overlay), 0 14px 36px -8px var(--sg-shadow-overlay);
 
   --ease-standard: cubic-bezier(0.2, 0, 0.13, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --duration-press: 70ms;
+  --duration-fast: 120ms;
+  --duration-normal: 160ms;
+  --duration-slow: 240ms;
+  --duration-flash: 1400ms;
+  --motion-distance: 6px;
   --default-transition-duration: 120ms;
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0.13, 1);
 }

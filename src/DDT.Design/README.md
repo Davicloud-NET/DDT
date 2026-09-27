@@ -26,3 +26,21 @@ The rules the tokens encode:
 - Corners grow with the part: tags 2 px, keys and fields 4, panels 6, overlays 8.
 - Archivo carries every width, from 62 % for big numbers to 100 % for body text. Martian Mono is only for
   identifiers such as MAC addresses and for logs. Capitals appear only on state tags.
+
+Motion, from `motion` in the tokens:
+
+- Motion answers something: a person's action, or a change the server pushed. Nothing moves to decorate, and
+  nothing moves on its own except what is running: the stripes of the running step, a progress bar, a spinner that
+  stands for work in progress.
+- It is short and mechanical, never springy. Keys go down in `press` (70 ms) and colours change on hover in `fast`
+  (120 ms); overlays and new content enter in `normal` (160 ms), decelerating (`enter`), and leave faster,
+  accelerating (`exit`); the drawer and a step's fill take `slow` (240 ms). Nothing overshoots or bounces.
+- Things travel `distance` (6 px) at most, and only opacity and position change, never size or blur: the console
+  draws in software, and cheap motion stays smooth there too.
+- Hover changes colour only: no lift, no growing shadow. A pressed key sinks by a pixel and darkens, as a switch
+  does. Focus rings appear at once, without motion.
+- A value the server changed while it is on screen, such as a machine's state, flashes its row in the state's
+  colour at low strength and fades over `flash` (1.4 s), so an operator sees what just changed; values on a page's
+  first load do not flash.
+- The web honours "reduce motion": then only colour changes remain. The console runs where no such setting exists
+  and keeps its motion as short as the web's.

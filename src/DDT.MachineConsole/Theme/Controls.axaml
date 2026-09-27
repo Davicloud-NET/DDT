@@ -1,0 +1,358 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The controls the console uses, in the Switchgear look: flat keys that answer with tone, fields one shade off their
+     panel with a hairline edge, lists whose selected row turns the selected tone, thin scroll bars. Focus is a ring in
+     the focus colour, drawn outside the part so nothing moves. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <ControlTheme x:Key="{x:Type Window}" TargetType="Window">
+    <Setter Property="Background" Value="{DynamicResource SgPage}" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeBodySize}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Background="{TemplateBinding Background}" IsHitTestVisible="False" />
+          <VisualLayerManager Name="PART_VisualLayerManager">
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}" />
+          </VisualLayerManager>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <!-- Keys. Secondary is the default; primary is the one next step on a screen, filled with ink; danger is an outline
+       until it may be pressed, and then filled red; quiet has no edge. -->
+  <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+    <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="MinHeight" Value="{DynamicResource ConsoleKeyHeight}" />
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeLabelFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleKeySize}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="focus"
+                  Margin="-4"
+                  BorderThickness="2"
+                  BorderBrush="Transparent"
+                  CornerRadius="7" />
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            TextElement.Foreground="{TemplateBinding Foreground}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:focus-visible /template/ Border#focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgKeySecondaryHover}" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+
+    <Style Selector="^.primary">
+      <Setter Property="Background" Value="{DynamicResource SgKeyPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="^.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgKeyPrimaryHover}" />
+    </Style>
+
+    <Style Selector="^.danger">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SgFailText}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFailText}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+    <Style Selector="^.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgHover}" />
+    </Style>
+    <Style Selector="^.danger:not(:disabled)">
+      <Setter Property="Background" Value="{DynamicResource SgFail}" />
+      <Setter Property="Foreground" Value="{DynamicResource SgOnFail}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="^.danger:not(:disabled):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgFail}" />
+    </Style>
+
+    <Style Selector="^.quiet">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="^.quiet:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgHover}" />
+    </Style>
+
+    <!-- A key in the footer: a key cap and what it does, on the panel. -->
+    <Style Selector="^.footerKey">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="^.footerKey:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgHover}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- A field: one shade off its panel, with a hairline edge that turns into a ring in the focus colour. -->
+  <ControlTheme x:Key="{x:Type TextBox}" TargetType="TextBox">
+    <Setter Property="Background" Value="{DynamicResource SgField}" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource SgInk}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource SgSelected}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SgInk}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource SgPlaceholder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="{DynamicResource ConsoleFieldHeight}" />
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="border"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border Name="ring"
+                  BorderBrush="{DynamicResource SgFocus}"
+                  BorderThickness="2"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  IsVisible="False" />
+          <DockPanel Margin="{TemplateBinding Padding}"
+                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                     VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                     Cursor="IBeam">
+            <ScrollViewer Name="PART_ScrollViewer"
+                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+              <Panel>
+                <TextBlock Name="placeholder"
+                           Foreground="{TemplateBinding PlaceholderForeground}"
+                           FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}"
+                           Text="{TemplateBinding PlaceholderText}"
+                           TextWrapping="NoWrap"
+                           IsVisible="{TemplateBinding Text, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                <TextPresenter Name="PART_TextPresenter"
+                               CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
+                               CaretBrush="{TemplateBinding CaretBrush}"
+                               CaretIndex="{TemplateBinding CaretIndex}"
+                               LineHeight="{TemplateBinding LineHeight}"
+                               LetterSpacing="{TemplateBinding LetterSpacing}"
+                               PasswordChar="{TemplateBinding PasswordChar}"
+                               RevealPassword="{TemplateBinding RevealPassword}"
+                               SelectionBrush="{TemplateBinding SelectionBrush}"
+                               SelectionEnd="{TemplateBinding SelectionEnd}"
+                               SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                               SelectionStart="{TemplateBinding SelectionStart}"
+                               Text="{TemplateBinding Text, Mode=TwoWay}"
+                               TextAlignment="{TemplateBinding TextAlignment}"
+                               TextWrapping="{TemplateBinding TextWrapping}" />
+              </Panel>
+            </ScrollViewer>
+          </DockPanel>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:focus /template/ Border#ring">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^.invalid /template/ Border#border">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFailText}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="^.mono">
+      <Setter Property="FontFamily" Value="{DynamicResource SgTypeDataFamily}" />
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type ListBox}" TargetType="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ScrollViewer Name="PART_ScrollViewer"
+                      Background="{TemplateBinding Background}"
+                      HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                      VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+          <ItemsPresenter Name="PART_ItemsPresenter"
+                          Margin="{TemplateBinding Padding}"
+                          ItemsPanel="{TemplateBinding ItemsPanel}" />
+        </ScrollViewer>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <!-- A row to choose: the hover tone under the pointer, the selected tone with an edge once chosen. -->
+  <ControlTheme x:Key="{x:Type ListBoxItem}" TargetType="ListBoxItem">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="focus"
+                  Margin="-3"
+                  BorderThickness="2"
+                  BorderBrush="Transparent"
+                  CornerRadius="6" />
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgHover}" />
+    </Style>
+    <Style Selector="^:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SgSelected}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SgLine}" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
+    </Style>
+    <Style Selector="^.plain">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="^.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="^.plain:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+  </ControlTheme>
+
+  <!-- A thin bar with a thumb in the control tone and nothing else. -->
+  <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+    <Setter Property="Background" Value="Transparent" />
+    <Style Selector="^:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}" Padding="2,0">
+            <Track Name="track"
+                   IsDirectionReversed="True"
+                   Maximum="{TemplateBinding Maximum}"
+                   Minimum="{TemplateBinding Minimum}"
+                   Orientation="{TemplateBinding Orientation}"
+                   ViewportSize="{TemplateBinding ViewportSize}"
+                   Value="{TemplateBinding Value, Mode=TwoWay}">
+              <Track.DecreaseButton>
+                <RepeatButton Name="PART_PageUpButton" Focusable="False" Theme="{DynamicResource ScrollTrackButton}" />
+              </Track.DecreaseButton>
+              <Track.IncreaseButton>
+                <RepeatButton Name="PART_PageDownButton" Focusable="False" Theme="{DynamicResource ScrollTrackButton}" />
+              </Track.IncreaseButton>
+              <Thumb Name="thumb" Theme="{DynamicResource ScrollThumb}" />
+            </Track>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="^:horizontal">
+      <Setter Property="Height" Value="10" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}" Padding="0,2">
+            <Track Name="track"
+                   Maximum="{TemplateBinding Maximum}"
+                   Minimum="{TemplateBinding Minimum}"
+                   Orientation="{TemplateBinding Orientation}"
+                   ViewportSize="{TemplateBinding ViewportSize}"
+                   Value="{TemplateBinding Value, Mode=TwoWay}">
+              <Track.DecreaseButton>
+                <RepeatButton Name="PART_PageUpButton" Focusable="False" Theme="{DynamicResource ScrollTrackButton}" />
+              </Track.DecreaseButton>
+              <Track.IncreaseButton>
+                <RepeatButton Name="PART_PageDownButton" Focusable="False" Theme="{DynamicResource ScrollTrackButton}" />
+              </Track.IncreaseButton>
+              <Thumb Name="thumb" Theme="{DynamicResource ScrollThumb}" />
+            </Track>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="ScrollTrackButton" TargetType="RepeatButton">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent" />
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <ControlTheme x:Key="ScrollThumb" TargetType="Thumb">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{DynamicResource SgControl}" CornerRadius="3" />
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

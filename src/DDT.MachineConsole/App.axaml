@@ -1,0 +1,26 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The look of the console: Avalonia's simple theme underneath, the Switchgear tokens written from tokens.json, and
+     the console's own control themes and type on top. Dark by default, as Windows PE's screens are. -->
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DDT.MachineConsole.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ddt-console/Theme/Tokens.axaml" />
+        <ResourceInclude Source="avares://ddt-console/Theme/Console.axaml" />
+        <ResourceInclude Source="avares://ddt-console/Theme/Controls.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <SimpleTheme />
+    <StyleInclude Source="avares://ddt-console/Theme/Type.axaml" />
+    <StyleInclude Source="avares://ddt-console/Theme/Surfaces.axaml" />
+  </Application.Styles>
+</Application>

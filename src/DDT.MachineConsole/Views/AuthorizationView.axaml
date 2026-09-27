@@ -1,0 +1,33 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Waiting for authorization: the two ways on, what tells this machine apart on the Machines page, and the sign-in
+     beside it while the agent asks for it. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:v="using:DDT.MachineConsole.Views"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.AuthorizationView"
+             x:DataType="vm:AuthorizationViewModel">
+  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="32" VerticalAlignment="Center" MaxWidth="1180">
+    <StackPanel Spacing="18" VerticalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+        <c:StateTag Value="{Binding Tag}" />
+      </StackPanel>
+      <TextBlock Name="Intro" Classes="lead ink2" Text="{Binding Intro}" />
+      <Border Classes="panel" Padding="22,18">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="label muted" Text="{Binding FindLabel}" />
+          <ItemsControl ItemsSource="{Binding Identity}" ItemTemplate="{StaticResource FactRow}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Column="1" Classes="raised" Width="410" Padding="26,24" VerticalAlignment="Center" IsVisible="{Binding HasSignIn}">
+      <v:SignInView DataContext="{Binding SignIn}" />
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,127 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The type of the console as classes on TextBlock, each in the face and size the tokens give it, and the colours text
+     takes. Archivo carries every width; Martian Mono is only for identifiers and logs. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeBodySize}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeWordmarkFamily}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+  <Style Selector="TextBlock.display">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDisplayFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeDisplaySize}" />
+    <Setter Property="LetterSpacing" Value="{DynamicResource SgTypeDisplayLetterSpacing}" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeTitleFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeTitleSize}" />
+    <Setter Property="LetterSpacing" Value="{DynamicResource SgTypeTitleLetterSpacing}" />
+  </Style>
+  <Style Selector="TextBlock.subtitle">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeSubtitleFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeSubtitleSize}" />
+    <Setter Property="LetterSpacing" Value="{DynamicResource SgTypeSubtitleLetterSpacing}" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeHeadingSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeHeadingLineHeight}" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeLabelFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeLabelSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeLabelLineHeight}" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeBodyLineHeight}" />
+  </Style>
+  <Style Selector="TextBlock.small">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeSmallFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeSmallSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeSmallLineHeight}" />
+  </Style>
+  <Style Selector="TextBlock.numeral">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeNumeralFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeNumeralSize}" />
+  </Style>
+  <Style Selector="TextBlock.step">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeStepFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeStepSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeStepLineHeight}" />
+  </Style>
+  <Style Selector="TextBlock.tag">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeTagFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeTagSize}" />
+    <Setter Property="LetterSpacing" Value="{DynamicResource SgTypeTagLetterSpacing}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+  <Style Selector="TextBlock.data">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDataFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource SgTypeDataSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource SgTypeDataLineHeight}" />
+  </Style>
+
+  <!-- The console's large text, in the faces of the types above. -->
+  <Style Selector="TextBlock.hero">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDisplayFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleHeroSize}" />
+    <Setter Property="LetterSpacing" Value="-5.5" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+  <Style Selector="TextBlock.heroSign">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDisplayFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleHeroSignSize}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+  <Style Selector="TextBlock.headline">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeTitleFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleHeadlineSize}" />
+    <Setter Property="LetterSpacing" Value="-0.5" />
+  </Style>
+  <Style Selector="TextBlock.sequence">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeLabelFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleSequenceSize}" />
+  </Style>
+  <Style Selector="TextBlock.lead">
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleLeadSize}" />
+    <Setter Property="LineHeight" Value="24" />
+  </Style>
+  <Style Selector="TextBlock.identifier">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDataFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ConsoleIdentifierSize}" />
+  </Style>
+
+  <!-- Colours of text. Ink is the default; signal colours only say state. -->
+  <Style Selector="TextBlock.ink">
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+  </Style>
+  <Style Selector="TextBlock.ink2">
+    <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource SgMuted}" />
+  </Style>
+  <Style Selector="TextBlock.runText">
+    <Setter Property="Foreground" Value="{DynamicResource SgRunText}" />
+  </Style>
+  <Style Selector="TextBlock.failText">
+    <Setter Property="Foreground" Value="{DynamicResource SgFailText}" />
+  </Style>
+  <Style Selector="TextBlock.okText">
+    <Setter Property="Foreground" Value="{DynamicResource SgOkText}" />
+  </Style>
+  <Style Selector="TextBlock.attentionText">
+    <Setter Property="Foreground" Value="{DynamicResource SgAttentionText}" />
+  </Style>
+</Styles>

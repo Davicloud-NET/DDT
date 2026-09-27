@@ -1,0 +1,25 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Authorized and waiting for a task sequence, with what tells this machine apart on the Machines page. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.WaitingView"
+             x:DataType="vm:WaitingViewModel">
+  <StackPanel Spacing="18" VerticalAlignment="Center" MaxWidth="760" HorizontalAlignment="Left">
+    <StackPanel Orientation="Horizontal" Spacing="16">
+      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+      <c:StateTag Value="{Binding Tag}" />
+    </StackPanel>
+    <TextBlock Classes="lead ink2" Text="{Binding Intro}" />
+    <Border Classes="panel" Padding="22,18">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="label muted" Text="{Binding FindLabel}" />
+        <ItemsControl ItemsSource="{Binding Identity}" ItemTemplate="{StaticResource FactRow}" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

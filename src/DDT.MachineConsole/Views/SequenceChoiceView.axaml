@@ -1,0 +1,66 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The task sequences this machine can run, by name, description and what each needs; the arrow keys choose one and
+     Enter runs it. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.SequenceChoiceView"
+             x:DataType="vm:SequenceChoiceViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
+    <StackPanel Spacing="8">
+      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" />
+      <TextBlock Classes="lead ink2" Text="{Binding Intro}" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="panel" Padding="10">
+      <Panel>
+        <TextBlock Classes="lead ink2" Margin="12" Text="{Binding Empty}" IsVisible="{Binding IsEmpty}" />
+        <ListBox Name="List"
+                 ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding Selected}"
+                 IsEnabled="{Binding IsEditable}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="vm:SequenceItem">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Classes="heading" Text="{Binding Name}" />
+                  <TextBlock Classes="body ink2" Text="{Binding Description}" IsVisible="{Binding HasDescription}" />
+                </StackPanel>
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding Tags}" VerticalAlignment="Center" MaxWidth="420">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemSpacing="6" LineSpacing="6" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:Tag">
+                      <c:StateTag Value="{Binding}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
+      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <c:KeyCap Key="↑" />
+        <c:KeyCap Key="↓" />
+        <TextBlock Classes="body ink2" Text="{Binding MoveHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
+      </StackPanel>
+      <Button Name="Submit" Grid.Column="2" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Grid>
+</UserControl>

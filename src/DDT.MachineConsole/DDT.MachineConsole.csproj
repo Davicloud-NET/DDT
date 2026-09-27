@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ddt-console.exe, the graphical console the agent starts in Windows PE. It references only the console protocol,
+       never the agent, and draws with Avalonia in software alone: Windows PE has GDI and DirectWrite, but none of
+       Direct3D, DXGI, Direct2D or DirectComposition. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>ddt-console</AssemblyName>
+    <RootNamespace>DDT.MachineConsole</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.ConsoleProtocol\DDT.ConsoleProtocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.HarfBuzz" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="Avalonia.Win32" />
+    <!-- Avalonia.BuildServices sends statistics about each build; its targets are left out. ANGLE is only for GPU
+         rendering, which the console never uses. -->
+    <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="Avalonia.Angle.Windows.Natives" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\Fonts\*.ttf" />
+    <!-- What the console says, in the names Catalogs.ResourceName gives the catalogs. -->
+    <EmbeddedResource Include="Locales\en\messages.po" LogicalName="locales/en/messages.po" />
+    <EmbeddedResource Include="Locales\de\messages.po" LogicalName="locales/de/messages.po" />
+    <!-- The legal texts the licences view shows, under the names LegalTexts.Documents lists. -->
+    <EmbeddedResource Include="..\..\NOTICE;..\..\LICENSE" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\avalonia\*" LogicalName="licenses/avalonia/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\microcom\*" LogicalName="licenses/microcom/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\skiasharp\*" LogicalName="licenses/skiasharp/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\dotnet\*" LogicalName="licenses/dotnet/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\fonts\*" LogicalName="licenses/fonts/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

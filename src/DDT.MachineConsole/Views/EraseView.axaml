@@ -1,0 +1,66 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The last word before a disk is erased: what will be erased, under the hazard band, and ERASE to type. The erase
+     key works only once the word is typed, and sends what was typed. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.EraseView"
+             x:DataType="vm:EraseViewModel">
+  <StackPanel Spacing="20" VerticalAlignment="Center">
+    <Border Classes="panel" ClipToBounds="True">
+      <StackPanel>
+        <c:HazardBand Name="Hazard" />
+        <StackPanel Spacing="18" Margin="28,22,28,26">
+          <StackPanel Orientation="Horizontal" Spacing="16">
+            <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+            <c:StateTag Value="{Binding Tag}" />
+          </StackPanel>
+          <TextBlock Classes="lead" Text="{Binding Warning}" />
+
+          <Border Classes="well" Padding="18,14">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="28">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="small muted" Text="{Binding Disk.Number}" />
+                <TextBlock Classes="heading" Text="{Binding Disk.Model}" />
+              </StackPanel>
+              <TextBlock Grid.Column="1" Classes="heading" Text="{Binding Disk.Size}" VerticalAlignment="Bottom" />
+              <TextBlock Grid.Column="2" Classes="lead ink2" Text="{Binding Disk.Bus}" VerticalAlignment="Bottom" />
+              <TextBlock Grid.Column="3" Classes="lead ink2" Text="{Binding Disk.Partitions}" VerticalAlignment="Bottom" />
+            </Grid>
+          </Border>
+          <TextBlock Classes="body ink2" Text="{Binding DataWarning}" />
+
+          <StackPanel Spacing="8">
+            <TextBlock Classes="label" Text="{Binding Label}" />
+            <TextBox Name="WordBox"
+                     Classes="mono"
+                     Width="300"
+                     HorizontalAlignment="Left"
+                     Text="{Binding Typed}"
+                     IsEnabled="{Binding IsEditable}" />
+            <TextBlock Classes="body attentionText" Text="{Binding WordHint}" IsVisible="{Binding ShowsWordHint}" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <Button Name="Back" IsCancel="True" Command="{Binding BackCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <Button Name="Submit" Grid.Column="2" Classes="danger" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </StackPanel>
+</UserControl>

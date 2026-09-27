@@ -1,0 +1,59 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The run: the sequence, the percent of the running step as large as the screen allows, what the step does, and the
+     sequence rail with every step. When the run failed or the agent stopped, why and what to do take the percent's
+     place. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.RunView"
+             x:DataType="vm:RunViewModel">
+  <StackPanel Spacing="22" VerticalAlignment="Center">
+    <Border Classes="panel" Padding="28,24,28,28">
+      <StackPanel Spacing="22">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="sequence ink2"
+                     Text="{Binding SequenceName}"
+                     TextWrapping="NoWrap"
+                     TextTrimming="CharacterEllipsis"
+                     VerticalAlignment="Center" />
+          <c:StateTag Grid.Column="1" Value="{Binding Tag}" Margin="16,0,0,0" />
+        </Grid>
+
+        <Grid ColumnDefinitions="Auto,*">
+          <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowsPercent}" VerticalAlignment="Bottom" Margin="-6,-34,30,-20">
+            <TextBlock Name="Percent" Classes="hero runText" Text="{Binding Percent}" />
+            <TextBlock Classes="heroSign runText" Text="%" VerticalAlignment="Bottom" Margin="4,0,0,22" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Bottom">
+            <TextBlock Name="Heading" Classes="headline" MaxLines="2" TextTrimming="WordEllipsis" Text="{Binding Heading}" />
+            <TextBlock Classes="lead ink2" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
+            <TextBlock Classes="lead muted" Text="{Binding Position}" IsVisible="{Binding HasPosition}" />
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="3*,2*" ColumnSpacing="16" IsVisible="{Binding HasProblem}">
+          <Border Classes="well" Padding="18,14">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="label muted" Text="{Binding ProblemLabel}" />
+              <TextBlock Name="Problem" Classes="lead" Text="{Binding Problem}" />
+              <TextBlock Classes="body failText" Text="{Binding StepError}" IsVisible="{Binding HasStepError}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="well" Padding="18,14">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="label muted" Text="{Binding RemedyLabel}" />
+              <TextBlock Classes="lead" Text="{Binding Remedy}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <c:SequenceRail Name="Rail" Steps="{Binding Steps}" Phases="{Binding Phases}" IsVisible="{Binding HasRun}" />
+      </StackPanel>
+    </Border>
+    <TextBlock Classes="lead ink2" Text="{Binding Note}" IsVisible="{Binding HasNote}" Margin="4,0" FontSize="18" />
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,51 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The Secure Boot override: why the disk image would not start here, and ANYWAY to type. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.SecureBootView"
+             x:DataType="vm:SecureBootViewModel">
+  <StackPanel Spacing="20" VerticalAlignment="Center">
+    <Border Classes="panel" Padding="28,24">
+      <StackPanel Spacing="18">
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+          <c:StateTag Value="{Binding Tag}" />
+        </StackPanel>
+        <TextBlock Name="Problem" Classes="lead" Text="{Binding Problem}" />
+        <Border Classes="well" Padding="18,14">
+          <ItemsControl ItemsSource="{Binding Facts}" ItemTemplate="{StaticResource FactLine}" />
+        </Border>
+        <StackPanel Spacing="8">
+          <TextBlock Classes="label" Text="{Binding Label}" />
+          <TextBox Name="WordBox"
+                   Classes="mono"
+                   Width="300"
+                   HorizontalAlignment="Left"
+                   Text="{Binding Typed}"
+                   IsEnabled="{Binding IsEditable}" />
+          <TextBlock Classes="body attentionText" Text="{Binding WordHint}" IsVisible="{Binding ShowsWordHint}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <Button Name="Back" IsCancel="True" Command="{Binding BackCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <Button Name="Submit" Grid.Column="2" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </StackPanel>
+</UserControl>

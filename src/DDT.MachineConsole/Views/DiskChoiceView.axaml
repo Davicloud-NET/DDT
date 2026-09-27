@@ -1,0 +1,54 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The disks the sequence can erase, each by what it is. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.DiskChoiceView"
+             x:DataType="vm:DiskChoiceViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
+    <StackPanel Spacing="8">
+      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" />
+      <TextBlock Classes="lead ink2" Text="{Binding Intro}" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="panel" Padding="10">
+      <ListBox Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" IsEnabled="{Binding IsEditable}">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="vm:DiskItem">
+            <Grid ColumnDefinitions="110,*,120,130,140" ColumnSpacing="12">
+              <TextBlock Classes="heading" Text="{Binding Number}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Classes="lead" Text="{Binding Model}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Classes="heading" Text="{Binding Size}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="3" Classes="lead ink2" Text="{Binding Bus}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="4" Classes="lead ink2" Text="{Binding Partitions}" VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="16">
+      <Button Name="Back" Classes="quiet" IsCancel="True" Command="{Binding BackCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <c:KeyCap Key="↑" />
+        <c:KeyCap Key="↓" />
+        <TextBlock Classes="body ink2" Text="{Binding MoveHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
+      </StackPanel>
+      <Button Name="Submit" Grid.Column="3" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Grid>
+</UserControl>

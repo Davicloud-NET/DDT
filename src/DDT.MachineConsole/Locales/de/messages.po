@@ -1,0 +1,916 @@
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+"Language: de\n"
+
+#: Legal/LegalTexts.cs
+msgid ".NET: MIT licence"
+msgstr ".NET: MIT-Lizenz"
+
+#: Legal/LegalTexts.cs
+msgid ".NET: software by others in it"
+msgstr ".NET: enthaltene Software anderer"
+
+#: Texts/Say.cs
+msgid "1 partition"
+msgstr "1 Partition"
+
+#: Texts/Say.cs
+msgid "A step asked for a restart. The run goes on after it."
+msgstr "Ein Schritt hat einen Neustart verlangt. Die Ausführung geht danach weiter."
+
+#: Texts/Say.cs
+msgid "Adding drivers"
+msgstr "Treiber werden hinzugefügt"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Agent"
+msgstr "Agent"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Agent version"
+msgstr "Agent-Version"
+
+#: Texts/Say.cs
+msgid "Answer"
+msgstr "Antwort"
+
+#: Texts/Say.cs
+msgid "Applying the image"
+msgstr "Image wird angewendet"
+
+#: ViewModels/AuthorizationViewModel.cs
+msgid "Approve this machine on the Machines page. The agent goes on by itself as soon as it is approved."
+msgstr "Geben Sie dieses Gerät auf der Seite „Geräte“ frei. Der Agent macht von selbst weiter, sobald es freigegeben ist."
+
+#: Legal/LegalTexts.cs
+msgid "Archivo: SIL Open Font License"
+msgstr "Archivo: SIL Open Font License"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Asks for a name"
+msgstr "Fragt nach einem Namen"
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first."
+msgstr "Höchstens {max} Zeichen: die Buchstaben A bis Z, Ziffern und Bindestriche. Nicht nur Ziffern und kein Bindestrich am Anfang."
+
+#: ViewModels/SignInViewModel.cs
+msgid "Authenticator code"
+msgstr "Code der Authenticator-App"
+
+#: ViewModels/AuthorizationViewModel.cs
+msgid "Authorize this machine"
+msgstr "Dieses Gerät freigeben"
+
+#: ViewModels/WaitingViewModel.cs
+msgid "Authorized"
+msgstr "Freigegeben"
+
+#: Legal/LegalTexts.cs
+msgid "Avalonia: MIT licence"
+msgstr "Avalonia: MIT-Lizenz"
+
+#: Legal/LegalTexts.cs
+msgid "Avalonia: software by others in it"
+msgstr "Avalonia: enthaltene Software anderer"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Back to the password"
+msgstr "Zurück zum Kennwort"
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "Back to the task sequences"
+msgstr "Zurück zu den Tasksequenzen"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Back, erase nothing"
+msgstr "Zurück, nichts löschen"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Back, write nothing"
+msgstr "Zurück, nichts schreiben"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "BSD licence"
+msgstr "BSD-Lizenz"
+
+#: ViewModels/MainViewModel.cs
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: ViewModels/MainViewModel.cs
+msgid "Cannot reach {server}"
+msgstr "{server} ist nicht erreichbar"
+
+#: Texts/Say.cs
+msgid "Checking the run before anything on the disk changes"
+msgstr "Die Ausführung wird geprüft, bevor sich etwas auf dem Datenträger ändert"
+
+#: ViewModels/DiskChoiceViewModel.cs
+msgid "Choose"
+msgstr "Wählen"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Choose a task sequence"
+msgstr "Tasksequenz wählen"
+
+#: ViewModels/DiskChoiceViewModel.cs
+msgid "Choose the disk"
+msgstr "Datenträger wählen"
+
+#: ViewModels/WaitingViewModel.cs
+msgid "Choosing"
+msgstr "Wird gewählt"
+
+#: Texts/Say.cs
+msgid "Choosing a task sequence"
+msgstr "Tasksequenz wird gewählt"
+
+#: ViewModels/MainViewModel.cs
+msgid "Close the console"
+msgstr "Konsole schließen"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Close the details"
+msgstr "Details schließen"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Close the licences"
+msgstr "Lizenzen schließen"
+
+#: ViewModels/LogViewModel.cs
+msgid "Close the log"
+msgstr "Protokoll schließen"
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "Computer name"
+msgstr "Computername"
+
+#: ViewModels/MainViewModel.cs
+msgid "Connected to {server}"
+msgstr "Verbunden mit {server}"
+
+#: Texts/Say.cs
+msgid "Connecting"
+msgstr "Verbindet"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "Connecting to the server"
+msgstr "Verbindung mit dem Server"
+
+#: ViewModels/MainViewModel.cs
+msgid "Connecting to {server}"
+msgstr "Verbindet mit {server}"
+
+#: Texts/Say.cs
+msgid "Connection"
+msgstr "Verbindung"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Console version"
+msgstr "Konsolen-Version"
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "Continue"
+msgstr "Weiter"
+
+#: ViewModels/MainViewModel.cs
+msgid "Dark"
+msgstr "Dunkel"
+
+#: Texts/Say.cs
+msgid "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
+msgstr "DDT kann nicht feststellen, ob {image} für Secure Boot signiert ist, und auf diesem Gerät ist Secure Boot eingeschaltet. Es startet möglicherweise erst, wenn Secure Boot im Firmware-Setup ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
+
+#: Legal/LegalTexts.cs
+msgid "DDT: GNU General Public License, version 3"
+msgstr "DDT: GNU General Public License, Version 3"
+
+#: Legal/LegalTexts.cs
+msgid "DDT: notice and additional terms"
+msgstr "DDT: Hinweis und zusätzliche Bedingungen"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Disk image"
+msgstr "Datenträgerimage"
+
+#: ViewModels/DiskChoiceViewModel.cs
+msgid "Disk {number}"
+msgstr "Datenträger {number}"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Disks"
+msgstr "Datenträger"
+
+#: Texts/Say.cs
+msgid "Done"
+msgstr "Fertig"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Dry run"
+msgstr "Probelauf"
+
+#: Texts/Say.cs
+msgid "Empty"
+msgstr "Leer"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Erase and continue"
+msgstr "Löschen und fortfahren"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Erase disk {number}?"
+msgstr "Datenträger {number} löschen?"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Erases"
+msgstr "Löscht"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Erases a disk"
+msgstr "Löscht einen Datenträger"
+
+#: Texts/Say.cs
+msgid "Error"
+msgstr "Fehler"
+
+#: ViewModels/RunViewModel.cs
+msgid "Every step is done. The agent sends its last lines and reports."
+msgstr "Jeder Schritt ist erledigt. Der Agent sendet seine letzten Zeilen und Berichte."
+
+#: Texts/Say.cs
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+#: ViewModels/RunViewModel.cs
+msgid "Failed at step {number} of {count}, {name}"
+msgstr "Fehlgeschlagen bei Schritt {number} von {count}, {name}"
+
+#: ViewModels/AuthorizationViewModel.cs
+msgid "Find it on the Machines page by"
+msgstr "Auf der Seite „Geräte“ zu finden über"
+
+#: Texts/Say.cs
+msgid "Finished"
+msgstr "Fertig"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Firmware"
+msgstr "Firmware"
+
+#: ViewModels/LogViewModel.cs
+msgid "Follow the end"
+msgstr "Dem Ende folgen"
+
+#: Texts/Say.cs
+msgid "Handing the run over to the installed Windows"
+msgstr "Die Ausführung wird an das installierte Windows übergeben"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Identity"
+msgstr "Identität"
+
+#: Texts/Say.cs
+msgid "In the installed Windows"
+msgstr "Im installierten Windows"
+
+#: Texts/Say.cs
+msgid "In Windows PE"
+msgstr "In Windows PE"
+
+#: Texts/Say.cs
+msgid "Info"
+msgstr "Info"
+
+#: ViewModels/MachineFacts.cs
+msgid "IP address"
+msgstr "IP-Adresse"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."
+msgstr "Es ist freie Software: Sie können es unter der GNU General Public License, Version 3 oder später, mit zusätzlichen Bedingungen weitergeben und verändern. Diese Ansicht enthält die Texte."
+
+#: ViewModels/MainViewModel.cs
+msgid "It starts again as its firmware says, from the network or from its disk."
+msgstr "Es startet so neu, wie seine Firmware es vorgibt: aus dem Netzwerk oder von seinem Datenträger."
+
+#: Texts/Say.cs
+msgid "Joining the domain"
+msgstr "Domänenbeitritt"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Keyboard layout"
+msgstr "Tastaturlayout"
+
+#: ViewModels/RunViewModel.cs
+msgid "Leave this machine on. It restarts by itself and finishes in Windows."
+msgstr "Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst neu und wird in Windows fertig."
+
+#: ViewModels/RunViewModel.cs
+msgid "Leave this machine on. It starts again by itself."
+msgstr "Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst wieder."
+
+#: ViewModels/RunViewModel.cs
+msgid "Leave this machine on. This screen says when the run is done."
+msgstr "Lassen Sie dieses Gerät eingeschaltet. Diese Anzeige sagt, wenn die Ausführung fertig ist."
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Licence texts"
+msgstr "Lizenztexte"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Licences"
+msgstr "Lizenzen"
+
+#: ViewModels/MainViewModel.cs
+msgid "Light"
+msgstr "Hell"
+
+#: ViewModels/LogViewModel.cs
+msgid "Log"
+msgstr "Protokoll"
+
+#: ViewModels/MachineFacts.cs
+msgid "MAC address"
+msgstr "MAC-Adresse"
+
+#: ViewModels/MachineViewModel.cs
+msgid "MAC address, primary"
+msgstr "MAC-Adresse, primär"
+
+#: ViewModels/MainViewModel.cs
+msgid "Machine"
+msgstr "Gerät"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Machine ID"
+msgstr "Geräte-ID"
+
+#: Texts/Say.cs
+msgid "Making the disk bootable and sending the last reports"
+msgstr "Der Datenträger wird startfähig gemacht, und die letzten Berichte werden gesendet"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Manufacturer"
+msgstr "Hersteller"
+
+#: Legal/LegalTexts.cs
+msgid "Martian Mono: SIL Open Font License"
+msgstr "Martian Mono: SIL Open Font License"
+
+#: Legal/LegalTexts.cs
+msgid "MicroCom: MIT licence"
+msgstr "MicroCom: MIT-Lizenz"
+
+#: Texts/Say.cs
+msgid "Microsoft's third-party UEFI CA 2011"
+msgstr "Microsofts UEFI-CA für Drittanbieter 2011"
+
+#: Texts/Say.cs
+msgid "Microsoft's third-party UEFI CA 2023"
+msgstr "Microsofts UEFI-CA für Drittanbieter 2023"
+
+#: Texts/Say.cs
+msgid "Microsoft's third-party UEFI CAs 2011 and 2023"
+msgstr "Microsofts UEFI-CAs für Drittanbieter 2011 und 2023"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "MIT licence"
+msgstr "MIT-Lizenz"
+
+#: ViewModels/MachineFacts.cs
+msgid "Model"
+msgstr "Modell"
+
+#: Texts/Say.cs
+msgid "Name lookup"
+msgstr "Namensauflösung"
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "Name this machine"
+msgstr "Dieses Gerät benennen"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Needs {size}"
+msgstr "Braucht {size}"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Network"
+msgstr "Netzwerk"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Next"
+msgstr "Weiter"
+
+#: ViewModels/MachineViewModel.cs
+msgid "No"
+msgstr "Nein"
+
+#: ViewModels/MachineViewModel.cs
+msgid "No disk DDT can install on."
+msgstr "Kein Datenträger, auf dem DDT installieren kann."
+
+#: Texts/Say.cs
+msgid "none of Microsoft's third-party UEFI CAs"
+msgstr "keine von Microsofts UEFI-CAs für Drittanbieter"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Not for Secure Boot"
+msgstr "Nicht für Secure Boot"
+
+#: Texts/Say.cs
+msgid "Not known"
+msgstr "Nicht bekannt"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "Not reached"
+msgstr "Nicht erreicht"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Not read yet."
+msgstr "Noch nicht gelesen."
+
+#: ViewModels/MachineViewModel.cs
+msgid "Not registered yet"
+msgstr "Noch nicht registriert"
+
+#: Texts/Say.cs
+msgid "Not reported"
+msgstr "Nicht gemeldet"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Not trusted by this machine"
+msgstr "Von diesem Gerät nicht vertraut"
+
+#: Texts/Say.cs
+msgid "Off"
+msgstr "Aus"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Old MIT licence"
+msgstr "Old-MIT-Lizenz"
+
+#: Texts/Say.cs
+msgid "On"
+msgstr "Ein"
+
+#: ViewModels/WaitingViewModel.cs
+msgid "One moment"
+msgstr "Einen Moment"
+
+#: Texts/Say.cs
+msgid "Partitioning the disk"
+msgstr "Datenträger wird partitioniert"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "Passed"
+msgstr "Bestanden"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Password"
+msgstr "Kennwort"
+
+#: Texts/Say.cs
+msgid "Removing the agent"
+msgstr "Agent wird entfernt"
+
+#: ViewModels/MainViewModel.cs
+msgid "Restart"
+msgstr "Neu starten"
+
+#: ViewModels/MainViewModel.cs
+msgid "Restart the machine"
+msgstr "Gerät neu starten"
+
+#: ViewModels/MainViewModel.cs
+msgid "Restart this machine now?"
+msgstr "Dieses Gerät jetzt neu starten?"
+
+#: Texts/Say.cs
+msgid "Restarting"
+msgstr "Wird neu gestartet"
+
+#: Texts/Say.cs
+msgid "Restarting into the installed system"
+msgstr "Neustart in das installierte System"
+
+#: Texts/Say.cs
+msgid "Restarting into Windows PE"
+msgstr "Neustart in Windows PE"
+
+#: Texts/Say.cs
+msgid "Run it again: choose the task sequence here when the console asks for one, or assign it on the Machines page. The agent waits for either."
+msgstr "Führen Sie sie erneut aus: Wählen Sie die Tasksequenz hier, wenn die Konsole danach fragt, oder weisen Sie sie auf der Seite „Geräte“ zu. Der Agent wartet auf beides."
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Run the task sequence"
+msgstr "Tasksequenz ausführen"
+
+#: Texts/Say.cs
+msgid "Running"
+msgstr "Läuft"
+
+#: Texts/Say.cs
+msgid "Running a script"
+msgstr "Skript wird ausgeführt"
+
+#: Texts/Say.cs
+msgid "Running a step"
+msgstr "Ein Schritt läuft"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Secure Boot"
+msgstr "Secure Boot"
+
+#: Texts/Say.cs
+msgid "Secure Boot not reported"
+msgstr "Secure Boot nicht gemeldet"
+
+#: Texts/Say.cs
+msgid "Secure Boot off"
+msgstr "Secure Boot aus"
+
+#: Texts/Say.cs
+msgid "Secure Boot on"
+msgstr "Secure Boot ein"
+
+#: Texts/Say.cs
+msgid "Secure connection"
+msgstr "Sichere Verbindung"
+
+#: ViewModels/MachineFacts.cs
+msgid "Serial number"
+msgstr "Seriennummer"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "Server"
+msgstr "Server"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Sign in"
+msgstr "Anmelden"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Sign in at this machine"
+msgstr "Am Gerät anmelden"
+
+#: ViewModels/AuthorizationViewModel.cs
+msgid "Sign in here with your DDT account, or approve this machine on the Machines page. Either way the agent goes on by itself."
+msgstr "Melden Sie sich hier mit Ihrem DDT-Konto an, oder geben Sie dieses Gerät auf der Seite „Geräte“ frei. So oder so macht der Agent von selbst weiter."
+
+#: ViewModels/SignInViewModel.cs
+msgid "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
+msgstr "Melden Sie sich mit Ihrem DDT-Konto an. Ein Operator oder Administrator gibt dieses Gerät frei, indem er sich anmeldet."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Signed under"
+msgstr "Signiert unter"
+
+#: ViewModels/SignInViewModel.cs
+msgid "Signing in as {name}"
+msgstr "Anmeldung als {name}"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "SIL Open Font License 1.1"
+msgstr "SIL Open Font License 1.1"
+
+#: Legal/LegalTexts.cs
+msgid "Skia, HarfBuzz and what they contain"
+msgstr "Skia, HarfBuzz und was sie enthalten"
+
+#: Legal/LegalTexts.cs
+msgid "SkiaSharp and HarfBuzzSharp: MIT licence"
+msgstr "SkiaSharp und HarfBuzzSharp: MIT-Lizenz"
+
+#: Texts/Say.cs
+msgid "Skipped"
+msgstr "Übersprungen"
+
+#: ViewModels/MachineViewModel.cs
+msgid "SMBIOS UUID"
+msgstr "SMBIOS-UUID"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Software by others in this console"
+msgstr "Software anderer in dieser Konsole"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Stage"
+msgstr "Phase"
+
+#: Texts/Say.cs
+msgid "Starting"
+msgstr "Startet"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "Starting the agent"
+msgstr "Der Agent startet"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in the installed Windows"
+msgstr "Schritt {number} von {count}, im installierten Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in Windows PE"
+msgstr "Schritt {number} von {count}, in Windows PE"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number}, {name}: {state}"
+msgstr "Schritt {number}, {name}: {state}"
+
+#: Texts/Say.cs
+msgid "Stopped"
+msgstr "Beendet"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "Suggested"
+msgstr "Vorgeschlagen"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Task sequence"
+msgstr "Tasksequenz"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "The agent checks whether the server has a newer agent, then registers this machine with the server."
+msgstr "Der Agent prüft, ob der Server einen neueren Agent hat, und registriert dieses Gerät dann beim Server."
+
+#: ViewModels/WaitingViewModel.cs
+msgid "The agent gets what this machine can run. The choices appear here in a moment."
+msgstr "Der Agent holt, was dieses Gerät ausführen kann. Die Auswahl erscheint hier gleich."
+
+#: ViewModels/MainViewModel.cs
+msgid "The agent has ended"
+msgstr "Der Agent ist beendet"
+
+#: ViewModels/RunViewModel.cs
+msgid "The agent has stopped"
+msgstr "Der Agent hat angehalten"
+
+#: Texts/Say.cs
+msgid "The agent has stopped. Restart the machine from the network to start over."
+msgstr "Der Agent hat angehalten. Starten Sie das Gerät aus dem Netzwerk neu, um von vorn zu beginnen."
+
+#: ViewModels/LogViewModel.cs
+msgid "The agent has written nothing yet."
+msgstr "Der Agent hat noch nichts geschrieben."
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "The agent registers this machine with the server. It needs nothing from you."
+msgstr "Der Agent registriert dieses Gerät beim Server. Dafür braucht er nichts von Ihnen."
+
+#: ViewModels/LogViewModel.cs
+msgid "The agent's log, newest line last. Times are in UTC, by this machine's clock."
+msgstr "Das Protokoll des Agents, die neueste Zeile zuletzt. Zeiten in UTC, nach der Uhr dieses Geräts."
+
+#: ViewModels/MainViewModel.cs
+msgid "The command prompt is behind the console."
+msgstr "Die Eingabeaufforderung liegt hinter der Konsole."
+
+#: ViewModels/MainViewModel.cs
+msgid "The connection to the agent broke"
+msgstr "Die Verbindung zum Agent ist abgebrochen"
+
+#: ViewModels/MainViewModel.cs
+msgid "The console restarts a machine only in Windows PE."
+msgstr "Die Konsole startet ein Gerät nur in Windows PE neu."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "The disk has no partitions."
+msgstr "Der Datenträger hat keine Partitionen."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "The disk has partitions, so it holds something now."
+msgstr "Der Datenträger hat Partitionen, er enthält also jetzt etwas."
+
+#: Texts/Say.cs
+msgid "The disk image"
+msgstr "Das Datenträgerimage"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "the HarfBuzz authors"
+msgstr "die HarfBuzz-Autoren"
+
+#: ViewModels/SignInViewModel.cs
+msgid "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
+msgstr "Das Tastaturlayout ist {layout}. Ein Kennwort, das mit einem anderen Layout eingegeben wird, wird als falsch abgelehnt."
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "The last request failed. The agent tries again by itself."
+msgstr "Die letzte Anfrage ist fehlgeschlagen. Der Agent versucht es von selbst erneut."
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "The last {count} requests failed. The agent tries again by itself."
+msgstr "Die letzten {count} Anfragen sind fehlgeschlagen. Der Agent versucht es von selbst erneut."
+
+#: Texts/Say.cs
+msgid "The machine was to restart before and did not, so it restarts before anything else."
+msgstr "Das Gerät sollte schon vorher neu starten und hat es nicht getan, daher startet es vor allem anderen neu."
+
+#: ViewModels/RunViewModel.cs
+msgid "The run failed"
+msgstr "Die Ausführung ist fehlgeschlagen"
+
+#: Texts/Say.cs
+msgid "The run goes on in the installed Windows."
+msgstr "Die Ausführung geht im installierten Windows weiter."
+
+#: Texts/Say.cs
+msgid "The run is done."
+msgstr "Die Ausführung ist fertig."
+
+#: Texts/Say.cs
+msgid "The secure connection failed. The server may be stalling, or its certificate may not chain to the root the boot image trusts."
+msgstr "Die sichere Verbindung ist fehlgeschlagen. Der Server hängt möglicherweise, oder sein Zertifikat führt nicht zu der Stammzertifizierungsstelle, der das Startimage vertraut."
+
+#: Texts/Say.cs
+msgid "The server did not accept a connection. Check the address and port, the firewall, and the route from this network to the server."
+msgstr "Der Server hat keine Verbindung angenommen. Prüfen Sie Adresse und Port, die Firewall und den Weg aus diesem Netzwerk zum Server."
+
+#: Texts/Say.cs
+msgid "The server was reached but did not answer as the agent expects. Its log says why."
+msgstr "Der Server wurde erreicht, hat aber nicht so geantwortet, wie der Agent es erwartet. Sein Protokoll sagt, warum."
+
+#: Texts/Say.cs
+msgid "The server's name did not resolve. Check the DNS server the network gives this machine, and the server name the boot image was built with."
+msgstr "Der Name des Servers wurde nicht aufgelöst. Prüfen Sie den DNS-Server, den das Netzwerk diesem Gerät gibt, und den Servernamen, mit dem das Startimage erstellt wurde."
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
+msgstr "Das sind die Tasksequenzen, die dieses Gerät ausführen kann. Eine Tasksequenz, die eine Zuweisungsregel vorschlägt, steht zuerst."
+
+#: ViewModels/MachineFacts.cs
+msgid "This machine"
+msgstr "Dieses Gerät"
+
+#: ViewModels/SequenceChoiceViewModel.cs
+msgid "This machine can run no task sequence yet. Assign one on the Machines page."
+msgstr "Dieses Gerät kann noch keine Tasksequenz ausführen. Weisen Sie ihm auf der Seite „Geräte“ eine zu."
+
+#: ViewModels/WaitingViewModel.cs
+msgid "This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself."
+msgstr "Dieses Gerät ist freigegeben. Weisen Sie ihm auf der Seite „Geräte“ eine Tasksequenz zu, und sie startet von selbst."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "This machine trusts"
+msgstr "Dieses Gerät vertraut"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "This program comes with ABSOLUTELY NO WARRANTY."
+msgstr "Dieses Programm kommt OHNE JEGLICHE GEWÄHRLEISTUNG."
+
+#: ViewModels/MainViewModel.cs
+msgid "This screen keeps what the agent showed last. Nothing more comes from it."
+msgstr "Diese Anzeige behält, was der Agent zuletzt gezeigt hat. Von ihm kommt nichts mehr."
+
+#: ViewModels/MachineViewModel.cs
+msgid "Trusted CAs"
+msgstr "Vertraute CAs"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Type {word} in capitals, exactly as shown."
+msgstr "Geben Sie {word} in Großbuchstaben ein, genau wie gezeigt."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Type {word} to erase the disk"
+msgstr "Geben Sie {word} ein, um den Datenträger zu löschen"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Type {word} to write it all the same"
+msgstr "Geben Sie {word} ein, um es trotzdem zu schreiben"
+
+#: Texts/Say.cs
+msgid "Unknown bus"
+msgstr "Unbekannter Bus"
+
+#: Texts/Say.cs
+msgid "Unknown model"
+msgstr "Unbekanntes Modell"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "Up and Down choose a text."
+msgstr "Pfeil nach oben und unten wählen einen Text."
+
+#: ViewModels/SignInViewModel.cs
+msgid "Use another account"
+msgstr "Anderes Konto verwenden"
+
+#: ViewModels/DiskChoiceViewModel.cs
+msgid "Use this disk"
+msgstr "Diesen Datenträger verwenden"
+
+#: ViewModels/SignInViewModel.cs
+msgid "User name"
+msgstr "Benutzername"
+
+#: Texts/Say.cs
+msgid "Virtual"
+msgstr "Virtuell"
+
+#: Texts/Say.cs
+msgid "Virtual, backed by a file"
+msgstr "Virtuell, dateibasiert"
+
+#: Texts/Say.cs
+msgid "Waiting"
+msgstr "Wartet"
+
+#: Texts/Say.cs
+msgid "Waiting for a task sequence"
+msgstr "Wartet auf eine Tasksequenz"
+
+#: Texts/Say.cs
+msgid "Waiting for authorization"
+msgstr "Wartet auf Freigabe"
+
+#: ViewModels/MainViewModel.cs
+msgid "Waiting for the agent"
+msgstr "Wartet auf den Agent"
+
+#: Texts/Say.cs
+msgid "Waiting for Windows setup"
+msgstr "Wartet auf das Windows-Setup"
+
+#: Texts/Say.cs
+msgid "Warning"
+msgstr "Warnung"
+
+#: ViewModels/ConnectionViewModel.cs
+msgid "What the agent saw"
+msgstr "Was der Agent gesehen hat"
+
+#: ViewModels/RunViewModel.cs
+msgid "What to do"
+msgstr "Was zu tun ist"
+
+#: ViewModels/RunViewModel.cs
+msgid "What went wrong"
+msgstr "Was schiefging"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Write it anyway"
+msgstr "Trotzdem schreiben"
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "Write it despite Secure Boot?"
+msgstr "Trotz Secure Boot schreiben?"
+
+#: Texts/Say.cs
+msgid "Writing the answer file"
+msgstr "Antwortdatei wird geschrieben"
+
+#: Texts/Say.cs
+msgid "Writing the cloud-init seed"
+msgstr "Cloud-init-Seed wird geschrieben"
+
+#: Texts/Say.cs
+msgid "Writing the disk image"
+msgstr "Datenträgerimage wird geschrieben"
+
+#: ViewModels/MachineViewModel.cs
+msgid "Yes, nothing on the disks changes"
+msgstr "Ja, auf den Datenträgern ändert sich nichts"
+
+#: Texts/Say.cs
+msgid "{count} bytes"
+msgstr "{count} Bytes"
+
+#: Texts/Say.cs
+msgid "{count} partitions"
+msgstr "{count} Partitionen"
+
+#: ViewModels/RunViewModel.cs
+msgid "{done} of {count} steps done"
+msgstr "{done} von {count} Schritten erledigt"
+
+#: ViewModels/LicencesViewModel.cs
+msgid "{holder}, {licence}"
+msgstr "{holder}, {licence}"
+
+#: Texts/Say.cs
+msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. It starts only once Secure Boot is turned off in the firmware setup, or your own key is enrolled."
+msgstr "{image} ist nicht für Secure Boot signiert, und auf diesem Gerät ist Secure Boot eingeschaltet. Es startet erst, wenn Secure Boot im Firmware-Setup ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
+
+#: Texts/Say.cs
+msgid "{image} is signed only under {cas}, which this machine's firmware does not trust. It starts only once that CA is allowed, or Secure Boot is turned off in the firmware setup."
+msgstr "{image} ist nur unter {cas} signiert, der die Firmware dieses Geräts nicht vertraut. Es startet erst, wenn diese CA zugelassen oder Secure Boot im Firmware-Setup ausgeschaltet ist."
+
+#: ViewModels/AuthorizationViewModel.cs
+msgid "{name} signed in here. An operator or administrator still has to approve this machine on the Machines page."
+msgstr "{name} hat sich hier angemeldet. Ein Operator oder Administrator muss dieses Gerät noch auf der Seite „Geräte“ freigeben."
+
+#: ViewModels/TypedWordViewModel.cs
+msgid "{sequence} erases everything on this disk, and it cannot be undone."
+msgstr "{sequence} löscht alles auf diesem Datenträger, und das lässt sich nicht rückgängig machen."
+
+#: ViewModels/DiskChoiceViewModel.cs
+msgid "{sequence} erases the disk you choose. This machine has more than one disk it can install on."
+msgstr "{sequence} löscht den Datenträger, den Sie wählen. Dieses Gerät hat mehr als einen Datenträger, auf dem es installieren kann."
+
+#: ViewModels/ComputerNameViewModel.cs
+msgid "{sequence} needs a computer name for this machine."
+msgstr "{sequence} braucht einen Computernamen für dieses Gerät."

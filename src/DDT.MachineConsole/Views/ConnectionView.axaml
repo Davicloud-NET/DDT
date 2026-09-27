@@ -1,0 +1,59 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Starting and connecting: the server the boot image names and, when a request fails, how far it got, the agent's
+     own words about it and what to look at. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.ConnectionView"
+             x:DataType="vm:ConnectionViewModel">
+  <StackPanel Spacing="20" VerticalAlignment="Center">
+    <StackPanel Orientation="Horizontal" Spacing="16">
+      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+      <c:StateTag Value="{Binding Tag}" />
+    </StackPanel>
+    <TextBlock Classes="lead ink2" Text="{Binding Explanation}" />
+
+    <Border Classes="panel" Padding="24,22">
+      <StackPanel Spacing="20">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="label muted" Text="{Binding ServerLabel}" />
+          <TextBlock Name="Server" Classes="identifier" FontSize="26" Text="{Binding Server}" />
+          <TextBlock Classes="small muted" Text="{Binding Address}" />
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding Stages}" IsVisible="{Binding HasAdvice}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" ColumnSpacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:ConnectionStageItem">
+              <StackPanel Spacing="8">
+                <c:RailModule Height="22" State="{Binding ModuleState}" />
+                <TextBlock Classes="step" Classes.failText="{Binding IsFailed}" Text="{Binding Name}" />
+                <TextBlock Classes="small muted" Text="{Binding StateText}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Classes="console" Padding="16,12" IsVisible="{Binding HasProblem}">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="small" Foreground="{DynamicResource SgConsoleMuted}" Text="{Binding ProblemLabel}" />
+            <TextBlock Name="Problem" Classes="data" Foreground="{DynamicResource SgConsoleText}" FontSize="14" Text="{Binding Problem}" />
+          </StackPanel>
+        </Border>
+
+        <StackPanel Spacing="8" IsVisible="{Binding HasProblem}">
+          <TextBlock Classes="body ink2" Text="{Binding Failures}" />
+          <TextBlock Classes="lead" Text="{Binding Advice}" IsVisible="{Binding HasAdvice}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

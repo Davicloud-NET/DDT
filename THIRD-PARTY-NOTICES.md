@@ -12,9 +12,10 @@ for each artefact, with its copyright holders and licence, and [licenses/](licen
 licence texts. The container image carries LICENSE, NOTICE, this file and `licenses/` in
 `/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
 file, `licenses/dotnet`, `licenses/wimlib` and `licenses/zstd`, and prints them with
-`ddt-agent --licenses`. The web bundle alone holds no licence files; its licences are in
-`licenses/web`, which the About page links to. Pass LICENSE, NOTICE, this file and `licenses/` on
-with any artefact you distribute.
+`ddt-agent --licenses`. The console in Windows PE carries LICENSE, NOTICE and the licence texts of
+what it contains, and shows them on its licences view. The web bundle alone holds no licence files;
+its licences are in `licenses/web`, which the About page links to. Pass LICENSE, NOTICE, this file
+and `licenses/` on with any artefact you distribute.
 
 `src/DDT.ServiceDefaults/Extensions.cs` is code from the .NET Aspire ServiceDefaults project
 template, Copyright (c) .NET Foundation and Contributors, under the MIT licence in
@@ -255,14 +256,57 @@ changes, then use it in one of two ways:
    at your DLL and publish the agent again with `build/Publish-Agent.ps1`. The agent then carries
    your DLL and, as under 1, writes it out wherever no `libwim-15.dll` is next to it yet.
 
+## The console in Windows PE, `ddt-console.exe`
+
+`build/Publish-Console.ps1` publishes the graphical console the agent starts in Windows PE as one
+NativeAOT executable, `ddt-console.exe`, with the two native libraries it draws with,
+`libSkiaSharp.dll` and `libHarfBuzzSharp.dll`, next to it. Besides DDT's own code, from
+`DDT.MachineConsole` and `DDT.ConsoleProtocol`, they contain:
+
+- The .NET runtime and libraries and the Visual C++ startup code, as described for the agent above.
+- Avalonia, the UI framework: `Avalonia`, `Avalonia.HarfBuzz`, `Avalonia.Remote.Protocol`,
+  `Avalonia.Skia`, `Avalonia.Themes.Simple` and `Avalonia.Win32`, version 12.1.3, Copyright (c)
+  AvaloniaUI OÜ, under the MIT licence in [licenses/avalonia/LICENSE.md](licenses/avalonia/LICENSE.md).
+  Code by others in Avalonia, from WPF, WinUI, Mono, the Silverlight Toolkit (under the Microsoft
+  Public License), RichTextKit (under the Apache License, version 2.0) and others, is listed in
+  [licenses/avalonia/NOTICE.md](licenses/avalonia/NOTICE.md). Both files are taken from the
+  Avalonia repository at the commit 12.1.3 was built from,
+  `8eeda4f6f546165b3f72e63c9f42247abb306905`, because the packages carry none.
+- `MicroCom.Runtime` 0.11.6, which Avalonia calls COM with, Copyright (c) 2021 Nikita Tsukanov,
+  under the MIT licence in [licenses/microcom/LICENSE](licenses/microcom/LICENSE), taken from the
+  MicroCom repository because the package carries none.
+- `SkiaSharp` 3.119.4 and `HarfBuzzSharp` 8.3.1.3, the .NET bindings, and
+  `SkiaSharp.NativeAssets.Win32` and `HarfBuzzSharp.NativeAssets.Win32`, whose
+  `libSkiaSharp.dll` and `libHarfBuzzSharp.dll` are Skia and HarfBuzz built for Windows. The
+  bindings are Copyright (c) 2015-2016 Xamarin, Inc. and Copyright (c) 2017-2018 Microsoft
+  Corporation, under the MIT licence in [licenses/skiasharp/LICENSE.txt](licenses/skiasharp/LICENSE.txt).
+  Skia is Copyright (c) 2011 Google Inc. under a BSD licence, HarfBuzz is under the "Old MIT"
+  licence of its many authors, and the code by others that the native libraries contain, such as
+  FreeType, libpng, zlib, libjpeg-turbo and libwebp, is listed with its licences in
+  [licenses/skiasharp/THIRD-PARTY-NOTICES.txt](licenses/skiasharp/THIRD-PARTY-NOTICES.txt), the
+  notices file both native packages carry.
+- The fonts Archivo, Copyright 2020 The Archivo Project Authors, and Martian Mono, Copyright 2021
+  The Martian Mono Project Authors, under the SIL Open Font License 1.1 in
+  [licenses/fonts/Archivo-OFL.txt](licenses/fonts/Archivo-OFL.txt) and
+  [licenses/fonts/MartianMono-OFL.txt](licenses/fonts/MartianMono-OFL.txt). The console carries
+  static instances, one per weight and width it uses, cut from the variable fonts of Google Fonts by
+  `src/DDT.MachineConsole/Assets/Fonts/cut_fonts.py`, which names the source commits and their
+  SHA-256. They are Modified Versions in the terms of the licence and carry names of their own,
+  such as "Archivo 750 62"; neither font declares a Reserved Font Name.
+
+The console carries LICENSE, NOTICE and the texts in `licenses/avalonia`, `licenses/microcom`,
+`licenses/skiasharp`, `licenses/dotnet` and `licenses/fonts`, and its licences view, on F3, shows
+DDT's attribution notice, the list above and each of those texts.
+
 ## Windows PE and the Windows ADK
 
 A boot image built by `build/Build-BootImage.ps1` consists mostly of files from Windows PE and the
 Windows ADK: `boot.wim` with Windows PE, the boot managers, `boot.sdi`, `boot.stl` and the boot
 fonts. Those files are Microsoft's. Whoever builds the boot image supplies them from their own ADK
 installation under Microsoft's licence terms. DDT does not distribute them, and DDT's licence does
-not cover them. DDT adds `ddt-agent.exe`, `agent.json` and `startnet.cmd`, and with
-`-WimLibraryPath` a `libwim-15.dll`.
+not cover them. DDT adds `ddt-agent.exe`, `agent.json` and `startnet.cmd`, with `-WimLibraryPath` a
+`libwim-15.dll`, and with `-ConsolePath` the console's `ddt-console.exe`, `libSkiaSharp.dll` and
+`libHarfBuzzSharp.dll`.
 
 ## The container base image
 

@@ -101,7 +101,12 @@ export function Select<T extends object>({
           "flex h-9.5 cursor-pointer items-center gap-2 text-left type-body",
         )}
       >
-        <SelectValue className="flex-1 truncate placeholder-shown:text-placeholder" />
+        {/* The chosen option's text alone: its description belongs in the open list, not in the field. */}
+        <SelectValue className="flex-1 truncate placeholder-shown:text-placeholder">
+          {({ defaultChildren, isPlaceholder, selectedText }) =>
+            isPlaceholder || selectedText === "" ? defaultChildren : selectedText
+          }
+        </SelectValue>
         <IconChevronDown aria-hidden="true" size={16} stroke={2} className="shrink-0 text-muted" />
       </AriaButton>
       {hint ? (

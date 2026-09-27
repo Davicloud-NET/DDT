@@ -16,6 +16,9 @@ import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
+import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
+import { sequenceSearch, sequencesSearch } from "@/sequences/sequenceSearch";
+import { SequencesPage } from "@/sequences/SequencesPage";
 
 import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
@@ -103,12 +106,14 @@ const machineRoute = createRoute({
 const sequencesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences",
-  component: PendingPage,
+  validateSearch: sequencesSearch,
+  component: SequencesPage,
 });
 const sequenceRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences/$sequenceId",
-  component: PendingPage,
+  validateSearch: sequenceSearch,
+  component: SequenceEditorPage,
 });
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,

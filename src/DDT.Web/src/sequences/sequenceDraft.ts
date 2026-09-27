@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { t } from "@lingui/core/macro";
+
 import { equalJson } from "@/lib/equalJson";
 
 import {
@@ -45,11 +47,11 @@ export function changedParts(from: SequenceDraft, to: SequenceDraft): string[] {
   const parts: string[] = [];
 
   if (from.name !== to.name) {
-    parts.push("the name");
+    parts.push(t`the name`);
   }
 
   if (from.description.trim() !== to.description.trim()) {
-    parts.push("the description");
+    parts.push(t`the description`);
   }
 
   const before = new Map(from.steps.map((step) => [step.id, step]));
@@ -73,7 +75,7 @@ export function changedParts(from: SequenceDraft, to: SequenceDraft): string[] {
     steps.filter((step) => others.has(step.id)).map((step) => step.id);
 
   if (!equalJson(kept(from.steps, after), kept(to.steps, new Set(before.keys())))) {
-    parts.push("the order of the steps");
+    parts.push(t`the order of the steps`);
   }
 
   return parts;

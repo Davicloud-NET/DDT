@@ -18,20 +18,12 @@ public static class Principals
         return Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out Guid id) ? id : null;
     }
 
-    // The API token a user's request was authenticated by, null for the session cookie.
-    public static Guid? ApiTokenId(ClaimsPrincipal user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
+    // The API token a user's request was authenticated by, null for the session cookie. Only the identity the token
+    // handler made counts, so no claim of that name from anywhere else lets a cookie request skip the CSRF filters.
+    public static Guid? ApiTokenId(ClaimsPrincipal user) =>
+        Guid.TryParse(TokenIdentity(user)?.FindFirst(DdtClaimTypes.ApiTokenId)?.Value, out Guid id) ? id : null;
 
-        return Guid.TryParse(user.FindFirstValue(DdtClaimTypes.ApiTokenId), out Guid id) ? id : null;
-    }
-
-    public static string? ApiTokenName(ClaimsPrincipal user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-
-        return user.FindFirstValue(DdtClaimTypes.ApiTokenName);
-    }
+    public static string? ApiTokenName(ClaimsPrincipal user) => TokenIdentity(user)?.FindFirst(DdtClaimTypes.ApiTokenName)?.Value;
 
     // The name to record for who acted: the user's, and the token's beside it when the request came with one, such as
     // alice (token build-server).
@@ -57,5 +49,12 @@ public static class Principals
         ArgumentNullException.ThrowIfNull(machine);
 
         return machine.TokenGeneration.ToString(CultureInfo.InvariantCulture) == user.FindFirstValue(DdtClaimTypes.TokenGeneration);
+    }
+
+    private static ClaimsIdentity? TokenIdentity(ClaimsPrincipal user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        return user.Identities.FirstOrDefault(identity => identity.AuthenticationType == DdtAuthenticationSchemes.ApiToken);
     }
 }

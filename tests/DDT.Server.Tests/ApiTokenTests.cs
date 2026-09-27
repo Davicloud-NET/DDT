@@ -5,6 +5,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Channels;
 using DDT.Contracts.Audit;
@@ -19,6 +20,7 @@ using DDT.Server.Tokens;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -294,6 +296,24 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         garbage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "not-a-token");
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await administrator.Http.SendAsync(garbage, TestContext.Current.CancellationToken)).StatusCode);
+    }
+
+    // A user claim of the token's type rides in the session cookie, and must not make the session count as a token that
+    // skips the CSRF filters.
+    [Fact]
+    public async Task AClaimNamedLikeATokensDoesNotMakeASessionOne()
+    {
+        string userName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        await ChangeUserAsync(userName, (users, user) => users.AddClaimAsync(user, new Claim(DdtClaimTypes.ApiTokenId, Guid.NewGuid().ToString("D"))));
+
+        CookieContainer cookies = new();
+        using SignedInClient session = new(application.CreateDefaultClient(new CookieContainerHandler(cookies)), cookies);
+        (await session.PostAsync("/api/auth/login", new LoginRequest(userName, DdtApplication.Password, null, null))).EnsureSuccessStatusCode();
+        Guid machine = await PendingMachineAsync();
+
+        using HttpRequestMessage forged = new(HttpMethod.Post, new Uri($"/api/machines/{machine}/approve", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Forbidden, (await session.Http.SendAsync(forged, TestContext.Current.CancellationToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await session.PostAsync($"/api/machines/{machine}/approve")).StatusCode);
     }
 
     [Fact]

@@ -5,7 +5,7 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Form } from "react-aria-components";
 
 import {
@@ -57,6 +57,7 @@ export function AssignDialog({
   // The sequence and image the allowance was given for, so another sequence, or another image written by the same
   // one after a live update, asks again.
   const [allowedFor, setAllowedFor] = useState<string | null>(null);
+  const warningId = useId();
 
   const assign = useMutation({
     mutationFn: (request: AssignSequenceRequest) => assignSequence(machine.id, request),
@@ -234,7 +235,11 @@ export function AssignDialog({
               </p>
             )
           ) : null}
-          {risk !== null ? <Notice tone="attention">{risk.warning}</Notice> : null}
+          {risk !== null ? (
+            <Notice tone="attention">
+              <span id={warningId}>{risk.warning}</span>
+            </Notice>
+          ) : null}
           {sequence?.continuesInWindows === true ? (
             <p>
               <Trans>
@@ -269,6 +274,7 @@ export function AssignDialog({
 
         {risk !== null ? (
           <Checkbox
+            aria-describedby={warningId}
             isSelected={allowed}
             onChange={(selected) => {
               setAllowedFor(selected ? allowanceKey : null);

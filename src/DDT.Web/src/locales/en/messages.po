@@ -53,6 +53,7 @@ msgstr "{count, plural, one {# machine} other {# machines}}"
 
 #: src/machines/approval.ts
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
 msgstr "{count, plural, one {# problem} other {# problems}}"
 
@@ -254,6 +255,7 @@ msgid "{problemCount, plural, one {# problem} other {# problems}}"
 msgstr "{problemCount, plural, one {# problem} other {# problems}}"
 
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{problems}, cannot run"
 msgstr "{problems}, cannot run"
 
@@ -1241,6 +1243,7 @@ msgid "Fail when no driver package matches the model"
 msgstr "Fail when no driver package matches the model"
 
 #: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts

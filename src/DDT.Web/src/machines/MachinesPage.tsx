@@ -383,7 +383,12 @@ function runDetail(machine: MachineSummary, now: number): string | null {
     }
 
     case "Failed": {
-      const number = (run.stepIndex ?? 0) + 1;
+      // A run whose check before the first step failed has no step to name.
+      if (run.stepIndex === null) {
+        return t`Failed`;
+      }
+
+      const number = run.stepIndex + 1;
 
       return t`Step ${number} failed`;
     }

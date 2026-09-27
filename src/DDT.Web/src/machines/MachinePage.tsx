@@ -121,7 +121,7 @@ export function MachinePage() {
         </Notice>
       ) : null}
 
-      {summary !== null && view !== null && view.steps.length > 0 ? (
+      {summary !== null && view !== null && view.steps.length > 0 && !detail.removed ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <RunSteps
             steps={view.steps}

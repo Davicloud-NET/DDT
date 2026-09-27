@@ -326,6 +326,7 @@ function matches(image: ImageSummary, needle: string): boolean {
   return [
     image.name,
     kindLabel(image.kind),
+    bootCapabilityLabel(image),
     image.edition,
     image.architecture,
     image.version,

@@ -275,7 +275,7 @@ test.describe("dark", () => {
 
   test("deployment defaults", async ({ page }) => {
     await show(page, "/deployment/defaults", deploymentDefaults);
-    await expect(page.getByText("The console at the machine")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The console at the machine" })).toBeVisible();
 
     await expect(page).toHaveScreenshot("deployment-defaults-dark.png");
   });

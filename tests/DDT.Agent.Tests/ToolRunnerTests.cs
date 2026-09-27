@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Diagnostics;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
 using Xunit;
@@ -97,20 +98,20 @@ public sealed class ToolRunnerTests
         }
     }
 
-    // outer.cmd starts inner.cmd, which writes a file after about two seconds unless it was stopped with outer.cmd.
+    // outer.cmd starts inner.cmd, which holds held.txt open for half a minute unless it was stopped with outer.cmd.
     [Fact]
     public async Task StopsTheToolAndEverythingItStartedAtTheTimeout()
     {
         (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
         string directory = Directory.CreateTempSubdirectory("ddt-tool-").FullName;
-        string marker = Path.Combine(directory, "marker.txt");
+        string held = Path.Combine(directory, "held.txt");
         await File.WriteAllTextAsync(
             Path.Combine(directory, "outer.cmd"),
             "@echo waiting for inner.cmd\r\n@cmd /d /c \"%~dp0inner.cmd\"\r\n",
             TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(
             Path.Combine(directory, "inner.cmd"),
-            "@ping -n 3 127.0.0.1 >nul\r\n@echo done>\"%~dp0marker.txt\"\r\n",
+            "@ping -n 30 127.0.0.1 >\"%~dp0held.txt\"\r\n",
             TestContext.Current.CancellationToken);
 
         try
@@ -127,12 +128,20 @@ public sealed class ToolRunnerTests
             // What it printed before it hung says why.
             Assert.Contains(await SentAsync(server, log), line => line.Message == "waiting for inner.cmd");
 
-            await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
-            Assert.False(File.Exists(marker));
+            // A killed process ends a moment later, and a busy machine may stop the tool late, so this waits for the
+            // file to be free rather than for a fixed time. A process that escaped the stop holds it for half a minute.
+            Assert.True(await NothingHoldsAsync(held, TimeSpan.FromSeconds(10)), "A process outer.cmd started still holds held.txt.");
         }
         finally
         {
-            Directory.Delete(directory, recursive: true);
+            // Where a process escaped, it still holds its file, and the failure above says so rather than this.
+            try
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 
@@ -155,6 +164,34 @@ public sealed class ToolRunnerTests
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
 
         return (new ToolRunner(log, TimeProvider.System), new ScriptedAgentServer(), log);
+    }
+
+    // True once the file opens for this process alone, or is not there. A process that never started leaves no file.
+    private static async Task<bool> NothingHoldsAsync(string path, TimeSpan wait)
+    {
+        long started = Stopwatch.GetTimestamp();
+
+        while (true)
+        {
+            try
+            {
+                using FileStream file = new(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                return true;
+            }
+            catch (IOException) when (Stopwatch.GetElapsedTime(started) < wait)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
     }
 
     private static async Task<List<AgentLogLine>> SentAsync(ScriptedAgentServer server, AgentLog log)

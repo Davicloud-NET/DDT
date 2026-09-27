@@ -6,6 +6,8 @@
 
 # DDT, the Davicloud Deployment Toolkit
 
+[![CI](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml/badge.svg)](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml)
+
 DDT is a self-hostable, open-source replacement for the Microsoft Deployment Toolkit, aimed at small
 networks of 10 to 100 machines that may span several sites over a VPN. It netboots machines into
 Windows PE and runs an agent there that executes a task sequence: it applies a Windows image, goes
@@ -78,6 +80,10 @@ LICENSE                    GNU General Public License, version 3
 NOTICE                     attribution notice and the additional terms under GPL section 7
 THIRD-PARTY-NOTICES.md     software by others in DDT's built artefacts, and its licences
 licenses/                  licence texts of that software, one folder per component
+CONTRIBUTING.md            how to report a bug or ask for a feature, and what a change has to pass
+CODE_OF_CONDUCT.md         the Contributor Covenant, for everyone who takes part
+SECURITY.md                how to report a vulnerability privately
+.github/                   the CI workflow, Dependabot, and the issue and pull request forms
 docs/settings.md           design of the settings: their store, sections, rules and API
 docs/roadmap.md            the milestones after M6 and what each one holds
 docs/web-ui.md             how the web UI is built, for anyone changing it
@@ -2289,6 +2295,14 @@ Two things about the protocol layer are deliberately not done yet:
   the normal arrangement for a single boot server, but a client that insists on discovery is not served.
 - Only read requests are implemented. Netboot never writes, and a TFTP server that accepts writes on
   a provisioning network is a liability rather than a feature.
+
+## Contributing
+
+Bug reports and feature requests are welcome as issues, and [CONTRIBUTING.md](CONTRIBUTING.md) says
+what a useful one holds and what every change has to pass. DDT takes no pull requests from outside
+contributors until its contributor licence agreement is in place. Report a vulnerability privately,
+as [SECURITY.md](SECURITY.md) says.
+Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Licence
 

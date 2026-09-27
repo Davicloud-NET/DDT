@@ -1169,16 +1169,20 @@ public sealed class SequenceRunnerTests : IDisposable
     private AgentRun InWindows() => TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image);
 
     // The first beat stays on its way until the engine has asked for the restart and the runner recorded it, then runs
-    // act, which may also refuse the beat.
+    // act, which may also refuse the beat. The partitioning waits until that beat has reached the server, however late
+    // it comes: otherwise quick steps can be over before it, and the first report after them is the restart's own.
     private void OnFirstBeatOnceTheRestartIsDue(ScriptedAgentServer server, Action act)
     {
         string marker = TestAgents.RestartMarker(_tools, Log()).FilePath;
         int beats = 0;
+        TaskCompletionSource beating = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _tools.PartitionGate = beating;
 
         server.AnswerRunReports = (report, token) =>
         {
             if (report.Activity != RunActivity.Preparing && Interlocked.Increment(ref beats) == 1)
             {
+                beating.TrySetResult();
                 Assert.True(SpinWait.SpinUntil(() => File.Exists(marker), TimeSpan.FromSeconds(10)));
                 act();
             }

@@ -1,0 +1,224 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# Every job only reads the repository, and none needs a secret, so a pull request from a fork runs the same checks.
+permissions:
+  contents: read
+
+# A newer push to a pull request stops the checks of the one before. Every commit on master keeps its own run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ github.job }}-
+
+      - name: Build
+        run: dotnet build DDT.slnx
+
+      - name: Check the C# formatting
+        run: dotnet format whitespace DDT.slnx --verify-no-changes --no-restore
+
+      # Docker on a Windows runner runs Windows containers, so the PostgreSQL tests could not start theirs. With Docker
+      # stopped they skip, as on a PC where it is not running, and the Linux job runs them.
+      - name: Stop Docker
+        run: if (Get-Service docker -ErrorAction SilentlyContinue) { Stop-Service docker }
+
+      - name: Test
+        run: dotnet test --solution DDT.slnx --no-build -- --filter-not-trait "Category=E2E" --ignore-exit-code 8
+
+  linux:
+    name: Linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ github.job }}-
+
+      # The agent and the console target Windows and are tested in the Windows job. They build here as well, because
+      # the test of THIRD-PARTY-NOTICES.md reads what their restore resolved.
+      - name: Build
+        run: dotnet build DDT.slnx -p:EnableWindowsTargeting=true
+
+      # The server runs on Linux in its container, so its tests run here too. Some run only here: the PostgreSQL
+      # tests, which start PostgreSQL in Docker, and the one of an administrator's intermediate certificate.
+      - name: Test
+        run: |
+          status=0
+          for project in DDT.Core.Tests DDT.Protocols.Tests DDT.Pxe.Tests DDT.Server.Tests; do
+            dotnet test --project "tests/$project" --no-build || status=1
+          done
+          exit $status
+
+  e2e:
+    name: End to end
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ github.job }}-
+
+      # The tests publish the agent with NativeAOT, which needs the Visual C++ build tools, and skip without them. Here
+      # a skip would pass unnoticed, so the job fails first.
+      - name: Check for the Visual C++ build tools
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $tools = & $vswhere -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $tools) { throw 'vswhere finds no Visual C++ build tools, so the end-to-end tests would skip.' }
+          "Visual C++ build tools: $tools"
+
+      - name: Test
+        run: dotnet test --project tests/DDT.E2E
+
+  web:
+    name: Web client
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/DDT.Web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: src/DDT.Web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/DDT.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check the formatting
+        run: npm run format
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+  screens:
+    name: Web screenshots
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/DDT.Web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: src/DDT.Web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/DDT.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The screenshots in screens/__screenshots__ are taken on Windows, and the checks draw the pages in the Microsoft
+      # Edge the runner has.
+      - name: Compare the screenshots
+        run: npm run screens
+
+      - name: Keep what differed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screenshot-differences
+          path: src/DDT.Web/test-results/
+          retention-days: 14
+
+  container:
+    name: Container image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Built to prove that build/Dockerfile still builds and that the server starts in the image; nothing is pushed.
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: build/Dockerfile
+          load: true
+          tags: ddt:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # With the image's defaults the server makes its own certificate and a SQLite database, and answers for the About
+      # page without a sign-in.
+      - name: Start the server in the image
+        run: |
+          docker run --detach --name ddt --publish 8443:8443 ddt:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --insecure https://localhost:8443/api/about; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs ddt
+          exit 1

@@ -1,0 +1,38 @@
+name: Feature request
+description: Something DDT should do that it does not do yet.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [docs/roadmap.md](https://github.com/Davicloud-NET/DDT/blob/master/docs/roadmap.md)
+        first: what you need may be planned already, or listed as not planned, with the reason.
+
+  - type: textarea
+    id: need
+    attributes:
+      label: What you want to do
+      description: The task you cannot do with DDT today, and why it matters on your network.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: How DDT could do it
+      description: Optional. A way you have in mind, or how another tool does it.
+
+  - type: input
+    id: mdt
+    attributes:
+      label: The MDT feature it replaces
+      description: If you are moving from the Microsoft Deployment Toolkit, the feature you miss.
+      placeholder: CustomSettings.ini sections, selection profiles, the Deployment Wizard, ...
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open and closed issues and the roadmap for this request.
+          required: true

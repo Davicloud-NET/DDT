@@ -86,6 +86,7 @@ src/
   DDT.Web/                 Vite + React + TypeScript SPA: React Aria components, Tailwind CSS, Lingui
   DDT.Design/              design tokens, the one source of the look, and the generator for the theme
   DDT.Agent/               NativeAOT agent for Windows PE, and its temporary service in Windows
+  DDT.ConsoleProtocol/     messages between the agent and its graphical console, source-generated JSON
   DDT.AppHost/             Aspire orchestration, development only
   DDT.ServiceDefaults/     OpenTelemetry, health checks, service discovery
 tests/
@@ -917,6 +918,39 @@ updated itself runs from the same folder, so it uses the same DLL. Alternatively
 then carries your DLL and writes it out wherever no `libwim-15.dll` is next to it yet.
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) names the source and the build script the
 embedded DLL comes from.
+
+### The console at the machine
+
+In Windows PE the agent shows on a console what it does and asks there what it needs. When
+`ddt-console.exe`, the graphical console, is next to the agent, the agent starts it before it checks
+for a newer agent, as `ddt-console.exe --pipe <name>`, and feeds it over that named pipe: the whole
+state after every change, the log lines as it writes them, starting with the newest 500 it wrote
+before the console connected, and one question at a time. The pipe's name holds a random part, and
+only a process of the agent's own account can open it. The console has 30 seconds to connect, and
+then has to say that it speaks the agent's version of the protocol in `src/DDT.ConsoleProtocol`.
+`Build-BootImage.ps1` does not add the console yet, and the graphical console itself is not built
+yet.
+
+The text console stays underneath and gets every log line all the same. It takes over for the rest
+of the agent's run, with a warning that says why, when the graphical console cannot start, does not
+connect in time, speaks another version, sends what is not a console message, takes no message for
+30 seconds, closes its pipe or ends; a question that was open is asked again on the text console.
+The agent ends a console that went wrong, so the text console is seen, but leaves its console
+running when the agent itself ends, to show how the run ended. Without `ddt-console.exe` the agent
+uses the text console alone and prints what it always printed. An agent that switches to a newer
+one ends its console, and the newer agent starts its own, so an agent that updated itself to a new
+version of the protocol uses the text console until the boot image has a console of that version.
+
+The service in the installed Windows has no console. Neither does a dry run or an agent whose input
+is redirected, unless `--console <path>` names one to start, which is how a development computer
+tries one.
+
+The questions are the text console's: the sign-in one field at a time with the error of the attempt
+before, the sequence, the disk and the computer name, each with what the text console lists for it,
+then `ERASE` before a disk is erased and `ANYWAY` before a disk image is written that the machine's
+Secure Boot would not start. On the graphical console a sequence and a disk are chosen by what they
+are, not by number, but the two words are still typed, and the agent checks every answer itself. An
+approval or an assignment on the web takes an open question away on either console.
 
 ### Registration and authorization
 
@@ -2008,7 +2042,12 @@ what they configure, API tokens, users and roles with the group maps of the dire
 single sign-on, and the Windows PE drivers of the boot image. The pages are tested with Vitest and
 Testing Library, with axe checks, and were used in a browser against a development host with the
 `web` and `pxe` roles. They have not yet watched a deployment on a machine, and no boot image has
-been built with drivers yet. The agent's console in Windows PE is still the text console.
+been built with drivers yet. The agent's console in Windows PE is still the text console, but the
+agent now asks and shows through a seam the graphical console will fill, see
+[The console at the machine](#the-console-at-the-machine): it starts `ddt-console.exe` where there
+is one, feeds it over a named pipe, and falls back to the text console. That is tested with a
+console in the test process over a real pipe, and the published agent fed a stand-in console
+process in a dry run and carried on with the text console when that process crashed.
 
 Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: the rest of M6.5,
 the graphical console in Windows PE; M7 the task sequence

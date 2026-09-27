@@ -13,6 +13,7 @@ import {
   refusalOf,
   saveSettings,
   settingsQuery,
+  settingsText,
   type SaveRefusal,
   type SecretAction,
   type SettingsFinding,
@@ -130,11 +131,12 @@ export function useSettingsForm<T>(
     needsReauth,
     secrets,
     lockOf,
-    // Problems of the stored section, and the server's refusal of the last save, for one field.
+    // Problems of the stored section, and the server's refusal of the last save, for one field, in the person's
+    // language: apiErrorFrom says the refusal's already.
     fieldErrors: (field: string): string[] => [
       ...(refusal?.kind === "invalid" ? (refusal.fields[field] ?? []) : []),
       ...(draft === null
-        ? (view?.problems ?? []).filter((p) => p.field === field).map((p) => p.message)
+        ? (view?.problems ?? []).filter((p) => p.field === field).map((p) => settingsText(p))
         : []),
     ],
     change: (field: string, value: unknown) => {

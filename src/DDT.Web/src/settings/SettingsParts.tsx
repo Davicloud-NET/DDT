@@ -19,7 +19,12 @@ import { ListBoxItem, Select } from "@/ui/Select";
 import { StateTag } from "@/ui/StateTag";
 import { TextField } from "@/ui/TextField";
 
-import { reauthenticate, type SettingsApplyState, type SettingsLock } from "./settings";
+import {
+  reauthenticate,
+  settingsText,
+  type SettingsApplyState,
+  type SettingsLock,
+} from "./settings";
 import { valueAt, type SettingsForm } from "./useSettingsForm";
 
 // A section of settings as a panel: its fields, and a bar that saves or discards them, says who saved last, and shows
@@ -144,7 +149,11 @@ function ApplyStates({ states, version }: { states: SettingsApplyState[]; versio
                   : translate`Applied`}
             </StateTag>
             <span className="type-data text-ink">{host}</span>
-            {state.message !== null ? <span className="text-ink-2">{state.message}</span> : null}
+            {state.message !== null ? (
+              <span className="text-ink-2">
+                {settingsText({ message: state.message, text: state.text })}
+              </span>
+            ) : null}
           </li>
         );
       })}
@@ -514,7 +523,7 @@ function WarningsDialog<T>({ form }: { form: SettingsForm<T> }) {
     >
       <ul className="flex list-disc flex-col gap-2 pl-5">
         {warnings.map((warning, index) => (
-          <li key={index}>{warning.message}</li>
+          <li key={index}>{settingsText(warning)}</li>
         ))}
       </ul>
     </Dialog>

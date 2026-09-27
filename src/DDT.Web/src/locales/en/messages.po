@@ -8,6 +8,26 @@ msgstr ""
 "Language: en\n"
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootDirectoryHoldsStore"
+msgid "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, such as {suggested}."
+msgstr "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, such as {suggested}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootDirectoryHoldsKey"
+msgid "''{directory}'' holds the folder of the TLS certificate or key {file}, which would serve the key. Use a directory of its own, such as {suggested}."
+msgstr "''{directory}'' holds the folder of the TLS certificate or key {file}, which would serve the key. Use a directory of its own, such as {suggested}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootDirectoryInKeys"
+msgid "''{directory}'' is in the key ring folder {keys}, which would serve its keys. Use a directory of its own, such as {suggested}."
+msgstr "''{directory}'' is in the key ring folder {keys}, which would serve its keys. Use a directory of its own, such as {suggested}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootDirectoryIsRoot"
+msgid "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}."
+msgstr "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.keyboard"
 msgid "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407."
 msgstr "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407."
@@ -18,14 +38,99 @@ msgid "''{locale}'' is not a language and region that Windows knows. Use a name 
 msgstr "''{locale}'' is not a language and region that Windows knows. Use a name such as de-DE."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.certificate.nameInvalid"
+msgid "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5."
+msgstr "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.interfaceNotFound"
+msgid "''{name}'' names no interface on {host}, which serves nothing for it."
+msgstr "''{name}'' names no interface on {host}, which serves nothing for it."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.roleUnknown"
+msgid "''{role}'' is not a DDT role. Use {roles}."
+msgstr "''{role}'' is not a DDT role. Use {roles}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.provisionRoleUnknown"
+msgid "''{role}'' is not a DDT role. Use {viewer} or {operator}."
+msgstr "''{role}'' is not a DDT role. Use {viewer} or {operator}."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.timeZone"
 msgid "''{timeZone}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time."
 msgstr "''{timeZone}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.proxies.networkEverything"
+msgid "''{value}'' is every address there is, so any client could claim any address. Name the proxies' own network."
+msgstr "''{value}'' is every address there is, so any client could claim any address. Name the proxies' own network."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.networkEverything"
+msgid "''{value}'' is every address there is. Name the provisioning networks themselves."
+msgstr "''{value}'' is every address there is. Name the provisioning networks themselves."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.architectureUnknown"
+msgid "''{value}'' is not a client architecture. Use one of: {architectures}."
+msgstr "''{value}'' is not a client architecture. Use one of: {architectures}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.localeUnknown"
+msgid "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language."
+msgstr "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language."
+
+#: src/lib/serverMessages.ts
 msgctxt "organizationalUnit.notDistinguished"
 msgid "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com."
 msgstr "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.controllerInvalid"
+msgid "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
+msgstr "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.logging.levelUnknown"
+msgid "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None."
+msgstr "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.proxies.networkInvalid"
+msgid "''{value}'' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length."
+msgstr "''{value}'' is not a network such as 10.20.0.0/24 with no address bits set past the prefix length."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.networkInvalid"
+msgid "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine."
+msgstr "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.administratorNameInvalid"
+msgid "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >."
+msgstr "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.timeZoneUnknown"
+msgid "''{value}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale."
+msgstr "''{value}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time, or leave it empty so that Windows picks the zone of the locale."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.proxies.addressInvalid"
+msgid "''{value}'' is not an IP address."
+msgstr "''{value}'' is not an IP address."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.notIpv4Address"
+msgid "''{value}'' is not an IPv4 address."
+msgstr "''{value}'' is not an IPv4 address."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.domainUserNameForm"
+msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
+msgstr "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 
 #: src/sequences/SequencesPage.tsx
 msgid "{activeRuns, plural, one {Assigned to or running on # machine} other {Assigned to or running on # machines}}"
@@ -38,6 +143,11 @@ msgstr "{activeRuns, plural, one {The machine it is assigned to or running on ke
 #: src/machines/MachinesPage.tsx
 msgid "{activity}, last contact {contact}"
 msgstr "{activity}, last contact {contact}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.provisionAdministrator"
+msgid "{administrator} would make every identity the provider signs in that DDT has not seen an administrator. Use {viewer} or {operator}, or map a group to {administrator} in GroupRoleMap."
+msgstr "{administrator} would make every identity the provider signs in that DDT has not seen an administrator. Use {viewer} or {operator}, or map a group to {administrator} in GroupRoleMap."
 
 #: src/runs/RunPanel.tsx
 msgid "{assigned}. The machine has not started it yet."
@@ -84,19 +194,19 @@ msgid "{controller} answered the check with an error: {detail}"
 msgstr "{controller} answered the check with an error: {detail}"
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.unreachableWithDetail"
-msgid "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
-msgstr "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
+msgctxt "domain.controllerUnreachableWithDetail"
+msgid "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS."
+msgstr "{controller} could not be reached over LDAP ({detail}). If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.unreachable"
-msgid "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
-msgstr "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, set DDT:Deployment:Domain:Controller to a domain controller's name or address. The machines find their domain controller through their own DNS."
+msgctxt "domain.controllerUnreachable"
+msgid "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS."
+msgstr "{controller} could not be reached over LDAP. If this server's DNS does not know {domain}, enter a domain controller's name or address for the check on the Deployment defaults page. The machines find their domain controller through their own DNS."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.wrongPassword"
-msgid "{controller} did not accept the password of {user}. Correct DDT:Deployment:Domain:Password."
-msgstr "{controller} did not accept the password of {user}. Correct DDT:Deployment:Domain:Password."
+msgctxt "domain.joinPasswordRefused"
+msgid "{controller} did not accept the password of {user}. Correct the join account password on the Deployment defaults page."
+msgstr "{controller} did not accept the password of {user}. Correct the join account password on the Deployment defaults page."
 
 #: src/lib/serverMessages.ts
 msgctxt "domain.signInRefusedWithReason"
@@ -114,9 +224,9 @@ msgid "{controller} is a domain controller of {domain}."
 msgstr "{controller} is a domain controller of {domain}."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.noSuchAccount"
-msgid "{controller} knows no account {user}. Correct DDT:Deployment:Domain:UserName."
-msgstr "{controller} knows no account {user}. Correct DDT:Deployment:Domain:UserName."
+msgctxt "domain.joinAccountUnknown"
+msgid "{controller} knows no account {user}. Correct the join account on the Deployment defaults page."
+msgstr "{controller} knows no account {user}. Correct the join account on the Deployment defaults page."
 
 #: src/lib/serverMessages.ts
 msgctxt "domain.noSecureConnection"
@@ -124,9 +234,9 @@ msgid "{controller} offers no LDAPS on port 636 that this server trusts, and on 
 msgstr "{controller} offers no LDAPS on port 636 that this server trusts, and on this operating system only LDAPS keeps the join account's password secret during the check. Give the domain controllers a certificate, for example from Active Directory Certificate Services, and trust its CA on this server. Joining does not depend on this check."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.otherDomain"
-msgid "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or point DDT:Deployment:Domain:Controller at a domain controller of that domain."
-msgstr "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct DDT:Deployment:Domain:Name, or point DDT:Deployment:Domain:Controller at a domain controller of that domain."
+msgctxt "domain.servesOtherDomain"
+msgid "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults page, or name a domain controller of that domain for the check there."
+msgstr "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults page, or name a domain controller of that domain for the check there."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.unknownPlaceholders"
@@ -203,9 +313,24 @@ msgid "{description}"
 msgstr "{description}"
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.noOrganizationalUnit"
-msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none."
-msgstr "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or DDT:Deployment:Domain:OrganizationalUnit when the step names none."
+msgctxt "domain.organizationalUnitMissing"
+msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
+msgstr "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.noImmutableId"
+msgid "{entry} has no {attribute}, so a sign-in is refused."
+msgstr "{entry} has no {attribute}, so a sign-in is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.passwordRefused"
+msgid "{entry} was found, but the directory refused the password."
+msgstr "{entry} was found, but the directory refused the password."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.found"
+msgid "{entry} was found, in {count, plural, one {# group} other {# groups}}."
+msgstr "{entry} was found, in {count, plural, one {# group} other {# groups}}."
 
 #: src/lib/serverMessages.ts
 msgctxt "resolution.cannotRun"
@@ -215,6 +340,11 @@ msgstr "{explanation} {count, plural, one {{sequence} has # problem, so it canno
 #: src/sequences/steps/WindowsFields.tsx
 msgid "{facts}, cannot be installed"
 msgstr "{facts}, cannot be installed"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.fieldProblem"
+msgid "{field}: {problem}"
+msgstr "{field}: {problem}"
 
 #: src/packages/PackagesPage.tsx
 msgid "{file} is already in the library as {name}."
@@ -227,6 +357,11 @@ msgstr "{file}, index {index}"
 #: src/packages/PackagesPage.tsx
 msgid "{files, plural, one {# file, {unpacked} unpacked} other {# files, {unpacked} unpacked}}"
 msgstr "{files, plural, one {# file, {unpacked} unpacked} other {# files, {unpacked} unpacked}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "common.sentences"
+msgid "{first} {rest}"
+msgstr "{first} {rest}"
 
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
@@ -413,6 +548,11 @@ msgstr "{name} is a single sign-on account in DDT, so a sign-in with this name a
 msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
 msgstr "{name} is deleted and can no longer be assigned or chosen at a machine."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.accountDisabled"
+msgid "{name} is disabled, so a sign-in is refused before the directory is asked."
+msgstr "{name} is disabled, so a sign-in is refused before the directory is asked."
+
 #: src/uploads/UploadPanel.tsx
 msgid "{name} is empty."
 msgstr "{name} is empty."
@@ -423,9 +563,19 @@ msgid "{name} is in {count} mapped groups and gets the highest role they give, {
 msgstr "{name} is in {count} mapped groups and gets the highest role they give, {role} from {group}."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.noMappedGroup"
-msgid "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused."
-msgstr "{name} is in none of the groups DDT:Ldap:GroupRoleMap maps to a role, so a sign-in is refused."
+msgctxt "directory.inNoMappedGroup"
+msgid "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
+msgstr "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.lockedOut"
+msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
+msgstr "{name} is locked out, so a sign-in is refused before the directory is asked."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.notDirectoryAccount"
+msgid "{name} is not a directory account, so its password is not sent to the directory."
+msgstr "{name} is not a directory account, so its password is not sent to the directory."
 
 #: src/users/UsersPage.tsx
 msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working, until an administrator enables it again. Nothing is deleted."
@@ -449,6 +599,16 @@ msgstr "{name} signs in with its directory password. Reset it in the directory."
 #: src/uploads/UploadPanel.tsx
 msgid "{name} was not added. {reason}"
 msgstr "{name} was not added. {reason}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.proxies.networkWide"
+msgid "{network} is wider than a /{prefix}. Every address in it counts as a trusted proxy address."
+msgstr "{network} is wider than a /{prefix}. Every address in it counts as a trusted proxy address."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.networkWide"
+msgid "{network} is wider than a /{prefix}. Every address in it counts as a zero touch address."
+msgstr "{network} is wider than a /{prefix}. Every address in it counts as a zero touch address."
 
 #: src/log/LogPanel.tsx
 msgid "{newLines, plural, one {Paused, # new line} other {Paused, # new lines}}"
@@ -475,6 +635,16 @@ msgstr "{percent}% of {total} at {speed}/s, {took} so far"
 msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent}% of {total}, {took} so far"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.httpBootPortInvalid"
+msgid "{port} is not a port number."
+msgstr "{port} is not a port number."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.portInvalid"
+msgid "{port} is not a port number. LDAPS uses 636, and StartTLS 389."
+msgstr "{port} is not a port number. LDAPS uses 636, and StartTLS 389."
+
 #: src/sequences/FindingsSummary.tsx
 msgid "{problemCount, plural, one {# problem keeps it from running.} other {# problems keep it from running.}}"
 msgstr "{problemCount, plural, one {# problem keeps it from running.} other {# problems keep it from running.}}"
@@ -492,6 +662,16 @@ msgstr "{problems}, cannot run"
 msgctxt "directory.lockedOut"
 msgid "{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
 msgstr "{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.noRole"
+msgid "{result} The group map gives no role, so a sign-in is refused."
+msgstr "{result} The group map gives no role, so a sign-in is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.role"
+msgid "{result} The group map makes the account {role}."
+msgstr "{result} The group map makes the account {role}."
 
 #: src/machines/approval.ts
 msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
@@ -512,6 +692,16 @@ msgstr "{rule} chooses {name}, which names the machine in its cloud-init seed, a
 #: src/lib/format.ts
 msgid "{seconds} s"
 msgstr "{seconds} s"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.configurationUnreadable"
+msgid "{section} cannot be read from configuration: {error}"
+msgstr "{section} cannot be read from configuration: {error}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.noSuchSecret"
+msgid "{section} has no secret called {name}."
+msgstr "{section} has no secret called {name}."
 
 #: src/machines/MachinePage.tsx
 msgid "{seen} from {from}"
@@ -562,14 +752,34 @@ msgid "{stepName} moved to position {position} of {count}."
 msgstr "{stepName} moved to position {position} of {count}."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.answered"
+msgid "{url} answered {status} {reason}."
+msgstr "{url} answered {status} {reason}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.unreadable"
+msgid "{url} could not be read: {error}"
+msgstr "{url} could not be read: {error}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.notDiscovery"
+msgid "{url} is not the discovery document of an OpenID Connect provider."
+msgstr "{url} is not the discovery document of an OpenID Connect provider."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootUrl"
+msgid "{url} is not where DDT serves boot files, which is http://<server>:{port}/boot/. Keep it only if another server serves this file."
+msgstr "{url} is not where DDT serves boot files, which is http://<server>:{port}/boot/. Keep it only if another server serves this file."
+
+#: src/lib/serverMessages.ts
 msgctxt "domain.accountExpired"
 msgid "{user} has expired."
 msgstr "{user} has expired."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.mustChangePassword"
-msgid "{user} has to change its password before it can sign in. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
-msgstr "{user} has to change its password before it can sign in. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
+msgctxt "domain.joinPasswordMustChange"
+msgid "{user} has to change its password before it can sign in. Give it a new one, in the domain and on the Deployment defaults page."
+msgstr "{user} has to change its password before it can sign in. Give it a new one, in the domain and on the Deployment defaults page."
 
 #: src/lib/serverMessages.ts
 msgctxt "domain.accountDisabled"
@@ -1020,6 +1230,11 @@ msgstr "Actions for the rule for {description}"
 #: src/users/UsersPage.tsx
 msgid "Active"
 msgstr "Active"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.addHostFirst"
+msgid "Add {host}, the name this page is reached by, to the server names first."
+msgstr "Add {host}, the name this page is reached by, to the server names first."
 
 #: src/sequences/StepConditions.tsx
 msgid "Add a condition"
@@ -1751,6 +1966,11 @@ msgstr "DDT"
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.apply.pxeBindFailed"
+msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+msgstr "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+
 #: src/app/RouteError.tsx
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
 msgstr "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
@@ -1758,6 +1978,11 @@ msgstr "DDT could not reach its server. Check that the server is running and tha
 #: src/sequences/steps/RawImageFields.tsx
 msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 msgstr "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.newRootGenerate"
+msgid "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers that manage DDT."
+msgstr "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers that manage DDT."
 
 #: src/about/AboutPage.tsx
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
@@ -1780,19 +2005,14 @@ msgid "DDT shows this token only now and keeps nothing but a hash of it. If it i
 msgstr "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.noMapNewAccount"
-msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
-msgstr "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
+msgctxt "settings.agent.configured"
+msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+msgstr "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.noMapRole"
-msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {role}."
-msgstr "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has {role}."
-
-#: src/lib/serverMessages.ts
-msgctxt "directory.noMapNoRole"
-msgid "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing."
-msgstr "DDT:Ldap:GroupRoleMap is empty, so administrators set roles. The account has none yet, so it reaches nothing."
+msgctxt "settings.certificate.generateOff"
+msgid "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certificate. Upload one instead."
+msgstr "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certificate. Upload one instead."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Defaults for every run"
@@ -1930,6 +2150,11 @@ msgstr "Disks"
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr "does not equal"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.pfxPassword"
+msgid "Does not open with this password: {error}"
+msgstr "Does not open with this password: {error}"
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Domain"
@@ -2096,9 +2321,19 @@ msgctxt "sequence.rebootExitCodes"
 msgid "Enter at most {max} exit codes that ask for a restart."
 msgstr "Enter at most {max} exit codes that ask for a restart."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.secretForNewServer"
+msgid "Enter it again for the new server: a stored secret goes only to the server it was entered for."
+msgstr "Enter it again for the new server: a stored secret goes only to the server it was entered for."
+
 #: src/auth/SignInPage.tsx
 msgid "Enter one of the recovery codes you saved."
 msgstr "Enter one of the recovery codes you saved."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.reauthenticate.codeNeeded"
+msgid "Enter the code of your authenticator as well."
+msgstr "Enter the code of your authenticator as well."
 
 #: src/lib/serverMessages.ts
 msgctxt "model.enter"
@@ -2109,6 +2344,11 @@ msgstr "Enter the model as the machine reports it."
 msgctxt "user.displayNameEmpty"
 msgid "Enter the name DDT shows for the account."
 msgstr "Enter the name DDT shows for the account."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.authorityInvalid"
+msgid "Enter the provider's https address, such as https://login.example.com/realms/ddt."
+msgstr "Enter the provider's https address, such as https://login.example.com/realms/ddt."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptEmpty"
@@ -2132,6 +2372,11 @@ msgstr "Enter the value to compare with."
 #: src/sequences/fields.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
 msgstr "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.enterPasswordAgain"
+msgid "Enter your password again to change {fields}."
+msgstr "Enter your password again to change {fields}."
 
 #: src/users/DirectoryPanel.tsx
 msgid "Entry"
@@ -2164,6 +2409,16 @@ msgstr "Every action"
 #: src/boot/BootImagePage.tsx
 msgid "Every boot image is built again"
 msgstr "Every boot image is built again"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.rekey"
+msgid "Every directory account is keyed on {current}. With {next} each one is taken for a new person at its next sign-in, and its roles and history stay with the old account."
+msgstr "Every directory account is keyed on {current}. With {next} each one is taken for a new person at its next sign-in, and its roles and history stay with the old account."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.operatorRole"
+msgid "Every identity the provider signs in that DDT has not seen becomes an operator, and operators can read the deployment passwords by deploying a machine they control."
+msgstr "Every identity the provider signs in that DDT has not seen becomes an operator, and operators can read the deployment passwords by deploying a machine they control."
 
 #: src/images/ImagesPage.tsx
 msgid "Every image in {file} is already in the library."
@@ -2211,6 +2466,11 @@ msgstr "Failed"
 #: src/machines/machineView.ts
 msgid "Failed at step {number} of {count}"
 msgstr "Failed at step {number} of {count}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.nestedGroupsOff"
+msgid "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
+msgstr "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
 
 #: src/images/ImagesPage.tsx
 msgid "File"
@@ -2353,6 +2613,11 @@ msgstr "goes on in the installed Windows"
 msgid "Group name"
 msgstr "Group name"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.groupsClaimRequired"
+msgid "GroupRoleMap needs the claim that carries the groups, such as groups."
+msgstr "GroupRoleMap needs the claim that carries the groups, such as groups."
+
 #: src/users/DirectoryPanel.tsx
 msgid "Groups and the roles they give"
 msgstr "Groups and the roles they give"
@@ -2364,6 +2629,11 @@ msgstr "Handed over to Windows; after Windows setup the agent continued there {t
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
 msgstr "Handing over to Windows"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.pfxWithoutKey"
+msgid "Holds no certificate with its private key."
+msgstr "Holds no certificate with its private key."
 
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
@@ -2459,6 +2729,16 @@ msgstr "is"
 msgid "is not"
 msgstr "is not"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.userFilterBraces"
+msgid "Is not a valid template: a brace that is not part of {placeholder} has to be written twice, as {open} or {close}."
+msgstr "Is not a valid template: a brace that is not part of {placeholder} has to be written twice, as {open} or {close}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.notBase64"
+msgid "Is not base64."
+msgstr "Is not base64."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It can join machines here."
 msgstr "It can join machines here."
@@ -2466,6 +2746,16 @@ msgstr "It can join machines here."
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It cannot join machines here."
 msgstr "It cannot join machines here."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.missingNames"
+msgid "It does not name {names}, which the server is reached by, so browsers and agents would refuse it."
+msgstr "It does not name {names}, which the server is reached by, so browsers and agents would refuse it."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.notValidNow"
+msgid "It is valid from {from} to {until}, not now."
+msgstr "It is valid from {from} to {until}, not now."
 
 #: src/lib/autosave.ts
 msgid "It no longer exists on the server, so nothing more is saved."
@@ -2486,6 +2776,11 @@ msgstr "It stays waiting until someone signs in at it."
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
 msgstr "Its disk is not erased."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.keyAlgorithm"
+msgid "Its key is neither RSA nor ECDSA."
+msgstr "Its key is neither RSA nor ECDSA."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Join account"
@@ -2870,9 +3165,14 @@ msgid "More for {label}"
 msgstr "More for {label}"
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.manyEntries"
-msgid "More than one entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
-msgstr "More than one entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
+msgctxt "settings.ldapTest.manyEntries"
+msgid "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in is refused."
+msgstr "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.manyMatchingEntries"
+msgid "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
+msgstr "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
 
 #: src/sequences/StepInspector.tsx
 msgid "Move"
@@ -2891,9 +3191,74 @@ msgid "Move {name} later"
 msgstr "Move {name} later"
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.pxe.methodForArchitecture"
+msgid "Must be {method} for {architecture} clients."
+msgstr "Must be {method} for {architecture} clients."
+
+#: src/lib/serverMessages.ts
 msgctxt "organizationalUnit.withPrefix"
 msgid "Must be a distinguished name without the LDAP:// prefix, such as OU=Workstations,DC=example,DC=com."
 msgstr "Must be a distinguished name without the LDAP:// prefix, such as OU=Workstations,DC=example,DC=com."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootFileUrl"
+msgid "Must be an absolute http or https URL."
+msgstr "Must be an absolute http or https URL."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.asciiMaxLength"
+msgid "Must be ASCII and at most {max} characters."
+msgstr "Must be ASCII and at most {max} characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.atLeastOne"
+msgid "Must be at least 1."
+msgstr "Must be at least 1."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.windowSizeRange"
+msgid "Must be between 1 and {max}."
+msgstr "Must be between 1 and {max}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.perAddressRange"
+msgid "Must be between 1 and MaxWaiting, which is {max}."
+msgstr "Must be between 1 and MaxWaiting, which is {max}."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.transportInvalid"
+msgid "Must be Ldaps, StartTls or UnencryptedDangerous."
+msgstr "Must be Ldaps, StartTls or UnencryptedDangerous."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.timeoutNotPositive"
+msgid "Must be longer than zero, such as 00:00:10."
+msgstr "Must be longer than zero, such as 00:00:10."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootFileRequired"
+msgid "Must be set."
+msgstr "Must be set."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.methodInvalid"
+msgid "Must be Tftp or Http."
+msgstr "Must be Tftp or Http."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.userFilterPlaceholder"
+msgid "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder}))."
+msgstr "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder}))."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.scopesWithoutOpenid"
+msgid "Must contain openid, which is what makes the sign-in OpenID Connect."
+msgstr "Must contain openid, which is what makes the sign-in OpenID Connect."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootDirectoryEmpty"
+msgid "Must not be empty. Leave it out for the folder boot in DDT:StorePath."
+msgstr "Must not be empty. Leave it out for the folder boot in DDT:StorePath."
 
 #: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
@@ -2988,6 +3353,11 @@ msgstr "No account could be created for that identity. Ask an administrator."
 msgid "No account matches"
 msgstr "No account matches"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.nothingToConfirm"
+msgid "No certificate waits for a confirmation."
+msgstr "No certificate waits for a confirmation."
+
 #: src/runs/RunPanel.tsx
 msgid "No contact for {silentFor}, as the machine restarts."
 msgstr "No contact for {silentFor}, as the machine restarts."
@@ -3004,19 +3374,19 @@ msgstr "No DDT account is linked to that identity. Ask an administrator."
 msgid "No disk DDT can install on"
 msgstr "No disk DDT can install on"
 
-#: src/lib/serverMessages.ts
-msgctxt "sequence.noDomain"
-msgid "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step."
-msgstr "No domain is configured in DDT:Deployment:Domain, so the machine has no domain to join. Configure one or remove this step."
-
 #: src/sequences/steps/WindowsFields.tsx
 msgid "No domain is configured on the server, so this step cannot run."
 msgstr "No domain is configured on the server, so this step cannot run."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.notConfigured"
-msgid "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server."
-msgstr "No domain is configured. Set DDT:Deployment:Domain:Name and the join account on the server."
+msgctxt "sequence.noDomainSet"
+msgid "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step."
+msgstr "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.notSet"
+msgid "No domain is set. Set the domain and the join account on the Deployment defaults page."
+msgstr "No domain is set. Set the domain and the join account on the Deployment defaults page."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "No driver package is in the library yet."
@@ -3035,9 +3405,14 @@ msgid "No entry matches"
 msgstr "No entry matches"
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.noEntry"
-msgid "No entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
-msgstr "No entry under {baseDn} matches {name} through DDT:Ldap:UserFilter, so a sign-in with it is refused."
+msgctxt "directory.noMatchingEntry"
+msgid "No entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
+msgstr "No entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.noEntry"
+msgid "No entry under {baseDn} matches {name} with the user filter."
+msgstr "No entry under {baseDn} matches {name} with the user filter."
 
 #: src/lib/serverMessages.ts
 msgctxt "account.noExternalSignIn"
@@ -3051,6 +3426,11 @@ msgstr "No file packages yet"
 #: src/users/DirectoryPanel.tsx
 msgid "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
 msgstr "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.noAdministrator"
+msgid "No group maps to Administrator, so every directory account that is an administrator loses the role at its next sign-in."
+msgstr "No group maps to Administrator, so every directory account that is an administrator loses the role at its next sign-in."
 
 #: src/users/DirectoryPanel.tsx
 msgid "No group matches."
@@ -3069,13 +3449,23 @@ msgid "No loaded line matches the filter."
 msgstr "No loaded line matches the filter."
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.noLocalAdministrator"
-msgid "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one."
-msgstr "No local administrator is configured in DDT:Deployment:LocalAdministrator, so the answer file cannot add one."
+msgctxt "settings.noLocalAdministrator"
+msgid "No local administrator account is enabled. Should the directory or the provider stop granting the Administrator role, only the console command settings create-admin could let anyone in again."
+msgstr "No local administrator account is enabled. Should the directory or the provider stop granting the Administrator role, only the console command settings create-admin could let anyone in again."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.noLocalAdministratorSet"
+msgid "No local administrator is set on the Deployment defaults page, so the answer file cannot add one."
+msgstr "No local administrator is set on the Deployment defaults page, so the answer file cannot add one."
 
 #: src/log/LogPanel.tsx
 msgid "No log lines for this run yet. The agent sends its log while it runs."
 msgstr "No log lines for this run yet. The agent sends its log while it runs."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.secretCannotBeKept"
+msgid "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
+msgstr "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
 
 #: src/machines/MachinesPage.tsx
 msgid "No machine matches"
@@ -3097,6 +3487,11 @@ msgstr "No package"
 #: src/packages/PackagesPage.tsx
 msgid "No package matches"
 msgstr "No package matches"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.apply.proxiesClosed"
+msgid "No proxy is trusted on this host while the section has problems: {problems}"
+msgstr "No proxy is trusted on this host while the section has problems: {problems}"
 
 #: src/rules/RulesPage.tsx
 msgid "No registered machine"
@@ -3690,6 +4085,41 @@ msgstr "Removing the agent from Windows"
 msgid "Replace"
 msgstr "Replace"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.requiredWithDomain"
+msgid "Required when Domain:Name is set."
+msgstr "Required when Domain:Name is set."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.domainUserNameRequired"
+msgid "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example."
+msgstr "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.administratorPasswordRequired"
+msgid "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account page of its first start."
+msgstr "Required when Domain:Name is set. Without a local administrator, a domain machine stops at the account page of its first start."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.hostRequired"
+msgid "Required while directory sign-in is on. Name the directory server, such as dc1.corp.example."
+msgstr "Required while directory sign-in is on. Name the directory server, such as dc1.corp.example."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.serverAddressRequired"
+msgid "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it."
+msgstr "Required while EnableTftp is false, because this target uses Tftp. Name the TFTP server that serves it."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.clientIdRequired"
+msgid "Required while single sign-on is on: the client id the provider shows for DDT."
+msgstr "Required while single sign-on is on: the client id the provider shows for DDT."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.authorityRequired"
+msgid "Required while single sign-on is on: the provider's https address, such as https://login.example.com/realms/ddt."
+msgstr "Required while single sign-on is on: the provider's https address, such as https://login.example.com/realms/ddt."
+
 #: src/machines/AssignDialog.tsx
 msgid "Required, because {name} gives this name to the machine in its cloud-init seed."
 msgstr "Required, because {name} gives this name to the machine in its cloud-init seed."
@@ -4019,6 +4449,16 @@ msgid "Send every chunk with a Content-Length header."
 msgstr "Send every chunk with a Content-Length header."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.certificate.sendPair"
+msgid "Send the certificate and its key, or a PFX."
+msgstr "Send the certificate and its key, or a PFX."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.sendPem"
+msgid "Send the certificate with its intermediates and its key as PEM, or a PFX."
+msgstr "Send the certificate with its intermediates and its key as PEM, or a PFX."
+
+#: src/lib/serverMessages.ts
 msgctxt "package.targetsMissing"
 msgid "Send the list of targets, empty for none."
 msgstr "Send the list of targets, empty for none."
@@ -4032,6 +4472,16 @@ msgstr "Send the position of the chunk in the file in the Upload-Offset header."
 msgctxt "sequence.sendJson"
 msgid "Send the sequence as JSON."
 msgstr "Send the sequence as JSON."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.sendValues"
+msgid "Send the values of the section."
+msgstr "Send the values of the section."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.sendValues"
+msgid "Send the values to test."
+msgstr "Send the values to test."
 
 #: src/machines/MachinesPage.tsx
 #: src/runs/RunHistoryPage.tsx
@@ -4190,9 +4640,9 @@ msgid "Sign-in through a directory is off. It is turned on and set up in the con
 msgstr "Sign-in through a directory is off. It is turned on and set up in the configuration, under DDT:Ldap, until the settings page takes it over."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.off"
-msgid "Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first."
-msgstr "Sign-in through a directory is off. Turn on DDT:Ldap:Enabled and set its connection first."
+msgctxt "directory.turnedOff"
+msgid "Sign-in through a directory is off. Turn it on and set its connection on the Sign-in page first."
+msgstr "Sign-in through a directory is off. Turn it on and set its connection on the Sign-in page first."
 
 #: src/images/images.ts
 msgid "Signed"
@@ -4223,9 +4673,24 @@ msgstr "Signing in asks for a code from your authenticator app. To turn it off, 
 msgid "Single sign-on account"
 msgstr "Single sign-on account"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidc.cannotStart"
+msgid "Single sign-on cannot start with these values: {error}"
+msgstr "Single sign-on cannot start with these values: {error}"
+
 #: src/users/UserDialogs.tsx
 msgid "Single sign-on gave this role when it created the account. A role chosen here stays until an administrator changes it."
 msgstr "Single sign-on gave this role when it created the account. A role chosen here stays until an administrator changes it."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.apply.oidcClosed"
+msgid "Single sign-on is off on this host while the section has problems: {problems}"
+msgstr "Single sign-on is off on this host while the section has problems: {problems}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.apply.oidcFailed"
+msgid "Single sign-on is off on this host: {error}"
+msgstr "Single sign-on is off on this host: {error}"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
@@ -4260,6 +4725,11 @@ msgstr "Someone else saved these settings while you were changing them."
 #: src/sequences/SequenceEditor.tsx
 msgid "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
 msgstr "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.savedSince"
+msgid "Someone saved {section} since you loaded it. Load it again."
+msgstr "Someone saved {section} since you loaded it. Load it again."
 
 #: src/app/RouteError.tsx
 msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
@@ -4493,6 +4963,11 @@ msgstr "That code is not valid. Check the time on the device generating it."
 msgid "That did not work."
 msgstr "That did not work."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.agent.notExecutable"
+msgid "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."
+msgstr "That is not a Windows executable. Upload ddt-agent.exe as Publish-Agent.ps1 builds it."
+
 #: src/auth/SignInPage.tsx
 msgid "That user name or password is not correct."
 msgstr "That user name or password is not correct."
@@ -4524,6 +4999,11 @@ msgstr "The account changed while this was saved. Look at it again."
 msgid "The account has no role yet, so it reaches nothing."
 msgstr "The account has no role yet, so it reaches nothing."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.reauthenticate.lockedOut"
+msgid "The account is locked out. Try again later."
+msgstr "The account is locked out. Try again later."
+
 #: src/users/UserDialogs.tsx
 msgid "The account is ready. Hand over this password in person or through a channel you trust."
 msgstr "The account is ready. Hand over this password in person or through a channel you trust."
@@ -4531,6 +5011,11 @@ msgstr "The account is ready. Hand over this password in person or through a cha
 #: src/users/UsersPage.tsx
 msgid "The accounts could not be loaded."
 msgstr "The accounts could not be loaded."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.agent.tooLarge"
+msgid "The agent may be at most {max} MB."
+msgstr "The agent may be at most {max} MB."
 
 #: src/runs/runs.ts
 msgid "The agent started the run"
@@ -4557,6 +5042,21 @@ msgstr "The attribution notice, the warranty disclaimer and the additional terms
 msgid "The audit log could not be read: {readError}"
 msgstr "The audit log could not be read: {readError}"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.bindFailed"
+msgid "The bind as {account} to {server} failed: {error}"
+msgstr "The bind as {account} to {server} failed: {error}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.bound"
+msgid "The bind as {account} to {server} succeeded."
+msgstr "The bind as {account} to {server} succeeded."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.unencrypted"
+msgid "The bind password and every password typed at sign-in cross the network in clear text."
+msgstr "The bind password and every password typed at sign-in cross the network in clear text."
+
 #: src/boot/BootImagePage.tsx
 msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
 msgstr "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
@@ -4572,6 +5072,11 @@ msgstr "The boot image has Windows PE's own drivers only. Flag a driver package 
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
 msgstr "The browser did not let DDT copy it. Select it and copy it yourself."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.keyMismatch"
+msgid "The certificate does not load with this key: {error}"
+msgstr "The certificate does not load with this key: {error}"
 
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "The check did not run: {failure}"
@@ -4655,19 +5160,19 @@ msgid "The directory at {server} could not be reached: {detail}"
 msgstr "The directory at {server} could not be reached: {detail}"
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.bindRefused"
-msgid "The directory at {server} refused the bind account {bindDn}. Check DDT:Ldap:BindDn and its password."
-msgstr "The directory at {server} refused the bind account {bindDn}. Check DDT:Ldap:BindDn and its password."
+msgctxt "directory.bindAccountRefused"
+msgid "The directory at {server} refused the bind account {bindDn}. Check the bind account and its password on the Sign-in page."
+msgstr "The directory at {server} refused the bind account {bindDn}. Check the bind account and its password on the Sign-in page."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.searchRefused"
-msgid "The directory at {server} refused the search under {baseDn}: {detail} Check DDT:Ldap:BaseDn."
-msgstr "The directory at {server} refused the search under {baseDn}: {detail} Check DDT:Ldap:BaseDn."
+msgctxt "directory.baseDnRefused"
+msgid "The directory at {server} refused the search under {baseDn}: {detail} Check the base DN on the Sign-in page."
+msgstr "The directory at {server} refused the search under {baseDn}: {detail} Check the base DN on the Sign-in page."
 
 #: src/lib/serverMessages.ts
-msgctxt "directory.incomplete"
-msgid "The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn."
-msgstr "The directory connection is not complete. Set DDT:Ldap:Host and DDT:Ldap:BaseDn."
+msgctxt "directory.connectionIncomplete"
+msgid "The directory connection is not complete. Enter the directory server and the base DN on the Sign-in page."
+msgstr "The directory connection is not complete. Enter the directory server and the base DN on the Sign-in page."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.directoryProvidesNames"
@@ -4681,6 +5186,21 @@ msgstr "The directory provides the name and email address. DDT takes them over a
 #: src/users/DirectoryPanel.tsx
 msgid "The directory settings could not be loaded."
 msgstr "The directory settings could not be loaded."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.emptyMapNewAccount"
+msgid "The directory's group map on the Sign-in page is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
+msgstr "The directory's group map on the Sign-in page is empty, so administrators set roles. A first sign-in makes an account without one, which reaches nothing until an administrator gives it a role."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.emptyMapRole"
+msgid "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has {role}."
+msgstr "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has {role}."
+
+#: src/lib/serverMessages.ts
+msgctxt "directory.emptyMapNoRole"
+msgid "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has none yet, so it reaches nothing."
+msgstr "The directory's group map on the Sign-in page is empty, so administrators set roles. The account has none yet, so it reaches nothing."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.partitionAfterImage"
@@ -4850,6 +5370,11 @@ msgid "The hand-over to Windows began"
 msgstr "The hand-over to Windows began"
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.oidc.signInScheme"
+msgid "The handler would sign into ''{scheme}'', which bypasses local account linking entirely."
+msgstr "The handler would sign into ''{scheme}'', which bypasses local account linking entirely."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.imageBeforePartition"
 msgid "The image can be applied only after a step that partitions the disk."
 msgstr "The image can be applied only after a step that partitions the disk."
@@ -4899,9 +5424,9 @@ msgid "The image store needs {required} free for this upload but has {available}
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.noJoinAccount"
-msgid "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
-msgstr "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
+msgctxt "domain.noJoinAccountSet"
+msgid "The join account is not set. Set it and its password on the Deployment defaults page."
+msgstr "The join account is not set. Set it and its password on the Deployment defaults page."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
@@ -5037,13 +5562,38 @@ msgid "The packages could not be loaded."
 msgstr "The packages could not be loaded."
 
 #: src/lib/serverMessages.ts
-msgctxt "domain.passwordExpired"
-msgid "The password of {user} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
-msgstr "The password of {user} has expired. Give it a new one, in the domain and in DDT:Deployment:Domain:Password."
+msgctxt "settings.certificate.notManageable"
+msgid "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and no Password is set. A PFX, a key under a password, or TLS at a proxy is managed by hand."
+msgstr "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and no Password is set. A PFX, a key under a password, or TLS at a proxy is managed by hand."
+
+#: src/lib/serverMessages.ts
+msgctxt "domain.joinPasswordExpired"
+msgid "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page."
+msgstr "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.reauthenticate.notRight"
+msgid "The password or the code is not right."
+msgstr "The password or the code is not right."
 
 #: src/account/AccountPage.tsx
 msgid "The password you were given and signed in with."
 msgstr "The password you were given and signed in with."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.reached"
+msgid "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
+msgstr "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.oidcTest.otherIssuer"
+msgid "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority."
+msgstr "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.apply.pxeClosed"
+msgid "The pxe settings have problems, so nothing is served until they are fixed: {problems}"
+msgstr "The pxe settings have problems, so nothing is served until they are fixed: {problems}"
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.qcow2Backing"
@@ -5071,18 +5621,18 @@ msgid "The recovery partition needs {min} to {max} MB."
 msgstr "The recovery partition needs {min} to {max} MB."
 
 #: src/lib/serverMessages.ts
-msgctxt "user.roleFromDirectoryGroups"
-msgid "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
-msgstr "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
+msgctxt "user.roleFromDirectoryGroupMap"
+msgid "The role of {name} comes from its directory groups through the directory's group map, at each sign-in. Change its groups in the directory, or the map on the Sign-in page."
+msgstr "The role of {name} comes from its directory groups through the directory's group map, at each sign-in. Change its groups in the directory, or the map on the Sign-in page."
 
 #: src/users/userView.ts
 msgid "The role of {name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
 msgstr "The role of {name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
 
 #: src/lib/serverMessages.ts
-msgctxt "user.roleFromSingleSignOnGroups"
-msgid "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
-msgstr "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
+msgctxt "user.roleFromSingleSignOnGroupMap"
+msgid "The role of {name} comes from its single sign-on groups through the single sign-on group map, at each sign-in. Change its groups at the provider, or the map on the Sign-in page."
+msgstr "The role of {name} comes from its single sign-on groups through the single sign-on group map, at each sign-in. Change its groups at the provider, or the map on the Sign-in page."
 
 #: src/users/userView.ts
 msgid "The role of {name} comes from its single sign-on groups, through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
@@ -5146,6 +5696,11 @@ msgstr "The runs of this machine could not be loaded."
 #: src/boot/BootImagePage.tsx
 msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
 msgstr "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldapTest.searchFailed"
+msgid "The search for {name} under {baseDn} failed: {error}"
+msgstr "The search for {name} under {baseDn} failed: {error}"
 
 #: src/sequences/FindingsSummary.tsx
 msgid "The sequence"
@@ -5294,6 +5849,16 @@ msgid "The store volume ran out of space while the image was converted. Free som
 msgstr "The store volume ran out of space while the image was converted. Free some space and complete the upload again."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.storedValueUnreadable"
+msgid "The stored value cannot be read, so the default applies: {error}"
+msgstr "The stored value cannot be read, so the default applies: {error}"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.storedSecretUnreadable"
+msgid "The stored value no longer decrypts with this server's key ring. Enter it again."
+msgstr "The stored value no longer decrypts with this server's key ring. Enter it again."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.systemPartitionSize"
 msgid "The system partition needs {min} to {max} MB."
 msgstr "The system partition needs {min} to {max} MB."
@@ -5329,9 +5894,24 @@ msgstr "The upload failed."
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.valuesCannotBeChecked"
+msgid "The values cannot be checked: {error}"
+msgstr "The values cannot be checked: {error}"
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.networkHoldsProxy"
+msgid "The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the client's address would count as one from that network."
+msgstr "The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the client's address would count as one from that network."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.machines.networkOverlapsProxies"
+msgid "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the client's address would count as one from that network."
+msgstr "The zero touch network {network} overlaps the proxy network {proxies}. A request a proxy there forwards without the client's address would count as one from that network."
 
 #: src/lib/serverMessages.ts
 msgctxt "package.fileAndFolder"
@@ -5395,6 +5975,11 @@ msgctxt "account.noPassword"
 msgid "This account signs in through single sign-on and has no password in DDT."
 msgstr "This account signs in through single sign-on and has no password in DDT."
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.reauthenticate.noPassword"
+msgid "This account signs in without a password DDT can check, so it cannot change these settings. Use an account with a local or directory password."
+msgstr "This account signs in without a password DDT can check, so it cannot change these settings. Use an account with a local or directory password."
+
 #: src/machines/AssignDialog.tsx
 msgid "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
 msgstr "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
@@ -5404,9 +5989,19 @@ msgid "This also authorizes the machine, which then runs the sequence and receiv
 msgstr "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.certificate.newRootUpload"
+msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
+msgstr "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.beyondLength"
 msgid "This chunk ends past the end of the file. Upload the file this session was created for."
 msgstr "This chunk ends past the end of the file. Upload the file this session was created for."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.certificate.notServedNew"
+msgid "This connection was served the certificate before the new one, so it proves nothing about the new one. Load the page again, which connects anew, and confirm from there."
+msgstr "This connection was served the certificate before the new one, so it proves nothing about the new one. Load the page again, which connects anew, and confirm from there."
 
 #: src/runs/RunPanel.tsx
 msgid "This deployment ran before task sequences, so it has no steps to show."
@@ -5505,6 +6100,11 @@ msgstr "This sequence was deleted"
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
 msgstr "This sequence was deleted, so nothing more is saved."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.keyRingUnreadable"
+msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
+msgstr "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 
 #: src/machines/MachineActions.tsx
 msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
@@ -6051,6 +6651,11 @@ msgstr "You cannot take the Administrator role from your own account. Another ad
 msgctxt "token.nameTaken"
 msgid "You have a token of that name already. Choose another name, or revoke that token first."
 msgstr "You have a token of that name already. Choose another name, or revoke that token first."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.ldap.testOwnSignIn"
+msgid "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; the save is accepted while a test that kept you an administrator is less than 5 minutes old."
+msgstr "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; the save is accepted while a test that kept you an administrator is less than 5 minutes old."
 
 #: src/account/AccountPage.tsx
 msgid "You signed in with a password an administrator was shown. Replace it under Password; until then, DDT shows you nothing but this page."

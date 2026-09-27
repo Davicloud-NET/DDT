@@ -21,14 +21,17 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's motion on the real views, in real time: what enters starts clear and a few pixels down and ends where
-// it belongs with no transform left, what leaves goes before it is hidden, a key cap goes down with its key, a finished
-// step flashes, and a new theme changes every colour at once. With DDT_CONSOLE_FILMSTRIPS set to a folder, the frames
-// of each transition at fixed times are saved there for a person to look at.
+// The console's motion on the real views, on a clock of the tests' own, a frame every 16 ms: what enters starts clear
+// and a few pixels down and ends where it belongs with no transform left, what leaves goes before it is hidden, a key
+// cap goes down with its key, a finished step flashes, and a new theme changes every colour at once. With
+// DDT_CONSOLE_FILMSTRIPS set to a folder, the frames of each transition at fixed times are saved there for a person to
+// look at.
 public sealed class MotionTests
 {
-    private static readonly TimeSpan s_margin = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan s_frame = TimeSpan.FromMilliseconds(16);
+
+    // A few frames more than a transition takes: one that follows another starts on the frame after.
+    private static readonly TimeSpan s_settle = TimeSpan.FromMilliseconds(64);
 
     private static string? FilmFolder => Environment.GetEnvironmentVariable("DDT_CONSOLE_FILMSTRIPS");
 
@@ -37,6 +40,7 @@ public sealed class MotionTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.WaitingForSequence));
         MainWindow window = Open(console);
+        ManualClock clock = new(window);
         ContentPresenter before = Page(window);
 
         console.Show(Scenarios.Running);
@@ -49,7 +53,7 @@ public sealed class MotionTests
         Assert.True(before.IsVisible);
         Assert.False(before.IsHitTestVisible);
 
-        Run(Motion.Fast + Motion.Normal + s_margin);
+        clock.Play(Motion.Fast + Motion.Normal + s_settle);
 
         Assert.Equal(1, after.Opacity);
         Assert.Null(after.RenderTransform);
@@ -62,6 +66,7 @@ public sealed class MotionTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);
         MainWindow window = Open(console);
+        ManualClock clock = new(window);
         Panel overlay = window.Find<Panel>("Overlay");
         Backdrop backdrop = window.Find<Backdrop>("OverlayBackdrop");
 
@@ -73,7 +78,7 @@ public sealed class MotionTests
         Assert.True(overlay.Opacity < 1, $"The overlay starts at {overlay.Opacity}.");
         Assert.True(backdrop.Strength < 1, $"The backdrop starts at {backdrop.Strength}.");
 
-        Run(Motion.Normal + s_margin);
+        clock.Play(Motion.Normal + s_settle);
         Assert.Equal(1, overlay.Opacity);
         Assert.Null(overlay.RenderTransform);
         Assert.Equal(1, backdrop.Strength);
@@ -83,7 +88,7 @@ public sealed class MotionTests
         Assert.True(overlay.IsVisible);
         Assert.False(overlay.IsHitTestVisible);
 
-        Run(Motion.Fast + s_margin);
+        clock.Play(Motion.Fast + s_settle);
         Assert.False(overlay.IsVisible);
         Assert.False(backdrop.IsVisible);
         Assert.True(overlay.IsHitTestVisible);
@@ -95,6 +100,7 @@ public sealed class MotionTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.Choosing)).Ask(4, Scenarios.Sequences);
         MainWindow window = Open(console);
+        ManualClock clock = new(window);
         KeyCap down = Caps(window, "↓").Single();
         double deepest = 0;
         down.PropertyChanged += (_, change) => deepest = change.Property == KeyCap.DepthProperty ? Math.Max(deepest, down.Depth) : deepest;
@@ -104,7 +110,9 @@ public sealed class MotionTests
 
         // A quick tap: however soon the key is up again, the cap goes all the way down first.
         window.KeyRelease(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
-        Run(Motion.Press + Motion.Press + s_margin);
+        Assert.True(down.IsDown);
+
+        clock.Play(Motion.Press + Motion.Press + s_settle);
 
         Assert.Equal(1, deepest);
         Assert.False(down.IsDown);
@@ -135,13 +143,14 @@ public sealed class MotionTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);
         MainWindow window = Open(console);
+        ManualClock clock = new(window);
         Border[] flashes = Flashes(window);
 
         Assert.All(flashes, flash => Assert.Equal(0, flash.Opacity));
 
         console.Show(NextStep);
         Frame();
-        Run(TimeSpan.FromMilliseconds(60));
+        clock.Play(TimeSpan.FromMilliseconds(60));
 
         Assert.True(flashes[1].Opacity > 0, "Step 2 finished and flashes.");
         Assert.Contains("done", flashes[1].Classes);
@@ -303,20 +312,10 @@ public sealed class MotionTests
         change(console, window);
         Frame();
 
-        // A frame every 16 ms, as at 60 frames a second, and a picture at each of the times.
-        TimeSpan now = TimeSpan.Zero;
-
+        // A picture at each of the times.
         foreach (int time in times)
         {
-            TimeSpan due = TimeSpan.FromMilliseconds(time);
-
-            do
-            {
-                now = now + s_frame < due ? now + s_frame : due;
-                clock.At(now);
-                Frame();
-            }
-            while (now < due);
+            clock.Play(TimeSpan.FromMilliseconds(time) - clock.Now);
 
             using WriteableBitmap frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("Nothing was drawn.");
             frame.Save(Path.Combine(folder, $"{time:0000}.png"), PngBitmapEncoderOptions.Default);
@@ -342,6 +341,19 @@ public sealed class MotionTests
             s_pulse.Invoke(_clock, [TimeSpan.Zero]);
         }
 
-        public void At(TimeSpan time) => s_pulse.Invoke(_clock, [time]);
+        public TimeSpan Now { get; private set; }
+
+        // A frame every 16 ms for that long, as at 60 frames a second, with what each frame posts run after it.
+        public void Play(TimeSpan time)
+        {
+            TimeSpan until = Now + time;
+
+            while (Now < until)
+            {
+                Now = Now + s_frame < until ? Now + s_frame : until;
+                s_pulse.Invoke(_clock, [Now]);
+                Frame();
+            }
+        }
     }
 }

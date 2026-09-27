@@ -9,7 +9,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Threading;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 
 namespace DDT.MachineConsole.Controls;
 
@@ -29,18 +30,14 @@ public sealed class KeyCap : Border
     private readonly Border _shade = new() { Opacity = 0, IsHitTestVisible = false };
     private readonly TranslateTransform _sink = new();
     private TopLevel? _top;
-    private bool _releasing;
+    private Task _goingDown = Task.CompletedTask;
+    private CancellationTokenSource? _moving;
     private int _presses;
 
     public KeyCap()
     {
         _text.Classes.Add("keyCap");
         Child = new Panel { Children = { _shade, _text } };
-
-        if (Motion.IsEnabled)
-        {
-            Transitions = [new DoubleTransition { Property = DepthProperty, Duration = Motion.Press, Easing = Motion.Standard }];
-        }
     }
 
     public string? Key
@@ -114,8 +111,9 @@ public sealed class KeyCap : Border
             _top = null;
         }
 
+        _presses++;
         IsDown = false;
-        _releasing = false;
+        _moving?.Cancel();
         Depth = 0;
         base.OnDetachedFromVisualTree(e);
     }
@@ -149,23 +147,6 @@ public sealed class KeyCap : Border
             _sink.Y = depth;
             RenderTransform = depth > 0 ? _sink : null;
             _shade.Opacity = depth;
-
-            // Up again once the way down is over, after this change: going up from inside it would start the next
-            // transition while the one down still ends.
-            if (_releasing && depth >= 1)
-            {
-                int press = _presses;
-                _releasing = false;
-                Dispatcher.UIThread.Post(
-                    () =>
-                    {
-                        if (press == _presses && IsDown)
-                        {
-                            Release();
-                        }
-                    },
-                    DispatcherPriority.Background);
-            }
         }
     }
 
@@ -177,26 +158,15 @@ public sealed class KeyCap : Border
         }
 
         IsDown = true;
-        _releasing = false;
         _presses++;
-        Depth = 1;
+        _goingDown = MoveAsync(1);
     }
 
     private void OnKeyUp(object? sender, KeyEventArgs e)
     {
-        if (!IsDown || !Names(Key, e.Key))
+        if (IsDown && Names(Key, e.Key))
         {
-            return;
-        }
-
-        // Up only from the bottom, which a quick tap has not reached yet.
-        if (Depth >= 1)
-        {
-            Release();
-        }
-        else
-        {
-            _releasing = true;
+            _ = UpAsync();
         }
     }
 
@@ -204,14 +174,59 @@ public sealed class KeyCap : Border
     {
         if (IsDown)
         {
-            Release();
+            _presses++;
+            IsDown = false;
+            _ = MoveAsync(0);
         }
     }
 
-    private void Release()
+    // Up only from the bottom, which a quick tap has not reached yet, and not if the key went down again meanwhile.
+    private async Task UpAsync()
     {
-        IsDown = false;
-        _releasing = false;
-        Depth = 0;
+        int press = _presses;
+        await _goingDown.ConfigureAwait(true);
+
+        if (press == _presses && IsDown)
+        {
+            IsDown = false;
+            await MoveAsync(0).ConfigureAwait(true);
+        }
+    }
+
+    private async Task MoveAsync(double to)
+    {
+        _moving?.Cancel();
+        _moving?.Dispose();
+        _moving = null;
+
+        if (!Motion.IsEnabled || !this.IsAttachedToVisualTree())
+        {
+            Depth = to;
+
+            return;
+        }
+
+        CancellationTokenSource moving = new();
+        _moving = moving;
+
+        // Forward keeps where it got to, so the next move starts there.
+        Animation move = new()
+        {
+            Duration = Motion.Press,
+            Easing = Motion.Standard,
+            FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(DepthProperty, Depth) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(DepthProperty, to) } },
+            },
+        };
+
+        await move.RunAsync(this, moving.Token).ConfigureAwait(true);
+
+        if (!moving.IsCancellationRequested)
+        {
+            Depth = to;
+        }
     }
 }

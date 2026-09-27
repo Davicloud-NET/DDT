@@ -35,6 +35,10 @@ bld/
 # except the web client's log panel, which is source.
 !src/DDT.Web/src/log/
 
+# What a run of the web's screenshot checks leaves behind; the screenshots they compare with are in screens/.
+src/DDT.Web/test-results/
+src/DDT.Web/playwright-report/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot

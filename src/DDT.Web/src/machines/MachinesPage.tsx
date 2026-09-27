@@ -109,7 +109,7 @@ export function MachinesPage() {
             ...(option.tone === undefined ? {} : { tone: option.tone }),
           }))}
         />
-        <div className="flex-1" />
+        <div className="hidden flex-1 sm:block" />
         <SearchField
           label={translate`Find a machine`}
           placeholder={translate`Name, MAC, serial or address`}

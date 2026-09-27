@@ -7,3 +7,6 @@ src/styles/theme.css
 src/lib/serverMessages.ts
 scripts/server-messages.json
 src/locales
+test-results
+playwright-report
+screens/__screenshots__

@@ -144,7 +144,7 @@ export function SearchField({
     <AriaSearchField
       {...props}
       aria-label={label}
-      className={cx("group relative flex w-80 max-w-full", className)}
+      className={cx("group relative flex w-80 max-w-full max-sm:w-full", className)}
     >
       <IconSearch
         aria-hidden="true"

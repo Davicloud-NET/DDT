@@ -155,7 +155,7 @@ export function LogPanel({
             ...(level === "Warning" ? { tone: "attention" as const } : {}),
           }))}
         />
-        <div className="flex-1" />
+        <div className="hidden flex-1 sm:block" />
         <SearchField
           label={plural(loaded, {
             one: "Search the # loaded line",

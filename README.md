@@ -186,6 +186,12 @@ cd src/DDT.Web && npm install && npm run dev
 `npm run build` writes into `src/DDT.Host/wwwroot`, which the host serves with a fallback to
 `index.html`. That directory is entirely build output and is not tracked.
 
+`npm test` runs the page tests in jsdom. `npm run screens` shows a few pages in Microsoft Edge, in
+both themes and at a phone's width, against the Vite dev server with the API and the hub answered
+by the checks themselves, and compares them with the screenshots in `src/DDT.Web/screens`. Those
+are taken on Windows, where fonts render as they do there; after a wanted change,
+`npm run screens:update` takes them again, and the new screenshots belong in the same commit.
+
 Container:
 
 ```bash
@@ -2204,9 +2210,10 @@ The real UI (M6.5) is built for the web: every page on one design system, Switch
 and German and live over the hub, with the settings moved from configuration onto the pages of
 what they configure, API tokens, users and roles with the group maps of the directory and of
 single sign-on, and the Windows PE drivers of the boot image. The pages are tested with Vitest and
-Testing Library, with axe checks, and were used in a browser against a development host with the
-`web` and `pxe` roles. They have not yet watched a deployment on a machine, and no boot image has
-been built with drivers yet. In Windows PE the agent asks and shows through a seam, see
+Testing Library, with axe checks, a few of them against screenshots in Microsoft Edge, and were used
+in a browser against a development host with the `web` and `pxe` roles while the test machines
+below ran. No boot image has been built with drivers
+yet. In Windows PE the agent asks and shows through a seam, see
 [The console at the machine](#the-console-at-the-machine): it starts `ddt-console.exe` where there
 is one, feeds it over a named pipe, and falls back to the text console. That is tested with a
 console in the test process over a real pipe, and the published agent fed a stand-in console
@@ -2221,16 +2228,38 @@ framework, reached the Hyper-V Generation 2 test machine over TFTP in 9 s. The c
 Windows PE, drawing in software, and connected to the agent. A technician signed in on it, which
 approved the machine, chose a sequence of a partitioning step and two scripts, typed ERASE for its
 disk, and the run finished and restarted the machine. The console offered no way to the command
-prompt while the agent ran; Alt+F4 closed it and left the agent in the text console. Uno Platform,
-tried from the same image, drew in Windows PE as well, at 64 frames per second in software, after
-its SkiaSharp was raised to 3.119.4, which loads Direct3D only when asked; it chose its light theme
-there, because Windows PE cannot say which theme is set.
+prompt while the agent ran, and Alt+F4 closed it and left the agent in the text console; since then
+Shift+F10 opens a command prompt, as in Windows Setup, and Alt+F4 is refused while the agent works.
+A ThinkPad netbooted the same way, which added the hint that its function keys may need Fn. Uno
+Platform, tried from the same image, drew in Windows PE as well, at 64 frames per second in
+software, after its SkiaSharp was raised to 3.119.4, which loads Direct3D only when asked; it chose
+its light theme there, because Windows PE cannot say which theme is set.
 
-Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: the rest of M6.5,
-a whole deployment of Windows watched on the console and on the web; M7 the task sequence
-flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
-installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
-lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,
+The boot image was then cut down: `build/boot-image-trim.txt` removes, after DISM's cleanup, what
+neither Windows PE nor DDT uses, which took the image with PowerShell, the agent and the console
+from 486.0 MB to 304.7 MB, and its transfer to the test machine over TFTP from 8.4 s to between
+5.2 s and 6.4 s. An image trimmed by that list booted, partitioned a disk, and ran the command
+prompt and the parts of PowerShell the steps use. The comparison with MDT's LiteTouchPE waits for an
+MDT installer, since Microsoft took its download down.
+
+A whole deployment of Windows then ran on the test machine, and the rest of its run moved from
+Windows' out-of-box screens onto DDT's session, see
+[DDT's session at the machine](#ddts-session-at-the-machine). In four runs, setup signed in as
+`DDTDeploy` at the end of the out-of-box experience, the console showed the Windows phase full
+screen, the session came back after a restart with a new password, and when the run ended the
+account, its profile and setup's `defaultuser0` were gone. The first two runs showed that setup
+restarts Windows once more after its first user's update check, and that writing Winlogon's
+automatic sign-in during setup breaks setup's own, which is why the first sign-in now comes from
+the answer file. Since then the console's language is a deployment setting, the hand-over takes
+only a console that speaks the agent's version of the protocol into Windows, and the server updates
+the console like the agent; these have been tested, but have not run on a machine yet.
+
+What M6.5 still needs is a boot image built by `Build-BootImage.ps1` with the trim list, a run with
+a console the server offers, and the size comparison with MDT. The later milestones, in order, as
+[docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
+model it shows; M8 the Linux phase, in which a run goes on in the installed Linux; M9 applications
+and Windows configuration; M10 golden images and the machine lifecycle; M11 reach beyond netboot
+and a single site; M12 the documentation of the whole project,
 which this README stands in for until then. The roadmap also says what is not planned.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus

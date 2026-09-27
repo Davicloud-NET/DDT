@@ -25,7 +25,13 @@
     <Setter Property="BorderBrush" Value="{DynamicResource SgEdgeOverlay}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
+  </Style>
+  <!-- An overlay's shadow is an element of its own behind it, kept as a picture: blurred again in every frame in which
+       the overlay moves, it would be most of the software renderer's work. -->
+  <Style Selector="Border.overlayShadow">
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
     <Setter Property="BoxShadow" Value="{DynamicResource SgOverlayShadow}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
   <Style Selector="Border.well">
     <Setter Property="Background" Value="{DynamicResource SgWell}" />
@@ -35,8 +41,8 @@
     <Setter Property="Background" Value="{DynamicResource SgConsole}" />
     <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusPanel}" />
   </Style>
-  <Style Selector="Border.backdrop">
-    <Setter Property="Background" Value="{DynamicResource SgBackdrop}" />
+  <Style Selector="c|Backdrop">
+    <Setter Property="Fill" Value="{DynamicResource SgBackdrop}" />
   </Style>
   <Style Selector="Border.frame">
     <Setter Property="Background" Value="{DynamicResource SgFrame}" />
@@ -100,7 +106,7 @@
     <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
   </Style>
 
-  <!-- Key caps. -->
+  <!-- Key caps, which go down with their key. -->
   <Style Selector="c|KeyCap">
     <Setter Property="MinWidth" Value="26" />
     <Setter Property="Height" Value="24" />
@@ -110,6 +116,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Shade" Value="{DynamicResource ConsolePressShade}" />
   </Style>
   <Style Selector="c|KeyCap TextBlock.keyCap">
     <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
@@ -156,6 +163,14 @@
     <Setter Property="Fail" Value="{DynamicResource SgFail}" />
     <Setter Property="FailText" Value="{DynamicResource SgFailText}" />
   </Style>
+  <!-- A step's number and name change their tone with its module, over slow. -->
+  <Style Selector="c|SequenceRail TextBlock">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="{StaticResource SgMotionSlow}" Easing="{StaticResource SgMotionEasing}" />
+      </Transitions>
+    </Setter>
+  </Style>
   <Style Selector="c|SequenceRail TextBlock.numeral">
     <Setter Property="FontSize" Value="16" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
@@ -177,6 +192,27 @@
   </Style>
   <Style Selector="c|SequenceRail TextBlock.step.running">
     <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
+  </Style>
+
+  <!-- A step that just finished or failed flashes its column in its state's colour, faintly, and fades. -->
+  <Style Selector="c|SequenceRail Border.flash">
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusPanel}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="c|SequenceRail Border.flash.done">
+    <Setter Property="Background" Value="{DynamicResource SgOk}" />
+  </Style>
+  <Style Selector="c|SequenceRail Border.flash.failed">
+    <Setter Property="Background" Value="{DynamicResource SgFail}" />
+  </Style>
+
+  <!-- While the theme changes, every colour changes at once: nothing fades into the new theme. -->
+  <Style Selector="Window.switching c|SequenceRail TextBlock">
+    <Setter Property="Transitions" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Window.switching TextBox /template/ Border#border">
+    <Setter Property="Transitions" Value="{x:Null}" />
   </Style>
 
   <Style Selector="c|HazardBand">

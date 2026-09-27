@@ -147,6 +147,10 @@ msgstr "Lizenzen schließen"
 msgid "Close the log"
 msgstr "Protokoll schließen"
 
+#: ViewModels/MainViewModel.cs
+msgid "Command prompt"
+msgstr "Eingabeaufforderung"
+
 #: ViewModels/ComputerNameViewModel.cs
 msgid "Computer name"
 msgstr "Computername"

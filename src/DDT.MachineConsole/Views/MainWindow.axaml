@@ -52,7 +52,7 @@
       </Border>
 
       <!-- Once the pipe has ended: the last state stays below, and the way on is here. -->
-      <Border Grid.Row="1" Classes="raised" Name="EndedBand" IsVisible="{Binding IsEnded}" Margin="36,20,36,0" Padding="22,16">
+      <Border Grid.Row="1" Classes="raised" Name="EndedBand" c:Motion.Shown="{Binding IsEnded}" Margin="36,20,36,0" Padding="22,16">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Spacing="4" VerticalAlignment="Center">
             <TextBlock Classes="heading" Text="{Binding EndedTitle}" />
@@ -60,6 +60,15 @@
             <TextBlock Classes="small muted" Text="{Binding RestartUnavailable}" IsVisible="{Binding !CanRestart}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="20,0,0,0">
+            <Button Name="EndedPrompt" Classes="quiet" Command="{Binding OpenPromptCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <c:KeyCap Key="Shift" />
+                  <c:KeyCap Key="F10" />
+                </StackPanel>
+                <TextBlock Text="{Binding PromptLabel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
             <Button Name="CloseConsole" Command="{Binding CloseCommand}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:KeyCap Key="F9" />
@@ -76,9 +85,12 @@
         </Grid>
       </Border>
 
-      <!-- The screen of the stage, or the question. -->
-      <ContentControl Grid.Row="2" Name="Screen" Content="{Binding Screen}" Margin="36,20,36,20">
-        <ContentControl.DataTemplates>
+      <!-- The screen of the stage, or the question, which gives way to the next as it comes. -->
+      <TransitioningContentControl Grid.Row="2" Name="Screen" Content="{Binding Screen}" Margin="36,20,36,20">
+        <TransitioningContentControl.PageTransition>
+          <c:ScreenTransition />
+        </TransitioningContentControl.PageTransition>
+        <TransitioningContentControl.DataTemplates>
           <DataTemplate DataType="vm:ConnectionViewModel">
             <v:ConnectionView />
           </DataTemplate>
@@ -106,26 +118,34 @@
           <DataTemplate DataType="vm:SecureBootViewModel">
             <v:SecureBootView />
           </DataTemplate>
-        </ContentControl.DataTemplates>
-      </ContentControl>
+        </TransitioningContentControl.DataTemplates>
+      </TransitioningContentControl>
 
-      <!-- The log, the machine's details or the licences, over the screen. -->
-      <Border Grid.Row="1" Grid.RowSpan="2" Classes="backdrop" IsVisible="{Binding HasOverlay}" />
-      <Border Grid.Row="1" Grid.RowSpan="2" Classes="overlay" Name="Overlay" IsVisible="{Binding HasOverlay}" Margin="24,18,24,18">
-        <ContentControl Content="{Binding OverlayContent}">
-          <ContentControl.DataTemplates>
-            <DataTemplate DataType="vm:LogViewModel">
-              <v:LogView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:MachineViewModel">
-              <v:MachineView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:LicencesViewModel">
-              <v:LicencesView />
-            </DataTemplate>
-          </ContentControl.DataTemplates>
-        </ContentControl>
-      </Border>
+      <!-- The log, the machine's details or the licences, over the screen. The window sets what it shows, and keeps it
+           while the overlay leaves. -->
+      <c:Backdrop Grid.Row="1" Grid.RowSpan="2" Name="OverlayBackdrop" c:Motion.Shown="{Binding HasOverlay}" c:Motion.Rises="False" />
+      <Panel Grid.Row="1" Grid.RowSpan="2" Name="Overlay" c:Motion.Shown="{Binding HasOverlay}" Margin="24,18,24,18">
+        <Border Classes="overlayShadow">
+          <Border.CacheMode>
+            <BitmapCache />
+          </Border.CacheMode>
+        </Border>
+        <Border Classes="overlay">
+          <TransitioningContentControl Name="OverlayPages">
+            <TransitioningContentControl.DataTemplates>
+              <DataTemplate DataType="vm:LogViewModel">
+                <v:LogView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:MachineViewModel">
+                <v:MachineView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:LicencesViewModel">
+                <v:LicencesView />
+              </DataTemplate>
+            </TransitioningContentControl.DataTemplates>
+          </TransitioningContentControl>
+        </Border>
+      </Panel>
 
       <!-- The footer. -->
       <Border Grid.Row="3" Classes="footer">
@@ -170,8 +190,20 @@
       </Border>
 
       <!-- Asked before the console restarts the machine. -->
-      <Border Grid.Row="0" Grid.RowSpan="4" Classes="backdrop" IsVisible="{Binding ConfirmingRestart}">
-        <Border Classes="overlay" Width="520" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <c:Backdrop Grid.Row="0" Grid.RowSpan="4" Name="ConfirmBackdrop" c:Motion.Shown="{Binding ConfirmingRestart}" c:Motion.Rises="False" />
+      <Panel Grid.Row="0"
+             Grid.RowSpan="4"
+             Name="Confirm"
+             c:Motion.Shown="{Binding ConfirmingRestart}"
+             Width="520"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center">
+        <Border Classes="overlayShadow">
+          <Border.CacheMode>
+            <BitmapCache />
+          </Border.CacheMode>
+        </Border>
+        <Border Classes="overlay" Padding="24">
           <StackPanel Spacing="16">
             <TextBlock Classes="heading" Text="{Binding ConfirmTitle}" />
             <TextBlock Classes="body ink2" Text="{Binding ConfirmText}" />
@@ -191,7 +223,7 @@
             </StackPanel>
           </StackPanel>
         </Border>
-      </Border>
+      </Panel>
     </Grid>
   </c:ScreenScaler>
 </Window>

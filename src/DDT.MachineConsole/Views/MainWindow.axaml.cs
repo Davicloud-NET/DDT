@@ -5,11 +5,14 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DDT.ConsoleProtocol;
+using DDT.MachineConsole.Controls;
 using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
@@ -18,7 +21,10 @@ namespace DDT.MachineConsole.Views;
 // The function keys and Esc reach the console before any field or list sees them.
 public sealed partial class MainWindow : Window
 {
+    private static readonly ScreenTransition s_overlaySwitch = new();
     private readonly MainViewModel? _model;
+    private readonly FrameMeter? _frames;
+    private (ConsoleStage? Stage, Guid? Step) _step;
 
     // For the XAML designer and loader only.
     public MainWindow()
@@ -34,6 +40,7 @@ public sealed partial class MainWindow : Window
         _model = model;
         DataContext = model;
 
+        // Full screen but never topmost, so the command prompt Shift+F10 opens comes in front of it.
         if (fullScreen)
         {
             WindowDecorations = WindowDecorations.None;
@@ -43,8 +50,13 @@ public sealed partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnKeyDownFirst, RoutingStrategies.Tunnel);
         model.PropertyChanged += OnModelChanged;
         ApplyTheme(model.IsDark);
+        ShowOverlayContent();
+        _frames = FrameMeter.For(this);
+        _step = StepOf(model);
     }
 
+    // The one time the console takes the foreground: when it opens. Later it never takes it back, so a command prompt
+    // in front of it keeps the keyboard.
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
@@ -53,7 +65,9 @@ public sealed partial class MainWindow : Window
 
     private void OnKeyDownFirst(object? sender, KeyEventArgs e)
     {
-        if (_model is not null && e.KeyModifiers == KeyModifiers.None && _model.Press(e.Key))
+        _frames?.Measure($"key {e.Key}", Motion.Press);
+
+        if (_model is not null && _model.Press(e.Key, e.KeyModifiers))
         {
             e.Handled = true;
         }
@@ -66,9 +80,19 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        if (_frames is not null)
+        {
+            MeasureFrames(e.PropertyName);
+        }
+
         if (e.PropertyName is nameof(MainViewModel.IsDark) or "")
         {
             ApplyTheme(_model.IsDark);
+        }
+
+        if (e.PropertyName is nameof(MainViewModel.OverlayContent) or "")
+        {
+            ShowOverlayContent();
         }
 
         if (e.PropertyName is nameof(MainViewModel.HasOverlay) && !_model.HasOverlay)
@@ -77,7 +101,49 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // Back from the log or the details, the screen's field or list has the focus again, so typing goes on there.
+    // What moves when that changes, and for how long, for the frame meter.
+    private void MeasureFrames(string? change)
+    {
+        switch (change)
+        {
+            case nameof(MainViewModel.Screen):
+                _frames!.Measure("screen", Motion.Fast + Motion.Normal);
+                _step = StepOf(_model!);
+                break;
+            case nameof(MainViewModel.HasOverlay):
+                _frames!.Measure(_model!.HasOverlay ? "overlay in" : "overlay out", _model.HasOverlay ? Motion.Normal : Motion.Fast);
+                break;
+            case nameof(MainViewModel.IsEnded):
+                _frames!.Measure("ended band", Motion.Normal);
+                break;
+            case nameof(MainViewModel.ConfirmingRestart):
+                _frames!.Measure(_model!.ConfirmingRestart ? "confirm in" : "confirm out", _model.ConfirmingRestart ? Motion.Normal : Motion.Fast);
+                break;
+            case nameof(MainViewModel.State) when StepOf(_model!) != _step:
+                _step = StepOf(_model!);
+                _frames!.Measure("step", Motion.Slow);
+                break;
+        }
+    }
+
+    private static (ConsoleStage? Stage, Guid? Step) StepOf(MainViewModel model) => (model.State?.Stage, model.State?.Run?.CurrentStepId);
+
+    // What the overlay shows. Closing it keeps what it showed while it leaves; opening it shows the new content at once,
+    // as the overlay enters, and only switching from one to another lets the first give way to the next.
+    private void ShowOverlayContent()
+    {
+        if (_model?.OverlayContent is not { } content || ReferenceEquals(OverlayPages.Content, content))
+        {
+            return;
+        }
+
+        bool switching = OverlayPages.Content is not null && Overlay.IsVisible && Overlay.IsHitTestVisible;
+        OverlayPages.PageTransition = switching && Motion.IsEnabled ? s_overlaySwitch : null;
+        OverlayPages.Content = content;
+    }
+
+    // Back from the log or the details, the screen's field or list has the focus again, so typing goes on there: in
+    // the screen now shown, not in one still leaving.
     private void FocusScreen()
     {
         InputElement? target = Screen.GetVisualDescendants()
@@ -85,16 +151,28 @@ public sealed partial class MainWindow : Window
             .FirstOrDefault(element => element is TextBox or ListBoxItem or ListBox
                 && element.IsEffectivelyVisible
                 && element.IsEffectivelyEnabled
-                && (element is not ListBoxItem item || item.IsSelected));
+                && (element is not ListBoxItem item || item.IsSelected)
+                && IsOnScreenNow(element));
 
         target?.Focus(NavigationMethod.Directional);
     }
 
-    private static void ApplyTheme(bool dark)
+    private bool IsOnScreenNow(Visual element) =>
+        element.GetVisualAncestors().OfType<ContentPresenter>().LastOrDefault(presenter => presenter.TemplatedParent == Screen) is { } page
+        && ReferenceEquals(page.Content, _model?.Screen);
+
+    // A new theme changes every colour at once: nothing that fades its colour on hover or change fades into the theme.
+    private void ApplyTheme(bool dark)
     {
-        if (Application.Current is { } application)
+        ThemeVariant theme = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+
+        if (Application.Current is not { } application || application.RequestedThemeVariant == theme)
         {
-            application.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            return;
         }
+
+        Classes.Add("switching");
+        application.RequestedThemeVariant = theme;
+        Classes.Remove("switching");
     }
 }

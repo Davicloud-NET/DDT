@@ -36,7 +36,12 @@ public sealed class PipeFlowTests
 
         Pump ui = new();
         await using AgentLink link = new(await connecting);
-        MainViewModel model = new(Localizer.Embedded(UiLanguage.English), new FakePower(false), (id, answer) => _ = link.AnswerAsync(id, answer), () => { });
+        MainViewModel model = new(
+            Localizer.Embedded(UiLanguage.English),
+            new FakePower(false),
+            new FakePrompt(),
+            (id, answer) => _ = link.AnswerAsync(id, answer),
+            () => { });
         Inbox inbox = new(ui.Post);
         inbox.Deliver(model.Receive, model.Ended);
         Task reading = Task.Run(async () => inbox.End(await link.ReadAsync(inbox.Add)), Cancellation);

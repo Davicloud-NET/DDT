@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Xml.Linq;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Xunit;
 
@@ -12,8 +13,8 @@ namespace DDT.MachineConsole.Tests;
 
 // The console's look comes from src/DDT.Design/tokens.json, as the web's does: Theme/Tokens.axaml is written from it by
 // generate.mjs, and fails here as soon as either changes without the other. The web's own test compares the whole file;
-// this one reads both and compares the values, from the .NET side, and checks that every face a type names is one the
-// console carries.
+// this one reads both and compares the values, colours, radii, types and motion, from the .NET side, and checks that
+// every face a type names is one the console carries.
 public sealed class ThemeTests
 {
     private static readonly XNamespace s_x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -81,6 +82,60 @@ public sealed class ThemeTests
                 3);
             Assert.Equal($"avares://ddt-console/Assets/Fonts#{family} {type.Value.GetProperty("weight").GetInt32()} {stretch}", written[key + "Family"]);
         }
+    }
+
+    [Fact]
+    public void HasTheMotionOfTheTokens()
+    {
+        using JsonDocument tokens = Tokens();
+        JsonElement motion = tokens.RootElement.GetProperty("motion");
+        Dictionary<string, XElement> written = Resources()
+            .Elements()
+            .Where(element => element.Attribute(s_x + "Key") is not null)
+            .ToDictionary(element => (string)element.Attribute(s_x + "Key")!);
+        string[] durations = ["press", "fast", "normal", "slow", "flash"];
+        string[] easings = ["easing", "enter", "exit"];
+
+        // A motion token the console does not carry yet fails here.
+        Assert.Equal(
+            [.. durations.Concat(easings).Append("distance").Order(StringComparer.Ordinal)],
+            motion.EnumerateObject().Select(property => property.Name).Where(name => !name.StartsWith('$')).Order(StringComparer.Ordinal));
+
+        foreach (string name in durations)
+        {
+            XElement duration = written["SgMotion" + Capitalized(name)];
+            double milliseconds = double.Parse(motion.GetProperty(name).GetString()!.TrimEnd('m', 's'), CultureInfo.InvariantCulture);
+
+            Assert.Equal(s_x + "TimeSpan", duration.Name);
+            Assert.Equal(TimeSpan.FromMilliseconds(milliseconds), TimeSpan.Parse(duration.Value, CultureInfo.InvariantCulture));
+        }
+
+        foreach (string name in easings)
+        {
+            XElement easing = written["SgMotion" + Capitalized(name)];
+            string bezier = motion.GetProperty(name).GetString()!;
+            double[] expected = [.. bezier["cubic-bezier(".Length..^1].Split(',').Select(part => double.Parse(part, CultureInfo.InvariantCulture))];
+
+            Assert.Equal(s_avalonia + "SplineEasing", easing.Name);
+            Assert.Equal(expected, new[] { "X1", "Y1", "X2", "Y2" }.Select(point => double.Parse((string)easing.Attribute(point)!, CultureInfo.InvariantCulture)));
+        }
+
+        Assert.Equal(Pixels(motion.GetProperty("distance").GetString()!), double.Parse(written["SgMotionDistance"].Value, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task LoadsTheMotionAsTheTypesTheConsoleAnimatesWith()
+    {
+        (object? fast, object? enter, object? distance) = await Headless.RunAsync(() =>
+        {
+            Avalonia.Application application = Avalonia.Application.Current!;
+
+            return (application.FindResource("SgMotionFast"), application.FindResource("SgMotionEnter"), application.FindResource("SgMotionDistance"));
+        });
+
+        Assert.Equal(TimeSpan.FromMilliseconds(120), Assert.IsType<TimeSpan>(fast));
+        Assert.Equal(0.2, Assert.IsType<Avalonia.Animation.Easings.SplineEasing>(enter).X2);
+        Assert.Equal(6d, Assert.IsType<double>(distance));
     }
 
     [Fact]

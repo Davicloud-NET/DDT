@@ -9,7 +9,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's model with what it sends and does recorded instead: answers, closing, restarts.
+// The console's model with what it sends and does recorded instead: answers, closing, restarts, command prompts. No test
+// ever starts cmd.exe or restarts anything.
 internal sealed class TestConsole
 {
     public TestConsole(UiLanguage language = UiLanguage.English, bool canRestart = false)
@@ -18,6 +19,7 @@ internal sealed class TestConsole
         Model = new MainViewModel(
             Localizer.Embedded(language),
             Power,
+            Prompt,
             (id, answer) => Answers.Add((id, answer)),
             () => Closed++);
     }
@@ -25,6 +27,8 @@ internal sealed class TestConsole
     public MainViewModel Model { get; }
 
     public FakePower Power { get; }
+
+    public FakePrompt Prompt { get; } = new();
 
     public List<(int Id, ConsoleAnswer Answer)> Answers { get; } = [];
 
@@ -54,4 +58,11 @@ internal sealed class FakePower(bool canRestart) : IMachinePower
     public int Restarts { get; private set; }
 
     public void Restart() => Restarts++;
+}
+
+internal sealed class FakePrompt : ICommandPrompt
+{
+    public int Opened { get; private set; }
+
+    public void Open() => Opened++;
 }

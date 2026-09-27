@@ -18,6 +18,9 @@
   <x:Double x:Key="ConsoleKeyHeight">40</x:Double>
   <x:Double x:Key="ConsoleFieldHeight">44</x:Double>
 
+  <!-- What a pressed key, and a key cap whose key is down, darken by, in both themes. -->
+  <SolidColorBrush x:Key="ConsolePressShade" Color="#26000000" />
+
   <!-- A fact: its label above, its value below, in the mono face where it is an identifier. -->
   <DataTemplate x:Key="FactRow" x:DataType="vm:Fact">
     <StackPanel Spacing="2" Margin="0,0,0,10">

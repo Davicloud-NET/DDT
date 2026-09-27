@@ -3,7 +3,7 @@
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
 <!-- Starting and connecting: the server the boot image names and, when a request fails, how far it got, the agent's
-     own words about it and what to look at. -->
+     own words about it and what to look at, which fade in when the first request fails. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -42,14 +42,14 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Border Classes="console" Padding="16,12" IsVisible="{Binding HasProblem}">
+        <Border Classes="console" Padding="16,12" c:Motion.Shown="{Binding HasProblem}">
           <StackPanel Spacing="6">
             <TextBlock Classes="small" Foreground="{DynamicResource SgConsoleMuted}" Text="{Binding ProblemLabel}" />
             <TextBlock Name="Problem" Classes="data" Foreground="{DynamicResource SgConsoleText}" FontSize="14" Text="{Binding Problem}" />
           </StackPanel>
         </Border>
 
-        <StackPanel Spacing="8" IsVisible="{Binding HasProblem}">
+        <StackPanel Spacing="8" c:Motion.Shown="{Binding HasProblem}">
           <TextBlock Classes="body ink2" Text="{Binding Failures}" />
           <TextBlock Classes="lead" Text="{Binding Advice}" IsVisible="{Binding HasAdvice}" />
         </StackPanel>

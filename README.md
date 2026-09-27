@@ -985,6 +985,15 @@ run, with the sequence rail of its steps, the running step and its percent, a re
 run ended and what to do next. The layout scales with the size of the screen in pixels rather than
 its DPI, from 1024 × 768 up.
 
+It moves as the web does, by the motion in `src/DDT.Design/tokens.json`, and only when a key is
+pressed or the agent sends something: a screen fades out and the next fades in, rising a few pixels;
+the log, the details and the licences, the question before a restart and the band once the agent
+has ended enter the same way; keys sink when pressed, and the key caps on the screen go down with
+their keys on the keyboard; a step's module fills and changes its state over a quarter of a second,
+and a step that finishes or fails flashes faintly. Only the running step's stripes move by
+themselves. With `DDT_CONSOLE_FRAMES` set to a file, the console writes to it how many frames it
+drew for each of these, to see whether they stay smooth where it runs, such as in a virtual machine.
+
 It works from the keyboard, and with a mouse or touch too. The field or list a question needs has
 the focus, Enter sends, and Esc goes back where the question allows it: to the list of sequences,
 or from the password to the user name. The keys for `ERASE` and `ANYWAY` work only once the word is
@@ -1000,6 +1009,14 @@ When the agent ends, or its pipe breaks, the console keeps the last screen and s
 which leaves the command prompt behind it, and in Windows PE F8 restarts the machine after asking. It
 restarts a machine only when the system drive is `X:`, Windows PE's `MiniNT` key is set and
 `wpeutil.exe` is there, so a console started on a development computer never restarts it.
+
+Shift+F10 opens a command prompt at any time, as it does in Windows Setup: `cmd.exe` in a window of
+its own, in front of the console and with the keyboard, in `X:\DDT`, while the agent goes on. The
+console fills the screen but does not stay on top, and it never takes the keyboard back, so the
+prompt stays in front until it is closed or clicked away. The machine's details (F2) and the band
+shown once the agent has ended name the key; the keys along the bottom have no room for it at
+1024 × 768. Closing the console itself, with Alt+F4 at any time, leaves the agent running in the
+text console underneath, where Ctrl+C stops it.
 
 ### Registration and authorization
 

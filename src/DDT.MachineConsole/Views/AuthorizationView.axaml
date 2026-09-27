@@ -3,7 +3,7 @@
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
 <!-- Waiting for authorization: the two ways on, what tells this machine apart on the Machines page, and the sign-in
-     beside it while the agent asks for it. -->
+     beside it while the agent asks for it, which enters when it is asked and leaves when it is withdrawn. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -26,7 +26,7 @@
       </Border>
     </StackPanel>
 
-    <Border Grid.Column="1" Classes="raised" Width="410" Padding="26,24" VerticalAlignment="Center" IsVisible="{Binding HasSignIn}">
+    <Border Grid.Column="1" Classes="raised" Width="410" Padding="26,24" VerticalAlignment="Center" c:Motion.Shown="{Binding HasSignIn}">
       <v:SignInView DataContext="{Binding SignIn}" />
     </Border>
   </Grid>

@@ -15,7 +15,9 @@ public static class Headless
 {
     private static readonly Lazy<HeadlessUnitTestSession> s_session = new(() =>
     {
+        // What a test looks at has settled; the tests of the motion turn it on for themselves.
         RailModule.Animates = false;
+        Motion.IsEnabled = false;
 
         return HeadlessUnitTestSession.StartNew(typeof(Headless));
     });

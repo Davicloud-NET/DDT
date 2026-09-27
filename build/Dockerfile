@@ -4,10 +4,12 @@ ARG DOTNET_RUNTIME=mcr.microsoft.com/dotnet/aspnet:10.0-noble
 ARG NODE=node:24-trixie-slim
 
 FROM ${NODE} AS spa
-WORKDIR /spa
+WORKDIR /spa/src/DDT.Web
 COPY src/DDT.Web/package.json src/DDT.Web/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY src/DDT.Web/ ./
+# tsc -b checks the web's tests as well, and the tests of the theme import the design tokens' generator.
+COPY src/DDT.Design/ ../DDT.Design/
 # The checked in vite config writes into ../DDT.Host/wwwroot, which does not exist here.
 RUN npm run build -- --outDir /spa-dist --emptyOutDir
 

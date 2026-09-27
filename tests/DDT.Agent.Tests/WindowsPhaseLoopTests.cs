@@ -286,7 +286,10 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         AgentRunReport waiting = server.RunReports[0];
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.WaitingForWindowsSetup), (waiting.State, waiting.Phase, waiting.Activity));
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), waiting.Steps.Select(step => step.State));
-        Assert.Equal(RunActivity.Step, server.RunReports[1].Activity);
+
+        // Then the run went on. Its one quick step can be over before the heartbeat's first beat, which then says
+        // Finishing already, as changes this close together share a beat.
+        Assert.Contains(server.RunReports[1].Activity, (RunActivity[])[RunActivity.Step, RunActivity.Finishing]);
         Assert.False(File.Exists(AnswerFile));
     }
 

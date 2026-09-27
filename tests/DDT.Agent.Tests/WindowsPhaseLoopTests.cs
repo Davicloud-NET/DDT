@@ -362,6 +362,66 @@ public sealed class WindowsPhaseLoopTests : IDisposable
     }
 
     [Fact]
+    public async Task PreparesDdtsSessionFirstAndSignsItOutBeforeTheAgentRemovesItself()
+    {
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ =>
+            {
+                _tools.Note("register");
+
+                return Continued();
+            })
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(DeploymentState.Done, _ => new AgentRunReportResult("session-d", "resume-d", null));
+
+        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools));
+
+        Assert.Equal(AgentExitCodes.Deployed, exitCode);
+        Assert.Equal(
+            ["prepare the session", "register", "setup finished", "the session takes over the sign-in", "end the session, signing out", "remove", "reboot"],
+            _tools.Calls);
+    }
+
+    [Fact]
+    public async Task AfterAFailureTheSessionShowsItUntilSomeoneSignsOut()
+    {
+        _toolRunner.AnswerExitCode = (_, _, _) => 1;
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(DeploymentState.Failed, _ => new AgentRunReportResult("session-f", "resume-f", null));
+
+        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools));
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(
+            ["prepare the session", "setup finished", "the session takes over the sign-in", "end the session once someone signed out", "remove"],
+            _tools.Calls);
+    }
+
+    [Fact]
+    public async Task AStopWhileTheSessionWaitsLeavesTheRemovalToTheNextStart()
+    {
+        _toolRunner.AnswerExitCode = (_, _, _) => 1;
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(DeploymentState.Failed, _ => new AgentRunReportResult("session-f", "resume-f", null));
+
+        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools, ends: false));
+
+        // The service stays, finds no run at its next start, and ends the session and itself then.
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(["prepare the session", "setup finished", "the session takes over the sign-in", "end the session once someone signed out"], _tools.Calls);
+    }
+
+    [Fact]
     public async Task AFailureTheServerDidNotGetGoesOutAfterRegisteringAgain()
     {
         _toolRunner.AnswerExitCode = (_, _, _) => 1;
@@ -826,7 +886,8 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         TimeProvider? time = null,
         AgentLog? log = null,
         bool dryRun = false,
-        IAgentRemoval? removal = null)
+        IAgentRemoval? removal = null,
+        IDeploySession? session = null)
     {
         time ??= new ImmediateTimeProvider();
         log ??= new AgentLog(time, TextWriter.Null);
@@ -839,6 +900,27 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             systemDirectory: TestAgents.SystemDirectory(_tools),
             dryRun: false);
 
-        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal).RunAsync(server.Stop.Token);
+        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal, session).RunAsync(server.Stop.Token);
+    }
+
+    // Notes what the loop asks of DDT's session among the tools' calls. ends says whether an end completes, as a stop
+    // may end the wait for a sign-out.
+    private sealed class FakeDeploySession(FakeDeploymentTools tools, bool ends = true) : IDeploySession
+    {
+        public Task PrepareAsync(CancellationToken cancellationToken)
+        {
+            tools.Note("prepare the session");
+
+            return Task.CompletedTask;
+        }
+
+        public void SetupFinished() => tools.Note("the session takes over the sign-in");
+
+        public Task<bool> EndAsync(bool signOut, CancellationToken cancellationToken)
+        {
+            tools.Note(signOut ? "end the session, signing out" : "end the session once someone signed out");
+
+            return Task.FromResult(ends);
+        }
     }
 }

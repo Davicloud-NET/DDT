@@ -191,6 +191,10 @@ msgstr "Dark"
 msgid "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
 msgstr "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
 
+#: ViewModels/MainViewModel.cs
+msgid "DDT is done with this machine"
+msgstr "DDT is done with this machine"
+
 #: Legal/LegalTexts.cs
 msgid "DDT: GNU General Public License, version 3"
 msgstr "DDT: GNU General Public License, version 3"
@@ -571,6 +575,14 @@ msgstr "Sign in here with your DDT account, or approve this machine on the Machi
 msgid "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
 msgstr "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
 
+#: ViewModels/MainViewModel.cs
+msgid "Sign out"
+msgstr "Sign out"
+
+#: ViewModels/MainViewModel.cs
+msgid "Sign out to leave DDT's session. Windows then shows its sign-in screen."
+msgstr "Sign out to leave DDT's session. Windows then shows its sign-in screen."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "Signed under"
 msgstr "Signed under"
@@ -684,8 +696,16 @@ msgid "The console restarts a machine only in Windows PE."
 msgstr "The console restarts a machine only in Windows PE."
 
 #: ViewModels/MainViewModel.cs
+msgid "The console stays open while DDT works on this machine."
+msgstr "The console stays open while DDT works on this machine."
+
+#: ViewModels/MainViewModel.cs
 msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
 msgstr "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
+
+#: ViewModels/MainViewModel.cs
+msgid "The console stays open. F9 signs out of DDT's session."
+msgstr "The console stays open. F9 signs out of DDT's session."
 
 #: ViewModels/TypedWordViewModel.cs
 msgid "The disk has no partitions."
@@ -926,3 +946,4 @@ msgstr "{sequence} erases the disk you choose. This machine has more than one di
 #: ViewModels/ComputerNameViewModel.cs
 msgid "{sequence} needs a computer name for this machine."
 msgstr "{sequence} needs a computer name for this machine."
+

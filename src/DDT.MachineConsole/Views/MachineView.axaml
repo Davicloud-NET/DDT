@@ -13,7 +13,7 @@
   <Grid RowDefinitions="Auto,*" Margin="22,18,22,22" RowSpacing="14">
     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
       <TextBlock Name="Title" Classes="heading" Text="{Binding Title}" VerticalAlignment="Center" />
-      <Button Grid.Column="1" Name="Prompt" Classes="quiet" Command="{Binding PromptCommand}" Focusable="False">
+      <Button Grid.Column="1" Name="Prompt" Classes="quiet" Command="{Binding PromptCommand}" IsVisible="{Binding HasPrompt}" Focusable="False">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <c:KeyCap Key="Shift" />

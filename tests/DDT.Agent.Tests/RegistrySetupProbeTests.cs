@@ -50,6 +50,54 @@ public sealed class RegistrySetupProbeTests : IDisposable
         Assert.Null(probe.Pending());
     }
 
+    // Setup's first user looks for updates after the machine's part and may restart Windows, which would cut a step off.
+    [Fact]
+    public void SetupHasNotFinishedWhileItsFirstUserIsSignedIn()
+    {
+        using RegistryKey state = _root.CreateSubKey(RegistrySetupProbe.StateKeyPath);
+        state.SetValue("ImageState", RegistrySetupProbe.Complete);
+        List<string> signedIn = ["defaultuser0"];
+        RegistrySetupProbe probe = new(_root, () => signedIn);
+
+        Assert.Equal("Windows still sets up its first user", probe.Pending());
+
+        signedIn = ["DDTDeploy"];
+
+        Assert.Null(probe.Pending());
+    }
+
+    // Between a restart of setup and the next sign-in of its first user, the account is there without a session.
+    [Fact]
+    public void TheFirstUsersAccountHoldsTheRunUpOnlyForAWhileWithoutASession()
+    {
+        using RegistryKey state = _root.CreateSubKey(RegistrySetupProbe.StateKeyPath);
+        state.SetValue("ImageState", RegistrySetupProbe.Complete);
+        ManualTimeProvider time = new();
+        bool exists = true;
+        RegistrySetupProbe probe = new(_root, () => [], () => exists, time);
+
+        Assert.Equal("Windows still sets up its first user, and signs it in again", probe.Pending());
+
+        time.Advance(RegistrySetupProbe.LeftoverAfter);
+
+        // One setup left behind.
+        Assert.Null(probe.Pending());
+
+        exists = false;
+        Assert.Null(probe.Pending());
+    }
+
+    // The answer file's auto-logon, which setup does last, whatever it leaves behind of its first user.
+    [Fact]
+    public void DdtsSessionEndsTheWaitAtOnce()
+    {
+        using RegistryKey state = _root.CreateSubKey(RegistrySetupProbe.StateKeyPath);
+        state.SetValue("ImageState", RegistrySetupProbe.Complete);
+        RegistrySetupProbe probe = new(_root, () => ["DDTDeploy"], () => true, new ManualTimeProvider());
+
+        Assert.Null(probe.Pending());
+    }
+
     [Fact]
     public void AnImageStateThatWasNeverSetIsNotComplete()
     {

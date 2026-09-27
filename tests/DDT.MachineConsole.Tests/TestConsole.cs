@@ -13,7 +13,8 @@ namespace DDT.MachineConsole.Tests;
 // ever starts cmd.exe or restarts anything.
 internal sealed class TestConsole
 {
-    public TestConsole(UiLanguage language = UiLanguage.English, bool canRestart = false)
+    // session is the console as the shell of DDT's session in the installed Windows, where closing signs out.
+    public TestConsole(UiLanguage language = UiLanguage.English, bool canRestart = false, bool session = false)
     {
         Power = new FakePower(canRestart);
         Model = new MainViewModel(
@@ -21,7 +22,8 @@ internal sealed class TestConsole
             Power,
             Prompt,
             (id, answer) => Answers.Add((id, answer)),
-            () => Closed++);
+            () => Closed++,
+            session);
     }
 
     public MainViewModel Model { get; }

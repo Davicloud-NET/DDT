@@ -39,6 +39,65 @@ public static class UnattendFile
             .ConfigureAwait(false);
     }
 
+    // Has Setup sign in as userName once, at the end of the out-of-box experience, the way Windows supports signing in
+    // by itself after setup: Setup stores the password where Winlogon reads it, and signs in after its last restart,
+    // which nothing outside Setup can time. False when there is no answer file, or it has no Shell-Setup settings for
+    // the out-of-box experience to add it to. The password is encoded as the answer file encodes every password, which
+    // hides it from a glance and nothing more; the file goes when setup has read it.
+    public static async Task<bool> AddAutoLogonAsync(string windowsRoot, string userName, string password, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(password);
+
+        string path = PathIn(windowsRoot);
+
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        XDocument document;
+
+        await using (FileStream file = File.OpenRead(path))
+        {
+            using XmlReader reader = XmlReader.Create(file, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, Async = true });
+            document = await XDocument.LoadAsync(reader, LoadOptions.None, cancellationToken).ConfigureAwait(false);
+        }
+
+        XElement? shell = document.Root?
+            .Elements(s_unattend + "settings")
+            .Where(settings => (string?)settings.Attribute("pass") == "oobeSystem")
+            .Elements(s_unattend + "component")
+            .FirstOrDefault(component => (string?)component.Attribute("name") == "Microsoft-Windows-Shell-Setup");
+
+        if (shell is null)
+        {
+            return false;
+        }
+
+        shell.Element(s_unattend + "AutoLogon")?.Remove();
+
+        // First, as Windows System Image Manager orders the settings; the suffix is the one every account password gets.
+        shell.AddFirst(new XElement(
+            s_unattend + "AutoLogon",
+            new XElement(
+                s_unattend + "Password",
+                new XElement(s_unattend + "Value", Convert.ToBase64String(Encoding.Unicode.GetBytes(password + "Password"))),
+                new XElement(s_unattend + "PlainText", "false")),
+            new XElement(s_unattend + "Enabled", "true"),
+            new XElement(s_unattend + "LogonCount", "1"),
+            new XElement(s_unattend + "Username", userName)));
+
+        XmlWriterSettings settings = new() { Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), Indent = true, Async = true };
+
+        await using (FileStream file = File.Create(path))
+        await using (XmlWriter writer = XmlWriter.Create(file, settings))
+        {
+            await document.SaveAsync(writer, cancellationToken).ConfigureAwait(false);
+        }
+
+        return true;
+    }
+
     // What the answer file sets, without any secret, for the log.
     public static string Summarize(string unattend)
     {

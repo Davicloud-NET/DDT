@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
@@ -57,6 +59,43 @@ public static class WindowsPhaseService
         WindowsRebooter rebooter = new(tools);
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
+        // The console of DDT's session, which Windows starts at its auto-logon, gets the run as the console in Windows PE
+        // does. Its pipe opens once the session is prepared, for the session's account alone.
+        DeploySession? session = null;
+        SessionMachineConsole console = new(log, version, () => session?.SessionIsUp());
+
+        await using (console.ConfigureAwait(false))
+        {
+            ConsoleStatus status = new(console, version, options.ServerUrl, null, dryRun: false);
+            log.MachineConsole = console;
+            session = new DeploySession(
+                windowsRoot,
+                new WindowsSessionAccounts(),
+                Registry.LocalMachine,
+                Registry.Users,
+                tools,
+                log,
+                TimeProvider.System,
+                (sid, pipeName) => console.Start(() => SessionMachineConsole.CreatePipe(pipeName, sid)));
+
+            return await RunAsync(windowsRoot, directory, log, version, server, tools, rebooter, staged, session, status, cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<int> RunAsync(
+        string windowsRoot,
+        string directory,
+        AgentLog log,
+        string version,
+        HttpAgentServer server,
+        ToolRunner tools,
+        WindowsRebooter rebooter,
+        AgentConfiguration staged,
+        DeploySession session,
+        ConsoleStatus status,
+        CancellationToken cancellationToken)
+    {
         SequenceRunner runner = new(
             server,
             new DiskpartPartitioner(tools, log, TimeProvider.System, directory),
@@ -73,7 +112,8 @@ public static class WindowsPhaseService
             RunHeartbeat.DefaultInterval,
             directory,
             Environment.SystemDirectory,
-            dryRun: false);
+            dryRun: false,
+            status);
 
         WindowsPhaseLoop loop = new(
             server,
@@ -88,7 +128,9 @@ public static class WindowsPhaseService
             RunHeartbeat.DefaultInterval,
             windowsRoot,
             version,
-            dryRun: false);
+            dryRun: false,
+            session,
+            status);
 
         // The control manager only needs to know whether the service failed.
         return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch

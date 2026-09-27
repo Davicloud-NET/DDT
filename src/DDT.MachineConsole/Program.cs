@@ -11,6 +11,8 @@ namespace DDT.MachineConsole;
 
 // ddt-console.exe --pipe <name>, as the agent starts it. It connects to the agent's pipe first, before it opens a
 // window, and ends at once when there is no agent or the agent refuses it, so the agent's text console stays in view.
+// With --session it is the shell of DDT's session in the installed Windows, which opens at once and waits for the
+// agent, whose service Windows starts alongside.
 public static partial class Program
 {
     public const int Closed = 0;
@@ -26,24 +28,32 @@ public static partial class Program
             return NoPipe;
         }
 
-        ClientConnection connection;
+        if (ConsolePipe.IsSession(args))
+        {
+            App.Startup = ConsoleStartup.ForSession(pipeName);
+        }
+        else
+        {
+            ClientConnection connection;
 
-        try
-        {
-            connection = ClientConnection.ConnectAsync(pipeName, $"DDT console {ConsoleBuild.Version}", CancellationToken.None)
-                .GetAwaiter()
-                .GetResult();
-        }
-        catch (ConsoleProtocolException)
-        {
-            return Refused;
-        }
-        catch (Exception exception) when (exception is TimeoutException or IOException or UnauthorizedAccessException)
-        {
-            return NotConnected;
+            try
+            {
+                connection = ClientConnection.ConnectAsync(pipeName, $"DDT console {ConsoleBuild.Version}", CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ConsoleProtocolException)
+            {
+                return Refused;
+            }
+            catch (Exception exception) when (exception is TimeoutException or IOException or UnauthorizedAccessException)
+            {
+                return NotConnected;
+            }
+
+            App.Startup = new ConsoleStartup(connection);
         }
 
-        App.Startup = new ConsoleStartup(connection);
         FineTimer();
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

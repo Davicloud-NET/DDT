@@ -191,6 +191,10 @@ msgstr "Dunkel"
 msgid "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
 msgstr "DDT kann nicht feststellen, ob {image} für Secure Boot signiert ist, und auf diesem Gerät ist Secure Boot eingeschaltet. Es startet möglicherweise erst, wenn Secure Boot im Firmware-Setup ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
 
+#: ViewModels/MainViewModel.cs
+msgid "DDT is done with this machine"
+msgstr "DDT ist mit diesem Gerät fertig"
+
 #: Legal/LegalTexts.cs
 msgid "DDT: GNU General Public License, version 3"
 msgstr "DDT: GNU General Public License, Version 3"
@@ -571,6 +575,14 @@ msgstr "Melden Sie sich hier mit Ihrem DDT-Konto an, oder geben Sie dieses Gerä
 msgid "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
 msgstr "Melden Sie sich mit Ihrem DDT-Konto an. Ein Operator oder Administrator gibt dieses Gerät frei, indem er sich anmeldet."
 
+#: ViewModels/MainViewModel.cs
+msgid "Sign out"
+msgstr "Abmelden"
+
+#: ViewModels/MainViewModel.cs
+msgid "Sign out to leave DDT's session. Windows then shows its sign-in screen."
+msgstr "Melden Sie sich ab, um die Sitzung von DDT zu verlassen. Windows zeigt dann seine Anmeldeseite."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "Signed under"
 msgstr "Signiert unter"
@@ -684,8 +696,16 @@ msgid "The console restarts a machine only in Windows PE."
 msgstr "Die Konsole startet ein Gerät nur in Windows PE neu."
 
 #: ViewModels/MainViewModel.cs
+msgid "The console stays open while DDT works on this machine."
+msgstr "Die Konsole bleibt offen, solange DDT an diesem Gerät arbeitet."
+
+#: ViewModels/MainViewModel.cs
 msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
 msgstr "Die Konsole bleibt offen, solange DDT an diesem Gerät arbeitet. Umschalt+F10 öffnet eine Eingabeaufforderung."
+
+#: ViewModels/MainViewModel.cs
+msgid "The console stays open. F9 signs out of DDT's session."
+msgstr "Die Konsole bleibt offen. Mit F9 melden Sie sich von der Sitzung von DDT ab."
 
 #: ViewModels/TypedWordViewModel.cs
 msgid "The disk has no partitions."
@@ -926,3 +946,4 @@ msgstr "{sequence} löscht den Datenträger, den Sie wählen. Dieses Gerät hat 
 #: ViewModels/ComputerNameViewModel.cs
 msgid "{sequence} needs a computer name for this machine."
 msgstr "{sequence} braucht einen Computernamen für dieses Gerät."
+

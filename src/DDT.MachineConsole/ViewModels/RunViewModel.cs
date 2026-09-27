@@ -136,9 +136,11 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
+    // Only while steps in Windows PE are still to come does the machine have the move into Windows ahead of it.
     public string? Note => Stage switch
     {
-        ConsoleStage.Running when Run?.Steps.Any(step => step.Phase == ConsolePhase.Windows) == true =>
+        ConsoleStage.Running when Run?.Steps.Any(step => step.Phase == ConsolePhase.Windows) == true
+            && Run.Steps.Any(step => step.Phase == ConsolePhase.WindowsPE && step.State is ConsoleStepState.Pending or ConsoleStepState.Running) =>
             T("Leave this machine on. It restarts by itself and finishes in Windows."),
         ConsoleStage.Running => T("Leave this machine on. This screen says when the run is done."),
         ConsoleStage.Restarting => T("Leave this machine on. It starts again by itself."),

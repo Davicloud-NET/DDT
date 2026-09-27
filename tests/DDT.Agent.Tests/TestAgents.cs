@@ -34,7 +34,8 @@ internal static class TestAgents
         bool dryRun = true,
         IDomainJoiner? joiner = null,
         IRawDisks? rawDisks = null,
-        ConsoleStatus? status = null)
+        ConsoleStatus? status = null,
+        string? consoleDirectory = null)
     {
         toolRunner ??= new RecordingToolRunner();
 
@@ -48,7 +49,7 @@ internal static class TestAgents
             RestartMarker(tools, log),
             toolRunner,
             joiner ?? tools,
-            HandOver(tools, toolRunner, log, dryRunHandOver),
+            HandOver(tools, toolRunner, log, dryRunHandOver, consoleDirectory),
             log,
             timeProvider,
             heartbeatInterval ?? Timeout.InfiniteTimeSpan,
@@ -73,9 +74,14 @@ internal static class TestAgents
         return new WindowsPERestartMarker(Path.Combine(tools.Root, "RAM disk"), log, dryRun: false);
     }
 
-    // Stages AgentSource(tools) with Configuration.
-    public static WindowsHandOver HandOver(FakeDeploymentTools tools, IToolRunner toolRunner, AgentLog log, bool dryRun = false) =>
-        new(new OfflineServiceRegistration(toolRunner, log, dryRun), AgentSource(tools), Configuration, log, dryRun);
+    // Stages AgentSource(tools) with Configuration, and the console in consoleDirectory.
+    public static WindowsHandOver HandOver(
+        FakeDeploymentTools tools,
+        IToolRunner toolRunner,
+        AgentLog log,
+        bool dryRun = false,
+        string? consoleDirectory = null) =>
+        new(new OfflineServiceRegistration(toolRunner, log, dryRun), AgentSource(tools), Configuration, log, dryRun, consoleDirectory);
 
     // The running agent, as the self-update may have named it.
     public static string AgentSource(FakeDeploymentTools tools)
@@ -112,7 +118,8 @@ internal static class TestAgents
         AgentLog log,
         TimeProvider timeProvider,
         bool dryRun = false,
-        IAgentRemoval? removal = null)
+        IAgentRemoval? removal = null,
+        IDeploySession? session = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
@@ -129,7 +136,8 @@ internal static class TestAgents
             Timeout.InfiniteTimeSpan,
             tools.Volumes.Windows,
             Version,
-            dryRun);
+            dryRun,
+            session);
     }
 
     // With the text console, asking through prompt.

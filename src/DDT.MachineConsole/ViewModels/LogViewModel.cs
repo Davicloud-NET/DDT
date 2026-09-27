@@ -59,6 +59,18 @@ public sealed class LogViewModel(Localizer localizer) : OverlayViewModel(localiz
         }
     }
 
+    // For an agent that sends its newest lines again as it connects anew.
+    public void Clear()
+    {
+        if (Lines.Count == 0)
+        {
+            return;
+        }
+
+        Lines.Clear();
+        Raise(nameof(IsEmpty));
+    }
+
     public override void Refresh()
     {
         foreach (LogLine line in Lines)

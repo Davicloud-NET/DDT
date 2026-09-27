@@ -119,6 +119,10 @@ public sealed class ConsoleStatus
             Restart = null,
         });
 
+    // The agent in the installed Windows registered again to go on with its run, which it shows next.
+    public void Registered(Guid machineId) =>
+        Change(state => state with { Server = state.Server with { Problem = null, FailedStage = null, Failures = 0 }, MachineId = machineId });
+
     public void Rejected(Guid machineId) =>
         Change(state => state with
         {

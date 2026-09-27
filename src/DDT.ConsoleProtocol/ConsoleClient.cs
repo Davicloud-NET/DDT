@@ -32,20 +32,32 @@ public sealed class ConsoleClient : IAsyncDisposable
         ConnectAsync(pipeName, new HelloMessage(HelloMessage.CurrentVersion, program), timeout, cancellationToken);
 
     // With a hello of any version, which only a test needs.
-    public static async Task<ConsoleClient> ConnectAsync(
+    public static Task<ConsoleClient> ConnectAsync(
         string pipeName,
         HelloMessage hello,
         TimeSpan timeout,
+        CancellationToken cancellationToken) =>
+        ConnectAsync(ConsolePipe.CreateClient(pipeName), hello, null, timeout, cancellationToken);
+
+    // Over a pipe the caller made, such as one to an agent of another account, which check looks at once the pipe is
+    // connected and before anything is sent: it throws UnauthorizedAccessException when the pipe is not the agent's.
+    // The client owns the pipe from here on.
+    public static async Task<ConsoleClient> ConnectAsync(
+        NamedPipeClientStream pipe,
+        HelloMessage hello,
+        Action<NamedPipeClientStream>? check,
+        TimeSpan timeout,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(pipe);
         ArgumentNullException.ThrowIfNull(hello);
 
-        NamedPipeClientStream pipe = ConsolePipe.CreateClient(pipeName);
         ConsoleChannel channel = new(pipe);
 
         try
         {
             await pipe.ConnectAsync(timeout, cancellationToken).ConfigureAwait(false);
+            check?.Invoke(pipe);
             await channel.SendAsync(hello, cancellationToken).ConfigureAwait(false);
 
             return await channel.ReceiveAsync(cancellationToken).ConfigureAwait(false) switch

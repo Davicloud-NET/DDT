@@ -17,8 +17,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// In Windows PE the window fills the screen without a frame; on a development computer it is an ordinary window.
-// The function keys and Esc reach the console before any field or list sees them.
+// In Windows PE and as the shell of DDT's session the window fills the screen without a frame; on a development
+// computer it is an ordinary window. The function keys and Esc reach the console before any field or list sees them.
 public sealed partial class MainWindow : Window
 {
     private static readonly ScreenTransition s_overlaySwitch = new();
@@ -127,7 +127,7 @@ public sealed partial class MainWindow : Window
             case nameof(MainViewModel.HasOverlay):
                 _frames!.Measure(_model!.HasOverlay ? "overlay in" : "overlay out", _model.HasOverlay ? Motion.Normal : Motion.Fast);
                 break;
-            case nameof(MainViewModel.IsEnded):
+            case nameof(MainViewModel.ShowsEndBand):
                 _frames!.Measure("ended band", Motion.Normal);
                 break;
             case nameof(MainViewModel.ConfirmingRestart):

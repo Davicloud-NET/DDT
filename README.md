@@ -984,9 +984,10 @@ uses the text console alone and prints what it always printed. An agent that swi
 one ends its console, and the newer agent starts its own, so an agent that updated itself to a new
 version of the protocol uses the text console until the boot image has a console of that version.
 
-The service in the installed Windows has no console. Neither does a dry run or an agent whose input
-is redirected, unless `--console <path>` names one to start, which is how a development computer
-tries one.
+The service in the installed Windows does not start the console: Windows does, as the shell of DDT's
+session, see [DDT's session at the machine](#ddts-session-at-the-machine). A dry run and an agent
+whose input is redirected have no console, unless `--console <path>` names one to start, which is how
+a development computer tries one.
 
 The questions are the text console's: the sign-in one field at a time with the error of the attempt
 before, the sequence, the disk and the computer name, each with what the text console lists for it,
@@ -1622,8 +1623,10 @@ return fails the run, and the machine's firmware has to be set to start Windows 
 
 Windows setup runs first, with the answer file. When the service starts, it registers with the run
 token, and while setup or the out-of-box experience still runs, it reports that it waits for Windows
-setup, which the Machines page shows. It checks again every 15 seconds, with no time limit, because
-someone may be finishing the out-of-box experience by hand, and logs a warning every 30 minutes.
+setup, which the Machines page shows. That includes the part setup runs as its temporary first user,
+`defaultuser0`, after the machine's part: it looks for updates and may restart Windows, which would
+cut a step off. It checks again every 15 seconds, with no time limit, because someone may be
+finishing the out-of-box experience by hand, and logs a warning every 30 minutes.
 Then it deletes `C:\Windows\Panther\unattend.xml` and runs the remaining steps. It logs to the
 server and to `C:\DDT\logs\agent.log`, whose lines start with the date and the time in UTC, such as
 `2026-09-23 14:03:12 UTC INFO  ...`. The agent's console in Windows PE shows only the time, also in
@@ -1652,6 +1655,39 @@ without warning a signed-in user, and nothing of DDT is left. After a failed or 
 not restart: the service is gone, but `C:\DDT` with the agent stays until Windows next restarts. A
 service whose run the server no longer runs changes nothing on the server and removes itself the
 same way.
+
+### DDT's session at the machine
+
+When the boot image has the graphical console and the run has a Write the answer file step, the
+machine shows the rest of the run on DDT's console rather than on Windows' sign-in screen. The
+hand-over copies the console to `C:\DDT\console`, which Users may read and run, makes up a password
+nobody is told, and adds an `AutoLogon` for the account `DDTDeploy` to the answer file, so setup
+itself signs in as it once, at the very end of the out-of-box experience. Setup signs in its own
+first user between its restarts, and only setup knows when it is done with it. Setup's own screens,
+"Getting ready" and the out-of-box experience's update check, stay: nothing may draw over them.
+
+At every start during setup the service makes sure of `DDTDeploy`: a local standard account, in
+Users only, with its profile made before its first sign-in, so its own registry can name the console
+as its shell instead of Explorer and take Task Manager, locking, changing the password and signing
+out away from Ctrl+Alt+Del. While the run lasts, the machine offers no switching of users and shows
+no first sign-in animation. Once setup has finished, the service has Windows sign in as `DDTDeploy`
+after every restart the run still has, and again after a sign-out, with the password as the LSA
+secret Winlogon reads rather than in the Winlogon key, which every user can read. Each time the
+session is up, the password changes.
+
+The steps still run in the service, as SYSTEM, and the session only shows them, over the protocol of
+Windows PE, on a pipe only SYSTEM and `DDTDeploy` may open and which the console checks SYSTEM owns.
+The console fills the screen, cannot be closed with Alt+F4, and opens no command prompt, so whoever
+gets past it is a standard user. When the agent's service stops, as Windows restarts, the console
+keeps the last state and waits for it.
+
+When the run is done, the console shows it for 5 seconds, the session is signed out, and the agent
+puts Windows' sign-in settings back, deletes `DDTDeploy` and its profile, and restarts Windows. After
+a failure the console shows why until someone at the machine signs out with F9: the account is
+disabled at once and deleted once signed out, or at the service's next start. Without the console in
+the boot image or without an answer file, the run goes on the same way and shows only on the server.
+A domain policy with a sign-in notice stops the automatic sign-in at the notice until someone
+confirms it; the run goes on regardless.
 
 ### What Windows shows at its first start
 

@@ -5,6 +5,8 @@
 using System.Net;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsPhase;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
@@ -957,6 +959,30 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (last.State, last.Phase, last.Activity));
     }
 
+    [Fact]
+    public async Task TheConsoleComesAlongAndSetupSignsInToDdtsSession()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string console = Path.Combine(_tools.Root, "X", "console");
+        Directory.CreateDirectory(console);
+
+        foreach (string file in ConsolePipe.Files)
+        {
+            await File.WriteAllTextAsync(Path.Combine(console, file), file, cancellationToken);
+        }
+
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer())
+            .OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-1", "resume-1", "run-token-1"));
+
+        // A dry hand-over, as the console's directory would otherwise let only SYSTEM write to it.
+        Assert.Equal(new RunResult(RunOutcome.Restarting), await RunAsync(server, InWindows(), dryRunHandOver: true, consoleDirectory: console));
+
+        string staged = Path.Combine(Windows, "DDT", WindowsHandOver.ConsoleDirectory);
+        Assert.Equal(ConsolePipe.Files.Order(), Directory.GetFiles(staged).Select(Path.GetFileName).Order());
+        Assert.Contains("<Username>DDTDeploy</Username>", await File.ReadAllTextAsync(UnattendFile.PathIn(Windows), cancellationToken), StringComparison.Ordinal);
+        Assert.Contains("\"password\"", await File.ReadAllTextAsync(DeploySession.FilePathIn(Windows), cancellationToken), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("reg add")]
     [InlineData("firmware")]
@@ -1182,7 +1208,8 @@ public sealed class SequenceRunnerTests : IDisposable
         IRebooter? rebooter = null,
         string? runToken = null,
         IToolRunner? toolRunner = null,
-        bool dryRunHandOver = false)
+        bool dryRunHandOver = false,
+        string? consoleDirectory = null)
     {
         time ??= new ImmediateTimeProvider();
         _tokens = new DeploymentTokens("session-0", "resume-0", runToken);
@@ -1195,7 +1222,8 @@ public sealed class SequenceRunnerTests : IDisposable
             toolRunner ?? _toolRunner,
             rebooter: rebooter,
             systemDirectory: _system,
-            dryRunHandOver: dryRunHandOver);
+            dryRunHandOver: dryRunHandOver,
+            consoleDirectory: consoleDirectory);
 
         return runner.RunAsync(s_machineId, run ?? InstallWindows(), resumed, confirmedDisk, _tokens, s_identity, server.Stop.Token);
     }

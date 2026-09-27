@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -20,6 +21,11 @@ namespace DDT.Agent.WindowsPhase;
 // a restart of Windows, after which the service starts again. The run records that restart before anything else, so a
 // service that starts again without it restarts Windows instead of going on. The report of how the run ended stays on
 // the disk with the run token until the server has it, so a stop, or a server out of reach, only puts it off.
+//
+// With a session, the machine shows the run on DDT's console in a session Windows signs in to by itself. The session
+// is prepared at every start, before anything that can take long, and ends before the agent removes itself: at once
+// when the run is done or over on the server, and after a failure only once someone at the machine has read it and
+// signed out. status is what the console shows.
 public sealed class WindowsPhaseLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
@@ -33,7 +39,9 @@ public sealed class WindowsPhaseLoop(
     TimeSpan heartbeatInterval,
     string windowsRoot,
     string agentVersion,
-    bool dryRun)
+    bool dryRun,
+    IDeploySession? session = null,
+    ConsoleStatus? status = null)
 {
     public const string StateGoneMessage = "The run's state in the installed Windows is gone, so the run cannot go on there.";
 
@@ -71,7 +79,7 @@ public sealed class WindowsPhaseLoop(
         {
             log.Warning($"There is no run to go on with in {RunFiles.StatePathIn(windowsRoot)}.");
 
-            return await RemoveAsync(AgentExitCodes.Stopped).ConfigureAwait(false);
+            return await RemoveAsync(AgentExitCodes.Stopped, signOut: true, cancellationToken).ConfigureAwait(false);
         }
 
         Guid runId = local.State.RunId;
@@ -83,6 +91,12 @@ public sealed class WindowsPhaseLoop(
             log.Warning($"Run {runId} still goes on in Windows PE, which hands it over again. The agent leaves it alone.");
 
             return AgentExitCodes.Stopped;
+        }
+
+        // Before the registration, which waits for the network: Windows may sign in any moment after it starts.
+        if (session is not null)
+        {
+            await session.PrepareAsync(cancellationToken).ConfigureAwait(false);
         }
 
         string? runToken = local.RunToken;
@@ -113,6 +127,7 @@ public sealed class WindowsPhaseLoop(
             }
 
             Guid machineId = registration.MachineId;
+            status?.Registered(machineId);
             runToken = registration.RunToken ?? runToken;
             DeploymentTokens tokens = new(token, resumeToken, runToken);
             AgentRun? run;
@@ -175,6 +190,7 @@ public sealed class WindowsPhaseLoop(
                 continue;
             }
 
+            session?.SetupFinished();
             DeleteAnswerFile(local);
 
             RunResult result = await runner
@@ -191,7 +207,7 @@ public sealed class WindowsPhaseLoop(
                 case RunOutcome.Stopped:
                     return AgentExitCodes.Stopped;
                 case RunOutcome.Failed when result.UnsentReport is null:
-                    return await RemoveAsync(AgentExitCodes.Stopped).ConfigureAwait(false);
+                    return await RemoveAsync(AgentExitCodes.Stopped, signOut: false, cancellationToken).ConfigureAwait(false);
                 default:
                     // A last report the server did not get, kept on the disk with the token, or a refused token: the
                     // next registration decides, and the report goes out while the server still runs the run.
@@ -206,6 +222,8 @@ public sealed class WindowsPhaseLoop(
     // has nothing for this service to go on with.
     private async Task<AgentRegistrationResult?> RegisterAsync(string? runToken, CancellationToken cancellationToken)
     {
+        status?.Registering();
+
         for (int failures = 0; ; failures++)
         {
             if (failures > 0)
@@ -217,6 +235,7 @@ public sealed class WindowsPhaseLoop(
             {
                 MachineIdentity identity = identityReader.Read();
                 _identity = identity;
+                status?.Identified(identity);
 
                 return await server.RegisterAsync(
                     new AgentRegistration(
@@ -244,6 +263,7 @@ public sealed class WindowsPhaseLoop(
             catch (Exception exception) when (exception is AgentTokenRejectedException || ServerCallRules.IsTransient(exception, cancellationToken))
             {
                 log.Warning($"Cannot register with the server ({exception.Message}).");
+                status?.Unreachable(exception);
             }
         }
     }
@@ -349,6 +369,13 @@ public sealed class WindowsPhaseLoop(
     // never leads to another.
     private async Task<int> RemoveAndRestartAsync(CancellationToken cancellationToken)
     {
+        if (session is not null && !await session.EndAsync(signOut: true, cancellationToken).ConfigureAwait(false))
+        {
+            log.Information("The agent was stopped while DDT's session ended. It ends it and removes itself when it next starts.");
+
+            return AgentExitCodes.Deployed;
+        }
+
         await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
 
         if (cancellationToken.IsCancellationRequested)
@@ -424,7 +451,9 @@ public sealed class WindowsPhaseLoop(
 
     // After the server has the run's last report: Windows restarts once more after a finished run.
     private Task<int> EndAsync(AgentRunReport report, CancellationToken cancellationToken) =>
-        report.State == DeploymentState.Done ? RemoveAndRestartAsync(cancellationToken) : RemoveAsync(AgentExitCodes.Stopped);
+        report.State == DeploymentState.Done
+            ? RemoveAndRestartAsync(cancellationToken)
+            : RemoveAsync(AgentExitCodes.Stopped, signOut: false, cancellationToken);
 
     // The run's state and answer file go first, token first, whatever is still there.
     private async Task<int> RunIsOverAsync(Guid runId, CancellationToken cancellationToken)
@@ -436,12 +465,20 @@ public sealed class WindowsPhaseLoop(
             local.Discard(log);
         }
 
-        return await RemoveAsync(AgentExitCodes.Stopped).ConfigureAwait(false);
+        return await RemoveAsync(AgentExitCodes.Stopped, signOut: true, cancellationToken).ConfigureAwait(false);
     }
 
-    // Nothing may stop the removal half way.
-    private async Task<int> RemoveAsync(int exitCode)
+    // The session ends first, which after a failure waits for someone to sign out, and a stop may end that wait: the
+    // next start finds the run over and ends what is left. Nothing may stop the removal half way.
+    private async Task<int> RemoveAsync(int exitCode, bool signOut, CancellationToken cancellationToken)
     {
+        if (session is not null && !await session.EndAsync(signOut, cancellationToken).ConfigureAwait(false))
+        {
+            log.Information("The agent was stopped while DDT's session ended. It ends it and removes itself when it next starts.");
+
+            return AgentExitCodes.Stopped;
+        }
+
         await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
 
         return exitCode;

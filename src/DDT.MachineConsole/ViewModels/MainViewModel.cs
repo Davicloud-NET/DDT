@@ -23,6 +23,10 @@ public enum Overlay
 // and one question shows at a time until it is answered, withdrawn or replaced. When the pipe ends, the last state stays
 // and the console offers to restart the machine or to close, which leaves the command prompt behind it. Shift+F10 opens
 // a command prompt in front of the console at any time. Everything here runs on the UI thread.
+//
+// As the shell of DDT's session in the installed Windows the console is all there is on the screen, and runs as an
+// account that only shows the run: nothing closes it and no command prompt opens. The agent may go and come back, as its
+// service restarts with Windows, and the console waits for it meanwhile. Once the run is over, close signs out.
 public sealed class MainViewModel : ObservableObject
 {
     private readonly Localizer _l;
@@ -30,6 +34,8 @@ public sealed class MainViewModel : ObservableObject
     private readonly ICommandPrompt _prompt;
     private readonly Action<int, ConsoleAnswer> _send;
     private readonly Action _close;
+    private readonly bool _session;
+    private bool _detached;
     private ConsoleState? _state;
     private QuestionViewModel? _question;
     private ConsoleStage? _stageWhenAnswered;
@@ -43,8 +49,15 @@ public sealed class MainViewModel : ObservableObject
     private ConsoleNotice _shownNotice;
     private bool _isDark = true;
 
-    // send takes an answer to the agent; close ends the console.
-    public MainViewModel(Localizer localizer, IMachinePower power, ICommandPrompt prompt, Action<int, ConsoleAnswer> send, Action close)
+    // send takes an answer to the agent; close ends the console, or in DDT's session signs out. session is the console
+    // as the shell of DDT's session in the installed Windows.
+    public MainViewModel(
+        Localizer localizer,
+        IMachinePower power,
+        ICommandPrompt prompt,
+        Action<int, ConsoleAnswer> send,
+        Action close,
+        bool session = false)
     {
         ArgumentNullException.ThrowIfNull(localizer);
         ArgumentNullException.ThrowIfNull(power);
@@ -57,9 +70,10 @@ public sealed class MainViewModel : ObservableObject
         _prompt = prompt;
         _send = send;
         _close = close;
-        OpenPromptCommand = new Command(prompt.Open);
+        _session = session;
+        OpenPromptCommand = new Command(prompt.Open, () => !session);
         Log = new LogViewModel(localizer) { Closing = CloseOverlay };
-        Machine = new MachineViewModel(localizer) { Closing = CloseOverlay, PromptCommand = OpenPromptCommand };
+        Machine = new MachineViewModel(localizer) { Closing = CloseOverlay, PromptCommand = session ? null : OpenPromptCommand };
         _stageScreen = new ConnectionViewModel(localizer);
         _screen = _stageScreen;
         localizer.Changed += (_, _) => Refresh();
@@ -73,7 +87,7 @@ public sealed class MainViewModel : ObservableObject
         RestartCommand = new Command(() => ConfirmingRestart = true, () => IsEnded && _power.CanRestart);
         ConfirmRestartCommand = new Command(RestartNow, () => ConfirmingRestart);
         CancelRestartCommand = new Command(() => ConfirmingRestart = false);
-        CloseCommand = new Command(close, () => IsEnded);
+        CloseCommand = new Command(close, () => CanClose);
     }
 
     public ConsoleState? State => _state;
@@ -138,7 +152,7 @@ public sealed class MainViewModel : ObservableObject
     {
         LinkEnd.Closed => _l.T("The agent has ended"),
         LinkEnd.Broken => _l.T("The connection to the agent broke"),
-        _ when _state is null => _l.T("Waiting for the agent"),
+        _ when _state is null || _detached => _l.T("Waiting for the agent"),
         _ when _state.Server.Problem is not null => _l.F("Cannot reach {server}", ("server", Say.Host(_state.Server.Address))),
         _ when _state.MachineId is null => _l.F("Connecting to {server}", ("server", Say.Host(_state.Server.Address))),
         _ => _l.F("Connected to {server}", ("server", Say.Host(_state.Server.Address))),
@@ -218,17 +232,35 @@ public sealed class MainViewModel : ObservableObject
     // Once the pipe has ended.
     public bool IsEnded => _ended is not null;
 
-    public string EndedTitle => _ended == LinkEnd.Broken ? _l.T("The connection to the agent broke") : _l.T("The agent has ended");
+    public bool IsSession => _session;
 
-    public string EndedText => _l.T("This screen keeps what the agent showed last. Nothing more comes from it.");
+    // In DDT's session: the run is over, and the agent waits for someone to sign out.
+    public bool IsRunOver => _session && _state?.Stage is ConsoleStage.Finished or ConsoleStage.Failed or ConsoleStage.Stopped;
+
+    // The band with the way on, once the agent has ended or, in DDT's session, once the run is over.
+    public bool ShowsEndBand => IsEnded || IsRunOver;
+
+    public bool CanClose => IsEnded || IsRunOver;
+
+    public string EndedTitle => _session
+        ? _l.T("DDT is done with this machine")
+        : _ended == LinkEnd.Broken ? _l.T("The connection to the agent broke") : _l.T("The agent has ended");
+
+    public string EndedText => _session
+        ? _l.T("Sign out to leave DDT's session. Windows then shows its sign-in screen.")
+        : _l.T("This screen keeps what the agent showed last. Nothing more comes from it.");
 
     public bool CanRestart => _power.CanRestart;
+
+    public bool ShowsRestartUnavailable => !_power.CanRestart && !_session;
+
+    public bool CanOpenPrompt => !_session;
 
     public string RestartLabel => _l.T("Restart the machine");
 
     public string RestartUnavailable => _l.T("The console restarts a machine only in Windows PE.");
 
-    public string CloseLabel => _l.T("Close the console");
+    public string CloseLabel => _session ? _l.T("Sign out") : _l.T("Close the console");
 
     public string CloseHint => _l.T("The command prompt is behind the console.");
 
@@ -274,6 +306,8 @@ public sealed class MainViewModel : ObservableObject
             _l.T("This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."),
         ConsoleNotice.CloseRefused =>
             _l.T("The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."),
+        ConsoleNotice.SessionCloseRefused => _l.T("The console stays open while DDT works on this machine."),
+        ConsoleNotice.SignOutWithF9 => _l.T("The console stays open. F9 signs out of DDT's session."),
         _ => string.Empty,
     };
 
@@ -281,13 +315,22 @@ public sealed class MainViewModel : ObservableObject
     {
         ConsoleNotice.MediaKeys => ["Fn"],
         ConsoleNotice.CloseRefused => ["Shift", "F10"],
+        ConsoleNotice.SignOutWithF9 => ["F9"],
         _ => [],
     };
 
     // Someone closes the window, with Alt+F4 or its close button. While the agent works, a passer-by must not take the
-    // console away, so it stays and says how to reach a prompt; once the agent has ended, F9 closes it anyway.
+    // console away, so it stays and says how to reach a prompt; once the agent has ended, F9 closes it anyway. In DDT's
+    // session the console is the shell, and closing it would leave an empty screen, so it never closes that way.
     public bool RefuseClose()
     {
+        if (_session)
+        {
+            Notice = IsRunOver ? ConsoleNotice.SignOutWithF9 : ConsoleNotice.SessionCloseRefused;
+
+            return true;
+        }
+
         if (IsEnded)
         {
             return false;
@@ -347,9 +390,30 @@ public sealed class MainViewModel : ObservableObject
         RestartCommand.Refresh();
         CloseCommand.Refresh();
         Raise(nameof(IsEnded));
+        Raise(nameof(ShowsEndBand));
+        Raise(nameof(CanClose));
         Raise(nameof(EndedTitle));
         Raise(nameof(Connection));
         Raise(nameof(Question));
+    }
+
+    // In DDT's session the pipe ends when the agent's service stops, as it does when Windows restarts, and the console
+    // waits for the agent to come back: the last state stays meanwhile.
+    public void Detached()
+    {
+        _detached = true;
+        _question = null;
+        ShowScreen();
+        Raise(nameof(Connection));
+        Raise(nameof(Question));
+    }
+
+    // The agent is back, and sends the whole state and its newest lines again.
+    public void Attached()
+    {
+        _detached = false;
+        Log.Clear();
+        Raise(nameof(Connection));
     }
 
     // A key pressed anywhere, without modifiers. True when the console used it.
@@ -366,7 +430,10 @@ public sealed class MainViewModel : ObservableObject
 
         if (key == Key.F10 && modifiers == KeyModifiers.Shift)
         {
-            _prompt.Open();
+            if (!_session)
+            {
+                _prompt.Open();
+            }
 
             return true;
         }
@@ -422,7 +489,7 @@ public sealed class MainViewModel : ObservableObject
             case Key.F8 when IsEnded && _power.CanRestart:
                 ConfirmingRestart = true;
                 return true;
-            case Key.F9 when IsEnded:
+            case Key.F9 when CanClose:
                 _close();
                 return true;
             case Key.Escape when HasOverlay:
@@ -452,11 +519,15 @@ public sealed class MainViewModel : ObservableObject
 
         Machine.Update(state);
         ShowScreen();
+        CloseCommand.Refresh();
         Raise(nameof(State));
         Raise(nameof(MachineLabel));
         Raise(nameof(Connection));
         Raise(nameof(FooterFacts));
         Raise(nameof(IsDryRun));
+        Raise(nameof(IsRunOver));
+        Raise(nameof(ShowsEndBand));
+        Raise(nameof(CanClose));
     }
 
     private void Ask(int id, ConsoleQuestion question)
@@ -589,6 +660,8 @@ public enum ConsoleNotice
     None,
     MediaKeys,
     CloseRefused,
+    SessionCloseRefused,
+    SignOutWithF9,
 }
 
 // A key in the footer: what it is, what it does, and whether what it opens is open.

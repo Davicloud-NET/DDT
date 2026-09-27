@@ -37,6 +37,7 @@ msgstr "{count, plural, one {# machine} other {# machines}}"
 
 #: src/machines/approval.ts
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
 msgstr "{count, plural, one {# problem} other {# problems}}"
 
@@ -194,6 +195,7 @@ msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent}% of {total}, {took} so far"
 
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{problems}, cannot run"
 msgstr "{problems}, cannot run"
 
@@ -850,6 +852,7 @@ msgid "Every task sequence has problems, so none can run. An administrator fixes
 msgstr "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 
 #: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
 #: src/runs/runView.ts
 msgid "Failed"

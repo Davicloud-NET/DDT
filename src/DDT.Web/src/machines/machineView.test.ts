@@ -217,6 +217,18 @@ describe("railLabel", () => {
       "Failed at step 4 of 5",
     );
   });
+
+  it("names no step for a run that ended before its first", () => {
+    expect(railLabel(deploymentSummary({ state: "Failed", stepCount: 5, stepIndex: null }))).toBe(
+      "Not started, 5 steps",
+    );
+    expect(
+      railLabel(deploymentSummary({ state: "Cancelled", stepCount: 5, stepIndex: null })),
+    ).toBe("Not started, 5 steps");
+    expect(railLabel(deploymentSummary({ state: "Cancelled", stepCount: 5, stepIndex: 2 }))).toBe(
+      "Stopped at step 3 of 5",
+    );
+  });
 });
 
 describe("machinesSearch", () => {

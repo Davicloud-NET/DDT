@@ -203,7 +203,8 @@ export function railFromSteps(steps: readonly DeploymentStepView[]): RailStep[] 
     }));
 }
 
-// The rail in words, for screen readers and as its tooltip.
+// The rail in words, for screen readers and as its tooltip. A run that ended before its first step, as when the
+// check before it failed or the assignment was cancelled, shows no step done, so it names none.
 export function railLabel(run: DeploymentSummary): string {
   const count = run.stepCount;
   const number = (run.stepIndex ?? 0) + 1;
@@ -213,7 +214,9 @@ export function railLabel(run: DeploymentSummary): string {
     case "Done":
       return t`All ${count} steps done`;
     case "Failed":
-      return t`Failed at step ${number} of ${count}`;
+      return run.stepIndex === null
+        ? t`Not started, ${count} steps`
+        : t`Failed at step ${number} of ${count}`;
     case "Running":
       return run.stepIndex === null
         ? t`Starting, ${count} steps`
@@ -221,7 +224,9 @@ export function railLabel(run: DeploymentSummary): string {
     case "Assigned":
       return t`Not started, ${count} steps`;
     case "Cancelled":
-      return t`Stopped at step ${number} of ${count}`;
+      return run.stepIndex === null
+        ? t`Not started, ${count} steps`
+        : t`Stopped at step ${number} of ${count}`;
   }
 }
 

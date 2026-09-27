@@ -37,6 +37,7 @@ msgstr ""
 
 #: src/machines/approval.ts
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
 msgstr ""
 
@@ -194,6 +195,7 @@ msgid "{percent}% of {total}, {took} so far"
 msgstr ""
 
 #: src/machines/AssignDialog.tsx
+#: src/rules/RuleDialog.tsx
 msgid "{problems}, cannot run"
 msgstr ""
 
@@ -850,6 +852,7 @@ msgid "Every task sequence has problems, so none can run. An administrator fixes
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
+#: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
 #: src/runs/runView.ts
 msgid "Failed"

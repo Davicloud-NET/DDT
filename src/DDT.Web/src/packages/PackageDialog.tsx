@@ -7,7 +7,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Button as AriaButton } from "react-aria-components";
+import { Button as AriaButton, Form } from "react-aria-components";
 
 import { ApiError } from "@/lib/api";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
@@ -113,9 +113,12 @@ export function PackageDialog({
         </>
       }
     >
-      <form
+      {/* The server's refusal marks a field invalid; with the browser's own validation that would block the next
+          save until the dialog closed, so the form only tells assistive technology. */}
+      <Form
         id={formId}
         className="flex flex-col gap-4"
+        validationBehavior="aria"
         onSubmit={(event) => {
           event.preventDefault();
           save.mutate();
@@ -243,7 +246,7 @@ export function PackageDialog({
         ) : null}
 
         {unplaced ? <Notice tone="fail">{save.error.message}</Notice> : null}
-      </form>
+      </Form>
     </Dialog>
   );
 }

@@ -6,11 +6,12 @@ import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Form } from "react-aria-components";
 
 import { ApiError } from "@/lib/api";
 import { formatMac, type HardwareModelCount, type MachineSummary } from "@/machines/machines";
 import { matchingMachines } from "@/packages/packages";
-import type { SequenceSummary } from "@/sequences/sequences";
+import { canRun, type SequenceSummary } from "@/sequences/sequences";
 import { Button } from "@/ui/Button";
 import { FilterSelector } from "@/ui/Controls";
 import { Dialog } from "@/ui/Dialog";
@@ -34,7 +35,8 @@ import {
 } from "./rules";
 
 // Adds a rule, or changes one. A new rule picks its kind here; an existing one keeps it. The server refuses a
-// rule that would match the same machines as another, and says so on the MAC or the model.
+// rule that would match the same machines as another, and says so on the MAC or the model. A sequence with problems
+// cannot run, so it cannot be chosen.
 export function RuleDialog({
   rule,
   sequences,
@@ -53,7 +55,7 @@ export function RuleDialog({
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<AssignmentRuleKind>(rule?.kind ?? "Model");
   const [edit, setEdit] = useState<RuleEdit>(() =>
-    rule === null ? emptyEdit(sequences[0]?.id ?? "") : editOf(rule),
+    rule === null ? emptyEdit(sequences.find(canRun)?.id ?? "") : editOf(rule),
   );
 
   const save = useMutation({
@@ -115,6 +117,12 @@ export function RuleDialog({
         )
       : null;
   const formId = `rule-${rule?.id ?? "new"}`;
+  const problemsText = (sequence: SequenceSummary) => {
+    const count = sequence.problemCount;
+    const problems = plural(count, { one: "# problem", other: "# problems" });
+
+    return t`${problems}, cannot run`;
+  };
 
   return (
     <Dialog
@@ -142,9 +150,12 @@ export function RuleDialog({
         </>
       }
     >
-      <form
+      {/* The server's refusal marks a field invalid; with the browser's own validation that would block the next
+          save until the dialog closed, so the form only tells assistive technology. */}
+      <Form
         id={formId}
         className="flex flex-col gap-4"
+        validationBehavior="aria"
         onSubmit={(event) => {
           event.preventDefault();
           save.mutate();
@@ -247,7 +258,13 @@ export function RuleDialog({
           placeholder={t`Choose a sequence`}
         >
           {sequences.map((sequence) => (
-            <ListBoxItem key={sequence.id} id={sequence.id} textValue={sequence.name}>
+            <ListBoxItem
+              key={sequence.id}
+              id={sequence.id}
+              textValue={sequence.name}
+              isDisabled={!canRun(sequence)}
+              {...(canRun(sequence) ? {} : { description: problemsText(sequence) })}
+            >
               {sequence.name}
             </ListBoxItem>
           ))}
@@ -267,7 +284,7 @@ export function RuleDialog({
         {save.isError && refusal === null ? (
           <Notice tone="fail">{save.error.message}</Notice>
         ) : null}
-      </form>
+      </Form>
     </Dialog>
   );
 }

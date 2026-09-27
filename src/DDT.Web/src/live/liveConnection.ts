@@ -5,8 +5,18 @@
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { QueryClient } from "@tanstack/react-query";
 
+import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
+import { currentUserQuery } from "@/auth/auth";
+import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
 import type { DeploymentStepView } from "@/deployments/deployments";
-import { imagesQuery, uploadsQuery } from "@/images/images";
+import {
+  imagesQuery,
+  removeImages,
+  upsertImage,
+  uploadsQuery,
+  type ImageSummary,
+  type ImagesRemoved,
+} from "@/images/images";
 import {
   machinesQuery,
   removeMachines,
@@ -14,14 +24,35 @@ import {
   type MachinesRemoved,
   type MachineSummary,
 } from "@/machines/machines";
-import { packagesQuery } from "@/packages/packages";
+import {
+  packagesQuery,
+  removePackages,
+  upsertPackage,
+  type PackageSummary,
+  type PackagesRemoved,
+} from "@/packages/packages";
 import { rulesQuery, sequenceResolutionsKey, type AssignmentRuleView } from "@/rules/rules";
+import {
+  removeMachinesFromRuns,
+  renameMachineInRuns,
+  runHistoryKey,
+  upsertRun,
+  type RunHistoryItem,
+} from "@/runs/runHistory";
 import {
   sequenceDocumentsKey,
   sequenceQuery,
   sequencesQuery,
   type SequenceChanged,
 } from "@/sequences/sequences";
+import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
+import {
+  removeUsers,
+  upsertUser,
+  usersQuery,
+  type UsersRemoved,
+  type UserView,
+} from "@/users/users";
 
 // The part of SignalR's HubConnection the live connection uses, so tests can hand in a fake hub. The never
 // lets each handler declare the payload of its own event.
@@ -115,64 +146,68 @@ export function createLiveConnection(
     }
   };
 
-  const refetchMachines = () => {
-    void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
+  const invalidate = (queryKey: readonly unknown[]) => {
+    void queryClient.invalidateQueries({ queryKey });
   };
 
-  const refetchImages = () => {
-    void queryClient.invalidateQueries({ queryKey: imagesQuery.queryKey });
-  };
-
-  // What a machine would run depends on the rules and on whether the chosen sequence has problems.
+  // What a machine would run is the server's answer to the rules and to whether the chosen sequence has problems.
   const refetchResolutions = () => {
-    void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
+    invalidate(sequenceResolutionsKey);
   };
 
-  const refetchRules = () => {
-    void queryClient.invalidateQueries({ queryKey: rulesQuery.queryKey });
+  // A sequence's problems depend on the library, so an image or package that is gone reads the sequences again,
+  // which their editors take without losing unsaved edits.
+  const refetchSequenceProblems = () => {
+    invalidate(sequencesQuery.queryKey);
+    invalidate(sequenceDocumentsKey);
     refetchResolutions();
-  };
-
-  // A rule shows the name of the sequence it chooses.
-  const refetchSequences = () => {
-    void queryClient.invalidateQueries({ queryKey: sequencesQuery.queryKey });
-    refetchRules();
-  };
-
-  // A sequence's problems depend on the library, so a change there reads the open sequences again. An editor
-  // takes the new problems and keeps its unsaved edits.
-  const refetchLibrary = () => {
-    refetchSequences();
-    void queryClient.invalidateQueries({ queryKey: sequenceDocumentsKey });
   };
 
   // A copy at least as new as the change, such as the one this page's own save returned, is kept.
   const sequenceChanged = (event: SequenceChanged) => {
-    refetchSequences();
+    invalidate(sequencesQuery.queryKey);
+    refetchResolutions();
 
     const cached = queryClient.getQueryData(sequenceQuery(event.id).queryKey);
 
     if (cached === undefined || event.revision === null || cached.revision < event.revision) {
-      void queryClient.invalidateQueries({ queryKey: sequenceQuery(event.id).queryKey });
+      invalidate(sequenceQuery(event.id).queryKey);
     }
   };
 
-  // An upload another administrator finished no longer waits to be resumed.
-  const packagesChanged = () => {
-    void queryClient.invalidateQueries({ queryKey: packagesQuery.queryKey });
-    void queryClient.invalidateQueries({ queryKey: uploadsQuery.queryKey });
-    refetchLibrary();
+  // An upload that finished leaves the list of unfinished ones, which only the server keeps.
+  const uploadFinished = () => {
+    invalidate(uploadsQuery.queryKey);
   };
+
+  const ownUserId = () => queryClient.getQueryData(currentUserQuery.queryKey)?.id ?? null;
 
   const watchesOf = (machineId: string) => [...(watchers.get(machineId) ?? [])];
 
   // Groups do not survive a lost connection, so every watched machine is watched again before its
   // watchers read what they missed.
+  // Everything the events would have patched is read once more, since what was sent while disconnected is lost.
+  // Only the lists a page shows are read at once; the rest when a page next needs them.
   const connected = async (current: LiveHub) => {
     setStatus("live");
-    refetchMachines();
-    refetchImages();
-    packagesChanged();
+
+    for (const key of [
+      machinesQuery.queryKey,
+      imagesQuery.queryKey,
+      packagesQuery.queryKey,
+      uploadsQuery.queryKey,
+      rulesQuery.queryKey,
+      sequencesQuery.queryKey,
+      sequenceDocumentsKey,
+      sequenceResolutionsKey,
+      runHistoryKey,
+      auditKey,
+      usersQuery.queryKey,
+      ["tokens"],
+      bootImageQuery.queryKey,
+    ]) {
+      invalidate(key);
+    }
 
     const missed = [...watchers].flatMap(([machineId, watches]) =>
       [...watches].map((watch) => ({ machineId, watch })),
@@ -216,29 +251,67 @@ export function createLiveConnection(
 
     current.on("machineChanged", (machine: MachineSummary) => {
       upsertMachine(queryClient, machine);
+      renameMachineInRuns(queryClient, machine);
     });
 
     current.on("machinesRemoved", (event: MachinesRemoved) => {
       removeMachines(queryClient, event.machineIds);
+      removeMachinesFromRuns(queryClient, event.machineIds);
     });
 
-    current.on("imagesChanged", () => {
-      refetchImages();
-      refetchLibrary();
+    current.on("runChanged", (item: RunHistoryItem) => {
+      upsertRun(queryClient, item);
     });
 
-    current.on("packagesChanged", packagesChanged);
+    current.on("imageChanged", (image: ImageSummary) => {
+      upsertImage(queryClient, image);
+      uploadFinished();
+    });
+
+    current.on("imagesRemoved", (event: ImagesRemoved) => {
+      removeImages(queryClient, event.imageIds);
+      refetchSequenceProblems();
+    });
+
+    current.on("packageChanged", (item: PackageSummary) => {
+      upsertPackage(queryClient, item);
+      uploadFinished();
+    });
+
+    current.on("packagesRemoved", (event: PackagesRemoved) => {
+      removePackages(queryClient, event.packageIds);
+      refetchSequenceProblems();
+    });
 
     current.on("sequenceChanged", sequenceChanged);
 
     // Rules are few and reorder together, so the event carries the whole ordered list.
-    current.on("rulesChanged", (rules?: AssignmentRuleView[]) => {
-      if (Array.isArray(rules)) {
-        queryClient.setQueryData(rulesQuery.queryKey, rules);
-        refetchResolutions();
-      } else {
-        refetchRules();
-      }
+    current.on("rulesChanged", (rules: AssignmentRuleView[]) => {
+      queryClient.setQueryData(rulesQuery.queryKey, rules);
+      refetchResolutions();
+    });
+
+    current.on("bootImageChanged", (view: BootImageView) => {
+      queryClient.setQueryData(bootImageQuery.queryKey, view);
+    });
+
+    // Only administrators receive these.
+    current.on("auditAppended", (entries: AuditEntry[]) => {
+      appendAudit(queryClient, entries);
+    });
+
+    current.on("userChanged", (user: UserView) => {
+      upsertUser(queryClient, user);
+    });
+
+    current.on("usersRemoved", (event: UsersRemoved) => {
+      removeUsers(queryClient, event.userIds);
+      removeTokensOf(queryClient, event.userIds);
+    });
+
+    // Administrators and the token's owner receive it.
+    current.on("tokenChanged", (token: ApiTokenView) => {
+      upsertToken(queryClient, token, ownUserId());
     });
 
     current.on("machineLogAppended", (event: MachineLogAppended) => {

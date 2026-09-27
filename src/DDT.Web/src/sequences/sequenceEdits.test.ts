@@ -166,6 +166,7 @@ describe("isTyping", () => {
       { type: "updateStep", id: "a", patch: { packageId: null } },
       { type: "updateStep", id: "a", patch: { networkConfig: "version: 2\n" }, chosen: true },
       { type: "updateCondition", stepId: "a", index: 0, patch: { operator: "Contains" } },
+      { type: "updateCondition", stepId: "a", index: 0, patch: { variable: "Manufacturer" } },
       addStep("reboot"),
       { type: "moveStep", id: "a", to: 1 },
     ];

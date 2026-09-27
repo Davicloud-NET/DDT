@@ -87,6 +87,21 @@ export async function apiPut<TResponse>(
   return readBody<TResponse>(response);
 }
 
+// Changes some fields of a resource and answers with all of it.
+export async function apiPatchJson<TResponse>(path: string, body: unknown): Promise<TResponse> {
+  const response = await apiFetch(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw await apiErrorFrom(response);
+  }
+
+  return readBody<TResponse>(response);
+}
+
 // Some deletions answer 204, others the changed resource, for example the machine whose deployment ended.
 export async function apiDelete<TResponse = void>(path: string): Promise<TResponse> {
   const response = await apiFetch(path, { method: "DELETE" });

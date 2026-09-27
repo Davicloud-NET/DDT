@@ -166,10 +166,15 @@ const resynced = [
   ["images"],
   ["packages"],
   ["image-uploads"],
-  ["sequences"],
   ["rules"],
-  ["machine-sequence"],
+  ["sequences"],
   ["sequence"],
+  ["machine-sequence"],
+  ["run-history"],
+  ["audit"],
+  ["users"],
+  ["tokens"],
+  ["boot-image"],
 ];
 
 describe("createLiveConnection", () => {
@@ -220,25 +225,23 @@ describe("createLiveConnection", () => {
     expect(invalidate).not.toHaveBeenCalled();
   });
 
-  it("refetches the sequences, the rules and what the rules choose when either changes", async () => {
+  it("takes the rules from their event, and reads again only what the rules choose", async () => {
     const { live, hub, queryClient } = connection();
     live.start();
     await settle();
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const rules = [{ id: "r1", kind: "Model", model: "Latitude*", sequenceName: "Install" }];
 
-    hub().emit("rulesChanged");
+    hub().emit("rulesChanged", rules);
 
-    expect(invalidate.mock.calls).toEqual([
-      [{ queryKey: ["rules"] }],
-      [{ queryKey: ["machine-sequence"] }],
-    ]);
+    expect(queryClient.getQueryData(["rules"])).toEqual(rules);
+    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
 
     invalidate.mockClear();
     hub().emit("sequenceChanged", { id: "s1", revision: 2, changedBy: "admin" });
 
     expect(invalidate.mock.calls).toEqual([
       [{ queryKey: ["sequences"] }],
-      [{ queryKey: ["rules"] }],
       [{ queryKey: ["machine-sequence"] }],
       [{ queryKey: ["sequence", "s1"] }],
     ]);
@@ -263,24 +266,40 @@ describe("createLiveConnection", () => {
     expect(readsOf()).toBe(2);
   });
 
-  it("reads the open sequences again when the library changes, as their problems may have", async () => {
+  it("patches the library from its events, and reads the sequences again only when something is gone", async () => {
     const { live, hub, queryClient } = connection();
     live.start();
     await settle();
+    queryClient.setQueryData(["images"], [{ id: "i1", name: "Alpha" }]);
+    queryClient.setQueryData(["packages"], [{ id: "p1", name: "Drivers" }]);
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const reads = () => invalidate.mock.calls.map(([filters]) => filters?.queryKey);
 
-    hub().emit("imagesChanged");
+    hub().emit("imageChanged", { id: "i2", name: "Beta" });
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["images"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequences"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequence"] });
+    expect(queryClient.getQueryData(["images"])).toEqual([
+      { id: "i1", name: "Alpha" },
+      { id: "i2", name: "Beta" },
+    ]);
+    expect(reads()).toEqual([["image-uploads"]]);
 
     invalidate.mockClear();
-    hub().emit("packagesChanged");
+    hub().emit("imagesRemoved", { imageIds: ["i1"] });
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["packages"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["image-uploads"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["sequence"] });
+    expect(queryClient.getQueryData(["images"])).toEqual([{ id: "i2", name: "Beta" }]);
+    expect(reads()).toEqual([["sequences"], ["sequence"], ["machine-sequence"]]);
+
+    invalidate.mockClear();
+    hub().emit("packageChanged", { id: "p1", name: "Drivers, new" });
+
+    expect(queryClient.getQueryData(["packages"])).toEqual([{ id: "p1", name: "Drivers, new" }]);
+    expect(reads()).toEqual([["image-uploads"]]);
+
+    invalidate.mockClear();
+    hub().emit("packagesRemoved", { packageIds: ["p1"] });
+
+    expect(queryClient.getQueryData(["packages"])).toEqual([]);
+    expect(reads()).toEqual([["sequences"], ["sequence"], ["machine-sequence"]]);
   });
 
   it("watches a machine once however many watch it, and unwatches it when the last one stops", async () => {

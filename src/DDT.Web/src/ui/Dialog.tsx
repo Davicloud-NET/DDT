@@ -4,7 +4,7 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import { IconX } from "@tabler/icons-react";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import {
   Button as AriaButton,
   Dialog as AriaDialog,
@@ -32,6 +32,8 @@ export interface DialogProps {
   // While true, Escape and a click outside do not close it, as during a save.
   isBusy?: boolean;
   width?: "md" | "lg";
+  // The id of what a screen reader reads out with the title as the dialog opens.
+  describedBy?: string;
 }
 
 export function Dialog({
@@ -43,6 +45,7 @@ export function Dialog({
   hazard = false,
   isBusy = false,
   width = "md",
+  describedBy,
 }: DialogProps) {
   const { t } = useLingui();
 
@@ -60,7 +63,10 @@ export function Dialog({
           width === "md" ? "max-w-130" : "max-w-180",
         )}
       >
-        <AriaDialog className="flex flex-col outline-none">
+        <AriaDialog
+          {...(describedBy === undefined ? {} : { "aria-describedby": describedBy })}
+          className="flex flex-col outline-none"
+        >
           {hazard ? <span aria-hidden="true" className="block h-3 hazard-band" /> : null}
           <div className="flex items-start gap-3 px-5 pt-5">
             <Heading slot="title" className="flex-1 type-heading text-ink">
@@ -106,7 +112,8 @@ export interface ConfirmDialogProps {
 }
 
 // Asks before an action. The safe way out comes first and holds the focus, so Enter never confirms by accident;
-// with a word to type, the field takes the focus instead, since nothing confirms until the word is there.
+// with a word to type, the field takes the focus instead, since nothing confirms until the word is there. What the
+// action does is read out with the title, as the focus lands on a key rather than on the text.
 export function ConfirmDialog({
   isOpen,
   onOpenChange,
@@ -121,6 +128,7 @@ export function ConfirmDialog({
   isConfirmDisabled = false,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState("");
+  const descriptionId = useId();
   const ready = (typedWord === undefined || typed === typedWord) && !isConfirmDisabled;
 
   function openChange(open: boolean) {
@@ -138,6 +146,7 @@ export function ConfirmDialog({
       title={title}
       hazard={typedWord !== undefined}
       isBusy={isBusy}
+      describedBy={descriptionId}
       footer={
         <>
           <Button
@@ -163,7 +172,9 @@ export function ConfirmDialog({
         </>
       }
     >
-      {children}
+      <div id={descriptionId} className="flex flex-col gap-4">
+        {children}
+      </div>
       {typedWord !== undefined ? (
         <TextField
           label={<Trans>Type {typedWord} to go on</Trans>}

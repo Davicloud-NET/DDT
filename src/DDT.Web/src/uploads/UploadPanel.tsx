@@ -267,9 +267,7 @@ export function UploadPanel<T>({
       )}
 
       {outcome !== null ? (
-        <Notice tone={outcome.failed ? "fail" : "info"}>
-          <span role={outcome.failed ? "alert" : "status"}>{outcome.message}</span>
-        </Notice>
+        <Notice tone={outcome.failed ? "fail" : "info"}>{outcome.message}</Notice>
       ) : null}
 
       {open.length > 0 ? (

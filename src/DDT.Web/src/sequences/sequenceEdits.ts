@@ -27,11 +27,15 @@ export type SequenceEdit =
   | { type: "updateCondition"; stepId: string; index: number; patch: Partial<StepCondition> }
   | { type: "removeCondition"; stepId: string; index: number };
 
-export function addStep(kind: StepKind): SequenceEdit {
+// The edits that add a step name its id, so the page can show the new step.
+export function addStep(kind: StepKind): Extract<SequenceEdit, { type: "addStep" }> {
   return { type: "addStep", kind, id: crypto.randomUUID() };
 }
 
-export function insertStepAfter(afterId: string, kind: StepKind): SequenceEdit {
+export function insertStepAfter(
+  afterId: string,
+  kind: StepKind,
+): Extract<SequenceEdit, { type: "insertStepAfter" }> {
   return { type: "insertStepAfter", afterId, kind, id: crypto.randomUUID() };
 }
 
@@ -47,6 +51,7 @@ const chosen: (FieldOf<StepPatch> | keyof StepCondition)[] = [
   "phase",
   "interpreter",
   "packageId",
+  "variable",
   "operator",
 ];
 const chosenFields: ReadonlySet<string> = new Set(chosen);

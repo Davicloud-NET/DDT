@@ -11,6 +11,9 @@ import { apiDelete, apiGet, apiPost } from "@/lib/api";
 export type MachineState =
   "Pending" | "Approved" | "Deploying" | "Done" | "Failed" | "Rejected" | "Retired";
 
+// What kind of computer the server takes the machine for, from its firmware's chassis type and its maker's name.
+export type DeviceKindName = "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
+
 export interface MachineSummary {
   id: string;
   state: MachineState;
@@ -41,7 +44,7 @@ export interface MachineSummary {
   trustedUefiCas: string | null;
   // What kind of computer it is, from its SMBIOS chassis type, or Virtual from its maker and model. Unknown until
   // an agent that reports the chassis registers it.
-  deviceKind: "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
+  deviceKind: DeviceKindName;
 }
 
 // A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A

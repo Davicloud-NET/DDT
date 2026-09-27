@@ -5,28 +5,38 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { Form } from "react-aria-components";
 
 import { StandaloneHeader } from "@/app/StandaloneHeader";
-import { currentUserQuery, login, type LoginStatus } from "@/auth/auth";
+import {
+  currentUserQuery,
+  externalProvidersQuery,
+  externalSignInUrl,
+  login,
+  type LoginStatus,
+} from "@/auth/auth";
 import { Button } from "@/ui/Button";
+import { buttonClass } from "@/ui/buttonClass";
 import { Notice } from "@/ui/Notice";
 import { TextField } from "@/ui/TextField";
 
 type Step = "credentials" | "twoFactor";
 
 const lockedMessage = msg`This account is locked. Try again later or ask an administrator.`;
+const unfinishedMessage = msg`The sign-in at the identity provider did not finish. Try again.`;
 
-// Why the server's OpenID Connect callback refused a sign-in.
+// Why the server's OpenID Connect callback refused a sign-in. A reason this page does not know yet reads as a sign-in
+// that did not finish.
 const externalErrors: Record<string, MessageDescriptor> = {
-  external: msg`The sign-in at the identity provider did not finish. Try again.`,
+  external: unfinishedMessage,
   unlinked: msg`No DDT account is linked to that identity. Ask an administrator.`,
   provision: msg`No account could be created for that identity. Ask an administrator.`,
   locked: lockedMessage,
   "not-allowed": msg`This account may not sign in. Ask an administrator.`,
+  "no-role": msg`Your account is in none of the groups DDT maps to a role. Ask an administrator.`,
 };
 
 export function SignInPage() {
@@ -44,9 +54,11 @@ export function SignInPage() {
   const [code, setCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [error, setError] = useState<MessageDescriptor | null>(
-    search.error === undefined ? null : (externalErrors[search.error] ?? null),
+    search.error === undefined ? null : (externalErrors[search.error] ?? unfinishedMessage),
   );
   const [busy, setBusy] = useState(false);
+  // Single sign-on, when it is on: a button per provider. The code step after it needs none.
+  const providers = useQuery(externalProvidersQuery).data ?? [];
 
   async function submit() {
     setBusy(true);
@@ -67,6 +79,13 @@ export function SignInPage() {
 
       if (status === "LockedOut") {
         setError(lockedMessage);
+        return;
+      }
+
+      if (status === "NoRole") {
+        setError(
+          msg`Your account is in none of the directory groups DDT gives a role to. Ask an administrator.`,
+        );
         return;
       }
 
@@ -170,6 +189,30 @@ export function SignInPage() {
           <Button type="submit" variant="primary" isDisabled={busy} className="w-full">
             {busy ? t`Signing in` : t`Sign in`}
           </Button>
+
+          {step === "credentials" && providers.length > 0 ? (
+            <>
+              <div className="flex items-center gap-3 type-small text-muted" aria-hidden="true">
+                <span className="h-px flex-1 bg-line-soft" />
+                <Trans>or</Trans>
+                <span className="h-px flex-1 bg-line-soft" />
+              </div>
+              {/* A plain link: the browser leaves for the provider, which the application's router cannot do. */}
+              {providers.map((provider) => {
+                const name = provider.displayName;
+
+                return (
+                  <a
+                    key={provider.scheme}
+                    href={externalSignInUrl(provider)}
+                    className={buttonClass("secondary", "md", "w-full")}
+                  >
+                    <Trans>Sign in with {name}</Trans>
+                  </a>
+                );
+              })}
+            </>
+          ) : null}
 
           <Link
             to="/about"

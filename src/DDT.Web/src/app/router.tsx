@@ -12,7 +12,9 @@ import {
 
 import { AboutPage } from "@/about/AboutPage";
 import { AccountPage } from "@/account/AccountPage";
+import { AuditPage } from "@/audit/AuditPage";
 import { currentUserQuery } from "@/auth/auth";
+import { BootImagePage } from "@/boot/BootImagePage";
 import { ImagesPage } from "@/images/ImagesPage";
 import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
@@ -20,6 +22,13 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage, FilesPage } from "@/packages/PackagesPage";
 import { RulesPage } from "@/rules/RulesPage";
+import { runHistorySearch } from "@/runs/runHistory";
+import { RunHistoryPage } from "@/runs/RunHistoryPage";
+import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
+import { sequenceSearch, sequencesSearch } from "@/sequences/sequenceSearch";
+import { SequencesPage } from "@/sequences/SequencesPage";
+import { TokensPage } from "@/tokens/TokensPage";
+import { UsersPage } from "@/users/UsersPage";
 
 import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
@@ -56,16 +65,22 @@ const aboutRoute = createRoute({
 });
 
 // Everything inside the shell requires a session. The check runs before the route renders, so there is no flash of
-// the application for a signed out visitor.
+// the application for a signed out visitor. An account that still has to replace a password an administrator was
+// shown is kept on the Account page, the only one the server answers for it, until the change updates the cached
+// account.
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "shell",
   component: Shell,
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, location }) => {
     const user = await context.queryClient.query({ ...currentUserQuery, staleTime: "static" });
 
     if (user === null) {
       throw redirect({ to: "/sign-in" });
+    }
+
+    if (user.mustChangePassword && location.pathname !== "/account") {
+      throw redirect({ to: "/account" });
     }
 
     return { user };
@@ -91,7 +106,8 @@ const machinesRoute = createRoute({
 const runHistoryRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/runs",
-  component: PendingPage,
+  validateSearch: runHistorySearch,
+  component: RunHistoryPage,
 });
 const approvalRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -107,12 +123,14 @@ const machineRoute = createRoute({
 const sequencesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences",
-  component: PendingPage,
+  validateSearch: sequencesSearch,
+  component: SequencesPage,
 });
 const sequenceRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences/$sequenceId",
-  component: PendingPage,
+  validateSearch: sequenceSearch,
+  component: SequenceEditorPage,
 });
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -142,7 +160,7 @@ const filesRoute = createRoute({
 const bootImageRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/boot/image",
-  component: PendingPage,
+  component: BootImagePage,
 });
 const networkBootRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -152,7 +170,7 @@ const networkBootRoute = createRoute({
 const usersRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/users",
-  component: PendingPage,
+  component: UsersPage,
 });
 const signInSettingsRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -162,7 +180,7 @@ const signInSettingsRoute = createRoute({
 const tokensRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/tokens",
-  component: PendingPage,
+  component: TokensPage,
 });
 const serverRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -172,7 +190,7 @@ const serverRoute = createRoute({
 const auditRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/audit",
-  component: PendingPage,
+  component: AuditPage,
 });
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,

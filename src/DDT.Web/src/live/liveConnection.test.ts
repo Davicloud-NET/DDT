@@ -175,6 +175,10 @@ const resynced = [
   ["users"],
   ["tokens"],
   ["boot-image"],
+  ["directory"],
+  ["settings"],
+  ["settings-overview"],
+  ["settings-certificate"],
 ];
 
 describe("createLiveConnection", () => {
@@ -222,6 +226,41 @@ describe("createLiveConnection", () => {
     expect(
       queryClient.getQueryData<MachineSummary[]>(["machines"])?.map((listed) => listed.id),
     ).toEqual(["m2"]);
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("takes a settings section and the interfaces of the pxe hosts from their events", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const machines = { section: "machines", version: 4, values: { maxWaiting: 50 } };
+
+    hub().emit("settingsChanged", machines);
+
+    expect(queryClient.getQueryData(["settings", "machines"])).toEqual(machines);
+    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["settings-overview"] }]]);
+
+    invalidate.mockClear();
+    hub().emit("settingsChanged", { section: "ldap", version: 2, values: {} });
+
+    expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: ["settings-overview"] }],
+      [{ queryKey: ["directory"] }],
+    ]);
+
+    invalidate.mockClear();
+    const hosts = [
+      {
+        host: "ddt-01",
+        updatedUtc: "2026-09-27T10:00:00Z",
+        interfaces: [{ name: "lab", addresses: ["10.40.0.1"], served: true }],
+        unmatched: [],
+      },
+    ];
+    hub().emit("pxeInterfacesChanged", hosts);
+
+    expect(queryClient.getQueryData(["settings", "pxe", "interfaces"])).toEqual(hosts);
     expect(invalidate).not.toHaveBeenCalled();
   });
 

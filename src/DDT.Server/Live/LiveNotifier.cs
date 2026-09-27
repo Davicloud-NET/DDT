@@ -10,6 +10,7 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Settings;
 using DDT.Contracts.Tokens;
 using DDT.Contracts.Users;
 using DDT.Server.Deployments;
@@ -207,6 +208,13 @@ public sealed partial class LiveNotifier(
             operatorsMayRead ? [LiveGroups.Administrators, LiveGroups.Operators] : [LiveGroups.Administrators],
             LiveEvents.SettingsChanged,
             view);
+    }
+
+    public void PxeInterfacesChanged(IReadOnlyList<PxeHostInterfaces> hosts)
+    {
+        ArgumentNullException.ThrowIfNull(hosts);
+
+        _ = PushToAdministratorsAsync(LiveEvents.PxeInterfacesChanged, hosts);
     }
 
     public void CertificateChanged(object view)

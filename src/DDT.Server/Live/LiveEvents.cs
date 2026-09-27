@@ -60,6 +60,10 @@ public static class LiveEvents
     // a host applied it: to administrators, and for the deployment and machines sections also to operators.
     public const string SettingsChanged = "settingsChanged";
 
+    // Carries every pxe host's candidate interfaces, as GET /api/settings/pxe/interfaces answers them, whenever a host
+    // applied the pxe section and reported what it found: to administrators.
+    public const string PxeInterfacesChanged = "pxeInterfacesChanged";
+
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";

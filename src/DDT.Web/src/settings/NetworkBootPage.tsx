@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tan
 import { useId, useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
+import { liveListOptions } from "@/live/freshness";
+import { useLiveStatus } from "@/live/useLiveStatus";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import { ConfirmDialog } from "@/ui/Dialog";
@@ -92,7 +94,8 @@ export function NetworkBootPage() {
 
 function NetworkBootSettings() {
   const form = useSettingsForm<PxeSettings>("pxe");
-  const hosts = useQuery(pxeInterfacesQuery);
+  const live = useLiveStatus();
+  const hosts = useQuery({ ...pxeInterfacesQuery, ...liveListOptions(live) });
   const configuration = useQuery(pxeConfigurationQuery).data ?? null;
   const view = form.view;
   const values = form.values;

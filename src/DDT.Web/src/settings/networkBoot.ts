@@ -47,8 +47,8 @@ export interface PxeHostInterfaces {
   unmatched: string[];
 }
 
-// The hosts report their interfaces only when they apply the section, and nothing pushes the list, so it is read
-// when the page opens. Its key is inside ["settings"], so a reconnect of the live connection reads it again.
+// The hosts report their interfaces when they apply the section, and the hub's pxeInterfacesChanged carries the whole
+// list then. Its key is inside ["settings"], so a reconnect of the live connection reads it again.
 export const pxeInterfacesQuery = queryOptions({
   queryKey: [...settingsKey("pxe"), "interfaces"],
   queryFn: () => apiGet<PxeHostInterfaces[]>("/api/settings/pxe/interfaces"),

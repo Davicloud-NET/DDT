@@ -51,6 +51,7 @@ import {
   settingsOverviewQuery,
   type SettingsSectionView,
 } from "@/settings/settings";
+import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
   directoryQuery,
@@ -330,6 +331,11 @@ export function createLiveConnection(
       if (view.section === "ldap") {
         invalidate(directoryQuery.queryKey);
       }
+    });
+
+    // Administrators receive every pxe host's interfaces whenever a host applied the pxe section.
+    current.on("pxeInterfacesChanged", (hosts: PxeHostInterfaces[]) => {
+      queryClient.setQueryData(pxeInterfacesQuery.queryKey, hosts);
     });
 
     current.on("certificateChanged", (view: unknown) => {

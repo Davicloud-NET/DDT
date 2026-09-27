@@ -93,6 +93,12 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
 
         object view = await ViewAsync(api, settings.Current, cancellationToken).ConfigureAwait(false);
         live.SettingsChanged(view, api.OperatorsMayRead);
+
+        // A host reports its interfaces with its apply result, so the list changes whenever the section's states do.
+        if (section == SettingsSectionNames.Pxe)
+        {
+            live.PxeInterfacesChanged(await PxeInterfacesAsync(cancellationToken).ConfigureAwait(false));
+        }
     }
 
     // This host's own state from memory, which may be newer than its row.

@@ -1004,7 +1004,9 @@ m6.5-settings. Where the implementation deliberately differs from the plan above
 - **The live push carries the view.** `settingsChanged` carries the whole `SettingsSectionView` of
   the section, as its GET answers it, so other browsers patch what they show; 5.5 planned the
   section name alone. It goes to the administrators' group, and for deployment and machines also to
-  a group of operators. A host's apply result is pushed the same way.
+  a group of operators. A host's apply result is pushed the same way, and for pxe it is followed by
+  `pxeInterfacesChanged` to administrators, with the interfaces every host found, as
+  GET /api/settings/pxe/interfaces answers them.
 - **Views carry two more members.** `section` names the section, and `reauthenticate` lists the
   fields that need the re-auth token. An unconfirmed warning is reported under `confirm` in the
   ValidationProblem's errors, as `code: message`, and with its code in the `confirm` extension.

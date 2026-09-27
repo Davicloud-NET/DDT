@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Runtime.InteropServices;
 using Avalonia;
 using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Agent;
@@ -10,7 +11,7 @@ namespace DDT.MachineConsole;
 
 // ddt-console.exe --pipe <name>, as the agent starts it. It connects to the agent's pipe first, before it opens a
 // window, and ends at once when there is no agent or the agent refuses it, so the agent's text console stays in view.
-public static class Program
+public static partial class Program
 {
     public const int Closed = 0;
     public const int NoPipe = 2;
@@ -43,6 +44,7 @@ public static class Program
         }
 
         App.Startup = new ConsoleStartup(connection);
+        FineTimer();
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
@@ -60,6 +62,24 @@ public static class Program
                 CompositionMode = [Win32CompositionMode.RedirectionSurface],
             })
             .With(App.FontOptions);
+
+    // Avalonia waits for its next frame with the system's timer, whose steps of 15.6 ms turn the 16.7 ms of a frame at
+    // 60 per second into two steps, so everything that moves would move at 32 frames a second. Steps of 1 ms, for as
+    // long as the console runs, let it keep 60.
+    private static void FineTimer()
+    {
+        try
+        {
+            _ = TimeBeginPeriod(1);
+        }
+        catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // Then the console moves at the coarser rate.
+        }
+    }
+
+    [LibraryImport("winmm.dll", EntryPoint = "timeBeginPeriod")]
+    private static partial uint TimeBeginPeriod(uint milliseconds);
 }
 
 internal static class ConsoleBuild

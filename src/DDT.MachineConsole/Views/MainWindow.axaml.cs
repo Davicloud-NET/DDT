@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Controls;
 using DDT.MachineConsole.ViewModels;
 
@@ -22,6 +23,8 @@ public sealed partial class MainWindow : Window
 {
     private static readonly ScreenTransition s_overlaySwitch = new();
     private readonly MainViewModel? _model;
+    private readonly FrameMeter? _frames;
+    private (ConsoleStage? Stage, Guid? Step) _step;
 
     // For the XAML designer and loader only.
     public MainWindow()
@@ -48,6 +51,8 @@ public sealed partial class MainWindow : Window
         model.PropertyChanged += OnModelChanged;
         ApplyTheme(model.IsDark);
         ShowOverlayContent();
+        _frames = FrameMeter.For(this);
+        _step = StepOf(model);
     }
 
     // The one time the console takes the foreground: when it opens. Later it never takes it back, so a command prompt
@@ -60,6 +65,8 @@ public sealed partial class MainWindow : Window
 
     private void OnKeyDownFirst(object? sender, KeyEventArgs e)
     {
+        _frames?.Measure($"key {e.Key}", Motion.Press);
+
         if (_model is not null && _model.Press(e.Key, e.KeyModifiers))
         {
             e.Handled = true;
@@ -71,6 +78,11 @@ public sealed partial class MainWindow : Window
         if (_model is null)
         {
             return;
+        }
+
+        if (_frames is not null)
+        {
+            MeasureFrames(e.PropertyName);
         }
 
         if (e.PropertyName is nameof(MainViewModel.IsDark) or "")
@@ -88,6 +100,33 @@ public sealed partial class MainWindow : Window
             Dispatcher.UIThread.Post(FocusScreen, DispatcherPriority.Loaded);
         }
     }
+
+    // What moves when that changes, and for how long, for the frame meter.
+    private void MeasureFrames(string? change)
+    {
+        switch (change)
+        {
+            case nameof(MainViewModel.Screen):
+                _frames!.Measure("screen", Motion.Fast + Motion.Normal);
+                _step = StepOf(_model!);
+                break;
+            case nameof(MainViewModel.HasOverlay):
+                _frames!.Measure(_model!.HasOverlay ? "overlay in" : "overlay out", _model.HasOverlay ? Motion.Normal : Motion.Fast);
+                break;
+            case nameof(MainViewModel.IsEnded):
+                _frames!.Measure("ended band", Motion.Normal);
+                break;
+            case nameof(MainViewModel.ConfirmingRestart):
+                _frames!.Measure(_model!.ConfirmingRestart ? "confirm in" : "confirm out", _model.ConfirmingRestart ? Motion.Normal : Motion.Fast);
+                break;
+            case nameof(MainViewModel.State) when StepOf(_model!) != _step:
+                _step = StepOf(_model!);
+                _frames!.Measure("step", Motion.Slow);
+                break;
+        }
+    }
+
+    private static (ConsoleStage? Stage, Guid? Step) StepOf(MainViewModel model) => (model.State?.Stage, model.State?.Run?.CurrentStepId);
 
     // What the overlay shows. Closing it keeps what it showed while it leaves; opening it shows the new content at once,
     // as the overlay enters, and only switching from one to another lets the first give way to the next.

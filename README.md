@@ -985,7 +985,8 @@ the log, the details and the licences, the question before a restart and the ban
 has ended enter the same way; keys sink when pressed, and the key caps on the screen go down with
 their keys on the keyboard; a step's module fills and changes its state over a quarter of a second,
 and a step that finishes or fails flashes faintly. Only the running step's stripes move by
-themselves.
+themselves. With `DDT_CONSOLE_FRAMES` set to a file, the console writes to it how many frames it
+drew for each of these, to see whether they stay smooth where it runs, such as in a virtual machine.
 
 It works from the keyboard, and with a mouse or touch too. The field or list a question needs has
 the focus, Enter sends, and Esc goes back where the question allows it: to the list of sequences,

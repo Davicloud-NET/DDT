@@ -285,10 +285,11 @@ public sealed partial class ImageUploadCompleter(
                 return new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(existing));
             }
 
-            live.PackagesChanged();
+            PackageSummary added = PackageSummaries.From(package);
+            live.PackageChanged(added);
             LogPackageAdded(kind, package.Id, upload.Id, upload.FileName, sha256);
 
-            return new UploadCompletion(UploadCompletionStatus.Added, [], Package: PackageSummaries.From(package));
+            return new UploadCompletion(UploadCompletionStatus.Added, [], Package: added);
         }
         finally
         {
@@ -351,6 +352,7 @@ public sealed partial class ImageUploadCompleter(
                     $"{upload.FileName} holds the disk of {same.Name}, SHA-256 {import.SourceSha256}, so no entry was added."));
                 upload.CompletedSha256 = same.Sha256;
                 upload.UpdatedUtc = now;
+                Image? stored = null;
 
                 if (File.Exists(store.ObjectPath(same.Sha256)))
                 {
@@ -363,7 +365,7 @@ public sealed partial class ImageUploadCompleter(
                     // differently, as by another version of DDT, becomes the image's file.
                     if (import.Sha256 != same.Sha256)
                     {
-                        Image stored = await database.Images.FirstAsync(i => i.Id == same.Id, CancellationToken.None).ConfigureAwait(false);
+                        stored = await database.Images.FirstAsync(i => i.Id == same.Id, CancellationToken.None).ConfigureAwait(false);
                         stored.Sha256 = import.Sha256;
                         stored.SizeBytes = import.SizeBytes;
                         upload.CompletedSha256 = import.Sha256;
@@ -373,6 +375,12 @@ public sealed partial class ImageUploadCompleter(
                 }
 
                 File.Delete(store.PartPath(upload.Id));
+
+                // The image's file is another one now, which the library shows.
+                if (stored is not null)
+                {
+                    live.ImageChanged(ImageSummaries.From(stored));
+                }
 
                 return new UploadCompletion(
                     UploadCompletionStatus.Existing,
@@ -389,10 +397,11 @@ public sealed partial class ImageUploadCompleter(
             await SaveWithFileAsync(database, import.CompressedPath, import.Sha256).ConfigureAwait(false);
             File.Delete(store.PartPath(upload.Id));
 
-            live.ImagesChanged();
+            ImageSummary summary = ImageSummaries.From(image);
+            live.ImageChanged(summary);
             LogRawImageAdded(image.Id, upload.Id, upload.FileName, boot.Capability, import.Sha256);
 
-            return new UploadCompletion(UploadCompletionStatus.Added, [ImageSummaries.From(image)]);
+            return new UploadCompletion(UploadCompletionStatus.Added, [summary]);
         }
         finally
         {
@@ -607,10 +616,16 @@ public sealed partial class ImageUploadCompleter(
                     await ImagesOfAsync(database, sha256, CancellationToken.None).ConfigureAwait(false));
             }
 
-            live.ImagesChanged();
+            List<ImageSummary> summaries = [.. added.Select(ImageSummaries.From)];
+
+            foreach (ImageSummary summary in summaries)
+            {
+                live.ImageChanged(summary);
+            }
+
             LogImagesAdded(added.Count, upload.Id, upload.FileName, sha256);
 
-            return new UploadCompletion(UploadCompletionStatus.Added, [.. added.Select(ImageSummaries.From)]);
+            return new UploadCompletion(UploadCompletionStatus.Added, summaries);
         }
         finally
         {

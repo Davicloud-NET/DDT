@@ -4,15 +4,15 @@
 
 using System.Net;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
+using DDT.Server.Live;
 using DDT.Server.Machines;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -134,34 +134,23 @@ public sealed class ImageLibraryTests(DdtApplication application) : IClassFixtur
         Assert.False(File.Exists(Store.ObjectPath(first.Sha256)));
     }
 
+    // Each change carries what the library page patches its list with, so it never loads the list again.
     [Fact]
     public async Task PushesLibraryChangesToSignedInViewers()
     {
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         SignedInClient administrator = await application.AdministratorAsync();
         using SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer);
-        Uri hub = new(application.Server.BaseAddress, "hubs/live");
-
-        await using HubConnection connection = new HubConnectionBuilder()
-            .WithUrl(hub, options =>
-            {
-                options.Transports = HttpTransportType.LongPolling;
-                options.HttpMessageHandlerFactory = _ => application.Server.CreateHandler();
-                options.Headers["Cookie"] = viewer.Cookies.GetCookieHeader(application.Server.BaseAddress);
-            })
-            .Build();
-
-        using SemaphoreSlim changes = new(0);
-        connection.On("imagesChanged", () => changes.Release());
-        await connection.StartAsync(cancellationToken);
+        await using LiveListener live = await LiveListener.StartAsync(application, viewer);
+        ChannelReader<ImageSummary> changes = live.Listen<ImageSummary>(LiveEvents.ImageChanged);
+        ChannelReader<ImagesRemovedEvent> removals = live.Listen<ImagesRemovedEvent>(LiveEvents.ImagesRemoved);
 
         ImageUploadSession session = await administrator.UploadAsync(TestWim.Create(TestWim.X64));
-        IReadOnlyList<ImageSummary> added = await RegisteredMachine.ReadAsync<IReadOnlyList<ImageSummary>>(
-            await administrator.CompleteUploadAsync(session.Id));
+        ImageSummary added = Assert.Single(await RegisteredMachine.ReadAsync<IReadOnlyList<ImageSummary>>(
+            await administrator.CompleteUploadAsync(session.Id)));
 
-        Assert.True(await changes.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken));
+        Assert.Equal(added, await LiveListener.NextAsync(changes, i => i.Id == added.Id));
 
-        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{Images}/{Assert.Single(added).Id}")).StatusCode);
-        Assert.True(await changes.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken));
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{Images}/{added.Id}")).StatusCode);
+        Assert.Equal([added.Id], (await LiveListener.NextAsync(removals)).ImageIds);
     }
 }

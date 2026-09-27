@@ -15,19 +15,26 @@ public static class LiveEvents
     // Carries a RunHistoryItem whenever a run or the machine it names changes, so the run history upserts it by run id.
     public const string RunChanged = "runChanged";
 
-    // Carries nothing either: clients load the image list again.
-    public const string ImagesChanged = "imagesChanged";
+    // Carries the ImageSummary of an image that was added or changed, which clients upsert by id.
+    public const string ImageChanged = "imageChanged";
+
+    // Carries an ImagesRemovedEvent, so clients drop the images without loading the library again.
+    public const string ImagesRemoved = "imagesRemoved";
 
     // Carries a SequenceChangedEvent, so an editor can tell another administrator's save from its own.
     public const string SequenceChanged = "sequenceChanged";
 
-    // Carries nothing: clients load the package list again.
-    public const string PackagesChanged = "packagesChanged";
+    // Carries the PackageSummary of a package that was added or changed, which clients upsert by id.
+    public const string PackageChanged = "packageChanged";
+
+    // Carries a PackagesRemovedEvent, so clients drop the packages without loading the library again.
+    public const string PackagesRemoved = "packagesRemoved";
 
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
-    // Carries nothing: clients load the rules again.
+    // Carries every rule, AssignmentRuleView in the order the Rules page lists them: rules are few, and one change can
+    // move a rule among the others or rename the sequence several of them choose.
     public const string RulesChanged = "rulesChanged";
 
     // Carries a RunStepChangedEvent, only to the connections that watch the machine.

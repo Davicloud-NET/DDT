@@ -10,6 +10,7 @@ using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,7 @@ public sealed class AssignmentRuleTests(DdtApplication application) : IClassFixt
         SignedInClient administrator = await application.AdministratorAsync();
         using SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer);
         await using LiveListener live = await LiveListener.StartAsync(application, viewer);
-        ChannelReader<DateTimeOffset> changes = live.Listen("rulesChanged");
+        ChannelReader<AssignmentRuleView[]> changes = live.Listen<AssignmentRuleView[]>(LiveEvents.RulesChanged);
         SequenceView sequence = await application.RunnableSequenceAsync();
         string mac = RuleRequests.RandomMac();
         string model = RuleRequests.UniqueModel();
@@ -68,7 +69,7 @@ public sealed class AssignmentRuleTests(DdtApplication application) : IClassFixt
         Assert.Equal(
             new AssignmentRuleView(byMac.Id, AssignmentRuleKind.Mac, mac, null, null, sequence.Id, sequence.Name, "Lab", byMac.UpdatedUtc, byMac.UpdatedBy),
             byMac);
-        await LiveListener.NextAsync(changes);
+        Assert.Contains(byMac, await LiveListener.NextAsync(changes, rules => rules.Any(r => r.Id == byMac.Id)));
 
         AssignmentRuleView byModel = await administrator.CreatedRuleAsync(
             RuleRequests.ModelRule(sequence.Id, $"  {model}  7* ", " Dell   Inc. "));
@@ -80,6 +81,9 @@ public sealed class AssignmentRuleTests(DdtApplication application) : IClassFixt
         IReadOnlyList<AssignmentRuleView> listed = await ReadAsync<IReadOnlyList<AssignmentRuleView>>(await viewer.GetAsync(RuleRequests.Rules));
         Assert.Contains(byMac, listed);
         Assert.Contains(byModel, listed);
+
+        // Every rule, in the order the list has them.
+        Assert.Equal(listed, await LiveListener.NextAsync(changes, rules => rules.Any(r => r.Id == byModel.Id)));
 
         AuditEvent audit = Assert.Single(await AuditAsync(byModel.Id));
         Assert.Equal(AuditActions.RuleCreated, audit.Action);
@@ -199,5 +203,30 @@ public sealed class AssignmentRuleTests(DdtApplication application) : IClassFixt
 
         (await administrator.DeleteAsync($"{RuleRequests.Rules}/{second.Id}")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{sequence.Id}")).StatusCode);
+    }
+
+    // Rules are few and a change can move one among the others, so every push carries them all, in the list's order.
+    [Fact]
+    public async Task PushesEveryRuleWhenOneChangesOrItsSequenceIsRenamed()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener live = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<AssignmentRuleView[]> pushes = live.Listen<AssignmentRuleView[]>(LiveEvents.RulesChanged);
+        SequenceView sequence = await application.RunnableSequenceAsync();
+        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, RuleRequests.UniqueModel()));
+        await LiveListener.NextAsync(pushes, rules => rules.Any(r => r.Id == rule.Id));
+
+        AssignmentRuleView changed = await ReadAsync<AssignmentRuleView>(await PutAsync(
+            rule.Id,
+            RuleRequests.ModelRule(sequence.Id, rule.Model!) with { Description = "Changed" }));
+        Assert.Contains(changed, await LiveListener.NextAsync(pushes, rules => rules.Any(r => r.Id == rule.Id && r.Description == "Changed")));
+
+        string renamed = $"Renamed {Guid.NewGuid():N}";
+        (await administrator.SaveSequenceAsync(sequence, name: renamed)).EnsureSuccessStatusCode();
+        AssignmentRuleView[] afterRename = await LiveListener.NextAsync(pushes, rules => rules.Any(r => r.Id == rule.Id && r.SequenceName == renamed));
+        Assert.Equal(await ReadAsync<IReadOnlyList<AssignmentRuleView>>(await administrator.GetAsync(RuleRequests.Rules)), afterRename);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{RuleRequests.Rules}/{rule.Id}")).StatusCode);
+        Assert.DoesNotContain(await LiveListener.NextAsync(pushes), r => r.Id == rule.Id);
     }
 }

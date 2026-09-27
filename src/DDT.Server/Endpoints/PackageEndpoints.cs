@@ -128,7 +128,9 @@ public static class PackageEndpoints
                 : $"{package.Name}, for {string.Join("; ", targets.Select(t => $"{t.Manufacturer ?? "any maker"} {t.Model}"))}.") + bootImageChange));
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        live.PackagesChanged();
+
+        PackageSummary summary = PackageSummaries.From(package);
+        live.PackageChanged(summary);
 
         // The boot image page lists the flagged packages by name.
         if (wasInBootImage != package.BootImage || (package.BootImage && previousName != package.Name))
@@ -136,7 +138,7 @@ public static class PackageEndpoints
             live.BootImageChanged(await bootImage.ViewAsync(database, cancellationToken).ConfigureAwait(false));
         }
 
-        return TypedResults.Ok(PackageSummaries.From(package));
+        return TypedResults.Ok(summary);
     }
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> DeleteAsync(
@@ -195,7 +197,7 @@ public static class PackageEndpoints
             store.LibraryLock.Release();
         }
 
-        live.PackagesChanged();
+        live.PackagesRemoved([id]);
 
         if (wasInBootImage)
         {

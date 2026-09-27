@@ -10,6 +10,7 @@ using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
+using DDT.Server.Rules;
 using DDT.Server.Sequences;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -226,6 +227,7 @@ public static class SequenceEndpoints
             return TypedResults.Ok(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
         }
 
+        bool renamed = name != sequence.Name;
         string changes = SequenceChanges.Describe(
             sequence.Name,
             sequence.Description,
@@ -271,6 +273,12 @@ public static class SequenceEndpoints
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
+
+        // A rule shows the name of the sequence it chooses.
+        if (renamed && await database.AssignmentRules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))
+        {
+            live.RulesChanged(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
+        }
 
         return TypedResults.Ok(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
     }

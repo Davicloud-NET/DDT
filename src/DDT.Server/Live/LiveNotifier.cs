@@ -5,7 +5,10 @@
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Packages;
+using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Tokens;
 using DDT.Server.Deployments;
@@ -115,11 +118,40 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.MachinesRemoved, new MachinesRemovedEvent(removed));
     }
 
-    public void ImagesChanged() => _ = PushEventAsync(LiveEvents.ImagesChanged);
+    public void ImageChanged(ImageSummary image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
 
-    public void PackagesChanged() => _ = PushEventAsync(LiveEvents.PackagesChanged);
+        _ = PushEventAsync(LiveEvents.ImageChanged, image);
+    }
 
-    public void RulesChanged() => _ = PushEventAsync(LiveEvents.RulesChanged);
+    public void ImagesRemoved(IEnumerable<Guid> imageIds)
+    {
+        ArgumentNullException.ThrowIfNull(imageIds);
+
+        _ = PushEventAsync(LiveEvents.ImagesRemoved, new ImagesRemovedEvent([.. imageIds]));
+    }
+
+    public void PackageChanged(PackageSummary package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+
+        _ = PushEventAsync(LiveEvents.PackageChanged, package);
+    }
+
+    public void PackagesRemoved(IEnumerable<Guid> packageIds)
+    {
+        ArgumentNullException.ThrowIfNull(packageIds);
+
+        _ = PushEventAsync(LiveEvents.PackagesRemoved, new PackagesRemovedEvent([.. packageIds]));
+    }
+
+    public void RulesChanged(AssignmentRuleView[] rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+
+        _ = PushEventAsync(LiveEvents.RulesChanged, rules);
+    }
 
     public void BootImageChanged(BootImageView bootImage)
     {
@@ -150,14 +182,12 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.SequenceChanged, change);
     }
 
-    private async Task PushEventAsync(string liveEvent, object? payload = null)
+    // Every event carries what changed, so a page patches what it shows rather than loading it again.
+    private async Task PushEventAsync(string liveEvent, object payload)
     {
         try
         {
-            // A null argument would still be sent as one, so an event without a payload is sent without arguments.
-            await (payload is null
-                ? hub.Clients.All.SendAsync(liveEvent, CancellationToken.None)
-                : hub.Clients.All.SendAsync(liveEvent, payload, CancellationToken.None)).ConfigureAwait(false);
+            await hub.Clients.All.SendAsync(liveEvent, payload, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

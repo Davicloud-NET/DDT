@@ -34,19 +34,8 @@ public static class RuleEndpoints
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<AssignmentRuleView>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
-    {
-        List<AssignmentRule> rules = await database.AssignmentRules.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<Guid, string> names = await SequenceNamesAsync(database, cancellationToken).ConfigureAwait(false);
-
-        return TypedResults.Ok<IReadOnlyList<AssignmentRuleView>>(
-        [
-            .. rules
-                .OrderBy(r => r.Kind)
-                .ThenBy(r => r.MatchKey, StringComparer.Ordinal)
-                .Select(r => View(r, names[r.TaskSequenceId])),
-        ]);
-    }
+    private static async Task<Ok<IReadOnlyList<AssignmentRuleView>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken) =>
+        TypedResults.Ok<IReadOnlyList<AssignmentRuleView>>(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
 
     private static async Task<Results<Created<AssignmentRuleView>, ValidationProblem, ProblemHttpResult>> CreateAsync(
         SaveAssignmentRuleRequest request,
@@ -142,7 +131,7 @@ public static class RuleEndpoints
             timeProvider.GetUtcNow(),
             $"The rule for {AssignmentRuleKeys.Describe(rule)}."));
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        live.RulesChanged();
+        live.RulesChanged(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
 
         return TypedResults.NoContent();
     }
@@ -262,9 +251,9 @@ public static class RuleEndpoints
             throw;
         }
 
-        live.RulesChanged();
+        live.RulesChanged(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
 
-        return TypedResults.Ok(View(rule, sequence.Name));
+        return TypedResults.Ok(AssignmentRuleViews.From(rule, sequence.Name));
     }
 
     private static async Task<ProblemHttpResult?> ConflictAsync(DdtDbContext database, Guid id, string matchKey, CancellationToken cancellationToken)
@@ -279,28 +268,13 @@ public static class RuleEndpoints
             return null;
         }
 
-        string sequence = (await SequenceNamesAsync(database, cancellationToken).ConfigureAwait(false))[existing.TaskSequenceId];
+        string sequence = (await AssignmentRuleViews.SequenceNamesAsync(database, cancellationToken).ConfigureAwait(false))[existing.TaskSequenceId];
 
         return TypedResults.Problem(
             title: $"There is a rule for {AssignmentRuleKeys.Describe(existing)} already. It chooses {sequence}; change that rule instead.",
             statusCode: StatusCodes.Status409Conflict,
             extensions: new Dictionary<string, object?> { ["ruleId"] = existing.Id });
     }
-
-    private static Task<Dictionary<Guid, string>> SequenceNamesAsync(DdtDbContext database, CancellationToken cancellationToken) =>
-        database.TaskSequences.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
-
-    private static AssignmentRuleView View(AssignmentRule rule, string sequenceName) => new(
-        rule.Id,
-        rule.Kind,
-        rule.Mac,
-        rule.Manufacturer,
-        rule.Model,
-        rule.TaskSequenceId,
-        sequenceName,
-        rule.Description,
-        rule.UpdatedUtc,
-        rule.UpdatedByName);
 
     private static AuditEvent Audit(
         string action,

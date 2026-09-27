@@ -25,6 +25,7 @@ import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
 import { NetworkBootPage } from "@/settings/NetworkBootPage";
+import { SignInSettingsPage } from "@/settings/SignInSettingsPage";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
@@ -178,7 +179,7 @@ const usersRoute = createRoute({
 const signInSettingsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/sign-in",
-  component: PendingPage,
+  component: SignInSettingsPage,
 });
 const tokensRoute = createRoute({
   getParentRoute: () => shellRoute,

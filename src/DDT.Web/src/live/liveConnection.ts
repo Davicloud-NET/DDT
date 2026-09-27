@@ -53,6 +53,7 @@ import {
 } from "@/settings/settings";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
+  directoryQuery,
   removeUsers,
   upsertUser,
   usersQuery,
@@ -209,6 +210,7 @@ export function createLiveConnection(
       runHistoryKey,
       auditKey,
       usersQuery.queryKey,
+      directoryQuery.queryKey,
       ["tokens"],
       bootImageQuery.queryKey,
       ["settings"],
@@ -319,10 +321,15 @@ export function createLiveConnection(
     });
 
     // Administrators receive every section; operators the deployment and machine sections they may read. The
-    // overview counts problems and locks, so it is read again.
+    // overview counts problems and locks, so it is read again. So is what the pages read from the directory with the
+    // ldap section: the group map with the names only the directory has, and the groups found by name.
     current.on("settingsChanged", (view: SettingsSectionView<unknown>) => {
       putSection(queryClient, view);
       invalidate(settingsOverviewQuery.queryKey);
+
+      if (view.section === "ldap") {
+        invalidate(directoryQuery.queryKey);
+      }
     });
 
     current.on("certificateChanged", (view: unknown) => {

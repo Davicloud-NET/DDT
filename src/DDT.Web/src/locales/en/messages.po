@@ -142,6 +142,7 @@ msgstr "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it 
 msgid "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
 msgstr "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "{count, plural, one {# group} other {# groups}}"
 msgstr "{count, plural, one {# group} other {# groups}}"
@@ -726,6 +727,10 @@ msgctxt "user.displayNameTooLong"
 msgid "A display name can have at most {max} characters."
 msgstr "A display name can have at most {max} characters."
 
+#: src/settings/DirectorySettings.tsx
+msgid "A domain controller or the domain's name."
+msgstr "A domain controller or the domain's name."
+
 #: src/lib/serverMessages.ts
 msgctxt "package.noInf"
 msgid "A driver package needs at least one .inf file. Zip the folder that holds the drivers' .inf files."
@@ -735,6 +740,14 @@ msgstr "A driver package needs at least one .inf file. Zip the folder that holds
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
+
+#: src/settings/DirectorySettings.tsx
+msgid "A group added here gives Viewer until you choose its role."
+msgstr "A group added here gives Viewer until you choose its role."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "A group as the provider sends it in the claim above. It gives Viewer until you choose its role."
+msgstr "A group as the provider sends it in the claim above. It gives Viewer until you choose its role."
 
 #: src/rules/RuleDialog.tsx
 msgid "A hardware model"
@@ -985,7 +998,12 @@ msgstr "A zip of the files a Run script step needs. The step finds them unpacked
 msgid "About DDT"
 msgstr "About DDT"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Accepted"
+msgstr "Accepted"
+
 #: src/account/AccountPage.tsx
+#: src/settings/DirectorySettings.tsx
 #: src/users/UsersPage.tsx
 msgid "Account"
 msgstr "Account"
@@ -1057,13 +1075,26 @@ msgstr "Actions for the rule for {description}"
 msgid "Active"
 msgstr "Active"
 
+#: src/settings/DirectorySettings.tsx
 #: src/settings/NetworkBootPage.tsx
 msgid "Add"
 msgstr "Add"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Add {shown} to the map"
+msgstr "Add {shown} to the map"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Add a claim value"
+msgstr "Add a claim value"
+
 #: src/sequences/StepConditions.tsx
 msgid "Add a condition"
 msgstr "Add a condition"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Add a group by its distinguished name"
+msgstr "Add a group by its distinguished name"
 
 #: src/users/UserDialogs.tsx
 msgid "Add a local account"
@@ -1085,6 +1116,10 @@ msgstr "Add an assignment rule"
 #: src/settings/NetworkBootPage.tsx
 msgid "Add boot target"
 msgstr "Add boot target"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Add group"
+msgstr "Add group"
 
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
@@ -1110,6 +1145,10 @@ msgstr "Add the local administrator"
 #: src/packages/PackageDialog.tsx
 msgid "Add to the Windows PE boot image"
 msgstr "Add to the Windows PE boot image"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Add value"
+msgstr "Add value"
 
 #: src/packages/PackagesPage.tsx
 msgid "Added {name} from {file}."
@@ -1462,9 +1501,13 @@ msgstr "At {failedAt}"
 msgid "At {step}"
 msgstr "At {step}"
 
+#: src/settings/DirectorySettings.tsx
+msgid "At each sign-in, a directory account gets the highest role its groups below give it, and an account in none of them cannot sign in. While no group is listed, administrators choose the role of each directory account on the Users and roles page."
+msgstr "At each sign-in, a directory account gets the highest role its groups below give it, and an account in none of them cannot sign in. While no group is listed, administrators choose the role of each directory account on the Users and roles page."
+
 #: src/users/DirectoryPanel.tsx
-msgid "At each sign-in, a directory account gets the highest role that its groups below give it, and an account in none of them cannot sign in. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
-msgstr "At each sign-in, a directory account gets the highest role that its groups below give it, and an account in none of them cannot sign in. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
+msgid "At each sign-in, a directory account gets the highest role that its groups below give it, and an account in none of them cannot sign in. The map is set on the <0>Sign-in</0> page."
+msgstr "At each sign-in, a directory account gets the highest role that its groups below give it, and an account in none of them cannot sign in. The map is set on the <0>Sign-in</0> page."
 
 #: src/account/AccountPage.tsx
 msgid "At least 12 characters."
@@ -1473,6 +1516,10 @@ msgstr "At least 12 characters."
 #: src/tokens/MakeTokenDialog.tsx
 msgid "At most your own. Give it no more than the script needs."
 msgstr "At most your own. Give it no more than the script needs."
+
+#: src/settings/DirectorySettings.tsx
+msgid "Attribute that identifies an account"
+msgstr "Attribute that identifies an account"
 
 #: src/app/navigation.ts
 #: src/audit/AuditPage.tsx
@@ -1502,6 +1549,10 @@ msgstr "Authorizing machines"
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr "Back to DDT"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Bind account"
+msgstr "Bind account"
 
 #: src/settings/networkBoot.ts
 msgid "BIOS PCs, over TFTP"
@@ -1543,6 +1594,10 @@ msgstr "Building it again"
 #: src/boot/BootImagePage.tsx
 msgid "Built"
 msgstr "Built"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Button text"
+msgstr "Button text"
 
 #: src/sequences/SequencesPage.tsx
 msgid "by {name}"
@@ -1732,6 +1787,18 @@ msgstr "Chosen at the machine by {by}"
 msgid "Chosen by a rule, approved on the web"
 msgstr "Chosen by a rule, approved on the web"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Chosen on the Users and roles page"
+msgstr "Chosen on the Users and roles page"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Claim values and the roles they give"
+msgstr "Claim values and the roles they give"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Claim with the groups"
+msgstr "Claim with the groups"
+
 #: src/settings/SettingsParts.tsx
 msgid "Clear"
 msgstr "Clear"
@@ -1739,6 +1806,14 @@ msgstr "Clear"
 #: src/settings/SettingsParts.tsx
 msgid "Cleared on save"
 msgstr "Cleared on save"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Client ID"
+msgstr "Client ID"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Client secret"
+msgstr "Client secret"
 
 #: src/ui/Dialog.tsx
 #: src/ui/Drawer.tsx
@@ -1820,6 +1895,10 @@ msgstr "Copy the token {tokenName}"
 msgid "Could not reach the server."
 msgstr "Could not reach the server."
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Create an account for an identity DDT has not seen"
+msgstr "Create an account for an identity DDT has not seen"
+
 #: src/sequences/NewSequenceDialog.tsx
 msgid "Create and open"
 msgstr "Create and open"
@@ -1860,9 +1939,17 @@ msgstr "DDT fills in <0>{placeholders}</0> with the machine's values. Put them i
 msgid "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 msgstr "DDT is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version, together with additional terms under section 7 of that licence."
 
+#: src/settings/DirectorySettings.tsx
+msgid "DDT keys each directory account on it. With another attribute, every account is taken for a new one at its next sign-in."
+msgstr "DDT keys each directory account on it. With another attribute, every account is taken for a new one at its next sign-in."
+
 #: src/users/UserDialogs.tsx
 msgid "DDT makes up a password for the account and shows it once. Its owner replaces it at the first sign-in. Directory and single sign-on accounts are not added here: they appear after their first sign-in."
 msgstr "DDT makes up a password for the account and shows it once. Its owner replaces it at the first sign-in. Directory and single sign-on accounts are not added here: they appear after their first sign-in."
+
+#: src/settings/DirectorySettings.tsx
+msgid "DDT reads the directory with this account: it finds the user who signs in, and their groups. A saved password goes only to the server it was entered for, so after a change of the server, port or encryption, enter it again."
+msgstr "DDT reads the directory with this account: it finds the user who signs in, and their groups. A saved password goes only to the server it was entered for, so after a change of the server, port or encryption, enter it again."
 
 #: src/boot/BootImagePage.tsx
 msgid "DDT replaced the self-signed server certificate that boot images built before it pin. Machines netbooting such an image cannot reach the server until it is built again with DDT's root certificate."
@@ -1974,6 +2061,10 @@ msgstr "Detail"
 msgid "Details"
 msgstr "Details"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Directory"
+msgstr "Directory"
+
 #: src/users/userView.ts
 msgid "Directory account"
 msgstr "Directory account"
@@ -1982,9 +2073,14 @@ msgstr "Directory account"
 msgid "Directory groups"
 msgstr "Directory groups"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Directory groups found"
 msgstr "Directory groups found"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Directory server"
+msgstr "Directory server"
 
 #: src/users/UsersPage.tsx
 msgid "Disable"
@@ -2132,6 +2228,10 @@ msgstr "Email ''{email}'' is invalid."
 msgid "Email address"
 msgstr "Email address"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Email attribute"
+msgstr "Email attribute"
+
 #: src/sequences/NewSequenceDialog.tsx
 msgid "Empty sequence"
 msgstr "Empty sequence"
@@ -2139,6 +2239,14 @@ msgstr "Empty sequence"
 #: src/users/UsersPage.tsx
 msgid "Enable"
 msgstr "Enable"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Encrypted from the first byte."
+msgstr "Encrypted from the first byte."
+
+#: src/settings/DirectorySettings.tsx
+msgid "Encryption"
+msgstr "Encryption"
 
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
@@ -2304,6 +2412,7 @@ msgstr "Fail when no driver package matches the model"
 #: src/machines/machineView.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Failed"
 msgstr "Failed"
@@ -2334,6 +2443,7 @@ msgstr "Files"
 msgid "Files package"
 msgstr "Files package"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Find a directory group"
 msgstr "Find a directory group"
@@ -2346,6 +2456,7 @@ msgstr "Find a driver package"
 msgid "Find a file package"
 msgstr "Find a file package"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Find a group"
 msgstr "Find a group"
@@ -2373,6 +2484,10 @@ msgstr "Find an account"
 #: src/images/ImagesPage.tsx
 msgid "Find an image"
 msgstr "Find an image"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Finds the user who signs in. It must contain {USER_TOKEN}, which DDT replaces with the user name typed at sign-in."
+msgstr "Finds the user who signs in. It must contain {USER_TOKEN}, which DDT replaces with the user name typed at sign-in."
 
 #: src/deployments/deployments.ts
 msgid "Finishing"
@@ -2410,6 +2525,10 @@ msgstr "For places that need two people: a sign-in at the machine then only reco
 msgid "For these hardware models"
 msgstr "For these hardware models"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Found"
+msgstr "Found"
+
 #: src/audit/AuditPage.tsx
 msgid "From"
 msgstr "From"
@@ -2438,6 +2557,11 @@ msgstr "Give {name} a new password?"
 msgid "Given when single sign-on created it"
 msgstr "Given when single sign-on created it"
 
+#: src/settings/DirectorySettings.tsx
+msgid "gives {label}"
+msgstr "gives {label}"
+
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Gives {label}"
 msgstr "Gives {label}"
@@ -2462,10 +2586,21 @@ msgstr "Go to…"
 msgid "goes on in the installed Windows"
 msgstr "goes on in the installed Windows"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Group name"
 msgstr "Group name"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Groups"
+msgstr "Groups"
+
+#: src/settings/DirectorySettings.tsx
+#: src/settings/SignInSettingsPage.tsx
+msgid "Groups and roles"
+msgstr "Groups and roles"
+
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Groups and the roles they give"
 msgstr "Groups and the roles they give"
@@ -2477,6 +2612,10 @@ msgstr "Handed over to Windows; after Windows setup the agent continued there {t
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
 msgstr "Handing over to Windows"
+
+#: src/settings/DirectorySettings.tsx
+msgid "How long DDT waits for each answer of the directory."
+msgstr "How long DDT waits for each answer of the directory."
 
 #: src/settings/NetworkBootPage.tsx
 msgid "HTTP boot port"
@@ -2584,6 +2723,10 @@ msgstr "is"
 msgid "is not"
 msgstr "is not"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Issuer"
+msgstr "Issuer"
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It can join machines here."
 msgstr "It can join machines here."
@@ -2661,6 +2804,10 @@ msgstr "Key"
 msgid "Keyboard"
 msgstr "Keyboard"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
+msgstr "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
+
 #: src/images/ImagesPage.tsx
 msgid "Kind"
 msgstr "Kind"
@@ -2716,6 +2863,14 @@ msgstr "Last used"
 msgid "Later"
 msgstr "Later"
 
+#: src/settings/DirectorySettings.tsx
+msgid "LDAPS"
+msgstr "LDAPS"
+
+#: src/settings/DirectorySettings.tsx
+msgid "LDAPS uses 636, StartTLS and unencrypted 389."
+msgstr "LDAPS uses 636, StartTLS and unencrypted 389."
+
 #: src/uploads/UploadPanel.tsx
 msgid "Leave page"
 msgstr "Leave page"
@@ -2747,6 +2902,10 @@ msgstr "Left empty, DDT shows the user name."
 #: src/ui/Controls.tsx
 msgid "Less"
 msgstr "Less"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Let people sign in with their directory account"
+msgstr "Let people sign in with their directory account"
 
 #: src/log/LogPanel.tsx
 msgid "Levels"
@@ -2803,6 +2962,10 @@ msgstr "Loading older runs"
 #: src/users/userView.ts
 msgid "Local account"
 msgstr "Local account"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Local accounts always sign in with their password. Here you let people sign in with their directory account or through a single sign-on provider as well, and decide which role their groups give them."
+msgstr "Local accounts always sign in with their password. Here you let people sign in with their directory account or through a single sign-on provider as well, and decide which role their groups give them."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Local administrator"
@@ -3047,6 +3210,10 @@ msgstr "Must be a distinguished name without the LDAP:// prefix, such as OU=Work
 msgid "Name"
 msgstr "Name"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Name attribute"
+msgstr "Name attribute"
+
 #: src/sequences/SequencesPage.tsx
 msgid "Name or description"
 msgstr "Name or description"
@@ -3093,6 +3260,10 @@ msgstr "Never"
 msgid "Never changed on this page."
 msgstr "Never changed on this page."
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "New accounts"
+msgstr "New accounts"
+
 #: src/account/AccountPage.tsx
 msgid "New password"
 msgstr "New password"
@@ -3133,6 +3304,10 @@ msgstr "No account matches"
 #: src/settings/NetworkBootPage.tsx
 msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr "No boot target yet, so ProxyDHCP answers no machine."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "No claim value is listed, so the groups decide no role: a new account gets the role above, and administrators change it on the Users and roles page."
+msgstr "No claim value is listed, so the groups decide no role: a new account gets the role above, and administrators change it on the Users and roles page."
 
 #: src/runs/RunPanel.tsx
 msgid "No contact for {silentFor}, as the machine restarts."
@@ -3194,10 +3369,15 @@ msgstr "No external sign in is in progress."
 msgid "No file packages yet"
 msgstr "No file packages yet"
 
-#: src/users/DirectoryPanel.tsx
-msgid "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
-msgstr "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set in the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over."
+#: src/settings/DirectorySettings.tsx
+msgid "No group is listed, so groups decide no role."
+msgstr "No group is listed, so groups decide no role."
 
+#: src/users/DirectoryPanel.tsx
+msgid "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set on the <0>Sign-in</0> page."
+msgstr "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set on the <0>Sign-in</0> page."
+
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "No group matches."
 msgstr "No group matches."
@@ -3340,9 +3520,14 @@ msgid "Nobody has signed in yet"
 msgstr "Nobody has signed in yet"
 
 #: src/account/AccountPage.tsx
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "None"
 msgstr "None"
+
+#: src/settings/DirectorySettings.tsx
+msgid "None, so the sign-in is refused"
+msgstr "None, so the sign-in is refused"
 
 #: src/sequences/FindingsSummary.tsx
 msgid "None. Nothing keeps this sequence from running."
@@ -3361,6 +3546,11 @@ msgstr "Not built yet"
 msgid "Not deployable: only x64 images can be installed."
 msgstr "Not deployable: only x64 images can be installed."
 
+#: src/settings/DirectorySettings.tsx
+msgid "Not found"
+msgstr "Not found"
+
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Not found in the directory"
 msgstr "Not found in the directory"
@@ -3372,6 +3562,10 @@ msgstr "Not known"
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Not known whether it is signed for Secure Boot"
 msgstr "Not known whether it is signed for Secure Boot"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Not reached"
+msgstr "Not reached"
 
 #: src/boot/BootImagePage.tsx
 msgid "Not recorded"
@@ -3425,6 +3619,10 @@ msgstr "Not started, {count} steps"
 msgid "Not stated"
 msgstr "Not stated"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Not used while the claim map below has entries: the map decides the role."
+msgstr "Not used while the claim map below has entries: the map decides the role."
+
 #: src/app/CommandPalette.tsx
 msgid "Nothing matches."
 msgstr "Nothing matches."
@@ -3447,6 +3645,14 @@ msgstr "of the run"
 msgid "Off"
 msgstr "Off"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Off, an identity DDT has not seen is refused at the sign-in."
+msgstr "Off, an identity DDT has not seen is refused at the sign-in."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Offer single sign-on on the sign-in page"
+msgstr "Offer single sign-on on the sign-in page"
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "OK"
 msgstr "OK"
@@ -3465,6 +3671,10 @@ msgstr "On {name}"
 msgid "On, {note}"
 msgstr "On, {note}"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Once directory sign-in is on and its server and search base are saved, you can find groups by name here. Until then, add a group by its distinguished name."
+msgstr "Once directory sign-in is on and its server and search base are saved, you can find groups by name here. Until then, add a group by its distinguished name."
+
 #: src/settings/NetworkBootPage.tsx
 msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
 msgstr "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
@@ -3476,6 +3686,10 @@ msgstr "One MAC address"
 #: src/settings/ApprovalPage.tsx
 msgid "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
 msgstr "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "One per line. openid is required; profile and email bring the name and the email address."
+msgstr "One per line. openid is required; profile and email bring the name and the email address."
 
 #: src/users/UserDialogs.tsx
 msgid "One-time password"
@@ -3490,6 +3704,10 @@ msgstr "Only a driver package can go into the Windows PE boot image."
 msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
+msgstr "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
 
 #: src/sequences/SequenceEditor.tsx
 msgid "Only administrators change task sequences. You can look at this one."
@@ -3549,6 +3767,7 @@ msgstr "Only x64 images can be installed."
 msgid "Open machine"
 msgstr "Open machine"
 
+#: src/settings/SignInSettingsPage.tsx
 #: src/users/userView.ts
 msgid "Operator"
 msgstr "Operator"
@@ -3557,6 +3776,10 @@ msgstr "Operator"
 msgctxt "role.operator"
 msgid "Operator"
 msgstr "Operator"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Operators can read the deployment passwords by deploying a machine they control."
+msgstr "Operators can read the deployment passwords by deploying a machine they control."
 
 #: src/lib/serverMessages.ts
 msgctxt "identity.concurrencyFailure"
@@ -3665,6 +3888,7 @@ msgstr "Partitions the disk, applies an image, adds the drivers for the machine'
 #: src/account/AccountPage.tsx
 #: src/auth/SignInPage.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
+#: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Password"
 msgstr "Password"
@@ -3688,6 +3912,18 @@ msgstr "Password read by a run"
 #: src/audit/auditView.ts
 msgid "Password reset"
 msgstr "Password reset"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Password, optional"
+msgstr "Password, optional"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Passwords cross the network in clear text"
+msgstr "Passwords cross the network in clear text"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Passwords cross the network in clear text."
+msgstr "Passwords cross the network in clear text."
 
 #: src/lib/serverMessages.ts
 msgctxt "identity.passwordTooShort"
@@ -3732,6 +3968,10 @@ msgctxt "machineState.pending"
 msgid "Pending"
 msgstr "Pending"
 
+#: src/settings/DirectorySettings.tsx
+msgid "People sign in with the user name and password of their directory account, such as one of Active Directory. DDT checks the password with the directory at each sign-in and takes over the name, the email address and, through the group map, the role. Changes apply at the next sign-in."
+msgstr "People sign in with the user name and password of their directory account, such as one of Active Directory. DDT checks the password with the directory at each sign-in and takes over the name, the email address and, through the group map, the role. Changes apply at the next sign-in."
+
 #: src/audit/auditView.ts
 msgid "Person"
 msgstr "Person"
@@ -3744,6 +3984,10 @@ msgstr "Phase"
 msgctxt "wim.pipable"
 msgid "Pipable WIM files are not supported. Export the image into a regular WIM first."
 msgstr "Pipable WIM files are not supported. Export the image into a regular WIM first."
+
+#: src/settings/DirectorySettings.tsx
+msgid "Port"
+msgstr "Port"
 
 #: src/deployments/deployments.ts
 msgid "Preparing"
@@ -3760,6 +4004,14 @@ msgstr "Problems and warnings"
 #: src/sequences/StepInspector.tsx
 msgid "Problems and warnings of this step"
 msgstr "Problems and warnings of this step"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Provider"
+msgstr "Provider"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Provider address"
+msgstr "Provider address"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "ProxyDHCP and TFTP"
@@ -3787,9 +4039,17 @@ msgstr "QR code for your authenticator app"
 msgid "Raw disk image"
 msgstr "Raw disk image"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Reached"
+msgstr "Reached"
+
 #: src/users/userView.ts
 msgid "Reaches nothing"
 msgstr "Reaches nothing"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Read the account's groups, nested groups included"
+msgstr "Read the account's groups, nested groups included"
 
 #: src/log/LogPanel.tsx
 msgid "Reading every {pollSeconds} s, because the live connection is down."
@@ -3826,6 +4086,18 @@ msgstr "Recovery code redemption failed."
 msgid "Recovery partition in MB"
 msgstr "Recovery partition in MB"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Redirect URI"
+msgstr "Redirect URI"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Refused"
+msgstr "Refused"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Register this address as the redirect URI of DDT's client at the provider."
+msgstr "Register this address as the redirect URI of DDT's client at the provider."
+
 #: src/machines/MachinesPage.tsx
 msgid "Registered {registered}"
 msgstr "Registered {registered}"
@@ -3846,12 +4118,17 @@ msgstr "Rejected"
 #: src/machines/MachineActions.tsx
 #: src/sequences/StepInspector.tsx
 #: src/settings/NetworkBootPage.tsx
+#: src/settings/RoleMapEditor.tsx
 msgid "Remove"
 msgstr "Remove"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Remove {entry}"
 msgstr "Remove {entry}"
+
+#: src/settings/RoleMapEditor.tsx
+msgid "Remove {key}"
+msgstr "Remove {key}"
 
 #: src/sequences/StepInspector.tsx
 msgid "Remove {name}"
@@ -3975,6 +4252,7 @@ msgstr "Revoked"
 msgid "Role"
 msgstr "Role"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Role at sign-in"
 msgstr "Role at sign-in"
@@ -3988,6 +4266,14 @@ msgstr "Role name ''{role}'' is already taken."
 msgctxt "identity.invalidRoleName"
 msgid "Role name ''{role}'' is invalid."
 msgstr "Role name ''{role}'' is invalid."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Role of a new account"
+msgstr "Role of a new account"
+
+#: src/settings/RoleMapEditor.tsx
+msgid "Role that {key} gives"
+msgstr "Role that {key} gives"
 
 #: src/audit/auditView.ts
 msgid "Rule added"
@@ -4174,6 +4460,10 @@ msgstr "Scan the code with your authenticator app, or type the key into it. Then
 msgid "Scan the interfaces again?"
 msgstr "Scan the interfaces again?"
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "Scopes"
+msgstr "Scopes"
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Script"
 msgstr "Script"
@@ -4182,6 +4472,7 @@ msgstr "Script"
 msgid "Search"
 msgstr "Search"
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Search base"
 msgstr "Search base"
@@ -4296,6 +4587,7 @@ msgid "Serve boot files over TFTP"
 msgstr "Serve boot files over TFTP"
 
 #: src/app/navigation.ts
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Server"
 msgstr "Server"
@@ -4421,12 +4713,13 @@ msgid "Sign out"
 msgstr "Sign out"
 
 #: src/app/navigation.ts
+#: src/settings/SignInSettingsPage.tsx
 msgid "Sign-in"
 msgstr "Sign-in"
 
 #: src/users/DirectoryPanel.tsx
-msgid "Sign-in through a directory is off. It is turned on and set up in the configuration, under DDT:Ldap, until the settings page takes it over."
-msgstr "Sign-in through a directory is off. It is turned on and set up in the configuration, under DDT:Ldap, until the settings page takes it over."
+msgid "Sign-in through a directory is off. It is turned on and set up on the <0>Sign-in</0> page."
+msgstr "Sign-in through a directory is off. It is turned on and set up on the <0>Sign-in</0> page."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.off"
@@ -4440,6 +4733,10 @@ msgstr "Signed"
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Signed for Secure Boot"
 msgstr "Signed for Secure Boot"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Signed in"
+msgstr "Signed in"
 
 #: src/audit/auditView.ts
 msgid "Signed in at a machine"
@@ -4457,6 +4754,10 @@ msgstr "Signing in"
 #: src/account/AccountPage.tsx
 msgid "Signing in asks for a code from your authenticator app. To turn it off, enter a current code."
 msgstr "Signing in asks for a code from your authenticator app. To turn it off, enter a current code."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Single sign-on"
+msgstr "Single sign-on"
 
 #: src/users/userView.ts
 msgid "Single sign-on account"
@@ -4543,10 +4844,18 @@ msgstr "Starting"
 msgid "Starting, {count} steps"
 msgstr "Starting, {count} steps"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Starts plain and encrypts before anything is sent."
+msgstr "Starts plain and encrypts before anything is sent."
+
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
 msgid "starts with"
 msgstr "starts with"
+
+#: src/settings/DirectorySettings.tsx
+msgid "StartTLS"
+msgstr "StartTLS"
 
 #: src/machines/MachinesPage.tsx
 #: src/runs/RunHistoryPage.tsx
@@ -4714,6 +5023,18 @@ msgstr "Task sequence"
 msgid "Task sequences"
 msgstr "Task sequences"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Test"
+msgstr "Test"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Test the directory"
+msgstr "Test the directory"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "Test the provider"
+msgstr "Test the provider"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "TFTP transfers at once"
 msgstr "TFTP transfers at once"
@@ -4799,6 +5120,10 @@ msgstr "The attribution notice, the warranty disclaimer and the additional terms
 #: src/audit/AuditPage.tsx
 msgid "The audit log could not be read: {readError}"
 msgstr "The audit log could not be read: {readError}"
+
+#: src/settings/DirectorySettings.tsx
+msgid "The bind password and every password typed at sign-in can be read by anyone on the way to the directory. Use this only on a test network; a save asks you to confirm it."
+msgstr "The bind password and every password typed at sign-in can be read by anyone on the way to the directory. Use this only on a test network; a save asks you to confirm it."
 
 #: src/boot/BootImagePage.tsx
 msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
@@ -4925,6 +5250,7 @@ msgstr "The directory provides the display name and email address of {name}. Cha
 msgid "The directory provides the name and email address. DDT takes them over at each sign-in."
 msgstr "The directory provides the name and email address. DDT takes them over at each sign-in."
 
+#: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "The directory settings could not be loaded."
 msgstr "The directory settings could not be loaded."
@@ -5061,6 +5387,10 @@ msgstr "The file name must have 1 to {max} characters and no control characters.
 msgid "The GNU General Public License, version 3"
 msgstr "The GNU General Public License, version 3"
 
+#: src/settings/DirectorySettings.tsx
+msgid "The group map needs it: while it is off, DDT reads no groups at all."
+msgstr "The group map needs it: while it is off, DDT reads no groups at all."
+
 #: src/lib/serverMessages.ts
 msgctxt "gpt.damaged"
 msgid "The GUID partition table of the disk image is damaged."
@@ -5099,6 +5429,10 @@ msgstr "The GUID partition table of the disk image is damaged. The file ends ins
 #: src/runs/runs.ts
 msgid "The hand-over to Windows began"
 msgstr "The hand-over to Windows began"
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "The ID the provider shows for DDT's client."
+msgstr "The ID the provider shows for DDT's client."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.imageBeforePartition"
@@ -5320,6 +5654,10 @@ msgstr "The password of {user} has expired. Give it a new one, in the domain and
 msgid "The password you were given and signed in with."
 msgstr "The password you were given and signed in with."
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "The provider's https address, where DDT reads its discovery document. A saved client secret goes only to the provider it was entered for, so after a change of the address, enter it again."
+msgstr "The provider's https address, where DDT reads its discovery document. A saved client secret goes only to the provider it was entered for, so after a change of the address, enter it again."
+
 #: src/lib/serverMessages.ts
 msgctxt "upload.qcow2Backing"
 msgid "The qcow2 image depends on a backing file. Make a standalone image with qemu-img convert -O qcow2 <file> standalone.qcow2 and upload that."
@@ -5350,18 +5688,18 @@ msgctxt "user.roleFromDirectoryGroups"
 msgid "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
 msgstr "The role of {name} comes from its directory groups through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
 
-#: src/users/userView.ts
-msgid "The role of {name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
-msgstr "The role of {name} comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map."
+#: src/users/UserDialogs.tsx
+msgid "The role of {name} comes from its directory groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups in the directory, or the map."
+msgstr "The role of {name} comes from its directory groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups in the directory, or the map."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.roleFromSingleSignOnGroups"
 msgid "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
 msgstr "The role of {name} comes from its single sign-on groups through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
 
-#: src/users/userView.ts
-msgid "The role of {name} comes from its single sign-on groups, through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
-msgstr "The role of {name} comes from its single sign-on groups, through DDT:Oidc:GroupRoleMap, at each sign-in. Change its groups at the provider, or the map."
+#: src/users/UserDialogs.tsx
+msgid "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups at the provider, or the map."
+msgstr "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups at the provider, or the map."
 
 #: src/lib/serverMessages.ts
 msgctxt "resolution.ruleChooses"
@@ -5421,6 +5759,10 @@ msgstr "The runs of this machine could not be loaded."
 #: src/boot/BootImagePage.tsx
 msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
 msgstr "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
+
+#: src/settings/DirectorySettings.tsx
+msgid "The search asks the directory as it is saved, not with the changes above that are not saved yet."
+msgstr "The search asks the directory as it is saved, not with the changes above that are not saved yet."
 
 #: src/sequences/FindingsSummary.tsx
 msgid "The sequence"
@@ -5546,6 +5888,14 @@ msgstr "The server refuses while a machine is assigned or runs a sequence that u
 #: src/auth/SignInPage.tsx
 msgid "The sign-in at the identity provider did not finish. Try again."
 msgstr "The sign-in at the identity provider did not finish. Try again."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "The sign-in page offers a button that signs people in at an OpenID Connect provider, such as Entra ID, Keycloak or Authentik. DDT never links an identity to an existing account by its email address."
+msgstr "The sign-in page offers a button that signs people in at an OpenID Connect provider, such as Entra ID, Keycloak or Authentik. DDT never links an identity to an existing account by its email address."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "The single sign-on settings could not be loaded."
+msgstr "The single sign-on settings could not be loaded."
 
 #: src/about/AboutPage.tsx
 msgid "The software by others that DDT contains, and its licences"
@@ -5714,6 +6064,10 @@ msgctxt "wim.notAWim"
 msgid "This file is not a WIM image."
 msgstr "This file is not a WIM image."
 
+#: src/settings/DirectorySettings.tsx
+msgid "This group is listed already."
+msgstr "This group is listed already."
+
 #: src/settings/NetworkBootPage.tsx
 msgid "This host found no interface with an IPv4 address."
 msgstr "This host found no interface with an IPv4 address."
@@ -5825,6 +6179,10 @@ msgctxt "upload.gone"
 msgid "This upload no longer exists. Select the file again to upload it."
 msgstr "This upload no longer exists. Select the file again to upload it."
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "This value is listed already."
+msgstr "This value is listed already."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.unknownStep"
 msgid "This version of DDT does not know this kind of step."
@@ -5868,6 +6226,10 @@ msgstr "Timeline"
 msgid "Timeout in minutes"
 msgstr "Timeout in minutes"
 
+#: src/settings/DirectorySettings.tsx
+msgid "Timeout in seconds"
+msgstr "Timeout in seconds"
+
 #: src/tokens/MakeTokenDialog.tsx
 #: src/tokens/TokenTable.tsx
 msgid "Token"
@@ -5888,6 +6250,10 @@ msgstr "Took {took}"
 #: src/machines/MachinesPage.tsx
 msgid "Took {took}, finished {finished}"
 msgstr "Took {took}, finished {finished}"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
+msgstr "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 
 #: src/app/RouteError.tsx
 msgid "Try again"
@@ -5941,6 +6307,10 @@ msgstr "Type part of a group's name to see its distinguished name for the map."
 #: src/sequences/RemovedStepNotice.tsx
 msgid "Undo"
 msgstr "Undo"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Unencrypted (dangerous)"
+msgstr "Unencrypted (dangerous)"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Unfinished uploads"
@@ -6054,6 +6424,7 @@ msgstr "Use theirs throws your unsaved changes away. Keep mine saves your versio
 msgid "Used by"
 msgstr "Used by"
 
+#: src/settings/DirectorySettings.tsx
 #: src/tokens/TokenTable.tsx
 msgid "User"
 msgstr "User"
@@ -6068,6 +6439,10 @@ msgctxt "identity.userAlreadyInRole"
 msgid "User already in role ''{role}''."
 msgstr "User already in role ''{role}''."
 
+#: src/settings/DirectorySettings.tsx
+msgid "User filter"
+msgstr "User filter"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.userNotInRole"
 msgid "User is not in role ''{role}''."
@@ -6080,6 +6455,10 @@ msgstr "User is not in role ''{role}''."
 msgid "User name"
 msgstr "User name"
 
+#: src/settings/DirectorySettings.tsx
+msgid "User name, optional"
+msgstr "User name, optional"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.duplicateUserName"
 msgid "Username ''{name}'' is already taken."
@@ -6091,6 +6470,7 @@ msgid "Username ''{name}'' is invalid, can only contain letters or digits."
 msgstr "Username ''{name}'' is invalid, can only contain letters or digits."
 
 #: src/audit/auditView.ts
+#: src/settings/DirectorySettings.tsx
 msgid "Users"
 msgstr "Users"
 
@@ -6123,6 +6503,7 @@ msgstr "Version"
 msgid "Version {version}"
 msgstr "Version {version}"
 
+#: src/settings/SignInSettingsPage.tsx
 #: src/users/userView.ts
 msgid "Viewer"
 msgstr "Viewer"
@@ -6176,6 +6557,10 @@ msgstr "What it does"
 msgid "What the account signs in with."
 msgstr "What the account signs in with."
 
+#: src/settings/SignInSettingsPage.tsx
+msgid "What the button on the sign-in page says."
+msgstr "What the button on the sign-in page says."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "What the check found"
 msgstr "What the check found"
@@ -6191,6 +6576,10 @@ msgstr "Whatever uses the token is refused from its next request. The token stay
 #: src/audit/AuditPage.tsx
 msgid "When"
 msgstr "When"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Where DDT looks for users and groups."
+msgstr "Where DDT looks for users and groups."
 
 #: src/settings/SettingsParts.tsx
 msgid "Where it applies"
@@ -6211,6 +6600,10 @@ msgstr "Which machines the rule is for"
 #: src/packages/packages.ts
 msgid "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
 msgstr "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
+
+#: src/settings/SignInSettingsPage.tsx
+msgid "While the map has entries, an account single sign-on created gets the highest role its groups give it at each sign-in, and an identity in none of them cannot sign in. A local account linked to an identity keeps the role an administrator gave it."
+msgstr "While the map has entries, an account single sign-on created gets the highest role its groups give it at each sign-in, and an identity in none of them cannot sign in. A local account linked to an identity keeps the role an administrator gave it."
 
 #: src/audit/AuditPage.tsx
 msgid "Who"
@@ -6363,6 +6756,10 @@ msgctxt "token.nameTaken"
 msgid "You have a token of that name already. Choose another name, or revoke that token first."
 msgstr "You have a token of that name already. Choose another name, or revoke that token first."
 
+#: src/settings/DirectorySettings.tsx
+msgid "You sign in through the directory, and these changes decide whether you still can. Test your own sign-in with them above before you save; the save is accepted within 5 minutes of a test that kept you an administrator."
+msgstr "You sign in through the directory, and these changes decide whether you still can. Test your own sign-in with them above before you save; the save is accepted within 5 minutes of a test that kept you an administrator."
+
 #: src/account/AccountPage.tsx
 msgid "You signed in with a password an administrator was shown. Replace it under Password; until then, DDT shows you nothing but this page."
 msgstr "You signed in with a password an administrator was shown. Replace it under Password; until then, DDT shows you nothing but this page."
@@ -6403,6 +6800,14 @@ msgstr "Your latest changes are not saved yet. Leaving throws them away."
 #: src/account/AccountPage.tsx
 msgid "Your recovery codes"
 msgstr "Your recovery codes"
+
+#: src/settings/DirectorySettings.tsx
+msgid "Your sign-in with these values keeps you an administrator. Save them within 5 minutes."
+msgstr "Your sign-in with these values keeps you an administrator. Save them within 5 minutes."
+
+#: src/settings/DirectorySettings.tsx
+msgid "Your test of these values is more than 5 minutes old. Test your sign-in again before you save."
+msgstr "Your test of these values is more than 5 minutes old. Test your sign-in again before you save."
 
 #: src/tokens/OwnTokensPanel.tsx
 msgid "Your tokens could not be loaded."

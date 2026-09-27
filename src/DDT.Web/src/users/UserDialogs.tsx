@@ -4,6 +4,7 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { Button } from "@/ui/Button";
@@ -25,9 +26,9 @@ import {
 import {
   fieldErrors,
   formError,
+  groupsDecideRole,
   roleDescription,
   roleLabel,
-  roleLockReason,
   ROLES,
   shownName,
 } from "./userView";
@@ -46,6 +47,29 @@ function RoleOptions() {
         </ListBoxItem>
       ))}
     </>
+  );
+}
+
+// Why the role cannot be chosen here, and where to change it instead.
+function RoleLockReason({ user }: { user: UserView }) {
+  const name = user.userName;
+
+  return user.roleFrom === "SingleSignOnGroups" ? (
+    <Trans>
+      The role of {name} comes from its single sign-on groups, through the map on the{" "}
+      <Link to="/admin/sign-in" className="underline">
+        Sign-in
+      </Link>{" "}
+      page, at each sign-in. Change its groups at the provider, or the map.
+    </Trans>
+  ) : (
+    <Trans>
+      The role of {name} comes from its directory groups, through the map on the{" "}
+      <Link to="/admin/sign-in" className="underline">
+        Sign-in
+      </Link>{" "}
+      page, at each sign-in. Change its groups in the directory, or the map.
+    </Trans>
   );
 }
 
@@ -188,8 +212,8 @@ export function ChangeUserDialog({
   const [role, setRole] = useState<UserRole | null>(user.role);
 
   const directory = user.source === "Directory";
-  const lockReason = roleLockReason(user);
-  const roleLocked = lockReason !== null || isSelf;
+  const groupsDecide = groupsDecideRole(user);
+  const roleLocked = groupsDecide || isSelf;
 
   // Only what changed is sent: an empty text clears the name or the address, a field left out stays as it is.
   const request: UpdateUserRequest = {
@@ -284,8 +308,9 @@ export function ChangeUserDialog({
           placeholder={t`No role`}
           isDisabled={roleLocked}
           hint={
-            lockReason ??
-            (isSelf ? (
+            groupsDecide ? (
+              <RoleLockReason user={user} />
+            ) : isSelf ? (
               <Trans>You cannot change your own role. Another administrator can.</Trans>
             ) : user.roleFrom === "Provisioned" ? (
               <Trans>
@@ -294,7 +319,7 @@ export function ChangeUserDialog({
               </Trans>
             ) : user.role === null ? (
               <Trans>The account has no role yet, so it reaches nothing.</Trans>
-            ) : undefined)
+            ) : undefined
           }
           onChange={(key) => {
             if (key !== null) {

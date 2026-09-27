@@ -5,6 +5,7 @@
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/ui/Button";
@@ -26,10 +27,9 @@ import { fieldErrors, roleLabel } from "./userView";
 // How long typing rests before the directory is asked, so a group name is not searched letter by letter.
 const SEARCH_DELAY_MS = 300;
 
-// The directory sign-in as configuration sets it up: which groups give which role, read-only until the settings page
-// takes it over, with a search for groups and a check of what a sign-in would give a user. Both ask the directory with
-// DDT's bind account; the server answers 409 while the directory is off or incomplete and 502 when it cannot reach it,
-// with the reason as the message.
+// The directory sign-in as the Sign-in page sets it up: which groups give which role, with a search for groups and a
+// check of what a sign-in would give a user. Both ask the directory with DDT's bind account; the server answers 409
+// while the directory is off or incomplete and 502 when it cannot reach it, with the reason as the message.
 export function DirectoryPanel() {
   const directory = useQuery(directoryQuery);
 
@@ -49,8 +49,11 @@ export function DirectoryPanel() {
       ) : (
         <p className="max-w-[80ch] text-ink-2">
           <Trans>
-            Sign-in through a directory is off. It is turned on and set up in the configuration,
-            under DDT:Ldap, until the settings page takes it over.
+            Sign-in through a directory is off. It is turned on and set up on the{" "}
+            <Link to="/admin/sign-in" className="font-semibold text-ink underline">
+              Sign-in
+            </Link>{" "}
+            page.
           </Trans>
         </p>
       )}
@@ -74,14 +77,21 @@ function DirectoryOn({ directory }: { directory: DirectoryView }) {
         {map.length === 0 ? (
           <Trans>
             No group is mapped to a role, so administrators choose the role of each directory
-            account on this page, and a new one reaches nothing until it has one. The map is set in
-            the configuration, DDT:Ldap:GroupRoleMap, until the settings page takes it over.
+            account on this page, and a new one reaches nothing until it has one. The map is set on
+            the{" "}
+            <Link to="/admin/sign-in" className="font-semibold text-ink underline">
+              Sign-in
+            </Link>{" "}
+            page.
           </Trans>
         ) : (
           <Trans>
             At each sign-in, a directory account gets the highest role that its groups below give
-            it, and an account in none of them cannot sign in. The map is set in the configuration,
-            DDT:Ldap:GroupRoleMap, until the settings page takes it over.
+            it, and an account in none of them cannot sign in. The map is set on the{" "}
+            <Link to="/admin/sign-in" className="font-semibold text-ink underline">
+              Sign-in
+            </Link>{" "}
+            page.
           </Trans>
         )}
       </p>

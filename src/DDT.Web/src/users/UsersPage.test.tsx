@@ -353,7 +353,11 @@ describe("UsersPage", () => {
     expect(within(dialog).getByRole("textbox", { name: "Name" })).toBeDisabled();
     expect(within(dialog).getByRole("textbox", { name: "Email address" })).toBeDisabled();
     expect(dialog).toHaveTextContent(
-      "The role of j.berger comes from its directory groups, through DDT:Ldap:GroupRoleMap, at each sign-in. Change its groups in the directory, or the map.",
+      "The role of j.berger comes from its directory groups, through the map on the Sign-in page, at each sign-in. Change its groups in the directory, or the map.",
+    );
+    expect(within(dialog).getByRole("link", { name: "Sign-in" })).toHaveAttribute(
+      "href",
+      "/admin/sign-in",
     );
     expect(within(dialog).getByRole("button", { name: /Role$/ })).toBeDisabled();
   });
@@ -457,10 +461,13 @@ describe("UsersPage", () => {
     });
   });
 
-  it("says when sign-in through a directory is off", async () => {
+  it("says when sign-in through a directory is off, and where it is turned on", async () => {
     serve({});
 
-    expect(await screen.findByText(/^Sign-in through a directory is off\./)).toBeInTheDocument();
+    expect(await screen.findByText(/^Sign-in through a directory is off\./)).toHaveTextContent(
+      "Sign-in through a directory is off. It is turned on and set up on the Sign-in page.",
+    );
+    expect(screen.getByRole("link", { name: "Sign-in" })).toHaveAttribute("href", "/admin/sign-in");
     expect(
       screen.queryByRole("searchbox", { name: "Find a directory group" }),
     ).not.toBeInTheDocument();
@@ -492,6 +499,9 @@ describe("UsersPage", () => {
     );
     expect(map).toHaveTextContent(
       "Not found in the directoryCN=Gone,OU=Groups,DC=corp,DC=exampleViewer",
+    );
+    expect(screen.getByText(/^At each sign-in, a directory account/)).toHaveTextContent(
+      "an account in none of them cannot sign in. The map is set on the Sign-in page.",
     );
 
     vi.useFakeTimers({ shouldAdvanceTime: true });

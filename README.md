@@ -2002,8 +2002,16 @@ with the Ubuntu 24.04 and Debian 13 cloud images:
   serial console, so it was most likely waiting for the network.
 - A power cut during the write could not be timed: the write took seconds.
 
-Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: M6.5 the real UI, as
-the web UI and the agent's console in Windows PE are concept UIs until then; M7 the task sequence
+The real UI (M6.5) is built for the web: every page on one design system, Switchgear, in English
+and German and live over the hub, with the settings moved from configuration onto the pages of
+what they configure, API tokens, users and roles with the group maps of the directory and of
+single sign-on, and the Windows PE drivers of the boot image. The pages are tested with Vitest and
+Testing Library, with axe checks, and were used in a browser against a development host with the
+`web` and `pxe` roles. They have not yet watched a deployment on a machine, and no boot image has
+been built with drivers yet. The agent's console in Windows PE is still the text console.
+
+Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: the rest of M6.5,
+the graphical console in Windows PE; M7 the task sequence
 flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
 installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
 lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,

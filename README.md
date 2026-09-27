@@ -84,9 +84,12 @@ src/
   DDT.Server/              EF Core, image storage, minimal API endpoints, SignalR hubs
   DDT.Host/                ASP.NET Core entry point. Registers roles, serves the API, hubs and SPA
   DDT.Web/                 Vite + React + TypeScript SPA: React Aria components, Tailwind CSS, Lingui
-  DDT.Design/              design tokens, the one source of the look, and the generator for the theme
+  DDT.Design/              design tokens, the one source of the look, and the generator for the web's
+                           theme and the console's resources
   DDT.Agent/               NativeAOT agent for Windows PE, and its temporary service in Windows
   DDT.ConsoleProtocol/     messages between the agent and its graphical console, source-generated JSON
+  DDT.MachineConsole/      ddt-console.exe, the graphical console in Windows PE: Avalonia, NativeAOT,
+                           software rendering, English and German
   DDT.AppHost/             Aspire orchestration, development only
   DDT.ServiceDefaults/     OpenTelemetry, health checks, service discovery
 tests/
@@ -95,12 +98,14 @@ tests/
   DDT.Pxe.Tests/
   DDT.Server.Tests/
   DDT.Agent.Tests/
+  DDT.MachineConsole.Tests/  the console's screens drawn headless, its catalogs, and a stand-in agent
   DDT.E2E/                 the real host and the published agent in dry runs, not in the default run
 build/
   Dockerfile
   compose.yaml
   Build-BootImage.ps1      WinPE boot files, BCD and both boot managers, laid out for the pxe role
   Publish-Agent.ps1        DDT.Agent as one NativeAOT executable for Windows PE
+  Publish-Console.ps1      ddt-console.exe and the two libraries it draws with, for Windows PE
   New-TestVm.ps1           Hyper-V Generation 2 test machine with Secure Boot on
   Start-DevHost.ps1        DDT from source with the pxe role, reachable from the test machine
 ```
@@ -232,11 +237,12 @@ with a row of pages, and every setting sits on the page of the thing it configur
   only says so to anyone else, and reads nothing from the server.
 - **Languages.** English and German. The UI starts in the first language of the browser that it
   has, else English, and the account menu changes it for that browser. The server's refusals and
-  validation messages carry codes, so they are shown in the chosen language too. The agent's
-  console in Windows PE is English.
+  validation messages carry codes, so they are shown in the chosen language too. The graphical
+  console in Windows PE has English and German catalogs of its own, see
+  [The console at the machine](#the-console-at-the-machine).
 - **Look.** Light and dark, following the system unless the account menu picks one. The look,
   Switchgear, is defined once in `src/DDT.Design/tokens.json`, the source of the web's theme and
-  later of the agent's console in Windows PE.
+  of the graphical console in Windows PE.
 - **Keyboard and phone.** Ctrl K opens a search over the pages, machines, task sequences and OS
   images. Every control works from the keyboard, and the pages fit a phone's width, for approving a
   machine or watching a run away from a desk.
@@ -756,7 +762,7 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 | `x64/bootmgfw_ex.efi` | Boot manager signed by Windows UEFI CA 2023 |
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
-| `Boot/boot.wim` | Windows PE with `DDT.Agent`, and PowerShell unless left out |
+| `Boot/boot.wim` | Windows PE with `DDT.Agent`, its graphical console with `-ConsolePath`, and PowerShell unless left out |
 | `Boot/ddt-boot-image.json` | What the build holds, for the boot image page, see below |
 | `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
 | `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
@@ -928,8 +934,16 @@ state after every change, the log lines as it writes them, starting with the new
 before the console connected, and one question at a time. The pipe's name holds a random part, and
 only a process of the agent's own account can open it. The console has 30 seconds to connect, and
 then has to say that it speaks the agent's version of the protocol in `src/DDT.ConsoleProtocol`.
-`Build-BootImage.ps1` does not add the console yet, and the graphical console itself is not built
-yet.
+
+```bash
+.\build\Publish-Console.ps1
+```
+
+This publishes the graphical console, `src/DDT.MachineConsole`, to `artifacts\console`:
+`ddt-console.exe`, about 16 MB, and beside it `libSkiaSharp.dll` and `libHarfBuzzSharp.dll`, the
+libraries it draws with, 29 MB in all. Like the agent it needs the Visual C++ build tools. Build the
+boot image with `-ConsolePath artifacts\console` to put the three next to the agent in `X:\DDT`,
+which adds about 12 MB to `boot.wim`.
 
 The text console stays underneath and gets every log line all the same. It takes over for the rest
 of the agent's run, with a warning that says why, when the graphical console cannot start, does not
@@ -951,6 +965,35 @@ then `ERASE` before a disk is erased and `ANYWAY` before a disk image is written
 Secure Boot would not start. On the graphical console a sequence and a disk are chosen by what they
 are, not by number, but the two words are still typed, and the agent checks every answer itself. An
 approval or an assignment on the web takes an open question away on either console.
+
+The graphical console is Avalonia, compiled ahead of time like the agent, and draws in software
+alone: Windows PE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP, and on a development
+computer the console loads none of them either. It has the web's look, Switchgear, from the same
+`src/DDT.Design/tokens.json`, and carries its own Archivo and Martian Mono, as Windows PE lacks even
+Segoe UI. It connects to the agent's pipe before it opens its window, and ends at once when no agent
+is there or the agent refuses it, so the text console stays in view. Otherwise it fills the screen
+with one screen for what the agent does: starting and connecting, with how far a failed request got,
+the agent's own words about it and what to check; waiting for authorization, with the sign-in and
+what tells the machine apart on the Machines page; waiting for a sequence; each question; and the
+run, with the sequence rail of its steps, the running step and its percent, a restart, or how the
+run ended and what to do next. The layout scales with the size of the screen in pixels rather than
+its DPI, from 1024 × 768 up.
+
+It works from the keyboard, and with a mouse or touch too. The field or list a question needs has
+the focus, Enter sends, and Esc goes back where the question allows it: to the list of sequences,
+or from the password to the user name. The keys for `ERASE` and `ANYWAY` work only once the word is
+typed exactly, and send what was typed. F1 opens the log, F2 the machine's details, F3 the licences,
+with DDT's attribution notice and every licence text the console carries, F4 switches between the
+dark and the light theme, and F5 between English and German. The console starts dark, in the
+language of Windows PE's user interface, which is English in the image copype makes. Everything the
+console says comes from its own catalogs in `src/DDT.MachineConsole/Locales`, in the web's PO
+format; what the agent sends, such as its problems, the step names and the log, shows as it was
+sent.
+
+When the agent ends, or its pipe breaks, the console keeps the last screen and says so. F9 closes it,
+which leaves the command prompt behind it, and in Windows PE F8 restarts the machine after asking. It
+restarts a machine only when the system drive is `X:`, Windows PE's `MiniNT` key is set and
+`wpeutil.exe` is there, so a console started on a development computer never restarts it.
 
 ### Registration and authorization
 
@@ -2042,15 +2085,19 @@ what they configure, API tokens, users and roles with the group maps of the dire
 single sign-on, and the Windows PE drivers of the boot image. The pages are tested with Vitest and
 Testing Library, with axe checks, and were used in a browser against a development host with the
 `web` and `pxe` roles. They have not yet watched a deployment on a machine, and no boot image has
-been built with drivers yet. The agent's console in Windows PE is still the text console, but the
-agent now asks and shows through a seam the graphical console will fill, see
+been built with drivers yet. In Windows PE the agent asks and shows through a seam, see
 [The console at the machine](#the-console-at-the-machine): it starts `ddt-console.exe` where there
 is one, feeds it over a named pipe, and falls back to the text console. That is tested with a
 console in the test process over a real pipe, and the published agent fed a stand-in console
-process in a dry run and carried on with the text console when that process crashed.
+process in a dry run and carried on with the text console when that process crashed. The graphical
+console itself, `ddt-console.exe`, is built: its screens are drawn by Avalonia's headless platform
+in both themes and both languages in its tests, a stand-in agent drives it over a real pipe through
+a sign-in and a run, and the published console ran on a development computer against a stand-in
+agent, drawing in software. It has not yet run in Windows PE, and no boot image has been built with
+it yet.
 
 Later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: the rest of M6.5,
-the graphical console in Windows PE; M7 the task sequence
+the graphical console's first runs in Windows PE; M7 the task sequence
 flow builder and the sequence model it shows; M8 the Linux phase, in which a run goes on in the
 installed Linux; M9 applications and Windows configuration; M10 golden images and the machine
 lifecycle; M11 reach beyond netboot and a single site; M12 the documentation of the whole project,

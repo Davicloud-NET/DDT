@@ -1,0 +1,197 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The console's one window: the frame with the machine and the connection on top, the screen of the stage or the
+     question in the middle, and the machine's network and the keys that work everywhere at the bottom. The log, the
+     machine's details and the licences open over the screen. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DDT.MachineConsole.ViewModels"
+        xmlns:v="using:DDT.MachineConsole.Views"
+        xmlns:c="using:DDT.MachineConsole.Controls"
+        x:Class="DDT.MachineConsole.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="DDT"
+        Width="1280"
+        Height="800"
+        MinWidth="640"
+        MinHeight="480"
+        TextOptions.TextRenderingMode="Antialias">
+  <c:ScreenScaler>
+    <Grid RowDefinitions="56,Auto,*,50">
+
+      <!-- The frame. -->
+      <Border Grid.Row="0" Classes="frame" Padding="28,0">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <v:Logo Width="26" Height="26" />
+            <TextBlock Classes="wordmark" Text="DDT" Foreground="{DynamicResource SgFrameText}" VerticalAlignment="Center" />
+            <Rectangle Width="1" Height="24" Margin="6,0" Fill="{DynamicResource SgFrameLine}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" ClipToBounds="True">
+            <TextBlock Name="MachineLabel"
+                       Text="{Binding MachineLabel}"
+                       FontFamily="{DynamicResource SgTypeHeadingFamily}"
+                       FontSize="22"
+                       TextWrapping="NoWrap"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource SgFrameText}"
+                       VerticalAlignment="Center" />
+            <c:StateTag Value="{Binding DryRunTag}" IsVisible="{Binding IsDryRun}" />
+          </StackPanel>
+          <TextBlock Grid.Column="2"
+                     Name="Connection"
+                     Margin="16,0,0,0"
+                     Text="{Binding Connection}"
+                     FontSize="15"
+                     TextWrapping="NoWrap"
+                     Foreground="{DynamicResource SgFrameMuted}"
+                     VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <!-- Once the pipe has ended: the last state stays below, and the way on is here. -->
+      <Border Grid.Row="1" Classes="raised" Name="EndedBand" IsVisible="{Binding IsEnded}" Margin="36,20,36,0" Padding="22,16">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4" VerticalAlignment="Center">
+            <TextBlock Classes="heading" Text="{Binding EndedTitle}" />
+            <TextBlock Classes="body ink2" Text="{Binding EndedText}" />
+            <TextBlock Classes="small muted" Text="{Binding RestartUnavailable}" IsVisible="{Binding !CanRestart}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="20,0,0,0">
+            <Button Name="CloseConsole" Command="{Binding CloseCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:KeyCap Key="F9" />
+                <TextBlock Text="{Binding CloseLabel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Name="Restart" Classes="primary" Command="{Binding RestartCommand}" IsVisible="{Binding CanRestart}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:KeyCap Key="F8" />
+                <TextBlock Text="{Binding RestartLabel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- The screen of the stage, or the question. -->
+      <ContentControl Grid.Row="2" Name="Screen" Content="{Binding Screen}" Margin="36,20,36,20">
+        <ContentControl.DataTemplates>
+          <DataTemplate DataType="vm:ConnectionViewModel">
+            <v:ConnectionView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:AuthorizationViewModel">
+            <v:AuthorizationView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:WaitingViewModel">
+            <v:WaitingView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:RunViewModel">
+            <v:RunView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:SequenceChoiceViewModel">
+            <v:SequenceChoiceView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:DiskChoiceViewModel">
+            <v:DiskChoiceView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:ComputerNameViewModel">
+            <v:ComputerNameView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:EraseViewModel">
+            <v:EraseView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:SecureBootViewModel">
+            <v:SecureBootView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
+      <!-- The log, the machine's details or the licences, over the screen. -->
+      <Border Grid.Row="1" Grid.RowSpan="2" Classes="backdrop" IsVisible="{Binding HasOverlay}" />
+      <Border Grid.Row="1" Grid.RowSpan="2" Classes="overlay" Name="Overlay" IsVisible="{Binding HasOverlay}" Margin="24,18,24,18">
+        <ContentControl Content="{Binding OverlayContent}">
+          <ContentControl.DataTemplates>
+            <DataTemplate DataType="vm:LogViewModel">
+              <v:LogView />
+            </DataTemplate>
+            <DataTemplate DataType="vm:MachineViewModel">
+              <v:MachineView />
+            </DataTemplate>
+            <DataTemplate DataType="vm:LicencesViewModel">
+              <v:LicencesView />
+            </DataTemplate>
+          </ContentControl.DataTemplates>
+        </ContentControl>
+      </Border>
+
+      <!-- The footer. -->
+      <Border Grid.Row="3" Classes="footer">
+        <Grid ColumnDefinitions="*,Auto">
+          <ItemsControl ItemsSource="{Binding FooterFacts}" ClipToBounds="True" Margin="8,0,0,0">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:Fact">
+                <Border BorderBrush="{DynamicResource SgLineSoft}" BorderThickness="0,0,1,0" Padding="20,0" Height="49">
+                  <TextBlock Text="{Binding Value}"
+                             Classes="ink2"
+                             Classes.footerData="{Binding Mono}"
+                             FontSize="14"
+                             TextWrapping="NoWrap"
+                             VerticalAlignment="Center" />
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ItemsControl Grid.Column="1" ItemsSource="{Binding Keys}" Margin="0,0,20,0" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:KeyHint">
+                <Button Classes="footerKey" Classes.active="{Binding IsActive}" Command="{Binding Command}" Focusable="False">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <c:KeyCap Key="{Binding Key}" />
+                    <TextBlock Text="{Binding Label}" TextWrapping="NoWrap" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Grid>
+      </Border>
+
+      <!-- Asked before the console restarts the machine. -->
+      <Border Grid.Row="0" Grid.RowSpan="4" Classes="backdrop" IsVisible="{Binding ConfirmingRestart}">
+        <Border Classes="overlay" Width="520" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <StackPanel Spacing="16">
+            <TextBlock Classes="heading" Text="{Binding ConfirmTitle}" />
+            <TextBlock Classes="body ink2" Text="{Binding ConfirmText}" />
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+              <Button Command="{Binding CancelRestartCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <c:KeyCap Key="Esc" />
+                  <TextBlock Text="{Binding CancelLabel}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="primary" Command="{Binding ConfirmRestartCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <c:KeyCap Key="Enter" />
+                  <TextBlock Text="{Binding ConfirmLabel}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Border>
+    </Grid>
+  </c:ScreenScaler>
+</Window>

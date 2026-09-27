@@ -16,6 +16,7 @@
     <Project Path="src/DDT.Contracts/DDT.Contracts.csproj" />
     <Project Path="src/DDT.Core/DDT.Core.csproj" />
     <Project Path="src/DDT.Host/DDT.Host.csproj" />
+    <Project Path="src/DDT.MachineConsole/DDT.MachineConsole.csproj" />
     <Project Path="src/DDT.Protocols/DDT.Protocols.csproj" />
     <Project Path="src/DDT.Pxe/DDT.Pxe.csproj" />
     <Project Path="src/DDT.Server/DDT.Server.csproj" />
@@ -29,6 +30,7 @@
     <Project Path="tests/DDT.Agent.Tests/DDT.Agent.Tests.csproj" />
     <Project Path="tests/DDT.Core.Tests/DDT.Core.Tests.csproj" />
     <Project Path="tests/DDT.E2E/DDT.E2E.csproj" />
+    <Project Path="tests/DDT.MachineConsole.Tests/DDT.MachineConsole.Tests.csproj" />
     <Project Path="tests/DDT.Protocols.Tests/DDT.Protocols.Tests.csproj" />
     <Project Path="tests/DDT.Pxe.Tests/DDT.Pxe.Tests.csproj" />
     <Project Path="tests/DDT.Server.Tests/DDT.Server.Tests.csproj" />

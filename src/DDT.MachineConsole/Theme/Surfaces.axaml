@@ -1,0 +1,187 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Surfaces and marks. Surfaces get lighter as they come forward: page, panel, overlay; a well is one shade below its
+     panel. Edges are hairlines, and only overlays cast a shadow. Signal colours mark state, nothing else. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:DDT.MachineConsole.Controls">
+
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource SgPanel}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgEdgePanel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
+  </Style>
+  <Style Selector="Border.raised">
+    <Setter Property="Background" Value="{DynamicResource SgRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgEdgeOverlay}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
+  </Style>
+  <Style Selector="Border.overlay">
+    <Setter Property="Background" Value="{DynamicResource SgRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgEdgeOverlay}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource SgOverlayShadow}" />
+  </Style>
+  <Style Selector="Border.well">
+    <Setter Property="Background" Value="{DynamicResource SgWell}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusPanel}" />
+  </Style>
+  <Style Selector="Border.console">
+    <Setter Property="Background" Value="{DynamicResource SgConsole}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusPanel}" />
+  </Style>
+  <Style Selector="Border.backdrop">
+    <Setter Property="Background" Value="{DynamicResource SgBackdrop}" />
+  </Style>
+  <Style Selector="Border.frame">
+    <Setter Property="Background" Value="{DynamicResource SgFrame}" />
+  </Style>
+  <Style Selector="Border.footer">
+    <Setter Property="Background" Value="{DynamicResource SgPanel}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgLineSoft}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+
+  <Style Selector="TextBlock.footerData">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeDataFamily}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="Rectangle.phaseLine">
+    <Setter Property="Fill" Value="{DynamicResource SgControl}" />
+  </Style>
+  <Style Selector="Rectangle.divider">
+    <Setter Property="Fill" Value="{DynamicResource SgLineSoft}" />
+  </Style>
+
+  <!-- State tags: printed, not raised. -->
+  <Style Selector="c|StateTag">
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusTag}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="c|StateTag.run">
+    <Setter Property="Background" Value="{DynamicResource SgRun}" />
+  </Style>
+  <Style Selector="c|StateTag.run TextBlock">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="c|StateTag.attention">
+    <Setter Property="Background" Value="{DynamicResource SgAttention}" />
+  </Style>
+  <Style Selector="c|StateTag.attention TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SgOnAttention}" />
+  </Style>
+  <Style Selector="c|StateTag.fail">
+    <Setter Property="Background" Value="{DynamicResource SgFail}" />
+  </Style>
+  <Style Selector="c|StateTag.fail TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SgOnFail}" />
+  </Style>
+  <Style Selector="c|StateTag.ok">
+    <Setter Property="BorderBrush" Value="{DynamicResource SgOkText}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <Style Selector="c|StateTag.ok TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SgOkText}" />
+  </Style>
+  <Style Selector="c|StateTag.idle">
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="c|StateTag.idle TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
+  </Style>
+
+  <!-- Key caps. -->
+  <Style Selector="c|KeyCap">
+    <Setter Property="MinWidth" Value="26" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Background" Value="{DynamicResource SgRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="c|KeyCap TextBlock.keyCap">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </Style>
+  <Style Selector="Button.primary c|KeyCap">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgOnKeyPrimary}" />
+  </Style>
+  <Style Selector="Button.primary c|KeyCap TextBlock.keyCap">
+    <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
+  </Style>
+  <Style Selector="Button.danger c|KeyCap">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgFailText}" />
+  </Style>
+  <Style Selector="Button.danger c|KeyCap TextBlock.keyCap">
+    <Setter Property="Foreground" Value="{DynamicResource SgFailText}" />
+  </Style>
+  <Style Selector="Button.danger:not(:disabled) c|KeyCap">
+    <Setter Property="BorderBrush" Value="{DynamicResource SgOnFail}" />
+  </Style>
+  <Style Selector="Button.danger:not(:disabled) c|KeyCap TextBlock.keyCap">
+    <Setter Property="Foreground" Value="{DynamicResource SgOnFail}" />
+  </Style>
+  <Style Selector="Button.footerKey.active c|KeyCap">
+    <Setter Property="Background" Value="{DynamicResource SgKeyPrimary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgKeyPrimary}" />
+  </Style>
+  <Style Selector="Button.footerKey.active c|KeyCap TextBlock.keyCap">
+    <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
+  </Style>
+
+  <!-- The sequence rail. -->
+  <Style Selector="c|RailModule">
+    <Setter Property="Trough" Value="{DynamicResource SgWell}" />
+    <Setter Property="Edge" Value="{DynamicResource SgRailEdge}" />
+    <Setter Property="Done" Value="{DynamicResource SgRailDone}" />
+    <Setter Property="Run" Value="{DynamicResource SgRun}" />
+    <Setter Property="RunSoft" Value="{DynamicResource SgRunSoft}" />
+    <Setter Property="Stripe" Value="{DynamicResource SgRailStripe}" />
+    <Setter Property="Fail" Value="{DynamicResource SgFail}" />
+    <Setter Property="FailText" Value="{DynamicResource SgFailText}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.numeral">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.numeral.running">
+    <Setter Property="Foreground" Value="{DynamicResource SgRunText}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.numeral.waiting">
+    <Setter Property="Foreground" Value="{DynamicResource SgMuted}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.numeral.failed">
+    <Setter Property="Foreground" Value="{DynamicResource SgFailText}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.step">
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.step.waiting">
+    <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.step.running">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
+  </Style>
+
+  <Style Selector="c|HazardBand">
+    <Setter Property="Ink" Value="{DynamicResource SgInk}" />
+    <Setter Property="Attention" Value="{DynamicResource SgAttention}" />
+    <Setter Property="Height" Value="12" />
+  </Style>
+</Styles>

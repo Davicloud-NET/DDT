@@ -1,0 +1,88 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- DDT's attribution notice and licence, the software by others in the console, and every licence text it carries. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.LicencesView"
+             x:DataType="vm:LicencesViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,18,22,22" RowSpacing="14">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Name="Title" Classes="heading" Text="{Binding Title}" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="quiet" Command="{Binding CloseCommand}" Focusable="False">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding CloseLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="380,*" ColumnSpacing="20">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="14" Margin="0,0,10,0">
+          <StackPanel Spacing="4">
+            <TextBlock Name="Attribution" Classes="label" Text="{Binding Attribution}" />
+            <TextBlock Classes="small ink2" Text="{Binding Warranty}" />
+            <TextBlock Classes="small ink2" Text="{Binding Licence}" />
+          </StackPanel>
+          <StackPanel Spacing="8">
+            <TextBlock Classes="label muted" Text="{Binding OthersTitle}" />
+            <ItemsControl ItemsSource="{Binding Others}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:Fact">
+                  <StackPanel Margin="0,0,0,6">
+                    <TextBlock Classes="body" FontFamily="{DynamicResource SgTypeLabelFamily}" Text="{Binding Label}" />
+                    <TextBlock Classes="small muted" Text="{Binding Value}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="label muted" Text="{Binding DocumentsTitle}" VerticalAlignment="Center" />
+          <TextBlock Classes="small muted" Text="{Binding DocumentsHint}" VerticalAlignment="Center" />
+        </StackPanel>
+        <ListBox Grid.Row="1"
+                 Name="Documents"
+                 ItemsSource="{Binding Documents}"
+                 SelectedItem="{Binding Selected}"
+                 MaxHeight="150">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="10,4" />
+              <Setter Property="Margin" Value="0,0,0,2" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="vm:LegalDocument">
+              <TextBlock Classes="body" Text="{Binding Title}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Border Grid.Row="2" Classes="well" Padding="4">
+          <ScrollViewer Name="Text" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Lines}" Margin="12,8">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="small" Margin="0,0,0,8" Text="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,60 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The sign-in, one field at a time as the agent asks: user name, password (masked), authenticator code. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.SignInView"
+             x:DataType="vm:SignInViewModel">
+  <StackPanel Spacing="16">
+    <StackPanel Spacing="6">
+      <TextBlock Classes="heading" Text="{Binding Title}" />
+      <TextBlock Classes="body ink2" Text="{Binding Intro}" />
+    </StackPanel>
+
+    <Border Classes="well" Padding="14,10" IsVisible="{Binding HasError}">
+      <TextBlock Name="Error" Classes="body failText" Text="{Binding Error}" />
+    </Border>
+
+    <StackPanel Spacing="6" IsVisible="{Binding AsksUserName}">
+      <TextBlock Classes="label" Text="{Binding UserNameLabel}" />
+      <TextBox Name="UserNameBox" Text="{Binding UserName}" IsEnabled="{Binding IsEditable}" />
+    </StackPanel>
+
+    <TextBlock Classes="body ink2" Text="{Binding SignedInAs}" IsVisible="{Binding ShowsUserName}" />
+
+    <StackPanel Spacing="6" IsVisible="{Binding AsksPassword}">
+      <TextBlock Classes="label" Text="{Binding PasswordLabel}" />
+      <TextBox Name="PasswordBox" PasswordChar="•" Text="{Binding Password}" IsEnabled="{Binding IsEditable}" />
+      <TextBlock Classes="small muted" Text="{Binding KeyboardHint}" IsVisible="{Binding HasKeyboardLayout}" />
+    </StackPanel>
+
+    <StackPanel Spacing="6" IsVisible="{Binding AsksCode}">
+      <TextBlock Classes="label" Text="{Binding CodeLabel}" />
+      <TextBox Name="CodeBox" Classes="mono" MaxLength="10" Text="{Binding Code}" IsEnabled="{Binding IsEditable}" />
+    </StackPanel>
+
+    <StackPanel Spacing="8" Margin="0,4,0,0">
+      <Button Name="Submit" Classes="primary" IsDefault="True" HorizontalAlignment="Stretch" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <Button Name="Back"
+              Classes="quiet"
+              IsCancel="True"
+              HorizontalAlignment="Left"
+              Command="{Binding BackCommand}"
+              IsVisible="{Binding CanGoBack}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

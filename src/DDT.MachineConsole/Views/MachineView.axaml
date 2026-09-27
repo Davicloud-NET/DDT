@@ -1,0 +1,80 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Everything the agent knows about the machine and itself. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.MachineView"
+             x:DataType="vm:MachineViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,18,22,22" RowSpacing="14">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Name="Title" Classes="heading" Text="{Binding Title}" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="quiet" Command="{Binding CloseCommand}" Focusable="False">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding CloseLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <ScrollViewer Name="Scroller" Grid.Row="1" Focusable="True" HorizontalScrollBarVisibility="Disabled">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="20" Margin="0,0,12,0">
+        <StackPanel Spacing="16">
+          <Border Classes="panel" Padding="18,14">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="{Binding IdentityTitle}" />
+              <ItemsControl ItemsSource="{Binding Identity}" ItemTemplate="{StaticResource FactLine}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="18,14">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="{Binding NetworkTitle}" />
+              <ItemsControl ItemsSource="{Binding Network}" ItemTemplate="{StaticResource FactLine}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="16">
+          <Border Classes="panel" Padding="18,14">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="{Binding DisksTitle}" />
+              <TextBlock Classes="body muted" Text="{Binding NotRead}" IsVisible="{Binding DisksNotRead}" />
+              <TextBlock Classes="body muted" Text="{Binding NoDisks}" IsVisible="{Binding HasNoDisks}" />
+              <ItemsControl ItemsSource="{Binding Disks}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:DiskItem">
+                    <Grid ColumnDefinitions="70,*,Auto" ColumnSpacing="10" Margin="0,0,0,6">
+                      <TextBlock Classes="body muted" Text="{Binding Number}" />
+                      <StackPanel Grid.Column="1">
+                        <TextBlock Classes="body" Text="{Binding Model}" />
+                        <TextBlock Classes="small muted" Text="{Binding Partitions}" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <TextBlock Classes="body" Text="{Binding Size}" HorizontalAlignment="Right" />
+                        <TextBlock Classes="small muted" Text="{Binding Bus}" HorizontalAlignment="Right" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="18,14">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="{Binding FirmwareTitle}" />
+              <ItemsControl ItemsSource="{Binding Firmware}" ItemTemplate="{StaticResource FactLine}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="18,14">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="{Binding AgentTitle}" />
+              <ItemsControl ItemsSource="{Binding Agent}" ItemTemplate="{StaticResource FactLine}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

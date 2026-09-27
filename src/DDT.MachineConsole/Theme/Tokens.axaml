@@ -1,0 +1,287 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Written by src/DDT.Design/generate.mjs from src/DDT.Design/tokens.json. Change those and run npm run tokens. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="SgFrameColor">#FF2A2E31</Color>
+      <SolidColorBrush x:Key="SgFrame" Color="#FF2A2E31" />
+      <Color x:Key="SgFrameTextColor">#FFE6E9E6</Color>
+      <SolidColorBrush x:Key="SgFrameText" Color="#FFE6E9E6" />
+      <Color x:Key="SgFrameMutedColor">#FFAAB1B3</Color>
+      <SolidColorBrush x:Key="SgFrameMuted" Color="#FFAAB1B3" />
+      <Color x:Key="SgFrameLineColor">#FF3C4245</Color>
+      <SolidColorBrush x:Key="SgFrameLine" Color="#FF3C4245" />
+      <Color x:Key="SgFrameHoverColor">#FF34393C</Color>
+      <SolidColorBrush x:Key="SgFrameHover" Color="#FF34393C" />
+      <Color x:Key="SgFrameLogoColor">#FFF08A8A</Color>
+      <SolidColorBrush x:Key="SgFrameLogo" Color="#FFF08A8A" />
+      <Color x:Key="SgPageColor">#FFDCDFDB</Color>
+      <SolidColorBrush x:Key="SgPage" Color="#FFDCDFDB" />
+      <Color x:Key="SgPanelColor">#FFF7F8F6</Color>
+      <SolidColorBrush x:Key="SgPanel" Color="#FFF7F8F6" />
+      <Color x:Key="SgRaisedColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgRaised" Color="#FFFFFFFF" />
+      <Color x:Key="SgWellColor">#FFECEEEA</Color>
+      <SolidColorBrush x:Key="SgWell" Color="#FFECEEEA" />
+      <Color x:Key="SgFieldColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgField" Color="#FFFFFFFF" />
+      <Color x:Key="SgHoverColor">#FFEEF0EC</Color>
+      <SolidColorBrush x:Key="SgHover" Color="#FFEEF0EC" />
+      <Color x:Key="SgSelectedColor">#FFE6ECF4</Color>
+      <SolidColorBrush x:Key="SgSelected" Color="#FFE6ECF4" />
+      <Color x:Key="SgLineColor">#FFCCD1CD</Color>
+      <SolidColorBrush x:Key="SgLine" Color="#FFCCD1CD" />
+      <Color x:Key="SgLineSoftColor">#FFE4E7E3</Color>
+      <SolidColorBrush x:Key="SgLineSoft" Color="#FFE4E7E3" />
+      <Color x:Key="SgControlColor">#FF7D8588</Color>
+      <SolidColorBrush x:Key="SgControl" Color="#FF7D8588" />
+      <Color x:Key="SgInkColor">#FF1F2426</Color>
+      <SolidColorBrush x:Key="SgInk" Color="#FF1F2426" />
+      <Color x:Key="SgInk2Color">#FF454D51</Color>
+      <SolidColorBrush x:Key="SgInk2" Color="#FF454D51" />
+      <Color x:Key="SgMutedColor">#FF566064</Color>
+      <SolidColorBrush x:Key="SgMuted" Color="#FF566064" />
+      <Color x:Key="SgPlaceholderColor">#FF6B7478</Color>
+      <SolidColorBrush x:Key="SgPlaceholder" Color="#FF6B7478" />
+      <Color x:Key="SgInverseColor">#FFF7F8F6</Color>
+      <SolidColorBrush x:Key="SgInverse" Color="#FFF7F8F6" />
+      <Color x:Key="SgRunColor">#FF1F5AA6</Color>
+      <SolidColorBrush x:Key="SgRun" Color="#FF1F5AA6" />
+      <Color x:Key="SgRunTextColor">#FF1F5AA6</Color>
+      <SolidColorBrush x:Key="SgRunText" Color="#FF1F5AA6" />
+      <Color x:Key="SgRunSoftColor">#141F5AA6</Color>
+      <SolidColorBrush x:Key="SgRunSoft" Color="#141F5AA6" />
+      <Color x:Key="SgAttentionColor">#FFF2A900</Color>
+      <SolidColorBrush x:Key="SgAttention" Color="#FFF2A900" />
+      <Color x:Key="SgOnAttentionColor">#FF1F2426</Color>
+      <SolidColorBrush x:Key="SgOnAttention" Color="#FF1F2426" />
+      <Color x:Key="SgAttentionTextColor">#FF7A5300</Color>
+      <SolidColorBrush x:Key="SgAttentionText" Color="#FF7A5300" />
+      <Color x:Key="SgFailColor">#FFC22A2F</Color>
+      <SolidColorBrush x:Key="SgFail" Color="#FFC22A2F" />
+      <Color x:Key="SgOnFailColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgOnFail" Color="#FFFFFFFF" />
+      <Color x:Key="SgFailTextColor">#FFB3262B</Color>
+      <SolidColorBrush x:Key="SgFailText" Color="#FFB3262B" />
+      <Color x:Key="SgOkColor">#FF22774D</Color>
+      <SolidColorBrush x:Key="SgOk" Color="#FF22774D" />
+      <Color x:Key="SgOnOkColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgOnOk" Color="#FFFFFFFF" />
+      <Color x:Key="SgOkTextColor">#FF1E6B45</Color>
+      <SolidColorBrush x:Key="SgOkText" Color="#FF1E6B45" />
+      <Color x:Key="SgKeyPrimaryColor">#FF1F2426</Color>
+      <SolidColorBrush x:Key="SgKeyPrimary" Color="#FF1F2426" />
+      <Color x:Key="SgKeyPrimaryHoverColor">#FF384044</Color>
+      <SolidColorBrush x:Key="SgKeyPrimaryHover" Color="#FF384044" />
+      <Color x:Key="SgOnKeyPrimaryColor">#FFF7F8F6</Color>
+      <SolidColorBrush x:Key="SgOnKeyPrimary" Color="#FFF7F8F6" />
+      <Color x:Key="SgKeySecondaryColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgKeySecondary" Color="#FFFFFFFF" />
+      <Color x:Key="SgKeySecondaryHoverColor">#FFF0F2EF</Color>
+      <SolidColorBrush x:Key="SgKeySecondaryHover" Color="#FFF0F2EF" />
+      <Color x:Key="SgRailDoneColor">#FF4D565A</Color>
+      <SolidColorBrush x:Key="SgRailDone" Color="#FF4D565A" />
+      <Color x:Key="SgRailEdgeColor">#FFAEB4B0</Color>
+      <SolidColorBrush x:Key="SgRailEdge" Color="#FFAEB4B0" />
+      <Color x:Key="SgRailStripeColor">#29FFFFFF</Color>
+      <SolidColorBrush x:Key="SgRailStripe" Color="#29FFFFFF" />
+      <Color x:Key="SgFocusColor">#FF1F5AA6</Color>
+      <SolidColorBrush x:Key="SgFocus" Color="#FF1F5AA6" />
+      <Color x:Key="SgConsoleColor">#FF1B1E20</Color>
+      <SolidColorBrush x:Key="SgConsole" Color="#FF1B1E20" />
+      <Color x:Key="SgConsoleTextColor">#FFD9DDDA</Color>
+      <SolidColorBrush x:Key="SgConsoleText" Color="#FFD9DDDA" />
+      <Color x:Key="SgConsoleMutedColor">#FFA0A8AC</Color>
+      <SolidColorBrush x:Key="SgConsoleMuted" Color="#FFA0A8AC" />
+      <Color x:Key="SgConsoleLineColor">#FF2C3134</Color>
+      <SolidColorBrush x:Key="SgConsoleLine" Color="#FF2C3134" />
+      <Color x:Key="SgConsoleAttentionColor">#FFF2B84B</Color>
+      <SolidColorBrush x:Key="SgConsoleAttention" Color="#FFF2B84B" />
+      <Color x:Key="SgConsoleFailColor">#FFF28B82</Color>
+      <SolidColorBrush x:Key="SgConsoleFail" Color="#FFF28B82" />
+      <Color x:Key="SgConsoleSelectedColor">#FF2A3036</Color>
+      <SolidColorBrush x:Key="SgConsoleSelected" Color="#FF2A3036" />
+      <Color x:Key="SgBackdropColor">#7315181A</Color>
+      <SolidColorBrush x:Key="SgBackdrop" Color="#7315181A" />
+      <Color x:Key="SgEdgePanelColor">#171F2426</Color>
+      <SolidColorBrush x:Key="SgEdgePanel" Color="#171F2426" />
+      <Color x:Key="SgEdgeOverlayColor">#141F2426</Color>
+      <SolidColorBrush x:Key="SgEdgeOverlay" Color="#141F2426" />
+      <Color x:Key="SgShadowOverlayColor">#331F2426</Color>
+      <SolidColorBrush x:Key="SgShadowOverlay" Color="#331F2426" />
+      <Color x:Key="SgLogoRingColor">#FF981F28</Color>
+      <SolidColorBrush x:Key="SgLogoRing" Color="#FF981F28" />
+      <BoxShadows x:Key="SgOverlayShadow">0 14 36 -8 #331F2426</BoxShadows>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="SgFrameColor">#FF15181A</Color>
+      <SolidColorBrush x:Key="SgFrame" Color="#FF15181A" />
+      <Color x:Key="SgFrameTextColor">#FFE6E9E6</Color>
+      <SolidColorBrush x:Key="SgFrameText" Color="#FFE6E9E6" />
+      <Color x:Key="SgFrameMutedColor">#FFA0A8AC</Color>
+      <SolidColorBrush x:Key="SgFrameMuted" Color="#FFA0A8AC" />
+      <Color x:Key="SgFrameLineColor">#FF2A2F32</Color>
+      <SolidColorBrush x:Key="SgFrameLine" Color="#FF2A2F32" />
+      <Color x:Key="SgFrameHoverColor">#FF1F2326</Color>
+      <SolidColorBrush x:Key="SgFrameHover" Color="#FF1F2326" />
+      <Color x:Key="SgFrameLogoColor">#FFF08A8A</Color>
+      <SolidColorBrush x:Key="SgFrameLogo" Color="#FFF08A8A" />
+      <Color x:Key="SgPageColor">#FF1D2123</Color>
+      <SolidColorBrush x:Key="SgPage" Color="#FF1D2123" />
+      <Color x:Key="SgPanelColor">#FF262B2E</Color>
+      <SolidColorBrush x:Key="SgPanel" Color="#FF262B2E" />
+      <Color x:Key="SgRaisedColor">#FF30363A</Color>
+      <SolidColorBrush x:Key="SgRaised" Color="#FF30363A" />
+      <Color x:Key="SgWellColor">#FF1F2326</Color>
+      <SolidColorBrush x:Key="SgWell" Color="#FF1F2326" />
+      <Color x:Key="SgFieldColor">#FF1F2326</Color>
+      <SolidColorBrush x:Key="SgField" Color="#FF1F2326" />
+      <Color x:Key="SgHoverColor">#FF2C3236</Color>
+      <SolidColorBrush x:Key="SgHover" Color="#FF2C3236" />
+      <Color x:Key="SgSelectedColor">#FF28323C</Color>
+      <SolidColorBrush x:Key="SgSelected" Color="#FF28323C" />
+      <Color x:Key="SgLineColor">#FF394044</Color>
+      <SolidColorBrush x:Key="SgLine" Color="#FF394044" />
+      <Color x:Key="SgLineSoftColor">#FF30363A</Color>
+      <SolidColorBrush x:Key="SgLineSoft" Color="#FF30363A" />
+      <Color x:Key="SgControlColor">#FF7C868B</Color>
+      <SolidColorBrush x:Key="SgControl" Color="#FF7C868B" />
+      <Color x:Key="SgInkColor">#FFE8EAE7</Color>
+      <SolidColorBrush x:Key="SgInk" Color="#FFE8EAE7" />
+      <Color x:Key="SgInk2Color">#FFC3C8C6</Color>
+      <SolidColorBrush x:Key="SgInk2" Color="#FFC3C8C6" />
+      <Color x:Key="SgMutedColor">#FFA0A8AC</Color>
+      <SolidColorBrush x:Key="SgMuted" Color="#FFA0A8AC" />
+      <Color x:Key="SgPlaceholderColor">#FF8E979B</Color>
+      <SolidColorBrush x:Key="SgPlaceholder" Color="#FF8E979B" />
+      <Color x:Key="SgInverseColor">#FF1D2123</Color>
+      <SolidColorBrush x:Key="SgInverse" Color="#FF1D2123" />
+      <Color x:Key="SgRunColor">#FF2D6CC9</Color>
+      <SolidColorBrush x:Key="SgRun" Color="#FF2D6CC9" />
+      <Color x:Key="SgRunTextColor">#FF8DB6F2</Color>
+      <SolidColorBrush x:Key="SgRunText" Color="#FF8DB6F2" />
+      <Color x:Key="SgRunSoftColor">#1A5892E6</Color>
+      <SolidColorBrush x:Key="SgRunSoft" Color="#1A5892E6" />
+      <Color x:Key="SgAttentionColor">#FFF2B21B</Color>
+      <SolidColorBrush x:Key="SgAttention" Color="#FFF2B21B" />
+      <Color x:Key="SgOnAttentionColor">#FF1D2123</Color>
+      <SolidColorBrush x:Key="SgOnAttention" Color="#FF1D2123" />
+      <Color x:Key="SgAttentionTextColor">#FFF2C35A</Color>
+      <SolidColorBrush x:Key="SgAttentionText" Color="#FFF2C35A" />
+      <Color x:Key="SgFailColor">#FFD1383E</Color>
+      <SolidColorBrush x:Key="SgFail" Color="#FFD1383E" />
+      <Color x:Key="SgOnFailColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgOnFail" Color="#FFFFFFFF" />
+      <Color x:Key="SgFailTextColor">#FFF08D8F</Color>
+      <SolidColorBrush x:Key="SgFailText" Color="#FFF08D8F" />
+      <Color x:Key="SgOkColor">#FF25784F</Color>
+      <SolidColorBrush x:Key="SgOk" Color="#FF25784F" />
+      <Color x:Key="SgOnOkColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgOnOk" Color="#FFFFFFFF" />
+      <Color x:Key="SgOkTextColor">#FF7FCFA3</Color>
+      <SolidColorBrush x:Key="SgOkText" Color="#FF7FCFA3" />
+      <Color x:Key="SgKeyPrimaryColor">#FFE8EAE7</Color>
+      <SolidColorBrush x:Key="SgKeyPrimary" Color="#FFE8EAE7" />
+      <Color x:Key="SgKeyPrimaryHoverColor">#FFFFFFFF</Color>
+      <SolidColorBrush x:Key="SgKeyPrimaryHover" Color="#FFFFFFFF" />
+      <Color x:Key="SgOnKeyPrimaryColor">#FF1D2123</Color>
+      <SolidColorBrush x:Key="SgOnKeyPrimary" Color="#FF1D2123" />
+      <Color x:Key="SgKeySecondaryColor">#FF30363A</Color>
+      <SolidColorBrush x:Key="SgKeySecondary" Color="#FF30363A" />
+      <Color x:Key="SgKeySecondaryHoverColor">#FF373E43</Color>
+      <SolidColorBrush x:Key="SgKeySecondaryHover" Color="#FF373E43" />
+      <Color x:Key="SgRailDoneColor">#FFA0A8AC</Color>
+      <SolidColorBrush x:Key="SgRailDone" Color="#FFA0A8AC" />
+      <Color x:Key="SgRailEdgeColor">#FF4A5357</Color>
+      <SolidColorBrush x:Key="SgRailEdge" Color="#FF4A5357" />
+      <Color x:Key="SgRailStripeColor">#1FFFFFFF</Color>
+      <SolidColorBrush x:Key="SgRailStripe" Color="#1FFFFFFF" />
+      <Color x:Key="SgFocusColor">#FF8DB6F2</Color>
+      <SolidColorBrush x:Key="SgFocus" Color="#FF8DB6F2" />
+      <Color x:Key="SgConsoleColor">#FF141618</Color>
+      <SolidColorBrush x:Key="SgConsole" Color="#FF141618" />
+      <Color x:Key="SgConsoleTextColor">#FFD9DDDA</Color>
+      <SolidColorBrush x:Key="SgConsoleText" Color="#FFD9DDDA" />
+      <Color x:Key="SgConsoleMutedColor">#FFA0A8AC</Color>
+      <SolidColorBrush x:Key="SgConsoleMuted" Color="#FFA0A8AC" />
+      <Color x:Key="SgConsoleLineColor">#FF2C3134</Color>
+      <SolidColorBrush x:Key="SgConsoleLine" Color="#FF2C3134" />
+      <Color x:Key="SgConsoleAttentionColor">#FFF2B84B</Color>
+      <SolidColorBrush x:Key="SgConsoleAttention" Color="#FFF2B84B" />
+      <Color x:Key="SgConsoleFailColor">#FFF28B82</Color>
+      <SolidColorBrush x:Key="SgConsoleFail" Color="#FFF28B82" />
+      <Color x:Key="SgConsoleSelectedColor">#FF2A3036</Color>
+      <SolidColorBrush x:Key="SgConsoleSelected" Color="#FF2A3036" />
+      <Color x:Key="SgBackdropColor">#8C000000</Color>
+      <SolidColorBrush x:Key="SgBackdrop" Color="#8C000000" />
+      <Color x:Key="SgEdgePanelColor">#0FFFFFFF</Color>
+      <SolidColorBrush x:Key="SgEdgePanel" Color="#0FFFFFFF" />
+      <Color x:Key="SgEdgeOverlayColor">#14FFFFFF</Color>
+      <SolidColorBrush x:Key="SgEdgeOverlay" Color="#14FFFFFF" />
+      <Color x:Key="SgShadowOverlayColor">#8C000000</Color>
+      <SolidColorBrush x:Key="SgShadowOverlay" Color="#8C000000" />
+      <Color x:Key="SgLogoRingColor">#FFF08A8A</Color>
+      <SolidColorBrush x:Key="SgLogoRing" Color="#FFF08A8A" />
+      <BoxShadows x:Key="SgOverlayShadow">0 14 36 -8 #8C000000</BoxShadows>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <CornerRadius x:Key="SgRadiusTag">2</CornerRadius>
+  <CornerRadius x:Key="SgRadiusKey">4</CornerRadius>
+  <CornerRadius x:Key="SgRadiusPanel">6</CornerRadius>
+  <CornerRadius x:Key="SgRadiusOverlay">8</CornerRadius>
+
+  <!-- Each type has a face of its own, so no weight or width is synthesized. The console sets tags in capitals. -->
+  <FontFamily x:Key="SgTypeWordmarkFamily">avares://ddt-console/Assets/Fonts#Archivo 800 72</FontFamily>
+  <x:Double x:Key="SgTypeWordmarkSize">21</x:Double>
+  <x:Double x:Key="SgTypeWordmarkLineHeight">21</x:Double>
+  <x:Double x:Key="SgTypeWordmarkLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeDisplayFamily">avares://ddt-console/Assets/Fonts#Archivo 750 62</FontFamily>
+  <x:Double x:Key="SgTypeDisplaySize">64</x:Double>
+  <x:Double x:Key="SgTypeDisplayLineHeight">52.48</x:Double>
+  <x:Double x:Key="SgTypeDisplayLetterSpacing">-1.28</x:Double>
+  <FontFamily x:Key="SgTypeTitleFamily">avares://ddt-console/Assets/Fonts#Archivo 750 70</FontFamily>
+  <x:Double x:Key="SgTypeTitleSize">42</x:Double>
+  <x:Double x:Key="SgTypeTitleLineHeight">39.9</x:Double>
+  <x:Double x:Key="SgTypeTitleLetterSpacing">-0.42</x:Double>
+  <FontFamily x:Key="SgTypeSubtitleFamily">avares://ddt-console/Assets/Fonts#Archivo 750 72</FontFamily>
+  <x:Double x:Key="SgTypeSubtitleSize">28</x:Double>
+  <x:Double x:Key="SgTypeSubtitleLineHeight">28</x:Double>
+  <x:Double x:Key="SgTypeSubtitleLetterSpacing">-0.14</x:Double>
+  <FontFamily x:Key="SgTypeHeadingFamily">avares://ddt-console/Assets/Fonts#Archivo 700 78</FontFamily>
+  <x:Double x:Key="SgTypeHeadingSize">20</x:Double>
+  <x:Double x:Key="SgTypeHeadingLineHeight">24</x:Double>
+  <x:Double x:Key="SgTypeHeadingLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeLabelFamily">avares://ddt-console/Assets/Fonts#Archivo 650 80</FontFamily>
+  <x:Double x:Key="SgTypeLabelSize">15</x:Double>
+  <x:Double x:Key="SgTypeLabelLineHeight">19.5</x:Double>
+  <x:Double x:Key="SgTypeLabelLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeBodyFamily">avares://ddt-console/Assets/Fonts#Archivo 400 100</FontFamily>
+  <x:Double x:Key="SgTypeBodySize">14</x:Double>
+  <x:Double x:Key="SgTypeBodyLineHeight">20.3</x:Double>
+  <x:Double x:Key="SgTypeBodyLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeSmallFamily">avares://ddt-console/Assets/Fonts#Archivo 400 100</FontFamily>
+  <x:Double x:Key="SgTypeSmallSize">13</x:Double>
+  <x:Double x:Key="SgTypeSmallLineHeight">18.2</x:Double>
+  <x:Double x:Key="SgTypeSmallLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeNumeralFamily">avares://ddt-console/Assets/Fonts#Archivo 700 70</FontFamily>
+  <x:Double x:Key="SgTypeNumeralSize">15</x:Double>
+  <x:Double x:Key="SgTypeNumeralLineHeight">18</x:Double>
+  <x:Double x:Key="SgTypeNumeralLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeStepFamily">avares://ddt-console/Assets/Fonts#Archivo 500 85</FontFamily>
+  <x:Double x:Key="SgTypeStepSize">15</x:Double>
+  <x:Double x:Key="SgTypeStepLineHeight">18</x:Double>
+  <x:Double x:Key="SgTypeStepLetterSpacing">0</x:Double>
+  <FontFamily x:Key="SgTypeTagFamily">avares://ddt-console/Assets/Fonts#Archivo 750 75</FontFamily>
+  <x:Double x:Key="SgTypeTagSize">13</x:Double>
+  <x:Double x:Key="SgTypeTagLineHeight">13</x:Double>
+  <x:Double x:Key="SgTypeTagLetterSpacing">0.26</x:Double>
+  <FontFamily x:Key="SgTypeDataFamily">avares://ddt-console/Assets/Fonts#Martian Mono 400 87.5</FontFamily>
+  <x:Double x:Key="SgTypeDataSize">12.5</x:Double>
+  <x:Double x:Key="SgTypeDataLineHeight">18.75</x:Double>
+  <x:Double x:Key="SgTypeDataLetterSpacing">0</x:Double>
+</ResourceDictionary>

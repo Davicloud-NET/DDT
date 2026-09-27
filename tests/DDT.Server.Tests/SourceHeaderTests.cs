@@ -7,7 +7,8 @@ using Xunit;
 namespace DDT.Server.Tests;
 
 // NOTICE's attribution term points at the copyright notices in the source files, so every source file has to start
-// with the licence header. IDE0073 enforces it for C# at build time; this also covers the web client and the scripts.
+// with the licence header. IDE0073 enforces it for C# at build time; this also covers the web client, the console's
+// XAML and the scripts.
 public sealed class SourceHeaderTests
 {
     private static readonly string[] s_headerLines =
@@ -27,6 +28,8 @@ public sealed class SourceHeaderTests
         [".mjs"] = ("// ", ""),
         [".css"] = ("/* ", " */"),
         [".ps1"] = ("# ", ""),
+        [".py"] = ("# ", ""),
+        [".axaml"] = ("<!-- ", " -->"),
     };
 
     private static readonly string[] s_sourceFolders = ["src", "tests", "build"];
@@ -45,6 +48,7 @@ public sealed class SourceHeaderTests
         Assert.Contains(Path.Combine(root, "build", "Publish-Agent.ps1"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "main.tsx"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "styles", "app.css"), files);
+        Assert.Contains(Path.Combine(root, "src", "DDT.MachineConsole", "Views", "MainWindow.axaml"), files);
 
         List<string> withoutHeader = [];
         foreach (string file in files)

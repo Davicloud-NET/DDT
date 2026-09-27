@@ -36,6 +36,9 @@ internal sealed class FakeDeploymentTools
 
     public Exception Failure { get; set; } = new DeploymentStepException("The scripted step failed.");
 
+    // When set, the partitioning waits for it once it is recorded.
+    public TaskCompletionSource? PartitionGate { get; set; }
+
     // When set, the apply reports 50 percent, completes ApplyStarted and then waits for it.
     public TaskCompletionSource? ApplyGate { get; set; }
 
@@ -94,7 +97,7 @@ internal sealed class FakeDeploymentTools
         return Task.FromResult<IReadOnlyList<LocalDisk>>([.. Disks]);
     }
 
-    public Task<TargetVolumes> PartitionAsync(
+    public async Task<TargetVolumes> PartitionAsync(
         LocalDisk disk,
         int systemPartitionMegabytes,
         int recoveryPartitionMegabytes,
@@ -103,12 +106,17 @@ internal sealed class FakeDeploymentTools
         PartitionSizes = (systemPartitionMegabytes, recoveryPartitionMegabytes);
         Record("partition", $" {disk.Number}");
 
+        if (PartitionGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken);
+        }
+
         TargetVolumes volumes = Volumes;
         Directory.CreateDirectory(volumes.System);
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);
 
-        return Task.FromResult(volumes);
+        return volumes;
     }
 
     public void Prepare() => Record("prepare");

@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The sign-in, one field at a time as the agent asks: user name, password (masked), authenticator code. -->
+<!-- The sign-in, one field at a time as the agent asks: user name, password (masked), authenticator code. The next
+     field enters as the agent asks for it, and the agent's words about a refused attempt fade in, without a shake. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -15,24 +16,24 @@
       <TextBlock Classes="body ink2" Text="{Binding Intro}" />
     </StackPanel>
 
-    <Border Classes="well" Padding="14,10" IsVisible="{Binding HasError}">
+    <Border Name="ErrorBox" Classes="well" Padding="14,10" IsVisible="{Binding HasError}">
       <TextBlock Name="Error" Classes="body failText" Text="{Binding Error}" />
     </Border>
 
-    <StackPanel Spacing="6" IsVisible="{Binding AsksUserName}">
+    <StackPanel Name="UserNameField" Spacing="6" IsVisible="{Binding AsksUserName}">
       <TextBlock Classes="label" Text="{Binding UserNameLabel}" />
       <TextBox Name="UserNameBox" Text="{Binding UserName}" IsEnabled="{Binding IsEditable}" />
     </StackPanel>
 
     <TextBlock Classes="body ink2" Text="{Binding SignedInAs}" IsVisible="{Binding ShowsUserName}" />
 
-    <StackPanel Spacing="6" IsVisible="{Binding AsksPassword}">
+    <StackPanel Name="PasswordField" Spacing="6" IsVisible="{Binding AsksPassword}">
       <TextBlock Classes="label" Text="{Binding PasswordLabel}" />
       <TextBox Name="PasswordBox" PasswordChar="•" Text="{Binding Password}" IsEnabled="{Binding IsEditable}" />
       <TextBlock Classes="small muted" Text="{Binding KeyboardHint}" IsVisible="{Binding HasKeyboardLayout}" />
     </StackPanel>
 
-    <StackPanel Spacing="6" IsVisible="{Binding AsksCode}">
+    <StackPanel Name="CodeField" Spacing="6" IsVisible="{Binding AsksCode}">
       <TextBlock Classes="label" Text="{Binding CodeLabel}" />
       <TextBox Name="CodeBox" Classes="mono" MaxLength="10" Text="{Binding Code}" IsEnabled="{Binding IsEditable}" />
     </StackPanel>

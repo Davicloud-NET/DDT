@@ -3,9 +3,12 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 using DDT.ConsoleProtocol;
 using DDT.MachineConsole.ViewModels;
 
@@ -13,7 +16,8 @@ namespace DDT.MachineConsole.Controls;
 
 // The sequence rail, the signature of the run screen: one module per step in equal columns, with the step's number
 // and name under it, and the phases the steps run in labelled above them. Where the columns get too narrow for names,
-// only the numbers show; the heading above the rail names the running step anyway.
+// only the numbers show; the heading above the rail names the running step anyway. A step that finishes or fails
+// while the rail is on the screen flashes its column in its state's colour, faintly, fading over flash.
 public sealed class SequenceRail : Panel
 {
     public static readonly StyledProperty<IReadOnlyList<RailStep>?> StepsProperty =
@@ -27,6 +31,8 @@ public sealed class SequenceRail : Panel
     private const double PhaseGap = 8;
     private const double ModuleHeight = 22;
     private const double NamesFrom = 64;
+    private const double FlashStrength = 0.2;
+    private const double FlashMargin = 4;
 
     private readonly List<StepParts> _steps = [];
     private readonly List<PhaseParts> _phases = [];
@@ -77,6 +83,7 @@ public sealed class SequenceRail : Panel
 
         foreach (StepParts step in _steps)
         {
+            step.Flash.Measure(new Size(column + Gap, double.PositiveInfinity));
             step.Module.Measure(new Size(column, ModuleHeight));
             step.Number.Measure(new Size(column, double.PositiveInfinity));
             numberHeight = Math.Max(numberHeight, step.Number.DesiredSize.Height);
@@ -120,6 +127,8 @@ public sealed class SequenceRail : Panel
         double numberTop = top + ModuleHeight + RowGap;
         double numberHeight = _steps.Count == 0 ? 0 : _steps.Max(step => step.Number.DesiredSize.Height);
 
+        double bottom = numberTop + numberHeight;
+
         for (int index = 0; index < _steps.Count; index++)
         {
             StepParts step = _steps[index];
@@ -130,7 +139,15 @@ public sealed class SequenceRail : Panel
             if (step.Name.IsVisible)
             {
                 step.Name.Arrange(new Rect(x, numberTop + numberHeight + RowGap, column, step.Name.DesiredSize.Height));
+                bottom = Math.Max(bottom, numberTop + numberHeight + RowGap + step.Name.DesiredSize.Height);
             }
+        }
+
+        // Half the gap either side, so two columns flashing at once meet but do not overlap.
+        for (int index = 0; index < _steps.Count; index++)
+        {
+            double x = index * (column + Gap);
+            _steps[index].Flash.Arrange(new Rect(x - Gap / 2, top - FlashMargin, column + Gap, bottom - top + 2 * FlashMargin));
         }
 
         return finalSize;
@@ -147,11 +164,13 @@ public sealed class SequenceRail : Panel
     private void Rebuild()
     {
         IReadOnlyList<RailStep> steps = Steps ?? [];
+        bool fresh = steps.Count != _steps.Count;
 
-        if (steps.Count != _steps.Count)
+        if (fresh)
         {
             foreach (StepParts parts in _steps)
             {
+                Children.Remove(parts.Flash);
                 Children.Remove(parts.Module);
                 Children.Remove(parts.Number);
                 Children.Remove(parts.Name);
@@ -159,10 +178,12 @@ public sealed class SequenceRail : Panel
 
             _steps.Clear();
 
+            // The flashes go first, so they lie under every module and name.
             foreach (RailStep _ in steps)
             {
-                StepParts parts = new(new RailModule(), Text("numeral"), Text("step"));
+                StepParts parts = new(new Border { Classes = { "flash" } }, new RailModule(), Text("numeral"), Text("step"));
                 _steps.Add(parts);
+                Children.Insert(0, parts.Flash);
                 Children.Add(parts.Module);
                 Children.Add(parts.Number);
                 Children.Add(parts.Name);
@@ -173,6 +194,12 @@ public sealed class SequenceRail : Panel
         {
             RailStep step = steps[index];
             StepParts parts = _steps[index];
+
+            if (!fresh && step.State != parts.Module.State && step.State is ConsoleStepState.Done or ConsoleStepState.Failed)
+            {
+                StartFlash(parts.Flash, step.State);
+            }
+
             parts.Module.State = step.State;
             parts.Module.Percent = step.Percent;
             parts.Number.Text = step.Number;
@@ -220,7 +247,34 @@ public sealed class SequenceRail : Panel
         text.Classes.Set("failed", state == ConsoleStepState.Failed);
     }
 
-    private sealed record StepParts(RailModule Module, TextBlock Number, TextBlock Name);
+    // The column in the state's colour, fading. Only a rail on the screen flashes, and Rebuild leaves out a run shown for
+    // the first time.
+    private void StartFlash(Border flash, ConsoleStepState state)
+    {
+        if (!Motion.IsEnabled || !this.IsAttachedToVisualTree())
+        {
+            return;
+        }
+
+        flash.Classes.Set("done", state == ConsoleStepState.Done);
+        flash.Classes.Set("failed", state == ConsoleStepState.Failed);
+
+        Animation fade = new()
+        {
+            Duration = Motion.Flash,
+            Easing = Motion.Standard,
+            FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, FlashStrength) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, 0d) } },
+            },
+        };
+
+        _ = fade.RunAsync(flash);
+    }
+
+    private sealed record StepParts(Border Flash, RailModule Module, TextBlock Number, TextBlock Name);
 
     private sealed record PhaseParts(TextBlock Label, Rectangle Line, int Steps);
 }

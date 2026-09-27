@@ -3,15 +3,19 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Controls;
 
 // One module of the sequence rail: a trough one shade below the panel, filled as its step goes. Done is filled with
 // the done tone, failed and skipped are hatched, and the running step fills with blue to its percent under stripes
-// that move, the one thing on the screen that does. A running step that gives no percent fills a paler blue.
+// that move, the one thing on the screen that does. A running step that gives no percent fills a paler blue. The fill
+// grows to a new percent over slow, and a new state fades in over the one before, over slow too.
 public sealed class RailModule : Control
 {
     public static readonly StyledProperty<ConsoleStepState> StateProperty =
@@ -35,6 +39,12 @@ public sealed class RailModule : Control
 
     public static readonly StyledProperty<IBrush?> FailTextProperty = AvaloniaProperty.Register<RailModule, IBrush?>(nameof(FailText));
 
+    // The percent the running fill shows, which follows Percent over slow.
+    public static readonly StyledProperty<double> FillProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Fill));
+
+    // How far the change from the state before has come, from 0 to 1.
+    public static readonly StyledProperty<double> ChangeProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Change), 1);
+
     // How often the stripes of a running step move, in frames per second: enough to read as motion, little enough for
     // software rendering while an image is applied.
     private const double FramesPerSecond = 30;
@@ -46,6 +56,10 @@ public sealed class RailModule : Control
     private TimeSpan _lastFrame;
     private double _offset;
     private bool _animating;
+    private ConsoleStepState _before;
+    private double _fillBefore;
+    private bool _softBefore;
+    private CancellationTokenSource? _changing;
 
     static RailModule()
     {
@@ -59,7 +73,17 @@ public sealed class RailModule : Control
             RunSoftProperty,
             StripeProperty,
             FailProperty,
-            FailTextProperty);
+            FailTextProperty,
+            FillProperty,
+            ChangeProperty);
+    }
+
+    public RailModule()
+    {
+        if (Motion.IsEnabled)
+        {
+            Transitions = [new DoubleTransition { Property = FillProperty, Duration = Motion.Slow, Easing = Motion.Standard }];
+        }
     }
 
     public ConsoleStepState State
@@ -122,6 +146,18 @@ public sealed class RailModule : Control
         set => SetValue(FailTextProperty, value);
     }
 
+    public double Fill
+    {
+        get => GetValue(FillProperty);
+        private set => SetValue(FillProperty, value);
+    }
+
+    public double Change
+    {
+        get => GetValue(ChangeProperty);
+        private set => SetValue(ChangeProperty, value);
+    }
+
     // Tests draw the stripes where they start.
     public static bool Animates { get; set; } = true;
 
@@ -135,9 +171,29 @@ public sealed class RailModule : Control
 
         context.DrawRectangle(Trough, null, trough);
 
+        if (Change < 1)
+        {
+            DrawState(context, bounds, trough, _before, _fillBefore, _softBefore);
+
+            using (context.PushOpacity(Change))
+            {
+                DrawState(context, bounds, trough, State, Fill, Percent is null);
+            }
+        }
+        else
+        {
+            DrawState(context, bounds, trough, State, Fill, Percent is null);
+        }
+    }
+
+    // soft is a running step that gives no percent, which fills a paler blue.
+    private void DrawState(DrawingContext context, Rect bounds, RoundedRect trough, ConsoleStepState state, double fill, bool soft)
+    {
+        const double radius = 2;
+
         using (context.PushClip(trough))
         {
-            switch (State)
+            switch (state)
             {
                 case ConsoleStepState.Done:
                     context.DrawRectangle(Done, null, bounds);
@@ -149,18 +205,16 @@ public sealed class RailModule : Control
                     context.DrawRectangle(Stripes.Brush(ColorOf(Edge), 2, Colors.Transparent, 4), null, bounds);
                     break;
                 case ConsoleStepState.Running:
-                    Rect fill = Percent is { } percent
-                        ? new Rect(0, 0, bounds.Width * Math.Clamp(percent, 0, 100) / 100, bounds.Height)
-                        : bounds;
+                    Rect filled = soft ? bounds : new Rect(0, 0, bounds.Width * Math.Clamp(fill, 0, 100) / 100, bounds.Height);
 
-                    context.DrawRectangle(Percent is null ? RunSoft : Run, null, fill);
-                    context.DrawRectangle(Stripes.Brush(ColorOf(Stripe), StripeWidth, Colors.Transparent, StripeWidth, _offset), null, fill);
+                    context.DrawRectangle(soft ? RunSoft : Run, null, filled);
+                    context.DrawRectangle(Stripes.Brush(ColorOf(Stripe), StripeWidth, Colors.Transparent, StripeWidth, _offset), null, filled);
                     break;
             }
         }
 
         // The running module's edge is the run tone, every other one the rail's edge.
-        IBrush? edge = State == ConsoleStepState.Running ? Run : Edge;
+        IBrush? edge = state == ConsoleStepState.Running ? Run : Edge;
         context.DrawRectangle(null, new Pen(edge, 1), new RoundedRect(bounds.Deflate(0.5), radius));
     }
 
@@ -176,8 +230,48 @@ public sealed class RailModule : Control
 
         if (change.Property == StateProperty)
         {
+            ChangeFrom(change.GetOldValue<ConsoleStepState>());
             Animate();
         }
+        else if (change.Property == PercentProperty)
+        {
+            Fill = Percent ?? 0;
+        }
+    }
+
+    // The new state fades in over the one before, where the module is on the screen already.
+    private void ChangeFrom(ConsoleStepState before)
+    {
+        _changing?.Cancel();
+        _changing?.Dispose();
+        _changing = null;
+
+        if (!Motion.IsEnabled || !this.IsAttachedToVisualTree())
+        {
+            Change = 1;
+
+            return;
+        }
+
+        _before = before;
+        _fillBefore = Fill;
+        _softBefore = Percent is null;
+        _changing = new CancellationTokenSource();
+        Change = 0;
+
+        Animation fade = new()
+        {
+            Duration = Motion.Slow,
+            Easing = Motion.Standard,
+            FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(ChangeProperty, 0d) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(ChangeProperty, 1d) } },
+            },
+        };
+
+        _ = fade.RunAsync(this, _changing.Token);
     }
 
     private static Color ColorOf(IBrush? brush) => brush is ISolidColorBrush solid ? solid.Color : Colors.Transparent;

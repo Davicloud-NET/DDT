@@ -4,7 +4,7 @@
 
 <!-- The run: the sequence, the percent of the running step as large as the screen allows, what the step does, and the
      sequence rail with every step. When the run failed or the agent stopped, why and what to do take the percent's
-     place. -->
+     place. A new step or stage enters in place of the one before. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -23,7 +23,7 @@
           <c:StateTag Grid.Column="1" Value="{Binding Tag}" Margin="16,0,0,0" />
         </Grid>
 
-        <Grid ColumnDefinitions="Auto,*">
+        <Grid Name="Hero" ColumnDefinitions="Auto,*">
           <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowsPercent}" VerticalAlignment="Bottom" Margin="-6,-34,30,-20">
             <TextBlock Name="Percent" Classes="hero runText" Text="{Binding Percent}" />
             <TextBlock Classes="heroSign runText" Text="%" VerticalAlignment="Bottom" Margin="4,0,0,22" />
@@ -35,7 +35,7 @@
           </StackPanel>
         </Grid>
 
-        <Grid ColumnDefinitions="3*,2*" ColumnSpacing="16" IsVisible="{Binding HasProblem}">
+        <Grid Name="Problems" ColumnDefinitions="3*,2*" ColumnSpacing="16" IsVisible="{Binding HasProblem}">
           <Border Classes="well" Padding="18,14">
             <StackPanel Spacing="6">
               <TextBlock Classes="label muted" Text="{Binding ProblemLabel}" />

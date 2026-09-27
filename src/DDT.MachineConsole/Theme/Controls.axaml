@@ -4,7 +4,9 @@
 
 <!-- The controls the console uses, in the Switchgear look: flat keys that answer with tone, fields one shade off their
      panel with a hairline edge, lists whose selected row turns the selected tone, thin scroll bars. Focus is a ring in
-     the focus colour, drawn outside the part so nothing moves. -->
+     the focus colour, drawn outside the part so nothing moves, and it appears at once. Hover and selection change
+     colour over fast, by fading a layer of the new tone in, since a colour faded from transparent would pass through
+     white on the way; a pressed key sinks by a pixel and darkens over press, as a switch does. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -44,22 +46,54 @@
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+      </Transitions>
+    </Setter>
     <Setter Property="Template">
       <ControlTemplate>
-        <Panel>
+        <!-- The key, with its focus ring, sinks as a whole; the hover tone and the shade of a press fade in over the
+             face, inside its edge. -->
+        <Panel Name="key" RenderTransform="translateY(0px)">
+          <Panel.Transitions>
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="{StaticResource SgMotionPress}" Easing="{StaticResource SgMotionEasing}" />
+            </Transitions>
+          </Panel.Transitions>
           <Border Name="focus"
                   Margin="-4"
                   BorderThickness="2"
                   BorderBrush="Transparent"
                   CornerRadius="7" />
+          <Border Name="face"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border Name="hover"
+                  Margin="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Background="{DynamicResource SgKeySecondaryHover}"
+                  Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <Border Name="shade" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource ConsolePressShade}" Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionPress}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
           <ContentPresenter Name="PART_ContentPresenter"
                             Padding="{TemplateBinding Padding}"
                             HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                             VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
                             Content="{TemplateBinding Content}"
                             ContentTemplate="{TemplateBinding ContentTemplate}"
                             TextElement.Foreground="{TemplateBinding Foreground}" />
@@ -70,8 +104,14 @@
     <Style Selector="^:focus-visible /template/ Border#focus">
       <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
     </Style>
-    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource SgKeySecondaryHover}" />
+    <Style Selector="^:pointerover /template/ Border#hover">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:pressed /template/ Panel#key">
+      <Setter Property="RenderTransform" Value="translateY(1px)" />
+    </Style>
+    <Style Selector="^:pressed /template/ Border#shade">
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="^:disabled">
       <Setter Property="Opacity" Value="0.45" />
@@ -82,7 +122,7 @@
       <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
       <Setter Property="BorderThickness" Value="0" />
     </Style>
-    <Style Selector="^.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="^.primary /template/ Border#hover">
       <Setter Property="Background" Value="{DynamicResource SgKeyPrimaryHover}" />
     </Style>
 
@@ -92,7 +132,7 @@
       <Setter Property="BorderBrush" Value="{DynamicResource SgFailText}" />
       <Setter Property="BorderThickness" Value="1.5" />
     </Style>
-    <Style Selector="^.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="^.danger /template/ Border#hover">
       <Setter Property="Background" Value="{DynamicResource SgHover}" />
     </Style>
     <Style Selector="^.danger:not(:disabled)">
@@ -100,8 +140,8 @@
       <Setter Property="Foreground" Value="{DynamicResource SgOnFail}" />
       <Setter Property="BorderThickness" Value="0" />
     </Style>
-    <Style Selector="^.danger:not(:disabled):pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource SgFail}" />
+    <Style Selector="^.danger:not(:disabled) /template/ Border#hover">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <Style Selector="^.quiet">
@@ -109,7 +149,7 @@
       <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
       <Setter Property="BorderThickness" Value="0" />
     </Style>
-    <Style Selector="^.quiet:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="^.quiet /template/ Border#hover">
       <Setter Property="Background" Value="{DynamicResource SgHover}" />
     </Style>
 
@@ -122,7 +162,7 @@
       <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
       <Setter Property="FontSize" Value="14" />
     </Style>
-    <Style Selector="^.footerKey:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="^.footerKey /template/ Border#hover">
       <Setter Property="Background" Value="{DynamicResource SgHover}" />
     </Style>
   </ControlTheme>
@@ -194,6 +234,14 @@
       </ControlTemplate>
     </Setter>
 
+    <!-- The edge turns red over fast when what was typed is refused; the ring is there at once. -->
+    <Style Selector="^ /template/ Border#border">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+        </Transitions>
+      </Setter>
+    </Style>
     <Style Selector="^:focus /template/ Border#ring">
       <Setter Property="IsVisible" Value="True" />
     </Style>
@@ -231,7 +279,8 @@
     </Setter>
   </ControlTheme>
 
-  <!-- A row to choose: the hover tone under the pointer, the selected tone with an edge once chosen. -->
+  <!-- A row to choose: the hover tone under the pointer, the selected tone with an edge once chosen. When the choice
+       moves, the tone fades from one row to the next rather than jumping. -->
   <ControlTheme x:Key="{x:Type ListBoxItem}" TargetType="ListBoxItem">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="Transparent" />
@@ -250,6 +299,25 @@
                   BorderThickness="2"
                   BorderBrush="Transparent"
                   CornerRadius="6" />
+          <Border Name="hover" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource SgHover}" Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <Border Name="selected"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Background="{DynamicResource SgSelected}"
+                  BorderBrush="{DynamicResource SgLine}"
+                  Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
           <ContentPresenter Name="PART_ContentPresenter"
                             Padding="{TemplateBinding Padding}"
                             HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -264,12 +332,11 @@
       </ControlTemplate>
     </Setter>
 
-    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource SgHover}" />
+    <Style Selector="^:pointerover /template/ Border#hover">
+      <Setter Property="Opacity" Value="1" />
     </Style>
-    <Style Selector="^:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource SgSelected}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource SgLine}" />
+    <Style Selector="^:selected /template/ Border#selected">
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="^:focus-visible /template/ Border#focus">
       <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
@@ -279,12 +346,11 @@
       <Setter Property="Margin" Value="0" />
       <Setter Property="Cursor" Value="Arrow" />
     </Style>
-    <Style Selector="^.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
+    <Style Selector="^.plain /template/ Border#hover">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="^.plain:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="Transparent" />
+    <Style Selector="^.plain /template/ Border#selected">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
   </ControlTheme>
 

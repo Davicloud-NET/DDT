@@ -7,14 +7,17 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using DDT.ConsoleProtocol;
+using DDT.MachineConsole.Controls;
 using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The field the agent asks for has the focus, so the person just types.
+// The field the agent asks for has the focus, so the person just types. A field asked for next enters, and so do the
+// agent's words about each refused attempt, even where they are the same as before.
 public sealed partial class SignInView : UserControl
 {
     private SignInViewModel? _model;
+    private (int Id, SignInField Field)? _asked;
 
     public SignInView()
     {
@@ -31,6 +34,7 @@ public sealed partial class SignInView : UserControl
         }
 
         _model = DataContext as SignInViewModel;
+        _asked = _model is null ? null : (_model.Id, _model.Field);
 
         if (_model is not null)
         {
@@ -50,6 +54,29 @@ public sealed partial class SignInView : UserControl
         if (e.PropertyName is nameof(SignInViewModel.Field) or nameof(SignInViewModel.IsEditable) or "")
         {
             FocusField();
+        }
+
+        if (_model is null || (_model.Id, _model.Field) == _asked)
+        {
+            return;
+        }
+
+        SignInField? before = _asked?.Field;
+        _asked = (_model.Id, _model.Field);
+
+        if (_model.Field != before)
+        {
+            Motion.Renew(_model.Field switch
+            {
+                SignInField.UserName => UserNameField,
+                SignInField.Password => PasswordField,
+                _ => CodeField,
+            });
+        }
+
+        if (_model.HasError)
+        {
+            Motion.Renew(ErrorBox);
         }
     }
 

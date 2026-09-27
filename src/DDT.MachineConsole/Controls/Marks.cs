@@ -82,33 +82,3 @@ public sealed class StateTag : Border
         }
     }
 }
-
-// A key cap, such as F1 or Enter, as the footer and the keys on the screen show it.
-public sealed class KeyCap : Border
-{
-    public static readonly StyledProperty<string?> KeyProperty = AvaloniaProperty.Register<KeyCap, string?>(nameof(Key));
-
-    private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-
-    public KeyCap()
-    {
-        _text.Classes.Add("keyCap");
-        Child = _text;
-    }
-
-    public string? Key
-    {
-        get => GetValue(KeyProperty);
-        set => SetValue(KeyProperty, value);
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        if (change.Property == KeyProperty)
-        {
-            _text.Text = Key;
-        }
-    }
-}

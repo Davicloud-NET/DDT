@@ -979,6 +979,14 @@ run, with the sequence rail of its steps, the running step and its percent, a re
 run ended and what to do next. The layout scales with the size of the screen in pixels rather than
 its DPI, from 1024 × 768 up.
 
+It moves as the web does, by the motion in `src/DDT.Design/tokens.json`, and only when a key is
+pressed or the agent sends something: a screen fades out and the next fades in, rising a few pixels;
+the log, the details and the licences, the question before a restart and the band once the agent
+has ended enter the same way; keys sink when pressed, and the key caps on the screen go down with
+their keys on the keyboard; a step's module fills and changes its state over a quarter of a second,
+and a step that finishes or fails flashes faintly. Only the running step's stripes move by
+themselves.
+
 It works from the keyboard, and with a mouse or touch too. The field or list a question needs has
 the focus, Enter sends, and Esc goes back where the question allows it: to the list of sequences,
 or from the password to the user name. The keys for `ERASE` and `ANYWAY` work only once the word is

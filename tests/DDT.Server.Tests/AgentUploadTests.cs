@@ -27,18 +27,22 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
 
         Assert.Equal(AgentBinarySource.None, (await RegisteredMachine.ReadAsync<AgentBinaryView>(await administrator.GetAsync("/api/settings/agent"))).Source);
 
-        AgentBinaryUploaded uploaded = await RegisteredMachine.ReadAsync<AgentBinaryUploaded>(
+        AgentBinaryView uploaded = await RegisteredMachine.ReadAsync<AgentBinaryView>(
             await UploadAsync(administrator, agent, await administrator.TokenAsync()));
 
         string sha256 = Convert.ToHexStringLower(SHA256.HashData(agent));
         Assert.Equal(sha256, uploaded.Sha256);
         Assert.Equal(agent.Length, uploaded.Size);
+        Assert.Equal(AgentBinarySource.Uploaded, uploaded.Source);
 
+        // The answer is the view as it is read from now on, so the page puts it in place without reading it again.
         AgentBinaryView view = await RegisteredMachine.ReadAsync<AgentBinaryView>(await administrator.GetAsync("/api/settings/agent"));
         Assert.Equal(AgentBinarySource.Uploaded, view.Source);
         Assert.Equal(sha256, view.Sha256);
         Assert.NotNull(view.UploadedBy);
+        Assert.Equal(view.UploadedBy, uploaded.UploadedBy);
         Assert.NotNull(view.UploadedUtc);
+        Assert.NotNull(uploaded.UploadedUtc);
 
         // What agents are told to switch to.
         AgentRelease release = (await application.Services.GetRequiredService<AgentReleaseStore>().CurrentAsync(TestContext.Current.CancellationToken))!;

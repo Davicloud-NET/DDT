@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Settings;
 
-// The agent netbooting machines switch to. Null values when there is none.
+// The agent netbooting machines switch to. Null values when there is none. An upload answers with it as well.
 public sealed record AgentBinaryView(string? Sha256, long? Size, DateTimeOffset? UploadedUtc, string? UploadedBy, AgentBinarySource Source);
 
 public enum AgentBinarySource
@@ -18,5 +18,3 @@ public enum AgentBinarySource
     // DDT:Agent:BinaryPath names the file, which the page then cannot replace.
     Configuration,
 }
-
-public sealed record AgentBinaryUploaded(string Sha256, long Size);

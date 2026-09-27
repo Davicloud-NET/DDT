@@ -1625,8 +1625,11 @@ Windows setup runs first, with the answer file. When the service starts, it regi
 token, and while setup or the out-of-box experience still runs, it reports that it waits for Windows
 setup, which the Machines page shows. That includes the part setup runs as its temporary first user,
 `defaultuser0`, after the machine's part: it looks for updates and may restart Windows, which would
-cut a step off. It checks again every 15 seconds, with no time limit, because someone may be
-finishing the out-of-box experience by hand, and logs a warning every 30 minutes.
+cut a step off. So the service also waits while `defaultuser0` is signed in, and for up to 5 minutes
+while it exists without a session, as between such a restart and its next sign-in, unless DDT's
+session is up, which setup signs in to last. It checks again every 15 seconds, with no time limit,
+because someone may be finishing the out-of-box experience by hand, and logs a warning every 30
+minutes.
 Then it deletes `C:\Windows\Panther\unattend.xml` and runs the remaining steps. It logs to the
 server and to `C:\DDT\logs\agent.log`, whose lines start with the date and the time in UTC, such as
 `2026-09-23 14:03:12 UTC INFO  ...`. The agent's console in Windows PE shows only the time, also in
@@ -1682,7 +1685,10 @@ gets past it is a standard user. When the agent's service stops, as Windows rest
 keeps the last state and waits for it.
 
 When the run is done, the console shows it for 5 seconds, the session is signed out, and the agent
-puts Windows' sign-in settings back, deletes `DDTDeploy` and its profile, and restarts Windows. After
+puts Windows' sign-in settings back, deletes `DDTDeploy` and its profile, and restarts Windows. It
+also deletes `defaultuser0` and its profile when nobody is signed in to it: setup deletes that
+account at the end of its first user's part, which signing in as `DDTDeploy` keeps it from reaching,
+and the sign-in screen would offer it. After
 a failure the console shows why until someone at the machine signs out with F9: the account is
 disabled at once and deleted once signed out, or at the service's next start. Without the console in
 the boot image or without an answer file, the run goes on the same way and shows only on the server.

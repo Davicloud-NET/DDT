@@ -232,8 +232,9 @@ public sealed class DeploySession(
             }
 
             Attempt("forget the last user of the sign-in screen", () => ForgetLastUser(sid));
-            await DeleteProfileAsync(sid).ConfigureAwait(false);
+            await DeleteProfileAsync(sid, AccountName).ConfigureAwait(false);
             Attempt($"delete {AccountName}", () => accounts.Delete(AccountName));
+            await DeleteSetupUserAsync().ConfigureAwait(false);
         }
 
         Leftovers.Delete(FilePathIn(windowsRoot), log);
@@ -305,7 +306,31 @@ public sealed class DeploySession(
         }
     }
 
-    private async Task DeleteProfileAsync(SecurityIdentifier sid)
+    // Setup deletes its first user, defaultuser0, when that user's part of the out-of-box experience ends. Signing in
+    // as DDTDeploy, whose shell is the console, keeps it from getting there, so the account stays behind, and the
+    // sign-in screen offers it. It goes as setup would have deleted it, unless someone is signed in to it.
+    private async Task DeleteSetupUserAsync()
+    {
+        const string name = RegistrySetupProbe.SetupUser;
+
+        try
+        {
+            if (!accounts.Exists(name) || accounts.Sessions(name).Count > 0)
+            {
+                return;
+            }
+
+            await DeleteProfileAsync(accounts.Sid(name), name).ConfigureAwait(false);
+            accounts.Delete(name);
+            log.Information($"Deleted {name}, the temporary account Windows setup left behind.");
+        }
+        catch (Exception exception)
+        {
+            log.Warning($"Could not delete {name}, the temporary account Windows setup left behind ({LogText.OneLine(exception)}).");
+        }
+    }
+
+    private async Task DeleteProfileAsync(SecurityIdentifier sid, string name)
     {
         for (int attempt = 1; ; attempt++)
         {
@@ -317,12 +342,12 @@ public sealed class DeploySession(
             }
             catch (Exception exception) when (attempt < ProfileAttempts)
             {
-                log.Information($"The profile of {AccountName} is still in use ({LogText.OneLine(exception)}). Trying again.");
+                log.Information($"The profile of {name} is still in use ({LogText.OneLine(exception)}). Trying again.");
                 await Task.Delay(ProfileRetryInterval, timeProvider, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
-                log.Warning($"The profile of {AccountName} could not be deleted ({LogText.OneLine(exception)}). It stays in C:\\Users.");
+                log.Warning($"The profile of {name} could not be deleted ({LogText.OneLine(exception)}). It stays in C:\\Users.");
 
                 return;
             }

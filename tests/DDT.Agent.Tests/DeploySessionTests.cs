@@ -229,6 +229,21 @@ public sealed class DeploySessionTests : IDisposable
         Assert.False(System.IO.File.Exists(DeploySession.FilePathIn(_root)));
     }
 
+    // Signing in as DDTDeploy keeps setup from deleting its first user.
+    [Fact]
+    public async Task EndingDeletesTheAccountSetupLeftBehind()
+    {
+        await PlanAsync();
+        await Session().PrepareAsync(Cancellation);
+        _accounts.Create(RegistrySetupProbe.SetupUser, "set up by Windows");
+
+        Assert.True(await Session().EndAsync(signOut: true, Cancellation));
+
+        Assert.False(_accounts.Exists(RegistrySetupProbe.SetupUser));
+        Assert.Equal(["delete DDTDeploy", "delete the profile", "delete defaultuser0"], _accounts.Calls.TakeLast(3));
+        Assert.Contains("Deleted defaultuser0, the temporary account Windows setup left behind.", _console.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AfterAFailureTheSessionStaysUntilSomeoneSignsOut()
     {

@@ -660,6 +660,30 @@ msgstr ""
 msgid "1 to 365 days. It stops working on {expires}."
 msgstr ""
 
+#: src/settings/networkBoot.ts
+msgid "32-bit UEFI, over HTTP"
+msgstr ""
+
+#: src/settings/networkBoot.ts
+msgid "32-bit UEFI, over TFTP"
+msgstr ""
+
+#: src/settings/networkBoot.ts
+msgid "64-bit Arm UEFI, over HTTP"
+msgstr ""
+
+#: src/settings/networkBoot.ts
+msgid "64-bit Arm UEFI, over TFTP"
+msgstr ""
+
+#: src/settings/networkBoot.ts
+msgid "64-bit UEFI PCs, over HTTP"
+msgstr ""
+
+#: src/settings/networkBoot.ts
+msgid "64-bit UEFI PCs, over TFTP"
+msgstr ""
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr ""
@@ -716,6 +740,10 @@ msgstr ""
 msgid "A hardware model"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "A host may have a network adapter on a segment whose DHCP belongs to someone else, so DDT answers on no interface until it is listed. List the interfaces machines reach DDT on, and never a VPN tunnel."
+msgstr ""
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "A Join the domain step joins the machine online in Windows with this account, which it fetches while the step runs. Left without a domain name, machines stay in a workgroup."
 msgstr ""
@@ -723,6 +751,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "A machine over the limit waits until a transfer ends."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -742,6 +774,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "package.tooManyTargets"
 msgid "A package can have at most {max} targets."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi, signed by the 2023 one."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1021,6 +1057,10 @@ msgstr ""
 msgid "Active"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Add"
+msgstr ""
+
 #: src/sequences/StepConditions.tsx
 msgid "Add a condition"
 msgstr ""
@@ -1040,6 +1080,10 @@ msgstr ""
 
 #: src/rules/RuleDialog.tsx
 msgid "Add an assignment rule"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Add boot target"
 msgstr ""
 
 #: src/rules/RuleDialog.tsx
@@ -1098,6 +1142,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "role.administrator"
 msgid "Administrator"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Advertise boot server discovery"
 msgstr ""
 
 #: src/runs/RunPanel.tsx
@@ -1189,6 +1237,14 @@ msgctxt "sequence.exitCodeMeansBoth"
 msgid "An exit code cannot mean both success and a restart: {codes}."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "An http URL on DDT's boot port, below /boot/, where it serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "An http URL on port {portText}, below /boot/, where DDT serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgstr ""
+
 #: src/packages/PackageDialog.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr ""
@@ -1228,6 +1284,10 @@ msgstr ""
 msgid "Another administrator saved this sequence while you were editing."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Another interface name or address"
+msgstr ""
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "another processor"
 msgstr ""
@@ -1240,6 +1300,18 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.nameTaken"
 msgid "Another sequence is already called {name}. Choose another name."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answer as ProxyDHCP"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answer TFTP from port 69"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Answering machines that netboot"
 msgstr ""
 
 #: src/rules/RuleDialog.tsx
@@ -1332,6 +1404,7 @@ msgid "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgstr ""
 
 #: src/images/ImagesPage.tsx
+#: src/settings/NetworkBootPage.tsx
 msgid "Architecture"
 msgstr ""
 
@@ -1418,6 +1491,10 @@ msgstr ""
 msgid "Authenticator code, if you use one"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Authorized relay agents"
+msgstr ""
+
 #: src/settings/ApprovalPage.tsx
 msgid "Authorizing machines"
 msgstr ""
@@ -1426,8 +1503,20 @@ msgstr ""
 msgid "Back to DDT"
 msgstr ""
 
+#: src/settings/networkBoot.ts
+msgid "BIOS PCs, over TFTP"
+msgstr ""
+
 #: src/app/navigation.ts
 msgid "Boot"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot directory"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot file"
 msgstr ""
 
 #: src/app/navigation.ts
@@ -1437,6 +1526,10 @@ msgstr ""
 
 #: src/boot/BootImagePage.tsx
 msgid "Boot manager"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Boot targets"
 msgstr ""
 
 #: src/boot/BootImagePage.tsx
@@ -1747,6 +1840,10 @@ msgstr ""
 msgid "DDT"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr ""
@@ -1777,6 +1874,10 @@ msgstr ""
 
 #: src/tokens/MakeTokenDialog.tsx
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2165,6 +2266,10 @@ msgstr ""
 msgid "Every boot image is built again"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Every host that runs network boot looks for its network adapters again and restarts its listeners with these settings. TFTP transfers in progress end, and those machines start their download again."
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "Every image in {file} is already in the library."
 msgstr ""
@@ -2281,8 +2386,16 @@ msgstr ""
 msgid "For {architecture} only, cannot be written"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "For a network adapter that was added, or an address that changed."
+msgstr ""
+
 #: src/users/UsersPage.tsx
 msgid "For an account that lost its authenticator. {name} is signed out within a minute and signs in with the password alone until it sets up an authenticator again on its Account page."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "For an adapter no host reported, such as one still to come. An IPv4 address picks the interface that has it."
 msgstr ""
 
 #: src/packages/PackageDialog.tsx
@@ -2365,6 +2478,10 @@ msgstr ""
 msgid "Handing over to Windows"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "HTTP boot port"
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
 msgstr ""
@@ -2442,6 +2559,14 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Interfaces"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Interfaces on {name}"
+msgstr ""
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Interpreter"
 msgstr ""
@@ -2485,6 +2610,14 @@ msgstr ""
 
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Its firmware loads the boot file over HTTP, from a URL."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Its firmware loads the boot file over TFTP."
 msgstr ""
 
 #: src/settings/DeploymentDefaultsPage.tsx
@@ -2540,6 +2673,10 @@ msgstr ""
 #: src/sequences/steps/WindowsFields.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Language and region"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Largest TFTP window"
 msgstr ""
 
 #: src/boot/BootImagePage.tsx
@@ -2807,6 +2944,10 @@ msgstr ""
 msgid "Matches"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Microsoft 2011 CA. The default, which most machines trust."
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "Microsoft's boot files"
 msgstr ""
@@ -2939,6 +3080,7 @@ msgid "Needs your approval"
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/settings/NetworkBootPage.tsx
 msgid "Network boot"
 msgstr ""
 
@@ -2986,6 +3128,10 @@ msgstr ""
 
 #: src/users/UsersPage.tsx
 msgid "No account matches"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr ""
 
 #: src/runs/RunPanel.tsx
@@ -3056,12 +3202,20 @@ msgstr ""
 msgid "No group matches."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "No host that runs network boot has reported its interfaces yet. A host reports them when it applies these settings without problems."
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "No image matches"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
 msgid "No images yet"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "No interface is listed, so DDT answers no machine that netboots. Choose the interfaces below, or type one."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -3211,6 +3365,10 @@ msgstr ""
 msgid "Not found in the directory"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Not known"
+msgstr ""
+
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Not known whether it is signed for Secure Boot"
 msgstr ""
@@ -3299,8 +3457,16 @@ msgstr ""
 msgid "On"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "On {name}"
+msgstr ""
+
 #: src/machines/secureBoot.ts
 msgid "On, {note}"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
 msgstr ""
 
 #: src/rules/RuleDialog.tsx
@@ -3341,8 +3507,16 @@ msgstr ""
 msgid "Only administrators read the audit log."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Only administrators see and change network boot: which interfaces DDT answers on and what machines load."
+msgstr ""
+
 #: src/tokens/TokensPage.tsx
 msgid "Only administrators see every token. Your own are on the Account and security page in the account menu."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Only ever useful for BIOS machines: UEFI firmware can refuse an answer that carries it."
 msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx
@@ -3435,6 +3609,10 @@ msgstr ""
 #: src/audit/auditView.ts
 #: src/images/ImagesPage.tsx
 msgid "OS images"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Other entries"
 msgstr ""
 
 #: src/sequences/StepInspector.tsx
@@ -3583,6 +3761,14 @@ msgstr ""
 msgid "Problems and warnings of this step"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "ProxyDHCP and TFTP"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "ProxyDHCP sends a machine the boot file of the architecture its firmware reports, and answers no architecture without a boot target. A site whose own DHCP server names DDT and the boot file needs none."
+msgstr ""
+
 #: src/app/Shell.tsx
 msgid "Pseudo (development)"
 msgstr ""
@@ -3659,7 +3845,12 @@ msgstr ""
 
 #: src/machines/MachineActions.tsx
 #: src/sequences/StepInspector.tsx
+#: src/settings/NetworkBootPage.tsx
 msgid "Remove"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Remove {entry}"
 msgstr ""
 
 #: src/sequences/StepInspector.tsx
@@ -3676,6 +3867,10 @@ msgstr ""
 
 #: src/packages/PackageDialog.tsx
 msgid "Remove model {position}"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Remove the boot target for {key}"
 msgstr ""
 
 #: src/sequences/RemovedStepNotice.tsx
@@ -3931,6 +4126,10 @@ msgstr ""
 msgid "Save my version"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Save or discard your changes first."
+msgstr ""
+
 #: src/packages/PackageDialog.tsx
 msgid "Save package"
 msgstr ""
@@ -3955,8 +4154,24 @@ msgstr ""
 msgid "Saving"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Saving restarts the network boot listeners on every host that runs them, which ends the TFTP transfers in progress. Those machines start their download again."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan again"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan interfaces again"
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Scan the interfaces again?"
 msgstr ""
 
 #: src/sequences/steps/ScriptFields.tsx
@@ -4076,13 +4291,33 @@ msgstr ""
 msgid "Serial number"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Serve boot files over TFTP"
+msgstr ""
+
 #: src/app/navigation.ts
 #: src/users/DirectoryPanel.tsx
 msgid "Server"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Server address"
+msgstr ""
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Server default"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Server host name"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Server name for the URL"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Serving"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -4095,6 +4330,10 @@ msgstr ""
 
 #: src/users/userView.ts
 msgid "Set by an administrator"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Set in configuration"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -4475,6 +4714,10 @@ msgstr ""
 msgid "Task sequences"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "TFTP transfers at once"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "That code is not valid."
 msgstr ""
@@ -4567,6 +4810,10 @@ msgstr ""
 
 #: src/boot/BootImagePage.tsx
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
 msgstr ""
 
 #: src/ui/SecretValue.tsx
@@ -4786,6 +5033,10 @@ msgctxt "directory.noImmutableId"
 msgid "The entry has no {attribute} value to key the account on, so a sign-in is refused."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The fields marked below say what."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "gpt.noTable"
 msgid "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image."
@@ -4898,6 +5149,18 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The interfaces the hosts found could not be read."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The IPv4 address machines load the boot file from. Left empty, DDT's address on the interface the request arrived on, which suits a host serving several networks."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The IPv4 address the answer names as the boot server; the URL decides where the boot file comes from. Left empty, DDT's address on the interface the request arrived on."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "domain.noJoinAccount"
 msgid "The join account is not configured. Set DDT:Deployment:Domain:UserName and Password on the server."
@@ -4993,6 +5256,10 @@ msgstr ""
 msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The most blocks DDT sends before the machine acknowledges them, whatever the boot image asks for; 1 to 64. 16 was reliable in tests; lower it to 8 or 4 where a link loses packets."
+msgstr ""
+
 #: src/sequences/sequenceDraft.ts
 msgid "the name"
 msgstr ""
@@ -5004,6 +5271,14 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "common.nameLength"
 msgid "The name must have 1 to {max} characters and no control characters."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The name or IPv4 address machines reach DDT by. The boot file offers URLs with it."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "The network boot settings could not be loaded."
 msgstr ""
 
 #: src/account/AccountPage.tsx
@@ -5293,6 +5568,10 @@ msgctxt "upload.conversionOutOfSpace"
 msgid "The store volume ran out of space while the image was converted. Free some space and complete the upload again."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "The stored method does not suit this architecture."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.systemPartitionSize"
 msgid "The system partition needs {min} to {max} MB."
@@ -5365,6 +5644,14 @@ msgstr ""
 msgid "These settings decide who signs in and what machines trust, so they need your password again."
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "These settings have problems, so no host serves network boot until they are fixed."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory: a port that is taken would stop the server, and everything in the boot directory is served to anyone who asks. A relative boot directory is inside DDT:StorePath."
+msgstr ""
+
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
 msgstr ""
@@ -5425,6 +5712,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "wim.notAWim"
 msgid "This file is not a WIM image."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "This host found no interface with an IPv4 address."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5606,6 +5897,14 @@ msgstr ""
 msgid "Try now"
 msgstr ""
 
+#: src/settings/NetworkBootPage.tsx
+msgid "Turn it off only when another TFTP server serves them. Every TFTP boot target then needs that server's address."
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Turn it on when the log shows a read request arriving but the machine never receives data: a stateful firewall is dropping replies from a fresh port. Replies then leave by the route back to the machine, which has to go through a served interface."
+msgstr ""
+
 #: src/account/AccountPage.tsx
 msgid "Turn off"
 msgstr ""
@@ -5728,6 +6027,14 @@ msgstr ""
 
 #: src/auth/SignInPage.tsx
 msgid "Use an authenticator code"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Use HTTP"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Use TFTP"
 msgstr ""
 
 #: src/sequences/StepInspector.tsx
@@ -5941,6 +6248,10 @@ msgstr ""
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Windows setup"
+msgstr ""
+
+#: src/settings/NetworkBootPage.tsx
+msgid "Windows UEFI CA 2023."
 msgstr ""
 
 #: src/sequences/steps/ScriptFields.tsx

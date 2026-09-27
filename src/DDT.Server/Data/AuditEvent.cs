@@ -16,6 +16,10 @@ public sealed class AuditEvent
 
     public Guid? ActorMachineId { get; set; }
 
+    // Set when the user acted through an API token, which ActorName then names too. No foreign key, so the log outlives
+    // the token and its user.
+    public Guid? ActorTokenId { get; set; }
+
     public string? ActorName { get; set; }
 
     public string? SubjectId { get; set; }

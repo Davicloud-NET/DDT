@@ -14,4 +14,8 @@ public static class DdtClaimTypes
     // Kept as a claim of the account, so that it travels in the cookie and the policies can refuse on it without a
     // query. Its value is not read.
     public const string MustChangePassword = "ddt:mustchangepassword";
+
+    // On a user's principal authenticated by an API token: the token's id and name.
+    public const string ApiTokenId = "ddt:apitoken";
+    public const string ApiTokenName = "ddt:apitokenname";
 }

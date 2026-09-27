@@ -22,18 +22,26 @@ public static class DataServiceCollectionExtensions
 
         string? postgres = configuration.GetConnectionString("ddtdb");
 
+        // Sees every save, to push the audit rows it added and to name an API token that acted.
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AuditInterceptor>();
+
         if (string.IsNullOrWhiteSpace(postgres))
         {
             Directory.CreateDirectory(options.StorePath);
             string file = Path.Combine(options.StorePath, "ddt-dev.db");
-            services.AddDbContextPool<DdtDbContext>(db => db.UseSqlite($"Data Source={file}"));
+            services.AddDbContextPool<DdtDbContext>((provider, db) => db
+                .UseSqlite($"Data Source={file}")
+                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>()));
         }
         else
         {
-            services.AddDbContextPool<DdtDbContext>(db => db.UseNpgsql(postgres, npgsql => npgsql
-                .MigrationsHistoryTable("__EFMigrationsHistory", DdtDbContext.Schema)
-                .MigrationsAssembly(typeof(DdtDbContext).Assembly.GetName().Name)
-                .EnableRetryOnFailure()));
+            services.AddDbContextPool<DdtDbContext>((provider, db) => db
+                .UseNpgsql(postgres, npgsql => npgsql
+                    .MigrationsHistoryTable("__EFMigrationsHistory", DdtDbContext.Schema)
+                    .MigrationsAssembly(typeof(DdtDbContext).Assembly.GetName().Name)
+                    .EnableRetryOnFailure())
+                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>()));
         }
 
         services.AddHostedService<DatabaseInitializer>();

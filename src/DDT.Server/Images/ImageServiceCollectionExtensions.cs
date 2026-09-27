@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Server.BootImage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -22,6 +23,8 @@ public static class ImageServiceCollectionExtensions
         services.AddScoped<ImageUploadSessions>();
         services.AddSingleton<ImageUploadSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<ImageUploadSweeper>());
+        services.AddSingleton<BootImageCatalog>();
+        services.AddHostedService<BootImageWatcher>();
 
         return services;
     }

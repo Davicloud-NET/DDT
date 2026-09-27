@@ -24,6 +24,7 @@ public static class PackageSummaries
             package.Description,
             package.OriginalFileName,
             package.UploadedUtc,
-            package.UploadedByName);
+            package.UploadedByName,
+            package.BootImage);
     }
 }

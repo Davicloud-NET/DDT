@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Server.Endpoints;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
 // Second CSRF layer. The antiforgery middleware records a verdict and calls the next middleware
-// anyway on a JSON body, so validation has to happen in a filter that can actually refuse.
+// anyway on a JSON body, so validation has to happen in a filter that can actually refuse. A request
+// authenticated by an API token skips it, see SameOriginEndpointFilter.
 public sealed class AntiforgeryEndpointFilter(IAntiforgery antiforgery) : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
@@ -21,7 +23,8 @@ public sealed class AntiforgeryEndpointFilter(IAntiforgery antiforgery) : IEndpo
         if (HttpMethods.IsGet(request.Method)
             || HttpMethods.IsHead(request.Method)
             || HttpMethods.IsOptions(request.Method)
-            || HttpMethods.IsTrace(request.Method))
+            || HttpMethods.IsTrace(request.Method)
+            || Principals.ApiTokenId(context.HttpContext.User) is not null)
         {
             return await next(context).ConfigureAwait(false);
         }

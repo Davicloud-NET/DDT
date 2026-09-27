@@ -10,8 +10,10 @@ using DDT.Server.Machines;
 using DDT.Server.Packages;
 using DDT.Server.Rules;
 using DDT.Server.Sequences;
+using DDT.Server.Tokens;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DDT.Server.Data;
 
@@ -43,6 +45,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
     public DbSet<AssignmentRule> AssignmentRules => Set<AssignmentRule>();
+
+    public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -218,6 +222,24 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             rule.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
+        builder.Entity<ApiToken>(token =>
+        {
+            token.Property(t => t.Name).HasMaxLength(ApiTokenLimits.MaxNameLength);
+            token.Property(t => t.Role).HasMaxLength(16);
+            token.Property(t => t.SecretHash).HasMaxLength(64);
+            token.Property(t => t.Hint).HasMaxLength(ApiTokenSecrets.HintLength);
+            token.Property(t => t.LastUsedAddress).HasMaxLength(64);
+            token.Property(t => t.RevokedByName).HasMaxLength(256);
+
+            // Every request that carries a token looks it up by the hash of what it sent.
+            token.HasIndex(t => t.SecretHash).IsUnique();
+            token.HasIndex(t => t.UserId);
+
+            // A token acts only for its user, so it goes with the account.
+            token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            token.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.RevokedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
         builder.Entity<AuditEvent>(audit =>
         {
             audit.Property(a => a.Action).HasMaxLength(64);
@@ -227,6 +249,16 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             audit.Property(a => a.Detail).HasMaxLength(AuditEvent.MaxDetailLength);
             audit.HasIndex(a => a.OccurredUtc);
             audit.HasIndex(a => a.Action);
+
+            // SQLite has no type for DateTimeOffset and compares it only for equality, but the audit log is filtered by
+            // time. As UTC ticks it compares in order and keeps every digit, which EF Core's own binary converter does
+            // not. PostgreSQL, which has the type, keeps it.
+            if (Database.IsSqlite())
+            {
+                audit.Property(a => a.OccurredUtc).HasConversion(new ValueConverter<DateTimeOffset, long>(
+                    time => time.UtcTicks,
+                    ticks => new DateTimeOffset(ticks, TimeSpan.Zero)));
+            }
         });
     }
 }

@@ -136,6 +136,9 @@ api.MapGroup("/about").MapAboutEndpoints();
 api.MapGroup("/server").MapServerEndpoints();
 api.MapGroup("/users").MapUserEndpoints();
 api.MapGroup("/directory").MapDirectoryEndpoints();
+api.MapGroup("/audit").MapAuditEndpoints();
+api.MapGroup("/tokens").MapApiTokenEndpoints();
+api.MapGroup("/boot-image").MapBootImageEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
 

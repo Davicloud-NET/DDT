@@ -40,4 +40,6 @@ public static class AuditActions
     public const string UserDeleted = "user.deleted";
     public const string UserPasswordReset = "user.password-reset";
     public const string UserTwoFactorReset = "user.two-factor-reset";
+    public const string TokenCreated = "token.created";
+    public const string TokenRevoked = "token.revoked";
 }

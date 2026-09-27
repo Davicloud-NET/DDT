@@ -7,6 +7,7 @@ using DDT.Contracts.Machines;
 namespace DDT.Contracts.Packages;
 
 // ExpandedBytes is what the files take once unpacked, checked by unpacking them on the server without writing them.
+// BootImage is set on a driver package that goes into the Windows PE boot image, see BootImageView.
 public sealed record PackageSummary(
     Guid Id,
     string Name,
@@ -19,4 +20,5 @@ public sealed record PackageSummary(
     string? Description,
     string? OriginalFileName,
     DateTimeOffset UploadedUtc,
-    string? UploadedBy);
+    string? UploadedBy,
+    bool BootImage = false);

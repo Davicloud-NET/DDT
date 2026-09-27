@@ -14,6 +14,7 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Images;
+using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -55,7 +56,7 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
         SignedInClient administrator = await application.AdministratorAsync();
         using SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer);
         await using LiveListener live = await LiveListener.StartAsync(application, viewer);
-        ChannelReader<DateTimeOffset> changes = live.Listen("packagesChanged");
+        ChannelReader<PackageSummary> changes = live.Listen<PackageSummary>(LiveEvents.PackageChanged);
         byte[] zip = TestZip.Create(("Audio/HDX.inf", new byte[1000]), ("Audio/hdx.sys", RandomNumberGenerator.GetBytes(3000)));
         string fileName = $"latitude-{Guid.NewGuid():N}.zip";
 
@@ -80,7 +81,7 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
         Assert.Equal(package.Id, Assert.Single(await ListAsync(), p => p.Id == package.Id).Id);
         Assert.Equal(zip, await File.ReadAllBytesAsync(Store.ObjectPath(package.Sha256), TestContext.Current.CancellationToken));
         Assert.Empty(Directory.EnumerateFileSystemEntries(Store.UploadsDirectory, $"{session.Id:N}*"));
-        await LiveListener.NextAsync(changes);
+        Assert.Equal(package with { Targets = [] }, (await LiveListener.NextAsync(changes, p => p.Id == package.Id)) with { Targets = [] });
 
         AuditEvent audit = Assert.Single(await AuditAsync(package.Id));
         Assert.Equal(AuditActions.PackageUploaded, audit.Action);
@@ -153,9 +154,9 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
         SignedInClient administrator = await application.AdministratorAsync();
         using SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer);
         await using LiveListener live = await LiveListener.StartAsync(application, viewer);
-        ChannelReader<DateTimeOffset> changes = live.Listen("packagesChanged");
+        ChannelReader<PackageSummary> changes = live.Listen<PackageSummary>(LiveEvents.PackageChanged);
         PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);
-        await LiveListener.NextAsync(changes);
+        await LiveListener.NextAsync(changes, p => p.Id == package.Id);
 
         HttpResponseMessage saved = await administrator.PutAsync(
             $"{PackageRequests.Packages}/{package.Id}",
@@ -169,7 +170,11 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
         Assert.Equal("From the vendor's pack.", updated.Description);
         Assert.Equal([new HardwareModel("Dell Inc.", "Latitude 5440"), new HardwareModel(null, "Latitude 7*")], updated.Targets.ToArray());
         Assert.Equal(updated.Targets, Assert.Single(await ListAsync(), p => p.Id == package.Id).Targets);
-        await LiveListener.NextAsync(changes);
+
+        // What the page patches its list with, targets and all.
+        PackageSummary pushed = await LiveListener.NextAsync(changes, p => p.Id == package.Id);
+        Assert.Equal(updated with { Targets = [] }, pushed with { Targets = [] });
+        Assert.Equal(updated.Targets, pushed.Targets);
 
         AuditEvent audit = (await AuditAsync(package.Id))[^1];
         Assert.Equal(AuditActions.PackageChanged, audit.Action);
@@ -240,9 +245,12 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
     public async Task DeletesAPackageAndItsFile()
     {
         SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener live = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<PackagesRemovedEvent> removals = live.Listen<PackagesRemovedEvent>(LiveEvents.PackagesRemoved);
         PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);
 
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
+        Assert.Equal([package.Id], (await LiveListener.NextAsync(removals)).PackageIds);
 
         Assert.DoesNotContain(await ListAsync(), p => p.Id == package.Id);
         Assert.False(File.Exists(Store.ObjectPath(package.Sha256)));

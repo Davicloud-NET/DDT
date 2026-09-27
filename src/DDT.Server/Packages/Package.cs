@@ -36,5 +36,10 @@ public sealed class Package
 
     public Guid? UploadedByUserId { get; set; }
 
+    // A driver package that Build-BootImage.ps1 adds to the Windows PE boot image, for a network or storage controller
+    // Windows PE has no driver for. A machine needs it before any sequence runs, so it goes to every machine that boots
+    // the image, whatever the package's targets say about the installed Windows.
+    public bool BootImage { get; set; }
+
     public string? UploadedByName { get; set; }
 }

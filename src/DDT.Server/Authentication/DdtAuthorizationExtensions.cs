@@ -4,7 +4,6 @@
 
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Authentication;
@@ -17,21 +16,21 @@ public static class DdtAuthorizationExtensions
 
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .Build())
             .AddPolicy(DdtPolicies.Administrator, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator)
                 .RequireAssertion(HasOwnPassword))
             .AddPolicy(DdtPolicies.Operator, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator)
                 .RequireAssertion(HasOwnPassword))
             .AddPolicy(DdtPolicies.Viewer, policy => policy
-                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme)
+                .AddAuthenticationSchemes(DdtAuthenticationSchemes.User)
                 .RequireAuthenticatedUser()
                 .RequireRole(DdtRoleNames.Administrator, DdtRoleNames.Operator, DdtRoleNames.Viewer)
                 .RequireAssertion(HasOwnPassword))

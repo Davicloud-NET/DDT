@@ -4,14 +4,16 @@
 
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Endpoints;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
 
-// Server to client: clients receive small change events and patch or refetch their queries. A page that shows one
-// machine watches it, to receive also what only it needs, such as new log lines and step changes. Groups do not
-// survive a reconnect, so a client watches again after one.
+// Server to client: every event carries what changed, and clients patch what they show with it rather than loading it
+// again, see LiveEvents. A page that shows one machine watches it, to receive also what only it needs, such as new log
+// lines and step changes. Groups do not survive a reconnect, so a client watches again after one. A script may connect
+// with an API token too, and receives what its token's role may read.
 public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, LiveConnections connections) : Hub
 {
     // A connection is one browser tab, which shows a machine or a few.
@@ -21,27 +23,51 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
 
     // The cookie carries the roles and the security stamp of its last check, up to a minute old, so the account is read
     // as it is now: one disabled, deleted or signed out everywhere since then gets no connection, and administrators,
-    // who also receive what only they may read, are told apart by the roles they hold now. A role changed while the
-    // connection is open takes effect when it connects again, which the Users API forces by closing it.
+    // who also receive what only they may read, are told apart by the roles they hold now. A token request was read
+    // as it is now by the token handler, which gave it the lower of the token's role and the account's. A role changed
+    // while the connection is open takes effect when it connects again, which the Users API forces by closing it.
     public override async Task OnConnectedAsync()
     {
-        DdtUser? user = Context.User is { } principal
-            ? await signInManager.ValidateSecurityStampAsync(principal).ConfigureAwait(false)
-            : null;
+        Guid? userId;
+        bool administrator;
 
-        if (user is null || user.IsDisabled)
+        if (Context.User is { } token && Principals.ApiTokenId(token) is not null)
+        {
+            userId = Principals.UserId(token);
+            administrator = token.IsInRole(DdtRoleNames.Administrator);
+        }
+        else
+        {
+            DdtUser? user = Context.User is { } principal
+                ? await signInManager.ValidateSecurityStampAsync(principal).ConfigureAwait(false)
+                : null;
+
+            if (user is null || user.IsDisabled)
+            {
+                Context.Abort();
+
+                return;
+            }
+
+            userId = user.Id;
+            administrator = await userManager.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false);
+        }
+
+        if (userId is not { } id)
         {
             Context.Abort();
 
             return;
         }
 
-        connections.Opened(user.Id, Context);
+        connections.Opened(id, Context);
 
-        if (await userManager.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false))
+        if (administrator)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.Administrators, Context.ConnectionAborted).ConfigureAwait(false);
         }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, LiveGroups.User(id), Context.ConnectionAborted).ConfigureAwait(false);
 
         await base.OnConnectedAsync().ConfigureAwait(false);
     }

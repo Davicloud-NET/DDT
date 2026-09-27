@@ -106,7 +106,7 @@ public static class ImageEndpoints
             store.LibraryLock.Release();
         }
 
-        live.ImagesChanged();
+        live.ImagesRemoved([id]);
 
         return TypedResults.NoContent();
     }

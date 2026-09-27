@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Channels;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.Tokens;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -109,6 +110,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.True(me.MustChangePassword);
         Assert.Equal(HttpStatusCode.Forbidden, (await browser.GetAsync("/api/machines")).StatusCode);
         await Assert.ThrowsAnyAsync<Exception>(async () => await LiveListener.StartAsync(application, browser));
+        // Nor can it make a token to get past that.
+        Assert.Equal(HttpStatusCode.Forbidden, (await browser.PostAsync("/api/tokens", new CreateApiTokenRequest("script", DdtRoleNames.Viewer))).StatusCode);
 
         const string own = "A password only I know 7";
         (await browser.PostAsync("/api/auth/password", new ChangePasswordRequest(created.Password, own))).EnsureSuccessStatusCode();

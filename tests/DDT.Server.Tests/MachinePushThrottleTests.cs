@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Threading.Channels;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Live;
@@ -83,5 +84,45 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         application.Clock.Advance(LiveNotifier.MachinePushInterval);
 
         Assert.False(await PushedWithinAsync(pushes, machine.Id, TimeSpan.FromSeconds(1)));
+    }
+
+    // The run history drops the runs of a removed machine, which the run's delayed push would bring back.
+    [Fact]
+    public async Task ARemovedMachineTakesTheDelayedPushOfItsRunWithIt()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener listener = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<RunHistoryItem> runs = listener.Listen<RunHistoryItem>(LiveEvents.RunChanged);
+        ChannelReader<MachinesRemovedEvent> removals = listener.Listen<MachinesRemovedEvent>(LiveEvents.MachinesRemoved);
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
+
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/approve")).EnsureSuccessStatusCode();
+        DeploymentSummary run = await administrator.AssignedAsync(machine.Id, sequence.Id);
+        Assert.Equal(DeploymentState.Assigned, (await LiveListener.NextAsync(runs, r => r.Run.Id == run.Id)).Run.State);
+
+        // The rejection cancels the run within the interval, so its push waits, and the removal comes before it.
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/reject")).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines/{machine.Id}")).StatusCode);
+        Assert.Equal([machine.Id], (await LiveListener.NextAsync(removals)).MachineIds);
+
+        application.Clock.Advance(LiveNotifier.MachinePushInterval);
+
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(1));
+        List<RunHistoryItem> late = [];
+
+        try
+        {
+            await foreach (RunHistoryItem pushed in runs.ReadAllAsync(timeout.Token))
+            {
+                late.Add(pushed);
+            }
+        }
+        catch (OperationCanceledException) when (!TestContext.Current.CancellationToken.IsCancellationRequested)
+        {
+        }
+
+        Assert.DoesNotContain(late, r => r.Run.Id == run.Id);
     }
 }

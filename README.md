@@ -369,6 +369,25 @@ Single sign-on accounts were stored as directory accounts before M6.5. DDT tells
 start, since a directory account always carries the directory's identifier, so that a password
 typed for one no longer goes to the directory.
 
+### API tokens
+
+A script or another system calls the API with an API token, which a user makes for themselves with
+`POST /api/tokens`: a name, a role no higher than their own, and a lifetime of 1 to 365 days, 90 by
+default. The answer carries the secret, `ddt_` and 43 letters and digits, once; DDT keeps only its
+SHA-256. The prefix lets secret scanners recognise a token that leaked into a repository or a log.
+The token goes in every request as `Authorization: Bearer ddt_...`, and such a request needs no
+antiforgery token: it is authenticated by that header alone, never by a session cookie that rides
+along, and a page on another site cannot make a browser send the header.
+
+A token acts with the lower of its own role and its user's current highest role, so demoting a user
+demotes their tokens, and it stops working the moment it is revoked or expires, or its user is
+disabled or locked out. It cannot change its account: the password, two factor authentication,
+linking an external sign in and making tokens answer it with 403. `GET /api/tokens` lists a user's
+tokens with when and from where each was last used, recorded at most once a minute, and
+`GET /api/tokens/all` every user's, for administrators. `DELETE /api/tokens/{id}` revokes one, by its
+owner or an administrator, and keeps its row. What a token does is audited under its user's name and
+the token's, as `alice (token build-server)`.
+
 ### The first administrator
 
 A fresh deployment creates an `admin` account and prints its password once, at warning level:
@@ -586,6 +605,7 @@ as a PFX in `Kestrel:Certificates:Default:Path`, or a folder above it.
 | `Boot/BCD` | Boot configuration: `boot.wim` from a RAM disk over TFTP |
 | `Boot/boot.sdi` | RAM disk description |
 | `Boot/boot.wim` | Windows PE with `DDT.Agent`, and PowerShell unless left out |
+| `Boot/ddt-boot-image.json` | What the build holds, for the boot image page, see below |
 | `EFI/Microsoft/Boot/boot.stl` | Secure Boot revocation list the boot manager checks |
 | `EFI/Microsoft/Boot/Fonts/` | Fonts the boot manager draws its screens with |
 
@@ -614,6 +634,34 @@ logged with the name the client asked for.
 A normal boot also logs a dozen refused reads, and none of them is a fault. The boot manager tries
 `\BCD` before `\Boot\BCD`, and it and the Windows loader look for optional Secure Boot policy files
 such as `\EFI\Microsoft\Boot\SiPolicy.p7b` and `UnlockToken.pol`, then carry on without them.
+
+#### Drivers in the boot image
+
+Windows PE carries drivers for common network and storage controllers only. A machine whose
+controller it does not know cannot reach DDT, or cannot see its disk, before any sequence runs, so
+the driver has to be in `boot.wim`. There are two ways to put it there, and a build can use both:
+
+- **From DDT.** On the Packages page an administrator flags a driver package for the boot image
+  (`bootImage` in `PUT /api/packages/{id}`; only a driver package can have it). Build with
+  `-ServerUrl`, `-RootCertificatePath` and `-ApiToken`, an administrator's API token, see
+  [API tokens](#api-tokens). The script asks `GET /api/boot-image` for the flagged packages,
+  downloads each from `GET /api/boot-image/drivers/{packageId}/content` over a connection that
+  trusts the pinned root and no other, checks its SHA-256 and unpacks it. The token only authorizes
+  the download; it goes into neither the image nor the file below. Pass it from an environment
+  variable rather than typing it, so it stays out of the shell's history.
+- **From a folder.** `-DriverPath` names a folder of drivers on the build computer.
+
+DISM adds every `.inf` below each folder with `/Add-Driver /Recurse`, and refuses a driver that is
+not signed, which Windows PE could not load with Secure Boot on anyway.
+
+Every build writes `Boot/ddt-boot-image.json` next to `boot.wim`: when it was built, the DDT
+packages it holds with their SHA-256, the ADK version, the version of the boot managers and that of
+the agent. DDT reads it on each request, and `GET /api/boot-image` compares the flagged packages
+with it: `stale` says the boot image must be built again to carry them, or no longer carries one
+that was taken out. A missing or unreadable file counts as a build without DDT's drivers, which is
+what a boot image built before this is. The file holds no secret; like everything in the boot
+directory, anyone who can netboot can read it. DDT looks at it every 10 seconds and pushes a new
+build to open pages, so copying a build into the boot directory is enough.
 
 ### TFTP tuning
 
@@ -937,7 +985,8 @@ it on the Packages page as one of two kinds, in resumable chunks like an image.
   such as a Lenovo machine type, and needs at least three characters there. Case and spacing are
   ignored, and the placeholders firmware leaves in unset fields, such as "To Be Filled By O.E.M.",
   are refused and never match. An Inject drivers step adds every driver package whose targets match
-  the machine.
+  the machine. A driver package can also go into the Windows PE boot image, for a controller Windows
+  PE lacks, see [Drivers in the boot image](#drivers-in-the-boot-image).
 - A **files package** has no targets. A Run script step that names it has it unpacked into a folder
   of its own, which becomes the script's working directory and is named in `DDT_PACKAGE`.
 
@@ -1173,7 +1222,10 @@ starts, the agent does not report, and the page shows the last contact. Once the
 reports while it waits for Windows setup to finish. A run whose agent has been silent for longer
 than a run token lasts (7 days) can never go on, so the server fails it within the next hour, with
 an error that says since when; until then it stays running unless someone stops it. The same data
-is at `GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`.
+is at `GET /api/deployments/{id}` and `GET /api/machines/{id}/deployments`. The runs of every machine
+are at `GET /api/deployments`, newest first and a page at a time, filtered by state, sequence,
+machine and a search over the machine's name, model, serial number and MAC addresses and the run's
+title; the first page counts the runs of each state.
 
 The log panel shows the newest 500 lines of the run, or of the machine with its registration and
 sign-in lines, and adds each line the agent sends as it arrives. It follows the newest line until
@@ -1575,9 +1627,15 @@ is being checked does not receive it.
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
 operator is written to the audit table with the actor and source address, and so is every run that
 is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
-sequence, package, rule or account. Waiting machines removed after a day unseen are only counted in the
-server log. Since anyone can register, approve on the page only a machine you can tie to a real PC,
-by its address or by someone signing in at it.
+sequence, package, rule, account or API token. Waiting machines removed after a day unseen are only
+counted in the server log. Since anyone can register, approve on the page only a machine you can tie
+to a real PC, by its address or by someone signing in at it.
+
+Administrators read the audit table at `GET /api/audit`, newest first, a page of up to 500 rows at a
+time, filtered by the start of the action such as `machine.`, any part of the actor's name, the exact
+subject id and a time range, `from` included and `to` not. Each row says whether a user, an API
+token, a machine or DDT itself acted, and the rows a change adds reach administrators' open pages as
+it is stored.
 
 Machine tokens are opaque payloads from ASP.NET Core Data Protection rather than JWTs: the key
 ring is already required, already rotates, and this needs no token library. Each purpose, poll,

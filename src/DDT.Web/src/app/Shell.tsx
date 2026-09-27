@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button as AriaButton, MenuTrigger, type Key, type Selection } from "react-aria-components";
@@ -22,16 +22,20 @@ import { CommandPalette } from "./CommandPalette";
 import { categories, locate } from "./navigation";
 import { chooseTheme, useThemeChoice, type ThemeChoice } from "./theme";
 
+// An account signed in with a password an administrator was shown reaches only its Account page until it has set its
+// own: the server answers nothing else, and the router sends every other address there. Meanwhile the shell offers no
+// navigation, search or live connection, and brings them back as soon as the cached account says the password changed.
 export function Shell() {
-  const live = useLiveUpdates();
+  const passwordFirst = useQuery(currentUserQuery).data?.mustChangePassword === true;
+  const live = useLiveUpdates(!passwordFirst);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const here = locate(pathname);
+  const here = passwordFirst ? null : locate(pathname);
 
   return (
     <div className="flex h-full flex-col">
-      <TopBar activeCategory={here?.category.id} />
+      <TopBar activeCategory={here?.category.id} passwordFirst={passwordFirst} />
       {here ? <SubNavigation categoryId={here.category.id} activePage={here.page.to} /> : null}
-      <ConnectionBanner live={live} />
+      {passwordFirst ? null : <ConnectionBanner live={live} />}
       <main className="min-h-0 flex-1 overflow-auto">
         <LiveContext value={live}>
           <Outlet />
@@ -42,7 +46,13 @@ export function Shell() {
   );
 }
 
-function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
+function TopBar({
+  activeCategory,
+  passwordFirst,
+}: {
+  activeCategory: string | undefined;
+  passwordFirst: boolean;
+}) {
   const { i18n, t } = useLingui();
   const user = useQueryClient().getQueryData(currentUserQuery.queryKey) ?? null;
 
@@ -59,7 +69,7 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
         aria-label={t`Sections`}
         className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto [scrollbar-width:none]"
       >
-        {categories.map((category) => {
+        {(passwordFirst ? [] : categories).map((category) => {
           const active = category.id === activeCategory;
 
           return (
@@ -77,7 +87,7 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
           );
         })}
       </nav>
-      <CommandPalette />
+      {passwordFirst ? null : <CommandPalette />}
       {user ? <UserMenu user={user} /> : null}
     </header>
   );

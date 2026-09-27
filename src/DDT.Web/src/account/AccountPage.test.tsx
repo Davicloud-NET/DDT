@@ -12,8 +12,13 @@ import { administrator } from "@/test/builders";
 import { renderPage } from "@/test/renderPage";
 import type { Routes } from "@/test/server";
 
+// The page also lists the person's API tokens, which these tests leave empty.
 function open(routes: Routes = {}, user: CurrentUser = administrator) {
-  return renderPage({ path: "/account", user, routes });
+  return renderPage({
+    path: "/account",
+    user,
+    routes: { "GET /api/tokens": { body: [] }, ...routes },
+  });
 }
 
 function field(label: string): HTMLElement {

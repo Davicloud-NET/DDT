@@ -4,7 +4,7 @@
 
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import { ApiError, apiFetch, apiPost } from "@/lib/api";
+import { ApiError, apiFetch, apiGet, apiPost } from "@/lib/api";
 
 // NoRole: the password was right, but none of the directory groups of the account maps to a role in DDT.
 export type LoginStatus = "Succeeded" | "RequiresTwoFactor" | "LockedOut" | "Failed" | "NoRole";
@@ -45,6 +45,25 @@ export const currentUserQuery = queryOptions({
     return (await response.json()) as CurrentUser;
   },
 });
+
+// A single sign-on provider the sign-in page offers a button for. The list is empty while single sign-on is off.
+export interface ExternalProvider {
+  scheme: string;
+  displayName: string;
+}
+
+export const externalProvidersQuery = queryOptions({
+  queryKey: ["external-providers"],
+  staleTime: Infinity,
+  retry: false,
+  queryFn: () => apiGet<ExternalProvider[]>("/api/auth/external/providers"),
+});
+
+// Where a provider's button goes: the server sends the browser on to the provider, and back to / or to the sign-in page
+// with the reason it refused.
+export function externalSignInUrl(provider: ExternalProvider): string {
+  return `/api/auth/external/start?${new URLSearchParams({ scheme: provider.scheme }).toString()}`;
+}
 
 export async function login(request: LoginRequest): Promise<LoginStatus> {
   try {

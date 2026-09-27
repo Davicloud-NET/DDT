@@ -3,23 +3,27 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Agent.Consoles;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
 // What the technician has typed so far. A wrong password asks again only for the password, and a wrong code
 // only for the code, as the web sign in page does. Typed user names never reach the log, because a password
-// typed into the wrong field would otherwise be uploaded with it.
-public sealed class SignInConversation(ISignInPrompt prompt, AgentLog log)
+// typed into the wrong field would otherwise be uploaded with it. What went wrong is logged, and the next question
+// carries it too, for a console that shows it with the field.
+public sealed class SignInConversation(IMachineConsole console, AgentLog log)
 {
     private string? _userName;
     private string? _password;
     private bool _codeRequired;
     private bool _introduced;
+    private string? _error;
 
-    public bool IsAvailable => prompt.IsAvailable;
+    public bool IsAvailable => console.CanAsk;
 
-    public Task<string?> ReadAsync(CancellationToken cancellationToken)
+    public Task<ConsoleAnswer?> ReadAsync(CancellationToken cancellationToken)
     {
         if (_userName is null)
         {
@@ -29,18 +33,21 @@ public sealed class SignInConversation(ISignInPrompt prompt, AgentLog log)
                 log.Information("Sign in with your DDT account at this machine. Enter an empty password to use another account.");
             }
 
-            return prompt.ReadLineAsync("User name", secret: false, cancellationToken);
+            return console.AskAsync(new SignInQuestion(SignInField.UserName, null, _error), cancellationToken);
         }
 
-        return _password is null
-            ? prompt.ReadLineAsync($"Password for {_userName}", secret: true, cancellationToken)
-            : prompt.ReadLineAsync("Authenticator code", secret: false, cancellationToken);
+        SignInField field = _password is null ? SignInField.Password : SignInField.Code;
+
+        return console.AskAsync(new SignInQuestion(field, _userName, _error), cancellationToken);
     }
 
     // The request to send once everything the server needs has been typed, otherwise null.
-    public AgentSignInRequest? Accept(string typed)
+    public AgentSignInRequest? Accept(ConsoleAnswer answer)
     {
-        ArgumentNullException.ThrowIfNull(typed);
+        ArgumentNullException.ThrowIfNull(answer);
+
+        string typed = answer.Back ? string.Empty : answer.Text ?? string.Empty;
+        _error = null;
 
         if (_userName is null)
         {
@@ -86,18 +93,18 @@ public sealed class SignInConversation(ISignInPrompt prompt, AgentLog log)
                 _codeRequired = true;
                 break;
             case AgentSignInStatus.Failed when _codeRequired:
-                log.Warning("That code is not valid. Check the time on the device that shows it.");
+                Warn("That code is not valid. Check the time on the device that shows it.");
                 break;
             case AgentSignInStatus.Failed:
-                log.Warning("Wrong user name or password.");
+                Warn("Wrong user name or password.");
                 _password = null;
                 break;
             case AgentSignInStatus.LockedOut:
-                log.Warning("This account is locked after too many attempts. Wait a few minutes or use another account.");
+                Warn("This account is locked after too many attempts. Wait a few minutes or use another account.");
                 Reset();
                 break;
             case AgentSignInStatus.NotPermitted:
-                log.Warning("This account may not authorize machines. Sign in as an operator or administrator.");
+                Warn("This account may not authorize machines. Sign in as an operator or administrator.");
                 Reset();
                 break;
             default:
@@ -112,7 +119,7 @@ public sealed class SignInConversation(ISignInPrompt prompt, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(exception);
 
-        log.Warning(exception is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests }
+        Warn(exception is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests }
             ? "Too many sign in attempts from this address. Wait a few minutes, then try again."
             : $"Cannot sign in ({exception.Message}). Try again.");
 
@@ -127,5 +134,11 @@ public sealed class SignInConversation(ISignInPrompt prompt, AgentLog log)
         _userName = null;
         _password = null;
         _codeRequired = false;
+    }
+
+    private void Warn(string message)
+    {
+        log.Warning(message);
+        _error = message;
     }
 }

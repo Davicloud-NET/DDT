@@ -5,13 +5,14 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using DDT.Agent.Consoles;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
 // Switches to the agent the server offers, so a DDT update never needs a new boot image. It runs only before
 // this agent first registers: the new agent starts without this one's resume token, so switching later would
-// cost an approved machine its approval.
+// cost an approved machine its approval. status shows a server that cannot be reached on the console.
 public sealed class AgentUpdate(
     IAgentServer server,
     IAgentRelauncher relauncher,
@@ -19,7 +20,8 @@ public sealed class AgentUpdate(
     TimeProvider timeProvider,
     string currentSha256,
     string directory,
-    IReadOnlyList<string> arguments)
+    IReadOnlyList<string> arguments,
+    ConsoleStatus? status = null)
 {
     // Six retries wait 90 seconds in all, longer than the server's one minute window.
     private const int MaxRefusals = 6;
@@ -83,7 +85,10 @@ public sealed class AgentUpdate(
         {
             try
             {
-                return await server.GetReleaseAsync(cancellationToken).ConfigureAwait(false);
+                AgentRelease? release = await server.GetReleaseAsync(cancellationToken).ConfigureAwait(false);
+                status?.Answered();
+
+                return release;
             }
             catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.TooManyRequests && ++refusals <= MaxRefusals)
             {
@@ -95,6 +100,7 @@ public sealed class AgentUpdate(
             {
                 failures++;
                 log.Warning($"Cannot reach the server to ask for the current agent ({exception.Message}).");
+                status?.Unreachable(exception);
             }
             catch (Exception exception) when (exception is HttpRequestException or JsonException)
             {

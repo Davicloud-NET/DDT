@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using Xunit;
 
@@ -42,6 +43,37 @@ public sealed class AgentUpdateTests : IDisposable
         Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
         Assert.Empty(relauncher.Started);
         Assert.DoesNotContain("download", server.Calls);
+    }
+
+    // The update check is the first call to the server, so the console at the machine shows why it does not get through.
+    [Fact]
+    public async Task ShowsWhyTheServerCannotBeReachedUntilItAnswers()
+    {
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRelease(() => throw new HttpRequestException(HttpRequestError.NameResolutionError, "the name ddt.example cannot be found in DNS"))
+            .OnRelease(() => null);
+        ScriptedMachineConsole console = new();
+        ImmediateTimeProvider time = new();
+        AgentUpdate update = new(
+            server,
+            new ScriptedRelauncher(() => 0),
+            new AgentLog(time, TextWriter.Null),
+            time,
+            CurrentSha256,
+            _directory,
+            [],
+            TestAgents.Status(console));
+
+        Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(
+            [
+                new ConsoleServer("https://ddt.example:8443/"),
+                new ConsoleServer("https://ddt.example:8443/", "the name ddt.example cannot be found in DNS", ConnectionStage.NameLookup, 1),
+                new ConsoleServer("https://ddt.example:8443/"),
+            ],
+            console.States.Select(state => state.Server));
+        Assert.All(console.States, state => Assert.Equal(ConsoleStage.Starting, state.Stage));
     }
 
     [Fact]

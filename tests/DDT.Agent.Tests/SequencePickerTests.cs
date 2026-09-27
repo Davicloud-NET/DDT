@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -211,7 +212,7 @@ public sealed class SequencePickerTests
         };
         StringWriter console = new();
         ScriptedSignInPrompt prompt = new("1", "ERASE", "ANYWAY");
-        SequencePicker picker = new(prompt, new AgentLog(new ImmediateTimeProvider(), console));
+        SequencePicker picker = TextPicker(prompt, console);
         picker.Offer([signed], [FakeDeploymentTools.Disk(0)], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011);
 
         Assert.Equal(new AgentRunRequest(signed.Id, 0, null, AllowSecureBootMismatch: true), await AnswerAllAsync(picker));
@@ -272,10 +273,18 @@ public sealed class SequencePickerTests
     {
         StringWriter console = new();
         ScriptedSignInPrompt prompt = new(typed);
-        SequencePicker picker = new(prompt, new AgentLog(new ImmediateTimeProvider(), console));
+        SequencePicker picker = TextPicker(prompt, console);
         picker.Offer(sequences, disks, secureBootEnabled);
 
         return (picker, prompt, console);
+    }
+
+    // Asks as the text console does, which these tests pin.
+    private static SequencePicker TextPicker(ScriptedSignInPrompt prompt, StringWriter console)
+    {
+        AgentLog log = new(new ImmediateTimeProvider(), console);
+
+        return new SequencePicker(new TextMachineConsole(prompt, log), log);
     }
 
     private static string[] Lines(StringWriter console) => console.ToString().Split(Environment.NewLine);
@@ -283,9 +292,9 @@ public sealed class SequencePickerTests
     // Reads and accepts typed lines until the picker has a request.
     private static async Task<AgentRunRequest?> AnswerAllAsync(SequencePicker picker)
     {
-        while (await picker.ReadAsync(TestContext.Current.CancellationToken) is { } typed)
+        while (await picker.ReadAsync(TestContext.Current.CancellationToken) is { } answer)
         {
-            if (picker.Accept(typed) is { } request)
+            if (picker.Accept(answer) is { } request)
             {
                 return request;
             }

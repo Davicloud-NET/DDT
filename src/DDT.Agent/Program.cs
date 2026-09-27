@@ -4,6 +4,7 @@
 
 using System.Text;
 using DDT.Agent;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
@@ -62,6 +63,8 @@ string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "u
 using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
 
 AgentLog log = new(TimeProvider.System, Console.Out);
+TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
+ConsoleStatus status = new(text, version, options.ServerUrl, options.KeyboardLayout, options.DryRun);
 
 if (options.DryRun)
 {
@@ -77,15 +80,13 @@ if (options.DryRun || !AgentBuild.IsPublished)
 else if (!options.NoUpdate)
 {
     string current = await AgentUpdate.Sha256Async(Environment.ProcessPath!, stop.Token).ConfigureAwait(false);
-    AgentUpdate update = new(server, new ProcessAgentRelauncher(server.CloseConnections), log, TimeProvider.System, current, AppContext.BaseDirectory, args);
+    AgentUpdate update = new(server, new ProcessAgentRelauncher(server.CloseConnections), log, TimeProvider.System, current, AppContext.BaseDirectory, args, status);
 
     if (await update.RunAsync(stop.Token).ConfigureAwait(false) is { } exitCode)
     {
         return exitCode;
     }
 }
-
-ConsoleSignInPrompt prompt = new(log, TimeProvider.System, options.KeyboardLayout);
 
 // The whole run, both phases, in this process, with a directory for the machine's disk that holds the run until it
 // ends. The Windows phase reaches the server as the agent.json the hand-over staged says.
@@ -95,7 +96,7 @@ if (options.DryRun)
         options,
         server,
         staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate),
-        prompt,
+        status,
         Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}"),
         Environment.ProcessPath!,
         log,
@@ -128,11 +129,12 @@ SequenceRunner runner = new(
     RunHeartbeat.DefaultInterval,
     AppContext.BaseDirectory,
     Environment.SystemDirectory,
-    dryRun: false);
+    dryRun: false,
+    status);
 AgentLoop loop = new(
     server,
     new HardwareMachineIdentityReader(),
-    prompt,
+    status,
     disks,
     runner,
     new LocalRunLocator(LocalRunLocator.FixedDrives()),

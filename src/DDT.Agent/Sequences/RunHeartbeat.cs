@@ -36,14 +36,31 @@ public sealed class RunHeartbeat(
     private SequenceState? _state;
     private Guid? _stepId;
     private int _percent;
+    private bool _percentKnown;
     private RunActivity _activity = RunActivity.Preparing;
     private CancellationTokenSource? _stop;
     private CancellationTokenSource? _run;
     private Task? _loop;
 
+    // After every change of the state, the running step's percent or the activity, on the thread that made it, for the
+    // console at the machine, which reads Position then.
+    public event Action? Changed;
+
     // Why the heartbeat ended the run: AgentTokenRejectedException, also for a step's own call, or a
     // DeploymentStepException carrying the server's refusal. Null while it runs or when it was stopped.
     public Exception? Failure { get; private set; }
+
+    // The run as it stands, with every step. Percent is null until the running step has said how far it is.
+    public (SequenceState? State, Guid? StepId, int? Percent, RunActivity Activity) Position
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return (_state, _stepId, _percentKnown ? _percent : null, _activity);
+            }
+        }
+    }
 
     public RunActivity Activity
     {
@@ -68,7 +85,11 @@ public sealed class RunHeartbeat(
                 }
             }
 
-            changed?.TrySetResult();
+            if (changed is not null)
+            {
+                changed.TrySetResult();
+                Changed?.Invoke();
+            }
         }
     }
 
@@ -87,6 +108,7 @@ public sealed class RunHeartbeat(
             {
                 _stepId = running;
                 _percent = 0;
+                _percentKnown = false;
             }
 
             _state = state;
@@ -94,6 +116,7 @@ public sealed class RunHeartbeat(
         }
 
         changed.TrySetResult();
+        Changed?.Invoke();
     }
 
     // The running step's percent, which waits for the next beat.
@@ -101,12 +124,24 @@ public sealed class RunHeartbeat(
     {
         ArgumentNullException.ThrowIfNull(value);
 
+        bool changed = false;
+
         lock (_lock)
         {
-            if (value.StepId == _stepId)
+            int percent = Math.Clamp(value.Percent, 0, 100);
+
+            if (value.StepId == _stepId && (percent != _percent || !_percentKnown))
             {
-                _percent = Math.Clamp(value.Percent, 0, 100);
+                _percent = percent;
+                _percentKnown = true;
+                changed = true;
             }
+        }
+
+        // Only a new percent: a download reports far more often than its percent moves.
+        if (changed)
+        {
+            Changed?.Invoke();
         }
     }
 

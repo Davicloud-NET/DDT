@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
@@ -14,11 +16,12 @@ namespace DDT.Agent;
 
 // Registers the machine, waits until it may run a task sequence, runs it, and after a restart in the middle of a run
 // goes on with the run whose state it finds on the disk, as long as the server still runs it. A start that finds a
-// restart still due makes that restart first, without registering.
+// restart still due makes that restart first, without registering. The console at the machine asks the questions and
+// shows how far the machine is.
 public sealed class AgentLoop(
     IAgentServer server,
     IMachineIdentityReader identityReader,
-    ISignInPrompt prompt,
+    ConsoleStatus status,
     IDiskPartitioner disks,
     SequenceRunner runner,
     LocalRunLocator locator,
@@ -52,6 +55,18 @@ public sealed class AgentLoop(
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
+        int exitCode = await RunCoreAsync(cancellationToken).ConfigureAwait(false);
+
+        if (exitCode == AgentExitCodes.Stopped && status.State.Stage != ConsoleStage.Stopped)
+        {
+            status.Stopped("The agent was stopped.");
+        }
+
+        return exitCode;
+    }
+
+    private async Task<int> RunCoreAsync(CancellationToken cancellationToken)
+    {
         log.Information($"DDT agent {agentVersion}");
 
         if (await runner.RestartIfDueAsync(cancellationToken).ConfigureAwait(false) is { } restarted)
@@ -59,7 +74,7 @@ public sealed class AgentLoop(
             return restarted == RunOutcome.Restarting ? AgentExitCodes.Restarting : AgentExitCodes.Stopped;
         }
 
-        if (!prompt.IsAvailable)
+        if (!status.Console.CanAsk)
         {
             log.Information("Nobody can type at this console. Unless the server requires a sign in at the machine, approve it on the Machines page.");
         }
@@ -98,12 +113,14 @@ public sealed class AgentLoop(
             if (registration.Token is null)
             {
                 log.Error($"An administrator rejected machine {registration.MachineId}. The agent stops here.");
+                status.Rejected(registration.MachineId);
 
                 return AgentExitCodes.Rejected;
             }
 
             _resumeToken = registration.ResumeToken;
             log.Information($"Registered as machine {registration.MachineId}, {Describe(registration.State)}");
+            status.Reached(registration.MachineId, registration.State, registration.SignedInBy);
 
             int? exitCode = await PollAsync(registration, cancellationToken).ConfigureAwait(false);
 
@@ -127,10 +144,10 @@ public sealed class AgentLoop(
         TimeSpan interval = TimeSpan.FromSeconds(registration.PollAfterSeconds);
         int failures = 0;
 
-        SignInConversation conversation = new(prompt, log);
-        SequencePicker picker = new(prompt, log);
+        SignInConversation conversation = new(status.Console, log);
+        SequencePicker picker = new(status.Console, log);
         CancellationTokenSource? stopTyping = null;
-        Task<string?>? typing = null;
+        Task<ConsoleAnswer?>? typing = null;
         bool typingForPicker = false;
         _pickableDisks = null;
 
@@ -270,6 +287,8 @@ public sealed class AgentLoop(
                         typing = typingForPicker ? picker.ReadAsync(stopTyping.Token) : conversation.ReadAsync(stopTyping.Token);
                     }
 
+                    status.Reached(machineId, state, signedInBy, picker.IsOffered);
+
                     // Only an authorized machine may write to the server's log. Until then lines wait here.
                     if (authorized)
                     {
@@ -291,6 +310,7 @@ public sealed class AgentLoop(
                     failures++;
                     interval = AgentLimits.RetryDelay(failures);
                     log.Warning($"Cannot reach the server ({exception.Message}). Retrying in {interval.TotalSeconds:0} s.");
+                    status.Unreachable(exception);
                 }
 
                 if (typing is null)
@@ -320,14 +340,14 @@ public sealed class AgentLoop(
                     await waiting.CancelAsync().ConfigureAwait(false);
                 }
 
-                string? typed = await typing.ConfigureAwait(false);
+                ConsoleAnswer? answer = await typing.ConfigureAwait(false);
                 stopTyping!.Dispose();
                 stopTyping = null;
                 typing = null;
 
                 // Poll before asking for the next field, so an approval or an assignment on the web is noticed
                 // right away.
-                if (typed is null)
+                if (answer is null)
                 {
                     continue;
                 }
@@ -336,11 +356,11 @@ public sealed class AgentLoop(
                 {
                     if (typingForPicker)
                     {
-                        await SendPickAsync(picker, machineId, token, typed, cancellationToken).ConfigureAwait(false);
+                        await SendPickAsync(picker, machineId, token, answer, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        await SendSignInAsync(conversation, machineId, token, typed, cancellationToken).ConfigureAwait(false);
+                        await SendSignInAsync(conversation, machineId, token, answer, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (AgentTokenRejectedException)
@@ -371,10 +391,10 @@ public sealed class AgentLoop(
         SignInConversation conversation,
         Guid machineId,
         string token,
-        string typed,
+        ConsoleAnswer answer,
         CancellationToken cancellationToken)
     {
-        if (conversation.Accept(typed) is not { } request)
+        if (conversation.Accept(answer) is not { } request)
         {
             return;
         }
@@ -391,9 +411,14 @@ public sealed class AgentLoop(
     }
 
     // A refused token and a stop reach the caller.
-    private async Task SendPickAsync(SequencePicker picker, Guid machineId, string token, string typed, CancellationToken cancellationToken)
+    private async Task SendPickAsync(
+        SequencePicker picker,
+        Guid machineId,
+        string token,
+        ConsoleAnswer answer,
+        CancellationToken cancellationToken)
     {
-        if (picker.Accept(typed) is not { } request)
+        if (picker.Accept(answer) is not { } request)
         {
             return;
         }
@@ -449,6 +474,7 @@ public sealed class AgentLoop(
         if (_pickableDisks is null && sequences.Any(sequence => sequence.ErasesDisk))
         {
             _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            status.DisksRead(_pickableDisks);
 
             if (_pickableDisks.Count == 0)
             {
@@ -460,7 +486,7 @@ public sealed class AgentLoop(
     }
 
     // Waits for the prompt to let go of the console before anything else can ask for input.
-    private static async Task StopTypingAsync(CancellationTokenSource stopTyping, Task<string?> typing)
+    private static async Task StopTypingAsync(CancellationTokenSource stopTyping, Task<ConsoleAnswer?> typing)
     {
         await stopTyping.CancelAsync().ConfigureAwait(false);
         await typing.ConfigureAwait(false);
@@ -514,6 +540,7 @@ public sealed class AgentLoop(
     private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
     {
         int failures = 0;
+        status.Registering();
         IReadOnlyList<AgentDisk>? eligibleDisks = await ReadDisksAsync(cancellationToken).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
@@ -543,10 +570,11 @@ public sealed class AgentLoop(
                         ChassisType: identity.ChassisType),
                     cancellationToken).ConfigureAwait(false);
             }
-            catch (AgentTokenRejectedException)
+            catch (AgentTokenRejectedException exception)
             {
                 failures++;
                 log.Warning("The server refused the registration. Trying again.");
+                status.Unreachable(exception);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -556,6 +584,7 @@ public sealed class AgentLoop(
             {
                 failures++;
                 log.Warning($"Cannot register with the server ({exception.Message}).");
+                status.Unreachable(exception);
             }
 
             if (!await DelayAsync(AgentLimits.RetryDelay(failures), cancellationToken).ConfigureAwait(false))
@@ -574,6 +603,7 @@ public sealed class AgentLoop(
         try
         {
             IReadOnlyList<LocalDisk> eligible = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            status.DisksRead(eligible);
 
             return [.. eligible.Select(disk => disk.ToAgentDisk())];
         }
@@ -593,6 +623,7 @@ public sealed class AgentLoop(
             && _lastIdentity.PrimaryMac == identity.PrimaryMac;
 
         _lastIdentity = identity;
+        status.Identified(identity);
 
         if (known)
         {

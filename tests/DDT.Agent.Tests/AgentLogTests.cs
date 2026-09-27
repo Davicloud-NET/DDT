@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using Xunit;
 
@@ -39,6 +40,34 @@ public sealed class AgentLogTests
         await log.FlushAsync(server, s_machineId, "token", cancellationToken);
 
         Assert.Equal("line 204", server.SentLines[0].Message);
+    }
+
+    // The graphical console shows the log, and the text console behind it gets every line too, so it has them all
+    // should it take over.
+    [Fact]
+    public void GivesEveryLineToTheConsoleThatShowsTheLogAsWell()
+    {
+        StringWriter text = new();
+        ScriptedMachineConsole graphical = new();
+        AgentLog log = new(new ImmediateTimeProvider(), text);
+        log.Information("before");
+        log.MachineConsole = graphical;
+
+        log.StepId = TestRuns.Apply.Id;
+        log.Warning("during the step");
+        log.StepId = null;
+        log.Error("after");
+
+        DateTimeOffset now = new ImmediateTimeProvider().GetUtcNow();
+        Assert.Equal(
+            [
+                new ConsoleLogLine(now, ConsoleLogLevel.Warning, "during the step", TestRuns.Apply.Id),
+                new ConsoleLogLine(now, ConsoleLogLevel.Error, "after"),
+            ],
+            graphical.Lines);
+        Assert.Equal(
+            ["00:00:00 INFO  before", "00:00:00 WARN  during the step", "00:00:00 ERROR after", string.Empty],
+            text.ToString().Split(Environment.NewLine));
     }
 
     [Fact]

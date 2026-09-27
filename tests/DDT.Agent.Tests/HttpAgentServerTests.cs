@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
@@ -55,10 +56,11 @@ public sealed class HttpAgentServerTests
         Task serving = AnswerLateAsync(listener, "application/json", """{"sha256":"00","size":1}"""u8.ToArray(), cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.GetReleaseAsync(cancellationToken));
+        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => server.GetReleaseAsync(cancellationToken));
         await serving;
 
         Assert.Equal("the server did not answer within 0.2 s", timeout.Message);
+        Assert.Equal(ConnectionStage.Answer, timeout.Stage);
     }
 
     // The connect timeout covers the TLS handshake, which a listener that never accepts leaves unanswered once the kernel
@@ -72,11 +74,13 @@ public sealed class HttpAgentServerTests
         int port = ((IPEndPoint)listener.LocalEndpoint).Port;
         using HttpAgentServer server = new(new Uri($"https://127.0.0.1:{port}/"), null, connectTimeout: TimeSpan.FromMilliseconds(300));
 
-        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.GetReleaseAsync(TestContext.Current.CancellationToken));
+        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(
+            () => server.GetReleaseAsync(TestContext.Current.CancellationToken));
 
         Assert.Matches(
             $@"^the server at 127\.0\.0\.1:{port} accepted a connection at 127\.0\.0\.1:{port} after 0\.\d s, but the TLS handshake did not finish within 0\.3 s$",
             timeout.Message);
+        Assert.Equal(ConnectionStage.SecureConnection, timeout.Stage);
     }
 
     // ConnectionFailure's words rely on how SocketsHttpHandler reports this, which a real connection shows.
@@ -120,10 +124,11 @@ public sealed class HttpAgentServerTests
         using HttpAgentServer server = new(AddressOf(listener), null, downloadTimeout: TimeSpan.FromMilliseconds(300));
         using MemoryStream destination = new();
 
-        TimeoutException timeout = await Assert.ThrowsAsync<TimeoutException>(() => server.DownloadReleaseAsync(destination, cancellationToken));
+        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => server.DownloadReleaseAsync(destination, cancellationToken));
         await serving;
 
         Assert.Equal("the download did not finish within 0.3 s", timeout.Message);
+        Assert.Equal(ConnectionStage.Answer, timeout.Stage);
     }
 
     // The download's own deadline is minutes away, so only the stop can end it.

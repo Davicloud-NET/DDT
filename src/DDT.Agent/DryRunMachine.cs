@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
@@ -14,12 +15,13 @@ namespace DDT.Agent;
 // which connect turns into the server the service reaches. Its disk is root, the only thing that outlasts a restart:
 // each restart starts the phase the run's state names over with new instances, as a real restart does, until the run
 // ends. Tools only log, and nothing on this computer is changed, so the dry run works in a normal Windows session. A
-// dry run that was stopped goes on when it is started again with the same dry run id, which names the same root.
+// dry run that was stopped goes on when it is started again with the same dry run id, which names the same root. The
+// console shows Windows PE's part, as the service in the installed Windows has none.
 public sealed class DryRunMachine(
     AgentOptions options,
     IAgentServer server,
     Func<AgentOptions, IAgentServer> connect,
-    ISignInPrompt prompt,
+    ConsoleStatus status,
     string root,
     string agentPath,
     AgentLog log,
@@ -50,8 +52,8 @@ public sealed class DryRunMachine(
     private Task<int> RunWindowsPEAsync(CancellationToken cancellationToken)
     {
         DryRunDiskPartitioner disks = new(root, log);
-        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), root);
-        AgentLoop loop = new(server, Identity(), prompt, disks, runner, new LocalRunLocator([Windows]), log, timeProvider, agentVersion);
+        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), root, status);
+        AgentLoop loop = new(server, Identity(), status, disks, runner, new LocalRunLocator([Windows]), log, timeProvider, agentVersion);
 
         return loop.RunAsync(cancellationToken);
     }
@@ -80,7 +82,7 @@ public sealed class DryRunMachine(
             WindowsPhaseLoop loop = new(
                 windowsServer,
                 Identity(),
-                Runner(windowsServer, new DryRunDiskPartitioner(root, log), tools, rebooter, Path.Combine(Windows, "DDT")),
+                Runner(windowsServer, new DryRunDiskPartitioner(root, log), tools, rebooter, Path.Combine(Windows, "DDT"), null),
                 new DryRunSetupProbe(log),
                 rebooter,
                 new DryRunRestartMarker(log),
@@ -108,7 +110,8 @@ public sealed class DryRunMachine(
         DryRunDiskPartitioner disks,
         DryRunToolRunner tools,
         IRebooter rebooter,
-        string workDirectory)
+        string workDirectory,
+        ConsoleStatus? runStatus)
     {
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
@@ -128,6 +131,7 @@ public sealed class DryRunMachine(
             heartbeatInterval,
             workDirectory,
             Environment.SystemDirectory,
-            dryRun: true);
+            dryRun: true,
+            runStatus);
     }
 }

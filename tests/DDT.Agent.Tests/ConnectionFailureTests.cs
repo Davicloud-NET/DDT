@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
+using DDT.ConsoleProtocol;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -54,5 +57,22 @@ public sealed class ConnectionFailureTests
         Assert.Null(ConnectionFailure.Describe(Failed(HttpRequestError.ConnectionError, SocketError.ConnectionReset), s_server));
         Assert.Null(ConnectionFailure.Describe(new HttpRequestException(HttpRequestError.SecureConnectionError, "The server's certificate does not name ddt.example."), s_server));
         Assert.Null(ConnectionFailure.Describe(new HttpRequestException("The server sent an empty answer."), s_server));
+    }
+
+    // For the console at the machine, which shows how far a call got.
+    [Fact]
+    public void TellsHowFarAFailedCallGot()
+    {
+        Assert.Equal(ConnectionStage.NameLookup, ConnectionFailure.StageOf(Failed(HttpRequestError.NameResolutionError, SocketError.HostNotFound)));
+        Assert.Equal(ConnectionStage.Connection, ConnectionFailure.StageOf(Failed(HttpRequestError.ConnectionError, SocketError.ConnectionRefused)));
+        Assert.Equal(
+            ConnectionStage.SecureConnection,
+            ConnectionFailure.StageOf(new HttpRequestException(HttpRequestError.SecureConnectionError, "The server's certificate does not name ddt.example.")));
+        Assert.Equal(
+            ConnectionStage.Connection,
+            ConnectionFailure.StageOf(new ServerTimeoutException(ConnectionStage.Connection, "did not accept a connection", new TimeoutException())));
+        Assert.Equal(ConnectionStage.Answer, ConnectionFailure.StageOf(new AgentRequestException("503", null, HttpStatusCode.ServiceUnavailable)));
+        Assert.Equal(ConnectionStage.Answer, ConnectionFailure.StageOf(new JsonException("An HTML page.")));
+        Assert.Null(ConnectionFailure.StageOf(new InvalidOperationException()));
     }
 }

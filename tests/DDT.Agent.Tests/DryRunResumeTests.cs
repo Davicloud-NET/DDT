@@ -180,7 +180,7 @@ public sealed class DryRunResumeTests : IDisposable
         return new AgentLoop(
             _server,
             new DryRunMachineIdentityReader(1),
-            new ScriptedSignInPrompt { IsAvailable = false },
+            TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
             disks,
             runner,
             new LocalRunLocator([Path.Combine(_root, "W")]),

@@ -3,7 +3,9 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
@@ -27,7 +29,8 @@ namespace DDT.Agent.Sequences;
 // restart failed, makes it at its next start through RestartIfDueAsync.
 // The service in the installed Windows goes on with the run through GoOnInWindowsAsync, with the same steps, reports
 // and failure handling. The engine never runs a Windows PE step there, as the phases come in order, so the disk, image
-// and boot tools and the restart marker are only there for Windows PE.
+// and boot tools and the restart marker are only there for Windows PE. status, in Windows PE, is what the console at the
+// machine shows, which the run keeps up to date; nobody watches the service's.
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
@@ -44,7 +47,8 @@ public sealed class SequenceRunner(
     TimeSpan heartbeatInterval,
     string workDirectory,
     string systemDirectory,
-    bool dryRun)
+    bool dryRun,
+    ConsoleStatus? status = null)
 {
     public const string NoDiskMessage =
         "No internal disk was found. If this PC's storage is set to RAID or Intel VMD/RST, switch it to AHCI in the " +
@@ -128,7 +132,8 @@ public sealed class SequenceRunner(
             ? "The machine was to restart into Windows PE for the run but has not restarted since. Restarting it now."
             : "The machine was to start the installed Windows but has not restarted since. Restarting it now.");
 
-        RunResult result = await RebootAsync(into, RunOutcome.Restarting, "Restart it by hand.", cancellationToken).ConfigureAwait(false);
+        RunResult result = await RebootAsync(into, RestartReason.WasDue, RunOutcome.Restarting, "Restart it by hand.", cancellationToken)
+            .ConfigureAwait(false);
 
         return result.Outcome;
     }
@@ -206,6 +211,12 @@ public sealed class SequenceRunner(
                 heartbeat.Update(saved);
             });
 
+        if (status is not null)
+        {
+            status.RunBegins(run, state);
+            heartbeat.Changed += () => status.RunChanged(heartbeat);
+        }
+
         heartbeat.Update(state);
 
         RunResult result = await RunCoreAsync(session, resumed, confirmedDisk, store, heartbeat, state, machine, cancellationToken)
@@ -260,6 +271,7 @@ public sealed class SequenceRunner(
         {
             string message = LogText.OneLine(exception);
             log.Error(resumed is null ? $"The run cannot start: {message}" : $"The run cannot go on: {message}");
+            status?.RunFailed(message);
             AgentRunReport report = heartbeat.Snapshot(DeploymentState.Failed, message);
 
             if (resumed is not null)
@@ -297,7 +309,9 @@ public sealed class SequenceRunner(
         }
         catch (Exception exception)
         {
-            log.Error($"The server did not let the run start: {LogText.OneLine(exception)} Nothing was changed on any disk.");
+            string message = $"The server did not let the run start: {LogText.OneLine(exception)} Nothing was changed on any disk.";
+            log.Error(message);
+            status?.RunFailed(message);
 
             return new RunResult(RunOutcome.Failed);
         }
@@ -394,8 +408,12 @@ public sealed class SequenceRunner(
         {
             log.Warning("The server no longer accepts this machine's token. The machine restarts as the run asked, and the run goes on after the restart if the server still runs it.");
 
-            return await RebootAsync(SamePhase, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
-                .ConfigureAwait(false);
+            return await RebootAsync(
+                SamePhase,
+                RestartReason.StepAsked,
+                RunOutcome.Restarting,
+                "Restart it by hand; the run goes on after the restart.",
+                cancellationToken).ConfigureAwait(false);
         }
 
         if (heartbeat.Failure is AgentTokenRejectedException)
@@ -740,6 +758,7 @@ public sealed class SequenceRunner(
     {
         bool inWindows = _phase == SequencePhase.Windows;
         log.Information(inWindows ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
+        status?.RunFinished();
 
         AgentRunReport done = heartbeat.Snapshot(DeploymentState.Done);
         await EndRunAsync(store.Files, done).ConfigureAwait(false);
@@ -796,8 +815,12 @@ public sealed class SequenceRunner(
             return new RunResult(RunOutcome.Finished);
         }
 
-        return await RebootAsync(RestartInto.Windows, RunOutcome.Finished, "Restart it by hand; the run is done.", cancellationToken)
-            .ConfigureAwait(false);
+        return await RebootAsync(
+            RestartInto.Windows,
+            RestartReason.RunDone,
+            RunOutcome.Finished,
+            "Restart it by hand; the run is done.",
+            cancellationToken).ConfigureAwait(false);
     }
 
     // The run's state and token are on the disk, and the rest of the run follows the next start of Windows PE, or of the
@@ -840,8 +863,12 @@ public sealed class SequenceRunner(
             return await TokenRejectedAsync(heartbeat).ConfigureAwait(false);
         }
 
-        return await RebootAsync(into, RunOutcome.Restarting, "Restart it by hand; the run goes on after the restart.", cancellationToken)
-            .ConfigureAwait(false);
+        return await RebootAsync(
+            into,
+            handingOver ? RestartReason.HandOver : RestartReason.StepAsked,
+            RunOutcome.Restarting,
+            "Restart it by hand; the run goes on after the restart.",
+            cancellationToken).ConfigureAwait(false);
     }
 
     // The run's state and answer file stay: the registration with the run token decides whether it goes on. Until then
@@ -854,8 +881,15 @@ public sealed class SequenceRunner(
         return new RunResult(RunOutcome.TokenRejected, heartbeat.Snapshot(DeploymentState.Failed, LostContactMessage));
     }
 
-    private async Task<RunResult> RebootAsync(RestartInto into, RunOutcome outcome, string byHand, CancellationToken cancellationToken)
+    private async Task<RunResult> RebootAsync(
+        RestartInto into,
+        RestartReason reason,
+        RunOutcome outcome,
+        string byHand,
+        CancellationToken cancellationToken)
     {
+        status?.Restarting(reason, into);
+
         try
         {
             await rebooter.RebootAsync(into, cancellationToken).ConfigureAwait(false);
@@ -866,7 +900,9 @@ public sealed class SequenceRunner(
         }
         catch (Exception exception)
         {
-            log.Error($"The machine could not restart itself ({LogText.OneLine(exception)}). {byHand}");
+            string message = $"The machine could not restart itself ({LogText.OneLine(exception)}). {byHand}";
+            log.Error(message);
+            status?.RestartFailed(message);
         }
 
         return new RunResult(outcome);
@@ -882,6 +918,7 @@ public sealed class SequenceRunner(
         CancellationToken cancellationToken)
     {
         log.Error($"The run failed: {error}");
+        status?.RunFailed(error);
         await UndoAsync(session, state).ConfigureAwait(false);
         AgentRunReport report = heartbeat.Snapshot(DeploymentState.Failed, error);
         await EndRunAsync(store.Files, report).ConfigureAwait(false);

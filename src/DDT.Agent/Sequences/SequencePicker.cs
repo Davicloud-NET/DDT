@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
 using DDT.Core.Boot;
@@ -14,9 +15,9 @@ namespace DDT.Agent.Sequences;
 // What the technician signed in at the machine has chosen so far: a sequence, then only what that sequence needs: a
 // disk when it erases one and there are several, a computer name when the server needs one, ERASE before a disk is
 // erased, and ANYWAY before a disk image is written that will not start with the Secure Boot the machine has on.
-// Anything but the word at those questions goes back to the list, so nothing is erased by a stray key. The sequences an
-// assignment rule suggests for this machine come first.
-public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
+// Anything but the word at those questions goes back to the list, so nothing is erased by a stray key, and so does Back
+// at any question after the list. The sequences an assignment rule suggests for this machine come first.
+public sealed class SequencePicker(IMachineConsole console, AgentLog log)
 {
     public const string ConfirmationWord = "ERASE";
 
@@ -32,11 +33,12 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
     private AgentSequenceChoice? _sequence;
     private LocalDisk? _disk;
     private string? _computerName;
+    private string? _computerNameError;
     private bool? _secureBootEnabled;
     private UefiCa? _trustedUefiCas;
     private bool _allowSecureBootMismatch;
 
-    public bool IsAvailable => prompt.IsAvailable;
+    public bool IsAvailable => console.CanAsk;
 
     // True once there is something to choose from.
     public bool IsOffered => _question != PickerQuestion.None;
@@ -79,87 +81,66 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _sequence = null;
         _disk = null;
         _computerName = null;
+        _computerNameError = null;
         _secureBootEnabled = null;
         _trustedUefiCas = null;
         _allowSecureBootMismatch = false;
     }
 
-    public Task<string?> ReadAsync(CancellationToken cancellationToken)
+    public Task<ConsoleAnswer?> ReadAsync(CancellationToken cancellationToken) => _question switch
     {
-        switch (_question)
-        {
-            case PickerQuestion.Sequence:
-                log.Information("Task sequences this machine can run:");
-
-                for (int number = 1; number <= _sequences.Count; number++)
-                {
-                    log.Information($"  {number}. {Describe(_sequences[number - 1])}");
-                }
-
-                return prompt.ReadLineAsync("Sequence number", secret: false, cancellationToken);
-            case PickerQuestion.Disk:
-                log.Information("Disks DDT can install on:");
-
-                foreach (LocalDisk disk in _disks)
-                {
-                    log.Information($"  {disk.Describe()}");
-                }
-
-                return prompt.ReadLineAsync("Disk number", secret: false, cancellationToken);
-            case PickerQuestion.ComputerName:
-                log.Information($"{_sequence!.Name} needs a computer name for this machine.");
-
-                return prompt.ReadLineAsync("Computer name", secret: false, cancellationToken);
-            case PickerQuestion.Confirmation:
-                log.Warning(
-                    $"All data on disk {_disk!.Number} ({_disk.DisplayModel}, {ByteSize.Format(_disk.SizeBytes)}, " +
-                    $"{LocalDisk.Partitions(_disk.PartitionCount)}) will be erased by {_sequence!.Name}.");
-
-                return prompt.ReadLineAsync($"Type {ConfirmationWord} to continue", secret: false, cancellationToken);
-            case PickerQuestion.SecureBoot:
-                AgentSequenceChoice writing = _sequence!;
-                log.Warning(UntrustedCa(writing)
-                    ? $"{writing.RawImageName} is signed under {MicrosoftUefiCa.Describe(writing.RawImageSignedUnder)}, which this machine's " +
-                        "firmware does not trust. It starts only once that CA is allowed or Secure Boot is turned off in the firmware setup."
-                    : $"{writing.RawImageName} {(writing.RawImageBootCapability == ImageBootCapability.NotSigned ? "will" : "may")} not " +
-                        "start with Secure Boot on, and this machine has Secure Boot on. It starts only once Secure Boot is turned off in " +
-                        "the firmware setup, or your own key is enrolled.");
-
-                return prompt.ReadLineAsync($"Type {SecureBootWord} to write it all the same", secret: false, cancellationToken);
-            default:
-                throw new InvalidOperationException("There is nothing to pick yet.");
-        }
-    }
+        PickerQuestion.Sequence => console.AskAsync(new SequenceQuestion([.. _sequences.Select(Option)]), cancellationToken),
+        PickerQuestion.Disk => console.AskAsync(
+            new DiskQuestion(_sequence!.Name, [.. _disks.Select(disk => disk.ToConsoleDisk())]),
+            cancellationToken),
+        PickerQuestion.ComputerName => console.AskAsync(
+            new ComputerNameQuestion(_sequence!.Name, ComputerNames.MaxLength, _computerNameError),
+            cancellationToken),
+        PickerQuestion.Confirmation => console.AskAsync(
+            new EraseQuestion(_sequence!.Name, _disk!.ToConsoleDisk(), ConfirmationWord),
+            cancellationToken),
+        PickerQuestion.SecureBoot => console.AskAsync(SecureBootQuestionFor(_sequence!), cancellationToken),
+        _ => throw new InvalidOperationException("There is nothing to pick yet."),
+    };
 
     // The request to send once the technician has answered everything the sequence needs, otherwise null.
-    public AgentRunRequest? Accept(string typed)
+    public AgentRunRequest? Accept(ConsoleAnswer answer)
     {
-        ArgumentNullException.ThrowIfNull(typed);
+        ArgumentNullException.ThrowIfNull(answer);
 
-        string answer = typed.Trim();
+        string typed = answer.Text?.Trim() ?? string.Empty;
 
         switch (_question)
         {
             case PickerQuestion.Sequence:
-                if (!int.TryParse(answer, NumberStyles.None, CultureInfo.InvariantCulture, out int number) || number < 1 || number > _sequences.Count)
+                // Back has nowhere to go from the list; the text console checks the number itself.
+                if (answer.Back)
                 {
-                    log.Warning($"Type a number from 1 to {_sequences.Count}.");
+                    return null;
+                }
+
+                if (_sequences.FirstOrDefault(candidate => candidate.Id == answer.SequenceId) is not { } sequence)
+                {
+                    log.Warning("Choose one of the sequences shown.");
 
                     return null;
                 }
 
-                _sequence = _sequences[number - 1];
+                _sequence = sequence;
                 _disk = _sequence.ErasesDisk && _disks.Count == 1 ? _disks[0] : null;
 
                 return Ask(_sequence.ErasesDisk && _disk is null ? PickerQuestion.Disk : AfterDisk());
             case PickerQuestion.Disk:
-                LocalDisk? disk = int.TryParse(answer, NumberStyles.None, CultureInfo.InvariantCulture, out int diskNumber)
-                    ? _disks.FirstOrDefault(candidate => candidate.Number == diskNumber)
-                    : null;
-
-                if (disk is null)
+                if (answer.Back)
                 {
-                    log.Warning($"Type one of the disk numbers shown: {string.Join(", ", _disks.Select(candidate => candidate.Number))}.");
+                    StartOver();
+
+                    return null;
+                }
+
+                if (_disks.FirstOrDefault(candidate => candidate.Number == answer.DiskNumber) is not { } disk)
+                {
+                    log.Warning("Choose one of the disks shown.");
 
                     return null;
                 }
@@ -168,18 +149,27 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 
                 return Ask(AfterDisk());
             case PickerQuestion.ComputerName:
-                if (!ComputerNames.IsValid(answer, out string error))
+                if (answer.Back)
                 {
-                    log.Warning(error);
+                    StartOver();
 
                     return null;
                 }
 
-                _computerName = answer;
+                if (!ComputerNames.IsValid(typed, out string error))
+                {
+                    log.Warning(error);
+                    _computerNameError = error;
+
+                    return null;
+                }
+
+                _computerName = typed;
+                _computerNameError = null;
 
                 return Ask(AfterComputerName());
             case PickerQuestion.Confirmation:
-                if (!string.Equals(answer, ConfirmationWord, StringComparison.Ordinal))
+                if (answer.Back || !string.Equals(typed, ConfirmationWord, StringComparison.Ordinal))
                 {
                     log.Information("Nothing was erased.");
                     StartOver();
@@ -189,7 +179,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
 
                 return Ask(AfterConfirmation());
             case PickerQuestion.SecureBoot:
-                if (!string.Equals(answer, SecureBootWord, StringComparison.Ordinal))
+                if (answer.Back || !string.Equals(typed, SecureBootWord, StringComparison.Ordinal))
                 {
                     log.Information("Nothing was erased.");
                     StartOver();
@@ -245,6 +235,7 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         _sequence = null;
         _disk = null;
         _computerName = null;
+        _computerNameError = null;
         _allowSecureBootMismatch = false;
     }
 
@@ -281,19 +272,23 @@ public sealed class SequencePicker(ISignInPrompt prompt, AgentLog log)
         && _secureBootEnabled == true
         && MicrosoftUefiCa.Untrusted(_trustedUefiCas, sequence.RawImageSignedUnder);
 
-    private string Describe(AgentSequenceChoice sequence)
-    {
-        IEnumerable<string> details = new[]
-        {
-            sequence.Suggested ? "suggested for this machine" : null,
-            sequence.ErasesDisk ? "erases a disk" : null,
-            sequence.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown ? "not for Secure Boot" : null,
-            UntrustedCa(sequence) ? "not for this machine's Secure Boot" : null,
-            sequence.RequiredBytes > 0 ? $"needs {ByteSize.Format(sequence.RequiredBytes)}" : null,
-        }.OfType<string>();
+    private SequenceOption Option(AgentSequenceChoice sequence) => new(
+        sequence.Id,
+        sequence.Name,
+        sequence.Description,
+        sequence.Suggested,
+        sequence.ErasesDisk,
+        sequence.NeedsComputerName,
+        sequence.RequiredBytes,
+        NotSignedForSecureBoot: sequence.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown,
+        NotTrustedHere: UntrustedCa(sequence));
 
-        string text = details.Any() ? $"{sequence.Name} ({string.Join(", ", details)})" : sequence.Name;
-
-        return string.IsNullOrWhiteSpace(sequence.Description) ? text : $"{text}: {sequence.Description}";
-    }
+    private SecureBootQuestion SecureBootQuestionFor(AgentSequenceChoice writing) => new(
+        writing.Name,
+        writing.RawImageName,
+        UntrustedCa(writing)
+            ? SecureBootProblem.UntrustedCa
+            : writing.RawImageBootCapability == ImageBootCapability.NotSigned ? SecureBootProblem.NotSigned : SecureBootProblem.MayNotStart,
+        ConsoleValues.ToConsole(writing.RawImageSignedUnder),
+        SecureBootWord);
 }

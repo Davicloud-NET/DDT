@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using DDT.Agent.Consoles;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
@@ -10,7 +12,8 @@ namespace DDT.Agent;
 // Writes to the console immediately, because in Windows PE the console is all an operator at the
 // machine has, and queues the same lines for the server until they are delivered. Dated lines are for a file, which
 // someone reads days later beside Windows' own logs; the console, read as the lines appear, keeps only the time.
-// Both are in UTC.
+// Both are in UTC. The text console gets every line even while the graphical one shows them, so it has them all should
+// the graphical one go away.
 public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool datedLines = false)
 {
     private const int MaxQueuedLines = 2000;
@@ -24,6 +27,27 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
     private int _dropped;
     private bool _consoleHeld;
     private Guid? _stepId;
+    private IMachineConsole? _machineConsole;
+
+    // A console that shows the log itself, such as the graphical one, which gets every line from now on, in order.
+    public IMachineConsole? MachineConsole
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _machineConsole;
+            }
+        }
+
+        set
+        {
+            lock (_lock)
+            {
+                _machineConsole = value;
+            }
+        }
+    }
 
     public void Information(string message) => Write(AgentLogLevel.Information, message);
 
@@ -156,6 +180,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
             }
 
             _pending.Add((_nextSequence++, new AgentLogLine(now, level, message, _stepId)));
+            _machineConsole?.Write(new ConsoleLogLine(now, ConsoleValues.ToConsole(level), message, _stepId));
         }
     }
 

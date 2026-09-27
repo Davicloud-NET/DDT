@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net.Sockets;
+using System.Text.Json;
+using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
@@ -31,4 +33,16 @@ public static class ConnectionFailure
             _ => null,
         };
     }
+
+    // How far a failed call to the server got, for the console at the machine, or null for a failure that says nothing
+    // about the connection.
+    public static ConnectionStage? StageOf(Exception exception) => exception switch
+    {
+        ServerTimeoutException timeout => timeout.Stage,
+        HttpRequestException { HttpRequestError: HttpRequestError.NameResolutionError } => ConnectionStage.NameLookup,
+        HttpRequestException { HttpRequestError: HttpRequestError.ConnectionError } => ConnectionStage.Connection,
+        HttpRequestException { HttpRequestError: HttpRequestError.SecureConnectionError } => ConnectionStage.SecureConnection,
+        HttpRequestException or TimeoutException or JsonException or AgentTokenRejectedException => ConnectionStage.Answer,
+        _ => null,
+    };
 }

@@ -9,6 +9,7 @@ using System.Net.Http.Json;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
@@ -184,7 +185,10 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
         catch (OperationCanceledException exception) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException($"the download did not finish within {Duration(_downloadTimeout)}", exception);
+            throw new ServerTimeoutException(
+                ConnectionStage.Answer,
+                $"the download did not finish within {Duration(_downloadTimeout)}",
+                exception);
         }
     }
 
@@ -332,7 +336,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
         SendAsync(request, HttpCompletionOption.ResponseContentRead, _requestTimeout, cancellationToken);
 
-    // A timeout becomes a TimeoutException that says which one it was, and a connection that failed says why. A cancelled
+    // A timeout becomes a ServerTimeoutException that says which one it was, and a connection that failed says why. A cancelled
     // token stays a cancellation.
     private async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -352,7 +356,10 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             }
             catch (OperationCanceledException exception) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
-                throw new TimeoutException($"the server did not answer within {Duration(timeout)}", exception);
+                throw new ServerTimeoutException(
+                    ConnectionStage.Answer,
+                    $"the server did not answer within {Duration(timeout)}",
+                    exception);
             }
             catch (OperationCanceledException exception) when (exception.InnerException is TimeoutException
                 && !cancellationToken.IsCancellationRequested)
@@ -362,7 +369,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
                 string server = $"{_serverUrl.Host}:{_serverUrl.Port}";
                 string limit = Duration(_connectTimeout);
 
-                throw new TimeoutException(
+                throw new ServerTimeoutException(
+                    ServerConnection.TimedOutStage(request) ?? ConnectionStage.Connection,
                     ServerConnection.DescribeTimeout(request, server, limit) ?? $"the server at {server} did not accept a connection within {limit}",
                     exception);
             }

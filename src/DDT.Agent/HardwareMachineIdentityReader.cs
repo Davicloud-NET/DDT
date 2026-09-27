@@ -12,7 +12,7 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
     public MachineIdentity Read()
     {
         SmbiosSystemInformation? system = ReadSmbios();
-        (string primary, List<string> macs) = ReadMacAddresses();
+        (string primary, List<string> macs, List<string> addresses) = ReadMacAddresses();
 
         return new MachineIdentity(
             (system?.Uuid ?? Guid.Empty).ToString("D"),
@@ -23,7 +23,8 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
             system?.SerialNumber,
             SecureBootState.Read(),
             SecureBootTrust.Read(),
-            system?.ChassisType);
+            system?.ChassisType,
+            addresses);
     }
 
     private static SmbiosSystemInformation? ReadSmbios()
@@ -43,10 +44,10 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
 
     // The primary MAC is the adapter that carries the default route, which is the one the server sees
     // and the one PXE booted from. Adapters without link still count, because they are part of the
-    // machine a technician will recognise.
-    private static (string Primary, List<string> All) ReadMacAddresses()
+    // machine a technician will recognise. The primary adapter's IPv4 addresses come along for the console.
+    private static (string Primary, List<string> All, List<string> PrimaryAddresses) ReadMacAddresses()
     {
-        List<(string Mac, bool Primary)> adapters = [];
+        List<(string Mac, bool Primary, List<string> Addresses)> adapters = [];
 
         foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
         {
@@ -62,12 +63,19 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
                 continue;
             }
 
+            IPInterfaceProperties properties = adapter.GetIPProperties();
             bool hasGateway = adapter.OperationalStatus == OperationalStatus.Up
-                && adapter.GetIPProperties().GatewayAddresses.Any(gateway =>
+                && properties.GatewayAddresses.Any(gateway =>
                     gateway.Address.AddressFamily == AddressFamily.InterNetwork
                     && !gateway.Address.Equals(System.Net.IPAddress.Any));
+            List<string> addresses =
+            [
+                .. properties.UnicastAddresses
+                    .Where(unicast => unicast.Address.AddressFamily == AddressFamily.InterNetwork)
+                    .Select(unicast => unicast.Address.ToString()),
+            ];
 
-            adapters.Add((Convert.ToHexString(address), hasGateway));
+            adapters.Add((Convert.ToHexString(address), hasGateway, addresses));
         }
 
         List<string> sorted = [.. adapters.Select(adapter => adapter.Mac).Distinct().Order(StringComparer.Ordinal)];
@@ -83,6 +91,6 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
         // primary is always kept.
         List<string> all = [primary, .. sorted.Where(mac => mac != primary).Take(AgentLimits.MaxMacAddresses - 1)];
 
-        return (primary, all);
+        return (primary, all, adapters.First(adapter => adapter.Mac == primary).Addresses);
     }
 }

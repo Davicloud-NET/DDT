@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
@@ -32,7 +33,8 @@ internal static class TestAgents
         bool dryRunHandOver = false,
         bool dryRun = true,
         IDomainJoiner? joiner = null,
-        IRawDisks? rawDisks = null)
+        IRawDisks? rawDisks = null,
+        ConsoleStatus? status = null)
     {
         toolRunner ??= new RecordingToolRunner();
 
@@ -52,8 +54,15 @@ internal static class TestAgents
             heartbeatInterval ?? Timeout.InfiniteTimeSpan,
             Path.Combine(tools.Root, "X"),
             systemDirectory ?? SystemDirectory(tools),
-            dryRun);
+            dryRun,
+            status);
     }
+
+    // The text console, asking through prompt.
+    public static ConsoleStatus Status(ISignInPrompt prompt, AgentLog log) => Status(new TextMachineConsole(prompt, log));
+
+    public static ConsoleStatus Status(IMachineConsole console) =>
+        new(console, Version, new Uri(Configuration.ServerUrl!), "German (Germany)", dryRun: true);
 
     // The runner's. Windows PE keeps it in its own directory; here it has a directory of its own, because the tests'
     // runs are dry runs, which delete X when they end and would take the marker along.
@@ -123,6 +132,7 @@ internal static class TestAgents
             dryRun);
     }
 
+    // With the text console, asking through prompt.
     public static AgentLoop Loop(
         IAgentServer server,
         ISignInPrompt prompt,
@@ -131,12 +141,23 @@ internal static class TestAgents
         TimeProvider timeProvider,
         IMachineIdentityReader? identity = null,
         SequenceRunner? runner = null) =>
+        Loop(server, Status(prompt, log), tools, log, timeProvider, identity, runner);
+
+    // The runner, unless given, keeps status up to date too.
+    public static AgentLoop Loop(
+        IAgentServer server,
+        ConsoleStatus status,
+        FakeDeploymentTools tools,
+        AgentLog log,
+        TimeProvider timeProvider,
+        IMachineIdentityReader? identity = null,
+        SequenceRunner? runner = null) =>
         new(
             server,
             identity ?? new DryRunMachineIdentityReader(1),
-            prompt,
+            status,
             tools,
-            runner ?? Runner(server, tools, log, timeProvider),
+            runner ?? Runner(server, tools, log, timeProvider, status: status),
             new LocalRunLocator([tools.Volumes.Windows]),
             log,
             timeProvider,

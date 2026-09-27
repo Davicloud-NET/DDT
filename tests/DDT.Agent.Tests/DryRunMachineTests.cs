@@ -219,8 +219,11 @@ public sealed class DryRunMachineTests : IDisposable
     private string[] Lines() =>
         [.. _console.ToString().Split(Environment.NewLine).Select(line => line.Length > 15 ? line[15..] : line)];
 
-    private DryRunMachine Machine(ScriptedAgentServer server) =>
-        new(
+    private DryRunMachine Machine(ScriptedAgentServer server)
+    {
+        AgentLog log = new(new ImmediateTimeProvider(), _console);
+
+        return new(
             _options,
             server,
             staged =>
@@ -229,11 +232,12 @@ public sealed class DryRunMachineTests : IDisposable
 
                 return server;
             },
-            new ScriptedSignInPrompt { IsAvailable = false },
+            TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
             _root,
             _agent,
-            new AgentLog(new ImmediateTimeProvider(), _console),
+            log,
             new ImmediateTimeProvider(),
             Timeout.InfiniteTimeSpan,
             TestAgents.Version);
+    }
 }

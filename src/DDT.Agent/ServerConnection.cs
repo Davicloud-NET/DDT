@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
@@ -76,6 +77,10 @@ public static class ServerConnection
     public static string? DescribeTimeout(HttpRequestMessage request, string server, string timeout) =>
         request.Options.TryGetValue(s_progress, out Progress? progress) ? progress.DescribeTimeout(server, timeout) : null;
 
+    // The stage a connect timeout ran out in, or null when the request's connection was not opened for it.
+    public static ConnectionStage? TimedOutStage(HttpRequestMessage request) =>
+        request.Options.TryGetValue(s_progress, out Progress? progress) ? progress.TimedOutStage : null;
+
     private sealed class Progress
     {
         private readonly long _started = Environment.TickCount64;
@@ -98,6 +103,11 @@ public static class ServerConnection
                 : remote?.ToString();
             Volatile.Write(ref _connectedAt, Environment.TickCount64);
         }
+
+        public ConnectionStage TimedOutStage =>
+            Volatile.Read(ref _resolvedAt) == 0
+                ? ConnectionStage.NameLookup
+                : Volatile.Read(ref _connectedAt) == 0 ? ConnectionStage.Connection : ConnectionStage.SecureConnection;
 
         public string DescribeTimeout(string server, string timeout)
         {

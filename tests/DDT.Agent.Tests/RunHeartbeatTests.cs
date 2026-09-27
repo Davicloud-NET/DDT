@@ -69,6 +69,34 @@ public sealed class RunHeartbeatTests
         Assert.Equal((TestRuns.Unattend.Id, 0), (report.CurrentStepId, report.Percent));
     }
 
+    // The console at the machine reads the position after each change, and tells a step that has not said how far it is
+    // from one at 0 %.
+    [Fact]
+    public void SaysWhenTheRunMovesAndWhetherTheStepsPercentIsKnown()
+    {
+        int changes = 0;
+        _heartbeat.Changed += () => changes++;
+
+        _heartbeat.Update(State(StepState.Done, StepState.Running, StepState.Pending));
+
+        Assert.Equal((TestRuns.Apply.Id, (int?)null, 1), (_heartbeat.Position.StepId, _heartbeat.Position.Percent, changes));
+
+        _heartbeat.Report(new StepPercent(TestRuns.Apply.Id, 0));
+        _heartbeat.Report(new StepPercent(TestRuns.Apply.Id, 0));
+        _heartbeat.Report(new StepPercent(TestRuns.Apply.Id, 45));
+        _heartbeat.Report(new StepPercent(TestRuns.Partition.Id, 90));
+
+        Assert.Equal(((int?)45, 3), (_heartbeat.Position.Percent, changes));
+
+        _heartbeat.Activity = RunActivity.Step;
+        _heartbeat.Activity = RunActivity.Step;
+        _heartbeat.Update(State(StepState.Done, StepState.Done, StepState.Running));
+
+        Assert.Equal(
+            (TestRuns.Unattend.Id, (int?)null, RunActivity.Step, 5),
+            (_heartbeat.Position.StepId, _heartbeat.Position.Percent, _heartbeat.Position.Activity, changes));
+    }
+
     [Fact]
     public void AFailedReportNamesTheRunningStepAsTheOneThatFailed()
     {

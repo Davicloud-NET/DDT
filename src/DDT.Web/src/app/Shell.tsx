@@ -50,12 +50,15 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
     <header className="flex h-13 shrink-0 items-stretch bg-frame pl-5 text-frame-text">
       <Link
         to="/machines"
-        className="flex items-center gap-2.5 pr-6 outline-none focus-visible:outline-2"
+        className="flex shrink-0 items-center gap-2.5 pr-6 outline-none focus-visible:outline-2 max-sm:pr-3"
       >
         <Logo size={24} className="text-frame-logo" />
         <span className="type-wordmark text-frame-text">DDT</span>
       </Link>
-      <nav aria-label={t`Sections`} className="flex items-end gap-0.5">
+      <nav
+        aria-label={t`Sections`}
+        className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto [scrollbar-width:none]"
+      >
         {categories.map((category) => {
           const active = category.id === activeCategory;
 
@@ -65,7 +68,7 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
               to={category.pages[0].to}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "flex h-10.5 items-center rounded-t-key px-4 type-label outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
+                "flex h-10.5 shrink-0 items-center rounded-t-key px-4 type-label whitespace-nowrap outline-none focus-visible:outline-2 focus-visible:-outline-offset-2",
                 active ? "bg-page text-ink" : "text-frame-muted hover:text-frame-text",
               )}
             >
@@ -74,7 +77,6 @@ function TopBar({ activeCategory }: { activeCategory: string | undefined }) {
           );
         })}
       </nav>
-      <div className="flex-1" />
       <CommandPalette />
       {user ? <UserMenu user={user} /> : null}
     </header>

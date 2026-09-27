@@ -11,6 +11,7 @@ import { currentUserQuery } from "@/auth/auth";
 import { activityLabel, assignedBy, isActive, isSilentActivity } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useNow } from "@/lib/useNow";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
@@ -53,6 +54,7 @@ export function MachinesPage() {
   const machines = useQuery({ ...machinesQuery, ...liveListOptions(live) });
   const user = useQuery(currentUserQuery).data ?? null;
   const now = useNow(5_000);
+  const narrow = useMediaQuery("(max-width: 767px)");
   const actions = useMachineActions();
 
   const roles = user?.roles ?? [];
@@ -140,6 +142,44 @@ export function MachinesPage() {
                 </Button>
               }
             />
+          ) : narrow ? (
+            // A phone shows each machine as a row of its own that opens the machine's page; a table would scroll
+            // sideways and hide its state.
+            <ul aria-label={translate`Machines`} className="flex flex-col">
+              {shown.map((machine) => (
+                <li
+                  key={machine.id}
+                  className="flex flex-col gap-2 border-b border-line-soft px-4 py-3 last:border-b-0"
+                >
+                  <span className="flex items-start gap-3">
+                    <DeviceGlyph kind={deviceKind(machine)} />
+                    <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                      <Link
+                        to="/machines/$machineId"
+                        params={{ machineId: machine.id }}
+                        className="truncate type-label text-[16.5px] hover:underline"
+                      >
+                        {displayName(machine)}
+                      </Link>
+                      <span className="truncate type-small text-muted">
+                        {hardwareLine(machine)}
+                      </span>
+                    </span>
+                    <StateTag tone={stateTone[machine.state]}>
+                      {i18n._(stateLabel[machine.state])}
+                    </StateTag>
+                  </span>
+                  <RunCell machine={machine} now={now} />
+                  {canDecide ? (
+                    <MachineActions
+                      machine={machine}
+                      actions={actions}
+                      strays={strays.get(machine.id) ?? null}
+                    />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           ) : (
             <Table
               aria-label={translate`Machines`}

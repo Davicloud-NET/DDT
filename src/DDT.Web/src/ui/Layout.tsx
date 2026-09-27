@@ -10,7 +10,9 @@ import { cx } from "./cx";
 
 // A page's content area: the same gutters on every page.
 export function Page({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("flex flex-col gap-4 px-6 pt-5 pb-8", className)}>{children}</div>;
+  return (
+    <div className={cx("flex flex-col gap-4 px-4 pt-5 pb-8 sm:px-6", className)}>{children}</div>
+  );
 }
 
 // The page title with what sits beside it: filters, a search field, the page's main action.
@@ -119,7 +121,9 @@ export function Facts({
         {items.map((item, index) => (
           <div key={index} className="flex min-w-0 flex-col gap-0.75 bg-panel px-3.5 py-2.5">
             <dt className="type-small text-muted">{item.label}</dt>
-            <dd className={cx("truncate", item.mono ? "type-data" : "type-body")}>{item.value}</dd>
+            <dd className={cx("min-w-0 break-words", item.mono ? "type-data" : "type-body")}>
+              {item.value}
+            </dd>
           </div>
         ))}
       </dl>

@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/ui/Dialog";
 import { Drawer } from "@/ui/Drawer";
 import { EmptyState, Facts, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
+import { SecretValue } from "@/ui/SecretValue";
 import { ComboBox, ListBoxItem, Select } from "@/ui/Select";
 import { SequenceRail, SequenceRailStrip, type RailStep } from "@/ui/SequenceRail";
 import { StateTag } from "@/ui/StateTag";
@@ -212,6 +213,7 @@ export function DesignPage() {
             <ListBoxItem id="840">HP EliteBook 840 G10</ListBoxItem>
           </ComboBox>
           <NumberField label="Timeout" hint="Minutes." defaultValue={60} minValue={1} />
+          <SecretValue label="One-time password" value="Tq8v-Rk3m-Wz6p-Hd2n" />
           <Checkbox defaultSelected>Restart after this step</Checkbox>
           <Switch defaultSelected>Require web approval</Switch>
         </Section>

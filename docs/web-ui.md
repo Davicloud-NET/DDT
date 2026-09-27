@@ -23,12 +23,12 @@ Every package that ships in the bundle is listed with its licence in `THIRD-PART
 
 | Folder | What is in it |
 |---|---|
-| `src/ui` | The component library: buttons, fields, selects, tables, dialogs, the drawer, menus, tabs, notices, state tags, the sequence rail, filter controls, the QR code. `/design` shows them all in a development build. |
+| `src/ui` | The component library: buttons, fields, selects, tables, dialogs, the drawer, menus, tabs, notices, state tags, the sequence rail, filter controls, the QR code, the secret shown once. `/design` shows them all in a development build. |
 | `src/app` | The shell (top bar, category rows, user menu, command palette, connection banner), the router, the navigation model and the theme. |
 | `src/live` | The live connection: hub events, machine watches, the live status and how lists stay fresh. |
 | `src/lib` | The API client with its CSRF handling, formatting of sizes, durations and times, autosave. |
 | `src/i18n`, `src/locales` | Choosing and loading a language, and the catalogs. |
-| One folder per subject | `machines`, `runs`, `log`, `sequences`, `rules`, `images`, `packages`, `uploads`, `account`: the page, its components, and the module that reads and writes the server's data for it. |
+| One folder per subject | `machines`, `runs`, `log`, `sequences`, `rules`, `images`, `packages`, `uploads`, `account`, `users`, `tokens`: the page, its components, and the module that reads and writes the server's data for it. |
 
 ## Pages
 

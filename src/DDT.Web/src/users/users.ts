@@ -96,6 +96,13 @@ export function upsertUser(queryClient: QueryClient, user: UserView): void {
   );
 }
 
+// Changes some fields of a listed account, for an answer that carries only what changed, such as a new password.
+export function patchUser(queryClient: QueryClient, id: string, patch: Partial<UserView>): void {
+  queryClient.setQueryData(usersQuery.queryKey, (list) =>
+    list?.map((user) => (user.id === id ? { ...user, ...patch } : user)),
+  );
+}
+
 export function removeUsers(queryClient: QueryClient, userIds: readonly string[]): void {
   const removed = new Set(userIds);
 
@@ -112,9 +119,10 @@ export interface DirectoryView {
   groupRoleMap: { group: string; name: string | null; role: UserRole }[];
 }
 
+// The name is null when the directory has none for the group.
 export interface DirectoryGroup {
   distinguishedName: string;
-  name: string;
+  name: string | null;
   description: string | null;
 }
 

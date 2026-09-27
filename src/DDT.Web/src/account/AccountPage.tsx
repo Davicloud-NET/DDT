@@ -16,6 +16,7 @@ import {
   type TwoFactorEnrollment,
 } from "@/auth/account";
 import { currentUserQuery, type CurrentUser } from "@/auth/auth";
+import { OwnTokensPanel } from "@/tokens/OwnTokensPanel";
 import { Button } from "@/ui/Button";
 import { Dialog } from "@/ui/Dialog";
 import { Facts, Page, PageHeader, Panel } from "@/ui/Layout";
@@ -23,8 +24,11 @@ import { Notice } from "@/ui/Notice";
 import { QrCode } from "@/ui/QrCode";
 import { StateTag } from "@/ui/StateTag";
 import { TextField } from "@/ui/TextField";
+import { roleLabel, sourceLabel } from "@/users/userView";
 
-// The signed-in person's own account: who they are to DDT, their password and their authenticator.
+// The signed-in person's own account: who they are to DDT, their password, their authenticator and their API tokens.
+// An account signed in with a password an administrator was shown sees nothing else until it has set its own: the
+// server answers nothing else, and the shell keeps it on this page.
 export function AccountPage() {
   const user = useQuery(currentUserQuery).data ?? null;
 
@@ -35,6 +39,14 @@ export function AccountPage() {
   return (
     <Page className="max-w-[72rem]">
       <PageHeader title={<Trans>Account and security</Trans>} />
+      {user.mustChangePassword ? (
+        <Notice tone="attention" title={<Trans>Set a password of your own first</Trans>}>
+          <Trans>
+            You signed in with a password an administrator was shown. Replace it under Password;
+            until then, DDT shows you nothing but this page.
+          </Trans>
+        </Notice>
+      ) : null}
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           <Profile user={user} />
@@ -42,34 +54,9 @@ export function AccountPage() {
         </div>
         <AuthenticatorPanel user={user} />
       </div>
+      {user.mustChangePassword ? null : <OwnTokensPanel user={user} />}
     </Page>
   );
-}
-
-function sourceLabel(source: string): string {
-  switch (source) {
-    case "Local":
-      return t`Local account`;
-    case "Directory":
-      return t`Directory account`;
-    case "External":
-      return t`Single sign-on account`;
-    default:
-      return source;
-  }
-}
-
-function roleLabel(role: string): string {
-  switch (role) {
-    case "Administrator":
-      return t`Administrator`;
-    case "Operator":
-      return t`Operator`;
-    case "Viewer":
-      return t`Viewer`;
-    default:
-      return role;
-  }
 }
 
 function Profile({ user }: { user: CurrentUser }) {
@@ -91,12 +78,15 @@ function Profile({ user }: { user: CurrentUser }) {
   );
 }
 
+// Changing the password also ends the wait for one of the account's own: the server drops the demand with the change,
+// and the cached account follows, which opens the rest of DDT again.
 function PasswordPanel({ user }: { user: CurrentUser }) {
+  const queryClient = useQueryClient();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [again, setAgain] = useState("");
   const [mismatch, setMismatch] = useState(false);
-  const [changed, setChanged] = useState(false);
+  const [changed, setChanged] = useState<"no" | "yes" | "unlocked">("no");
 
   const change = useMutation({
     mutationFn: () => changePassword(current, next),
@@ -104,7 +94,10 @@ function PasswordPanel({ user }: { user: CurrentUser }) {
       setCurrent("");
       setNext("");
       setAgain("");
-      setChanged(true);
+      setChanged(user.mustChangePassword ? "unlocked" : "yes");
+      queryClient.setQueryData(currentUserQuery.queryKey, (cached) =>
+        cached === undefined || cached === null ? cached : { ...cached, mustChangePassword: false },
+      );
     },
   });
 
@@ -129,7 +122,7 @@ function PasswordPanel({ user }: { user: CurrentUser }) {
         onSubmit={(event) => {
           event.preventDefault();
           setMismatch(next !== again);
-          setChanged(false);
+          setChanged("no");
 
           if (next === again) {
             change.mutate();
@@ -138,6 +131,9 @@ function PasswordPanel({ user }: { user: CurrentUser }) {
       >
         <TextField
           label={<Trans>Current password</Trans>}
+          {...(user.mustChangePassword
+            ? { hint: <Trans>The password you were given and signed in with.</Trans> }
+            : {})}
           type="password"
           autoComplete="current-password"
           value={current}
@@ -168,9 +164,14 @@ function PasswordPanel({ user }: { user: CurrentUser }) {
           errorMessage={<Trans>The new passwords do not match.</Trans>}
         />
         {change.isError ? <Notice tone="fail">{change.error.message}</Notice> : null}
-        {changed ? (
+        {changed === "yes" ? (
           <Notice tone="info">
             <Trans>Password changed.</Trans>
+          </Notice>
+        ) : null}
+        {changed === "unlocked" ? (
+          <Notice tone="info">
+            <Trans>Password changed. The rest of DDT is open to you now.</Trans>
           </Notice>
         ) : null}
         <div>

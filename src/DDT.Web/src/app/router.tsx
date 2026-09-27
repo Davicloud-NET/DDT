@@ -23,6 +23,8 @@ import { RulesPage } from "@/rules/RulesPage";
 import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
 import { sequenceSearch, sequencesSearch } from "@/sequences/sequenceSearch";
 import { SequencesPage } from "@/sequences/SequencesPage";
+import { TokensPage } from "@/tokens/TokensPage";
+import { UsersPage } from "@/users/UsersPage";
 
 import { DesignPage } from "./DesignPage";
 import { PendingPage } from "./PendingPage";
@@ -59,16 +61,22 @@ const aboutRoute = createRoute({
 });
 
 // Everything inside the shell requires a session. The check runs before the route renders, so there is no flash of
-// the application for a signed out visitor.
+// the application for a signed out visitor. An account that still has to replace a password an administrator was
+// shown is kept on the Account page, the only one the server answers for it, until the change updates the cached
+// account.
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "shell",
   component: Shell,
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, location }) => {
     const user = await context.queryClient.query({ ...currentUserQuery, staleTime: "static" });
 
     if (user === null) {
       throw redirect({ to: "/sign-in" });
+    }
+
+    if (user.mustChangePassword && location.pathname !== "/account") {
+      throw redirect({ to: "/account" });
     }
 
     return { user };
@@ -157,7 +165,7 @@ const networkBootRoute = createRoute({
 const usersRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/users",
-  component: PendingPage,
+  component: UsersPage,
 });
 const signInSettingsRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -167,7 +175,7 @@ const signInSettingsRoute = createRoute({
 const tokensRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/admin/tokens",
-  component: PendingPage,
+  component: TokensPage,
 });
 const serverRoute = createRoute({
   getParentRoute: () => shellRoute,

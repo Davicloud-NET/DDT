@@ -6,7 +6,8 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { ApiError, apiFetch, apiPost } from "@/lib/api";
 
-export type LoginStatus = "Succeeded" | "RequiresTwoFactor" | "LockedOut" | "Failed";
+// NoRole: the password was right, but none of the directory groups of the account maps to a role in DDT.
+export type LoginStatus = "Succeeded" | "RequiresTwoFactor" | "LockedOut" | "Failed" | "NoRole";
 
 export interface CurrentUser {
   id: string;
@@ -15,6 +16,8 @@ export interface CurrentUser {
   source: string;
   twoFactorEnabled: boolean;
   roles: string[];
+  // Signed in with a password an administrator was shown: nothing but the account page answers until it is replaced.
+  mustChangePassword: boolean;
 }
 
 export interface LoginRequest {

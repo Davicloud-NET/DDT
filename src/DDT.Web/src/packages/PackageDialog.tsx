@@ -12,6 +12,7 @@ import { Button as AriaButton } from "react-aria-components";
 import { ApiError } from "@/lib/api";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import { Button } from "@/ui/Button";
+import { Switch } from "@/ui/Checkbox";
 import { Dialog } from "@/ui/Dialog";
 import { Notice } from "@/ui/Notice";
 import { ComboBox, ListBoxItem } from "@/ui/Select";
@@ -40,6 +41,7 @@ export function PackageDialog({
   const queryClient = useQueryClient();
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
+  const [bootImage, setBootImage] = useState(item.bootImage);
   const [targets, setTargets] = useState<TargetRow[]>(() =>
     item.targets.map((target, index) => ({
       key: index,
@@ -63,6 +65,7 @@ export function PackageDialog({
         name: name.trim(),
         description: description.trim() === "" ? null : description.trim(),
         targets: drivers ? cleaned : item.targets,
+        ...(drivers ? { bootImage } : {}),
       }),
     onSuccess: (saved) => {
       queryClient.setQueryData(packagesQuery.queryKey, (list) =>
@@ -240,6 +243,21 @@ export function PackageDialog({
               <span className="type-small text-fail-text">{fieldError("targets")}</span>
             ) : null}
           </fieldset>
+        ) : null}
+
+        {drivers ? (
+          <div className="flex flex-col gap-1">
+            <Switch isSelected={bootImage} onChange={setBootImage}>
+              <Trans>Add to the Windows PE boot image</Trans>
+            </Switch>
+            <span className="type-small text-muted">
+              <Trans>
+                For network and storage drivers a machine needs before the agent runs, such as those
+                of new laptops. They reach machines with the next boot image build; Boot, Boot image
+                says when the build is older than the drivers.
+              </Trans>
+            </span>
+          </div>
         ) : null}
 
         {unplaced ? <Notice tone="fail">{save.error.message}</Notice> : null}

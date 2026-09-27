@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { plural, t } from "@lingui/core/macro";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPut } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
@@ -28,6 +28,8 @@ export interface PackageSummary {
   originalFileName: string | null;
   uploadedUtc: string;
   uploadedBy: string | null;
+  // Drivers only: added to the Windows PE boot image at its next build.
+  bootImage: boolean;
 }
 
 // The last save wins: the server keeps no revision of a package.
@@ -35,6 +37,32 @@ export interface UpdatePackageRequest {
   name: string;
   description: string | null;
   targets: HardwareModel[];
+  // Null leaves it as it is. Only drivers may go into the boot image.
+  bootImage?: boolean | null;
+}
+
+export interface PackagesRemoved {
+  packageIds: string[];
+}
+
+function byName(a: PackageSummary, b: PackageSummary): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+export function upsertPackage(queryClient: QueryClient, item: PackageSummary): void {
+  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
+    list === undefined
+      ? list
+      : [item, ...list.filter((existing) => existing.id !== item.id)].sort(byName),
+  );
+}
+
+export function removePackages(queryClient: QueryClient, packageIds: readonly string[]): void {
+  const removed = new Set(packageIds);
+
+  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
+    list?.filter((item) => !removed.has(item.id)),
+  );
 }
 
 export const packagesQuery = queryOptions({

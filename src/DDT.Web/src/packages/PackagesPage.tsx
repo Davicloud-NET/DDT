@@ -20,6 +20,7 @@ import { ConfirmDialog } from "@/ui/Dialog";
 import { EmptyState, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Notice } from "@/ui/Notice";
+import { StateTag } from "@/ui/StateTag";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/ui/Table";
 import type { UploadOutcome } from "@/uploads/resumableUpload";
 import { UploadPanel } from "@/uploads/UploadPanel";
@@ -174,7 +175,14 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
                 <TableRow id={item.id} textValue={item.name}>
                   <TableCell className="pl-4">
                     <span className="flex min-w-0 flex-col">
-                      <span className="truncate type-label text-ink">{item.name}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate type-label text-ink">{item.name}</span>
+                        {item.bootImage ? (
+                          <StateTag tone="idle">
+                            <Trans>Windows PE</Trans>
+                          </StateTag>
+                        ) : null}
+                      </span>
                       <span className="truncate type-small text-muted">
                         {item.description ?? item.originalFileName ?? ""}
                       </span>

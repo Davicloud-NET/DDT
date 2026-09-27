@@ -1,0 +1,37 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+import { queryOptions } from "@tanstack/react-query";
+
+import { apiGet } from "@/lib/api";
+
+export interface BootImageDriver {
+  packageId: string;
+  name: string;
+  sha256: string;
+}
+
+// What the boot directory's ddt-boot-image.json says the last build put into boot.wim.
+export interface BootImageBuild {
+  builtUtc: string;
+  driverSetHash: string | null;
+  drivers: BootImageDriver[];
+  adkVersion: string | null;
+  bootManager: string | null;
+  agentVersion: string | null;
+}
+
+// The driver packages flagged for Windows PE, and the last build. stale says that the build's drivers differ from
+// the flagged ones, or that drivers are flagged and nothing was built yet.
+export interface BootImageView {
+  drivers: (BootImageDriver & { sizeBytes: number })[];
+  driverSetHash: string | null;
+  build: BootImageBuild | null;
+  stale: boolean;
+}
+
+export const bootImageQuery = queryOptions({
+  queryKey: ["boot-image"],
+  queryFn: () => apiGet<BootImageView>("/api/boot-image"),
+});

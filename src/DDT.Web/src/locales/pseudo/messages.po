@@ -476,6 +476,10 @@ msgstr ""
 msgid "Add the local administrator"
 msgstr ""
 
+#: src/packages/PackageDialog.tsx
+msgid "Add to the Windows PE boot image"
+msgstr ""
+
 #: src/packages/PackagesPage.tsx
 msgid "Added {name} from {file}."
 msgstr ""
@@ -1168,6 +1172,10 @@ msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "For {architecture} only, cannot be written"
+msgstr ""
+
+#: src/packages/PackageDialog.tsx
+msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
 msgstr ""
 
 #: src/packages/PackageDialog.tsx
@@ -3111,6 +3119,7 @@ msgstr ""
 msgid "Windows image"
 msgstr ""
 
+#: src/packages/PackagesPage.tsx
 #: src/sequences/steps.ts
 msgid "Windows PE"
 msgstr ""

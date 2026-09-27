@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { t } from "@lingui/core/macro";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet } from "@/lib/api";
 
@@ -104,6 +104,30 @@ export function secureBootWarning(image: ImageSummary): string | null {
   return image.bootCapability === "NotSigned"
     ? t`This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`
     : t`This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
+}
+
+export interface ImagesRemoved {
+  imageIds: string[];
+}
+
+function byName(a: ImageSummary, b: ImageSummary): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+export function upsertImage(queryClient: QueryClient, image: ImageSummary): void {
+  queryClient.setQueryData(imagesQuery.queryKey, (list) =>
+    list === undefined
+      ? list
+      : [image, ...list.filter((existing) => existing.id !== image.id)].sort(byName),
+  );
+}
+
+export function removeImages(queryClient: QueryClient, imageIds: readonly string[]): void {
+  const removed = new Set(imageIds);
+
+  queryClient.setQueryData(imagesQuery.queryKey, (list) =>
+    list?.filter((image) => !removed.has(image.id)),
+  );
 }
 
 export function deleteImage(id: string): Promise<void> {

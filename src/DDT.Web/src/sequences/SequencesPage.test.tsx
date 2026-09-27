@@ -37,6 +37,7 @@ const administrator: CurrentUser = {
   displayName: null,
   source: "Local",
   twoFactorEnabled: false,
+  mustChangePassword: false,
   roles: ["Administrator"],
 };
 

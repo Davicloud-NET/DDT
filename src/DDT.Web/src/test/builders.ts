@@ -77,6 +77,7 @@ export function currentUser(role: "Administrator" | "Operator" | "Viewer"): Curr
     source: "Local",
     twoFactorEnabled: false,
     roles: [role],
+    mustChangePassword: false,
   };
 }
 
@@ -213,6 +214,7 @@ export function packageSummary(overrides: Partial<PackageSummary> = {}): Package
     description: null,
     originalFileName: "latitude.zip",
     uploadedUtc: "2026-09-15T10:00:00Z",
+    bootImage: false,
     uploadedBy: "admin",
     ...overrides,
   };

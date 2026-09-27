@@ -251,19 +251,25 @@ describe("ImagesPage", () => {
       expect(screen.getByText(/^Upload a WIM file to add its Windows images/)).toBeInTheDocument();
     });
 
-    it("reads the list again when the hub says the images changed", async () => {
-      let images = [windows];
-      const { hub, server } = await open(() => json(images));
+    it("takes images from the hub as they change and go, without reading the list again", async () => {
+      const { hub, server } = await open([windows]);
 
       await screen.findByRole("button", { name: "Windows 11 Pro" });
-      images = [windows, arm];
 
       act(() => {
-        hub?.push("imagesChanged");
+        hub?.push("imageChanged", arm);
       });
 
       expect(await screen.findByRole("button", { name: "Windows 11 Pro ARM" })).toBeInTheDocument();
-      expect(server.count("GET /api/images")).toBe(2);
+
+      act(() => {
+        hub?.push("imagesRemoved", { imageIds: [windows.id] });
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: "Windows 11 Pro" })).not.toBeInTheDocument();
+      });
+      expect(server.count("GET /api/images")).toBe(1);
     });
   });
 

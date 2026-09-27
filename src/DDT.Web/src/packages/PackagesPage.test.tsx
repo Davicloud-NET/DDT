@@ -192,19 +192,17 @@ describe("PackagesPage", () => {
       expect(row("Hyper-V drivers")).toBeInTheDocument();
     });
 
-    it("reads the list again when the hub says the packages changed", async () => {
-      let packages = [scripts];
-      const { hub, server } = await open("files", () => json(packages));
+    it("takes a package from the hub as it changes, without reading the list again", async () => {
+      const { hub, server } = await open("files", [scripts]);
 
       await screen.findByRole("grid", { name: "File packages" });
-      packages = [{ ...scripts, description: "Wallpapers and printers" }];
 
       act(() => {
-        hub?.push("packagesChanged");
+        hub?.push("packageChanged", { ...scripts, description: "Wallpapers and printers" });
       });
 
       expect(await screen.findByText("Wallpapers and printers")).toBeInTheDocument();
-      expect(server.count("GET /api/packages")).toBe(2);
+      expect(server.count("GET /api/packages")).toBe(1);
     });
 
     it("shows a viewer the library without changes", async () => {
@@ -283,6 +281,7 @@ describe("PackagesPage", () => {
           name: "Latitude drivers",
           description: null,
           targets: [{ manufacturer: "Dell Inc.", model: "Latitude 7440" }],
+          bootImage: false,
         },
       ]);
       expect(
@@ -317,6 +316,7 @@ describe("PackagesPage", () => {
             name: "Latitude drivers",
             description: null,
             targets: [{ manufacturer: "Microsoft Corporation", model: "Virtual Machine" }],
+            bootImage: false,
           },
         ]);
       });
@@ -337,15 +337,13 @@ describe("PackagesPage", () => {
     });
 
     it("keeps an open dialog's edit when another administrator changes the library", async () => {
-      let packages = [drivers, scripts];
-      const { hub } = await open("files", () => json(packages));
+      const { hub } = await open("files", [drivers, scripts]);
 
       const dialog = await change("Lab scripts");
       fill(within(dialog).getByRole("textbox", { name: "Name" }), "Lab scripts 2");
 
-      packages = [drivers, { ...scripts, description: "Wallpapers and printers" }];
       act(() => {
-        hub?.push("packagesChanged");
+        hub?.push("packageChanged", { ...scripts, description: "Wallpapers and printers" });
       });
 
       expect(await screen.findByText("Wallpapers and printers")).toBeInTheDocument();

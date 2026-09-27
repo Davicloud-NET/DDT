@@ -23,6 +23,7 @@ public sealed class DdtConfigurationCheckTests
     [InlineData("DDT:Machines:RequireWebAproval", "true")]
     [InlineData("DDT:Ldap:BindPasword", "directory password")]
     [InlineData("DDT:Oidc:AutoProvison", "true")]
+    [InlineData("DDT:Oidc:GroupClaim", "groups")]
     [InlineData("DDT:ForwardedHeaders:KnownProxy", "10.10.0.5")]
     [InlineData("DDT:Pxe:Interface", "eth0")]
     [InlineData("DDT:Pxe:BootTargets:X64Uefi:BootFiel", "x64/bootmgfw.efi")]
@@ -45,6 +46,9 @@ public sealed class DdtConfigurationCheckTests
             ("DDT:Machines:requirewebapproval", "true"),
             ("DDT:Ldap:GroupRoleMap:CN=DDT Operators,OU=Groups,DC=corp,DC=example", "Operator"),
             ("DDT:Oidc:Scopes:3", "groups"),
+            ("DDT:Oidc:GroupsClaim", "roles"),
+            ("DDT:Oidc:GroupRoleMap:/ddt/admins", "Administrator"),
+            ("DDT:Oidc:GroupRoleMap:2f5c3a0e-8a9e-4c5e-9b1a-1c2d3e4f5a6b", "operator"),
             ("DDT:Pxe:BootTargets:X64Uefi:Method", "Tftp"),
             ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"));
 

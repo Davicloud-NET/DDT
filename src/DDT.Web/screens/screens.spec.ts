@@ -4,23 +4,20 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-import type { SequenceDefinition } from "@/sequences/sequences";
 import {
   currentUser,
   deploymentSummary,
-  deploymentView,
   imageSummary,
   logLine,
   machineSummary,
   sequenceResolution,
   sequenceSummary,
   sequenceView,
-  stepView,
 } from "@/test/builders";
 
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
+import { node, treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
 
-import installWindows from "../src/test/fixtures/install-windows.sequence.json" with { type: "json" };
 import { sampleLogo } from "./sampleLogo";
 import { serve } from "./server";
 
@@ -115,43 +112,22 @@ const machines = [
   }),
 ];
 
-const definition = installWindows.definition as SequenceDefinition;
-const phases = definition.steps.map((step) =>
-  step.kind === "joinDomain" ? "Windows" : "WindowsPE",
+// A run of a tree that waits at a pause, as the design canvas draws one: the IF took Then, the office's printer step
+// was skipped on a laptop, and the share test went round twice.
+const tree = treeRunView();
+const treeLines = [
+  ["Partitioned disk 0 as GPT: EFI 300 MB, MSR 16 MB, Windows, recovery 1024 MB.", node.partition],
+  [
+    "Is it a Latitude? Model contains Latitude holds for Latitude 7450, so Then runs.",
+    node.latitude,
+  ],
+  ["Applied Windows 11 for Latitudes to W:\\ in 3 min 0 s.", node.applyLatitude],
+  ["Joined corp.example as PC-G2341KXQ.", node.join],
+  ["Test the share: exit code 1, going round again (2 of at most 5).", node.test],
+  ["Paused: Stick the asset tag on the lid and note it in the inventory.", node.pause],
+].map(([message, stepId], index) =>
+  logLine(index + 1, { message, stepId, deploymentId: treeRunId }),
 );
-
-const run = deploymentView({
-  summary: running,
-  machineId,
-  definition,
-  steps: definition.steps.map((step, index) =>
-    stepView({
-      stepId: step.id,
-      index,
-      name: step.name,
-      kind: step.kind,
-      phase: phases[index],
-      ...(index < 2
-        ? {
-            state: "Done",
-            percent: 100,
-            startedUtc: `2026-09-16T10:0${String(index + 1)}:00Z`,
-            finishedUtc: `2026-09-16T10:0${String(index + 2)}:00Z`,
-          }
-        : index === 2
-          ? { state: "Running", percent: 45, startedUtc: "2026-09-16T10:03:00Z" }
-          : {}),
-    }),
-  ),
-});
-
-const lines = [
-  "Partitioned disk 0 as GPT: EFI 300 MB, MSR 16 MB, Windows, recovery 1024 MB.",
-  "Downloading Windows 11 Pro, 4.6 GB.",
-  "Applied Windows 11 Pro to W:\\ in 2 min 41 s.",
-  "Model LENOVO ThinkPad T14 Gen 4: 3 driver packages match.",
-  "Adding drivers from Lenovo T14 Gen 4 (1 of 3).",
-].map((message, index) => logLine(index + 1, { message, deploymentId: runId }));
 
 async function show(
   page: Page,
@@ -184,20 +160,24 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page).toHaveScreenshot(`machines-${scheme}.png`);
     });
 
+    // The design canvas's run artboard is 1440 by 1080 pixels.
     test("a machine's run", async ({ page }) => {
-      await show(page, `/machines/${machineId}`, {
-        "GET /api/machines": machines,
-        [`GET /api/machines/${machineId}/deployments`]: [running],
-        [`GET /api/machines/${machineId}/sequence`]: sequenceResolution({
+      await page.setViewportSize({ width: 1440, height: 1080 });
+      await show(page, `/machines/${treeMachineId}`, {
+        "GET /api/machines": [treeMachine(), ...machines],
+        [`GET /api/machines/${treeMachineId}/deployments`]: [tree.summary],
+        [`GET /api/machines/${treeMachineId}/sequence`]: sequenceResolution({
           source: "Assigned",
-          sequenceId: installWindows.key,
-          sequenceName: "Install Windows",
-          explanation: "admin assigned Install Windows on the web, which comes before every rule.",
+          sequenceId: tree.summary.sequenceId,
+          sequenceName: tree.summary.title,
+          explanation:
+            "anna assigned Windows 11 office PCs on the web, which comes before every rule.",
         }),
-        [`GET /api/deployments/${runId}`]: run,
-        [`GET /api/machines/${machineId}/log`]: { lines, hasOlder: false },
+        [`GET /api/deployments/${treeRunId}`]: tree,
+        [`GET /api/machines/${treeMachineId}/log`]: { lines: treeLines, hasOlder: false },
       });
-      await expect(page.getByText("Adding drivers from Lenovo T14 Gen 4 (1 of 3).")).toBeVisible();
+      await expect(page.getByRole("group", { name: "Flow of this run" })).toBeVisible();
+      await expect(page.getByText("Joined corp.example as PC-G2341KXQ.")).toBeAttached();
 
       await expect(page).toHaveScreenshot(`machine-run-${scheme}.png`);
     });

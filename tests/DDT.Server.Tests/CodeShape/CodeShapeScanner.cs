@@ -8,13 +8,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace DDT.Server.Tests.CodeShape;
 
-// Names every C# limit of docs/code-style.md a file breaks. A finding leaves out line numbers and counts, so it stays
-// the same while the file changes for other reasons.
+// Names every limit of docs/code-style.md that no analyzer checks: class size, constructor dependencies, parameters
+// and comment blocks. MA0048 and MA0051 check one type per file and method length.
 public static class CodeShapeScanner
 {
     public const int MaxClassLines = 400;
     public const int MaxTestClassLines = 700;
-    public const int MaxMethodLines = 60;
     public const int MaxDependencies = 6;
     public const int MaxParameters = 5;
     public const int MaxCommentLines = 4;
@@ -23,6 +22,9 @@ public static class CodeShapeScanner
 
     // Build output, and the migrations EF Core generates.
     private static readonly HashSet<string> s_skippedFolders = new(StringComparer.Ordinal) { "bin", "obj", "node_modules", "Migrations" };
+
+    // A native import mirrors the function it declares, and a log method's parameters are the message's fields.
+    private static readonly string[] s_fixedSignatures = ["LibraryImport", "DllImport", "LoggerMessage"];
 
     private static readonly CSharpParseOptions s_parseOptions = new(LanguageVersion.Preview);
 
@@ -65,27 +67,9 @@ public static class CodeShapeScanner
 
     private static void CheckTypes(string path, SyntaxTree tree, SortedSet<string> findings)
     {
-        SyntaxNode root = tree.GetRoot();
-        List<MemberDeclarationSyntax> topLevel =
-        [
-            .. root.DescendantNodes(node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax)
-                .OfType<MemberDeclarationSyntax>()
-                .Where(member => member is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax),
-        ];
-
-        if (topLevel.Count > 1)
-        {
-            findings.Add($"{path}: more than one type");
-        }
-
-        if (topLevel.Count > 0 && !topLevel.Any(type => TypeName(type) == FileStem(path)))
-        {
-            findings.Add($"{path}: no type named after the file");
-        }
-
         int maxLines = path.StartsWith("tests/", StringComparison.Ordinal) ? MaxTestClassLines : MaxClassLines;
 
-        foreach (TypeDeclarationSyntax type in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
+        foreach (TypeDeclarationSyntax type in tree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
             if (type is InterfaceDeclarationSyntax)
             {
@@ -99,78 +83,48 @@ public static class CodeShapeScanner
                 findings.Add($"{path}: {name}: over {maxLines} lines");
             }
 
+            // Records are data and have as many members as their data.
             if (type is ClassDeclarationSyntax && Dependencies(type) > MaxDependencies)
             {
                 findings.Add($"{path}: {name}: over {MaxDependencies} constructor dependencies");
             }
 
-            CheckMembers(path, tree, type, findings);
-        }
-    }
-
-    private static void CheckMembers(string path, SyntaxTree tree, TypeDeclarationSyntax type, SortedSet<string> findings)
-    {
-        string name = type.Identifier.Text;
-
-        foreach (MemberDeclarationSyntax member in type.Members)
-        {
-            if (member is BaseTypeDeclarationSyntax)
+            foreach ((string method, int parameters) in Methods(type))
             {
-                continue;
-            }
-
-            foreach ((string memberName, SyntaxNode body, int parameters) in Callables(member))
-            {
-                if (Lines(tree, body) > MaxMethodLines)
-                {
-                    findings.Add($"{path}: {name}.{memberName}: over {MaxMethodLines} lines");
-                }
-
                 if (parameters > MaxParameters)
                 {
-                    findings.Add($"{path}: {name}.{memberName}: over {MaxParameters} parameters");
+                    findings.Add($"{path}: {name}.{method}: over {MaxParameters} parameters");
                 }
             }
         }
     }
 
-    // Everything MA0051 measures: methods, local functions, constructors, operators and accessors. Parameters count
-    // for methods and local functions only; a constructor's are dependencies.
-    private static IEnumerable<(string Name, SyntaxNode Body, int Parameters)> Callables(MemberDeclarationSyntax member)
+    // Methods and their local functions; a constructor's parameters are dependencies.
+    private static IEnumerable<(string Name, int Parameters)> Methods(TypeDeclarationSyntax type)
     {
-        switch (member)
+        foreach (MethodDeclarationSyntax method in type.Members.OfType<MethodDeclarationSyntax>())
         {
-            case MethodDeclarationSyntax method:
-                yield return (method.Identifier.Text, method, method.ParameterList.Parameters.Count);
-                break;
-            case ConstructorDeclarationSyntax constructor:
-                yield return (".ctor", constructor, 0);
-                break;
-            case DestructorDeclarationSyntax destructor:
-                yield return ("~", destructor, 0);
-                break;
-            case OperatorDeclarationSyntax op:
-                yield return ($"operator {op.OperatorToken.Text}", op, 0);
-                break;
-            case ConversionOperatorDeclarationSyntax conversion:
-                yield return ($"operator {conversion.Type}", conversion, 0);
-                break;
-            case BasePropertyDeclarationSyntax property:
-                string propertyName = property switch
-                {
-                    PropertyDeclarationSyntax p => p.Identifier.Text,
-                    EventDeclarationSyntax e => e.Identifier.Text,
-                    _ => "this[]",
-                };
-                yield return (propertyName, property, 0);
-                break;
+            if (!HasFixedSignature(method))
+            {
+                yield return (method.Identifier.Text, method.ParameterList.Parameters.Count);
+            }
         }
 
-        foreach (LocalFunctionStatementSyntax local in member.DescendantNodes().OfType<LocalFunctionStatementSyntax>())
+        foreach (MemberDeclarationSyntax member in type.Members.Where(member => member is not BaseTypeDeclarationSyntax))
         {
-            yield return (local.Identifier.Text, local, local.ParameterList.Parameters.Count);
+            foreach (LocalFunctionStatementSyntax local in member.DescendantNodes().OfType<LocalFunctionStatementSyntax>())
+            {
+                yield return (local.Identifier.Text, local.ParameterList.Parameters.Count);
+            }
         }
     }
+
+    private static bool HasFixedSignature(MethodDeclarationSyntax method) =>
+        method.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .Select(attribute => attribute.Name.ToString())
+            .Any(name => s_fixedSignatures.Any(fixedName =>
+                name.EndsWith(fixedName, StringComparison.Ordinal) || name.EndsWith(fixedName + "Attribute", StringComparison.Ordinal)));
 
     private static int Dependencies(TypeDeclarationSyntax type)
     {
@@ -204,20 +158,5 @@ public static class CodeShapeScanner
     {
         FileLinePositionSpan span = tree.GetLineSpan(node.Span);
         return span.EndLinePosition.Line - span.StartLinePosition.Line + 1;
-    }
-
-    private static string TypeName(MemberDeclarationSyntax type) => type switch
-    {
-        BaseTypeDeclarationSyntax declaration => declaration.Identifier.Text,
-        DelegateDeclarationSyntax declaration => declaration.Identifier.Text,
-        _ => string.Empty,
-    };
-
-    // SequenceRunner.cs, ServerMessages.Machines.cs and Result{T}.cs all name their type before the first dot or brace.
-    private static string FileStem(string path)
-    {
-        string name = Path.GetFileName(path);
-        int end = name.IndexOfAny(['.', '{']);
-        return end < 0 ? name : name[..end];
     }
 }

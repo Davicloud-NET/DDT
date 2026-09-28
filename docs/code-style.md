@@ -55,7 +55,7 @@ public const string DeployableArchitecture = "x64";
 private const long SpareBytes = 2048L * 1024 * 1024;
 ```
 
-And one that needs the treatment. `SequenceRunner` opens with 16 lines of prose:
+And one that needed the treatment. `SequenceRunner` used to open with 16 lines of prose:
 
 ```csharp
 // Runs a task sequence in Windows PE. A fresh run is checked first, so nothing is erased for a run that cannot

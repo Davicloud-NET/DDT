@@ -17,9 +17,6 @@ const MAX_PRIVATE_COMPONENT_LINES = 30;
 // Compound components share their root's file.
 const COMPOUNDS = new Set(["ui/Menu.tsx", "ui/Select.tsx", "ui/Table.tsx", "ui/Tabs.tsx"]);
 
-// Files that broke the rule when it came in. A file leaves the list once it keeps the rule.
-const BASELINE = new Set<string>([]);
-
 const SRC = fileURLToPath(new URL("..", import.meta.url));
 
 function componentFiles(): string[] {
@@ -86,6 +83,5 @@ function breaksRule(file: string): boolean {
 it("keeps one component per file", () => {
   const breaking = componentFiles().filter(breaksRule);
 
-  expect(breaking.filter((file) => !BASELINE.has(file))).toEqual([]);
-  expect([...BASELINE].filter((file) => !breaking.includes(file))).toEqual([]);
+  expect(breaking).toEqual([]);
 });

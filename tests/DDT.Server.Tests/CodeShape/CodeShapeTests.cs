@@ -6,49 +6,40 @@ using Xunit;
 
 namespace DDT.Server.Tests.CodeShape;
 
-// Holds the code to the limits of docs/code-style.md. A finding outside the baseline fails, and so does a baseline
-// entry that no longer applies, so the baseline only shrinks. Set DDT_CODE_SHAPE_WRITE=1 to rewrite it after a fix.
+// Holds the code to the limits of docs/code-style.md that no analyzer checks.
 public sealed class CodeShapeTests
 {
-    private const string BaselineFile = "tests/code-shape-baseline.txt";
+    // Each one argued where it is declared.
+    private static readonly HashSet<string> s_exceptions = new(StringComparer.Ordinal)
+    {
+        // Name and value pairs read like the message's text; three pairs are six parameters.
+        "src/DDT.Contracts/Messages/MessageTemplate.cs: MessageTemplate.With: over 5 parameters",
+    };
 
     [Fact]
     public void EveryFileKeepsTheLimitsOfTheCodeStyle()
     {
-        string root = Repository.Root();
-        string baselinePath = Path.Combine(root, BaselineFile);
-        SortedSet<string> found = CodeShapeScanner.Scan(root);
+        SortedSet<string> found = CodeShapeScanner.Scan(Repository.Root());
+        List<string> breaking = [.. found.Except(s_exceptions)];
+        List<string> stale = [.. s_exceptions.Except(found)];
 
-        if (Environment.GetEnvironmentVariable("DDT_CODE_SHAPE_WRITE") == "1")
-        {
-            File.WriteAllText(baselinePath, string.Concat(found.Select(finding => finding + "\n")));
-            return;
-        }
-
-        SortedSet<string> baseline = new(ReadBaseline(baselinePath), StringComparer.Ordinal);
-        List<string> added = [.. found.Except(baseline)];
-        List<string> gone = [.. baseline.Except(found)];
-
-        Assert.True(added.Count == 0 && gone.Count == 0, Describe(added, gone));
+        Assert.True(breaking.Count == 0 && stale.Count == 0, Describe(breaking, stale));
     }
 
-    private static IEnumerable<string> ReadBaseline(string path) =>
-        File.Exists(path) ? File.ReadAllLines(path).Where(line => line.Length > 0) : [];
-
-    private static string Describe(List<string> added, List<string> gone)
+    private static string Describe(List<string> breaking, List<string> stale)
     {
         List<string> lines = [];
 
-        if (added.Count > 0)
+        if (breaking.Count > 0)
         {
-            lines.Add($"Breaks docs/code-style.md ({added.Count}):");
-            lines.AddRange(added.Select(finding => "  " + finding));
+            lines.Add($"Breaks docs/code-style.md ({breaking.Count}):");
+            lines.AddRange(breaking.Select(finding => "  " + finding));
         }
 
-        if (gone.Count > 0)
+        if (stale.Count > 0)
         {
-            lines.Add($"Fixed, so remove from {BaselineFile} ({gone.Count}), or run with DDT_CODE_SHAPE_WRITE=1:");
-            lines.AddRange(gone.Select(finding => "  " + finding));
+            lines.Add($"No longer needed in s_exceptions ({stale.Count}):");
+            lines.AddRange(stale.Select(finding => "  " + finding));
         }
 
         return string.Join(Environment.NewLine, lines);

@@ -286,8 +286,9 @@ it reads `Boot/ddt-boot-image.json` every 10 seconds (src/DDT.Server/BootImage/B
   `NT SERVICE\DDT` may open and takes a few kinds of request, each with values and never a path
   outside the store or a command. A build's values are the keyboard layout, with or without
   PowerShell, the TFTP window, and folders inside the store that the server filled. It runs the
-  `Build-BootImage.ps1` in `%ProgramFiles%\DDT`, which only administrators can change, and returns
-  its output line by line.
+  `Build-BootImage.ps1` in `%ProgramFiles%\DDT`, with its `BootImage` module folder (including the
+  two C# files it compiles), all of which only administrators can change, and returns its output
+  line by line.
 - The server fills in what the script's parameters take today: its URL by DNS name, its root, the
   agent and console it offers (section 4.2), and the flagged driver packages, which it unpacks
   itself, so the build needs no API token.
@@ -316,7 +317,8 @@ newest: winget offers the ADK 10.1.28000.1 with the add-on 10.1.26100.2454, whic
 A Linux server, or a Windows server without the ADK, gets its boot image from any Windows PC that has
 one:
 
-- The Boot image page hands out a builder: a zip with `Build-BootImage.ps1`, the trim list, the
+- The Boot image page hands out a builder: a zip with `Build-BootImage.ps1` and its `BootImage`
+  module folder, the trim list, the
   agent, the console, `ddt-root.pem` and a `Build.cmd` holding the server's URL and a token that can
   upload one boot image, once, within a day. The administrator downloads it after entering the
   password again, since a boot image runs as SYSTEM on every machine that netboots, like the agent

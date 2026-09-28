@@ -38,6 +38,15 @@ public static class RunVariables
 
     public const string Set = "1";
 
+    // Whether the name is one of these rather than a value of the run or a variable of its sequence, which no script
+    // sees and no report carries.
+    public static bool IsOwn(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        return name.StartsWith("ddt.", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static IReadOnlyDictionary<string, string> Of(TargetVolumes volumes)
     {
         ArgumentNullException.ThrowIfNull(volumes);

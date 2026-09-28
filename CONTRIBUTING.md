@@ -43,7 +43,8 @@ say how to sign the agreement once it exists.
 Once the agreement is in place, pull requests written with the help of AI are welcome too, on the
 same terms as any other:
 
-- say in the pull request which tool helped and with which parts; the template asks;
+- say which tool helped and with which parts in the template's AI assistance section, and leave
+  out the footer a tool adds to the end of a pull request, such as "🤖 Generated with …";
 - understand every line you submit, and be ready to explain it in the review;
 - expect the same review and the same tests as any other change.
 

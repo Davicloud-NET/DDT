@@ -8,7 +8,7 @@
 
 ## AI assistance
 
-<!-- Which AI tool helped, and with which parts. Write "None" if none did. -->
+<!-- Which AI tool helped, and with which parts. Write "None" if none did. This section replaces a tool's "Generated with" footer, so leave that out. -->
 
 ## Checklist
 

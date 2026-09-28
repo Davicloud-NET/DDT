@@ -86,6 +86,7 @@ SECURITY.md                how to report a vulnerability privately
 .github/                   the CI workflow, Dependabot, and the issue and pull request forms
 docs/settings.md           design of the settings: their store, sections, rules and API
 docs/roadmap.md            the milestones after M6 and what each one holds
+docs/install.md            plan for installing DDT with one command, on Windows Server and on Linux
 docs/web-ui.md             how the web UI is built, for anyone changing it
 src/
   DDT.Core/                domain model, image library, hashing, task sequences, GPT, FAT and
@@ -2277,7 +2278,8 @@ Last came the organisation's logo on the console, uploaded on the Deployment def
 completes M6.5. The rebuilt image predates the logo, so the server offers it a newer agent and
 console; a machine has not yet been seen switching to a console the server offers, which the tests
 cover. The later milestones,
-in order, as [docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
+in order, as [docs/roadmap.md](docs/roadmap.md) details them: M6.6 installation with one command, on Windows Server
+and on Linux, as [docs/install.md](docs/install.md) plans it; M7 the task sequence flow builder and the sequence
 model it shows; M8 the Linux phase, in which a run goes on in the installed Linux; M9 applications
 and Windows configuration; M10 golden images and the machine lifecycle; M11 reach beyond netboot
 and a single site; M12 the documentation of the whole project,

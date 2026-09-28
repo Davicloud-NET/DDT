@@ -5,6 +5,8 @@
 </picture>
 
 # DDT, the Davicloud Deployment Toolkit
+#### THIS README AND ALL DOCUMENTATION (minus the license, including most code comments) ARE GOING TO BE REWRITTEN IN M12 OF THE ROADMAP.
+##### I currently recommend summarizing the readme with AI until I get to rewriting it myself after the project is past its core building stage with AI.
 
 [![CI](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml/badge.svg)](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml)
 

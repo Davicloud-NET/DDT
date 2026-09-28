@@ -126,6 +126,15 @@ build/
 `DDT.Pxe` is a class library of hosted services, not a separate executable. There is one image with
 one entry point, and `DDT:Roles` decides what runs inside it.
 
+## AI-Usage
+DDT is written with Claude Code, an AI coding assistant. I decide what DDT does: the requirements, the design choices, the security model and the roadmap. 
+All changes and processes are reviewed by me, the maintainer.
+Nothing is merged or commited to the master branch, until it has been tested talked about extensively.
+
+Issues, PRs, code reviews, and any "product" decisions are solely done by humans. 
+**Any and all product art included in the project is manufactured by humans.**
+AI contributions and PRs are fully welcome, as long as you understand *what* the AI wrote, *why* it wrote it, and that you tested it.
+
 ## Prerequisites
 
 - .NET SDK 10.0.201 or a later 10.0 feature band

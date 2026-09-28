@@ -20,12 +20,3 @@ internal sealed class BootImageManifest
 
     public string? AgentVersion { get; set; }
 }
-
-internal sealed class BootImageManifestDriver
-{
-    public Guid? PackageId { get; set; }
-
-    public string? Name { get; set; }
-
-    public string? Sha256 { get; set; }
-}

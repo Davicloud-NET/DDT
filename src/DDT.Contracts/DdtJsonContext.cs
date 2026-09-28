@@ -25,8 +25,7 @@ using DDT.Contracts.Values;
 namespace DDT.Contracts;
 
 // Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties. A message's
-// values are objects, so the types they can be are listed too, for the problem details that carry a message's code. A
-// message read back from JSON, such as how a host applied the settings, has its values as JsonElement.
+// values are objects, so the problem details need every type they can be, and JsonElement once read back from JSON.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,

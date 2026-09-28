@@ -5,7 +5,6 @@
 using System.Security.Cryptography.X509Certificates;
 using DDT.Server.Certificates;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;

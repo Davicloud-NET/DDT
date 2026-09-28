@@ -14,9 +14,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// Rebuilds, inside the running server, the components the oidc and proxies sections configure, whenever their version
-// changes, and records each result for this host. The proxies need nothing rebuilt: the middleware reads the snapshot
-// of each request. The pxe listeners are rebuilt by PxeHost itself.
+// Applies the oidc and proxies sections in the running server when their version changes, and records each result for
+// this host. Only oidc needs a rebuild: the proxies middleware reads each request's snapshot, and PxeHost rebuilds the
+// pxe listeners itself.
 public sealed partial class SettingsApplier(
     DdtSettings settings,
     IAuthenticationSchemeProvider schemes,
@@ -85,9 +85,9 @@ public sealed partial class SettingsApplier(
         }
     }
 
-    // While single sign-on is off the scheme is not registered at all: the authentication middleware builds the options
-    // of every registered remote scheme on every request, and empty ones fail validation there. A scheme some other
-    // registration added under the name, such as a test's stand-in for the provider, is left alone.
+    // While single sign-on is off the scheme is not registered: the authentication middleware builds the options of
+    // every remote scheme on every request, and empty ones fail validation. A scheme another registration added under
+    // the name, such as a test's stand-in, is left alone.
     private async Task ApplyOidcAsync(SettingsSnapshot snapshot)
     {
         SettingsSectionState state = snapshot[SettingsSectionNames.Oidc];
@@ -127,7 +127,7 @@ public sealed partial class SettingsApplier(
             }
 
             schemes.TryAddScheme(new AuthenticationScheme(OidcOptions.SchemeName, snapshot.Oidc.DisplayName, typeof(OpenIdConnectHandler)));
-            hostStates.Record(SettingsSectionNames.Oidc, state.Version, SettingsApplyResult.Applied, null);
+            hostStates.Record(new SettingsApplyReport(SettingsSectionNames.Oidc, state.Version, SettingsApplyResult.Applied, null));
         }
         catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or OptionsValidationException)
         {
@@ -138,7 +138,7 @@ public sealed partial class SettingsApplier(
     }
 
     private void Record(SettingsSectionState state, SettingsApplyResult result, ServerMessage? message) =>
-        hostStates.Record(state.Name, state.Version, result, message?.Text, text: message);
+        hostStates.Record(new SettingsApplyReport(state.Name, state.Version, result, message?.Text) { Text = message });
 
     // What is off, and then the section's problems, one after another.
     private static ServerMessage Closed(SettingsSectionState state, MessageTemplate consequence) =>

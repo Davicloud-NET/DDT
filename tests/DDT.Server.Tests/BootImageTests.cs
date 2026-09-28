@@ -12,7 +12,6 @@ using DDT.Contracts.BootImage;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.BootImage;
-using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
@@ -261,27 +260,5 @@ public sealed class BootImageTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
         BootImageView deleted = await LiveListener.NextAsync(pushed);
         Assert.DoesNotContain(deleted.Drivers, d => d.PackageId == package.Id);
-    }
-}
-
-// The server's clock stands still here, so the look at the boot directory happens when the test advances it.
-public sealed class BootImageWatcherTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
-{
-    [Fact]
-    public async Task PushesANewBuildOnceItsDescriptionAppears()
-    {
-        SignedInClient administrator = await application.AdministratorAsync();
-        await using LiveListener live = await LiveListener.StartAsync(application, administrator);
-        ChannelReader<BootImageView> pushed = live.Listen<BootImageView>(LiveEvents.BootImageChanged);
-        string manifest = application.Services.GetRequiredService<BootImageCatalog>().ManifestPath;
-
-        Directory.CreateDirectory(Path.GetDirectoryName(manifest)!);
-        await File.WriteAllTextAsync(manifest, """{ "builtUtc": "2026-09-27T08:15:00Z", "drivers": [], "agentVersion": "0.8.0" }""", TestContext.Current.CancellationToken);
-        application.Clock.Advance(BootImageWatcher.Interval);
-
-        BootImageView view = await LiveListener.NextAsync(pushed);
-
-        Assert.Equal("0.8.0", view.Build?.AgentVersion);
-        Assert.False(view.Stale);
     }
 }

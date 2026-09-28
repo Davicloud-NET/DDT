@@ -23,11 +23,8 @@ public sealed class UnattendRenderer
     public string Render(RunInputs inputs, WriteUnattendStep step, string? imageLanguage, string? password) =>
         UnattendWriter.Write(Settings(inputs, step, imageLanguage, password));
 
-    // The answer file as the agent fetches it: the step's settings may be templates, such as {{TimeZone}}, worked out from
-    // values, which are the run's start values with the variables its steps set since and the machine's facts; the
-    // computer name and the settings the run started with are taken from them too, so a step that changed one counts.
-    // What comes out is checked as a sequence's settings are, since a value can hold anything. Problem is why the answer
-    // file cannot be written, in the words of a run's error.
+    // The answer file as the agent fetches it. Values are the run's start values, the variables its steps set since and
+    // the machine's facts, which the step's templates such as {{TimeZone}} read. Problem is why it cannot be written.
     public (string? AnswerFile, string? Problem) Render(
         RunInputs inputs,
         WriteUnattendStep step,
@@ -40,6 +37,8 @@ public sealed class UnattendRenderer
         return settings is null ? (null, problem) : (UnattendWriter.Write(settings), null);
     }
 
+    // The computer name and the settings the run started with are taken from the values too, so a step that changed one
+    // counts. What comes out is checked as a sequence's settings are, since a value can hold anything.
     public (UnattendSettings? Settings, string? Problem) Settings(
         RunInputs inputs,
         WriteUnattendStep step,
@@ -51,31 +50,13 @@ public sealed class UnattendRenderer
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(values);
 
-        string? problem = null;
+        (WriteUnattendStep? worked, string? problem) = Worked(step, values);
 
-        string? Worked(string? written, string setting)
+        if (worked is null)
         {
-            if (Value(written) is not { } text || problem is not null)
-            {
-                return null;
-            }
-
-            if (ValueTemplate.TryRender(text, values, out string rendered, out TemplateProblem? refused))
-            {
-                return Value(rendered);
-            }
-
-            problem = $"The answer file's {setting}, {text}, cannot be worked out from the run's values. {refused!.Message().Text}";
-
-            return null;
+            return (null, problem);
         }
 
-        WriteUnattendStep worked = step with
-        {
-            TimeZone = Worked(step.TimeZone, "time zone"),
-            Locale = Worked(step.Locale, "locale"),
-            Keyboard = Worked(step.Keyboard, "keyboard"),
-        };
         RunInputs current = inputs with
         {
             ComputerName = Value(values(MachineVariableNames.ComputerName)) ?? inputs.ComputerName,
@@ -83,28 +64,9 @@ public sealed class UnattendRenderer
             Locale = Value(values(MachineValues.Locale)) ?? inputs.Locale,
             Keyboard = Value(values(MachineValues.Keyboard)) ?? inputs.Keyboard,
         };
-
-        if (problem is not null)
-        {
-            return (null, problem);
-        }
-
         UnattendSettings settings = Settings(current, worked, imageLanguage, password);
 
-        problem = settings switch
-        {
-            { ComputerName: not GeneratedComputerName and var name } when ComputerNames.Problem(name) is { } refused =>
-                $"The computer name {name} cannot be used in the answer file. {refused.Text}",
-            { TimeZone: { } timeZone } when !WindowsSettings.IsTimeZone(timeZone) =>
-                $"The answer file's time zone, {timeZone}, is not a Windows time zone.",
-            { Locale: var locale } when !WindowsSettings.IsLocale(locale) =>
-                $"The answer file's locale, {locale}, is not a locale that names a region.",
-            { Keyboard: var keyboard } when !WindowsSettings.IsKeyboard(keyboard) =>
-                $"The answer file's keyboard, {keyboard}, is not a list of keyboards Windows knows.",
-            _ => null,
-        };
-
-        return problem is null ? (settings, null) : (null, problem);
+        return Problem(settings) is { } refused ? (null, refused) : (settings, null);
     }
 
     public UnattendSettings Settings(RunInputs inputs, WriteUnattendStep step, string? imageLanguage, string? password)
@@ -124,6 +86,51 @@ public sealed class UnattendRenderer
             Value(step.Keyboard) ?? Value(inputs.Keyboard) ?? locale,
             step.LocalAdministrator && !string.IsNullOrEmpty(password) ? new LocalAdministrator(inputs.AdministratorName, password) : null);
     }
+
+    // The step's settings worked out from the values, or the problem of the first that cannot be.
+    private static (WriteUnattendStep? Step, string? Problem) Worked(WriteUnattendStep step, Func<string, string?> values)
+    {
+        string? problem = null;
+
+        string? Work(string? written, string setting)
+        {
+            if (Value(written) is not { } text || problem is not null)
+            {
+                return null;
+            }
+
+            if (ValueTemplate.TryRender(text, values, out string rendered, out TemplateProblem? refused))
+            {
+                return Value(rendered);
+            }
+
+            problem = $"The answer file's {setting}, {text}, cannot be worked out from the run's values. {refused?.Message().Text}";
+
+            return null;
+        }
+
+        WriteUnattendStep worked = step with
+        {
+            TimeZone = Work(step.TimeZone, "time zone"),
+            Locale = Work(step.Locale, "locale"),
+            Keyboard = Work(step.Keyboard, "keyboard"),
+        };
+
+        return problem is null ? (worked, null) : (null, problem);
+    }
+
+    private static string? Problem(UnattendSettings settings) => settings switch
+    {
+        { ComputerName: not GeneratedComputerName and var name } when ComputerNames.Problem(name) is { } refused =>
+            $"The computer name {name} cannot be used in the answer file. {refused.Text}",
+        { TimeZone: { } timeZone } when !WindowsSettings.IsTimeZone(timeZone) =>
+            $"The answer file's time zone, {timeZone}, is not a Windows time zone.",
+        { Locale: var locale } when !WindowsSettings.IsLocale(locale) =>
+            $"The answer file's locale, {locale}, is not a locale that names a region.",
+        { Keyboard: var keyboard } when !WindowsSettings.IsKeyboard(keyboard) =>
+            $"The answer file's keyboard, {keyboard}, is not a list of keyboards Windows knows.",
+        _ => null,
+    };
 
     private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();
 }

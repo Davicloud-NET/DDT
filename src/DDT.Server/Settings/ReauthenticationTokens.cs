@@ -14,9 +14,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Settings;
 
-// A fresh proof of identity for the fields that grant roles or trust, and for the agent upload, which turns an
-// administrator session into code that runs as SYSTEM on every netbooting machine. Protected with the key ring, so it
-// travels in a header and serves a streamed upload as well as a JSON save.
+// A fresh proof of identity for fields that grant roles or trust, and for uploads that run as SYSTEM on every
+// netbooting machine. Protected with the key ring, so it travels in a header, for a streamed upload as for a JSON save.
 public sealed class ReauthenticationTokens(IDataProtectionProvider provider, TimeProvider timeProvider)
 {
     public const string HeaderName = "X-DDT-Reauthentication";

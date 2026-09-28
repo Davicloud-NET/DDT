@@ -305,12 +305,11 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal(0, rules.Single(r => r.Id == unknown.Id).MatchingMachines);
     }
 
-    // What a run would start with: the machine's own name first, then the rules from the top, their machine roles, the
-    // sequence's defaults and the deployment defaults, each with where it came from.
-    [Fact]
-    public async Task PreviewsTheValuesARunWouldStartWith()
+    private sealed record NamedMachine(RegisteredMachine Machine, RuleView Rule, MachineRoleView Kiosk, string ComputerName);
+
+    // A machine a rule names from its serial number, with a machine role, and the sequence of the rule.
+    private async Task<NamedMachine> NamedMachineAsync(SignedInClient administrator)
     {
-        SignedInClient administrator = await application.AdministratorAsync();
         string model = RuleRequests.UniqueModel();
         string serial = $"SN-{Guid.NewGuid():N}";
         string computerName = $"PC-{serial.Replace("-", "", StringComparison.Ordinal)[^6..]}";
@@ -334,12 +333,24 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
             Values = [new NamedValue("ComputerName", "PC-{{SerialNumber|alnum|right:6}}"), new NamedValue("Office", "Vienna")],
             RoleIds = [kiosk.Id],
         });
-        using RegisteredMachine machine = await application.RegisterWithAsync(registration => registration with
+        RegisteredMachine machine = await application.RegisterWithAsync(registration => registration with
         {
             Manufacturer = "Dell Inc.",
             Model = model,
             SerialNumber = serial,
         });
+
+        return new NamedMachine(machine, named, kiosk, computerName);
+    }
+
+    // What a run would start with: the machine's own name first, then the rules from the top, their machine roles, the
+    // sequence's defaults and the deployment defaults, each with where it came from.
+    [Fact]
+    public async Task PreviewsTheValuesARunWouldStartWith()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (RegisteredMachine machine, RuleView named, MachineRoleView kiosk, string computerName) = await NamedMachineAsync(administrator);
+        using RegisteredMachine _ = machine;
 
         MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
         Dictionary<string, ResolvedValue> used = resolution.Values!.Where(v => !v.Overridden).ToDictionary(v => v.Name);
@@ -358,9 +369,16 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal(["Office", "Owner"], resolution.Inputs!.Select(input => input.Name));
         Assert.Equal([new ResolvedValue("Office", "Vienna", ValueSource.Rule, named.Id, named.Name, false)], resolution.InputDefaults);
         Assert.Empty(resolution.ValueProblems!);
+    }
 
-        // A name the machine was given comes before every rule's, and the rules still give values to a run assigned on the
-        // web.
+    // A name the machine was given comes before every rule's, and the rules still give values to a run assigned on the web.
+    [Fact]
+    public async Task AGivenNameComesBeforeTheRulesWhichStillGiveValues()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (RegisteredMachine machine, RuleView named, MachineRoleView kiosk, string computerName) = await NamedMachineAsync(administrator);
+        using RegisteredMachine _ = machine;
+
         SequenceView script = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         (await administrator.AssignAsync(machine.Id, script.Id, "PC-GIVEN")).EnsureSuccessStatusCode();
         MachineSequenceResolution assigned = await administrator.ResolutionAsync(machine.Id);

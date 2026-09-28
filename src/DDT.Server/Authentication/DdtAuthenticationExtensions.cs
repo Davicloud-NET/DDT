@@ -6,6 +6,7 @@ using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
+using DDT.Server.Tokens;
 using DDT.Server.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -14,7 +15,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace DDT.Server.Authentication;
 
@@ -32,15 +32,35 @@ public static class DdtAuthenticationExtensions
         services.AddScoped<ILdapAuthenticator, LdapAuthenticator>();
         services.AddScoped<DirectorySignInService>();
         services.AddScoped<CredentialVerifier>();
+        services.AddScoped<ExternalSignIn>();
         services.AddScoped<UserViews>();
         services.AddScoped<UserActivity>();
+        services.AddScoped<UserChangePublisher>();
+        services.AddScoped<UserAccounts>();
+        services.AddSingleton<LastAdministratorGuard>();
+        services.AddScoped<ApiTokens>();
 
-        // The key ring can mint an administrator cookie and every machine token, so it has to
-        // survive restarts and it has to live on the store volume, not in the read only layer.
+        // The key ring can mint an administrator cookie and every machine token, so it has to survive restarts and live
+        // on the store volume, not in the read-only layer.
         services.AddDataProtection()
             .SetApplicationName("ddt")
             .PersistKeysToFileSystem(Directory.CreateDirectory(Path.Combine(options.StorePath, "keys")));
 
+        AddIdentity(services);
+        services.AddSingleton<MachineTokenService>();
+        AddSchemes(services);
+        ConfigureCookie(services, options);
+
+        // The default is 30 minutes, which is how long a disabled account keeps working.
+        services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
+
+        services.AddHostedService<IdentityBootstrap>();
+
+        return services;
+    }
+
+    private static void AddIdentity(IServiceCollection services)
+    {
         services.AddIdentityCore<DdtUser>(identity =>
             {
                 identity.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
@@ -59,14 +79,15 @@ public static class DdtAuthenticationExtensions
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
-        // The framework default is 100,000. OWASP currently recommends 210,000 for
-        // PBKDF2-HMAC-SHA512, and Identity rehashes on the next successful sign in.
+        // OWASP recommends 210,000 iterations for PBKDF2-HMAC-SHA512, against the framework's 100,000. Identity rehashes
+        // at the next successful sign-in.
         services.Configure<PasswordHasherOptions>(hasher => hasher.IterationCount = 210_000);
+    }
 
-        // AddIdentityCookies first, then Configure. A bare AddCookie for the same scheme silently
-        // drops SecurityStampValidator, which is what makes disabling an account take effect.
-        services.AddSingleton<MachineTokenService>();
-
+    private static void AddSchemes(IServiceCollection services)
+    {
+        // AddIdentityCookies before the cookie is configured, never a bare AddCookie for the scheme: that silently drops
+        // SecurityStampValidator, which makes disabling an account take effect.
         AuthenticationBuilder authentication = services.AddAuthentication(IdentityConstants.ApplicationScheme);
         authentication.AddIdentityCookies();
         authentication.AddScheme<AuthenticationSchemeOptions, MachineAuthenticationHandler>(
@@ -83,15 +104,16 @@ public static class DdtAuthenticationExtensions
                 context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
                     ? DdtAuthenticationSchemes.ApiToken
                     : IdentityConstants.ApplicationScheme);
+    }
 
+    private static void ConfigureCookie(IServiceCollection services, DdtOptions options) =>
         services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, cookie =>
         {
             cookie.Cookie.Name = options.RequireHttps ? "__Host-ddt-auth" : "ddt-auth";
             cookie.Cookie.HttpOnly = true;
-            // Lax whether single sign-on is on or not, as the maintainer decided: the provider sends the browser
-            // back with a navigation from its own site, on which Strict would leave the new session behind, and a
-            // value that followed Oidc:Enabled could not change without a restart. Cross site requests that change
-            // something are refused by the same origin and antiforgery filters, which do not rely on SameSite.
+
+            // Lax even while single sign-on is off, as cookie options change only at a restart, and Strict would drop the
+            // session the provider's redirect back starts. The same-origin and antiforgery filters refuse cross-site changes.
             cookie.Cookie.SameSite = SameSiteMode.Lax;
             cookie.Cookie.SecurePolicy = options.RequireHttps
                 ? CookieSecurePolicy.Always
@@ -100,12 +122,4 @@ public static class DdtAuthenticationExtensions
             cookie.ExpireTimeSpan = TimeSpan.FromHours(8);
             cookie.SlidingExpiration = true;
         });
-
-        // The default is 30 minutes, which is how long a disabled account keeps working.
-        services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
-
-        services.AddHostedService<IdentityBootstrap>();
-
-        return services;
-    }
 }

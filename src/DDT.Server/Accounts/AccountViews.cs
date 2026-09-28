@@ -11,9 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Accounts;
 
-// Accounts as the Accounts page and the sequence checks see them: never the password, only whether one is set and this
-// server can read it. Which sequences use an account is worked out from the stored sequences, so it is always what they
-// say now; a library of sequences is small.
+// Accounts as the Accounts page and the sequence checks see them: never the password, only whether it is set and this
+// server can read it. Uses are worked out from the stored sequences each time, which a small library allows.
 public sealed class AccountViews(DdtDbContext database, AccountProtector protector)
 {
     public async Task<IReadOnlyList<AccountView>> ListAsync(CancellationToken cancellationToken)
@@ -111,9 +110,8 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
         return uses;
     }
 
-    // The stored accounts whose uses a save of a sequence changed: named before or after, and by other steps or under
-    // another name of the sequence. A definition of null is a sequence that is not there, before it was created or after
-    // it was deleted. An autosave that changes nothing about accounts pushes nothing.
+    // The stored accounts whose uses a save of a sequence changed; a null definition is a sequence that does not exist yet
+    // or any more. An autosave that changes nothing about accounts pushes nothing.
     public static IReadOnlyList<Guid> UsesChanged(string? before, string? beforeName, string? after, string? afterName)
     {
         Dictionary<Guid, string> was = Uses(before, beforeName);

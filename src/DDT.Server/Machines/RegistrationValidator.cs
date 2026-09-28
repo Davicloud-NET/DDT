@@ -54,33 +54,11 @@ public static partial class RegistrationValidator
             return false;
         }
 
-        if (registration.MacAddresses is null || registration.MacAddresses.Count is 0 or > MaxMacAddresses)
+        (List<string> macs, string? primary, string? refusal) = Macs(registration);
+
+        if (refusal is not null || primary is null)
         {
-            error = $"macAddresses must hold between 1 and {MaxMacAddresses} addresses.";
-
-            return false;
-        }
-
-        List<string> macs = [];
-
-        foreach (string mac in registration.MacAddresses)
-        {
-            if (NormaliseMac(mac) is not { } parsed)
-            {
-                error = "macAddresses contains a value that is not a MAC address.";
-
-                return false;
-            }
-
-            if (!macs.Contains(parsed))
-            {
-                macs.Add(parsed);
-            }
-        }
-
-        if (NormaliseMac(registration.PrimaryMac) is not { } primary || !macs.Contains(primary))
-        {
-            error = "primaryMac must be one of macAddresses.";
+            error = refusal ?? string.Empty;
 
             return false;
         }
@@ -92,9 +70,45 @@ public static partial class RegistrationValidator
             return false;
         }
 
+        normalised = Normalised(registration, uuid, macs, primary);
+        error = string.Empty;
+
+        return true;
+    }
+
+    // Each once, with the primary one among them.
+    private static (List<string> Macs, string? Primary, string? Refusal) Macs(AgentRegistration registration)
+    {
+        List<string> macs = [];
+
+        if (registration.MacAddresses is null || registration.MacAddresses.Count is 0 or > MaxMacAddresses)
+        {
+            return (macs, null, $"macAddresses must hold between 1 and {MaxMacAddresses} addresses.");
+        }
+
+        foreach (string mac in registration.MacAddresses)
+        {
+            if (NormaliseMac(mac) is not { } parsed)
+            {
+                return (macs, null, "macAddresses contains a value that is not a MAC address.");
+            }
+
+            if (!macs.Contains(parsed))
+            {
+                macs.Add(parsed);
+            }
+        }
+
+        return NormaliseMac(registration.PrimaryMac) is { } primary && macs.Contains(primary)
+            ? (macs, primary, null)
+            : (macs, null, "primaryMac must be one of macAddresses.");
+    }
+
+    private static NormalisedRegistration Normalised(AgentRegistration registration, Guid uuid, List<string> macs, string primary)
+    {
         AgentDisk[]? disks = registration.Disks is null ? null : [.. registration.Disks.OfType<AgentDisk>()];
 
-        normalised = new NormalisedRegistration(
+        return new NormalisedRegistration(
             uuid.ToString("D"),
             primary,
             macs,
@@ -112,9 +126,6 @@ public static partial class RegistrationValidator
             registration.TrustedUefiCas,
             registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null,
             registration.Facts is { } facts ? Normalise(facts) : null);
-        error = string.Empty;
-
-        return true;
     }
 
     // Conditions and rules test these, and the machine's page shows them. Text is cleaned and cut like the names above,
@@ -155,9 +166,8 @@ public static partial class RegistrationValidator
             ? text
             : null;
 
-    // Board makers leave placeholders such as "Default string" or "To be filled by O.E.M." in the fields they did not fill
-    // in, which say nothing about the machine. They are dropped here, where every agent's facts arrive, so a condition
-    // never matches one and the machine's page shows the field as unknown.
+    // Board makers leave placeholders such as "Default string" in fields they did not fill in. They are dropped where every
+    // agent's facts arrive, so no condition matches one and the machine's page shows the field as unknown.
     private static string? FirmwareText(string? value) =>
         FactText(value, MaxTextLength) is { } text && !HardwareModels.IsPlaceholder(text) ? text : null;
 

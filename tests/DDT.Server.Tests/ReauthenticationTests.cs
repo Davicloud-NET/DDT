@@ -99,7 +99,7 @@ public sealed class ReauthenticationTests(ManualClockApplication application) : 
             SettingsSectionNames.Machines,
             loaded.Version,
             loaded.Values with { ZeroTouchNetworks = [network] },
-            reauthentication: token);
+            new(Reauthentication: token));
     }
 
     private async Task ChangeUserAsync(SignedInClient client, Func<UserManager<DdtUser>, DdtUser, Task<IdentityResult>> change)

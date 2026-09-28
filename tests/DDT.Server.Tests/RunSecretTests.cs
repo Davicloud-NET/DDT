@@ -53,8 +53,10 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
     private static AgentRunReport Reached(AgentRun run, int running, SequencePhase phase = SequencePhase.WindowsPE) =>
         Report(
             DeploymentState.Running,
-            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))],
-            phase: phase);
+            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))]) with
+        {
+            Phase = phase,
+        };
 
     // The service in Windows, as it registers with the run token the agent in Windows PE handed over.
     private static async Task<string> ServiceTokenAsync(DeployingMachine machine) =>
@@ -324,7 +326,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         (await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id)).EnsureSuccessStatusCode();
         await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
         (await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id)).EnsureSuccessStatusCode();
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))], phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))]) with { Phase = SequencePhase.Windows });
 
         Assert.Contains(application.Log.Entries, entry => entry.Message.Contains(run.Id.ToString("D"), StringComparison.Ordinal));
         Assert.All(application.Log.Entries, entry => Assert.All(secrets, secret =>

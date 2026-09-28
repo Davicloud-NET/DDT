@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
@@ -44,6 +45,9 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> PickRunAsync(Guid machineId, string token, AgentRunRequest request) =>
         SendAsync(HttpMethod.Post, AgentRoutes.Runs(machineId), token, JsonContent.Create(request, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> PickRunAsync(Guid machineId, string token, string json) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.Runs(machineId), token, new StringContent(json, Encoding.UTF8, "application/json"));
+
     public Task<HttpResponseMessage> RunReportAsync(Guid machineId, string token, Guid runId, AgentRunReport report) =>
         SendAsync(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId), token, JsonContent.Create(report, options: TestJson.Options));
 
@@ -54,14 +58,16 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
             token,
             JsonContent.Create(new AgentInputAnswers(answers), options: TestJson.Options));
 
-    public Task<HttpResponseMessage> RunFileAsync(
-        Guid machineId,
-        string token,
-        Guid runId,
-        string sha256,
-        HttpMethod? method = null,
-        RangeHeaderValue? range = null) =>
-        SendAsync(method ?? HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null, request => request.Headers.Range = range);
+    public Task<HttpResponseMessage> RunFileAsync(Guid machineId, string token, Guid runId, string sha256) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null);
+
+    // As the agent asks for a file's size before it erases the disk.
+    public Task<HttpResponseMessage> RunFileHeadAsync(Guid machineId, string token, Guid runId, string sha256) =>
+        SendAsync(HttpMethod.Head, AgentRoutes.RunFile(machineId, runId, sha256), token, null);
+
+    // As the agent resumes a download.
+    public Task<HttpResponseMessage> RunFileRangeAsync(Guid machineId, string token, Guid runId, string sha256, RangeHeaderValue range) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null, request => request.Headers.Range = range);
 
     public Task<HttpResponseMessage> RunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunStepUnattend(machineId, runId, stepId), token, null);

@@ -6,10 +6,9 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Version is the document schema, raised when a step kind or a member older agents would ignore is added. An agent
-// throws on a kind it does not know, so the server hands a run only to an agent whose AgentRegistration.SequenceVersion
-// is at least this. The server stores every sequence with the lowest version it needs, so an older agent still gets the
-// sequences it can run.
+// Version is the document schema, raised when a step kind or a member older agents would ignore is added. The server
+// hands a run only to an agent whose AgentRegistration.SequenceVersion is at least this, and stores every sequence with
+// the lowest version it needs, so an older agent still gets the sequences it can run.
 public sealed record SequenceDefinition(int Version, IReadOnlyList<SequenceStep> Steps)
 {
     // 2 adds WriteRawImageStep and WriteCloudInitSeedStep. 3 makes the steps a tree (group, if, repeat), adds Set

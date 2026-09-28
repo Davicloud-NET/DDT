@@ -121,7 +121,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         StepRunState chose = Visit(tree.Choose, StepState.Running) with { Branch = IfBranch.Else, Evaluation = [decided] };
         StepRunState notThinkPad = Visit(tree.ThinkPadImage, StepState.Skipped);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
         await machine.ReportOkAsync(run.Id, Running(partitioned, chose, notThinkPad, Visit(tree.OtherImage, StepState.Running)));
 
         DeploymentView applying = await ViewAsync(run.Id);

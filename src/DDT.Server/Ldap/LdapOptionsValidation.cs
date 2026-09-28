@@ -10,9 +10,9 @@ using DDT.Server.Settings;
 
 namespace DDT.Server.Ldap;
 
-// The group map decides who may sign in at all, since a directory user in none of its groups is refused, so a map
-// that cannot work is refused instead of refusing everyone at their next sign-in. The connection values are checked
-// only while directory sign-in is on, so a section that is off can be filled in step by step.
+// A directory user in none of the map's groups is refused, so a map that cannot work is refused now rather than
+// everyone at their next sign-in. The connection is checked only while directory sign-in is on, so a section that is
+// off can be filled in step by step.
 public static class LdapOptionsValidation
 {
     // What DDT replaces with the user name in the user filter.

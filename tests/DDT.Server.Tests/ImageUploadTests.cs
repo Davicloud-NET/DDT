@@ -294,7 +294,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
         ImageUploadCompleter completer = application.Services.GetRequiredService<ImageUploadCompleter>();
 
         // An uploader with no user row breaks the entries' foreign key, as a user deleted during the upload does.
-        UploadCompletion failed = await completer.CompleteAsync(session.Id, Guid.NewGuid(), "gone", null, cancellationToken);
+        UploadCompletion failed = await completer.CompleteAsync(session.Id, new Actor(Guid.NewGuid(), "gone", null), cancellationToken);
 
         Assert.Equal(UploadCompletionStatus.Failed, failed.Status);
         Assert.True(File.Exists(Store.PartPath(session.Id)));

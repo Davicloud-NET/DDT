@@ -10,10 +10,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
 
-// Server to client: every event carries what changed, and clients patch what they show with it rather than loading it
-// again, see LiveEvents. A page that shows one machine watches it, to receive also what only it needs, such as new log
-// lines and step changes. Groups do not survive a reconnect, so a client watches again after one. A script may connect
-// with an API token too, and receives what its token's role may read.
+// Pushes what changed for clients to patch in (see LiveEvents). A page watches the machine it shows, again after a
+// reconnect, since groups do not survive one; an API token receives what its role may read.
 public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, LiveConnections connections) : Hub
 {
     // A connection is one browser tab, which shows a machine or a few.
@@ -21,11 +19,9 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
 
     private const string WatchedKey = "ddt.watched";
 
-    // The cookie carries the roles and the security stamp of its last check, up to a minute old, so the account is read
-    // as it is now: one disabled, deleted or signed out everywhere since then gets no connection, and administrators,
-    // who also receive what only they may read, are told apart by the roles they hold now. A token request was read
-    // as it is now by the token handler, which gave it the lower of the token's role and the account's. A role changed
-    // while the connection is open takes effect when it connects again, which the Users API forces by closing it.
+    // The cookie's roles and security stamp can be a minute old, so the account is read as it is now: a disabled, deleted
+    // or signed-out one gets no connection. The token handler settled a token's role already. A role changed while the
+    // connection is open counts when it connects again, which the Users API forces by closing it.
     public override async Task OnConnectedAsync()
     {
         Guid? userId;

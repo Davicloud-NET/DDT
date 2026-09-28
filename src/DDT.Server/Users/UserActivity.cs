@@ -30,9 +30,9 @@ public sealed class UserActivity(
         }
     }
 
-    // The one role the account's groups give it, or none, as the directory or the provider says at the account's
-    // sign-in. A change closes the account's live connections, which connect again with the role it holds now. The
-    // caller tells the Users page, once for everything the sign-in changed.
+    // The one role the account's groups give it, or none, as the directory or the provider says at its sign-in. A
+    // change closes the account's live connections, which connect again with the new role; the caller tells the Users
+    // page once for the whole sign-in.
     public async Task<(IdentityResult Result, bool Changed)> ApplyGroupRoleAsync(DdtUser user, string? role)
     {
         ArgumentNullException.ThrowIfNull(user);

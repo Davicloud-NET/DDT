@@ -59,6 +59,11 @@ public sealed class CredentialVerifier(
             return (result, user);
         }
 
+        return await SecondFactorAsync(user, twoFactorCode).ConfigureAwait(false);
+    }
+
+    private async Task<(SignInResult Result, DdtUser? User)> SecondFactorAsync(DdtUser user, string? twoFactorCode)
+    {
         if (string.IsNullOrWhiteSpace(twoFactorCode))
         {
             return (SignInResult.TwoFactorRequired, null);

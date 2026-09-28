@@ -47,7 +47,7 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         (Image image, byte[] content) = await ImageAsync();
         AgentRun run = await AssignAsync(machine, image.Id);
 
-        HttpResponseMessage head = await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, HttpMethod.Head);
+        HttpResponseMessage head = await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, image.Sha256);
 
         Assert.Equal(HttpStatusCode.OK, head.StatusCode);
         Assert.Equal(content.Length, head.Content.Headers.ContentLength);
@@ -62,20 +62,20 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal("application/octet-stream", whole.Content.Headers.ContentType?.MediaType);
         Assert.Equal(content, await whole.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
 
-        HttpResponseMessage resumed = await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, range: new RangeHeaderValue(40_000, null));
+        HttpResponseMessage resumed = await machine.Agent.RunFileRangeAsync(machine.Id, machine.Token, run.Id, image.Sha256, new RangeHeaderValue(40_000, null));
 
         Assert.Equal(HttpStatusCode.PartialContent, resumed.StatusCode);
         Assert.Equal(40_000, resumed.Content.Headers.ContentRange?.From);
         Assert.Equal(content.Length, resumed.Content.Headers.ContentRange?.Length);
         Assert.Equal(content[40_000..], await resumed.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
 
-        HttpResponseMessage complete = await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, range: new RangeHeaderValue(content.Length, null));
+        HttpResponseMessage complete = await machine.Agent.RunFileRangeAsync(machine.Id, machine.Token, run.Id, image.Sha256, new RangeHeaderValue(content.Length, null));
 
         Assert.Equal(HttpStatusCode.RequestedRangeNotSatisfiable, complete.StatusCode);
         Assert.Equal(content.Length, complete.Content.Headers.ContentRange?.Length);
 
         // The URL may carry the hash in either case; the stored one names the file.
-        Assert.Equal(HttpStatusCode.OK, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256.ToUpperInvariant(), HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, image.Sha256.ToUpperInvariant())).StatusCode);
     }
 
     [Fact]
@@ -88,8 +88,8 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         AgentRun run = await AssignAsync(machine, image.Id, new InjectDriversStep { Id = Guid.NewGuid(), Name = "Drivers" });
 
         Assert.Equal(drivers.Sha256, Assert.Single(run.Packages).Sha256);
-        Assert.Equal(HttpStatusCode.OK, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, drivers.Sha256, HttpMethod.Head)).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, unrelated.Sha256, HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, drivers.Sha256)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, unrelated.Sha256)).StatusCode);
     }
 
     [Fact]
@@ -100,11 +100,11 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         AgentRun run = await AssignAsync(machine, image.Id);
 
         await machine.ReportOkAsync(run.Id, Running(Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Running)));
-        Assert.Equal(HttpStatusCode.PartialContent, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, range: new RangeHeaderValue(100, null))).StatusCode);
+        Assert.Equal(HttpStatusCode.PartialContent, (await machine.Agent.RunFileRangeAsync(machine.Id, machine.Token, run.Id, image.Sha256, new RangeHeaderValue(100, null))).StatusCode);
 
         (await (await application.AdministratorAsync()).EndCurrentAsync(machine.Id)).EnsureSuccessStatusCode();
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, range: new RangeHeaderValue(200, null))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.RunFileRangeAsync(machine.Id, machine.Token, run.Id, image.Sha256, new RangeHeaderValue(200, null))).StatusCode);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
 
         // The other image is another machine's to download right now, but never this run's.
         AgentRun neighbourRun = await AssignAsync(neighbour, other.Id);
-        Assert.Equal(HttpStatusCode.OK, (await neighbour.Agent.RunFileAsync(neighbour.Id, neighbour.Token, neighbourRun.Id, other.Sha256, HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await neighbour.Agent.RunFileHeadAsync(neighbour.Id, neighbour.Token, neighbourRun.Id, other.Sha256)).StatusCode);
 
         HttpResponseMessage nothingAssigned = await idle.Agent.RunFileAsync(idle.Id, idle.Token, run.Id, image.Sha256);
         Assert.Equal(HttpStatusCode.Forbidden, nothingAssigned.StatusCode);
@@ -156,6 +156,6 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
 
         File.Delete(application.Services.GetRequiredService<ImageStore>().ObjectPath(image.Sha256));
 
-        Assert.Equal(HttpStatusCode.NotFound, (await machine.Agent.RunFileAsync(machine.Id, machine.Token, run.Id, image.Sha256, HttpMethod.Head)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, image.Sha256)).StatusCode);
     }
 }

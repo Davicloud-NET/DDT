@@ -6,25 +6,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Accounts;
 
-public enum AccountPurpose
-{
-    // A script runs as the account, in Windows.
-    RunAs,
-
-    // A Join the domain step joins with it.
-    Join,
-
-    // DDT connects a share with it while the step runs.
-    Share,
-}
-
-// Where a step names an account. Field is the place in the step, as a sequence problem names it; Reference is null for
-// a share whose account a document from outside left out. SharePath is the share's path as written, for a share.
-public sealed record AccountSite(SequenceStep Step, string Field, AccountReference? Reference, AccountPurpose Purpose, string? SharePath);
-
 public static class AccountSites
 {
-    // Every place the sequence names an account, through the whole of its tree, in the order of the tree.
+    // Every place the sequence names an account, nested steps included, in tree order.
     public static IReadOnlyList<AccountSite> Of(SequenceDefinition definition)
     {
         List<AccountSite> sites = [];

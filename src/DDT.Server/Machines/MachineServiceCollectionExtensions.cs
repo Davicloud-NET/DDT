@@ -23,7 +23,16 @@ public static class MachineServiceCollectionExtensions
         services.AddSingleton<ConsoleLogoStore>();
         services.AddSingleton<WaitingMachineSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
+        services.AddScoped<MachineArrivals>();
+        services.AddScoped<RegistrationPublisher>();
         services.AddScoped<MachineRegistrar>();
+        services.AddScoped<MachinePolls>();
+        services.AddScoped<MachineSignIn>();
+        services.AddScoped<SignInApprovals>();
+        services.AddScoped<MachineLogs>();
+        services.AddScoped<MachineTransitions>();
+        services.AddScoped<MachineApprovals>();
+        services.AddScoped<MachineRemovals>();
         services.AddSingleton<LiveNotifier>();
 
         // The sweeper and the registrar change the machines the rules count.

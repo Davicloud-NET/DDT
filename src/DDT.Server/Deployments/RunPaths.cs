@@ -6,10 +6,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// The steps of a run's path as far as it is decided, which a list of runs counts and shows as a rail: the leaves of its
-// tree in pre-order, but none in the branch an IF did not take, and of an IF that has not decided yet those of the branch
-// with more steps, Then when both have as many. In a container that was skipped, or that failed and caught the failure,
-// only the steps that ran are on the path. A step a repeat runs again counts once. A flat run's path is all its steps.
+// The leaves of a run's path as far as it is decided, which a list counts: none of an IF's untaken branch, the longer
+// branch of an undecided IF (Then on a tie), only the steps that ran in a container that was skipped or caught a failure,
+// and a repeated step once.
 public static class RunPaths
 {
     // Tree is the run's definition, or null for a run without containers, whose rows say all there is.

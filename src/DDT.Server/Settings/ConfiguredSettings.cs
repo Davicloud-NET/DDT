@@ -11,10 +11,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace DDT.Server.Settings;
 
-// The settings as configuration alone sets them, checked before the server starts. A value configuration sets that fails
-// its rules stops the start, as it always did. A problem of a field configuration leaves to the settings page, such as
-// a domain whose password is stored there, is not one: the section reports it once the stored values are read, and
-// fails closed until it is fixed.
+// The settings as configuration alone sets them, checked before the server starts: a configured value that fails its
+// rules stops the start. A problem of a field left to the page, such as a domain whose password is stored there, is the
+// section's once the stored values are read, and the section fails closed until it is fixed.
 public static class ConfiguredSettings
 {
     public static IReadOnlyList<string> FindProblems(IConfiguration configuration, bool pxe)

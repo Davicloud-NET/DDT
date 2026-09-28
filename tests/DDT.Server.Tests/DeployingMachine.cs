@@ -44,14 +44,13 @@ public sealed class DeployingMachine : IDisposable
     public static async Task<DeployingMachine> RegisterAsync(
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
-        string? remoteAddress = null,
         bool? secureBootEnabled = null,
         int? sequenceVersion = null,
         UefiCa? trustedUefiCas = null)
     {
         ArgumentNullException.ThrowIfNull(application);
 
-        AgentClient agent = new(application.CreateDefaultClient(), remoteAddress ?? TestRemoteAddress.Unique());
+        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
         AgentRegistration registration = AgentClient.Registration(
             Guid.NewGuid().ToString("D"),
             "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)) with

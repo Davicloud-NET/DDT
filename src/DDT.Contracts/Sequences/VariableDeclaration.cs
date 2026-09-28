@@ -4,16 +4,17 @@
 
 namespace DDT.Contracts.Sequences;
 
-// A value the sequence uses, such as ComputerName or Office. Its value is worked out when the run starts: an input's
-// answer, the machine's own, the rules', the machine roles', then Default, a template. Only a variable with SetBySteps
-// may be changed by a Set variable step or a script's output while the run goes on.
+// A value the sequence uses, such as ComputerName or Office.
 public sealed record VariableDeclaration
 {
     public required string Name { get; init; }
 
+    // A template, the last choice when the run starts: an input's answer, the machine's own value, the rules' and the
+    // machine roles' come first.
     public string? Default { get; init; }
 
     public string? Description { get; init; }
 
+    // Only then may a Set variable step or a script's output change the value while the run goes on.
     public bool SetBySteps { get; init; }
 }

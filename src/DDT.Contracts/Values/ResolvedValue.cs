@@ -4,26 +4,15 @@
 
 namespace DDT.Contracts.Values;
 
-// A value of a run or of a preview and where it came from. SourceId and SourceName name the rule, machine role or step
-// that set it, where one did. Overridden marks a value a source further up the order also set, which is shown but not
-// used: input answers, then the machine's own values, rules from the top, machine roles, the sequence's defaults and
-// the deployment defaults. Value is null for a secret, which shows only that it is set.
+// A value of a run or of a preview and where it came from.
 public sealed record ResolvedValue(
     string Name,
+    // Null for a secret, which shows only that it is set.
     string? Value,
     ValueSource Source,
+    // The rule, machine role or step that set it, where one did.
     Guid? SourceId,
     string? SourceName,
+    // A source further up the order also set it, so it is shown but not used. The order: input answers, the machine's
+    // own values, rules from the top, machine roles, the sequence's defaults, the deployment defaults.
     bool Overridden);
-
-public enum ValueSource
-{
-    Input,
-    Machine,
-    Rule,
-    Role,
-    SequenceDefault,
-    DeploymentDefault,
-    Fact,
-    Step,
-}

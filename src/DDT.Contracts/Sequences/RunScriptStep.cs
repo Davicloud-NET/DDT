@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// PackageId names a Files package that is extracted and becomes the script's working directory.
 public sealed record RunScriptStep : SequenceStep
 {
     public SequencePhase Phase { get; init; }
@@ -15,6 +14,7 @@ public sealed record RunScriptStep : SequenceStep
 
     public required string Script { get; init; }
 
+    // A Files package that is extracted and becomes the script's working directory.
     public Guid? PackageId { get; init; }
 
     public int TimeoutMinutes { get; init; } = 60;

@@ -126,7 +126,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Assert.Null(assigned.PendingInputs);
         Assert.Null((await StoredAsync(runId)).Values);
 
-        AgentRunReportResult started = await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        AgentRunReportResult started = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
         string name = $"PC-{machine.Registration.PrimaryMac[^6..]}";
 
         Assert.NotNull(started.Values);
@@ -149,7 +149,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
 
         // The values stay as they started, whatever the rule says now; a report before the steps begin gets them again.
         await administrator.PutAsync($"{RuleRequests.Rules}/{rule.Id}", RuleRequests.Save(rule, save => save with { Values = [new NamedValue("Site", "Graz")] }));
-        AgentRunReportResult again = await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        AgentRunReportResult again = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
         Assert.Equal("Vienna", again.Values!["Site"]);
         Assert.Null((await ReportedAsync(machine, runId, Running(Step(assigned.Sequence.Steps[0], StepState.Running)))).Values);
 
@@ -169,7 +169,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         SequenceView sequence = await AskingAsync();
         Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
 
-        HttpResponseMessage refused = await machine.ReportAsync(runId, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        HttpResponseMessage refused = await machine.ReportAsync(runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
 
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
         string? error = await TestDatabase.TitleAsync(refused);
@@ -182,7 +182,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
     }
 
     [Fact]
-    public async Task AnAssignmentTakesTheAnswersTheWebAsksAndKeepsTheAccountForTheRunOnly()
+    public async Task AnAssignmentRefusesAnswersTheWebCannotGive()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
@@ -193,19 +193,28 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
 
         IDictionary<string, string[]> wrong = await ErrorsAsync(await administrator.AssignAsync(
             machine.Id,
-            sequence.Id,
-            answers: [Given("Owner", "Somebody far too long"), Given("Office", "Home"), Given("Room", "B 12"), Given("Nobody", "x"), new InputAnswer("JoinAccount", null, "joiner", "")]));
+            new AssignSequenceRequest(
+                sequence.Id,
+                null,
+                Answers: [Given("Owner", "Somebody far too long"), Given("Office", "Home"), Given("Room", "B 12"), Given("Nobody", "x"), new InputAnswer("JoinAccount", null, "joiner", "")])));
         Assert.Equal(["Owner takes at most 10 characters."], wrong["answers.Owner"]);
         Assert.Equal(["'Home' is not one of the choices of Office edition."], wrong["answers.Office"]);
         Assert.Equal(["Room is asked at the machine, not on the web."], wrong["answers.Room"]);
         Assert.Equal(["The sequence asks nothing called Nobody. Load the page again."], wrong["answers.Nobody"]);
         Assert.Equal(2, wrong["answers.JoinAccount"].Length);
         Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+    }
+
+    [Fact]
+    public async Task AnAssignmentTakesTheAnswersTheWebAsksAndKeepsTheAccountForTheRunOnly()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        SequenceView sequence = await AskingAsync(Owner, Office, Room, JoinAccount);
 
         MachineSummary assigned = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.AssignAsync(
             machine.Id,
-            sequence.Id,
-            answers: [Given("Owner", " Anna "), Given("office", "proplus"), new InputAnswer("JoinAccount", null, @"CORP\joiner", AccountPassword)]));
+            new AssignSequenceRequest(sequence.Id, null, Answers: [Given("Owner", " Anna "), Given("office", "proplus"), new InputAnswer("JoinAccount", null, @"CORP\joiner", AccountPassword)])));
         Guid runId = assigned.Deployment!.Id;
 
         // The answers are kept as the inputs spell them, the account apart from them, and the audit names only the inputs.
@@ -222,7 +231,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         AgentRun handed = (await machine.NextAsync()).Run!;
         Assert.Equal(["Room"], handed.PendingInputs!.Select(input => input.Name));
 
-        await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
         AgentAnswersResult answered = await RegisteredMachine.ReadAsync<AgentAnswersResult>(
             await machine.Agent.RunAnswersAsync(machine.Id, machine.Token, runId, Given("Room", "B 12")));
 
@@ -288,7 +297,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         // The page cannot answer before the machine says it waits.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, Given("Room", "A 1"))).StatusCode);
 
-        AgentRunReportResult waiting = await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        AgentRunReportResult waiting = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
 
         Assert.Null(waiting.Values);
         Assert.Equal(["Room", "Office"], waiting.InputsPending!.Select(input => input.Name));
@@ -321,7 +330,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Assert.Equal(HttpStatusCode.Conflict, late.StatusCode);
 
         // The agent's next report starts the run and hands it the values.
-        AgentRunReportResult started = await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        AgentRunReportResult started = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
         Assert.Equal("A 1", started.Values!["Room"]);
         Assert.NotNull(started.RunToken);
         Assert.Null(started.ReportAfterSeconds);
@@ -339,7 +348,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         SequenceView sequence = await AskingAsync(Owner, Room);
         Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id, answers: [Given("Owner", "Anna")])).Id;
         await machine.NextAsync();
-        await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
 
         AgentAnswersResult refused = await RegisteredMachine.ReadAsync<AgentAnswersResult>(
             await machine.Agent.RunAnswersAsync(machine.Id, machine.Token, runId, Given("Room", "Much too long"), Given("Owner", "Ben")));
@@ -366,7 +375,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         // The run started, so the page has nothing to answer, and nor has the machine.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, Given("Room", "C 3"))).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await machine.Agent.RunAnswersAsync(machine.Id, machine.Token, runId, Given("Room", "C 3"))).StatusCode);
-        Assert.Equal("B 12", (await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput))).Values!["Room"]);
+        Assert.Equal("B 12", (await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput })).Values!["Room"]);
     }
 
     // The page and the machine answer at the same moment: the answers are saved over those they were given to, so the
@@ -379,7 +388,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         SequenceView sequence = await AskingAsync(Room);
         Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
         await machine.NextAsync();
-        await ReportedAsync(machine, runId, Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
 
         using IServiceScope first = application.Services.CreateScope();
         using IServiceScope second = application.Services.CreateScope();
@@ -390,10 +399,10 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Deployment firstRun = await firstDatabase.Deployments.SingleAsync(d => d.Id == runId, Cancellation);
         Deployment secondRun = await secondDatabase.Deployments.SingleAsync(d => d.Id == runId, Cancellation);
 
-        RunAnswering web = await first.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AnswerAsync(firstMachine, firstRun, [Given("Room", "A 1")], atMachine: false, null, "web", null, Cancellation);
-        RunAnswering console = await second.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AnswerAsync(secondMachine, secondRun, [Given("Room", "B 2")], atMachine: true, null, "console", null, Cancellation);
+        RunAnswering web = await first.ServiceProvider.GetRequiredService<WaitingRuns>()
+            .AnswerAsync(firstMachine, firstRun, new AnswersGiven([Given("Room", "A 1")], new Actor(null, "web", null), AtMachine: false), Cancellation);
+        RunAnswering console = await second.ServiceProvider.GetRequiredService<WaitingRuns>()
+            .AnswerAsync(secondMachine, secondRun, new AnswersGiven([Given("Room", "B 2")], new Actor(null, "console", null), AtMachine: true), Cancellation);
 
         Assert.True(await RunAnswerSaves.SaveAsync(firstDatabase, firstRun, web.Before, Cancellation));
         Assert.False(await RunAnswerSaves.SaveAsync(secondDatabase, secondRun, console.Before, Cancellation));
@@ -432,7 +441,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
             [("Room", "C 7", true, operatorName), ("Office", "ProPlus", true, operatorName)],
             RunAnswer.Read((await StoredAsync(picked.Id)).Answers).Select(answer => (answer.Name, answer.Value, answer.AtMachine, answer.AnsweredBy)));
 
-        HttpResponseMessage refused = await machine.ReportAsync(picked.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        HttpResponseMessage refused = await machine.ReportAsync(picked.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
         Assert.Equal(
             "The run did not start, because only the web asks what it lacks: Owner needs an answer before the run can start. Assign the sequence again and answer it.",

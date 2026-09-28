@@ -55,8 +55,8 @@ public abstract record SequenceStep
     [JsonIgnore]
     public virtual bool ErasesDisk => false;
 
-    // The lowest SequenceDefinition.Version whose agents run this kind with these members. SequenceTree.RequiredVersion
-    // adds what every kind has, such as When.
+    // The lowest SequenceDefinition.Version whose agents run this kind with these members.
+    // SequenceTree.RequiredVersion adds what every kind has, such as When.
     [JsonIgnore]
     public virtual int MinimumVersion => 1;
 
@@ -74,7 +74,7 @@ public abstract record SequenceStep
     [JsonIgnore]
     public virtual bool Resumable => false;
 
-    // A copy whose bodies hold these nodes, one list per body in the order of Bodies. A leaf has none and stays as it is.
+    // A copy whose bodies hold these nodes, one list per body in the order of Bodies. A leaf has none and stays as is.
     public virtual SequenceStep WithBodies(IReadOnlyList<IReadOnlyList<SequenceStep>> bodies)
     {
         ArgumentNullException.ThrowIfNull(bodies);

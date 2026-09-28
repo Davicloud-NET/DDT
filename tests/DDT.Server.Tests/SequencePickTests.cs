@@ -74,6 +74,17 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Equal(HttpStatusCode.Forbidden, (await PickAsync(waiting, sequence.Id)).StatusCode);
     }
 
+    // A body that fails to bind is refused before the machine is looked up, even with another machine's token.
+    [Fact]
+    public async Task AChoiceWithoutABodyIsABadRequest()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine first = await DeployingMachine.SignedInAsync(application, operatorName);
+        using DeployingMachine second = await DeployingMachine.SignedInAsync(application, operatorName);
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await second.Agent.PickRunAsync(first.Id, second.Token, "null")).StatusCode);
+    }
+
     // Token generations are small numbers that machines share, so only the machine id keeps one machine's session
     // token away from another machine's sequences and runs.
     [Fact]

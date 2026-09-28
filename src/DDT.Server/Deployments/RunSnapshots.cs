@@ -22,9 +22,8 @@ using DDT.Server.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// What is frozen when a run is created: a row per node of the sequence's tree and the files the steps download,
-// resolved for the machine. Driver packages are matched to the machine's model now, so one uploaded later is not part of
-// the run.
+// What is frozen when a run is created: a row per node and the files its steps download, resolved for the machine now,
+// so a driver package uploaded later is not part of the run.
 public static class RunSnapshots
 {
     // The kinds that hold other nodes, as documents name them, so a run's rows tell its steps from their containers.
@@ -34,9 +33,8 @@ public static class RunSnapshots
         .Select(kind => (string)kind.TypeDiscriminator!)
         .ToFrozenSet(StringComparer.Ordinal);
 
-    // One row per node in pre-order, containers included, which for a flat sequence is a row per step as before. A node
-    // whose phase depends on the path an IF takes starts with the first it may run in, and takes the phase the agent
-    // reports when it runs.
+    // One row per node in pre-order, containers included. A node whose phase depends on an IF starts with the first phase
+    // it may run in, and takes the one the agent reports when it runs.
     public static IReadOnlyList<DeploymentStep> Steps(Guid runId, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -73,6 +71,7 @@ public static class RunSnapshots
         return s_containerKinds.Contains(row.Kind);
     }
 
+    // Every branch, since any may run: an IF can apply a different image per model.
     public static IReadOnlyList<DeploymentArtifact> Artifacts(
         Guid runId,
         SequenceDefinition definition,
@@ -83,66 +82,11 @@ public static class RunSnapshots
         ArgumentNullException.ThrowIfNull(references);
         ArgumentNullException.ThrowIfNull(machine);
 
-        List<DeploymentArtifact> artifacts = [];
-
-        // Every branch, since any may run: an IF can apply a different image per model.
-        foreach (SequenceStep step in SequenceTree.Nodes(definition))
-        {
-            switch (step)
-            {
-                case ApplyImageStep apply when references.Images.TryGetValue(apply.ImageId, out Image? image):
-                    artifacts.Add(new DeploymentArtifact
-                    {
-                        DeploymentId = runId,
-                        StepId = step.Id,
-                        Kind = ArtifactKind.Image,
-                        SourceId = image.Id,
-                        Name = image.Name,
-                        Sha256 = image.Sha256,
-                        SizeBytes = image.SizeBytes,
-                        ExpandedBytes = image.InstalledBytes,
-                        WimIndex = image.WimIndex,
-                        Language = image.Language,
-                    });
-                    break;
-
-                case WriteRawImageStep raw when references.Images.TryGetValue(raw.ImageId, out Image? disk):
-                    artifacts.Add(new DeploymentArtifact
-                    {
-                        DeploymentId = runId,
-                        StepId = step.Id,
-                        Kind = ArtifactKind.Image,
-                        SourceId = disk.Id,
-                        Name = disk.Name,
-                        Sha256 = disk.Sha256,
-                        SizeBytes = disk.SizeBytes,
-                        ExpandedBytes = disk.InstalledBytes,
-                        BootCapability = disk.BootCapability,
-                        SignedUnder = disk.SignedUnder,
-                    });
-                    break;
-
-                case InjectDriversStep:
-                    artifacts.AddRange(references.Packages.Values
-                        .Where(p => p.Kind == PackageKind.Drivers
-                            && PackageTargets.Matches(PackageTargets.Read(p), machine.Manufacturer, machine.Model))
-                        .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-                        .ThenBy(p => p.Id)
-                        .Select(p => Package(runId, step.Id, ArtifactKind.Drivers, p)));
-                    break;
-
-                case RunScriptStep { PackageId: { } packageId } when references.Packages.TryGetValue(packageId, out Package? package):
-                    artifacts.Add(Package(runId, step.Id, ArtifactKind.Files, package));
-                    break;
-            }
-        }
-
-        return artifacts;
+        return [.. SequenceTree.Nodes(definition).SelectMany(step => StepArtifacts(runId, step, references, machine))];
     }
 
-    // The space a run needs on the disk it erases, the most any path through it needs (see SequenceSizes): its
-    // partitions, and every file both downloaded and unpacked. A raw disk image is written as it downloads, so only the
-    // disk it holds counts, and the seed after it.
+    // The most any path needs on the disk it erases (see SequenceSizes): partitions, and every file downloaded and unpacked.
+    // A raw disk image is written as it downloads, so only the disk it holds, and the seed after it, count.
     public static long RequiredBytes(SequenceDefinition definition, IReadOnlyList<DeploymentArtifact> artifacts)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -160,16 +104,14 @@ public static class RunSnapshots
         return SequenceSizes.RequiredBytes(definition, step => files.GetValueOrDefault(step.Id));
     }
 
-    // Never a secret: the answer file and the join credentials are fetched while their step runs. An image a Write raw
-    // disk image step names is a raw disk image, whatever the library holds by now. Values are those the run started with,
-    // never an Account input's answer; pendingInputs what the machine asks before the run can start.
+    // Never a secret: the answer file and the credentials are fetched while their step runs, and the values never hold an
+    // Account input's answer. An image a Write raw disk image step names is a raw disk image, whatever the library holds now.
     public static AgentRun ForAgent(
         Deployment run,
         SequenceDefinition definition,
         IReadOnlyList<DeploymentArtifact> artifacts,
         string? computerName,
-        IReadOnlyDictionary<string, string>? values = null,
-        IReadOnlyList<AgentInput>? pendingInputs = null)
+        IReadOnlyList<AgentInput>? pendingInputs)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(artifacts);
@@ -194,9 +136,54 @@ public static class RunSnapshots
             run.DiskNumber,
             computerName,
             run.AllowSecureBootMismatch,
-            values,
+            RunValues.Effective(run),
             pendingInputs is { Count: > 0 } ? pendingInputs : null);
     }
+
+    private static IEnumerable<DeploymentArtifact> StepArtifacts(Guid runId, SequenceStep step, SequenceReferences references, Machine machine) =>
+        step switch
+        {
+            ApplyImageStep apply when references.Images.TryGetValue(apply.ImageId, out Image? image) =>
+            [
+                new DeploymentArtifact
+                {
+                    DeploymentId = runId,
+                    StepId = step.Id,
+                    Kind = ArtifactKind.Image,
+                    SourceId = image.Id,
+                    Name = image.Name,
+                    Sha256 = image.Sha256,
+                    SizeBytes = image.SizeBytes,
+                    ExpandedBytes = image.InstalledBytes,
+                    WimIndex = image.WimIndex,
+                    Language = image.Language,
+                },
+            ],
+            WriteRawImageStep raw when references.Images.TryGetValue(raw.ImageId, out Image? disk) =>
+            [
+                new DeploymentArtifact
+                {
+                    DeploymentId = runId,
+                    StepId = step.Id,
+                    Kind = ArtifactKind.Image,
+                    SourceId = disk.Id,
+                    Name = disk.Name,
+                    Sha256 = disk.Sha256,
+                    SizeBytes = disk.SizeBytes,
+                    ExpandedBytes = disk.InstalledBytes,
+                    BootCapability = disk.BootCapability,
+                    SignedUnder = disk.SignedUnder,
+                },
+            ],
+            InjectDriversStep => references.Packages.Values
+                .Where(p => p.Kind == PackageKind.Drivers && PackageTargets.Matches(PackageTargets.Read(p), machine.Manufacturer, machine.Model))
+                .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(p => p.Id)
+                .Select(p => Package(runId, step.Id, ArtifactKind.Drivers, p)),
+            RunScriptStep { PackageId: { } packageId } when references.Packages.TryGetValue(packageId, out Package? package) =>
+                [Package(runId, step.Id, ArtifactKind.Files, package)],
+            _ => [],
+        };
 
     // The discriminator the document gives the step, as the serializer writes it, so a new kind needs nothing here.
     private static string Kind(SequenceStep step) =>

@@ -34,10 +34,8 @@ public sealed partial class DatabaseInitializer(
 
         LogCreatingDevelopmentSchema();
 
-        // EnsureCreated does nothing to a file that already exists, so one created by an older build
-        // silently lacks new tables and columns and fails far from the cause. A fingerprint of the
-        // schema, kept in SQLite's user_version, which EnsureCreated never touches, catches every model
-        // change, including a column the model dropped.
+        // EnsureCreated leaves an existing file alone, which then lacks new tables and fails far from the cause. A
+        // fingerprint of the schema in SQLite's user_version, which EnsureCreated never touches, catches every change.
         int fingerprint = SchemaFingerprint(context);
 
         if (await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false))

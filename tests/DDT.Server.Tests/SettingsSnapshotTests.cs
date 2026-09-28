@@ -144,8 +144,8 @@ public sealed class SettingsSnapshotTests
         SettingsSnapshot snapshot = Build([Stored(SettingsSectionNames.Deployment, """{"domain":{"name":"corp.example"}}""")]);
 
         Assert.Contains(snapshot.DeploymentProblems, problem => problem.Field == "Domain:UserName");
-        Assert.StartsWith("The deployment settings have problems", DeploymentService.SettingsProblem(snapshot)?.Text, StringComparison.Ordinal);
-        Assert.Null(DeploymentService.SettingsProblem(Build([])));
+        Assert.StartsWith("The deployment settings have problems", DeploymentPolicy.SettingsProblem(snapshot)?.Text, StringComparison.Ordinal);
+        Assert.Null(DeploymentPolicy.SettingsProblem(Build([])));
     }
 
     // Web approval stays on when either source asked for it; the caps take their defaults and zero touch is off.

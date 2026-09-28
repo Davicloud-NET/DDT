@@ -21,8 +21,7 @@ public sealed class DomainOptions
     [JsonIgnore]
     public string? Password { get; set; }
 
-    // The domain controller the server asks when an administrator checks the join account, as a host name or an
-    // address. Unset, the server asks the domain's name, which the DNS of an Active Directory domain resolves to its
-    // controllers. The machines find their controller themselves and never use this.
+    // Where the join account is checked; unset, the domain's name, which Active Directory's DNS resolves to its controllers.
+    // Machines find their controller themselves.
     public string? Controller { get; set; }
 }

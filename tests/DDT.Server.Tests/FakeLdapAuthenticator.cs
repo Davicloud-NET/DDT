@@ -7,9 +7,8 @@ using DDT.Server.Ldap;
 
 namespace DDT.Server.Tests;
 
-// A directory in which every user exists, belongs to the operators group and has the test password, unless a test gives
-// the user other groups. A user name that starts with "nobody-" matches no entry, and one that starts with "twin-"
-// matches two.
+// A directory where every user exists, is in the operators group and has the test password, unless a test gives it
+// other groups. A user name that starts with "nobody-" matches no entry, and one that starts with "twin-" matches two.
 public sealed class FakeLdapAuthenticator : ILdapAuthenticator
 {
     // No "=" as in a real DN: the test host passes settings to Program as --key=value arguments.

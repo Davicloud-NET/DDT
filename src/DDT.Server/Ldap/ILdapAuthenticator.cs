@@ -4,9 +4,8 @@
 
 namespace DDT.Server.Ldap;
 
-// The directory as DDT uses it: to sign people in, and to explain a sign-in to an administrator. The lookups use the
-// bind account and the same searches as a sign-in, so what they report is what a sign-in would see. They throw
-// LdapUnavailableException when the directory cannot be asked.
+// The directory as DDT uses it, to sign people in and to explain a sign-in to an administrator. The lookups search with
+// the bind account as a sign-in does, and throw LdapUnavailableException when the directory cannot be asked.
 public interface ILdapAuthenticator
 {
     Task<LdapIdentity?> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken);

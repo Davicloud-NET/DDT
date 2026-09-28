@@ -8,11 +8,9 @@ using DDT.Server.Accounts;
 
 namespace DDT.Server.Sequences;
 
-// The accounts a sequence's steps name, anywhere in its tree: a stored account exists and has a password this server
-// can read, and every account may go where the step sends it, which is what the server checks again when the step
-// fetches it. A share whose server comes from a template is checked when the run fetches it, with the values the run
-// started with. Only a leaf step connects shares; the validator refuses shares on a group, an IF or a Repeat, so their
-// accounts are not checked here.
+// The accounts a sequence's steps name: a stored account exists with a password this server can read, and every account
+// may go where the step sends it, as the server checks again when the step fetches it. A share server made from a template
+// is checked at that fetch. The validator refuses shares on a container, so only leaf steps are checked.
 public static class SequenceAccountChecks
 {
     public static IReadOnlyList<SequenceProblem> Check(SequenceDefinition definition, SequenceReferences references)

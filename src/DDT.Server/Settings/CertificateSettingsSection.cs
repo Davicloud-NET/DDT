@@ -11,9 +11,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace DDT.Server.Settings;
 
-// The names the server is reached by, which Generate issues for and which an uploaded certificate has to cover.
-// DDT:Https:SubjectAlternativeNames seeds them once and never locks them: in configuration it also names what DDT's own
-// certificate has to carry, which it reissues on its own, so the key stays there with that meaning.
+// The names the server is reached by, which Generate issues for and an uploaded certificate has to cover.
+// DDT:Https:SubjectAlternativeNames only seeds them: in configuration it also names what DDT's own certificate carries,
+// which DDT reissues on its own.
 public sealed class CertificateSettingsSection() : SettingsSectionDefinition<HttpsOptions>(
     SettingsSectionNames.Certificate,
     HttpsOptions.SectionName,

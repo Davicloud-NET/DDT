@@ -6,17 +6,15 @@ using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
-using DDT.Server.Ldap;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Users;
 
-// What the Users page shows of an account. Where a role comes from is derived from the account's source and the group
-// maps of this moment, so a map that is emptied hands its accounts back to administrators at once. The one fact that
-// cannot be derived, that single sign-on gave the role and no administrator changed it since, is kept as a token row of
-// the account, where Identity itself keeps per-account values such as the authenticator key.
+// What the Users page shows of an account. Where a role comes from follows from the account's source and the group maps
+// of this moment, so an emptied map hands its accounts back to administrators at once. That single sign-on gave the
+// role, and nobody changed it since, is kept as a token row, where Identity keeps per-account values.
 public sealed class UserViews(
     DdtDbContext database,
     DdtSettings settings,

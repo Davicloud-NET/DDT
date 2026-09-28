@@ -12,8 +12,6 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Settings;
 
-public sealed record SettingsSaveCheck(IReadOnlyList<SettingProblem> Problems, IReadOnlyList<SettingWarning> Warnings);
-
 // The checks of a save that need more than the values: the accounts, the framework's own checks of the sign-in scheme,
 // and a directory administrator's proof that the new directory values keep them an administrator.
 public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtectionProvider dataProtection, DirectoryProofs proofs)
@@ -24,19 +22,18 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
 
     public async Task<SettingsSaveCheck> CheckAsync(
         SettingsSectionDefinition definition,
-        SettingsSectionState before,
-        SettingsSectionState after,
-        SettingsActor actor,
+        SettingsSectionChange change,
+        Actor actor,
         SettingsUpdate update,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
+        ArgumentNullException.ThrowIfNull(change);
         ArgumentNullException.ThrowIfNull(actor);
         ArgumentNullException.ThrowIfNull(update);
         cancellationToken.ThrowIfCancellationRequested();
 
+        SettingsSectionState after = change.After;
         List<SettingProblem> problems = [];
         List<SettingWarning> warnings = [];
 
@@ -53,7 +50,7 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
         if (definition.Name == SettingsSectionNames.Ldap
             && actor.UserId is { } userId
             && after.Options is LdapOptions { Enabled: true } ldap
-            && DirectoryChanged(definition, before, after)
+            && DirectoryChanged(definition, change.Before, after)
             && await users.FindByIdAsync(userId.ToString("D")).ConfigureAwait(false) is { Source: AccountSource.Directory }
             && !proofs.Accepts(update.DirectoryProof, userId, ldap))
         {

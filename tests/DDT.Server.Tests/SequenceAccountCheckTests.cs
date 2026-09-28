@@ -56,7 +56,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AStoredAccountMustExistAndHaveAPassword()
     {
-        AccountView without = await AccountAsync(Request(runAs: true, password: null));
+        AccountView without = await AccountAsync(Request() with { RunAs = true, Password = Secret(null) });
         RunScriptStep gone = Script(new AccountReference(Guid.NewGuid(), null));
         RunScriptStep empty = Script(new AccountReference(without.Id, null));
         RunScriptStep both = Script(new AccountReference(without.Id, "Account"));
@@ -76,7 +76,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AStoredPasswordMustDecrypt()
     {
-        AccountView account = await AccountAsync(Request(runAs: true));
+        AccountView account = await AccountAsync(Request() with { RunAs = true });
         string foreign = application.Services.GetRequiredService<AccountProtector>().Protect(Guid.NewGuid(), Password);
         RunScriptStep script = Script(new AccountReference(account.Id, null));
 
@@ -92,7 +92,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AnAccountGoesOnlyWhereItMay()
     {
-        AccountView account = await AccountAsync(Request(domain: null, hosts: ["files.corp.example"], runAs: false));
+        AccountView account = await AccountAsync(Request() with { Domain = null, Hosts = ["files.corp.example"], RunAs = false });
         AccountReference named = new(account.Id, null);
         RunScriptStep runAs = Script(named);
         JoinDomainStep join = Join(named);
@@ -116,7 +116,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AJoinWithAnAccountNeedsNoConfiguredDomain()
     {
-        AccountView account = await AccountAsync(Request(domain: "lab.example", runAs: true));
+        AccountView account = await AccountAsync(Request() with { Domain = "lab.example", RunAs = true });
         JoinDomainStep withAccount = Join(new AccountReference(account.Id, null));
         JoinDomainStep withoutAccount = Join(null);
 
@@ -169,7 +169,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task StepsInsideContainersAreCheckedAndContainersConnectNoShares()
     {
-        AccountView account = await AccountAsync(Request(hosts: ["files.corp.example"]));
+        AccountView account = await AccountAsync(Request() with { Hosts = ["files.corp.example"] });
         ShareConnection allowed = new(@"\\files.corp.example\tools", new AccountReference(account.Id, null));
         RunScriptStep inner = Script(null, new ShareConnection(@"\\evil.example\loot", new AccountReference(account.Id, null)));
         GroupStep group = new() { Id = Guid.NewGuid(), Name = "Tools", Shares = [allowed], Steps = [inner] };

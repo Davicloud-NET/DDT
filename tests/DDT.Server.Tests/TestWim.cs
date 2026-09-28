@@ -9,9 +9,9 @@ using System.Text;
 
 namespace DDT.Server.Tests;
 
-// The parts of a WIM file the server reads, laid out as WimMetadata expects them: the 208-byte header, bytes that
-// stand in for the image data, and the image list as uncompressed UTF-16 LE XML with a byte order mark. The data
-// bytes are random, so every file has its own hash and no test sees another test's upload in the library.
+// The parts of a WIM file the server reads, laid out as WimMetadata expects: the 208-byte header, stand-in image data,
+// and the image list as UTF-16 LE XML with a byte order mark. The data is random, so no test sees another test's upload
+// in the library.
 internal static class TestWim
 {
     public const int X86 = 0;

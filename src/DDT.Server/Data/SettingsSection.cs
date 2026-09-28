@@ -4,9 +4,7 @@
 
 namespace DDT.Server.Data;
 
-// One section of the settings page. Values holds only the fields that were ever written, as JSON of the section's
-// option class; Secrets maps each secret field to its ciphertext. Version is checked on every save, so two saves of one
-// section never overwrite each other unnoticed, and other processes reload the section when it grows.
+// One section of the settings page as stored.
 public sealed class SettingsSection
 {
     public const int MaxNameLength = 32;
@@ -15,10 +13,13 @@ public sealed class SettingsSection
 
     public int SchemaVersion { get; set; }
 
+    // Only the fields that were ever written, as JSON of the section's option class.
     public string Values { get; set; } = "{}";
 
+    // Each secret field's ciphertext.
     public string Secrets { get; set; } = "{}";
 
+    // Checked on every save, so two saves never overwrite each other unnoticed; other processes reload when it grows.
     public long Version { get; set; }
 
     public DateTimeOffset? UpdatedUtc { get; set; }

@@ -8,10 +8,8 @@ using System.Text.Json;
 
 namespace DDT.Contracts.Messages;
 
-// The part of ICU MessageFormat the catalog uses, the same part the web's Lingui reads: {name} for a value,
-// {count, plural, =0 {…} one {…} other {…}} with # for the number, and {kind, select, a {…} other {…}}. Plural forms
-// are English, since the server formats only English. An apostrophe quotes as ICU says: '' is one apostrophe, and one
-// before { or } (or # within a plural) quotes up to the next apostrophe; any other apostrophe is itself.
+// The part of ICU MessageFormat that the catalog and the web's Lingui share: {name}, plural with # and select. Plural
+// forms are English only. Apostrophes quote as in ICU: '' is one, and one before {, } or a plural's # quotes up to the next.
 public static class MessageFormat
 {
     // Throws FormatException for a template this formatter, and so the web, would read differently.

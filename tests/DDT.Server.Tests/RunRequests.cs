@@ -11,14 +11,11 @@ namespace DDT.Server.Tests;
 // Runs as the web UI assigns and reads them.
 internal static class RunRequests
 {
-    public static Task<HttpResponseMessage> AssignAsync(
-        this SignedInClient client,
-        Guid machineId,
-        Guid sequenceId,
-        string? computerName = null,
-        bool allowSecureBootMismatch = false,
-        IReadOnlyList<InputAnswer>? answers = null) =>
-        client.PostAsync($"/api/machines/{machineId}/deployments", new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch, answers));
+    public static Task<HttpResponseMessage> AssignAsync(this SignedInClient client, Guid machineId, Guid sequenceId, string? computerName = null) =>
+        client.AssignAsync(machineId, new AssignSequenceRequest(sequenceId, computerName));
+
+    public static Task<HttpResponseMessage> AssignAsync(this SignedInClient client, Guid machineId, AssignSequenceRequest request) =>
+        client.PostAsync($"/api/machines/{machineId}/deployments", request);
 
     public static async Task<DeploymentSummary> AssignedAsync(
         this SignedInClient client,
@@ -26,7 +23,8 @@ internal static class RunRequests
         Guid sequenceId,
         string? computerName = null,
         IReadOnlyList<InputAnswer>? answers = null) =>
-        (await RegisteredMachine.ReadAsync<MachineSummary>(await client.AssignAsync(machineId, sequenceId, computerName, answers: answers))).Deployment!;
+        (await RegisteredMachine.ReadAsync<MachineSummary>(
+            await client.AssignAsync(machineId, new AssignSequenceRequest(sequenceId, computerName, Answers: answers)))).Deployment!;
 
     public static Task<HttpResponseMessage> EndCurrentAsync(this SignedInClient client, Guid machineId) =>
         client.DeleteAsync($"/api/machines/{machineId}/deployments/current");

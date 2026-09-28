@@ -111,9 +111,9 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
 
         Assert.NotNull(result.RunToken);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [], error: "Stopped."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = "Stopped." });
         AgentRunReportResult failed = await RegisteredMachine.ReadAsync<AgentRunReportResult>(
-            await machine.Agent.RunReportAsync(machine.Id, machine.Token, run.Id, Report(DeploymentState.Failed, [], error: "Stopped.")));
+            await machine.Agent.RunReportAsync(machine.Id, machine.Token, run.Id, Report(DeploymentState.Failed, []) with { Error = "Stopped." }));
 
         Assert.Null(failed.RunToken);
     }
@@ -173,7 +173,7 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         string firstToken = machine.RunToken!;
         int generation = (await application.MachineAsync(machine.Id)).TokenGeneration;
 
-        await machine.ReportOkAsync(first.Id, Report(DeploymentState.Failed, [], error: "The script failed."));
+        await machine.ReportOkAsync(first.Id, Report(DeploymentState.Failed, []) with { Error = "The script failed." });
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         await administrator.AssignedAsync(machine.Id, sequence.Id);
         AgentRun second = (await machine.NextAsync()).Run!;

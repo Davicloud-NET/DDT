@@ -52,43 +52,46 @@ public static class DeploymentOptionsValidation
                     MaxAdministratorNameLength)));
         }
 
-        if (string.IsNullOrWhiteSpace(options.Domain.Name))
+        if (!string.IsNullOrWhiteSpace(options.Domain.Name))
         {
-            return problems;
+            problems.AddRange(DomainProblems(options));
         }
 
+        return problems;
+    }
+
+    private static IEnumerable<SettingProblem> DomainProblems(DeploymentOptions options)
+    {
         DomainOptions domain = options.Domain;
 
         if (string.IsNullOrWhiteSpace(domain.UserName))
         {
-            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameRequired.With()));
+            yield return new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameRequired.With());
         }
         else if (!IsQualifiedUserName(domain.UserName))
         {
-            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameForm.With("value", domain.UserName)));
+            yield return new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameForm.With("value", domain.UserName));
         }
 
         if (string.IsNullOrEmpty(domain.Password))
         {
-            problems.Add(new("Domain:Password", ServerMessages.SettingsDeploymentRequiredWithDomain.With()));
+            yield return new("Domain:Password", ServerMessages.SettingsDeploymentRequiredWithDomain.With());
         }
 
         if (string.IsNullOrEmpty(options.LocalAdministrator.Password))
         {
-            problems.Add(new("LocalAdministrator:Password", ServerMessages.SettingsDeploymentAdministratorPasswordRequired.With()));
+            yield return new("LocalAdministrator:Password", ServerMessages.SettingsDeploymentAdministratorPasswordRequired.With());
         }
 
         if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitMessage(domain.OrganizationalUnit) is { } problem)
         {
-            problems.Add(new("Domain:OrganizationalUnit", problem));
+            yield return new("Domain:OrganizationalUnit", problem);
         }
 
         if (!string.IsNullOrWhiteSpace(domain.Controller) && Uri.CheckHostName(domain.Controller.Trim()) == UriHostNameType.Unknown)
         {
-            problems.Add(new("Domain:Controller", ServerMessages.SettingsDeploymentControllerInvalid.With("value", domain.Controller)));
+            yield return new("Domain:Controller", ServerMessages.SettingsDeploymentControllerInvalid.With("value", domain.Controller));
         }
-
-        return problems;
     }
 
     // Without the culture data of the operating system, as in a globalization invariant build, no name can be checked,

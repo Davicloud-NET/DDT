@@ -8,17 +8,20 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Contracts.Agents;
 
-// State is Running, Done or Failed. Steps holds every step that has left Pending, so a report that is sent again or
-// lost changes nothing, and a step that was over between two reports is still seen. Percent is the current step's.
-// The server stamps step times, because the Windows PE clock can be hours off. Variables are the sequence's variables
-// as steps have set them so far; PauseMessage is the Pause step's message, worked out, while Activity is Paused.
+// The server stamps step times, because the Windows PE clock can be hours off.
 public sealed record AgentRunReport(
+    // Running, Done or Failed.
     DeploymentState State,
     SequencePhase Phase,
+    // Every step that has left Pending, so a report sent again or lost changes nothing, and a step that ended between
+    // two reports is still seen.
     IReadOnlyList<StepRunState> Steps,
     Guid? CurrentStepId,
+    // The current step's.
     int Percent,
     RunActivity Activity,
     string? Error,
+    // The sequence's variables as steps have set them so far.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Variables = null,
+    // The Pause step's message, worked out, while Activity is Paused.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? PauseMessage = null);

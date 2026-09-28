@@ -22,8 +22,8 @@ public static class OidcSchemeOptions
         ArgumentNullException.ThrowIfNull(openId);
         ArgumentNullException.ThrowIfNull(oidc);
 
-        // Without this the external principal is signed straight into the application cookie:
-        // no local user, no link row, no roles, no lockout and no second factor.
+        // Without this the external principal is signed straight into the application cookie, with no local user, link,
+        // roles, lockout or second factor.
         openId.SignInScheme = IdentityConstants.ExternalScheme;
 
         openId.Authority = oidc.Authority;

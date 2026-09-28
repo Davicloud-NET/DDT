@@ -10,9 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.BootImage;
 
-// A new build arrives by someone copying files into the boot directory, which tells the server nothing. The description
-// next to boot.wim is looked at every few seconds rather than watched, because a boot directory on a network share or a
-// container volume does not reliably report changes, and a changed one is pushed, so an open page shows the new build.
+// The description next to boot.wim is polled rather than watched: a network share or a container volume does not
+// reliably report changes. A new build is pushed, so an open page shows it.
 public sealed partial class BootImageWatcher(
     BootImageCatalog catalog,
     IServiceScopeFactory scopes,

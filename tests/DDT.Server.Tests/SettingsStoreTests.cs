@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using DDT.Contracts.Settings;
 using DDT.Server.Data;
@@ -61,8 +60,8 @@ public sealed class SettingsStoreTests
 
         using (IServiceScope scope = application.Services.CreateScope())
         {
-            SettingsStore store = scope.ServiceProvider.GetRequiredService<SettingsStore>();
-            await store.ImportAsync(TestContext.Current.CancellationToken);
+            SettingsImporter importer = scope.ServiceProvider.GetRequiredService<SettingsImporter>();
+            await importer.ImportAsync(TestContext.Current.CancellationToken);
         }
 
         SettingsSection row = await Row(application, SettingsSectionNames.Machines);
@@ -104,7 +103,7 @@ public sealed class SettingsStoreTests
             keyRing.Secrets = new SettingsProtector(new EphemeralDataProtectionProvider()).CanarySecrets(DateTimeOffset.UtcNow);
             await database.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-            Assert.False(await scope.ServiceProvider.GetRequiredService<SettingsStore>().ImportAsync(TestContext.Current.CancellationToken));
+            Assert.False(await scope.ServiceProvider.GetRequiredService<SettingsImporter>().ImportAsync(TestContext.Current.CancellationToken));
         }
 
         SettingsSectionView<LoggingSettings> loaded = await administrator.SectionAsync<LoggingSettings>(SettingsSectionNames.Logging);
@@ -181,7 +180,7 @@ public sealed class SettingsStoreTests
         Assert.Equal("Europe/Berlin", view.Values.TimeZone);
         Assert.StartsWith(
             "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: timeZone: 'Europe/Berlin'",
-            DDT.Server.Deployments.DeploymentService.SettingsProblem(application.Services.GetRequiredService<DdtSettings>().Current)?.Text,
+            DDT.Server.Deployments.DeploymentPolicy.SettingsProblem(application.Services.GetRequiredService<DdtSettings>().Current)?.Text,
             StringComparison.Ordinal);
     }
 

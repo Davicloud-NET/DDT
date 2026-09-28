@@ -86,7 +86,7 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
 
         await machine.ReportOkAsync(
             run.Id,
-            Report(DeploymentState.Done, [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)], 100));
+            Report(DeploymentState.Done, [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)]) with { Percent = 100 });
 
         Assert.Equal(DeploymentState.Done, await StateAsync(run.Id));
         Assert.Equal(0, await CredentialsAsync(run.Id));
@@ -98,7 +98,7 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         (DeployingMachine machine, AgentRun run) = await RunningAsync();
         using DeployingMachine _ = machine;
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [Step(run.Sequence.Steps[0], StepState.Failed, "No disk.")], error: "No disk."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [Step(run.Sequence.Steps[0], StepState.Failed, "No disk.")]) with { Error = "No disk." });
 
         Assert.Equal(DeploymentState.Failed, await StateAsync(run.Id));
         Assert.Equal(0, await CredentialsAsync(run.Id));
@@ -162,10 +162,11 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         await using (AsyncServiceScope scope = application.Services.CreateAsyncScope())
         {
             DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-            DeploymentService deployments = scope.ServiceProvider.GetRequiredService<DeploymentService>();
+            RunTermination termination = scope.ServiceProvider.GetRequiredService<RunTermination>();
             Machine loaded = await database.Machines.SingleAsync(m => m.Id == machine.Id, Cancellation);
+            Deployment active = await database.Deployments.SingleAsync(d => d.Id == loaded.ActiveDeploymentId, Cancellation);
 
-            await deployments.EndForLostContactAsync(loaded, (await deployments.ActiveAsync(loaded, Cancellation))!, Cancellation);
+            await termination.EndForLostContactAsync(loaded, active, Cancellation);
             await database.SaveChangesAsync(Cancellation);
         }
 
@@ -181,12 +182,12 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
 
         await using AsyncServiceScope scope = application.Services.CreateAsyncScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-        DeploymentService deployments = scope.ServiceProvider.GetRequiredService<DeploymentService>();
+        RunTermination termination = scope.ServiceProvider.GetRequiredService<RunTermination>();
         Machine loaded = await database.Machines.SingleAsync(m => m.Id == machine.Id, Cancellation);
 
         // A registration changes the machine in between.
         await application.ChangeMachineAsync(machine.Id, m => m.TokenGeneration++);
-        await deployments.EndCurrentAsync(loaded, null, "alice", null, Cancellation);
+        await termination.EndCurrentAsync(loaded, new Actor(null, "alice", null), Cancellation);
 
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => database.SaveChangesAsync(Cancellation));
         Assert.Equal((DeploymentState.Assigned, 2), (await StateAsync(run.Id), await CredentialsAsync(run.Id)));
@@ -201,11 +202,11 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         await using (AsyncServiceScope scope = application.Services.CreateAsyncScope())
         {
             DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-            DeploymentService deployments = scope.ServiceProvider.GetRequiredService<DeploymentService>();
+            RunTermination termination = scope.ServiceProvider.GetRequiredService<RunTermination>();
             Machine loaded = await database.Machines.SingleAsync(m => m.Id == machine.Id, Cancellation);
 
             database.RunCredentials.Add(Credential(run.Id, "LateAccount"));
-            await deployments.EndCurrentAsync(loaded, null, "alice", null, Cancellation);
+            await termination.EndCurrentAsync(loaded, new Actor(null, "alice", null), Cancellation);
             await database.SaveChangesAsync(Cancellation);
         }
 

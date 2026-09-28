@@ -158,10 +158,11 @@ public class DdtApplication : WebApplicationFactory<Program>
         ImageBootCapability capability = ImageBootCapability.SecureBootOk,
         string? architecture = "x64",
         string? name = null,
-        long installedBytes = 16L * 1024 * 1024,
-        UefiCa? signedUnder = null)
+        RawImageDisk? disk = null)
     {
         ArgumentNullException.ThrowIfNull(content);
+
+        (long installedBytes, UefiCa? signedUnder) = disk ?? new RawImageDisk();
 
         Image image = await SeedImageAsync(content, architecture, 0, name ?? $"Test disk {Convert.ToHexStringLower(SHA256.HashData(content))[..8]}");
 

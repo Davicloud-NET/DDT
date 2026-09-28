@@ -42,13 +42,11 @@ public sealed class AuditLogTests(DdtApplication application) : IClassFixture<Dd
         return [.. events];
     }
 
-    private static AuditEvent Event(string action, int minute = 0, string? actorName = null, Guid? userId = null, Guid? machineId = null, string? subject = null) => new()
+    private static AuditEvent Event(string action, int minute = 0, string? actorName = null, string? subject = null) => new()
     {
         OccurredUtc = s_start.AddMinutes(minute),
         Action = action,
         ActorName = actorName,
-        ActorUserId = userId,
-        ActorMachineId = machineId,
         SubjectId = subject,
         SourceAddress = "192.0.2.10",
         Detail = $"Seeded at minute {minute}.",

@@ -47,8 +47,3 @@ public class DirectoryApplication : DdtApplication
         });
     }
 }
-
-public sealed class UnmappedDirectoryApplication : DirectoryApplication
-{
-    protected override bool MapsGroups => false;
-}

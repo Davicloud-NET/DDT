@@ -15,9 +15,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.BootImage;
 
-// Compares the driver packages flagged for the boot image with what the boot image in the boot directory holds. The
-// build describes itself in a file next to boot.wim, which is read on every request: it changes whenever someone copies
-// a new build in, and it is small.
+// Compares the driver packages flagged for the boot image with the build in the boot directory. The build's description
+// next to boot.wim is read on every request: it is small, and changes whenever a new build is copied in.
 public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguration configuration)
 {
     public const string ManifestName = "ddt-boot-image.json";
@@ -68,9 +67,8 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
         return new BootImageView(drivers, driverSetHash, build, stale);
     }
 
-    // Null for a missing file, and for one that cannot be what the script wrote: a boot image built before the script
-    // described its builds, or a file someone broke, leaves the page without a build rather than without a page. The
-    // hash is computed again from the drivers the file lists, so it means what the server's means.
+    // Null for a missing or broken file, so the page shows no build rather than failing. The hash is computed again
+    // from the drivers the file lists, so it means what the server's does.
     public BootImageBuild? ReadBuild()
     {
         BootImageManifest? manifest;

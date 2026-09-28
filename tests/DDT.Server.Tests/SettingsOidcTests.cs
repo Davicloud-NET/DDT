@@ -8,7 +8,6 @@ using DDT.Contracts.Authentication;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Server.Authentication;
-using DDT.Server.Data;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -109,7 +108,7 @@ public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication applicat
             SettingsSectionNames.Oidc,
             loaded.Version,
             loaded.Values with { Authority = "https://attacker.example" },
-            reauthentication: await administrator.TokenAsync());
+            new(Reauthentication: await administrator.TokenAsync()));
 
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
         Assert.Equal(
@@ -149,8 +148,9 @@ public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication applicat
             SettingsSectionNames.Oidc,
             loaded.Version,
             loaded.Values with { Enabled = enabled, Authority = Authority, ClientId = clientId, DisplayName = "Contoso" },
-            new Dictionary<string, SecretUpdate> { ["clientSecret"] = new(SecretAction.Set, "client secret 1") },
-            reauthentication: await administrator.TokenAsync());
+            new(
+                Secrets: new Dictionary<string, SecretUpdate> { ["clientSecret"] = new(SecretAction.Set, "client secret 1") },
+                Reauthentication: await administrator.TokenAsync()));
 
         return await RegisteredMachine.ReadAsync<SettingsSectionView<OidcSettings>>(response);
     }

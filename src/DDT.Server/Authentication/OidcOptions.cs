@@ -27,10 +27,8 @@ public sealed class OidcOptions
     // Replaced as a whole, so a list without profile or email removes them.
     public IList<string> Scopes { get; set; } = ["openid", "profile", "email"];
 
-    // Creates a NEW account keyed on issuer plus subject when an unknown identity signs in.
-    // This is not the same as linking an external identity to an existing account by email
-    // address, which DDT never does: an issuer that does not verify email addresses would then
-    // be able to take over any account by asserting its address.
+    // An unknown identity gets an account of its own, keyed on issuer and subject. DDT never links an identity to an
+    // account by email address: an issuer that does not verify addresses could take any account over.
     public bool AutoProvision { get; set; }
 
     // Viewer or Operator. Administrator is refused: every identity the provider signs in that DDT has not seen would
@@ -41,8 +39,7 @@ public sealed class OidcOptions
     // Authentik send group names or paths, Entra ID the object ids of the groups.
     public string GroupsClaim { get; set; } = "groups";
 
-    // Claim value to role, compared without regard to case. While it has entries, the groups decide the role of an
-    // account single sign-on made, at each of its sign-ins, and an identity in none of them is refused. A local account
-    // linked to an identity keeps the role an administrator gave it.
+    // Claim value to role, ignoring case. While it has entries, the groups set the role of an account single sign-on
+    // made at each of its sign-ins, and refuse an identity in none of them; a linked local account keeps its role.
     public Dictionary<string, string> GroupRoleMap { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }

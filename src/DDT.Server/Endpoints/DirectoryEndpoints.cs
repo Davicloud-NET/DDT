@@ -14,9 +14,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// The directory sign-in as the Users page shows it: the group map, groups to choose from by name, and what a sign-in
-// would give a user. Everything is read with the bind account, as a sign-in reads it, and nothing is changed. The map
-// is read-only here: the Sign-in page, under Administration, edits it.
+// The directory sign-in as the Users page shows it, read with the bind account as a sign-in reads it. Nothing changes
+// here: the Sign-in page edits the group map.
 public static class DirectoryEndpoints
 {
     public const int DefaultGroupLimit = 20;

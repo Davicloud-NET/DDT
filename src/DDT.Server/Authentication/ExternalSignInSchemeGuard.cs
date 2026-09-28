@@ -11,11 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Authentication;
 
-// Guards the single most damaging misconfiguration in the external sign in path. If SignInScheme
-// resolves to the application cookie rather than the external one, every identity the configured
-// provider will authenticate gets a DDT session with no local user, no roles, no lockout and no
-// second factor. It is silent when it happens, so it is checked at startup instead. It reads the
-// options of the scheme the settings registered; a save checks its candidate on its own.
+// With SignInScheme on the application cookie rather than the external one, every identity the provider authenticates
+// would silently get a session with no local user, roles, lockout or second factor. So the scheme the settings
+// registered is checked at startup; a save checks its own candidate.
 public sealed class ExternalSignInSchemeGuard(
     IOptionsMonitor<OpenIdConnectOptions> options,
     IAuthenticationSchemeProvider schemes,

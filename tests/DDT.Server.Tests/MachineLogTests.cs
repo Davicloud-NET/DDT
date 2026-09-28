@@ -113,7 +113,7 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
         Guid step = run.Sequence.Steps[0].Id;
         await machine.ReportOkAsync(run.Id, Running(Step(run.Sequence.Steps[0], StepState.Running)));
         await LogAsync(machine, new AgentLogBatch([Line(now, "during", step), Line(now, "between")]));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [Step(run.Sequence.Steps[0], StepState.Failed, "Exit code 1.")], error: "Exit code 1."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [Step(run.Sequence.Steps[0], StepState.Failed, "Exit code 1.")]) with { Error = "Exit code 1." });
 
         // A run that ended claims no more lines, whatever step the agent names.
         await LogAsync(machine, new AgentLogBatch([Line(now, "after", step)]));

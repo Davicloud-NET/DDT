@@ -81,8 +81,8 @@ public sealed class ServerCertificateKestrelTests : IDisposable
     }
 
     // Kestrel watches the files of Kestrel:Certificates:Default, loads its configuration again when one changes, and
-    // rebinds an endpoint that uses them, which drops its connections. A second Kestrel with the framework default, on
-    // the same files, shows that it does.
+    // rebinds an endpoint that uses them, dropping its connections. A second Kestrel with the framework default on the
+    // same files shows that it does.
     [Fact]
     public async Task ARenewalMakesKestrelNeitherReloadNorRebind()
     {

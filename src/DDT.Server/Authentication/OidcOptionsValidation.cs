@@ -16,6 +16,39 @@ public static class OidcOptionsValidation
         ArgumentNullException.ThrowIfNull(options);
 
         List<SettingProblem> problems = [];
+        AddRoleProblems(options, problems);
+
+        if (options.GroupRoleMap.Count > 0 && string.IsNullOrWhiteSpace(options.GroupsClaim))
+        {
+            problems.Add(new(nameof(OidcOptions.GroupsClaim), ServerMessages.SettingsOidcGroupsClaimRequired.With()));
+        }
+
+        if (!options.Scopes.Contains("openid", StringComparer.Ordinal))
+        {
+            problems.Add(new(nameof(OidcOptions.Scopes), ServerMessages.SettingsOidcScopesWithoutOpenid.With()));
+        }
+
+        if (!options.Enabled)
+        {
+            return problems;
+        }
+
+        if (!Uri.TryCreate(options.Authority, UriKind.Absolute, out Uri? authority) || authority.Scheme != Uri.UriSchemeHttps)
+        {
+            problems.Add(new(nameof(OidcOptions.Authority), ServerMessages.SettingsOidcAuthorityRequired.With()));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.ClientId))
+        {
+            problems.Add(new(nameof(OidcOptions.ClientId), ServerMessages.SettingsOidcClientIdRequired.With()));
+        }
+
+        return problems;
+    }
+
+    // AutoProvisionRole names a role below Administrator, and the group map only roles DDT knows.
+    private static void AddRoleProblems(OidcOptions options, List<SettingProblem> problems)
+    {
         string? provisioned = DdtRoleNames.Canonical(options.AutoProvisionRole);
 
         if (provisioned is null)
@@ -52,32 +85,5 @@ public static class OidcOptionsValidation
                     ServerMessages.SettingsRoleUnknown.With("role", role, "roles", string.Join(", ", DdtRoleNames.All))));
             }
         }
-
-        if (options.GroupRoleMap.Count > 0 && string.IsNullOrWhiteSpace(options.GroupsClaim))
-        {
-            problems.Add(new(nameof(OidcOptions.GroupsClaim), ServerMessages.SettingsOidcGroupsClaimRequired.With()));
-        }
-
-        if (!options.Scopes.Contains("openid", StringComparer.Ordinal))
-        {
-            problems.Add(new(nameof(OidcOptions.Scopes), ServerMessages.SettingsOidcScopesWithoutOpenid.With()));
-        }
-
-        if (!options.Enabled)
-        {
-            return problems;
-        }
-
-        if (!Uri.TryCreate(options.Authority, UriKind.Absolute, out Uri? authority) || authority.Scheme != Uri.UriSchemeHttps)
-        {
-            problems.Add(new(nameof(OidcOptions.Authority), ServerMessages.SettingsOidcAuthorityRequired.With()));
-        }
-
-        if (string.IsNullOrWhiteSpace(options.ClientId))
-        {
-            problems.Add(new(nameof(OidcOptions.ClientId), ServerMessages.SettingsOidcClientIdRequired.With()));
-        }
-
-        return problems;
     }
 }

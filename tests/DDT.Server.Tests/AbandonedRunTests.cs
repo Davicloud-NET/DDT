@@ -176,11 +176,13 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(DeploymentState.Running, (await administrator.RunAsync(run.Id)).Summary.State);
 
         await LastSeenAsync(machine.Id, s_canNoLongerResume);
-        await machine.ReportOkAsync(run.Id, Report(
-            DeploymentState.Running,
-            [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)],
-            phase: SequencePhase.Windows,
-            activity: RunActivity.WaitingForWindowsSetup));
+        await machine.ReportOkAsync(
+            run.Id,
+            Report(DeploymentState.Running, [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)]) with
+            {
+                Phase = SequencePhase.Windows,
+                Activity = RunActivity.WaitingForWindowsSetup,
+            });
         await SweepAsync();
 
         Assert.Equal(DeploymentState.Running, (await administrator.RunAsync(run.Id)).Summary.State);

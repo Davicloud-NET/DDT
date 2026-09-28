@@ -29,9 +29,8 @@ public static class BootImageEndpoints
 
         group.MapGet("/", ReadAsync).RequireAuthorization(DdtPolicies.Viewer);
 
-        // Like every package, a driver runs as SYSTEM wherever it goes, and this one goes into every machine that
-        // netboots, so only an administrator downloads it. HEAD explicitly, so a HEAD never falls through to the web
-        // UI's index page with 200.
+        // A driver goes into every machine that netboots and runs as SYSTEM, so only an administrator downloads it.
+        // HEAD explicitly, so a HEAD never falls through to the web UI's index page with 200.
         group.MapMethods("/drivers/{packageId:guid}/content", [HttpMethods.Get, HttpMethods.Head], ReadDriverAsync)
             .RequireAuthorization(DdtPolicies.Administrator);
 

@@ -10,10 +10,9 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Settings;
 
-// Secrets are encrypted with the key ring that already protects cookies and machine tokens. The purpose names the
-// section and the field, so a ciphertext copied into another field, or another section, does not decrypt there. The
-// encryption protects a copy of the database alone, such as a dump or a backup, not the store volume, where the key ring
-// is.
+// Encrypts secrets with the key ring of cookies and machine tokens, for a purpose that names section and field, so a
+// ciphertext copied elsewhere does not decrypt. That protects a copy of the database, such as a backup, not the store
+// volume, which holds the key ring.
 public sealed class SettingsProtector(IDataProtectionProvider provider)
 {
     private const string Purpose = "DDT.Settings";

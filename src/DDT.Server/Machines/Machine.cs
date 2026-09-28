@@ -98,4 +98,12 @@ public sealed class Machine
 
     // The newest deployment, active or not, so the machines list loads one deployment per machine.
     public Guid? LastDeploymentId { get; set; }
+
+    public void Approve(Guid? by, DateTimeOffset now)
+    {
+        State = MachineState.Approved;
+        ApprovedByUserId = by;
+        ApprovedUtc = now;
+        FirstApprovedUtc ??= now;
+    }
 }

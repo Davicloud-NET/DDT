@@ -12,5 +12,3 @@ public sealed record ConsoleRelease(IReadOnlyList<ConsoleReleaseFile> Files)
     // it draws with.
     public static IReadOnlyList<string> FileNames { get; } = ["ddt-console.exe", "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
 }
-
-public sealed record ConsoleReleaseFile(string Name, string Sha256, long Size);

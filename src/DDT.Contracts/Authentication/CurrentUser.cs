@@ -4,8 +4,6 @@
 
 namespace DDT.Contracts.Authentication;
 
-// MustChangePassword: the account signed in with a password an administrator was shown, and every other request is
-// refused until it sets its own.
 public sealed record CurrentUser(
     Guid Id,
     string UserName,
@@ -13,4 +11,6 @@ public sealed record CurrentUser(
     string Source,
     bool TwoFactorEnabled,
     IReadOnlyList<string> Roles,
+    // The account signed in with a password an administrator was shown, and every other request is refused until it
+    // sets its own.
     bool MustChangePassword);

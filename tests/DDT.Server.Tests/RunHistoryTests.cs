@@ -45,12 +45,12 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
     }
 
     // Stored directly, with the creation time a test needs. Ids are minted from it, as the server mints them.
-    private async Task<Guid> RunAsync(Guid machineId, DeploymentState state, int minute, string title = "A run", Guid? sequenceId = null, Guid? id = null)
+    private async Task<Guid> RunAsync(Guid machineId, DeploymentState state, int minute, string title = "A run", Guid? sequenceId = null)
     {
         DateTimeOffset created = s_start.AddMinutes(minute);
         Deployment run = new()
         {
-            Id = id ?? Guid.CreateVersion7(created),
+            Id = Guid.CreateVersion7(created),
             MachineId = machineId,
             TaskSequenceId = sequenceId,
             Title = title,

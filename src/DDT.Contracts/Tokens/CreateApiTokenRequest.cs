@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Tokens;
 
-// Role is Administrator, Operator or Viewer, and no higher than the creator's own. Without ExpiresInDays the token lasts
-// 90 days.
+// Role is Administrator, Operator or Viewer, and no higher than the creator's own. Without ExpiresInDays the token
+// lasts 90 days.
 public sealed record CreateApiTokenRequest(string Name, string Role, int? ExpiresInDays = null);

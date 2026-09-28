@@ -4,8 +4,8 @@
 
 namespace DDT.Server.Data;
 
-// Whether a host applied a section that is applied by rebuilding a component in the running server: pxe, oidc and
-// proxies. Only the process on that host writes its rows. For pxe, Detail holds the host's candidate interfaces.
+// Whether a host applied a section that takes effect by rebuilding a component in the running server: pxe, oidc or
+// proxies. Only the process on that host writes its rows.
 public sealed class SettingsHostState
 {
     public const int MaxHostLength = 128;
@@ -21,13 +21,8 @@ public sealed class SettingsHostState
 
     public string? Message { get; set; }
 
+    // A JSON object: the message as a code, and for pxe the host's candidate interfaces (PxeHostDetail).
     public string? Detail { get; set; }
 
     public DateTimeOffset UpdatedUtc { get; set; }
-}
-
-public enum SettingsApplyResult
-{
-    Applied,
-    Failed,
 }

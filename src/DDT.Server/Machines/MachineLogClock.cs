@@ -4,9 +4,8 @@
 
 namespace DDT.Server.Machines;
 
-// The Windows PE clock can be hours off. A batch says when the agent sent it by its own clock, and the difference to
-// the server's clock when it arrives corrects every line in it. A difference below the tolerance is the network's
-// delay rather than the clock's, and a line is never put after the moment it arrived.
+// The Windows PE clock can be hours off, so the difference between a batch's sent time and its arrival corrects its
+// lines. A difference below the tolerance is the network's delay, and no line is put after the moment it arrived.
 public static class MachineLogClock
 {
     public static TimeSpan Skew(DateTimeOffset? sentUtc, DateTimeOffset receivedUtc)

@@ -22,10 +22,10 @@ public static class DdtForwardedHeadersExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
-        // middleware in front of everything with them. The switch's own setup clears both lists, so the host's copy would
-        // trust every address and take the entry of X-Forwarded-For the proxy added, leaving the client's to DDT's copy.
-        // PostConfigure runs after that setup.
+        // ASPNETCORE_FORWARDEDHEADERS_ENABLED has the host put its own copy of the middleware first, with the unnamed
+        // options, whose setup clears both lists: that copy would trust every address and take the proxy's entry of
+        // X-Forwarded-For, leaving the client's to DDT's copy. None turns the host's copy off, and PostConfigure runs
+        // after that setup.
         services.PostConfigure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.None);
 
         services.AddSingleton<ListedProxies>();

@@ -429,10 +429,10 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         Machine firstMachine = await firstDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
         Machine secondMachine = await secondDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
 
-        DeploymentDecision firstDecision = await first.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AssignAsync(firstMachine, new AssignSequenceRequest(sequence.Id, null), null, "first", null, cancellationToken);
-        DeploymentDecision secondDecision = await second.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AssignAsync(secondMachine, new AssignSequenceRequest(sequence.Id, null), null, "second", null, cancellationToken);
+        DeploymentDecision firstDecision = await first.ServiceProvider.GetRequiredService<RunAssignments>()
+            .AssignAsync(firstMachine, new AssignSequenceRequest(sequence.Id, null), new Actor(null, "first", null), cancellationToken);
+        DeploymentDecision secondDecision = await second.ServiceProvider.GetRequiredService<RunAssignments>()
+            .AssignAsync(secondMachine, new AssignSequenceRequest(sequence.Id, null), new Actor(null, "second", null), cancellationToken);
 
         Assert.Equal(DeploymentOutcome.Accepted, firstDecision.Outcome);
         Assert.Equal(DeploymentOutcome.Accepted, secondDecision.Outcome);

@@ -107,10 +107,12 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
 
         await administrator.AssignedAsync(machine.Id, sequence.Id);
         AgentRun run = (await machine.NextAsync()).Run!;
-        await machine.ReportOkAsync(run.Id, TestReports.Report(
-            DeploymentState.Running,
-            [TestReports.Step(run.Sequence.Steps[0], StepState.Done), TestReports.Step(run.Sequence.Steps[1], StepState.Running)],
-            percent: 35));
+        await machine.ReportOkAsync(
+            run.Id,
+            TestReports.Report(DeploymentState.Running, [TestReports.Step(run.Sequence.Steps[0], StepState.Done), TestReports.Step(run.Sequence.Steps[1], StepState.Running)]) with
+            {
+                Percent = 35,
+            });
 
         MachineSummary running = await PushedAsync(pushes, machine.Id, m => m.Deployment?.StepName == "Apply");
 
@@ -121,7 +123,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(SequencePhase.WindowsPE, running.Deployment?.Phase);
         Assert.NotNull(running.Deployment?.StartedUtc);
 
-        await machine.ReportOkAsync(run.Id, TestReports.Report(DeploymentState.Failed, [], error: "Apply failed."));
+        await machine.ReportOkAsync(run.Id, TestReports.Report(DeploymentState.Failed, []) with { Error = "Apply failed." });
 
         Assert.Equal("Apply failed.", (await PushedAsync(pushes, machine.Id, m => m.State == MachineState.Failed)).Deployment?.Error);
     }

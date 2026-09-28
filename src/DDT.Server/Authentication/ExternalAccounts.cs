@@ -10,9 +10,9 @@ namespace DDT.Server.Authentication;
 
 public static class ExternalAccounts
 {
-    // All of it or nothing. Without its link the account would be created again at the next sign in, and without its
-    // role it signs in to nothing. The link also fails when the identity already belongs to an account whose sign in
-    // stopped short, for example at its second factor: signing in to a new account instead would skip that factor.
+    // All of it or nothing: without its link the account would be made again at the next sign-in, and without its role
+    // it reaches nothing. The link also fails for an identity whose account stopped short, at its second factor say,
+    // and a new account would skip that factor.
     public static async Task<IdentityResult> ProvisionAsync(UserManager<DdtUser> users, DdtUser user, ExternalLoginInfo info, string role)
     {
         ArgumentNullException.ThrowIfNull(users);

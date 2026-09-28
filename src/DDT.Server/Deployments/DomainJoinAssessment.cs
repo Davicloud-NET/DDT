@@ -8,14 +8,10 @@ using DDT.Contracts.Messages;
 namespace DDT.Server.Deployments;
 
 // What the directory's answers mean for a Join the domain step, and what to change. NetJoinDomain creates the computer
-// account in the organizational unit, or in the default Computers container without one, and the domain controller lets
-// it when the account may create computer objects there. Without that right, an account may still add computers to the
-// default container while the domain's machine account quota lasts, but never to an organizational unit.
+// account in the organizational unit, or without one in the default Computers container.
 public static class DomainJoinAssessment
 {
-    public sealed record Verdict(bool CanJoin, string? Container, IReadOnlyList<DomainJoinFinding> Findings);
-
-    public static Verdict Assess(string domain, string userName, string controller, string? organizationalUnit, DomainDirectoryFacts facts)
+    public static DomainJoinVerdict Assess(string domain, string userName, string controller, string? organizationalUnit, DomainDirectoryFacts facts)
     {
         ArgumentNullException.ThrowIfNull(facts);
 
@@ -48,6 +44,51 @@ public static class DomainJoinAssessment
             return new(false, null, findings);
         }
 
+        return InContainer(userName, organizationalUnit, container, facts, findings);
+    }
+
+    // Active Directory's reason codes for a refused LDAP sign-in.
+    public static string DescribeRefusal(string? reasonCode, string controller, string userName) => RefusalMessage(reasonCode, controller, userName).Text;
+
+    public static ServerMessage RefusalMessage(string? reasonCode, string controller, string userName) => reasonCode switch
+    {
+        "525" => ServerMessages.DomainNoSuchAccount.With("controller", controller, "user", userName),
+        "52e" => ServerMessages.DomainWrongPassword.With("controller", controller, "user", userName),
+        "530" => ServerMessages.DomainLogonHours.With("user", userName),
+        "531" => ServerMessages.DomainLogonWorkstations.With("user", userName),
+        "532" => ServerMessages.DomainPasswordExpired.With("user", userName),
+        "533" => ServerMessages.DomainAccountDisabled.With("user", userName),
+        "701" => ServerMessages.DomainAccountExpired.With("user", userName),
+        "773" => ServerMessages.DomainMustChangePassword.With("user", userName),
+        "775" => ServerMessages.DomainLockedOut.With("user", userName),
+        null => ServerMessages.DomainSignInRefused.With("controller", controller, "user", userName),
+        _ => ServerMessages.DomainSignInRefusedWithReason.With("controller", controller, "user", userName, "reason", reasonCode),
+    };
+
+    public static string DescribeUnreachable(string controller, string domain, string? detail) => UnreachableMessage(controller, domain, detail).Text;
+
+    public static ServerMessage UnreachableMessage(string controller, string domain, string? detail) =>
+        detail is null
+            ? ServerMessages.DomainUnreachable.With("controller", controller, "domain", domain)
+            : ServerMessages.DomainUnreachableWithDetail.With("controller", controller, "detail", detail.TrimEnd('.'), "domain", domain);
+
+    public static string DescribeNoSecureConnection(string controller) => NoSecureConnectionMessage(controller).Text;
+
+    public static ServerMessage NoSecureConnectionMessage(string controller) => ServerMessages.DomainNoSecureConnection.With("controller", controller);
+
+    // corp.example becomes DC=corp,DC=example.
+    public static string NamingContextOf(string domain) =>
+        string.Join(',', domain.Trim().TrimEnd('.').Split('.').Select(label => $"DC={label}"));
+
+    // Without a right of its own to create computer objects, an account may still add computers to the default container
+    // while the domain's machine account quota lasts, but never to an organizational unit.
+    private static DomainJoinVerdict InContainer(
+        string userName,
+        string? organizationalUnit,
+        string container,
+        DomainDirectoryFacts facts,
+        List<DomainJoinFinding> findings)
+    {
         if (facts.CanCreateComputers)
         {
             findings.Add(Passed(ServerMessages.DomainMayCreate.With("user", userName, "container", container)));
@@ -100,39 +141,6 @@ public static class DomainJoinAssessment
 
         return new(true, container, findings);
     }
-
-    // Active Directory's reason codes for a refused LDAP sign-in.
-    public static string DescribeRefusal(string? reasonCode, string controller, string userName) => RefusalMessage(reasonCode, controller, userName).Text;
-
-    public static ServerMessage RefusalMessage(string? reasonCode, string controller, string userName) => reasonCode switch
-    {
-        "525" => ServerMessages.DomainNoSuchAccount.With("controller", controller, "user", userName),
-        "52e" => ServerMessages.DomainWrongPassword.With("controller", controller, "user", userName),
-        "530" => ServerMessages.DomainLogonHours.With("user", userName),
-        "531" => ServerMessages.DomainLogonWorkstations.With("user", userName),
-        "532" => ServerMessages.DomainPasswordExpired.With("user", userName),
-        "533" => ServerMessages.DomainAccountDisabled.With("user", userName),
-        "701" => ServerMessages.DomainAccountExpired.With("user", userName),
-        "773" => ServerMessages.DomainMustChangePassword.With("user", userName),
-        "775" => ServerMessages.DomainLockedOut.With("user", userName),
-        null => ServerMessages.DomainSignInRefused.With("controller", controller, "user", userName),
-        _ => ServerMessages.DomainSignInRefusedWithReason.With("controller", controller, "user", userName, "reason", reasonCode),
-    };
-
-    public static string DescribeUnreachable(string controller, string domain, string? detail) => UnreachableMessage(controller, domain, detail).Text;
-
-    public static ServerMessage UnreachableMessage(string controller, string domain, string? detail) =>
-        detail is null
-            ? ServerMessages.DomainUnreachable.With("controller", controller, "domain", domain)
-            : ServerMessages.DomainUnreachableWithDetail.With("controller", controller, "detail", detail.TrimEnd('.'), "domain", domain);
-
-    public static string DescribeNoSecureConnection(string controller) => NoSecureConnectionMessage(controller).Text;
-
-    public static ServerMessage NoSecureConnectionMessage(string controller) => ServerMessages.DomainNoSecureConnection.With("controller", controller);
-
-    // corp.example becomes DC=corp,DC=example.
-    public static string NamingContextOf(string domain) =>
-        string.Join(',', domain.Trim().TrimEnd('.').Split('.').Select(label => $"DC={label}"));
 
     private static DomainJoinFinding Passed(ServerMessage message) => DomainJoinFinding.From(DomainJoinFindingLevel.Passed, message);
 

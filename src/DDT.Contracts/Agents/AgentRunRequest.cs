@@ -6,12 +6,13 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Agents;
 
-// The technician's pick at the machine. DiskNumber is set only for a sequence that erases a disk.
-// AllowSecureBootMismatch is set when the technician confirmed writing an image that is not signed for Secure Boot.
-// Answers are the technician's answers to the sequence's inputs, AgentSequenceChoice.Inputs.
+// The technician's pick at the machine.
 public sealed record AgentRunRequest(
     Guid SequenceId,
+    // Set only for a sequence that erases a disk.
     int? DiskNumber,
     string? ComputerName,
+    // The technician confirmed writing an image that is not signed for Secure Boot.
     bool AllowSecureBootMismatch = false,
+    // Answers to AgentSequenceChoice.Inputs.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<InputAnswer>? Answers = null);

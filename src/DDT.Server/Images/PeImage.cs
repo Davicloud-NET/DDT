@@ -19,45 +19,38 @@ public sealed class PeImage
     private const int SectionHeaderBytes = 40;
 
     private readonly byte[] _file;
-    private readonly int _checksumOffset;
-    private readonly int _certificateEntryOffset;
-    private readonly int _sizeOfHeaders;
+    private readonly Headers _headers;
     private readonly List<(int Offset, int Length)> _sections;
 
-    private PeImage(
-        byte[] file,
-        ushort machine,
-        int checksumOffset,
-        int certificateEntryOffset,
-        int sizeOfHeaders,
-        List<(int Offset, int Length)> sections,
-        int certificateTableOffset,
-        int certificateTableLength)
+    private PeImage(byte[] file, Headers headers, List<(int Offset, int Length)> sections)
     {
         _file = file;
-        Machine = machine;
-        _checksumOffset = checksumOffset;
-        _certificateEntryOffset = certificateEntryOffset;
-        _sizeOfHeaders = sizeOfHeaders;
+        _headers = headers;
         _sections = sections;
-        CertificateTableOffset = certificateTableOffset;
-        CertificateTableLength = certificateTableLength;
     }
 
-    public ushort Machine { get; }
+    public ushort Machine => _headers.Machine;
 
     // Zero for a file without signatures.
-    public int CertificateTableOffset { get; }
+    public int CertificateTableOffset => _headers.CertificateTableOffset;
 
-    public int CertificateTableLength { get; }
+    public int CertificateTableLength => _headers.CertificateTableLength;
 
     // Null when the file is no PE file DDT can read.
     public static PeImage? Read(byte[] file)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        ReadOnlySpan<byte> span = file;
+        if (ReadHeaders(file) is not { } headers)
+        {
+            return null;
+        }
 
+        return ReadSections(file, headers) is { } sections ? new PeImage(file, headers, sections) : null;
+    }
+
+    private static Headers? ReadHeaders(ReadOnlySpan<byte> span)
+    {
         if (span.Length < 64 || span[0] != (byte)'M' || span[1] != (byte)'Z')
         {
             return null;
@@ -96,18 +89,11 @@ public sealed class PeImage
         int sizeOfHeaders = BinaryPrimitives.ReadInt32LittleEndian(span[(optional + 60)..]);
         uint directoryCount = BinaryPrimitives.ReadUInt32LittleEndian(span[(optional + countOffset)..]);
         int certificateEntry = optional + directories + (CertificateTableIndex * 8);
-        int tableOffset = 0;
-        int tableLength = 0;
+        bool signable = directoryCount > CertificateTableIndex && certificateEntry + 8 <= optional + optionalHeaderSize;
 
-        if (directoryCount > CertificateTableIndex && certificateEntry + 8 <= optional + optionalHeaderSize)
+        if (CertificateTable(span, certificateEntry, signable) is not { } table)
         {
-            tableOffset = BinaryPrimitives.ReadInt32LittleEndian(span[certificateEntry..]);
-            tableLength = BinaryPrimitives.ReadInt32LittleEndian(span[(certificateEntry + 4)..]);
-
-            if (tableLength != 0 && (tableOffset <= 0 || tableLength < 0 || tableOffset > span.Length - tableLength))
-            {
-                return null;
-            }
+            return null;
         }
 
         int sectionTable = optional + optionalHeaderSize;
@@ -117,11 +103,29 @@ public sealed class PeImage
             return null;
         }
 
+        return new Headers(machine, optional + 64, certificateEntry, sizeOfHeaders, sectionTable, sectionCount, table.Offset, table.Length);
+    }
+
+    // Zero for a file without the table's entry, and null for a table that does not lie within the file.
+    private static (int Offset, int Length)? CertificateTable(ReadOnlySpan<byte> span, int entry, bool present)
+    {
+        if (!present)
+        {
+            return (0, 0);
+        }
+
+        (int Offset, int Length) table = (BinaryPrimitives.ReadInt32LittleEndian(span[entry..]), BinaryPrimitives.ReadInt32LittleEndian(span[(entry + 4)..]));
+
+        return table.Length != 0 && (table.Offset <= 0 || table.Length < 0 || table.Offset > span.Length - table.Length) ? null : table;
+    }
+
+    private static List<(int Offset, int Length)>? ReadSections(ReadOnlySpan<byte> span, Headers headers)
+    {
         List<(int Offset, int Length)> sections = [];
 
-        for (int index = 0; index < sectionCount; index++)
+        for (int index = 0; index < headers.SectionCount; index++)
         {
-            ReadOnlySpan<byte> section = span.Slice(sectionTable + (index * SectionHeaderBytes), SectionHeaderBytes);
+            ReadOnlySpan<byte> section = span.Slice(headers.SectionTable + (index * SectionHeaderBytes), SectionHeaderBytes);
             int length = BinaryPrimitives.ReadInt32LittleEndian(section[16..]);
             int offset = BinaryPrimitives.ReadInt32LittleEndian(section[20..]);
 
@@ -147,7 +151,7 @@ public sealed class PeImage
 
         sections.Sort((left, right) => left.Offset.CompareTo(right.Offset));
 
-        return new PeImage(file, machine, optional + 64, certificateEntry, sizeOfHeaders, sections, tableOffset, tableLength);
+        return sections;
     }
 
     // The Authenticode hash as UEFI firmware computes it (EDK2's DxeImageVerificationLib): the headers without the
@@ -158,11 +162,11 @@ public sealed class PeImage
         using IncrementalHash hash = IncrementalHash.CreateHash(algorithm);
         ReadOnlySpan<byte> file = _file;
 
-        hash.AppendData(file[.._checksumOffset]);
-        hash.AppendData(file[(_checksumOffset + 4).._certificateEntryOffset]);
-        hash.AppendData(file[(_certificateEntryOffset + 8).._sizeOfHeaders]);
+        hash.AppendData(file[.._headers.ChecksumOffset]);
+        hash.AppendData(file[(_headers.ChecksumOffset + 4).._headers.CertificateEntryOffset]);
+        hash.AppendData(file[(_headers.CertificateEntryOffset + 8).._headers.SizeOfHeaders]);
 
-        long hashed = _sizeOfHeaders;
+        long hashed = _headers.SizeOfHeaders;
 
         foreach ((int offset, int length) in _sections)
         {
@@ -209,4 +213,15 @@ public sealed class PeImage
 
         return signatures;
     }
+
+    // Where the parts Authenticode needs lie in the file, every one within its length.
+    private sealed record Headers(
+        ushort Machine,
+        int ChecksumOffset,
+        int CertificateEntryOffset,
+        int SizeOfHeaders,
+        int SectionTable,
+        int SectionCount,
+        int CertificateTableOffset,
+        int CertificateTableLength);
 }

@@ -14,10 +14,8 @@ using DDT.Server.Settings;
 
 namespace DDT.Host.Startup;
 
-// Every configuration mistake DDT can recognise stops the server here, all of them in one message, before any
-// section is used. A key nothing reads binds nothing, so a misspelled DDT:Machines:RequireWebApproval would
-// otherwise leave web approval off without a word: every key under DDT has to be one DDT reads, whichever roles
-// this process runs.
+// Stops the server on every configuration mistake DDT recognises, all in one message, before any section is used. A
+// key nothing reads binds nothing, so every key under DDT must be one DDT reads, whichever roles this process runs.
 public static class DdtConfigurationCheck
 {
     // Listed rather than bound with ErrorOnUnknownConfiguration, which on DdtOptions would refuse every section.
@@ -42,7 +40,23 @@ public static class DdtConfigurationCheck
         ArgumentNullException.ThrowIfNull(roles);
 
         List<string> problems = [];
+        AddUnknownRootKeys(configuration, problems);
+        PxeOptions? pxe = ReadSections(configuration, problems);
 
+        // The values of every settings section, as far as configuration sets them. The rest is on the settings page.
+        problems.AddRange(ConfiguredSettings.FindProblems(configuration, roles.Contains(DeploymentRole.Pxe)));
+
+        // What configuration alone decides for netboot, checked only where it is served.
+        if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
+        {
+            Add(problems, PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(pxe, options.StorePath, configuration));
+        }
+
+        return problems;
+    }
+
+    private static void AddUnknownRootKeys(IConfiguration configuration, List<string> problems)
+    {
         foreach (IConfigurationSection child in configuration.GetSection(DdtOptions.SectionName).GetChildren())
         {
             if (!s_rootKeys.Contains(child.Key, StringComparer.OrdinalIgnoreCase))
@@ -52,9 +66,12 @@ public static class DdtConfigurationCheck
                     $"{string.Join(", ", s_rootKeys)}.");
             }
         }
+    }
 
-        // The binder stops at the first object with an unknown key, so the nested objects are read on their own, and
-        // first: a section then reports the failure of its nested object again, which Report leaves out.
+    // The binder stops at the first object with an unknown key, so the nested objects are read on their own, and first:
+    // a section then reports the failure of its nested object again, which Report leaves out.
+    private static PxeOptions? ReadSections(IConfiguration configuration, List<string> problems)
+    {
         _ = Read(
             configuration,
             $"{DeploymentOptions.SectionName}:{nameof(DeploymentOptions.LocalAdministrator)}",
@@ -83,26 +100,14 @@ public static class DdtConfigurationCheck
             DdtForwardedHeadersOptions.SectionName,
             problems,
             (section, binder) => section.Get<DdtForwardedHeadersOptions>(binder) ?? new());
-        PxeOptions? pxe = Read(
-            configuration, PxeOptions.SectionName, problems, (section, binder) => section.Get<PxeOptions>(binder) ?? new());
 
-        // The values of every settings section, as far as configuration sets them. The rest is on the settings page.
-        problems.AddRange(ConfiguredSettings.FindProblems(configuration, roles.Contains(DeploymentRole.Pxe)));
-
-        // What configuration alone decides for netboot, checked only where it is served.
-        if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
-        {
-            Add(problems, PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(pxe, options.StorePath, configuration));
-        }
-
-        return problems;
+        return Read(configuration, PxeOptions.SectionName, problems, (section, binder) => section.Get<PxeOptions>(binder) ?? new());
     }
 
     private static void Strict(BinderOptions binder) => binder.ErrorOnUnknownConfiguration = true;
 
-    // Bound with the concrete type at each call, because the binding generator cannot bind a type parameter. A section
-    // with an unknown key is read again without the key check, so that the key does not hide its values. A section that
-    // cannot be read at all has no values to check.
+    // The caller binds the concrete type, because the binding generator cannot bind a type parameter. A section with an
+    // unknown key is read again without the key check, so the key does not hide its values.
     private static T? Read<T>(
         IConfiguration configuration,
         string sectionName,

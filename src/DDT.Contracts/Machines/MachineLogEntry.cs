@@ -6,15 +6,16 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Contracts.Machines;
 
-// TimestampUtc is the agent's time corrected by how far its clock was off when it sent the line, which in Windows PE
-// can be hours; AgentTimestampUtc is the agent's own. ReceivedUtc is the server's. DeploymentId is the run that was
-// active when the line arrived, and StepId the step the agent was running then.
 public sealed record MachineLogEntry(
     long Id,
+    // The agent's time, corrected by how far its clock was off when it sent the line (hours, in Windows PE).
+    // AgentTimestampUtc is the agent's own, ReceivedUtc the server's.
     DateTimeOffset TimestampUtc,
     DateTimeOffset ReceivedUtc,
     AgentLogLevel Level,
     string Message,
     DateTimeOffset AgentTimestampUtc,
+    // The run that was active when the line arrived.
     Guid? DeploymentId = null,
+    // The step the agent was running then.
     Guid? StepId = null);

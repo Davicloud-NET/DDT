@@ -9,7 +9,7 @@ namespace DDT.Host.Startup;
 
 public static class CertificateBootstrap
 {
-    // Null when the certificate is not two plain PEM files, which Kestrel then loads on its own as before.
+    // Null when the certificate is not two plain PEM files; Kestrel then loads it on its own.
     public static ServerCertificates? Create(IConfiguration configuration, DdtOptions options)
     {
         ArgumentNullException.ThrowIfNull(configuration);

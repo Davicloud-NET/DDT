@@ -30,8 +30,17 @@ public static class SettingsServiceCollectionExtensions
         services.AddSingleton<SettingsHostStates>();
         services.AddSingleton<SettingsApplier>();
         services.AddScoped<SettingsSaveChecks>();
+        services.AddSingleton<SettingsSecretChanges>();
         services.AddScoped<SettingsStore>();
+        services.AddScoped<SettingsKeyRing>();
+        services.AddScoped<SettingsImporter>();
         services.AddScoped<SettingsViews>();
+        services.AddScoped<SettingsSaves>();
+        services.AddScoped<LdapSettingsTest>();
+        services.AddScoped<OidcSettingsTest>();
+        services.AddScoped<ReleaseUploads>();
+        services.AddScoped<ConsoleLogos>();
+        services.AddScoped<CertificateChanges>();
         services.TryAddSingleton<ILdapTester, LdapTester>();
         services.AddHttpClient(OidcTestClient, client => client.Timeout = TimeSpan.FromSeconds(10));
 

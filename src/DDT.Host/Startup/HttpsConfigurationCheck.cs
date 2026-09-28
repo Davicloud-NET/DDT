@@ -8,10 +8,8 @@ using DDT.Server.Configuration;
 
 namespace DDT.Host.Startup;
 
-// Every authentication control depends on TLS: Secure cookies are dropped over plain HTTP, so
-// without this check sign in appears to succeed and every later request is anonymous. Checked
-// against configuration rather than bound addresses, because Kestrel:Endpoints does not populate
-// IServerAddressesFeature and the check has to run before anything starts.
+// Every authentication control depends on TLS: over plain HTTP Secure cookies are dropped, so a sign-in seems to work and
+// every later request is anonymous. Reads configuration, because Kestrel:Endpoints does not fill IServerAddressesFeature.
 public static class HttpsConfigurationCheck
 {
     public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)

@@ -17,9 +17,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Endpoints;
 
-// Changing the authenticator key or turning the second factor on or off changes the security stamp, which ends
-// every session of the account within the stamp validation interval. The session that made the change is signed in
-// again with the new stamp, so only the others end, as with a password change.
+// Changing the second factor changes the security stamp, which ends the account's other sessions within the stamp
+// validation interval. The session that made the change is signed in again with the new stamp.
 public static class TwoFactorEndpoints
 {
     private const int RecoveryCodeCount = 10;
@@ -65,13 +64,12 @@ public static class TwoFactorEndpoints
     private static async Task<Results<Ok<RecoveryCodes>, ValidationProblem, UnauthorizedHttpResult>> EnableAsync(
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
-        UserManager<DdtUser> userManager,
-        SignInManager<DdtUser> signInManager,
-        UserActivity activity,
-        ILoggerFactory loggerFactory,
+        [AsParameters] SignInServices services,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        (SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, UserActivity activity, ILoggerFactory loggerFactory) = services;
 
         DdtUser? user = await userManager.GetUserAsync(principal).ConfigureAwait(false);
 
@@ -109,13 +107,12 @@ public static class TwoFactorEndpoints
     private static async Task<Results<Ok, ValidationProblem, UnauthorizedHttpResult>> DisableAsync(
         TwoFactorVerifyRequest request,
         ClaimsPrincipal principal,
-        UserManager<DdtUser> userManager,
-        SignInManager<DdtUser> signInManager,
-        UserActivity activity,
-        ILoggerFactory loggerFactory,
+        [AsParameters] SignInServices services,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        (SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, UserActivity activity, ILoggerFactory loggerFactory) = services;
 
         DdtUser? user = await userManager.GetUserAsync(principal).ConfigureAwait(false);
 
@@ -124,8 +121,7 @@ public static class TwoFactorEndpoints
             return TypedResults.Unauthorized();
         }
 
-        // Disabling a second factor is a credential change, so it needs a current code rather
-        // than only a live session.
+        // Disabling a second factor is a credential change, so it needs a current code rather than only a live session.
         bool valid = await userManager.VerifyTwoFactorTokenAsync(
             user,
             userManager.Options.Tokens.AuthenticatorTokenProvider,

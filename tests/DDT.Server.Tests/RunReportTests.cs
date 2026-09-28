@@ -82,7 +82,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         (DeployingMachine machine, AgentRun run) = await AssignedAsync();
         using DeployingMachine _ = machine;
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
 
         Deployment started = await StoredAsync(run.Id);
         Assert.Equal(DeploymentState.Running, started.State);
@@ -91,7 +91,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal("Admin", RunInputs.Read(started.Inputs!).AdministratorName);
         Assert.Equal(MachineState.Deploying, (await application.MachineAsync(machine.Id)).State);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [Step(Partition(run), StepState.Running)], percent: 10));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [Step(Partition(run), StepState.Running)]) with { Percent = 10 });
 
         DeploymentSummary partitioning = (await ViewAsync(run.Id)).Summary;
         Assert.Equal(0, partitioning.StepIndex);
@@ -100,7 +100,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(SequencePhase.WindowsPE, partitioning.Phase);
         Assert.Equal(RunActivity.Step, partitioning.Activity);
 
-        AgentRunReport applying = Report(DeploymentState.Running, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Running)], percent: 50);
+        AgentRunReport applying = Report(DeploymentState.Running, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Running)]) with { Percent = 50 };
         await machine.ReportOkAsync(run.Id, applying);
 
         // The response was lost and the agent sends the same again: nothing changes.
@@ -118,7 +118,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Null(view.Steps[1].FinishedUtc);
         Assert.Equal(1, view.Summary.StepIndex);
 
-        AgentRunReport done = Report(DeploymentState.Done, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Done)], percent: 100);
+        AgentRunReport done = Report(DeploymentState.Done, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Done)]) with { Percent = 100 };
         await machine.ReportOkAsync(run.Id, done);
 
         view = await ViewAsync(run.Id);
@@ -131,9 +131,19 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(
             [AuditActions.DeploymentAssigned, AuditActions.DeploymentStarted, AuditActions.DeploymentDone],
             (await AuditAsync(run.Id)).Select(a => a.Split(' ')[0]));
+    }
 
-        // Done holds no token, so a later request cannot send it again. One still in flight can, and is answered like
-        // the first.
+    // Done holds no token, so a later request cannot send it again. One still in flight can, and is answered like the
+    // first. Nothing is left running, so the machine takes its next sequence.
+    [Fact]
+    public async Task ADoneRunTakesNoFurtherReportAndFreesTheMachine()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        AgentRunReport done = Report(DeploymentState.Done, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Done)]) with { Percent = 100 };
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
+        await machine.ReportOkAsync(run.Id, done);
+
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.ReportAsync(run.Id, done)).StatusCode);
 
         using (IServiceScope scope = application.Services.CreateScope())
@@ -151,7 +161,6 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
             Assert.Equal(DeploymentOutcome.Unchanged, again.Outcome);
         }
 
-        // Nothing is left running, so the machine takes its next sequence.
         SignedInClient administrator = await application.AdministratorAsync();
         SequenceView next = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         (await administrator.AssignAsync(machine.Id, next.Id)).EnsureSuccessStatusCode();
@@ -258,7 +267,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         (DeployingMachine machine, AgentRun run) = await AssignedAsync();
         using DeployingMachine _ = machine;
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [], error: "The disk is too small for the image."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = "The disk is too small for the image." });
 
         Deployment failed = await StoredAsync(run.Id);
         Assert.Equal(DeploymentState.Failed, failed.State);
@@ -282,7 +291,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         // Whatever the report says about steps that do not fit, the failure ends the run.
         await machine.ReportOkAsync(
             run.Id,
-            Report(DeploymentState.Failed, [Step(Partition(run), StepState.Pending), new StepRunState(Guid.NewGuid(), StepState.Done, null)], error: "wimlib error 59"));
+            Report(DeploymentState.Failed, [Step(Partition(run), StepState.Pending), new StepRunState(Guid.NewGuid(), StepState.Done, null)]) with { Error = "wimlib error 59" });
 
         DeploymentView view = await ViewAsync(run.Id);
 
@@ -294,7 +303,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Contains($"{AuditActions.DeploymentFailed} {view.Summary.Title} on machine {machine.Id:D} at Apply: wimlib error 59", await AuditAsync(run.Id));
 
         // Sent again, because the answer was lost: answered like the first.
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [], error: "wimlib error 59"));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = "wimlib error 59" });
     }
 
     [Fact]
@@ -341,7 +350,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         using DeployingMachine _ = machine;
         string error = "A NUL\0 here " + new string('x', 5000);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [Step(Partition(run), StepState.Failed, error)], percent: 250));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [Step(Partition(run), StepState.Failed, error)]) with { Percent = 250 });
 
         DeploymentView view = await ViewAsync(run.Id);
 
@@ -349,7 +358,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentLimits.MaxErrorLength, view.Steps[0].Error!.Length);
         Assert.StartsWith("A NUL here x", view.Steps[0].Error, StringComparison.Ordinal);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [], error: " \0 "));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = " \0 " });
 
         Assert.Equal("The agent reported a failure without saying why.", (await StoredAsync(run.Id)).Error);
     }
@@ -444,10 +453,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, again.Token!))).Run?.Id);
     }
 
-    // Windows PE started after the run was handed over to Windows: the hand-over was interrupted, or the firmware
-    // started from the network first. The agent in Windows PE continues the run with its run token and does the
-    // hand-over again, with the reports SequenceRunner sends for it: the phase goes back to Windows PE until the state
-    // is staged again, then on to Windows.
+    // An interrupted hand-over, or firmware that starts from the network first, brings Windows PE back after it: the
+    // agent there continues with its run token and hands over again, as SequenceRunner reports it.
     [Fact]
     public async Task ARunHandedOverAgainGoesBackToWindowsPEAndOnToWindows()
     {
@@ -457,10 +464,10 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         using DeployingMachine _ = machine;
         StepRunState[] inWindowsPE = [.. run.Sequence.Steps.Take(3).Select(s => Step(s, StepState.Done))];
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, activity: RunActivity.HandingOver));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.HandingOver));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Activity = RunActivity.HandingOver });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows, Activity = RunActivity.HandingOver });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows, Activity = RunActivity.Restarting });
 
         AgentRegistrationResult continued = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await machine.Agent.RegisterAsync(machine.Registration with { RunToken = machine.RunToken }));
@@ -469,15 +476,15 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, continued.Token!))).Run?.Id);
 
         // The first beat can still carry the state as the agent found it on the disk.
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows });
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, activity: RunActivity.HandingOver));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Activity = RunActivity.HandingOver });
 
         DeploymentSummary goingBack = (await ViewAsync(run.Id)).Summary;
         Assert.Equal((DeploymentState.Running, SequencePhase.WindowsPE, RunActivity.HandingOver), (goingBack.State, goingBack.Phase, goingBack.Activity));
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.HandingOver));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows, Activity = RunActivity.HandingOver });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows, Activity = RunActivity.Restarting });
 
         DeploymentView handedOver = await ViewAsync(run.Id);
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (handedOver.Summary.State, handedOver.Summary.Phase, handedOver.Summary.Activity));
@@ -490,8 +497,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         Assert.Equal(run.Id, service.RunId);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Running)], phase: SequencePhase.Windows));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Done)], phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Running)]) with { Phase = SequencePhase.Windows });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Done)]) with { Phase = SequencePhase.Windows });
 
         Assert.Equal(DeploymentState.Done, (await StoredAsync(run.Id)).State);
     }
@@ -509,11 +516,11 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         StepRunState[] inWindowsPE = [.. run.Sequence.Steps.Take(3).Select(s => Step(s, StepState.Done))];
         StepRunState[] inWindows = [.. inWindowsPE, Step(run.Sequence.Steps[3], StepState.Done)];
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows, Activity = RunActivity.Restarting });
         await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindows, phase: SequencePhase.Windows, activity: RunActivity.Restarting));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindows) with { Phase = SequencePhase.Windows, Activity = RunActivity.Restarting });
 
         HttpResponseMessage back = await machine.ReportAsync(run.Id, Report(DeploymentState.Running, inWindows));
 
@@ -533,7 +540,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         // A failure ends the run whatever phase it names: the agent has stopped anyway.
         await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, inWindows, error: "The service could not read the run's state."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, inWindows) with { Error = "The service could not read the run's state." });
 
         Assert.Equal(DeploymentState.Failed, (await StoredAsync(run.Id)).State);
     }

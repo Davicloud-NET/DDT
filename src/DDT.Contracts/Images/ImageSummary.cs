@@ -4,24 +4,26 @@
 
 namespace DDT.Contracts.Images;
 
-// For a raw disk image, SizeBytes is the stored, compressed file and InstalledBytes the disk it holds, WimIndex is 0,
-// and SourceSha256 names the uncompressed disk, which an upload of the same disk in another format also is.
-// BootCapability says whether it starts with Secure Boot on, and BootDetail why, for raw disk images only.
 public sealed record ImageSummary(
     Guid Id,
     string Name,
     ImageKind Kind,
     string Sha256,
+    // For a raw disk image, the stored, compressed file.
     long SizeBytes,
+    // 0 for a raw disk image.
     int WimIndex,
     string? Edition,
     string? Architecture,
     string? Version,
     string? Language,
+    // For a raw disk image, the disk it holds.
     long InstalledBytes,
     string? OriginalFileName,
     DateTimeOffset UploadedUtc,
     string? UploadedBy,
+    // For raw disk images only: whether it starts with Secure Boot on, and BootDetail why.
     ImageBootCapability? BootCapability = null,
     string? BootDetail = null,
+    // Names a raw disk image's uncompressed disk, which is the same for an upload of that disk in another format.
     string? SourceSha256 = null);

@@ -4,9 +4,8 @@
 
 namespace DDT.Server.Tokens;
 
-// A token a user made for a script or another system to call the API as them. It is a principal of its own, apart from
-// the tokens machines get: it acts for a person, never for a machine. A revoked token keeps its row, so the list and the
-// audit log can still name it.
+// A token a user made for a script or another system, which acts for that person and never for a machine. A revoked
+// token keeps its row, so the list and the audit log can still name it.
 public sealed class ApiToken
 {
     public Guid Id { get; set; }

@@ -61,9 +61,44 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
     [Fact]
     public async Task RemovesAbandonedAndFinishedUploadsAndKeepsTheRest()
     {
-        SignedInClient administrator = await application.AdministratorAsync();
-        ImageUploadLocks locks = application.Services.GetRequiredService<ImageUploadLocks>();
+        Sessions sessions = await SessionsAsync(await application.AdministratorAsync());
+        Leftovers leftovers = LeftoversOf(sessions.Abandoned);
+        ImageUploadSweeper sweeper = application.Services.GetRequiredService<ImageUploadSweeper>();
+        int removed;
 
+        // A request using the session keeps it, however old it looks.
+        Assert.True(application.Services.GetRequiredService<ImageUploadLocks>().TryEnter(sessions.Busy.Id, out ImageUploadLock? held));
+
+        using (held)
+        {
+            removed = await sweeper.SweepOnceAsync(TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(5, removed);
+        Assert.False(await ExistsAsync(sessions.Abandoned.Id));
+        Assert.False(File.Exists(Store.PartPath(sessions.Abandoned.Id)));
+        Assert.False(File.Exists(leftovers.AbandonedRaw));
+        Assert.False(await ExistsAsync(sessions.Finished.Id));
+        Assert.False(File.Exists(leftovers.Orphan));
+        Assert.False(File.Exists(leftovers.OrphanRaw));
+        Assert.False(File.Exists(leftovers.OrphanCompressed));
+
+        Assert.True(await ExistsAsync(sessions.Active.Id));
+        Assert.True(File.Exists(Store.PartPath(sessions.Active.Id)));
+        Assert.True(await ExistsAsync(sessions.Busy.Id));
+        Assert.True(File.Exists(Store.PartPath(sessions.Busy.Id)));
+        Assert.True(await ExistsAsync(sessions.JustFinished.Id));
+        Assert.True(File.Exists(leftovers.FreshOrphan));
+        Assert.True(File.Exists(leftovers.Foreign));
+
+        // Left for the next pass, which finds it free.
+        Assert.Equal(1, await sweeper.SweepOnceAsync(TestContext.Current.CancellationToken));
+        Assert.False(await ExistsAsync(sessions.Busy.Id));
+    }
+
+    // Abandoned, Busy and Finished were last updated two days ago; Finished and JustFinished completed.
+    private async Task<Sessions> SessionsAsync(SignedInClient administrator)
+    {
         ImageUploadSession abandoned = await StartedUploadAsync(administrator);
         ImageUploadSession active = await StartedUploadAsync(administrator);
         ImageUploadSession busy = await StartedUploadAsync(administrator);
@@ -76,6 +111,12 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
         Assert.Equal(HttpStatusCode.Created, (await administrator.CompleteUploadAsync(justFinished.Id)).StatusCode);
         await LastUpdatedAsync(finished.Id, s_twoDays);
 
+        return new Sessions(abandoned, active, busy, finished, justFinished);
+    }
+
+    // Files no session owns, and the raw disk an import of the abandoned upload left.
+    private Leftovers LeftoversOf(ImageUploadSession abandoned)
+    {
         string orphan = OrphanPart(s_twoDays);
         string freshOrphan = OrphanPart(TimeSpan.FromHours(1));
 
@@ -88,37 +129,15 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
         File.WriteAllBytes(foreign, new byte[10]);
         File.SetLastWriteTimeUtc(foreign, DateTime.UtcNow - s_twoDays);
 
-        int removed;
-
-        // A request using the session keeps it, however old it looks.
-        Assert.True(locks.TryEnter(busy.Id, out ImageUploadLock? held));
-
-        using (held)
-        {
-            removed = await application.Services.GetRequiredService<ImageUploadSweeper>()
-                .SweepOnceAsync(TestContext.Current.CancellationToken);
-        }
-
-        Assert.Equal(5, removed);
-        Assert.False(await ExistsAsync(abandoned.Id));
-        Assert.False(File.Exists(Store.PartPath(abandoned.Id)));
-        Assert.False(File.Exists(abandonedRaw));
-        Assert.False(await ExistsAsync(finished.Id));
-        Assert.False(File.Exists(orphan));
-        Assert.False(File.Exists(orphanRaw));
-        Assert.False(File.Exists(orphanCompressed));
-
-        Assert.True(await ExistsAsync(active.Id));
-        Assert.True(File.Exists(Store.PartPath(active.Id)));
-        Assert.True(await ExistsAsync(busy.Id));
-        Assert.True(File.Exists(Store.PartPath(busy.Id)));
-        Assert.True(await ExistsAsync(justFinished.Id));
-        Assert.True(File.Exists(freshOrphan));
-        Assert.True(File.Exists(foreign));
-
-        // Left for the next pass, which finds it free.
-        Assert.Equal(1, await application.Services.GetRequiredService<ImageUploadSweeper>()
-            .SweepOnceAsync(TestContext.Current.CancellationToken));
-        Assert.False(await ExistsAsync(busy.Id));
+        return new Leftovers(orphan, freshOrphan, orphanRaw, orphanCompressed, abandonedRaw, foreign);
     }
+
+    private sealed record Sessions(
+        ImageUploadSession Abandoned,
+        ImageUploadSession Active,
+        ImageUploadSession Busy,
+        ImageUploadSession Finished,
+        ImageUploadSession JustFinished);
+
+    private sealed record Leftovers(string Orphan, string FreshOrphan, string OrphanRaw, string OrphanCompressed, string AbandonedRaw, string Foreign);
 }

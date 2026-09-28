@@ -11,9 +11,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Host.Startup;
 
-// The recovery for when the settings page cannot fix itself: a section that locks everyone out, or no administrator
-// left. It runs next to the running server with only the database and the key ring, which the container has, for example
-// docker exec ddt ./DDT.Host settings reset ldap. The running servers read the change within 15 seconds.
+// The recovery for what the settings page cannot fix, such as a section that locks everyone out. It needs only the
+// database and the key ring, as in docker exec ddt ./DDT.Host settings reset ldap, next to the running servers.
 public static class SettingsConsole
 {
     private const string AdministratorUserName = "admin";
@@ -102,7 +101,7 @@ public static class SettingsConsole
     {
         using IServiceScope scope = app.Services.CreateScope();
 
-        await scope.ServiceProvider.GetRequiredService<SettingsStore>().ResetAsync(definition, SettingsActor.Console, CancellationToken.None).ConfigureAwait(false);
+        await scope.ServiceProvider.GetRequiredService<SettingsStore>().ResetAsync(definition, Actor.Console, CancellationToken.None).ConfigureAwait(false);
     }
 
     // A new local administrator, or the existing one enabled again, unlocked, with a new password and no second factor:
@@ -130,43 +129,20 @@ public static class SettingsConsole
             return (null, $"{userName} signs in through a directory or single sign-on. Name a local account, or a new one.");
         }
 
+        string? problem;
+
         if (user is null)
         {
-            user = new DdtUser
-            {
-                UserName = userName,
-                DisplayName = "Administrator",
-                Source = AccountSource.Local,
-                CreatedUtc = timeProvider.GetUtcNow(),
-            };
-
-            if (Failed(await users.CreateAsync(user, password).ConfigureAwait(false)) is { } createProblem)
-            {
-                return (null, createProblem);
-            }
+            (user, problem) = await CreateLocalAsync(users, userName, password, timeProvider.GetUtcNow()).ConfigureAwait(false);
         }
         else
         {
-            user.IsDisabled = false;
+            problem = await EnableAgainAsync(users, user, password).ConfigureAwait(false);
+        }
 
-            // The new password changes the security stamp too, which signs the account out everywhere.
-            Func<Task<IdentityResult>>[] steps =
-            [
-                () => users.UpdateAsync(user),
-                () => users.SetLockoutEndDateAsync(user, null),
-                () => users.ResetAccessFailedCountAsync(user),
-                () => users.SetTwoFactorEnabledAsync(user, false),
-                () => users.RemovePasswordAsync(user),
-                () => users.AddPasswordAsync(user, password),
-            ];
-
-            foreach (Func<Task<IdentityResult>> step in steps)
-            {
-                if (Failed(await step().ConfigureAwait(false)) is { } resetProblem)
-                {
-                    return (null, resetProblem);
-                }
-            }
+        if (problem is not null)
+        {
+            return (null, problem);
         }
 
         if (!await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false)
@@ -175,20 +151,61 @@ public static class SettingsConsole
             return (null, grantProblem);
         }
 
-        database.AuditEvents.Add(new AuditEvent
-        {
-            OccurredUtc = timeProvider.GetUtcNow(),
-            Action = AuditActions.AdministratorCreated,
-            ActorName = SettingsActor.Console.Name,
-            SubjectId = user.Id.ToString("D"),
-            Detail = created
+        database.AuditEvents.Add(AuditEvents.Create(
+            AuditActions.AdministratorCreated,
+            user.Id.ToString("D"),
+            Actor.Console,
+            timeProvider.GetUtcNow(),
+            created
                 ? $"Created the local administrator {userName} from the console."
-                : $"Enabled the local administrator {userName} again from the console, with a new password and without a second factor.",
-        });
+                : $"Enabled the local administrator {userName} again from the console, with a new password and without a second factor."));
 
         await database.SaveChangesAsync().ConfigureAwait(false);
 
         return (password, null);
+    }
+
+    private static async Task<(DdtUser User, string? Problem)> CreateLocalAsync(
+        UserManager<DdtUser> users,
+        string userName,
+        string password,
+        DateTimeOffset now)
+    {
+        DdtUser user = new()
+        {
+            UserName = userName,
+            DisplayName = "Administrator",
+            Source = AccountSource.Local,
+            CreatedUtc = now,
+        };
+
+        return (user, Failed(await users.CreateAsync(user, password).ConfigureAwait(false)));
+    }
+
+    // The new password changes the security stamp too, which signs the account out everywhere.
+    private static async Task<string?> EnableAgainAsync(UserManager<DdtUser> users, DdtUser user, string password)
+    {
+        user.IsDisabled = false;
+
+        Func<Task<IdentityResult>>[] steps =
+        [
+            () => users.UpdateAsync(user),
+            () => users.SetLockoutEndDateAsync(user, null),
+            () => users.ResetAccessFailedCountAsync(user),
+            () => users.SetTwoFactorEnabledAsync(user, false),
+            () => users.RemovePasswordAsync(user),
+            () => users.AddPasswordAsync(user, password),
+        ];
+
+        foreach (Func<Task<IdentityResult>> step in steps)
+        {
+            if (Failed(await step().ConfigureAwait(false)) is { } problem)
+            {
+                return problem;
+            }
+        }
+
+        return null;
     }
 
     private static string? Failed(IdentityResult result) =>

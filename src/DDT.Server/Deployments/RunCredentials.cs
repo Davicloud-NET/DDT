@@ -4,7 +4,6 @@
 
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
-using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 using DDT.Server.Accounts;
 using DDT.Server.Data;
@@ -12,16 +11,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The accounts given for one run, in answer to the Account inputs of its sequence, on the web or at the machine. Each is
-// kept encrypted for that run and input only, with the destination its input declared at that moment, and read back
-// just in time for the step that uses it (RunSecrets). RunCredentialCleanup deletes them in the save that ends the run.
-// Nothing here logs or audits a password; the caller audits the answer, naming the input.
+// The accounts given for a run's Account inputs, each encrypted for that run and input only, and read back just in
+// time for the step that uses it. Nothing here logs or audits a password; the caller audits the answer by input name.
 public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector protector, TimeProvider timeProvider)
 {
-    // Checks the answer to an Account input and keeps it for the run in the database's change tracker, replacing an
-    // earlier answer to the input; the caller saves it with the rest of what it changes, so it is stored with the answer
-    // or not at all. Input is the declaration from the run's own snapshot, never the sequence as it is now, since its
-    // destination is what the password may reach. Null when kept; otherwise the problem, by the answer's field.
+    // Only tracks the change: the caller saves it with the answer, so both are stored or neither. Input must come from
+    // the run's own snapshot, never the current sequence, because its destination decides where the password may go.
     public async Task<RunCredentialProblem?> KeepAsync(
         Deployment run,
         InputDeclaration input,
@@ -82,8 +77,7 @@ public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector
         return null;
     }
 
-    // The account given for the input, with its password, or null when none was given. Password is null when it no
-    // longer decrypts with this server's key ring.
+    // Null when no account was given for the input; its Password is null when this server's key ring cannot decrypt it.
     public async Task<RunAccount?> ReadAsync(Guid runId, string inputName, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputName);
@@ -121,28 +115,4 @@ public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector
 
         return names.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
-}
-
-// Who gave an account for a run: the user signed in on the web or at the machine, and whether at the machine.
-public sealed record RunCredentialGiver(Guid? UserId, string? Name, bool AtMachine);
-
-// Field is the answer's field the problem is about: userName or password.
-public sealed record RunCredentialProblem(string Field, ServerMessage Message);
-
-// An account given for one run, as RunCredentials reads it back: the destination its input declared when it was given,
-// who gave it and when.
-public sealed record RunAccount(
-    string InputName,
-    string UserName,
-    string? Password,
-    string? Domain,
-    IReadOnlyList<string> Hosts,
-    bool RunAs,
-    string? ProvidedByName,
-    bool ProvidedAtMachine,
-    DateTimeOffset GivenUtc)
-{
-    // A record prints every property by default, and the password must never reach a log.
-    public override string ToString() =>
-        $"RunAccount {{ InputName = {InputName}, UserName = {UserName}, Domain = {Domain}, RunAs = {RunAs}, ProvidedByName = {ProvidedByName} }}";
 }

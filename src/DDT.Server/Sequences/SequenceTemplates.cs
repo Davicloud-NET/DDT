@@ -21,9 +21,8 @@ public static class SequenceTemplates
         "# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.\n" +
         "ssh_authorized_keys: []\n";
 
-    // What DDT did before task sequences, and its Linux counterpart. Without a domain the Windows run ends in Windows
-    // PE and the machine restarts into Windows setup; with one it continues in Windows to join, and restarts once more
-    // for the join to take effect. imageId is the Windows image to apply, if one was chosen.
+    // Installing Windows, and its Linux counterpart. Without a domain the Windows run ends in Windows PE and restarts into
+    // setup; with one it continues in Windows to join, and restarts for the join. imageId is the image chosen, if any.
     public static IReadOnlyList<SequenceTemplate> All(bool domainConfigured, bool administratorConfigured, Guid imageId)
     {
         List<SequenceStep> steps =

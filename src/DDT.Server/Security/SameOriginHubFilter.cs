@@ -6,11 +6,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
-// SameSite keeps the session cookie off cross site requests, but a page on another port of the same
-// host, or on a sibling host under the same domain, is same site: it can open the hub WebSocket with
-// the cookie, skip negotiation, and read every event. Browsers always send Origin on that handshake and
-// no Sec-Fetch-Site, so Origin is what decides. Unlike SameOriginEndpointFilter there is no exemption
-// for GET, because the WebSocket upgrade and long polling are GETs.
+// A page on another port of this host, or on a sibling host under the same domain, is same-site: it could open the hub
+// WebSocket with the session cookie, skip negotiation and read every event. Browsers always send Origin on that
+// handshake and no Sec-Fetch-Site, so Origin decides, for GET too, as the upgrade and long polling are GETs.
 public sealed class SameOriginHubFilter : IEndpointFilter
 {
     public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

@@ -10,11 +10,8 @@ using DDT.Server.Rules;
 
 namespace DDT.Server.Deployments;
 
-// The settings a run's answer file and domain join use, taken when the run starts, so that changing them later never
-// changes a run halfway. Never a secret: the passwords are read from the configuration when the agent fetches them.
-// They come from the run's values (From), where the deployment defaults are the last source, so without a rule, a
-// machine role, an input or a variable that sets one they are the settings as before. Facts are the machine's facts by
-// name as they were then (FactsOf), which a share's path may use; null for a run that started before they were kept.
+// The settings a run's answer file and join use, taken from its values when it starts, so later changes never change a
+// run halfway; never a secret. Facts are the machine's as they were then; null where a run started before they were kept.
 public sealed record RunInputs(
     string? ComputerName,
     string? TimeZone,

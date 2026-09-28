@@ -8,9 +8,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DDT.Server.Endpoints;
 
-// Problem details that carry the message's code and values beside its English title, so the web can say a refusal in
-// the person's language: { "title": "The machine is Rejected.", "code": "machine.inState", "args": { "state": "Rejected" } }.
-// A validation problem keeps its English errors and adds errorCodes, the same messages as codes, field by field.
+// Problem details carry the message's code and args beside its English title, so the web can say a refusal in the
+// person's language. A validation problem adds errorCodes: its English errors as codes, field by field.
 public static class ServerProblems
 {
     public const string CodeExtension = "code";
@@ -42,39 +41,5 @@ public static class ServerProblems
         problems.Add(field, message);
 
         return problems.ToResult();
-    }
-}
-
-// The messages of a validation problem, by the camelCase name of the field each is about.
-public sealed class FieldProblems
-{
-    private readonly Dictionary<string, List<ServerMessage>> _fields = new(StringComparer.Ordinal);
-
-    public int Count => _fields.Count;
-
-    public void Add(string field, ServerMessage message)
-    {
-        ArgumentNullException.ThrowIfNull(field);
-        ArgumentNullException.ThrowIfNull(message);
-
-        if (!_fields.TryGetValue(field, out List<ServerMessage>? messages))
-        {
-            _fields[field] = messages = [];
-        }
-
-        messages.Add(message);
-    }
-
-    public ValidationProblem ToResult()
-    {
-        Dictionary<string, string[]> errors = _fields.ToDictionary(
-            field => field.Key,
-            field => field.Value.Select(message => message.Text).ToArray(),
-            StringComparer.Ordinal);
-        Dictionary<string, ServerMessage[]> codes = _fields.ToDictionary(field => field.Key, field => field.Value.ToArray(), StringComparer.Ordinal);
-
-        return TypedResults.ValidationProblem(
-            errors,
-            extensions: new Dictionary<string, object?>(StringComparer.Ordinal) { [ServerProblems.ErrorCodesExtension] = codes });
     }
 }

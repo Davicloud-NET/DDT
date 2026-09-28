@@ -31,8 +31,8 @@ internal static class SettingsNetworks
     ];
 
     // A request a proxy forwards without the client's address comes from the proxy's own, which a zero touch network
-    // must not contain. Field names the zero touch field on a problem of the machines section; null puts the problem on
-    // the proxy field of the proxies section.
+    // must not hold. Field names the zero touch field for a problem of the machines section; null puts it on the
+    // proxies field.
     public static IReadOnlyList<SettingProblem> Overlaps(string zeroTouchNetworks, DdtForwardedHeadersOptions proxies, string? field)
     {
         List<SettingProblem> problems = [];

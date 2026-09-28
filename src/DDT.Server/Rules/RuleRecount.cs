@@ -4,6 +4,7 @@
 
 using DDT.Server.Data;
 using DDT.Server.Live;
+using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,9 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Rules;
 
-// Every rule says how many known machines it matches, so the list goes out again when the machines change: when one
-// registers with something a rule may test, or machines are removed. A lab of machines netbooting at once registers
-// many, so it goes out at most once per interval, counted after the last of them, in a scope of its own.
+// Every rule counts the machines it matches, so the list goes out again when a registration changes what a rule may
+// test, or machines are removed: at most once per interval, after the last of a lab netbooting at once, in its own
+// scope.
 public sealed partial class RuleRecount(
     IServiceScopeFactory scopes,
     LiveNotifier live,
@@ -26,6 +27,24 @@ public sealed partial class RuleRecount(
     private readonly PushThrottle _throttle = new(timeProvider, Interval, lifetime.ApplicationStopping);
 
     public void MachinesChanged() => _throttle.Push(Guid.Empty, PushAsync);
+
+    // What a rule's condition may test about the machine that a registration sets, to tell whether the counts changed.
+    public static string Tested(Machine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return string.Join(
+            '|',
+            machine.PrimaryMac,
+            machine.MacAddresses,
+            machine.Manufacturer,
+            machine.Model,
+            machine.SerialNumber,
+            machine.AgentEnvironment,
+            machine.SecureBootEnabled,
+            machine.ChassisType,
+            machine.Facts);
+    }
 
     private async Task PushAsync()
     {

@@ -12,8 +12,7 @@ using Microsoft.AspNetCore.Identity;
 namespace DDT.Server.Settings;
 
 // The scheme's options for values not yet saved, built off to the side as the framework builds them: DDT's configure
-// code, the handler's post-configure step, its Validate, and the sign-in scheme check that ExternalSignInSchemeGuard
-// makes of the published options at startup.
+// code, the handler's post-configure step and Validate, and the sign-in scheme check of ExternalSignInSchemeGuard.
 internal static class OidcCandidate
 {
     public static IReadOnlyList<SettingProblem> FindProblems(OidcOptions oidc, IDataProtectionProvider dataProtection)

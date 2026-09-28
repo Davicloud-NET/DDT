@@ -4,13 +4,14 @@
 
 namespace DDT.Contracts.Users;
 
-// Where an account's role comes from. Manual: an administrator set it. DirectoryGroups and SingleSignOnGroups: the
-// account's groups decide it at each sign-in, so it cannot be changed in DDT. Provisioned: DDT gave it to the account
-// when single sign-on created it, and no administrator has changed it since.
+// Where an account's role comes from.
 public enum RoleSource
 {
+    // An administrator set it.
     Manual,
+    // This and SingleSignOnGroups: the account's groups decide it at each sign-in, so it cannot be changed in DDT.
     DirectoryGroups,
     SingleSignOnGroups,
+    // DDT gave it when single sign-on created the account, and no administrator has changed it since.
     Provisioned,
 }

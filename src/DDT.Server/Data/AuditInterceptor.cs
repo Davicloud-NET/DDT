@@ -12,10 +12,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DDT.Server.Data;
 
-// Every audit row is written in the save of the change it records, so watching the saves finds every new row without a
-// call site having to remember it. The rows go to the administrators' live connections once they are stored: after the
-// save, or after the commit of a transaction the save ran in, and never when that transaction rolls back. A row whose
-// actor is the user of a request authenticated by an API token is marked with the token before it is stored.
+// Pushes every new audit row to the live connections once it is stored, after the save or the commit of its
+// transaction, never after a rollback. A row of a user who acted with an API token gets the token before it is stored.
 public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor httpContextAccessor) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
     private const int MaxActorNameLength = 256;

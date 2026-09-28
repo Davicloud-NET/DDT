@@ -29,12 +29,3 @@ namespace DDT.Server.Settings;
 [JsonSerializable(typeof(Dictionary<string, StoredSecretDocument>))]
 [JsonSerializable(typeof(PxeHostDetail))]
 internal sealed partial class SettingsJsonContext : JsonSerializerContext;
-
-// A secret in the Secrets column. Protected is null for one that was cleared.
-internal sealed record StoredSecretDocument(string? Protected, DateTimeOffset UpdatedUtc);
-
-// What a host that runs the pxe role found when it applied the section, in the detail of its row of
-// ddt."SettingsHostStates", beside the message SettingsHostStates keeps there as a code.
-internal sealed record PxeHostDetail(IReadOnlyList<PxeHostCandidate> Candidates, IReadOnlyList<string> Unmatched);
-
-internal sealed record PxeHostCandidate(string Name, IReadOnlyList<string> Addresses, bool Served);

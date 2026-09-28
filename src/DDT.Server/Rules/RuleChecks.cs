@@ -12,10 +12,8 @@ using DDT.Core.Templates;
 
 namespace DDT.Server.Rules;
 
-// What is wrong with a rule or a machine role. Bounds keep a request from being stored at all. Problems are saved with a
-// rule and keep it from matching until they are fixed, so an editor that saves as the administrator types keeps its
-// draft; a machine role has no problems of its own, so the same checks of its values refuse its save instead. Fields are
-// paths within the rule, such as "when.parts[0].value" or "values[1].name".
+// What is wrong with a rule or a machine role. Bounds refuse a request; problems are saved with a rule and keep it from
+// matching, so autosave keeps a draft, while they refuse a role's save. Fields are paths such as "when.parts[0].value".
 public static partial class RuleChecks
 {
     public const string WhenField = ConditionEvaluator.WhenPath;
@@ -194,23 +192,9 @@ public static partial class RuleChecks
         string variable = test.Variable ?? "";
         string? fact = MachineVariables.Fact(variable);
 
-        if (string.IsNullOrWhiteSpace(variable))
+        if (NameProblem(variable, fact, knownNames) is { } name)
         {
-            add($"{path}.variable", ServerMessages.RuleConditionChooseName.With());
-
-            return;
-        }
-
-        if (s_runVariables.Contains(variable, StringComparer.OrdinalIgnoreCase))
-        {
-            add($"{path}.variable", ServerMessages.RuleConditionRunVariable.With("name", variable));
-
-            return;
-        }
-
-        if (fact is null && !knownNames.Contains(variable))
-        {
-            add($"{path}.variable", ServerMessages.RuleConditionUnknownName.With("name", variable));
+            add($"{path}.variable", name);
 
             return;
         }
@@ -249,6 +233,21 @@ public static partial class RuleChecks
         {
             add($"{path}.value", problem);
         }
+    }
+
+    private static ServerMessage? NameProblem(string variable, string? fact, IReadOnlySet<string> knownNames)
+    {
+        if (string.IsNullOrWhiteSpace(variable))
+        {
+            return ServerMessages.RuleConditionChooseName.With();
+        }
+
+        if (s_runVariables.Contains(variable, StringComparer.OrdinalIgnoreCase))
+        {
+            return ServerMessages.RuleConditionRunVariable.With("name", variable);
+        }
+
+        return fact is null && !knownNames.Contains(variable) ? ServerMessages.RuleConditionUnknownName.With("name", variable) : null;
     }
 
     private static bool Fits(ConditionOperator comparison, FactType type, bool fact)

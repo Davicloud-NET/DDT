@@ -33,9 +33,8 @@ public static class LiveEvents
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
-    // Carries every rule, RuleView top first, as GET /api/rules answers: rules are few, and one change can move rules,
-    // rename the sequence several of them choose, change what another rule's condition may test, or change how many
-    // machines each matches, which a registration or a removal of machines does too.
+    // Every rule, top first, as GET /api/rules answers: rules are few, and one change can move several, rename a sequence
+    // they choose, or change what they test or how many machines they match.
     public const string RulesChanged = "rulesChanged";
 
     // Carries every machine role, MachineRoleView by name, as GET /api/machine-roles answers: a change of a rule changes

@@ -4,7 +4,6 @@
 
 using DDT.Server.Certificates;
 using DDT.Server.Data;
-using DDT.Server.Endpoints;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,26 +54,19 @@ public sealed partial class CertificateRollbackRecorder(
             using IServiceScope scope = scopes.CreateScope();
             DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
-            database.AuditEvents.Add(new AuditEvent
-            {
-                OccurredUtc = timeProvider.GetUtcNow(),
-                Action = AuditActions.CertificateRolledBack,
-                ActorName = "DDT",
-                SubjectId = rolledBack.RolledBackThumbprint,
-                Detail = StoredText.Bound(
-                    $"Nobody confirmed the server certificate {rolledBack.RolledBackThumbprint} within " +
-                    $"{ServerCertificates.ConfirmWithin.TotalMinutes} minutes, so DDT serves {rolledBack.Restored.Subject}, " +
-                    $"{rolledBack.Restored.Thumbprint}, again.",
-                    AuditEvent.MaxDetailLength),
-            });
+            database.AuditEvents.Add(AuditEvents.Create(
+                AuditActions.CertificateRolledBack,
+                rolledBack.RolledBackThumbprint,
+                new Actor(null, "DDT", null),
+                timeProvider.GetUtcNow(),
+                $"Nobody confirmed the server certificate {rolledBack.RolledBackThumbprint} within " +
+                $"{ServerCertificates.ConfirmWithin.TotalMinutes} minutes, so DDT serves {rolledBack.Restored.Subject}, " +
+                $"{rolledBack.Restored.Thumbprint}, again."));
             await database.SaveChangesAsync().ConfigureAwait(false);
 
-            live.CertificateChanged(await SettingsCertificateEndpoints.ViewAsync(
-                _certificates,
-                scope.ServiceProvider.GetRequiredService<SettingsViews>(),
-                scope.ServiceProvider.GetRequiredService<DdtSettings>(),
-                null,
-                CancellationToken.None).ConfigureAwait(false));
+            live.CertificateChanged(await scope.ServiceProvider.GetRequiredService<CertificateChanges>()
+                .ViewAsync(null, CancellationToken.None)
+                .ConfigureAwait(false));
         }
         catch (Exception exception)
         {

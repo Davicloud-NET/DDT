@@ -4,10 +4,8 @@
 
 namespace DDT.Server.Sequences;
 
-// What the server stores at all. A document within these limits is saved even when it has problems, so an editor
-// can keep a draft; SequenceValidator's tighter limits decide whether it runs. Nodes are the steps and the groups, IFs
-// and repeats that hold them: twice the nodes the validator runs, as it was twice the steps when a sequence was a list,
-// and a run reports a row for each. A request holds the document and its name, written less tightly.
+// What the server stores at all, so an editor keeps a draft with problems; SequenceValidator's tighter limits decide what
+// runs. Nodes, containers included, are twice what the validator runs, and a run reports a row for each.
 public static class SequenceLimits
 {
     public const int MaxNameLength = 128;

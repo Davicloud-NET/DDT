@@ -11,9 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Deployments;
 
-// RunCredentialCleanup deletes a run's credentials in the save that ends it. A run that ended without a save through
-// this build, such as by a change made to the database by hand or by another build, would keep them, so each start
-// removes the credentials of every run that is no longer assigned or running. It runs once the schema is up to date.
+// Removes at each start the credentials of every run that is over: a run ended by hand or by another build keeps them,
+// since RunCredentialCleanup deletes them only in a save through this build. Runs once the schema is up to date.
 public sealed partial class RunCredentialSweeper(
     IServiceScopeFactory scopes,
     ILogger<RunCredentialSweeper> logger) : IHostedService

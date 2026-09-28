@@ -14,8 +14,7 @@ public sealed class IdentityBootstrapTests
     [Fact]
     public void AlwaysGeneratesAPasswordIdentityAccepts()
     {
-        // Before the fix about 2.6 percent of draws had no digit, so ten thousand draws cannot all pass
-        // by luck.
+        // About 2.6 percent of draws from the alphabet lack a digit, so ten thousand draws cannot all pass by luck.
         for (int draw = 0; draw < 10_000; draw++)
         {
             string password = IdentityBootstrap.GeneratePassword();

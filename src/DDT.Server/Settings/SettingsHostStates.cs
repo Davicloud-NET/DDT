@@ -14,9 +14,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Whether this host applied the sections it rebuilds a component for: pxe, oidc and proxies. Kept in memory for the
-// page this process serves, and written to ddt."SettingsHostStates" for the pages other processes serve. Only this
-// process writes this host's rows.
+// Whether this host applied the sections it rebuilds a component for: pxe, oidc and proxies. Kept in memory for this
+// process's page and in ddt."SettingsHostStates" for the others', and only this process writes this host's rows.
 public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, TimeProvider timeProvider, ILogger<SettingsHostStates> logger)
 {
     public static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(5);
@@ -44,19 +43,22 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    // Message is English, and text the same sentence as a code, where it is one DDT knows. Detail is a JSON object, such as
-    // the interfaces a pxe host found, and the text goes in it under "text", so the pages other processes serve can say
-    // it in the person's language too.
-    public void Record(string section, long version, SettingsApplyResult state, string? message, string? detail = null, ServerMessage? text = null)
+    // The text goes into the detail under "text", so the pages other processes serve can say it in the person's language
+    // too.
+    public void Record(SettingsApplyReport report)
     {
+        ArgumentNullException.ThrowIfNull(report);
+
+        string section = report.Section;
+        long version = report.Version;
         SettingsHostState row = new()
         {
             Host = Host,
             Section = section,
             AppliedVersion = version,
-            State = state,
-            Message = StoredText.Bound(message, SettingsHostState.MaxMessageLength),
-            Detail = WithText(detail, text),
+            State = report.Result,
+            Message = StoredText.Bound(report.Message, SettingsHostState.MaxMessageLength),
+            Detail = WithText(report.Detail, report.Text),
             UpdatedUtc = timeProvider.GetUtcNow(),
         };
 
@@ -167,18 +169,14 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
 
             if (newVersion)
             {
-                database.AuditEvents.Add(new AuditEvent
-                {
-                    OccurredUtc = row.UpdatedUtc,
-                    Action = row.State == SettingsApplyResult.Applied ? AuditActions.SettingsApplied : AuditActions.SettingsApplyFailed,
-                    ActorName = row.Host,
-                    SubjectId = row.Section,
-                    Detail = StoredText.Bound(
-                        row.State == SettingsApplyResult.Applied
-                            ? $"{row.Host} applied version {row.AppliedVersion} of {row.Section}."
-                            : $"{row.Host} could not apply version {row.AppliedVersion} of {row.Section}: {row.Message}",
-                        AuditEvent.MaxDetailLength),
-                });
+                database.AuditEvents.Add(AuditEvents.Create(
+                    row.State == SettingsApplyResult.Applied ? AuditActions.SettingsApplied : AuditActions.SettingsApplyFailed,
+                    row.Section,
+                    new Actor(null, row.Host, null),
+                    row.UpdatedUtc,
+                    row.State == SettingsApplyResult.Applied
+                        ? $"{row.Host} applied version {row.AppliedVersion} of {row.Section}."
+                        : $"{row.Host} could not apply version {row.AppliedVersion} of {row.Section}: {row.Message}"));
             }
 
             await database.SaveChangesAsync().ConfigureAwait(false);

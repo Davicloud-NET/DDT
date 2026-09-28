@@ -56,8 +56,10 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     private static AgentRunReport Reached(AgentRun run, int running, SequencePhase phase = SequencePhase.WindowsPE) =>
         Report(
             DeploymentState.Running,
-            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))],
-            phase: phase);
+            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))]) with
+        {
+            Phase = phase,
+        };
 
     // The service in Windows, as it registers with the run token the agent in Windows PE handed over.
     private static async Task<string> ServiceTokenAsync(DeployingMachine machine) =>
@@ -159,7 +161,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     public async Task AShareGoesOnlyToItsStepWhileItRuns()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(name: $"Drivers {Guid.NewGuid():N}"));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Name = $"Drivers {Guid.NewGuid():N}" });
         RunScriptStep script = Script(SequencePhase.WindowsPE, null, new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(account.Id, null)));
         (DeployingMachine machine, AgentRun run, _) = await AssignedAsync(null, script);
         using DeployingMachine held = machine;
@@ -206,7 +208,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     public async Task ASharePathIsWorkedOutFromTheValuesTheRunStartedWith()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example"]));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example"] });
         RunScriptStep script = Script(
             SequencePhase.WindowsPE,
             null,
@@ -252,7 +254,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     public async Task ASharePathTakesTheMachinesFactsAsTheRunStartedWithThem()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example"]));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example"] });
         RunScriptStep script = Script(
             SequencePhase.WindowsPE,
             null,
@@ -273,7 +275,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     public async Task AScriptRunsAsAnAccountOnlyInTheServiceInWindows()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(userName: "svc-tools@corp.example", hosts: [], runAs: true));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { UserName = "svc-tools@corp.example", Hosts = [], RunAs = true });
         RunScriptStep script = Script(SequencePhase.Windows, new AccountReference(account.Id, null));
         (DeployingMachine machine, AgentRun run, _) = await AssignedAsync(null, script);
         using DeployingMachine held = machine;
@@ -331,16 +333,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         Assert.Null(await GiveAsync(run.Id, "ShareAccount", @" CORP\jane ", GivenPassword));
 
         // An edit of the sequence since then points elsewhere, which the run never sees.
-        SequenceDefinition edited = sequence.Definition with
-        {
-            Inputs = [AccountInput("ShareAccount", hosts: ["evil.example"])],
-            Steps =
-            [
-                .. sequence.Definition.Steps.Take(2),
-                script with { Shares = [new ShareConnection(@"\\evil.example\loot", new AccountReference(null, "ShareAccount"))] },
-            ],
-        };
-        (await administrator.SaveSequenceAsync(sequence, edited)).EnsureSuccessStatusCode();
+        (await administrator.SaveSequenceAsync(sequence, Elsewhere(sequence, script))).EnsureSuccessStatusCode();
 
         AgentStepAccounts accounts = await AccountsAsync(await machine.Agent.RunAccountsAsync(machine.Id, machine.Token, run.Id, script.Id));
 
@@ -353,17 +346,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             ],
             await SecretReadsAsync(run.Id));
 
-        // One credential for the input, kept with the destination the input declared, and read back whole.
-        RunCredential stored = await application.QueryAsync(database => database.RunCredentials.AsNoTracking().SingleAsync(c => c.DeploymentId == run.Id, Cancellation));
-        using IServiceScope scope = application.Services.CreateScope();
-        RunAccount? given = await scope.ServiceProvider.GetRequiredService<RunCredentials>().ReadAsync(run.Id, "SHAREACCOUNT", Cancellation);
-
-        Assert.Equal("""["files.corp.example","backup.corp.example"]""", stored.Hosts);
-        Assert.True(stored.ProvidedAtMachine);
-        Assert.Equal("technician", stored.ProvidedByName);
-        Assert.DoesNotContain(GivenPassword, stored.ProtectedPassword, StringComparison.Ordinal);
-        Assert.Equal(GivenPassword, given?.Password);
-        Assert.DoesNotContain(GivenPassword, given!.ToString(), StringComparison.Ordinal);
+        await StoredWholeAsync(run.Id);
 
         // The credential's own servers bind it, whatever value names another.
         await SetValuesAsync(run.Id, [Value("Backup", "archive.corp.example")]);
@@ -373,13 +356,39 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             StringComparison.Ordinal);
     }
 
+    private static SequenceDefinition Elsewhere(SequenceView sequence, RunScriptStep script) =>
+        sequence.Definition with
+        {
+            Inputs = [AccountInput("ShareAccount", hosts: ["evil.example"])],
+            Steps =
+            [
+                .. sequence.Definition.Steps.Take(2),
+                script with { Shares = [new ShareConnection(@"\\evil.example\loot", new AccountReference(null, "ShareAccount"))] },
+            ],
+        };
+
+    // One credential for the input, kept with the destination the input declared, and read back whole.
+    private async Task StoredWholeAsync(Guid runId)
+    {
+        RunCredential stored = await application.QueryAsync(database => database.RunCredentials.AsNoTracking().SingleAsync(c => c.DeploymentId == runId, Cancellation));
+        using IServiceScope scope = application.Services.CreateScope();
+        RunAccount? given = await scope.ServiceProvider.GetRequiredService<RunCredentials>().ReadAsync(runId, "SHAREACCOUNT", Cancellation);
+
+        Assert.Equal("""["files.corp.example","backup.corp.example"]""", stored.Hosts);
+        Assert.True(stored.ProvidedAtMachine);
+        Assert.Equal("technician", stored.ProvidedByName);
+        Assert.DoesNotContain(GivenPassword, stored.ProtectedPassword, StringComparison.Ordinal);
+        Assert.Equal(GivenPassword, given?.Password);
+        Assert.DoesNotContain(GivenPassword, given!.ToString(), StringComparison.Ordinal);
+    }
+
     // Only a leaf step connects shares: a step in a group gets its own and never the group's, and the group gets nothing,
     // whatever a document from outside gave it.
     [Fact]
     public async Task AStepInAGroupConnectsOnlyItsOwnShares()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example", "tools.corp.example"]));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example", "tools.corp.example"] });
         AccountReference named = new(account.Id, null);
         RunScriptStep script = Script(SequencePhase.WindowsPE, null, new ShareConnection(@"\\tools.corp.example\bin", named));
         GroupStep group = new()
@@ -404,8 +413,8 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
     public async Task AJoinWithAStoredAccountJoinsThatAccountsDomain()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView lab = await administrator.CreatedAccountAsync(Request(userName: @"LAB\joiner", domain: "lab.example", hosts: []));
-        AccountView corp = await administrator.CreatedAccountAsync(Request(userName: @"CORP\kiosk-join", domain: "CORP.example", hosts: []));
+        AccountView lab = await administrator.CreatedAccountAsync(Request() with { UserName = @"LAB\joiner", Domain = "lab.example", Hosts = [] });
+        AccountView corp = await administrator.CreatedAccountAsync(Request() with { UserName = @"CORP\kiosk-join", Domain = "CORP.example", Hosts = [] });
         JoinDomainStep joinLab = new() { Id = Guid.NewGuid(), Name = "Join", Account = new AccountReference(lab.Id, null) };
         JoinDomainStep joinCorp = new() { Id = Guid.NewGuid(), Name = "Join", Account = new AccountReference(corp.Id, null) };
 
@@ -481,7 +490,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         string[] events = [LiveEvents.AccountChanged, LiveEvents.AuditAppended, LiveEvents.MachineChanged, LiveEvents.RunChanged, LiveEvents.SequenceChanged];
         ChannelReader<JsonElement>[] readers = [.. events.Select(listener.Listen<JsonElement>)];
 
-        AccountView account = await administrator.CreatedAccountAsync(Request(name: $"Everything {Guid.NewGuid():N}", domain: "lab.example", runAs: true));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Name = $"Everything {Guid.NewGuid():N}", Domain = "lab.example", RunAs = true });
         AccountReference named = new(account.Id, null);
         RunScriptStep script = Script(
             SequencePhase.Windows,
@@ -501,7 +510,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         await AccountsAsync(await machine.Agent.RunAccountsAsync(machine.Id, service, run.Id, script.Id));
         await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
         (await machine.Agent.RunCredentialsAsync(machine.Id, service, run.Id, join.Id)).EnsureSuccessStatusCode();
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))], phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))]) with { Phase = SequencePhase.Windows });
 
         // The run is over, and the account given for it is gone with it.
         Assert.False(await application.QueryAsync(database => database.RunCredentials.AnyAsync(c => c.DeploymentId == run.Id, Cancellation)));
@@ -510,6 +519,15 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
 
         // The pushes of the reads have gone out once the one that says the run is done has.
         await LiveListener.NextAsync(readers[Array.IndexOf(events, LiveEvents.RunChanged)], e => e.GetProperty("run").GetProperty("state").GetString() == "Done");
+        List<string> pushed = Drained(readers);
+
+        Assert.Equal(4, (await SecretReadsAsync(run.Id)).Count);
+        Assert.Contains(pushed, payload => payload.Contains(AuditActions.DeploymentSecretRead, StringComparison.Ordinal));
+        await AssertNowhereAsync(secrets, pushed);
+    }
+
+    private static List<string> Drained(ChannelReader<JsonElement>[] readers)
+    {
         List<string> pushed = [];
 
         foreach (ChannelReader<JsonElement> reader in readers)
@@ -520,10 +538,14 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             }
         }
 
+        return pushed;
+    }
+
+    // Not in the log, the audit or what the hub pushed.
+    private async Task AssertNowhereAsync(string[] secrets, List<string> pushed)
+    {
         List<AuditEvent> audit = await application.QueryAsync(database => database.AuditEvents.AsNoTracking().ToListAsync(Cancellation));
 
-        Assert.Equal(4, (await SecretReadsAsync(run.Id)).Count);
-        Assert.Contains(pushed, payload => payload.Contains(AuditActions.DeploymentSecretRead, StringComparison.Ordinal));
         Assert.All(secrets, secret =>
         {
             Assert.All(application.Log.Entries, entry =>
@@ -566,6 +588,6 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         using IServiceScope scope = application.Services.CreateScope();
         Machine stored = await scope.ServiceProvider.GetRequiredService<DdtDbContext>().Machines.AsNoTracking().SingleAsync(m => m.Id == machine.Id, Cancellation);
 
-        return await scope.ServiceProvider.GetRequiredService<RunSecrets>().StepAccountsAsync(stored, run.Id, stepId, null, Cancellation);
+        return await scope.ServiceProvider.GetRequiredService<StepAccounts>().ReadAsync(stored, run.Id, stepId, null, Cancellation);
     }
 }

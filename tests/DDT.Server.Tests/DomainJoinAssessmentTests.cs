@@ -19,13 +19,13 @@ public sealed class DomainJoinAssessmentTests
     private static DomainDirectoryFacts Facts(string? container, bool canCreate = false, int? quota = 10, int created = 0) =>
         new("LDAPS", "DC=corp,DC=example", container, canCreate, quota, created);
 
-    private static DomainJoinAssessment.Verdict Assess(string? organizationalUnit, DomainDirectoryFacts facts) =>
+    private static DomainJoinVerdict Assess(string? organizationalUnit, DomainDirectoryFacts facts) =>
         DomainJoinAssessment.Assess(Domain, User, Controller, organizationalUnit, facts);
 
     [Fact]
     public void TheRightToCreateComputersInTheOrganizationalUnitIsEnough()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(Workstations, Facts(Workstations, canCreate: true));
+        DomainJoinVerdict verdict = Assess(Workstations, Facts(Workstations, canCreate: true));
 
         Assert.True(verdict.CanJoin);
         Assert.Equal(Workstations, verdict.Container);
@@ -42,7 +42,7 @@ public sealed class DomainJoinAssessmentTests
     [Fact]
     public void WithoutTheRightTheQuotaReachesNoOrganizationalUnit()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(Workstations, Facts(Workstations, quota: 10));
+        DomainJoinVerdict verdict = Assess(Workstations, Facts(Workstations, quota: 10));
 
         Assert.False(verdict.CanJoin);
         DomainJoinFinding last = verdict.Findings[^1];
@@ -54,7 +54,7 @@ public sealed class DomainJoinAssessmentTests
     [Fact]
     public void WithoutTheRightTheQuotaJoinsIntoTheComputersContainerWithAWarning()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(null, Facts(Computers, quota: 10, created: 3));
+        DomainJoinVerdict verdict = Assess(null, Facts(Computers, quota: 10, created: 3));
 
         Assert.True(verdict.CanJoin);
         DomainJoinFinding last = verdict.Findings[^1];
@@ -69,7 +69,7 @@ public sealed class DomainJoinAssessmentTests
     [InlineData(0, 0)]
     public void AUsedUpQuotaCannotJoin(int quota, int created)
     {
-        DomainJoinAssessment.Verdict verdict = Assess(null, Facts(Computers, quota: quota, created: created));
+        DomainJoinVerdict verdict = Assess(null, Facts(Computers, quota: quota, created: created));
 
         Assert.False(verdict.CanJoin);
         Assert.Equal(DomainJoinFindingLevel.Problem, verdict.Findings[^1].Level);
@@ -79,7 +79,7 @@ public sealed class DomainJoinAssessmentTests
     [Fact]
     public void AnUnreadableQuotaCannotBeCountedOn()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(null, Facts(Computers, quota: null));
+        DomainJoinVerdict verdict = Assess(null, Facts(Computers, quota: null));
 
         Assert.False(verdict.CanJoin);
         Assert.Equal(DomainJoinFindingLevel.Warning, verdict.Findings[^1].Level);
@@ -88,7 +88,7 @@ public sealed class DomainJoinAssessmentTests
     [Fact]
     public void AMissingOrganizationalUnitSaysWhereToCorrectIt()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(Workstations, Facts(null, canCreate: true));
+        DomainJoinVerdict verdict = Assess(Workstations, Facts(null, canCreate: true));
 
         Assert.False(verdict.CanJoin);
         Assert.Null(verdict.Container);
@@ -99,7 +99,7 @@ public sealed class DomainJoinAssessmentTests
     [Fact]
     public void AControllerOfAnotherDomainStopsTheCheck()
     {
-        DomainJoinAssessment.Verdict verdict = Assess(null, Facts(Computers, canCreate: true) with { NamingContext = "DC=lab,DC=example" });
+        DomainJoinVerdict verdict = Assess(null, Facts(Computers, canCreate: true) with { NamingContext = "DC=lab,DC=example" });
 
         Assert.False(verdict.CanJoin);
         Assert.Equal(2, verdict.Findings.Count);

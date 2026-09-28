@@ -428,7 +428,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal(AuditActions.UserTwoFactorReset, (await application.UserAuditAsync(id))[^1].Action);
     }
 
-    // Single sign-on stored its accounts as directory accounts before, and a password typed for one went to the directory.
+    // A directory account without the directory's id is single sign-on's, and a password typed for it must not reach
+    // the directory.
     [Fact]
     public async Task EarlierSingleSignOnAccountsAreToldApartFromDirectoryAccounts()
     {

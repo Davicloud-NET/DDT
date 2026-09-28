@@ -5,6 +5,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using DDT.Contracts.Machines;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Machines;
@@ -26,6 +27,19 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
         string json = JsonSerializer.Serialize(payload, MachineTokenJsonContext.Default.MachineTokenPayload);
 
         return Protector(purpose).ToTimeLimitedDataProtector().Protect(json, LifetimeFor(purpose));
+    }
+
+    // The token the machine's state accepts, as a poll hands it out. Done accepts none: the agent reboots after reporting
+    // it, and anything still holding a token is not that agent.
+    public string IssueCurrent(Machine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return Issue(
+            machine,
+            machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+                ? MachineTokenPurpose.Session
+                : MachineTokenPurpose.Poll);
     }
 
     public MachineTokenPayload? Validate(string token, MachineTokenPurpose purpose)

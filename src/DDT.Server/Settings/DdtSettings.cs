@@ -10,10 +10,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// Holds the snapshot every consumer reads. Current starts from configuration and the code defaults, so logging has its
-// levels before the store is loaded. Publish takes rows the store read, keeps the newest version of each section, and
-// rebuilds the snapshot under one lock, so two saves of different sections cannot drop each other's change. It has no
-// database access.
+// Holds the snapshot every consumer reads, from configuration and the code defaults until the store is loaded, so
+// logging has its levels at once. Publish keeps the newest version of each section and rebuilds under one lock, so
+// saves of two sections cannot drop each other's change.
 public sealed partial class DdtSettings
 {
     private readonly Lock _lock = new();
@@ -74,9 +73,8 @@ public sealed partial class DdtSettings
             _changed = new CancellationTokenSource();
         }
 
-        // Outside the lock: the callbacks read Current, and one may lead to another publish. The framework rebuilds options
-        // in these callbacks, and one that fails must not undo a save that is written already; whoever uses those options
-        // reports the failure.
+        // Outside the lock: the callbacks read Current, and one may publish again. A callback that fails as the
+        // framework rebuilds options must not undo a save written already; whoever uses those options reports it.
         try
         {
             changed.Cancel();

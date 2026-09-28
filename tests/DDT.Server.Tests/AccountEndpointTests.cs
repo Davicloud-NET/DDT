@@ -54,7 +54,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
     public async Task AViewerReadsAccountsButNeverTheirPasswords()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView created = await administrator.CreatedAccountAsync(Request(name: "Driver share", hosts: ["files.corp.example", "10.0.0.5"]));
+        AccountView created = await administrator.CreatedAccountAsync(Request() with { Name = "Driver share", Hosts = ["files.corp.example", "10.0.0.5"] });
 
         Assert.Equal("Driver share", created.Name);
         Assert.Equal(@"CORP\svc-ddt", created.UserName);
@@ -111,8 +111,8 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         SignedInClient administrator = await application.AdministratorAsync();
         string name = $"Unproved {Guid.NewGuid():N}";
 
-        HttpResponseMessage unproved = await administrator.CreateAccountAsync(Request(name: name), null);
-        HttpResponseMessage wrong = await administrator.CreateAccountAsync(Request(name: name), "not a token");
+        HttpResponseMessage unproved = await administrator.CreateAccountAsync(Request() with { Name = name }, null);
+        HttpResponseMessage wrong = await administrator.CreateAccountAsync(Request() with { Name = name }, "not a token");
 
         Assert.Equal(HttpStatusCode.Forbidden, unproved.StatusCode);
         Assert.Equal("stepAccount.reauthenticate", await CodeAsync(unproved));
@@ -123,7 +123,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
             Assert.Equal(["account"], problem.RootElement.GetProperty("fields").EnumerateArray().Select(field => field.GetString()));
         }
 
-        AccountView created = await administrator.CreatedAccountAsync(Request(name: name));
+        AccountView created = await administrator.CreatedAccountAsync(Request() with { Name = name });
 
         Assert.Equal(HttpStatusCode.Forbidden, (await administrator.SaveAccountAsync(created.Id, Keep(created) with { RunAs = true }, null)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await administrator.DeleteAccountAsync(created.Id, null)).StatusCode);
@@ -173,7 +173,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
     {
         SignedInClient administrator = await application.AdministratorAsync();
         string proof = await administrator.TokenAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example", "backup.corp.example"]));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example", "backup.corp.example"] });
 
         SaveAccountRequest[] refused =
         [
@@ -201,8 +201,16 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.EndsWith("for a new destination: domain.", refusals[1].Detail, StringComparison.Ordinal);
         Assert.EndsWith("for a new destination: hosts.", refusals[3].Detail, StringComparison.Ordinal);
         Assert.All(audit, e => Assert.DoesNotContain(Password, e.Detail ?? "", StringComparison.Ordinal));
+    }
 
-        // Fewer servers, the same names in another case, or the password entered again, reach nothing it was not entered for.
+    // Fewer servers, the same names in another case, or the password entered again, reach nothing it was not entered for.
+    [Fact]
+    public async Task FewerServersOrThePasswordEnteredAgainAreSaved()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        string proof = await administrator.TokenAsync();
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example", "backup.corp.example"] });
+
         AccountView fewer = await RegisteredMachine.ReadAsync<AccountView>(
             await administrator.SaveAccountAsync(account.Id, Keep(account) with { Hosts = ["files.corp.example"], UserName = @"corp\SVC-DDT" }, proof));
 
@@ -235,7 +243,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
     {
         SignedInClient administrator = await application.AdministratorAsync();
         string proof = await administrator.TokenAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(password: null));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Password = Secret(null) });
 
         Assert.False(account.Password.IsSet);
         Assert.Null(account.Password.UpdatedUtc);
@@ -294,12 +302,14 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         AccountView taken = await administrator.CreatedAccountAsync(Request());
 
         HttpResponseMessage response = await administrator.CreateAccountAsync(
-            Request(
-                name: taken.Name.ToUpperInvariant(),
-                userName: "svc-ddt",
-                domain: "not a domain",
-                hosts: ["files.corp.example", "FILES.corp.example", "files@SSL", ""],
-                password: new string('x', AccountLimits.MaxPasswordLength + 1)),
+            Request() with
+            {
+                Name = taken.Name.ToUpperInvariant(),
+                UserName = "svc-ddt",
+                Domain = "not a domain",
+                Hosts = ["files.corp.example", "FILES.corp.example", "files@SSL", ""],
+                Password = Secret(new string('x', AccountLimits.MaxPasswordLength + 1)),
+            },
             proof);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -312,12 +322,12 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.Equal(["stepAccount.passwordLength"], await ErrorCodesAsync(response, "password"));
 
         HttpResponseMessage many = await administrator.CreateAccountAsync(
-            Request(hosts: [.. Enumerable.Range(0, AccountLimits.MaxHosts + 1).Select(n => $"files{n}.corp.example")]),
+            Request() with { Hosts = [.. Enumerable.Range(0, AccountLimits.MaxHosts + 1).Select(n => $"files{n}.corp.example")] },
             proof);
         Assert.Equal(["stepAccount.tooManyHosts"], await ErrorCodesAsync(many, "hosts"));
 
         // Both forms of a qualified name, and no domain at all, are fine.
-        Assert.Equal(HttpStatusCode.Created, (await administrator.CreateAccountAsync(Request(userName: "svc@corp.example", domain: null, hosts: []), proof)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await administrator.CreateAccountAsync(Request() with { UserName = "svc@corp.example", Domain = null, Hosts = [] }, proof)).StatusCode);
     }
 
     // A run of a sequence that names it would fail at the step, after the disk was erased.
@@ -326,7 +336,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
     {
         SignedInClient administrator = await application.AdministratorAsync();
         string proof = await administrator.TokenAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(runAs: true));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { RunAs = true });
         RunScriptStep script = Script(account.Id);
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(
             new GroupStep { Id = Guid.NewGuid(), Name = "Tools", Steps = [script] }));
@@ -367,7 +377,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         ChannelReader<JsonElement> changed = listener.Listen<JsonElement>(LiveEvents.AccountChanged);
         ChannelReader<JsonElement> removed = listener.Listen<JsonElement>(LiveEvents.AccountsRemoved);
 
-        AccountView account = await administrator.CreatedAccountAsync(Request(name: $"Pushed {Guid.NewGuid():N}", runAs: true));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Name = $"Pushed {Guid.NewGuid():N}", RunAs = true });
         JsonElement pushed = await LiveListener.NextAsync(changed, e => e.GetProperty("id").GetGuid() == account.Id);
 
         Assert.True(pushed.GetProperty("password").GetProperty("isSet").GetBoolean());
@@ -400,7 +410,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
     public async Task APasswordThatNoLongerDecryptsIsShownAndCannotBeKept()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        AccountView account = await administrator.CreatedAccountAsync(Request(runAs: true));
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { RunAs = true });
         string foreign = application.Services.GetRequiredService<AccountProtector>().Protect(Guid.NewGuid(), Password);
 
         await application.QueryAsync(database => database.Accounts

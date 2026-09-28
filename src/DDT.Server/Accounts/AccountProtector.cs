@@ -7,9 +7,8 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Accounts;
 
-// Passwords of accounts are encrypted with the key ring that already protects settings, cookies and machine tokens. The
-// purpose names the account, so a password copied into another account's row, whose destinations may differ, does not
-// decrypt there. As for settings, this protects a copy of the database alone, not the store volume, where the key ring is.
+// The purpose names the account, so a password copied into another account's row, with other destinations, does not
+// decrypt there. Like the settings' secrets, this protects a copy of the database, not the volume the key ring is on.
 public sealed class AccountProtector(IDataProtectionProvider provider)
 {
     private const string Purpose = "DDT.Accounts";

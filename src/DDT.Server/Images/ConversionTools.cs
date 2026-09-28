@@ -7,9 +7,8 @@ using System.Text;
 
 namespace DDT.Server.Images;
 
-// The programs that turn a disk image DDT cannot read itself into a raw disk: qemu-img for qcow2 and xz for .xz. They
-// are found on PATH, and on Windows also where QEMU's installer puts qemu-img. The container image installs both.
-// find stands in for the search in tests.
+// qemu-img for qcow2 and xz for .xz, found on PATH, and on Windows also where QEMU's installer puts qemu-img. The
+// container image installs both; find stands in for the search in tests.
 public sealed class ConversionTools(Func<string, string?> find)
 {
     public const string QemuImg = "qemu-img";

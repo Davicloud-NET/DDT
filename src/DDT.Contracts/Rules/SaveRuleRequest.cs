@@ -7,9 +7,10 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts.Rules;
 
-// Creates a rule at the end of the list, or saves one. Revision is the one the page last read, and a save over a newer
-// one is refused with the rule as it is now; a new rule has none to name.
+// Creates a rule at the end of the list, or saves one.
 public sealed record SaveRuleRequest(
+    // The one the page last read; a save over a newer one is refused with the rule as it is now. A new rule has none
+    // to name.
     long Revision,
     string Name,
     string? Description,

@@ -8,9 +8,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Authentication;
 
-// Identity's refusals, each in Identity's own words and code, with the message it says kept beside the error, so a
-// validation problem can carry its code for the web. The table holds the errors weakly: they go when their result
-// does.
+// Keeps the ServerMessage of each error beside it, so a validation problem can carry its code for the web. The table
+// holds the errors weakly, so they go with their result.
 public sealed class DdtIdentityErrorDescriber : IdentityErrorDescriber
 {
     private static readonly ConditionalWeakTable<IdentityError, ServerMessage> s_messages = [];

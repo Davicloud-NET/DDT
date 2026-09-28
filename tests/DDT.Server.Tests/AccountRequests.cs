@@ -18,22 +18,13 @@ internal static class AccountRequests
 
     public const string Password = "Share <pass> & \"7\"";
 
-    public static SaveAccountRequest Request(
-        string? name = null,
-        string userName = @"CORP\svc-ddt",
-        string? domain = "corp.example",
-        IReadOnlyList<string>? hosts = null,
-        bool runAs = false,
-        string? password = Password,
-        long revision = 0) =>
-        new(
-            revision,
-            name ?? $"Account {Guid.NewGuid():N}",
-            userName,
-            domain,
-            hosts ?? ["files.corp.example"],
-            runAs,
-            password is null ? new SecretUpdate(SecretAction.Keep, null) : new SecretUpdate(SecretAction.Set, password));
+    // A new account; a test changes what it is about with a with expression.
+    public static SaveAccountRequest Request() =>
+        new(0, $"Account {Guid.NewGuid():N}", @"CORP\svc-ddt", "corp.example", ["files.corp.example"], false, Secret(Password));
+
+    // Sets the password, or keeps the stored one for null.
+    public static SecretUpdate Secret(string? password) =>
+        password is null ? new SecretUpdate(SecretAction.Keep, null) : new SecretUpdate(SecretAction.Set, password);
 
     // A save of the view as it is, with the password kept.
     public static SaveAccountRequest Keep(AccountView view) =>

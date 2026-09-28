@@ -30,8 +30,8 @@ public enum CertificateAction
     // A server certificate from the existing root, because a configured name was missing from the served one.
     Reissued,
 
-    // A new root and a server certificate from it, in place of the self-signed certificate DDT generated before it had a
-    // root. Boot images built before pin that certificate and have to be built again once.
+    // A new root and a server certificate from it, replacing the self-signed certificate of a DDT without a root. Boot
+    // images that pin that certificate have to be built again once.
     Migrated,
 
     // A pair from the settings page, uploaded or generated, served provisionally until it is confirmed.

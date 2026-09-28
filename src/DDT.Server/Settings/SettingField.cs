@@ -6,20 +6,6 @@ using System.Text.Json;
 
 namespace DDT.Server.Settings;
 
-public enum SettingFieldKind
-{
-    // One value: a text, a number, a switch, or a list kept as comma separated text.
-    Value,
-
-    // A map or a list, which configuration sets and locks as a whole, never entry by entry.
-    Collection,
-
-    // Written, never read back. It is stored encrypted, and the page only learns whether it is set.
-    Secret,
-}
-
-// One field of a section. Path is its configuration key below the section, such as Domain:Name. The page and the stored
-// document both name it in camel case, domain.name, so that a field reads the same everywhere but in configuration.
 public sealed class SettingField
 {
     public SettingField(
@@ -40,8 +26,10 @@ public sealed class SettingField
         Name = string.Join('.', Segments);
     }
 
+    // The configuration key below the section, such as Domain:Name.
     public string Path { get; }
 
+    // Path in camel case, such as domain.name, so the page and the stored document name the field alike.
     public string Name { get; }
 
     // Where the stored document and the serialized options keep it.

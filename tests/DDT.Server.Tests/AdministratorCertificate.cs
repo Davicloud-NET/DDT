@@ -28,9 +28,9 @@ internal static class AdministratorCertificate
         return new PemPair(certificate.ExportCertificatePem(), key.ExportPkcs8PrivateKeyPem());
     }
 
-    // On Windows, serving a chain puts its CA certificates into the user's Intermediate Certification Authorities store,
-    // and every test run makes new CAs under the same names. With a few dozen CAs of one name in that store, Windows stops
-    // building chains for the name, so the CAs made here are taken out of it again when the tests end.
+    // On Windows, serving a chain puts its CAs into the user's Intermediate Certification Authorities store, and with a
+    // few dozen CAs of one name there Windows stops building chains for it. So the CAs made here are taken out again
+    // when the tests end.
     private static readonly ConcurrentBag<string> s_authorities = [];
 
     static AdministratorCertificate() => AppDomain.CurrentDomain.ProcessExit += (_, _) => ForgetAuthorities();

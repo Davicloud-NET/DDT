@@ -33,15 +33,7 @@ public sealed class MachineAuthenticationHandler(
             return AuthenticateResult.NoResult();
         }
 
-        string token = header[BearerPrefix.Length..];
-        MachineTokenPurpose purpose = MachineTokenPurpose.Session;
-        MachineTokenPayload? payload = tokens.Validate(token, purpose);
-
-        if (payload is null)
-        {
-            purpose = MachineTokenPurpose.Poll;
-            payload = tokens.Validate(token, purpose);
-        }
+        (MachineTokenPurpose purpose, MachineTokenPayload? payload) = Validate(header[BearerPrefix.Length..]);
 
         if (payload is null)
         {
@@ -58,24 +50,9 @@ public sealed class MachineAuthenticationHandler(
             return AuthenticateResult.Fail("The machine token has been superseded.");
         }
 
-        // A poll token only lets a waiting machine learn that it was approved. Content needs a session
-        // token, which exists only while an approval stands: a failed deployment keeps it, so the machine
-        // can report and be given another image. Done takes no token at all.
-        bool allowed = purpose == MachineTokenPurpose.Session
-            ? machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
-            : machine.State is MachineState.Pending or MachineState.Approved;
-
-        if (!allowed)
+        if (Refusal(machine, payload, purpose) is { } refusal)
         {
-            return AuthenticateResult.Fail($"Machine {machine.Id} is {machine.State} and holds no grants for a {purpose} token.");
-        }
-
-        // Binding detects mistakes and casual replay. It is not device identity: an attacker can
-        // set both values freely.
-        if (!string.Equals(machine.SmbiosUuid, payload.SmbiosUuid, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(machine.PrimaryMac, payload.PrimaryMac, StringComparison.OrdinalIgnoreCase))
-        {
-            return AuthenticateResult.Fail("The machine token does not match the machine record.");
+            return AuthenticateResult.Fail(refusal);
         }
 
         ClaimsIdentity identity = new(
@@ -90,5 +67,39 @@ public sealed class MachineAuthenticationHandler(
         return AuthenticateResult.Success(new AuthenticationTicket(
             new ClaimsPrincipal(identity),
             DdtAuthenticationSchemes.Machine));
+    }
+
+    private (MachineTokenPurpose Purpose, MachineTokenPayload? Payload) Validate(string token)
+    {
+        MachineTokenPurpose purpose = MachineTokenPurpose.Session;
+        MachineTokenPayload? payload = tokens.Validate(token, purpose);
+
+        if (payload is null)
+        {
+            purpose = MachineTokenPurpose.Poll;
+            payload = tokens.Validate(token, purpose);
+        }
+
+        return (purpose, payload);
+    }
+
+    // A poll token only lets a waiting machine learn that it was approved. Content needs a session token, which exists
+    // only while an approval stands: a failed deployment keeps it, so the machine can report and be given another image.
+    private static string? Refusal(Machine machine, MachineTokenPayload payload, MachineTokenPurpose purpose)
+    {
+        bool allowed = purpose == MachineTokenPurpose.Session
+            ? machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed
+            : machine.State is MachineState.Pending or MachineState.Approved;
+
+        if (!allowed)
+        {
+            return $"Machine {machine.Id} is {machine.State} and holds no grants for a {purpose} token.";
+        }
+
+        // Binding detects mistakes and casual replay. It is not device identity: an attacker can set both values freely.
+        return string.Equals(machine.SmbiosUuid, payload.SmbiosUuid, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(machine.PrimaryMac, payload.PrimaryMac, StringComparison.OrdinalIgnoreCase)
+                ? null
+                : "The machine token does not match the machine record.";
     }
 }

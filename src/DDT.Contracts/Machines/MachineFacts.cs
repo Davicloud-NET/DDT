@@ -5,10 +5,7 @@
 namespace DDT.Contracts.Machines;
 
 // What the agent found out about the machine besides its identity, for conditions and rules to test and for the
-// machine's page. Every member is null where the agent could not tell. The network members are the primary adapter's,
-// the one PrimaryMac names. SystemVersion, SystemFamily and SystemSku are the SMBIOS system's (type 1), AssetTag its
-// enclosure's (type 3), BaseboardProduct the baseboard's (type 2), and BiosVersion and BiosDate the BIOS's (type 0),
-// the date as yyyy-MM-dd. TpmVersion is 2.0 or 1.2.
+// machine's page. Every member is null where the agent could not tell.
 public sealed record MachineFacts
 {
     public long? MemoryMegabytes { get; init; }
@@ -21,10 +18,12 @@ public sealed record MachineFacts
 
     public bool? TpmPresent { get; init; }
 
+    // 2.0 or 1.2.
     public string? TpmVersion { get; init; }
 
     public bool? SecureBootCapable { get; init; }
 
+    // The network members are the primary adapter's, the one PrimaryMac names.
     public string? IPv4Address { get; init; }
 
     public int? IPv4PrefixLength { get; init; }
@@ -35,17 +34,22 @@ public sealed record MachineFacts
 
     public string? DhcpServer { get; init; }
 
+    // SystemVersion, SystemFamily and SystemSku come from SMBIOS type 1.
     public string? SystemVersion { get; init; }
 
     public string? SystemFamily { get; init; }
 
     public string? SystemSku { get; init; }
 
+    // The enclosure's, SMBIOS type 3.
     public string? AssetTag { get; init; }
 
+    // SMBIOS type 2.
     public string? BaseboardProduct { get; init; }
 
+    // BiosVersion and BiosDate come from SMBIOS type 0.
     public string? BiosVersion { get; init; }
 
+    // yyyy-MM-dd.
     public string? BiosDate { get; init; }
 }

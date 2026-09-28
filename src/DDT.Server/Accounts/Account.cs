@@ -4,9 +4,8 @@
 
 namespace DDT.Server.Accounts;
 
-// An account steps use, see AccountView, bound to its destinations: Domain, the domain a join with it may join, Hosts,
-// the share hosts it may connect to, as DdtJsonContext writes a list of strings, and RunAs, whether a script may run as
-// it. ProtectedPassword is the password as AccountProtector protects it for this account, null when none is set.
+// An account steps use, bound to where it may go: Domain for a join, Hosts (JSON) for shares, RunAs for scripts.
+// ProtectedPassword is encrypted for this account by AccountProtector; null when none is set.
 public sealed class Account
 {
     public Guid Id { get; set; }

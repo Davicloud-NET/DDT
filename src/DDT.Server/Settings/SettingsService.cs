@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using DDT.Contracts.Settings;
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,10 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Registered after DatabaseInitializer, so the schema exists when it starts. It imports and loads the store before
-// the host binds its listeners, because every hosted service finishes starting before the server starts, so the first
-// request already sees the stored settings. Then it polls every 15 seconds for what other processes saved, and for how
-// other hosts applied it.
+// Registered after DatabaseInitializer, so the schema exists. It imports and loads the store as it starts, before the
+// server binds its listeners, so the first request sees the stored settings; then it polls every 15 seconds for other
+// processes' saves and applies.
 public sealed partial class SettingsService(
     IServiceScopeFactory scopes,
     DdtSettings settings,
@@ -33,10 +31,8 @@ public sealed partial class SettingsService(
     {
         using (IServiceScope scope = scopes.CreateScope())
         {
-            SettingsStore store = scope.ServiceProvider.GetRequiredService<SettingsStore>();
-
-            await store.ImportAsync(cancellationToken).ConfigureAwait(false);
-            settings.Publish(await store.LoadAsync(cancellationToken).ConfigureAwait(false));
+            await scope.ServiceProvider.GetRequiredService<SettingsImporter>().ImportAsync(cancellationToken).ConfigureAwait(false);
+            settings.Publish(await scope.ServiceProvider.GetRequiredService<SettingsStore>().LoadAsync(cancellationToken).ConfigureAwait(false));
         }
 
         hostStates.Changed = PushAsync;

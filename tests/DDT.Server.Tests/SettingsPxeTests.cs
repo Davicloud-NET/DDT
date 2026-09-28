@@ -6,7 +6,6 @@ using System.Net;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Pxe;
-using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;

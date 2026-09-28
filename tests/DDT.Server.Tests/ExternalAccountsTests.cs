@@ -8,7 +8,6 @@ using DDT.Server.Authentication;
 using DDT.Server.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace DDT.Server.Tests;

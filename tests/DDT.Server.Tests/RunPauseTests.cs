@@ -56,20 +56,17 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         AgentRun run = (await machine.NextAsync()).Run!;
 
         Assert.Equal(runId, run.Id);
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, [], activity: RunActivity.Preparing));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
 
         return new Paused(machine, run, before, pause, after);
     }
 
-    private static AgentRunReport PausedAt(Paused paused, int pass = 1, string message = "Check the BIOS of 0000-0000.")
-    {
-        AgentRunReport report = Report(
-            DeploymentState.Running,
-            [Visit(paused.Before, StepState.Done), Visit(paused.Pause, StepState.Running, pass)],
-            activity: RunActivity.Paused);
-
-        return report with { PauseMessage = message };
-    }
+    private static AgentRunReport PausedAt(Paused paused, int pass = 1, string message = "Check the BIOS of 0000-0000.") =>
+        Report(DeploymentState.Running, [Visit(paused.Before, StepState.Done), Visit(paused.Pause, StepState.Running, pass)]) with
+        {
+            Activity = RunActivity.Paused,
+            PauseMessage = message,
+        };
 
     private static async Task<AgentRunReportResult> ReportedAsync(DeployingMachine machine, Guid runId, AgentRunReport report)
     {
@@ -82,7 +79,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         client.PostAsync($"/api/machines/{machineId}/deployments/current/continue", new ContinueRunRequest(stepId, pass));
 
     [Fact]
-    public async Task AnOperatorContinuesThePauseThePageShowedAndTheAgentLearnsItUntilThePauseIsOver()
+    public async Task ThePageAndTheListShowThePauseTheRunWaitsAt()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         Paused paused = await AssignedAsync();
@@ -106,6 +103,15 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         {
             Assert.Equal(HttpStatusCode.Forbidden, (await ContinueAsync(viewer, machine.Id, paused.Pause.Id, 1)).StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task AnOperatorContinuesThePauseThePageShowedAndTheAgentLearnsItUntilThePauseIsOver()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Paused paused = await AssignedAsync();
+        using DeployingMachine machine = paused.Machine;
+        await ReportedAsync(machine, paused.Run.Id, PausedAt(paused));
 
         // A click meant for another visit, or another step, continues nothing, and is answered with the run as it is.
         HttpResponseMessage later = await ContinueAsync(administrator, machine.Id, paused.Pause.Id, 2);
@@ -154,7 +160,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
 
         await machine.ReportOkAsync(
             paused.Run.Id,
-            Report(DeploymentState.Running, [Visit(paused.Before, StepState.Running)], activity: RunActivity.Paused) with { PauseMessage = "Not a pause." });
+            Report(DeploymentState.Running, [Visit(paused.Before, StepState.Running)]) with { Activity = RunActivity.Paused, PauseMessage = "Not a pause." });
 
         Deployment notPaused = await application.QueryAsync(database => database.Deployments.AsNoTracking().SingleAsync(d => d.Id == paused.Run.Id, Cancellation));
         Assert.Null(notPaused.PauseStepId);

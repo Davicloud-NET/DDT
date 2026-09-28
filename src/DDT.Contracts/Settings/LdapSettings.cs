@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section ldap. Secrets: bindPassword. GroupRoleMap maps a group's distinguished name to a role.
+// The section ldap. Secrets: bindPassword.
 public sealed record LdapSettings(
     bool Enabled,
     string Host,
@@ -17,12 +17,6 @@ public sealed record LdapSettings(
     string DisplayNameAttribute,
     string EmailAttribute,
     bool ResolveNestedGroups,
+    // A group's distinguished name to a role.
     IReadOnlyDictionary<string, string> GroupRoleMap,
     TimeSpan Timeout);
-
-public enum DirectoryTransport
-{
-    Ldaps,
-    StartTls,
-    UnencryptedDangerous,
-}

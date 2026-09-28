@@ -24,58 +24,51 @@ public sealed class ImageUploadSessions(
 
         // Under the library lock, so two requests for the same file find one session, and two new sessions cannot
         // both pass the free space check that counts the other one.
-        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await using SemaphoreHold hold = await store.LibraryLock.EnterAsync(cancellationToken).ConfigureAwait(false);
 
-        try
+        List<ImageUpload> open = await database.ImageUploads
+            .Where(u => u.CompletedSha256 == null)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // The same file selected again, after a reload or in a second tab, continues where it stopped.
+        ImageUpload? found = open.FirstOrDefault(u =>
+            u.FileName == request.FileName
+            && u.Length == request.Length
+            && u.LastModified == request.LastModified
+            && u.Kind == request.Kind);
+
+        if (found is not null)
         {
-            List<ImageUpload> open = await database.ImageUploads
-                .Where(u => u.CompletedSha256 == null)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            // The same file selected again, after a reload or in a second tab, continues where it stopped.
-            ImageUpload? found = open.FirstOrDefault(u =>
-                u.FileName == request.FileName
-                && u.Length == request.Length
-                && u.LastModified == request.LastModified
-                && u.Kind == request.Kind);
-
-            if (found is not null)
-            {
-                return new UploadCreation(Session(found), Created: false, 0, 0);
-            }
-
-            // Decimal, because nothing limits how many sessions are open.
-            decimal required = request.Length + open.Sum(u => (decimal)(u.Length - u.Offset)) + ImageUploadLimits.FreeSpaceMargin;
-            long available = store.Volume().AvailableFreeSpace;
-
-            if (available < required)
-            {
-                return new UploadCreation(null, Created: false, (long)Math.Min(required, long.MaxValue), available);
-            }
-
-            DateTimeOffset now = timeProvider.GetUtcNow();
-            ImageUpload upload = new()
-            {
-                Id = Guid.CreateVersion7(now),
-                FileName = request.FileName,
-                Length = request.Length,
-                LastModified = request.LastModified,
-                Kind = request.Kind,
-                CreatedByUserId = userId,
-                CreatedUtc = now,
-                UpdatedUtc = now,
-            };
-
-            database.ImageUploads.Add(upload);
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            return new UploadCreation(Session(upload), Created: true, 0, 0);
+            return new UploadCreation(Session(found), Created: false, 0, 0);
         }
-        finally
+
+        // Decimal, because nothing limits how many sessions are open.
+        decimal required = request.Length + open.Sum(u => (decimal)(u.Length - u.Offset)) + ImageUploadLimits.FreeSpaceMargin;
+        long available = store.Volume().AvailableFreeSpace;
+
+        if (available < required)
         {
-            store.LibraryLock.Release();
+            return new UploadCreation(null, Created: false, (long)Math.Min(required, long.MaxValue), available);
         }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        ImageUpload upload = new()
+        {
+            Id = Guid.CreateVersion7(now),
+            FileName = request.FileName,
+            Length = request.Length,
+            LastModified = request.LastModified,
+            Kind = request.Kind,
+            CreatedByUserId = userId,
+            CreatedUtc = now,
+            UpdatedUtc = now,
+        };
+
+        database.ImageUploads.Add(upload);
+        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return new UploadCreation(Session(upload), Created: true, 0, 0);
     }
 
     public async Task<IReadOnlyList<ImageUploadSession>> ListOpenAsync(CancellationToken cancellationToken)

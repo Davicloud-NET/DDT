@@ -36,8 +36,8 @@ public static class ServerCertificateExtensions
             kestrel.ConfigureHttpsDefaults(https =>
             {
                 // The selector keeps Kestrel from loading Kestrel:Certificates:Default itself, but a selected
-                // certificate goes out without the intermediates of an administrator's certificate. So each
-                // connection is handed the context instead, which carries them, and remembers which pair it got.
+                // certificate goes out without its intermediates. So each connection gets the context, which carries
+                // them, and remembers the pair it got.
                 https.ServerCertificateSelector = (_, _) => certificates.Current;
                 https.OnAuthenticate = (connection, tls) =>
                 {

@@ -4,13 +4,11 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Cryptography.X509Certificates;
 using DDT.Contracts.Settings;
 using DDT.Server.Certificates;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -131,7 +129,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
         Assert.Equal(HttpStatusCode.Forbidden, (await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names)).StatusCode);
 
         SettingsSectionView<CertificateSettings> saved = await RegisteredMachine.ReadAsync<SettingsSectionView<CertificateSettings>>(
-            await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names, reauthentication: await administrator.TokenAsync()));
+            await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names, new(Reauthentication: await administrator.TokenAsync())));
 
         Assert.Contains("ddt2.corp.example", saved.Values.SubjectAlternativeNames);
 
@@ -139,7 +137,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             SettingsSectionNames.Certificate + "/names",
             saved.Version,
             new CertificateSettings(["not a name!"]),
-            reauthentication: await administrator.TokenAsync());
+            new(Reauthentication: await administrator.TokenAsync()));
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         Assert.Contains("subjectAlternativeNames", (await SettingsRequests.ProblemsAsync(invalid)).Errors.Keys);
 
@@ -147,7 +145,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             SettingsSectionNames.Certificate + "/names",
             saved.Version,
             before.Names.Values,
-            reauthentication: await administrator.TokenAsync());
+            new(Reauthentication: await administrator.TokenAsync()));
     }
 
     // A PFX, a key under a password or TLS at a proxy is managed by hand.

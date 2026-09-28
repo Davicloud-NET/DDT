@@ -9,9 +9,8 @@ using DDT.Core.Disks;
 
 namespace DDT.Server.Images;
 
-// Judges a raw disk image by the file firmware starts from its EFI system partition, \EFI\BOOT\BOOTX64.EFI, which is
-// also the file the boot entry DDT writes starts. The shims beside a distribution's boot loader only explain a
-// fallback file that is not signed.
+// Judges a raw disk image by \EFI\BOOT\BOOTX64.EFI, the file firmware starts from its EFI system partition and the one
+// DDT's boot entry starts. The shims beside a distribution's boot loader only explain a fallback that is not signed.
 public static class BootCapabilities
 {
     // For a sentence such as "noble will not start with Secure Boot on": an image whose boot file is not signed for it will

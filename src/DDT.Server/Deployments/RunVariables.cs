@@ -9,9 +9,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// The variables of a run as its agent reports them, stored as Deployment.Variables: each by name, merged into what the
-// run has, since the agent sends them only when they changed. They come from outside, so they are held to the bounds the
-// agent keeps, and an Account input's name is never one: its answer is a password.
+// A run's variables as its agent reports them, only when they change, so merged into what the run has. They come from
+// outside, so they keep the agent's bounds, and never take an Account input's name: its answer is a password.
 public static partial class RunVariables
 {
     // As many as a sequence declares, and the values as long as an answer may be.
@@ -36,9 +35,8 @@ public static partial class RunVariables
         }
     }
 
-    // What the run has with the reported variables merged in by name, or null when that is what it has already. A name
-    // that is not one, or names an Account input, is left out; a value loses its NULs and is cut to MaxValueLength; and a
-    // new name beyond MaxCount is left out.
+    // The stored variables with the reported ones merged in, or null when nothing changes. Names that are none or an Account
+    // input's, and new names beyond MaxCount, are left out; values lose their NULs and are cut to MaxValueLength.
     public static string? Merged(string? stored, IReadOnlyDictionary<string, string>? reported, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);

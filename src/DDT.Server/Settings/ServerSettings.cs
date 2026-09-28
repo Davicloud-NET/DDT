@@ -10,9 +10,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace DDT.Server.Settings;
 
-// What configuration alone decides, for the page's read-only server panel. A value is shown only from the list below;
-// every other key shows only whether it is set and where. A key whose last segment is Password, Secret, Key or Headers,
-// and every connection string, is secret by rule and never shows a value.
+// What configuration alone decides, for the page's read-only server panel. Only the keys below show a value, any other
+// only whether it is set and where; a key whose last segment is Password, Secret, Key or Headers, and every connection
+// string, never does.
 public static class ServerSettings
 {
     private static readonly string[] s_shown =

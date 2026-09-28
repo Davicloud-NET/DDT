@@ -9,9 +9,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Accounts;
 
-// What an account, stored or given for one run, may hold, and which server a share path names. The same rules check the
-// Accounts page, the answers to account inputs and every share a step connects, so a password goes to no server its
-// account does not name.
+// What an account may hold and which server a share path names. The Accounts page, account inputs and every share a
+// step connects use the same rules, so a password goes to no server its account does not name.
 public static class AccountRules
 {
     // Besides control characters, which no part of a share path holds.
@@ -48,9 +47,8 @@ public static class AccountRules
 
     public static bool Allows(IEnumerable<string> hosts, string host) => hosts.Contains(host, StringComparer.OrdinalIgnoreCase);
 
-    // The server of \\server\share, with folders after the share or not, or null when the path is not such a path. A
-    // part that walks up (. or ..) or holds a character a share path cannot is refused, so the path an agent connects is
-    // the one whose server was checked.
+    // The server of \\server\share, with folders or not, or null. A part that walks up (. or ..) or holds a character no
+    // share path can is refused, so the path an agent connects is the one whose server was checked.
     public static string? ShareHost(string? path)
     {
         if (path is null || !path.StartsWith(@"\\", StringComparison.Ordinal))

@@ -12,13 +12,8 @@ namespace DDT.Server.Settings;
 // on in further rows.
 internal static class SettingsAudit
 {
-    public static IEnumerable<AuditEvent> Rows(
-        string action,
-        string section,
-        SettingsActor actor,
-        DateTimeOffset now,
-        string lead,
-        IReadOnlyList<string> changes)
+    // The detail of each row: the lead, then as many changes as fit.
+    public static List<string> Details(string lead, IReadOnlyList<string> changes)
     {
         List<string> details = [];
         StringBuilder detail = new(lead);
@@ -40,16 +35,7 @@ internal static class SettingsAudit
 
         details.Add(detail.ToString());
 
-        return details.Select(text => new AuditEvent
-        {
-            OccurredUtc = now,
-            Action = action,
-            ActorUserId = actor.UserId,
-            ActorName = actor.Name,
-            SubjectId = section,
-            SourceAddress = actor.Address,
-            Detail = StoredText.Bound(text, AuditEvent.MaxDetailLength),
-        });
+        return details;
     }
 
     // What changed between two documents, field by field. A map or a list names only the entries added, removed or

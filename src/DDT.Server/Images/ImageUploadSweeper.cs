@@ -10,9 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Removes what abandoned uploads leave behind: open sessions nobody continued for a day with their part files,
-// completed sessions a day after they finished, and part files that belong to no session. The library itself is
-// never swept.
+// Removes sessions nobody continued for a day with their part files, completed sessions a day after they finished, and
+// part files of no session. The library itself is never swept.
 public sealed partial class ImageUploadSweeper(
     IServiceScopeFactory scopes,
     ImageStore store,

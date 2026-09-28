@@ -4,7 +4,8 @@
 
 namespace DDT.Server.Settings;
 
-// The levels of the logging section. The defaults used to be in appsettings.json, where a key locks its field.
+// The levels of the logging section. The defaults live here rather than in appsettings.json, where a key would lock its
+// field.
 public sealed class LoggingOptions
 {
     public const string SectionName = "Logging";

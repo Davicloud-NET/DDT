@@ -4,11 +4,11 @@
 
 namespace DDT.Contracts.About;
 
-// LegalDocuments: the paths /api/about/legal/{path} serves, relative to the legal folder, with forward slashes.
 public sealed record AboutInfo(
     string Product,
     string Version,
     string Attribution,
     string License,
     string SourceUrl,
+    // The paths /api/about/legal/{path} serves, relative to the legal folder, with forward slashes.
     IReadOnlyList<string> LegalDocuments);

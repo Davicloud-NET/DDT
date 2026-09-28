@@ -281,7 +281,7 @@ export function treeRunSummary(overrides: Partial<DeploymentSummary> = {}): Depl
     source: "Web",
     requestedBy: "anna",
     stepCount: 11,
-    stepIndex: 13,
+    stepIndex: 9,
     stepName: "Check the asset tag",
     percent: 0,
     phase: "Windows",

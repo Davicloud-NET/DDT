@@ -12,7 +12,8 @@ import {
   type DeploymentStepView,
   type DeploymentSummary,
 } from "@/deployments/deployments";
-import type { StepKind, StepState } from "@/sequences/sequences";
+import { nodeTitle } from "@/sequences/flow/flowKeyboard";
+import type { StepState } from "@/sequences/sequences";
 import type { StateTone } from "@/ui/StateTag";
 
 import type { PathNode, PathState } from "./runPath";
@@ -73,26 +74,12 @@ export const pathStateLabel: Record<PathState, MessageDescriptor> = {
   notTaken: msg`Not taken`,
 };
 
-// A node's title as the flow's cards say it: a container with its kind in front.
-export function nodeTitle(kind: StepKind, name: string): string {
-  switch (kind) {
-    case "if":
-      return t`If: ${name}`;
-    case "group":
-      return t`Group: ${name}`;
-    case "repeat":
-      return t`Repeat: ${name}`;
-    default:
-      return name;
-  }
-}
-
 // Where a node sits: its containers, outermost first, each with the branch of an IF, such as "If: Is it a Latitude?,
 // Then".
 export function crumbText(ancestors: PathNode["ancestors"]): string {
   return ancestors
     .map(({ node, branch }) => {
-      const title = nodeTitle(node.kind, node.name);
+      const title = nodeTitle(node);
 
       return branch === "then" ? t`${title}, Then` : branch === "else" ? t`${title}, Else` : title;
     })

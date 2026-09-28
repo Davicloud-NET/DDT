@@ -15,6 +15,7 @@ import { formattingLocale } from "@/i18n/i18n";
 import { formatDuration } from "@/lib/format";
 import { useLiveMarks } from "@/live/useLiveMarks";
 import type { MachineSummary } from "@/machines/machines";
+import { nodeTitle } from "@/sequences/flow/flowKeyboard";
 import type { SequenceDefinition } from "@/sequences/sequences";
 import { phaseLabel, stepKindLabel } from "@/sequences/steps";
 import { Button } from "@/ui/Button";
@@ -23,10 +24,12 @@ import { NodeGlyph } from "@/ui/FlowNode";
 import { Panel } from "@/ui/Layout";
 import { StateTag } from "@/ui/StateTag";
 
-import { decisionLine } from "./decisions";
+import type { ResolvedValue } from "@/values/values";
+
+import { decisionLine, runSubjects } from "./decisions";
 import { runPath, type PathNode, type PathRun } from "./runPath";
 import { skipReason, stepDuration, wentOnAfter } from "./runs";
-import { crumbText, nodeTitle, pathStateLabel, pathStateTone, stepStateTone } from "./runView";
+import { crumbText, pathStateLabel, pathStateTone, stepStateTone } from "./runView";
 
 // Every node on the run's path in order: what it is and where it sits in the tree, how it stands, when it ran, why it
 // failed, and what it decided, as the agent recorded it: the branch an IF took, why a node was skipped, when a repeat
@@ -40,6 +43,7 @@ export function RunSteps({
   definition,
   machine,
   run = {},
+  values = [],
   now,
   onShowLog,
 }: {
@@ -50,11 +54,14 @@ export function RunSteps({
   machine: MachineSummary | null;
   // What the agent does and the pause it waits at, for a paused step.
   run?: PathRun;
+  // The run's values, whose names its conditions may test.
+  values?: readonly ResolvedValue[];
   now: number;
   onShowLog: (stepId: string) => void;
 }) {
   const { i18n, t } = useLingui();
   const path = runPath(definition, steps, run);
+  const subjects = runSubjects(definition, values);
   const shown = path.nodes.filter(
     (each): each is PathNode & { step: DeploymentStepView } =>
       each.state !== "notTaken" && each.step !== null,
@@ -82,7 +89,7 @@ export function RunSteps({
           const took = duration === null ? "" : formatDuration(duration);
           const kind = stepKindLabel(step.kind);
           const phase = phaseLabel(step.phase);
-          const decision = decisionLine(each.node, step);
+          const decision = decisionLine(each.node, step, subjects);
           const passes = step.pass ?? 0;
 
           return (
@@ -114,7 +121,7 @@ export function RunSteps({
                 {each.ancestors.length > 0 ? <Crumbs node={each} /> : null}
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="type-label text-ink">
-                    {container ? nodeTitle(each.node.kind, step.name) : step.name}
+                    {container ? nodeTitle({ ...each.node, name: step.name }) : step.name}
                   </span>
                   <StateTag tone={pathStateTone[each.state]}>
                     {each.state === "running" && !container
@@ -126,7 +133,9 @@ export function RunSteps({
                   {started === null
                     ? t`${kind}, ${phase}`
                     : ended === null
-                      ? t`${kind}, ${phase}, started ${started}, running for ${took}`
+                      ? each.state === "paused"
+                        ? t`${kind}, ${phase}, started ${started}, paused for ${took}`
+                        : t`${kind}, ${phase}, started ${started}, running for ${took}`
                       : t`${kind}, ${phase}, ${started} to ${ended}, took ${took}`}
                 </span>
                 {passes > 1 && !container ? (

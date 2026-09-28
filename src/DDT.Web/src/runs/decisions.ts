@@ -4,130 +4,72 @@
 
 import { t } from "@lingui/core/macro";
 
+import {
+  factCatalogue,
+  operatorTakesValue,
+  operatorText,
+  subjectFor,
+  subjectsOf,
+  testText,
+  valueText,
+  type Subject,
+} from "@/conditions/conditions";
 import type { DeploymentStepView } from "@/deployments/deployments";
-import { formattingLocale } from "@/i18n/i18n";
-import { factLabel, factValueText, isFact, isRunVariable } from "@/machines/facts";
-import { conditionOf, testsOf, conditionPath } from "@/sequences/flow/conditionTree";
-import type {
-  ConditionNode,
-  ConditionOperator,
-  SequenceStep,
-  TestCondition,
-} from "@/sequences/sequences";
-import { operatorLabel, operatorTakesValue } from "@/sequences/steps";
+import { conditionOf, conditionPath, testsOf } from "@/sequences/flow/conditionTree";
+import type { SequenceDefinition, SequenceStep, TestCondition } from "@/sequences/sequences";
+import type { ResolvedValue } from "@/values/values";
 
 // Why a run took the path it took, from what the agent recorded when it decided: the tests of an IF, of a node's
 // condition and of a repeat's end, each with whether it held and the value it was tested against. What the machine
-// reports now does not enter into it.
+// reports now does not enter into it. The tests read as the flow builder writes them.
 
-// Facts whose values are numbers or yes and no, which a sentence does not put in quotes.
-const plainFacts: ReadonlySet<string> = new Set(
-  [
-    "MemoryMegabytes",
-    "ProcessorCores",
-    "LogicalProcessors",
-    "TpmPresent",
-    "TpmVersion",
-    "SecureBootCapable",
-    "SecureBootEnabled",
-    "IPv4PrefixLength",
-    "LastStepFailed",
-    "LastExitCode",
-  ].map((name) => name.toLowerCase()),
-);
+// What a run's conditions can name: the machine's facts, the run's own values, the values of rules and machine roles,
+// and the sequence's variables and inputs.
+export function runSubjects(
+  definition: SequenceDefinition | null,
+  values: readonly ResolvedValue[] = [],
+): Subject[] {
+  return subjectsOf({
+    facts: factCatalogue,
+    valueNames: values.map((value) => value.name),
+    variables: definition?.variables ?? [],
+    inputs: definition?.inputs ?? [],
+  });
+}
 
-const yesNoFacts: ReadonlySet<string> = new Set(
-  ["TpmPresent", "SecureBootCapable", "SecureBootEnabled", "LastStepFailed"].map((name) =>
-    name.toLowerCase(),
-  ),
-);
-
-// A test's parts as a sentence shows them: what it tests, how, and the value, in the person's language.
+// A test's parts as a sentence shows them: what it tests, how, and the value; null for a test of whether there is a
+// value at all.
 export interface TestWords {
   subject: string;
   operator: string;
-  // Null for a test of whether there is a value at all.
   value: string | null;
 }
 
-function operatorWords(variable: string, operator: ConditionOperator): string {
-  if (yesNoFacts.has(variable.toLowerCase())) {
-    if (operator === "Equals") {
-      return t`is`;
-    }
+export function testWords(test: TestCondition, subjects: readonly Subject[]): TestWords {
+  const subject = subjectFor(subjects, test.variable);
 
-    if (operator === "NotEquals") {
-      return t`is not`;
-    }
-  }
-
-  return operatorLabel(operator);
-}
-
-function valueWords(variable: string, value: string): string {
-  const shown = isFact(variable) ? factValueText(variable, value) : value;
-
-  return plainFacts.has(variable.toLowerCase()) ? shown : `"${shown}"`;
-}
-
-export function testWords(test: Pick<TestCondition, "variable" | "operator" | "value">): TestWords {
   return {
-    subject: factLabel(test.variable),
-    operator: operatorWords(test.variable, test.operator),
-    value: operatorTakesValue(test.operator) ? valueWords(test.variable, test.value) : null,
+    subject: subject.label,
+    operator: operatorText(test.operator, subject.kind),
+    value: operatorTakesValue(test.operator) ? valueText(subject, test.value) : null,
   };
-}
-
-// A test as one sentence, such as Model contains "Latitude".
-export function testText(test: Pick<TestCondition, "variable" | "operator" | "value">): string {
-  const { subject, operator, value } = testWords(test);
-
-  return value === null ? t`${subject} ${operator}` : t`${subject} ${operator} ${value}`;
-}
-
-// A condition in words: its tests joined with and or or, a none as not.
-export function conditionText(node: ConditionNode): string {
-  if (node.kind === "test") {
-    return testText(node);
-  }
-
-  const parts = node.parts.map((part) =>
-    part.kind === "test" || part.parts.length <= 1
-      ? conditionText(part)
-      : `(${conditionText(part)})`,
-  );
-  const locale = formattingLocale();
-
-  if (parts.length === 0) {
-    return node.kind === "any" ? t`nothing` : t`always`;
-  }
-
-  if (node.kind === "all") {
-    return new Intl.ListFormat(locale, { type: "conjunction" }).format(parts);
-  }
-
-  const either = new Intl.ListFormat(locale, { type: "disjunction" }).format(parts);
-
-  return node.kind === "any" ? either : t`not (${either})`;
 }
 
 // One test as the run decided it.
 export interface TestOutcome {
   path: string;
   // The test, null where the path names nothing in the node, as for a node changed since.
-  test: Pick<TestCondition, "variable" | "operator" | "value"> | null;
+  test: TestCondition | null;
   held: boolean;
   actual: string | null;
 }
 
 // Every test of a node by the path a problem and an evaluation name it with: conditions[0], when, test.parts[1].
-export function testsByPath(
-  node: SequenceStep,
-): Map<string, Pick<TestCondition, "variable" | "operator" | "value">> {
-  const found = new Map<string, Pick<TestCondition, "variable" | "operator" | "value">>();
+export function testsByPath(node: SequenceStep): Map<string, TestCondition> {
+  const found = new Map<string, TestCondition>();
 
   node.conditions.forEach((condition, index) => {
-    found.set(`conditions[${String(index)}]`, condition);
+    found.set(`conditions[${String(index)}]`, { kind: "test", ...condition });
   });
 
   for (const field of ["when", "test", "until"] as const) {
@@ -169,16 +111,17 @@ export function outcomesOf(
     }));
 }
 
-// What an outcome's value was, as a line under its test.
-export function reportedText(outcome: TestOutcome): string {
-  const variable = outcome.test?.variable ?? "";
-  const machine = isFact(variable) && !isRunVariable(variable);
-  const actual =
-    outcome.actual === null
-      ? null
-      : isFact(variable)
-        ? factValueText(variable, outcome.actual)
-        : outcome.actual;
+function actualText(outcome: TestOutcome, subjects: readonly Subject[]): string | null {
+  return outcome.actual === null || outcome.test === null
+    ? outcome.actual
+    : valueText(subjectFor(subjects, outcome.test.variable), outcome.actual);
+}
+
+// What an outcome's value was, as a line under its test: what the machine reported, or the value of the run.
+export function reportedText(outcome: TestOutcome, subjects: readonly Subject[]): string {
+  const machine =
+    outcome.test !== null && subjectFor(subjects, outcome.test.variable).section === "machine";
+  const actual = actualText(outcome, subjects);
 
   if (actual === null) {
     return machine ? t`The machine reported no value.` : t`There was no value.`;
@@ -187,16 +130,10 @@ export function reportedText(outcome: TestOutcome): string {
   return machine ? t`The machine reported ${actual}.` : t`The value was ${actual}.`;
 }
 
-// An outcome as a clause of a decision's line, such as Model contains "Latitude" holds for "Latitude 7450".
-export function outcomeText(outcome: TestOutcome): string {
-  const test = outcome.test === null ? outcome.path : testText(outcome.test);
-  const variable = outcome.test?.variable ?? "";
-  const actual =
-    outcome.actual === null
-      ? null
-      : isFact(variable)
-        ? factValueText(variable, outcome.actual)
-        : outcome.actual;
+// An outcome as a clause of a decision's line, such as Model contains Latitude holds for "Latitude 7450".
+export function outcomeText(outcome: TestOutcome, subjects: readonly Subject[]): string {
+  const test = outcome.test === null ? outcome.path : testText(outcome.test, subjects);
+  const actual = actualText(outcome, subjects);
 
   if (actual === null) {
     return outcome.held ? t`${test} holds, with no value` : t`${test} does not hold, with no value`;
@@ -205,14 +142,18 @@ export function outcomeText(outcome: TestOutcome): string {
   return outcome.held ? t`${test} holds for "${actual}"` : t`${test} does not hold for "${actual}"`;
 }
 
-function clauses(outcomes: readonly TestOutcome[]): string {
-  return outcomes.map(outcomeText).join("; ");
+function clauses(outcomes: readonly TestOutcome[], subjects: readonly Subject[]): string {
+  return outcomes.map((outcome) => outcomeText(outcome, subjects)).join("; ");
 }
 
 // The decision a node's step shows in the list of the run's steps: the branch an IF took, why a node was skipped,
 // or when a repeat stopped, with the tests that decided it. Null where the node decided nothing, or where the agent
 // recorded no tests, as older agents do not.
-export function decisionLine(node: SequenceStep, step: DeploymentStepView | null): string | null {
+export function decisionLine(
+  node: SequenceStep,
+  step: DeploymentStepView | null,
+  subjects: readonly Subject[],
+): string | null {
   if (step === null) {
     return null;
   }
@@ -224,14 +165,14 @@ export function decisionLine(node: SequenceStep, step: DeploymentStepView | null
       return null;
     }
 
-    const reasons = clauses(outcomes);
+    const reasons = clauses(outcomes, subjects);
 
     return t`Skipped: ${reasons}`;
   }
 
   if (node.kind === "if" && step.branch !== null && step.branch !== undefined) {
     const outcomes = outcomesOf(node, step, "test");
-    const reasons = clauses(outcomes);
+    const reasons = clauses(outcomes, subjects);
 
     if (outcomes.length === 0) {
       return step.branch === "Then" ? t`Took Then` : t`Took Else`;
@@ -249,7 +190,7 @@ export function decisionLine(node: SequenceStep, step: DeploymentStepView | null
       return null;
     }
 
-    const reasons = clauses(outcomes);
+    const reasons = clauses(outcomes, subjects);
 
     return outcomes.every((outcome) => outcome.held)
       ? t`Stopped after ${times} of at most ${most} times: ${reasons}`
@@ -259,7 +200,7 @@ export function decisionLine(node: SequenceStep, step: DeploymentStepView | null
   return null;
 }
 
-// The heading of a node's decision in its details: which branch it took, why it was skipped, or when it stopped.
+// The heading of a node's decision in its details: which branch it took, why it was skipped, or how far it went.
 export function decisionTitle(node: SequenceStep, step: DeploymentStepView | null): string | null {
   if (step === null) {
     return null;
@@ -274,15 +215,19 @@ export function decisionTitle(node: SequenceStep, step: DeploymentStepView | nul
   }
 
   if (node.kind === "repeat" && step.iteration !== undefined && step.iteration > 0) {
-    const times = step.iteration;
-    const most = node.maxTimes;
-
-    return step.state === "Running"
-      ? t`Iteration ${times} of at most ${most}`
-      : t`Done after ${times} of at most ${most} times`;
+    return repeatText(node.maxTimes, step);
   }
 
   return null;
+}
+
+// How far a repeat went: the time through its body it is on, or how many it took.
+export function repeatText(most: number, step: DeploymentStepView): string {
+  const times = step.iteration ?? 0;
+
+  return step.state === "Running"
+    ? t`Iteration ${times} of at most ${most}`
+    : t`Done after ${times} of at most ${most} times`;
 }
 
 // The outcomes a node's details show under its decision.

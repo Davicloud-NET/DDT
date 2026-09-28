@@ -7,7 +7,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { IconChevronLeft } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useId, useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
 import { isActive } from "@/deployments/deployments";
@@ -28,15 +28,23 @@ import { DeviceGlyph } from "@/ui/DeviceGlyph";
 import { EmptyState, Facts, Page, Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 import { StateTag } from "@/ui/StateTag";
+import { valueRows } from "@/values/valueRows";
 
 import { MachineActionErrors, MachineActions } from "./MachineActions";
+import { MachineFacts } from "./MachineFacts";
 import { formatMac, machinesQuery, type MachineSummary } from "./machines";
-import { deviceKind, displayName, stateLabel, stateTone } from "./machineView";
+import { MachineValues } from "./MachineValues";
+import { deviceKind, displayName, machineTag } from "./machineView";
+import { RunWaiting } from "./RunWaiting";
 import { secureBootFact } from "./secureBoot";
 import { useMachineActions } from "./useMachineActions";
 
-// One machine: what it is, the run the page shows with its steps and log, and every run it had. Everything on it
-// is live: the machine and its run from the hub's machine pushes, the steps and log lines from its watch.
+// The flow of a run comes with the flow's code, which only a run's page needs.
+const RunFlow = lazy(() => import("@/runs/RunFlow"));
+
+// One machine: what it is, the run the page shows on its flow with its steps and log, what it waits for, the values it
+// works with, what the machine reported of itself, and every run it had. Everything on it is live: the machine and its
+// run from the hub's machine pushes, the steps, variables and log lines from its watch.
 export function MachinePage() {
   const { machineId } = useParams({ from: "/shell/machines/$machineId" });
   const pinnedRunId = useSearch({ from: "/shell/machines/$machineId" }).run ?? null;
@@ -58,6 +66,43 @@ export function MachinePage() {
   const showStepLog = (stepId: string | null) => {
     setStepFilter(stepId === null ? null : { runId: detail.runId, stepId });
   };
+  // From the flow, the log is further down the page, so the page goes there.
+  const logId = useId();
+  const showLogFromFlow = (stepId: string) => {
+    showStepLog(stepId);
+
+    const log = document.getElementById(logId);
+
+    if (log !== null) {
+      window.scrollTo({ top: log.getBoundingClientRect().top + window.scrollY - 16 });
+    }
+  };
+
+  const shownView =
+    view !== null && summary !== null && view.summary.id === summary.id ? view : null;
+  const flow = shownView !== null && (shownView.definition?.steps.length ?? 0) > 0;
+  const runValues = shownView?.values ?? null;
+  const preview = summary === null ? (resolution.data?.values ?? null) : null;
+  const values =
+    runValues !== null ? (
+      <MachineValues
+        title={<Trans>Values of this run</Trans>}
+        rows={valueRows({
+          values: runValues,
+          variables: shownView?.variables ?? null,
+          definition: shownView?.definition ?? null,
+          steps: shownView?.steps ?? [],
+          inputs: shownView?.inputs ?? null,
+        })}
+        empty={<Trans>No rule, machine role or input gave this run a value.</Trans>}
+      />
+    ) : preview !== null ? (
+      <MachineValues
+        title={<Trans>Values a run would start with</Trans>}
+        rows={valueRows({ values: preview })}
+        empty={<Trans>No rule, machine role or sequence sets a value for this machine.</Trans>}
+      />
+    ) : null;
 
   return (
     <Page>
@@ -93,6 +138,10 @@ export function MachinePage() {
         </>
       )}
 
+      {machine !== null && !detail.removed ? (
+        <RunWaiting machineId={machineId} run={machine.deployment} view={view} canAct={canDecide} />
+      ) : null}
+
       {detail.newerRunId !== null ? (
         <Notice tone="info">
           <span className="flex flex-wrap items-center gap-x-3">
@@ -124,6 +173,20 @@ export function MachinePage() {
         </Notice>
       ) : null}
 
+      {flow && summary !== null && !detail.removed ? (
+        <Suspense fallback={<Skeleton className="h-[32rem] w-full rounded-panel" />}>
+          <RunFlow
+            key={shownView.summary.id}
+            view={shownView}
+            summary={summary}
+            now={now}
+            onShowLog={showLogFromFlow}
+          >
+            {values}
+          </RunFlow>
+        </Suspense>
+      ) : null}
+
       {summary !== null && view !== null && view.steps.length > 0 && !detail.removed ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <RunSteps
@@ -132,22 +195,34 @@ export function MachinePage() {
             runState={summary.state}
             definition={view.definition}
             machine={machine}
+            run={{ activity: summary.activity, pause: view.pause ?? null }}
+            values={view.values ?? []}
             now={now}
             onShowLog={showStepLog}
           />
-          <RunTimeline entries={runTimeline(machine, summary, view.steps, view.definition)} />
+          <div className="flex min-w-0 flex-col gap-4">
+            <RunTimeline entries={runTimeline(machine, summary, view.steps, view.definition)} />
+            {machine !== null ? <MachineFacts machine={machine} /> : null}
+          </div>
+        </div>
+      ) : machine !== null && !detail.removed ? (
+        <div className="grid items-start gap-4 xl:grid-cols-2">
+          {flow ? null : values}
+          <MachineFacts machine={machine} />
         </div>
       ) : null}
 
       {!detail.removed ? (
-        <LogPanel
-          machineId={machineId}
-          runId={detail.runId}
-          active={isActive(summary)}
-          steps={view?.steps ?? []}
-          stepFilter={filteredStep}
-          onStepFilterChange={showStepLog}
-        />
+        <div id={logId} className="flex flex-col">
+          <LogPanel
+            machineId={machineId}
+            runId={detail.runId}
+            active={isActive(summary)}
+            steps={view?.steps ?? []}
+            stepFilter={filteredStep}
+            onStepFilterChange={showStepLog}
+          />
+        </div>
       ) : null}
 
       {detail.historyError ? (
@@ -183,9 +258,10 @@ function MachineHeader({
     queryKey: machinesQuery.queryKey,
     items: (list) => list.filter((candidate) => candidate.id === machine.id),
     id: (candidate) => candidate.id,
-    signature: (candidate) => candidate.state,
-    tone: (candidate) => stateTone[candidate.state],
+    signature: (candidate) => `${candidate.state} ${machineTag(candidate).tone}`,
+    tone: (candidate) => machineTag(candidate).tone,
   });
+  const tag = machineTag(machine);
   const maker = [machine.manufacturer, machine.model].filter((part) => part !== null).join(" ");
   const signedInBy = machine.signedInBy;
   const seen = relativeTime(machine.lastSeenUtc, now);
@@ -206,7 +282,7 @@ function MachineHeader({
             )}
           >
             <h1 className="type-title text-ink">{displayName(machine)}</h1>
-            <StateTag tone={stateTone[machine.state]}>{i18n._(stateLabel[machine.state])}</StateTag>
+            <StateTag tone={tag.tone}>{i18n._(tag.label)}</StateTag>
           </span>
           <span className="text-ink-2">
             {maker === "" ? <Trans>Model not reported</Trans> : maker}

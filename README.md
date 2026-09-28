@@ -5,6 +5,8 @@
 </picture>
 
 # DDT, the Davicloud Deployment Toolkit
+#### THIS README AND ALL DOCUMENTATION (minus the license, including most code comments) ARE GOING TO BE REWRITTEN IN M12 OF THE ROADMAP.
+##### I currently recommend summarizing the readme with AI until I get to rewriting it myself after the project is past its core building stage with AI.
 
 [![CI](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml/badge.svg)](https://github.com/Davicloud-NET/DDT/actions/workflows/ci.yml)
 
@@ -125,6 +127,15 @@ build/
 
 `DDT.Pxe` is a class library of hosted services, not a separate executable. There is one image with
 one entry point, and `DDT:Roles` decides what runs inside it.
+
+## AI-Usage
+DDT is written with Claude Code, an AI coding assistant. I decide what DDT does: the requirements, the design choices, the security model and the roadmap. 
+All changes and processes are reviewed by me, the maintainer.
+Nothing is merged or commited to the master branch, until it has been tested talked about extensively.
+
+Issues, PRs, code reviews, and any "product" decisions are solely done by humans. 
+**Any and all product art included in the project is manufactured by humans.**
+AI contributions and PRs are fully welcome, as long as you understand *what* the AI wrote, *why* it wrote it, and that you tested it.
 
 ## Prerequisites
 

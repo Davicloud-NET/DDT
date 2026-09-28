@@ -168,7 +168,8 @@ export interface WriteCloudInitSeedStep extends StepBase {
   networkConfig: string | null;
 }
 
-// Runs its steps in order. Its conditions, continueOnError and shares apply to all of them.
+// Runs its steps in order. Its conditions and continueOnError apply to all of them. It connects no shares itself: a
+// share belongs to the step inside that needs it, for as long as that step runs.
 export interface GroupStep extends StepBase {
   kind: "group";
   steps: SequenceStep[];

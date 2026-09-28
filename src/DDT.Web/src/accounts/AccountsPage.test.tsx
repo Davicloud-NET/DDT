@@ -134,7 +134,7 @@ describe("AccountsPage", () => {
     await open([]);
 
     expect(await screen.findByText(/^Every operator can obtain an account/)).toHaveTextContent(
-      "Every operator can obtain an account a sequence uses by running that sequence on a machine they control. Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here.",
+      "Every operator can obtain an account a sequence uses by running that sequence on a machine they control. Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here.",
     );
     expect(await screen.findByText("No accounts yet")).toBeInTheDocument();
   });

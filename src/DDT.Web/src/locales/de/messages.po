@@ -4246,8 +4246,8 @@ msgid "Give {name} a new password?"
 msgstr "{name} ein neues Kennwort geben?"
 
 #: src/accounts/AccountsPage.tsx
-msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
-msgstr "Geben Sie jedem Konto nur, was es braucht, und ziehen Sie ein Konto, das beim Start der Ausführung abgefragt und nicht gespeichert wird, einem hier gespeicherten vor."
+msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
+msgstr "Geben Sie jedem Konto nur, was es braucht, und ziehen Sie ein Konto, das beim Start der Ausführung abgefragt und nur bis zu ihrem Ende verschlüsselt aufbewahrt wird, einem hier gespeicherten vor."
 
 #: src/machines/RunWaiting.tsx
 msgid "Give the answers"
@@ -10705,8 +10705,12 @@ msgid "without Microsoft's third-party UEFI CA"
 msgstr "ohne Microsofts UEFI-CA für Drittanbieter"
 
 #: src/sequences/builder/VariablesPanel.tsx
-msgid "Without one, and without a default, the run waits at its start."
-msgstr "Ohne Antwort und ohne Standardwert wartet die Ausführung an ihrem Start."
+msgid "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
+msgstr "Ohne Antwort und ohne Standardwert muss die Eingabe beantwortet werden, wenn die Tasksequenz im Web zugewiesen oder freigegeben wird, und eine Ausführung, die am Gerät gewählt oder von einer Regel gestartet wird, schlägt an ihrem Start fehl."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
+msgstr "Ohne Antwort und ohne Standardwert wartet die Ausführung an ihrem Start, bis die Eingabe am Gerät oder auf der Seite des Geräts beantwortet wird."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Without one, the step cannot add the account and the run fails."

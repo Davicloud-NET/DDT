@@ -4246,7 +4246,7 @@ msgid "Give {name} a new password?"
 msgstr ""
 
 #: src/accounts/AccountsPage.tsx
-msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
+msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
 msgstr ""
 
 #: src/machines/RunWaiting.tsx
@@ -10705,7 +10705,11 @@ msgid "without Microsoft's third-party UEFI CA"
 msgstr ""
 
 #: src/sequences/builder/VariablesPanel.tsx
-msgid "Without one, and without a default, the run waits at its start."
+msgid "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
+msgstr ""
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
 msgstr ""
 
 #: src/settings/DeploymentDefaultsPage.tsx

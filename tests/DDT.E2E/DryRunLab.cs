@@ -7,11 +7,13 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using DDT.Contracts;
+using DDT.Contracts.Accounts;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Settings;
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -25,6 +27,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
 {
     public const string LocalAdministratorPassword = "E2e-Local-Admin-7Qx4";
     public const string JoinPassword = "E2e-Join-Secret-9Kp2";
+    public const string AccountPassword = "E2e-Share-Secret-3Vn6";
     public const string Domain = "e2e.ddt.test";
 
     // What a dry run of this model reports, and what the driver package targets.
@@ -55,6 +58,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal LiveRecorder Live => _live!;
 
     public ImageSummary Image { get; private set; } = null!;
+
+    // Another Windows image, of another name, for the branch a dry run does not take.
+    public ImageSummary OtherImage { get; private set; } = null!;
 
     public ImageSummary LargeImage { get; private set; } = null!;
 
@@ -127,12 +133,15 @@ public sealed partial class DryRunLab : IAsyncLifetime
         return AgentProcess.Start(_agentPath!, slowDownloads ? _relay!.Url : Host.Url, Host.RootCertificatePath, id, log, secureBoot);
     }
 
-    internal async Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken)
+    internal Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken) =>
+        CreateSequenceAsync(name, new SequenceDefinition(SequenceDefinition.CurrentVersion, steps), cancellationToken);
+
+    internal async Task<SequenceView> CreateSequenceAsync(string name, SequenceDefinition definition, CancellationToken cancellationToken)
     {
         SequenceView sequence = await Api.SendAsync(
             HttpMethod.Post,
             "api/sequences",
-            new CreateSequenceRequest($"{name} {Guid.NewGuid():N}", "Made by the end-to-end tests.", new SequenceDefinition(SequenceDefinition.CurrentVersion, steps)),
+            new CreateSequenceRequest($"{name} {Guid.NewGuid():N}", "Made by the end-to-end tests.", definition),
             DdtJsonContext.Default.CreateSequenceRequest,
             DdtJsonContext.Default.SequenceView,
             HttpStatusCode.Created,
@@ -177,6 +186,30 @@ public sealed partial class DryRunLab : IAsyncLifetime
             HttpStatusCode.OK,
             cancellationToken);
 
+    // As the machine's page continues the pause it shows.
+    internal Task<DeploymentView> ContinueAsync(Guid machineId, RunPauseView pause, CancellationToken cancellationToken) =>
+        Api.SendAsync(
+            HttpMethod.Post,
+            $"api/machines/{machineId:D}/deployments/current/continue",
+            new ContinueRunRequest(pause.StepId, pause.Pass),
+            DdtJsonContext.Default.ContinueRunRequest,
+            DdtJsonContext.Default.DeploymentView,
+            HttpStatusCode.OK,
+            cancellationToken);
+
+    // A stored account with AccountPassword, saved as the Accounts page saves one: with the administrator's password
+    // entered again.
+    internal Task<AccountView> CreateAccountAsync(string userName, string domain, IReadOnlyList<string> hosts, bool runAs, CancellationToken cancellationToken) =>
+        Api.SendReauthenticatedAsync(
+            HttpMethod.Post,
+            "api/accounts",
+            Host.AdministratorPassword,
+            new SaveAccountRequest(0, $"E2E account {Guid.NewGuid():N}", userName, domain, hosts, runAs, new SecretUpdate(SecretAction.Set, AccountPassword)),
+            DdtJsonContext.Default.SaveAccountRequest,
+            DdtJsonContext.Default.AccountView,
+            HttpStatusCode.Created,
+            cancellationToken);
+
     internal Task<DeploymentView> RunAsync(Guid runId, CancellationToken cancellationToken) =>
         Api.GetAsync($"api/deployments/{runId:D}", DdtJsonContext.Default.DeploymentView, cancellationToken);
 
@@ -203,8 +236,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
     }
 
     // What every test ends with. The agents warned of nothing and failed at nothing but what the test expects, the
-    // host logged no error, and neither configured password, nor the form an answer file gives it, appears in the
-    // agents' output, in text the test saw, in the host's log, in what the hub sent, or in the host's database files.
+    // host logged no error, and neither a configured password nor the stored account's, nor the form an answer file
+    // gives them, appears in the agents' output, in text the test saw, in the host's log, in what the hub sent, or in
+    // the host's database files.
     internal void AssertClean(IReadOnlyList<AgentProcess> agents, IReadOnlyList<string> expectedProblems, params (string Where, string Text)[] seen)
     {
         ArgumentNullException.ThrowIfNull(agents);
@@ -257,7 +291,12 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     private static IEnumerable<(string Name, string Secret)> Secrets()
     {
-        (string Name, string Password)[] passwords = [("the local administrator's password", LocalAdministratorPassword), ("the join password", JoinPassword)];
+        (string Name, string Password)[] passwords =
+        [
+            ("the local administrator's password", LocalAdministratorPassword),
+            ("the join password", JoinPassword),
+            ("the stored account's password", AccountPassword),
+        ];
 
         foreach ((string name, string password) in passwords)
         {
@@ -305,6 +344,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
         _live = await LiveRecorder.ConnectAsync(Api, _rootCertificate, cancellationToken).ConfigureAwait(false);
 
         Image = await UploadImageAsync("small.wim", 1, cancellationToken).ConfigureAwait(false);
+        OtherImage = await UploadImageAsync("other.wim", 1, cancellationToken, "Other E2E Windows").ConfigureAwait(false);
         LargeImage = await UploadImageAsync("large.wim", LargeMegabytes, cancellationToken).ConfigureAwait(false);
 
         string drivers = Path.Combine(_directory, "drivers.zip");
@@ -327,10 +367,10 @@ public sealed partial class DryRunLab : IAsyncLifetime
         RawImage = Assert.Single(await Api.UploadImageAsync(raw, cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<ImageSummary> UploadImageAsync(string name, int megabytes, CancellationToken cancellationToken)
+    private async Task<ImageSummary> UploadImageAsync(string name, int megabytes, CancellationToken cancellationToken, string imageName = "DDT E2E Windows")
     {
         string path = Path.Combine(_directory, name);
-        TestContent.WriteWim(path, megabytes);
+        TestContent.WriteWim(path, megabytes, imageName);
 
         return Assert.Single(await Api.UploadImageAsync(path, cancellationToken).ConfigureAwait(false));
     }

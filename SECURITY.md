@@ -27,7 +27,8 @@ you unless you ask not to be named. Please keep the details to yourself until th
 
 ## What counts
 
-[The security model](README.md#security-model) in the README states DDT's trust boundary. What it
+[The security model](https://github.com/Davicloud-NET/DDT/blob/b8f9f1a2a686a03ec450a5d0ff82b211d57a3ab3/README.md#security-model)
+in the old README states DDT's trust boundary, until the documentation takes it over. What it
 names as accepted is not a vulnerability by itself, for example that the provisioning network is
 inside the trust boundary, that anything in `boot.wim` can be read by whoever boots it, or that
 every operator can obtain the deployment passwords by running a sequence that needs them. A way

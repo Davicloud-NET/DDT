@@ -29,8 +29,8 @@ public sealed class PxeOptions
     public bool TftpSinglePort { get; set; }
 
     // The largest window a boot manager gets, whatever its BCD asks for. Only 4 has Microsoft backing, but DDT writes the
-    // BCD, and 16 measured reliable and about 40 percent faster than 4 (README, Status). A site whose link loses packets
-    // under a large window lowers this without building its boot images again.
+    // BCD, and 16 measured reliable and about 40 percent faster than 4 (the README's Status at commit b8f9f1a). A site
+    // whose link loses packets under a large window lowers this without building its boot images again.
     public int TftpMaxWindowSize { get; set; } = 16;
 
     // Comma separated rather than a list, for the same reason as DDT:Roles.

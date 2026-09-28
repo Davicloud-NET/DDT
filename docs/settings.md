@@ -1143,7 +1143,7 @@ account or an Account input instead of the configured join account; its domain t
 account, and Domain:OrganizationalUnit applies only when that domain is Domain:Name. The deployment
 section also gives every run the values TimeZone, Locale, Keyboard, OrganizationalUnit and
 AdministratorName, below what inputs, the machine, rules, machine roles and the sequence set
-(README, "Variables and inputs").
+(src/DDT.Core/Values/ValueResolver.cs holds the order).
 
 ## 8. Open questions for the maintainer
 

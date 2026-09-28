@@ -18,6 +18,8 @@ import {
   stepView,
 } from "@/test/builders";
 
+import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
+
 import installWindows from "../src/test/fixtures/install-windows.sequence.json" with { type: "json" };
 import { sampleLogo } from "./sampleLogo";
 import { serve } from "./server";
@@ -202,28 +204,82 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
-test("a task sequence", async ({ page }) => {
-  const summary = sequenceSummary({ stepCount: definition.steps.length, continuesInWindows: true });
-
-  await show(page, `/deployment/sequences/${summary.id}`, {
-    [`GET /api/sequences/${summary.id}`]: {
-      ...sequenceView(summary, definition.steps),
-      stepPhases: phases,
-    },
-    "GET /api/sequences": [summary],
-    "GET /api/images": [imageSummary({ name: "Windows 11 Pro 25H2" })],
-    "GET /api/packages": [],
-    "GET /api/deployments/options": {
-      domainConfigured: true,
-      requireWebApproval: false,
-      zeroTouchEnabled: false,
-      serverUtc: now.toISOString(),
-    },
-  });
-  await expect(page.getByRole("heading", { name: "Install Windows" })).toBeVisible();
-
-  await expect(page).toHaveScreenshot("sequence-light.png");
+// The flow builder with a sequence of every shape: an IF, a group, a repeat, a template and a problem, the IF chosen.
+const flowSummary = sequenceSummary({
+  name: "Windows 11 office PCs",
+  stepCount: 12,
+  problemCount: flowProblems.length,
+  continuesInWindows: true,
 });
+const facts = [
+  ["Manufacturer", "Text"],
+  ["Model", "Text"],
+  ["FriendlyModel", "Text"],
+  ["SerialNumber", "Text"],
+  ["SmbiosUuid", "Text"],
+  ["DeviceKind", "Text"],
+  ["MacAddress", "Mac"],
+  ["PrimaryMacAddress", "Mac"],
+  ["ComputerName", "Text"],
+  ["Phase", "Text"],
+  ["MemoryMegabytes", "Number"],
+  ["ProcessorName", "Text"],
+  ["ProcessorCores", "Number"],
+  ["LogicalProcessors", "Number"],
+  ["TpmPresent", "YesNo"],
+  ["TpmVersion", "Number"],
+  ["SecureBootCapable", "YesNo"],
+  ["SecureBootEnabled", "YesNo"],
+  ["IPv4Address", "IPv4"],
+  ["IPv4PrefixLength", "Number"],
+  ["Subnet", "Text"],
+  ["DefaultGateway", "IPv4"],
+  ["DnsSuffix", "Text"],
+  ["DhcpServer", "IPv4"],
+  ["LastStepFailed", "YesNo"],
+  ["LastExitCode", "Number"],
+].map(([name, type]) => ({
+  name,
+  type,
+  changesDuringRun: name === "Phase" || name === "LastStepFailed" || name === "LastExitCode",
+}));
+const builderAnswers = {
+  [`GET /api/sequences/${flowSummary.id}`]: {
+    ...sequenceView(flowSummary, flowDefinition.steps),
+    definition: flowDefinition,
+    nodePhases: flowPhases,
+    problems: flowProblems,
+  },
+  "GET /api/sequences": [flowSummary],
+  "GET /api/sequences/facts": facts,
+  "GET /api/rules": [],
+  "GET /api/machine-roles": [],
+  "GET /api/accounts": [],
+  "GET /api/images": [imageSummary({ id: windowsImageId, name: "Windows 11 Pro 25H2" })],
+  "GET /api/packages": [],
+  "GET /api/deployments/options": {
+    domainConfigured: true,
+    requireWebApproval: false,
+    zeroTouchEnabled: false,
+    serverUtc: now.toISOString(),
+  },
+};
+
+for (const scheme of ["light", "dark"] as const) {
+  test.describe(scheme, () => {
+    test.use({ colorScheme: scheme });
+
+    test("a task sequence", async ({ page }) => {
+      await show(page, `/deployment/sequences/${flowSummary.id}?step=if1`, builderAnswers);
+      await expect(page.getByRole("heading", { name: "Windows 11 office PCs" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /^Step 2, If: Is it a Latitude\?/ }),
+      ).toBeVisible();
+
+      await expect(page).toHaveScreenshot(`sequence-${scheme}.png`);
+    });
+  });
+}
 
 // The deployment defaults, and the console's logo on their page.
 const deploymentDefaults = {
@@ -302,5 +358,15 @@ test.describe("phone", () => {
     await expect(page.getByText("PC-042")).toBeVisible();
 
     await expect(page).toHaveScreenshot("machines-phone.png");
+  });
+
+  // On a phone the flow is its outline.
+  test("a task sequence", async ({ page }) => {
+    await show(page, `/deployment/sequences/${flowSummary.id}`, builderAnswers);
+    await expect(
+      page.getByRole("treegrid", { name: "Outline of Windows 11 office PCs" }),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot("sequence-phone.png");
   });
 });

@@ -4,6 +4,7 @@
 
 using DDT.Contracts;
 using DDT.Server.Live;
+using DDT.Server.Rules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -24,6 +25,9 @@ public static class MachineServiceCollectionExtensions
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());
         services.AddScoped<MachineRegistrar>();
         services.AddSingleton<LiveNotifier>();
+
+        // The sweeper and the registrar change the machines the rules count.
+        services.AddSingleton<RuleRecount>();
         services.AddSingleton<LiveConnections>();
 
         // The context's own option reaches only its own options, not these.

@@ -35,7 +35,7 @@ public static class LiveEvents
 
     // Carries every rule, RuleView top first, as GET /api/rules answers: rules are few, and one change can move rules,
     // rename the sequence several of them choose, change what another rule's condition may test, or change how many
-    // machines each matches.
+    // machines each matches, which a registration or a removal of machines does too.
     public const string RulesChanged = "rulesChanged";
 
     // Carries every machine role, MachineRoleView by name, as GET /api/machine-roles answers: a change of a rule changes

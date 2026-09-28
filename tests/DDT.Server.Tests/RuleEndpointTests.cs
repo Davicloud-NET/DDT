@@ -384,4 +384,21 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
 
         Assert.Equal((await administrator.RulesAsync()).Select(r => (r.Id, r.SequenceName)), afterRename.Select(r => (r.Id, r.SequenceName)));
     }
+
+    // How many machines a rule matches changes when machines register, so the list goes out again then.
+    [Fact]
+    public async Task CountsTheMachinesARuleMatchesAgainWhenOneRegisters()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        await using LiveListener live = await LiveListener.StartAsync(application, administrator);
+        ChannelReader<RuleView[]> pushes = live.Listen<RuleView[]>(LiveEvents.RulesChanged);
+        string model = RuleRequests.UniqueModel();
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(null, model));
+        Assert.Equal(0, rule.MatchingMachines);
+
+        using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model);
+
+        await LiveListener.NextAsync(pushes, rules => rules.Any(r => r.Id == rule.Id && r.MatchingMachines == 1));
+        Assert.Equal(1, (await administrator.RulesAsync()).Single(r => r.Id == rule.Id).MatchingMachines);
+    }
 }

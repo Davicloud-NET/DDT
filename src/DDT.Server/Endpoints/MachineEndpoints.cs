@@ -552,6 +552,7 @@ public static class MachineEndpoints
         HttpContext context,
         DdtDbContext database,
         LiveNotifier live,
+        RuleRecount recount,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -569,7 +570,7 @@ public static class MachineEndpoints
             return ServerProblems.Problem(ServerMessages.MachineCannotBeRemoved.With(), StatusCodes.Status409Conflict);
         }
 
-        return await RemoveStraysAsync([machine], user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
+        return await RemoveStraysAsync([machine], user, context, database, live, recount, timeProvider, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveWaitingFromAsync(
@@ -578,6 +579,7 @@ public static class MachineEndpoints
         HttpContext context,
         DdtDbContext database,
         LiveNotifier live,
+        RuleRecount recount,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -589,7 +591,7 @@ public static class MachineEndpoints
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return await RemoveStraysAsync(machines, user, context, database, live, timeProvider, cancellationToken).ConfigureAwait(false);
+        return await RemoveStraysAsync(machines, user, context, database, live, recount, timeProvider, cancellationToken).ConfigureAwait(false);
     }
 
     // A waiting machine with an assigned run waits on purpose, for a sign-in or a zero touch netboot.
@@ -602,6 +604,7 @@ public static class MachineEndpoints
         HttpContext context,
         DdtDbContext database,
         LiveNotifier live,
+        RuleRecount recount,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -637,6 +640,7 @@ public static class MachineEndpoints
         if (machines.Count > 0)
         {
             live.MachinesRemoved(machines.Select(m => m.Id));
+            recount.MachinesChanged();
         }
 
         return TypedResults.NoContent();

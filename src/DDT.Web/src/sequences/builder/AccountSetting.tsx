@@ -6,13 +6,15 @@ import { useLingui } from "@lingui/react/macro";
 import { useContext, type ReactNode } from "react";
 import { Header, ListBoxSection } from "react-aria-components";
 
+import type { AccountView } from "@/accounts/accounts";
 import { ListBoxItem, Select } from "@/ui/Select";
 import { TextField } from "@/ui/TextField";
 
 import { EditorLock } from "../editorLock";
 import { fieldFindings, type Findings } from "../problems";
 import type { AccountReference, InputDeclaration } from "../sequences";
-import { useBuilder, type AccountView } from "./builderData";
+
+import { useBuilder } from "./builderData";
 
 // What an account is for: running a script as it, joining the domain with it, or connecting a share with it. Only
 // accounts and Account inputs bound to that destination are offered; the server checks the rest when the step runs.

@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { onTestFinished, vi } from "vitest";
 
 import { AccountPage } from "@/account/AccountPage";
+import { AccountsPage } from "@/accounts/AccountsPage";
 import { CommandPalette } from "@/app/CommandPalette";
 import { RootLayout } from "@/app/RootLayout";
 import type { CurrentUser } from "@/auth/auth";
@@ -28,6 +29,8 @@ import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage, FilesPage } from "@/packages/PackagesPage";
+import { MachineRolesPage } from "@/roles/MachineRolesPage";
+import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 
 import { testHub, type TestHub } from "./fakeHub";
@@ -103,7 +106,14 @@ function testRouter(path: string, hub: TestHub | null, palette: boolean) {
           validateSearch: machineSearch,
           component: MachinePage,
         }),
-        page("/deployment/rules", RulesPage),
+        createRoute({
+          getParentRoute: () => shellRoute,
+          path: "/deployment/rules",
+          validateSearch: rulesSearch,
+          component: RulesPage,
+        }),
+        page("/deployment/machine-roles", MachineRolesPage),
+        page("/deployment/accounts", AccountsPage),
         page("/library/images", ImagesPage),
         page("/library/drivers", DriversPage),
         page("/library/files", FilesPage),

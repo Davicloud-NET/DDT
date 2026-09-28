@@ -18,6 +18,14 @@ import {
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
 import { node, treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
 
+import {
+  accounts,
+  roles,
+  rules,
+  sequences as ruleSequences,
+  testedMachine,
+  testedResolution,
+} from "./rules";
 import { sampleLogo } from "./sampleLogo";
 import { serve } from "./server";
 
@@ -314,6 +322,43 @@ test.describe("dark", () => {
     await expect(page.getByRole("heading", { name: "The console at the machine" })).toBeVisible();
 
     await expect(page).toHaveScreenshot("deployment-defaults-dark.png");
+  });
+});
+
+// The rules of an office in the order they are checked, with a Latitude in Berlin tested against them; and the accounts
+// its steps use, one of them with a password this server cannot read.
+const ruleAnswers = {
+  "GET /api/rules": rules,
+  "GET /api/machine-roles": roles,
+  "GET /api/sequences": ruleSequences,
+  "GET /api/sequences/facts": facts,
+  "GET /api/machines": [testedMachine],
+  [`GET /api/machines/${testedMachine.id}/sequence`]: testedResolution,
+};
+
+test.describe("tall", () => {
+  test.use({ viewport: { width: 1440, height: 1080 } });
+
+  test("rules", async ({ page }) => {
+    await show(page, "/deployment/rules", ruleAnswers);
+    await expect(page.getByRole("grid", { name: "Rules in order" })).toBeVisible();
+    await page.getByRole("button", { name: /Show suggestions/ }).click();
+    await page.getByRole("option", { name: /PC-G2341KXQ/ }).click();
+    await expect(page.getByText("Windows 11 office PCs, from rule 4")).toBeVisible();
+    await page.getByRole("heading", { name: "Rules", exact: true }).click();
+
+    await expect(page).toHaveScreenshot("rules-light.png");
+  });
+});
+
+test.describe("dark", () => {
+  test.use({ colorScheme: "dark" });
+
+  test("accounts", async ({ page }) => {
+    await show(page, "/deployment/accounts", { "GET /api/accounts": accounts });
+    await expect(page.getByRole("grid", { name: "Accounts" })).toBeVisible();
+
+    await expect(page).toHaveScreenshot("accounts-dark.png");
   });
 });
 

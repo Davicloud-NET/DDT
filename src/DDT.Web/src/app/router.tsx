@@ -13,6 +13,7 @@ import {
 
 import { AboutPage } from "@/about/AboutPage";
 import { AccountPage } from "@/account/AccountPage";
+import { AccountsPage } from "@/accounts/AccountsPage";
 import { AuditPage } from "@/audit/AuditPage";
 import { currentUserQuery } from "@/auth/auth";
 import { BootImagePage } from "@/boot/BootImagePage";
@@ -22,6 +23,8 @@ import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage, FilesPage } from "@/packages/PackagesPage";
+import { MachineRolesPage } from "@/roles/MachineRolesPage";
+import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
@@ -144,7 +147,18 @@ const sequenceRoute = createRoute({
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/rules",
+  validateSearch: rulesSearch,
   component: RulesPage,
+});
+const machineRolesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/deployment/machine-roles",
+  component: MachineRolesPage,
+});
+const accountsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/deployment/accounts",
+  component: AccountsPage,
 });
 const deploymentDefaultsRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -227,6 +241,8 @@ const routeTree = rootRoute.addChildren([
     sequencesRoute,
     sequenceRoute,
     rulesRoute,
+    machineRolesRoute,
+    accountsRoute,
     deploymentDefaultsRoute,
     imagesRoute,
     driversRoute,

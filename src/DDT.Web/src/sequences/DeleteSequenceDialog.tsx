@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { ApiError } from "@/lib/api";
-import type { AssignmentRuleView } from "@/rules/rules";
+import type { RuleView } from "@/rules/rules";
 import { ConfirmDialog } from "@/ui/Dialog";
 
 import { deletionBlocker, deletionConsequence, removeSummary } from "./sequenceList";
@@ -24,7 +24,7 @@ export function DeleteSequenceDialog({
 }: {
   sequence: SequenceSummary;
   // The rules that choose it.
-  rules: readonly AssignmentRuleView[];
+  rules: readonly RuleView[];
   // The machines it is assigned to or running on now.
   activeRuns: number;
   onClose: () => void;
@@ -76,7 +76,7 @@ export function DeleteSequenceDialog({
           <p>{blocker}</p>
           <p>
             <Link to="/deployment/rules" className="font-semibold text-ink underline">
-              <Trans>Go to the assignment rules</Trans>
+              <Trans>Go to the rules</Trans>
             </Link>
           </p>
         </>

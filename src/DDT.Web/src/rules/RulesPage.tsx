@@ -4,181 +4,229 @@
 
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { IconDots } from "@tabler/icons-react";
+import { IconDots, IconGripVertical, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Button as AriaButton, MenuTrigger } from "react-aria-components";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useState, type KeyboardEvent } from "react";
+import {
+  Button as AriaButton,
+  DropIndicator,
+  GridList,
+  GridListItem,
+  Keyboard,
+  MenuTrigger,
+  Text,
+  useDragAndDrop,
+} from "react-aria-components";
 
 import { currentUserQuery } from "@/auth/auth";
-import { relativeTime } from "@/lib/relativeTime";
-import { useNow } from "@/lib/useNow";
-import { machinesQuery, modelsQuery } from "@/machines/machines";
+import { conditionSentence, type Subject } from "@/conditions/conditions";
+import { liveListOptions } from "@/live/freshness";
+import { useLiveMarks } from "@/live/useLiveMarks";
+import { useLiveStatus } from "@/live/useLiveStatus";
+import { machineRolesQuery, type MachineRoleView } from "@/roles/roles";
 import { sequencesQuery } from "@/sequences/sequences";
 import { Button } from "@/ui/Button";
-import { ConfirmDialog } from "@/ui/Dialog";
-import { EmptyState, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
+import { cx } from "@/ui/cx";
+import { EmptyState, Page, Panel, Skeleton } from "@/ui/Layout";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Notice } from "@/ui/Notice";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/ui/Table";
+import { StateTag } from "@/ui/StateTag";
 
-import { RuleDialog } from "./RuleDialog";
+import { useRuleSubjects } from "./ruleData";
+import { DeleteRuleDialog, RuleDrawer } from "./RuleDrawer";
 import {
-  deleteRule,
-  describeRule,
-  ruleDeletionConsequence,
-  ruleMatches,
+  droppedAt,
+  inOrder,
+  movedBy,
+  reorderRules,
+  RulesChangedMeanwhile,
+  ruleEffects,
+  ruleName,
   rulesQuery,
-  ruleTarget,
   sequenceResolutionsKey,
-  type AssignmentRuleKind,
-  type AssignmentRuleView,
+  type RuleView,
 } from "./rules";
+import { RuleTest } from "./RuleTest";
 
-// The rules that choose a sequence for machines by MAC address or hardware model. The list is live: a save here
-// patches it from the server's answer, and another administrator's change arrives through the hub.
+// The rules, one ordered list checked from the top: the first rule that chooses a sequence chooses it, the first that
+// sets a value sets it, and every rule that matches gives its machine roles. An administrator adds and changes them in
+// a drawer and moves them by dragging, with Alt and the arrow keys, or from a rule's menu; each move sends the whole
+// order, and the list shows it at once and takes the server's answer, or the list as it is when someone changed it
+// meanwhile. The list is live, and a rule someone else changed flashes.
 export function RulesPage() {
   const { t } = useLingui();
   const queryClient = useQueryClient();
-  const rules = useQuery(rulesQuery);
-  const sequences = useQuery(sequencesQuery);
-  const machines = useQuery(machinesQuery);
-  const models = useQuery(modelsQuery);
+  const freshness = liveListOptions(useLiveStatus());
+  const rules = useQuery({ ...rulesQuery, ...freshness });
+  const roles = useQuery({ ...machineRolesQuery, ...freshness });
+  const sequences = useQuery({ ...sequencesQuery, ...freshness });
+  const subjects = useRuleSubjects();
   const user = useQuery(currentUserQuery).data ?? null;
-  const now = useNow(30_000);
   const canEdit = user?.roles.includes("Administrator") === true;
+  const search = useSearch({ from: "/shell/deployment/rules" });
+  const navigate = useNavigate({ from: "/deployment/rules" });
+  const mark = useLiveMarks({
+    queryKey: rulesQuery.queryKey,
+    items: (list) => list,
+    id: (rule) => rule.id,
+    signature: (rule) => `${String(rule.revision)} ${String(rule.position)}`,
+    tone: () => "idle",
+  });
 
-  // Null while no dialog is open; a rule to change it, "new" to add one.
-  const [editing, setEditing] = useState<AssignmentRuleView | "new" | null>(null);
-  const [deleting, setDeleting] = useState<AssignmentRuleView | null>(null);
+  // The drawer's rule as it was when it opened, null for a new one; key opens a fresh form each time.
+  const [drawer, setDrawer] = useState<{ key: number; rule: RuleView | null } | null>(null);
+  // A rule named in the address, such as from a machine role's page, opens once the list is there.
+  const [linked, setLinked] = useState(search.rule ?? null);
+  const [deleting, setDeleting] = useState<RuleView | null>(null);
+  // Why the last move did not happen as it was made: someone changed the rules meanwhile, or it failed.
+  const [moveProblem, setMoveProblem] = useState<{
+    text: string;
+    tone: "attention" | "fail";
+  } | null>(null);
 
-  const remove = useMutation({
-    mutationFn: (id: string) => deleteRule(id),
-    onSuccess: (_, id) => {
-      queryClient.setQueryData(rulesQuery.queryKey, (list) =>
-        list?.filter((rule) => rule.id !== id),
+  const list = rules.data ?? [];
+  const roleList = roles.data ?? [];
+
+  if (linked !== null && rules.data !== undefined) {
+    const found = rules.data.find((rule) => rule.id === linked);
+
+    setLinked(null);
+
+    if (found !== undefined) {
+      setDrawer({ key: 1, rule: found });
+    }
+  }
+
+  const openRule = (rule: RuleView | null) => {
+    setDrawer((current) => ({ key: (current?.key ?? 0) + 1, rule }));
+  };
+
+  const closeDrawer = () => {
+    setDrawer(null);
+
+    if (search.rule !== undefined) {
+      void navigate({ search: {}, replace: true });
+    }
+  };
+
+  const move = useMutation({
+    mutationFn: (order: string[]) => reorderRules(order),
+    onMutate: async (order) => {
+      await queryClient.cancelQueries({ queryKey: rulesQuery.queryKey });
+      const before = queryClient.getQueryData(rulesQuery.queryKey);
+
+      queryClient.setQueryData(rulesQuery.queryKey, (current) =>
+        current === undefined ? current : inOrder(current, order),
       );
+      setMoveProblem(null);
+
+      return { before };
+    },
+    onSuccess: (answer) => {
+      queryClient.setQueryData(rulesQuery.queryKey, answer);
       void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
-      setDeleting(null);
+    },
+    // A 409 carries the list as it is now, which someone changed meanwhile; anything else puts the order back.
+    onError: (error, _order, context) => {
+      const current = error instanceof RulesChangedMeanwhile ? error.rules : null;
+
+      queryClient.setQueryData(rulesQuery.queryKey, current ?? context?.before);
+
+      if (current !== null) {
+        setMoveProblem({
+          text: t`Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there.`,
+          tone: "attention",
+        });
+      } else {
+        const message = error.message;
+
+        setMoveProblem({ text: t`The rule could not be moved: ${message}`, tone: "fail" });
+      }
     },
   });
 
-  const list = rules.data ?? [];
-  const sequenceList = sequences.data ?? [];
-  const machineList = machines.data ?? [];
-  const modelList = models.data ?? [];
+  const moveBy = (id: string, offset: number) => {
+    const order = movedBy(list, id, offset);
 
-  const section = (kind: AssignmentRuleKind) => {
-    const ofKind = list.filter((rule) => rule.kind === kind);
-
-    if (ofKind.length === 0) {
-      return null;
+    if (order !== null) {
+      move.mutate(order);
     }
-
-    return (
-      <Panel
-        title={kind === "Mac" ? <Trans>By MAC address</Trans> : <Trans>By hardware model</Trans>}
-        flush
-      >
-        <Table
-          aria-label={kind === "Mac" ? t`Rules by MAC address` : t`Rules by hardware model`}
-          className="min-w-[720px] table-fixed"
-        >
-          <TableHeader>
-            <TableColumn id="target" isRowHeader className="w-[30%] pl-4">
-              {kind === "Mac" ? <Trans>MAC address</Trans> : <Trans>Model</Trans>}
-            </TableColumn>
-            <TableColumn id="sequence">
-              <Trans>Task sequence</Trans>
-            </TableColumn>
-            <TableColumn id="matches" className="w-40">
-              <Trans>Matches</Trans>
-            </TableColumn>
-            <TableColumn id="changed" className="w-44">
-              <Trans>Changed</Trans>
-            </TableColumn>
-            <TableColumn id="actions" className="w-14 pr-4">
-              <span className="sr-only">
-                <Trans>Actions</Trans>
-              </span>
-            </TableColumn>
-          </TableHeader>
-          <TableBody items={ofKind} dependencies={[machineList, modelList, now, canEdit]}>
-            {(rule) => (
-              <TableRow id={rule.id} textValue={ruleTarget(rule)}>
-                <TableCell className="pl-4">
-                  <span className="flex min-w-0 flex-col">
-                    <span className={kind === "Mac" ? "truncate type-data" : "truncate type-label"}>
-                      {ruleTarget(rule)}
-                    </span>
-                    {rule.description !== null ? (
-                      <span className="truncate type-small text-muted">{rule.description}</span>
-                    ) : null}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Link
-                    to="/deployment/sequences/$sequenceId"
-                    params={{ sequenceId: rule.sequenceId }}
-                    className="truncate hover:underline"
-                  >
-                    {rule.sequenceName}
-                  </Link>
-                </TableCell>
-                <TableCell className="type-small text-ink-2">
-                  <MatchCount count={ruleMatches(rule, machineList, modelList)} />
-                </TableCell>
-                <TableCell className="type-small text-muted">
-                  <ChangedBy rule={rule} now={now} />
-                </TableCell>
-                <TableCell className="pr-4">
-                  {canEdit ? (
-                    <RuleMenu
-                      rule={rule}
-                      onEdit={() => {
-                        setEditing(rule);
-                      }}
-                      onDelete={() => {
-                        remove.reset();
-                        setDeleting(rule);
-                      }}
-                    />
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Panel>
-    );
   };
 
+  const { dragAndDropHooks } = useDragAndDrop<RuleView>({
+    isDisabled: !canEdit,
+    getItems: (keys) =>
+      [...keys].map((key) => {
+        const rule = list.find((candidate) => candidate.id === String(key));
+
+        return { "text/plain": rule === undefined ? String(key) : ruleName(rule) };
+      }),
+    onReorder: (event) => {
+      const order = droppedAt(
+        list,
+        [...event.keys].map(String),
+        String(event.target.key),
+        event.target.dropPosition === "before" ? "before" : "after",
+      );
+
+      if (order !== null) {
+        move.mutate(order);
+      }
+    },
+    renderDropIndicator: (target) => (
+      <DropIndicator
+        target={target}
+        className={({ isDropTarget }) =>
+          cx("h-0.5 rounded-full", isDropTarget ? "bg-focus" : "bg-transparent")
+        }
+      />
+    ),
+  });
+
+  // Alt and an arrow key move the rule whose row has the focus, as in the outline of a sequence.
+  const onKeyDownCapture = (event: KeyboardEvent) => {
+    if (!canEdit || !event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) {
+      return;
+    }
+
+    const id = (event.target as HTMLElement).closest<HTMLElement>("[data-rule-id]")?.dataset.ruleId;
+
+    if (id !== undefined) {
+      event.preventDefault();
+      event.stopPropagation();
+      moveBy(id, event.key === "ArrowUp" ? -1 : 1);
+    }
+  };
+
+  const openId = drawer?.rule?.id ?? null;
+
   return (
-    <Page>
-      <PageHeader title={<Trans>Assignment rules</Trans>}>
-        <div className="flex-1" />
+    <Page className="max-w-230">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="flex max-w-155 flex-col gap-2.5">
+          <h1 className="type-title text-ink">
+            <Trans>Rules</Trans>
+          </h1>
+          <p className="text-ink-2">
+            <Trans>
+              Checked from the top. The first rule that chooses a sequence chooses it, and the first
+              rule that sets a value sets it. A rule never approves a machine.
+            </Trans>
+          </p>
+        </div>
         {canEdit ? (
           <Button
             variant="primary"
-            isDisabled={sequenceList.length === 0}
             onPress={() => {
-              setEditing("new");
+              openRule(null);
             }}
           >
+            <IconPlus aria-hidden="true" size={14} stroke={2} />
             <Trans>Add rule</Trans>
           </Button>
         ) : null}
-      </PageHeader>
-
-      <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          A rule chooses the task sequence for a machine that has none. It never authorizes a
-          machine: someone still signs in at it, or an operator approves it. A sequence assigned on
-          the web or chosen at the machine comes first; then a rule for one of the machine's MAC
-          addresses, then a rule for its model, the exact model before one ending in *, and a rule
-          that names the manufacturer before one for any.
-        </Trans>
-      </p>
+      </div>
 
       {rules.isError ? (
         <Notice tone="fail">
@@ -186,14 +234,7 @@ export function RulesPage() {
         </Notice>
       ) : null}
 
-      {canEdit && sequences.isSuccess && sequenceList.length === 0 ? (
-        <Notice tone="info">
-          <Trans>
-            A rule needs a task sequence to choose. Create one under Deployment, Task sequences
-            first.
-          </Trans>
-        </Notice>
-      ) : null}
+      {moveProblem !== null ? <Notice tone={moveProblem.tone}>{moveProblem.text}</Notice> : null}
 
       {rules.isPending ? (
         <Panel>
@@ -206,121 +247,282 @@ export function RulesPage() {
           <EmptyState title={<Trans>No rules yet</Trans>}>
             {canEdit ? (
               <Trans>
-                Without rules an operator assigns a sequence to each machine. Add a rule to choose
-                one by hardware model or MAC address.
+                Without rules an operator chooses the sequence of each machine. Add a rule to choose
+                one, set values or give machine roles by what a machine is, such as its model or its
+                network.
               </Trans>
             ) : (
               <Trans>
-                Without rules an operator assigns a sequence to each machine. An administrator adds
-                rules here.
+                Without rules an operator chooses the sequence of each machine. An administrator
+                adds rules here.
               </Trans>
             )}
           </EmptyState>
         </Panel>
-      ) : (
-        <>
-          {section("Model")}
-          {section("Mac")}
-        </>
-      )}
+      ) : rules.isSuccess ? (
+        <div
+          className="overflow-hidden rounded-panel bg-panel shadow-panel"
+          onKeyDownCapture={onKeyDownCapture}
+        >
+          <GridList
+            aria-label={t`Rules in order`}
+            items={list}
+            {...(canEdit ? { dragAndDropHooks } : {})}
+            onAction={(key) => {
+              const rule = list.find((candidate) => candidate.id === String(key));
 
-      {editing !== null ? (
-        <RuleDialog
-          rule={editing === "new" ? null : editing}
-          sequences={sequenceList}
-          machines={machineList}
-          models={modelList}
-          onClose={() => {
-            setEditing(null);
+              if (rule !== undefined) {
+                openRule(rule);
+              }
+            }}
+            dependencies={[mark, canEdit, roleList, subjects, openId, list.length]}
+            className="flex flex-col outline-none"
+          >
+            {(rule) => (
+              <RuleRow
+                rule={rule}
+                last={rule.position === list.length - 1}
+                roles={roleList}
+                subjects={subjects}
+                canEdit={canEdit}
+                isOpen={rule.id === openId}
+                mark={mark(rule.id)}
+                onOpen={() => {
+                  openRule(rule);
+                }}
+                onMove={(offset) => {
+                  moveBy(rule.id, offset);
+                }}
+                onDelete={() => {
+                  setDeleting(rule);
+                }}
+              />
+            )}
+          </GridList>
+        </div>
+      ) : null}
+
+      {rules.isSuccess ? <RuleTest rules={list} /> : null}
+
+      {drawer !== null ? (
+        <RuleDrawer
+          key={drawer.key}
+          rule={drawer.rule}
+          count={list.length}
+          roles={roleList}
+          sequences={sequences.data ?? []}
+          subjects={subjects}
+          canEdit={canEdit}
+          onSaved={(saved) => {
+            setDrawer((current) => (current === null ? current : { ...current, rule: saved }));
           }}
+          onClose={closeDrawer}
         />
       ) : null}
 
-      <ConfirmDialog
-        isOpen={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open) {
+      {deleting !== null ? (
+        <DeleteRuleDialog
+          rule={deleting}
+          onClose={() => {
             setDeleting(null);
-          }
-        }}
-        title={deleting === null ? "" : <DeleteTitle description={describeRule(deleting)} />}
-        confirmLabel={<Trans>Delete rule</Trans>}
-        danger
-        isBusy={remove.isPending}
-        error={remove.isError ? remove.error.message : undefined}
-        onConfirm={() => {
-          if (deleting !== null) {
-            remove.mutate(deleting.id);
-          }
-        }}
-      >
-        <p>{deleting === null ? null : ruleDeletionConsequence(deleting)}</p>
-      </ConfirmDialog>
+          }}
+          onDeleted={() => {
+            setDeleting(null);
+          }}
+        />
+      ) : null}
     </Page>
   );
 }
 
-function DeleteTitle({ description }: { description: string }) {
-  return <Trans>Delete the rule for {description}?</Trans>;
-}
-
-function MatchCount({ count }: { count: number }) {
-  return count === 0 ? (
-    <Trans>No registered machine</Trans>
-  ) : (
-    <>{plural(count, { one: "# machine", other: "# machines" })}</>
-  );
-}
-
-function ChangedBy({ rule, now }: { rule: AssignmentRuleView; now: number }) {
-  const when = relativeTime(rule.updatedUtc, now);
-  const by = rule.updatedBy;
+function RuleRow({
+  rule,
+  last,
+  roles,
+  subjects,
+  canEdit,
+  isOpen,
+  mark,
+  onOpen,
+  onMove,
+  onDelete,
+}: {
+  rule: RuleView;
+  last: boolean;
+  roles: readonly MachineRoleView[];
+  subjects: readonly Subject[];
+  canEdit: boolean;
+  isOpen: boolean;
+  mark: string;
+  onOpen: () => void;
+  onMove: (offset: number) => void;
+  onDelete: () => void;
+}) {
+  const { t } = useLingui();
+  const name = ruleName(rule);
+  const number = String(rule.position + 1).padStart(2, "0");
+  const sentence = conditionSentence("rule", rule.when, subjects);
+  const effects = ruleEffects(rule, roles);
+  const problems = rule.problems.length;
+  const matching = rule.matchingMachines;
+  const count =
+    matching === 0 ? t`No machine` : plural(matching, { one: "# machine", other: "# machines" });
+  // What a screen reader says of the row: its name, its condition, what it does and what it matches.
+  const text = [name, sentence, effects.join(", "), count].filter((part) => part !== "").join(". ");
 
   return (
-    <span title={new Date(rule.updatedUtc).toLocaleString()}>
-      {by === null ? (
-        when
-      ) : (
-        <Trans>
-          {when} by {by}
-        </Trans>
-      )}
-    </span>
+    <GridListItem
+      id={rule.id}
+      textValue={text}
+      data-rule-id={rule.id}
+      className={({ isFocusVisible, isDragging }) =>
+        cx(
+          "grid cursor-pointer items-center gap-x-3 gap-y-1 px-4 py-3 shadow-[inset_0_-1px_0_var(--color-line-soft)] outline-none motion-highlight hover:bg-hover",
+          // On a phone the count goes under the rule, so the rule keeps the width.
+          canEdit
+            ? "grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_2rem] sm:grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_6rem_2rem]"
+            : "grid-cols-[2.125rem_minmax(0,1fr)] sm:grid-cols-[2.125rem_minmax(0,1fr)_6rem]",
+          isOpen && "bg-selected hover:bg-selected",
+          isFocusVisible && "outline-2 -outline-offset-2 outline-focus",
+          isDragging && "opacity-50",
+          mark,
+        )
+      }
+    >
+      {canEdit ? (
+        <AriaButton
+          slot="drag"
+          aria-label={t`Move ${name}`}
+          className="row-span-2 flex h-8 w-5.5 cursor-grab items-center justify-center rounded-key text-control outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:row-span-1"
+        >
+          <IconGripVertical aria-hidden="true" size={16} stroke={2} />
+        </AriaButton>
+      ) : null}
+      <span className="row-span-2 type-numeral text-ink-2 tabular-nums sm:row-span-1">
+        {number}
+      </span>
+      <div
+        className={cx(
+          "row-start-1 flex min-w-0 flex-col gap-1.25",
+          canEdit ? "col-start-3" : "col-start-2",
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className={cx("truncate type-label", rule.enabled ? "text-ink" : "text-ink-2")}>
+            {rule.name}
+          </span>
+          {rule.enabled ? null : (
+            <StateTag tone="idle" className="h-5">
+              <Trans>Off</Trans>
+            </StateTag>
+          )}
+          {problems > 0 ? (
+            <StateTag tone="fail" className="h-5">
+              {plural(problems, { one: "# problem", other: "# problems" })}
+            </StateTag>
+          ) : null}
+        </span>
+        <span
+          className="line-clamp-2 type-small break-words text-muted sm:line-clamp-1"
+          title={sentence}
+        >
+          {sentence}
+        </span>
+        {effects.length > 0 ? (
+          <span className="flex flex-wrap gap-1.5">
+            {effects.map((effect, index) => (
+              <span
+                key={index}
+                className="inline-flex h-5.5 max-w-full items-center truncate rounded-tag px-2 type-small whitespace-nowrap text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)]"
+              >
+                {effect}
+              </span>
+            ))}
+          </span>
+        ) : null}
+      </div>
+      <span
+        className={cx(
+          "row-start-2 type-small text-muted sm:row-start-1 sm:text-right",
+          canEdit ? "col-start-3 sm:col-start-4" : "col-start-2 sm:col-start-3",
+        )}
+      >
+        {count}
+      </span>
+      {canEdit ? (
+        <RuleMenu
+          name={name}
+          first={rule.position === 0}
+          last={last}
+          onOpen={onOpen}
+          onMove={onMove}
+          onDelete={onDelete}
+        />
+      ) : null}
+    </GridListItem>
   );
 }
 
 function RuleMenu({
-  rule,
-  onEdit,
+  name,
+  first,
+  last,
+  onOpen,
+  onMove,
   onDelete,
 }: {
-  rule: AssignmentRuleView;
-  onEdit: () => void;
+  name: string;
+  first: boolean;
+  last: boolean;
+  onOpen: () => void;
+  onMove: (offset: number) => void;
   onDelete: () => void;
 }) {
   const { t } = useLingui();
-  const description = describeRule(rule);
+  const label = t`Actions for ${name}`;
 
   return (
     <MenuTrigger>
       <AriaButton
-        aria-label={t`Actions for the rule for ${description}`}
-        className="flex size-7.5 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        aria-label={label}
+        className="col-start-4 row-span-2 row-start-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:col-start-5 sm:row-span-1"
       >
         <IconDots size={18} stroke={2} />
       </AriaButton>
       <Menu
-        aria-label={t`Actions for the rule for ${description}`}
+        aria-label={label}
+        disabledKeys={[...(first ? ["up"] : []), ...(last ? ["down"] : [])]}
         onAction={(key) => {
-          if (key === "edit") {
-            onEdit();
-          } else {
-            onDelete();
+          switch (key) {
+            case "edit":
+              onOpen();
+              break;
+            case "up":
+              onMove(-1);
+              break;
+            case "down":
+              onMove(1);
+              break;
+            case "delete":
+              onDelete();
+              break;
           }
         }}
       >
         <MenuItem id="edit">
           <Trans>Change</Trans>
+        </MenuItem>
+        <MenuItem id="up" textValue={t`Move up`}>
+          <Text slot="label" className="flex-1">
+            <Trans>Move up</Trans>
+          </Text>
+          <Keyboard className="type-small text-muted">Alt+↑</Keyboard>
+        </MenuItem>
+        <MenuItem id="down" textValue={t`Move down`}>
+          <Text slot="label" className="flex-1">
+            <Trans>Move down</Trans>
+          </Text>
+          <Keyboard className="type-small text-muted">Alt+↓</Keyboard>
         </MenuItem>
         <MenuItem id="delete" className="text-fail-text">
           <Trans>Delete</Trans>

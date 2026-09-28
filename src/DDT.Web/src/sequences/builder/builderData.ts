@@ -2,40 +2,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 
+import { accountsQuery, type AccountView } from "@/accounts/accounts";
 import { factCatalogue, sampleMachine, type Subject } from "@/conditions/conditions";
 import { useConditionData } from "@/conditions/subjects";
-import { apiGet } from "@/lib/api";
-import type { SecretState } from "@/settings/settings";
 
 import { lookup, renderTemplate } from "../flow/templates";
 import type { InputDeclaration, VariableDeclaration } from "../sequences";
 
 // What the fields of the flow builder choose from and complete, beside the step catalog: the subjects of conditions,
 // the names templates can use, a sample machine to preview them for, and the stored accounts.
-
-// The server's AccountView: an account steps use, its password never sent. usedBy lists the sequences that name it.
-export interface AccountView {
-  id: string;
-  name: string;
-  userName: string;
-  domain: string | null;
-  hosts: string[];
-  runAs: boolean;
-  password: SecretState;
-  usedBy: { sequenceId: string; sequenceName: string }[];
-  revision: number;
-  updatedUtc: string;
-  updatedBy: string | null;
-}
-
-export const accountsQuery = queryOptions({
-  queryKey: ["accounts"],
-  queryFn: () => apiGet<AccountView[]>("/api/accounts"),
-  staleTime: 5 * 60_000,
-});
 
 export interface BuilderData {
   subjects: Subject[];
@@ -74,7 +52,7 @@ export function useBuilderData(declared: {
   inputs: readonly InputDeclaration[];
 }): BuilderData {
   const { subjects, ruleValues } = useConditionData(declared);
-  const accounts = useQuery(accountsQuery);
+  const accounts = useQuery({ ...accountsQuery, staleTime: 5 * 60_000 });
   const { variables, inputs } = declared;
 
   return useMemo(() => {

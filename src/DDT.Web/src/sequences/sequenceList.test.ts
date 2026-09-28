@@ -5,8 +5,8 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import type { AssignmentRuleView } from "@/rules/rules";
-import { deploymentSummary, machineSummary } from "@/test/builders";
+import type { RuleView } from "@/rules/rules";
+import { deploymentSummary, machineSummary, ruleView } from "@/test/builders";
 
 import {
   activeRunsOf,
@@ -64,20 +64,8 @@ function view(overrides: Partial<SequenceView> = {}): SequenceView {
   };
 }
 
-function rule(overrides: Partial<AssignmentRuleView>): AssignmentRuleView {
-  return {
-    id: "r1",
-    kind: "Model",
-    mac: null,
-    manufacturer: null,
-    model: "Latitude 7440",
-    sequenceId: "0193a4b2-0000-7000-8000-0000000000e1",
-    sequenceName: "Install Windows",
-    description: null,
-    updatedUtc: "2026-09-15T10:00:00Z",
-    updatedBy: "admin",
-    ...overrides,
-  };
+function rule(overrides: Partial<RuleView>): RuleView {
+  return ruleView({ id: "r1", name: "Latitude laptops", ...overrides });
 }
 
 describe("the sequence list", () => {
@@ -96,12 +84,9 @@ describe("the sequence list", () => {
     expect(new Set(copy.steps.map((step) => step.id)).size).toBe(2);
   });
 
-  it("names what a rule matches", () => {
-    expect(ruleTarget(rule({}))).toBe("model Latitude 7440");
-    expect(ruleTarget(rule({ manufacturer: "Dell Inc." }))).toBe("model Dell Inc. Latitude 7440");
-    expect(ruleTarget(rule({ kind: "Mac", mac: "00155D010203", model: null }))).toBe(
-      "MAC 00:15:5D:01:02:03",
-    );
+  it("names a rule by its place and its name", () => {
+    expect(ruleTarget(rule({}))).toBe("Rule 1, Latitude laptops");
+    expect(ruleTarget(rule({ position: 3, name: "Kiosk" }))).toBe("Rule 4, Kiosk");
   });
 
   it("counts the machines a sequence is assigned to or running on", () => {
@@ -119,12 +104,12 @@ describe("the sequence list", () => {
   it("says which rules keep a sequence from being deleted", () => {
     expect(deletionBlocker(summary(), [])).toBeNull();
     expect(deletionBlocker(summary(), [rule({})])).toBe(
-      "The rule for model Latitude 7440 chooses Install Windows. Delete that rule or let it choose another sequence, then delete this one.",
+      "Rule 1, Latitude laptops chooses Install Windows. Let that rule choose another sequence or none, then delete this one.",
     );
     expect(
-      deletionBlocker(summary(), [rule({}), rule({ id: "r2", kind: "Mac", mac: "00155D010203" })]),
+      deletionBlocker(summary(), [rule({}), rule({ id: "r2", position: 3, name: "Kiosk" })]),
     ).toBe(
-      "The rules for model Latitude 7440, MAC 00:15:5D:01:02:03 choose Install Windows. Delete those rules or let them choose another sequence, then delete this one.",
+      "Rule 1, Latitude laptops and rule 4, Kiosk choose Install Windows. Let those rules choose another sequence or none, then delete this one.",
     );
   });
 

@@ -20,7 +20,7 @@ import type { ResolvedValue } from "@/values/values";
 
 export type DeploymentState = "Assigned" | "Running" | "Done" | "Failed" | "Cancelled";
 
-// Rule: an assignment rule chose the sequence and an operator approved the machine with it on the web.
+// Rule: a rule chose the sequence and an operator approved the machine with it on the web.
 export type DeploymentSource = "Web" | "Console" | "Rule";
 
 // What the agent does between steps, so the page can say why no step is running. WaitingForInput: the run waits at

@@ -7,8 +7,10 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { apiGet } from "@/lib/api";
+import { machineRolesQuery } from "@/roles/roles";
 import { rulesQuery } from "@/rules/rules";
 import type { FactView, InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
+import type { NamedValue } from "@/values/values";
 
 import { factCatalogue, subjectsOf, type Subject } from "./conditions";
 
@@ -22,25 +24,10 @@ export const factsQuery = queryOptions({
   staleTime: Number.POSITIVE_INFINITY,
 });
 
-// A value a rule or a machine role sets, such as TimeZone = W. Europe Standard Time.
-export interface NamedValue {
-  name: string;
-  value: string;
-}
+export type { NamedValue };
 
-// Rules and machine roles as far as the builder reads them: the values they set, where the server sends them.
-interface SetsValues {
-  values?: NamedValue[] | null;
-}
-
-export const machineRolesQuery = queryOptions({
-  queryKey: ["machine-roles"],
-  queryFn: () => apiGet<SetsValues[]>("/api/machine-roles"),
-  staleTime: 5 * 60_000,
-});
-
-function valuesOf(list: readonly unknown[] | undefined): NamedValue[] {
-  return (list ?? []).flatMap((item) => (item as SetsValues).values ?? []);
+function valuesOf(list: readonly { values: NamedValue[] }[] | undefined): NamedValue[] {
+  return (list ?? []).flatMap((item) => item.values);
 }
 
 export interface ConditionData {
@@ -57,7 +44,7 @@ export function useConditionData(declared: {
 }): ConditionData {
   const facts = useQuery(factsQuery);
   const rules = useQuery({ ...rulesQuery, staleTime: 5 * 60_000 });
-  const roles = useQuery(machineRolesQuery);
+  const roles = useQuery({ ...machineRolesQuery, staleTime: 5 * 60_000 });
   const { variables, inputs } = declared;
   // The labels are in the person's language.
   const locale = useLingui().i18n.locale;

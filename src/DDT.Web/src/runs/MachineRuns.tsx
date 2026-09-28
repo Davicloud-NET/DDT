@@ -47,8 +47,8 @@ export function MachineRuns({
       {runs.length === 0 ? (
         <EmptyState title={<Trans>No runs yet</Trans>}>
           <Trans>
-            Assign a sequence above, or add an assignment rule for its model under Deployment,
-            Assignment rules.
+            Assign a sequence above, or add a rule that chooses one for machines like it under
+            Deployment, Rules.
           </Trans>
         </EmptyState>
       ) : (

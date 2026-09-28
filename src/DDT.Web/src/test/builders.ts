@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import type { AccountView } from "@/accounts/accounts";
 import type { CurrentUser } from "@/auth/auth";
 import type {
   DeploymentOptionsView,
@@ -13,7 +14,8 @@ import type { ImageSummary } from "@/images/images";
 import type { MachineLogEntry } from "@/log/log";
 import type { MachineSummary } from "@/machines/machines";
 import type { PackageSummary } from "@/packages/packages";
-import type { AssignmentRuleView, MachineSequenceResolution } from "@/rules/rules";
+import type { MachineRoleView } from "@/roles/roles";
+import type { MachineSequenceResolution, RuleView } from "@/rules/rules";
 import type { SequenceStep, SequenceSummary, SequenceView } from "@/sequences/sequences";
 
 // Whole objects for tests, so a field the page reads is never missing from a fixture.
@@ -220,17 +222,61 @@ export function packageSummary(overrides: Partial<PackageSummary> = {}): Package
   };
 }
 
-export function assignmentRule(overrides: Partial<AssignmentRuleView> = {}): AssignmentRuleView {
+// A rule at the top of the list that chooses Install Windows for Dell Latitudes.
+export function ruleView(overrides: Partial<RuleView> = {}): RuleView {
   return {
     id: "0193a4b2-0000-7000-8000-0000000000f1",
-    kind: "Model",
-    mac: null,
-    manufacturer: "Dell Inc.",
-    model: "Latitude*",
+    position: 0,
+    name: "Latitude laptops",
+    description: null,
+    enabled: true,
+    when: {
+      kind: "all",
+      parts: [
+        { kind: "test", variable: "Manufacturer", operator: "Equals", value: "Dell Inc." },
+        { kind: "test", variable: "Model", operator: "StartsWith", value: "Latitude" },
+      ],
+    },
     sequenceId: "0193a4b2-0000-7000-8000-0000000000e1",
     sequenceName: "Install Windows",
-    description: null,
+    values: [],
+    roleIds: [],
+    revision: 1,
+    problems: [],
+    matchingMachines: 0,
     updatedUtc: "2026-09-16T10:00:00Z",
+    updatedBy: "admin",
+    ...overrides,
+  };
+}
+
+export function machineRole(overrides: Partial<MachineRoleView> = {}): MachineRoleView {
+  return {
+    id: "0193a4b2-0000-7000-8000-0000000000c1",
+    name: "Office PC",
+    description: null,
+    values: [],
+    revision: 1,
+    ruleCount: 0,
+    updatedUtc: "2026-09-16T10:00:00Z",
+    updatedBy: "admin",
+    ...overrides,
+  };
+}
+
+// An account with its password set, which no sequence names.
+export function accountView(overrides: Partial<AccountView> = {}): AccountView {
+  return {
+    id: "0193a4b2-0000-7000-8000-0000000000a9",
+    name: "Join account",
+    userName: "CORP\\ddt-join",
+    domain: "corp.example",
+    hosts: [],
+    runAs: false,
+    password: { isSet: true, unreadable: false, updatedUtc: "2026-09-15T16:20:00Z" },
+    usedBy: [],
+    revision: 1,
+    updatedUtc: "2026-09-15T16:20:00Z",
     updatedBy: "admin",
     ...overrides,
   };

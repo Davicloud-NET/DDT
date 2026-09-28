@@ -4,9 +4,18 @@
 
 import { t } from "@lingui/core/macro";
 
-// The values a run works with, such as ComputerName or TimeZone, and where each came from. The server works them out
-// when a run starts, from the first source that sets a name: input answers, the machine's own values, rules from the
-// top, machine roles, the sequence's defaults and the deployment defaults.
+// The values a run works with, such as ComputerName or TimeZone, and where each came from, as the server's
+// DDT.Contracts.Values has them; and the values rules and machine roles set, as their pages edit them. The server works a
+// run's values out when it starts, from the first source that sets a name: input answers, the machine's own values,
+// rules from the top, machine roles, the sequence's defaults and the deployment defaults. The machine's page lists
+// them with valueRows.ts.
+
+// A value a rule or a machine role sets, such as TimeZone = W. Europe Standard Time. value is a template, such as
+// PC-{{SerialNumber|alnum|right:12}}. Every signed-in user can read it, so it never holds a password.
+export interface NamedValue {
+  name: string;
+  value: string;
+}
 
 export type ValueSource =
   "Input" | "Machine" | "Rule" | "Role" | "SequenceDefault" | "DeploymentDefault" | "Fact" | "Step";
@@ -95,4 +104,40 @@ export function prefillText(value: Pick<ResolvedValue, "source" | "sourceName">)
 // The values that are used, one per name, in the order the server gave them.
 export function usedValues(values: readonly ResolvedValue[]): ResolvedValue[] {
   return values.filter((value) => !value.overridden);
+}
+
+// A value of the list that a rule's or a machine role's drawer edits, with a key that stays when rows above it are
+// taken away.
+export interface EditedValue extends NamedValue {
+  key: string;
+}
+
+export function editedValues(values: readonly NamedValue[]): EditedValue[] {
+  return values.map((value) => ({ ...value, key: crypto.randomUUID() }));
+}
+
+function isBlank(row: NamedValue): boolean {
+  return row.name.trim() === "" && row.value.trim() === "";
+}
+
+// What is sent: the rows without their keys, a row with neither a name nor a value left out.
+export function namedValues(rows: readonly EditedValue[]): NamedValue[] {
+  return rows
+    .filter((row) => !isBlank(row))
+    .map(({ name, value }) => ({ name: name.trim(), value }));
+}
+
+// A field of what was sent, such as values[1].name, as the field of the row it came from: the blank rows left out
+// before it move it down.
+export function rowField(rows: readonly EditedValue[], field: string): string {
+  const match = /^values\[(\d+)\](.*)$/.exec(field);
+
+  if (match === null) {
+    return field;
+  }
+
+  const sent = rows.flatMap((row, index) => (isBlank(row) ? [] : [index]));
+  const index = sent[Number(match[1])];
+
+  return index === undefined ? field : `values[${String(index)}]${match[2] ?? ""}`;
 }

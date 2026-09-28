@@ -276,9 +276,9 @@ public static class SequenceEndpoints
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
 
         // A rule shows the name of the sequence it chooses.
-        if (renamed && await database.AssignmentRules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))
+        if (renamed && await database.Rules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))
         {
-            live.RulesChanged(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
+            live.RulesChanged(await RuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
         }
 
         return TypedResults.Ok(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
@@ -300,7 +300,7 @@ public static class SequenceEndpoints
             return TypedResults.NotFound();
         }
 
-        int rules = await database.AssignmentRules.CountAsync(r => r.TaskSequenceId == id, cancellationToken).ConfigureAwait(false);
+        int rules = await database.Rules.CountAsync(r => r.TaskSequenceId == id, cancellationToken).ConfigureAwait(false);
 
         if (rules > 0)
         {

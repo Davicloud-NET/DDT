@@ -149,11 +149,18 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.PackagesRemoved, new PackagesRemovedEvent([.. packageIds]));
     }
 
-    public void RulesChanged(AssignmentRuleView[] rules)
+    public void RulesChanged(RuleView[] rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
 
         _ = PushEventAsync(LiveEvents.RulesChanged, rules);
+    }
+
+    public void RolesChanged(MachineRoleView[] roles)
+    {
+        ArgumentNullException.ThrowIfNull(roles);
+
+        _ = PushEventAsync(LiveEvents.RolesChanged, roles);
     }
 
     public void BootImageChanged(BootImageView bootImage)

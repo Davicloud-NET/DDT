@@ -15,6 +15,7 @@ public static class SequenceServiceCollectionExtensions
 
         services.AddScoped<SequenceCatalog>();
         services.AddScoped<SequenceResolver>();
+        services.AddScoped<MachineValues>();
 
         return services;
     }

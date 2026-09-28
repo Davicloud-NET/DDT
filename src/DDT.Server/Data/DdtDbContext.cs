@@ -4,7 +4,6 @@
 
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
-using DDT.Core.Machines;
 using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -46,7 +45,6 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
 
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
-    public DbSet<AssignmentRule> AssignmentRules => Set<AssignmentRule>();
 
     public DbSet<Rule> Rules => Set<Rule>();
 
@@ -234,22 +232,6 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             sequence.Property(s => s.UpdatedByName).HasMaxLength(256);
             sequence.HasIndex(s => s.NormalizedName).IsUnique();
             sequence.HasOne<DdtUser>().WithMany().HasForeignKey(s => s.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
-        });
-
-        builder.Entity<AssignmentRule>(rule =>
-        {
-            rule.Property(r => r.Kind).HasConversion<string>().HasMaxLength(16);
-            rule.Property(r => r.MatchKey).HasMaxLength(AssignmentRuleKeys.MaxMatchKeyLength);
-            rule.Property(r => r.Mac).HasMaxLength(12);
-            rule.Property(r => r.Manufacturer).HasMaxLength(HardwareModels.MaxLength);
-            rule.Property(r => r.Model).HasMaxLength(HardwareModels.MaxLength);
-            rule.Property(r => r.Description).HasMaxLength(AssignmentRuleKeys.MaxDescriptionLength);
-            rule.Property(r => r.UpdatedByName).HasMaxLength(256);
-            rule.HasIndex(r => r.MatchKey).IsUnique();
-
-            // A sequence that rules choose cannot be deleted, so no rule is left pointing nowhere.
-            rule.HasOne<TaskSequence>().WithMany().HasForeignKey(r => r.TaskSequenceId).OnDelete(DeleteBehavior.Restrict);
-            rule.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<Rule>(rule =>

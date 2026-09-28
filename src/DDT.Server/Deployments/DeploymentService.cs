@@ -145,7 +145,7 @@ public sealed class DeploymentService(
         return choices;
     }
 
-    // The sequence an assignment rule chooses for the machine, offered first at the console. Only one that can run.
+    // The sequence the rules choose for the machine, offered first at the console. Only one that can run.
     public async Task<Guid?> SuggestedAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -350,7 +350,7 @@ public sealed class DeploymentService(
             deployment,
             now,
             address,
-            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by the rule for {AssignmentRuleKeys.Describe(rule)} and approved by {userName ?? SomeOperator}.{MismatchNote(machine, definition, references, allowMismatch)}",
+            $"{sequence.Name}, revision {sequence.Revision}, to machine {machine.Id:D}, chosen by rule {rule.Position + 1}, {rule.Name}, and approved by {userName ?? SomeOperator}.{MismatchNote(machine, definition, references, allowMismatch)}",
             actorUserId: userId,
             actorName: userName));
 

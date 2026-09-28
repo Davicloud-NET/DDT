@@ -8,7 +8,7 @@ namespace DDT.Core.Sequences;
 
 // IPv4 addresses as conditions write them: four decimal numbers of 0 to 255, nothing shorter. IPAddress.Parse would
 // also take 10.1 or 0x0A000001, which a person reading the condition would not expect to match.
-internal static class Ipv4
+public static class Ipv4
 {
     public static bool TryParse(string? text, out uint address)
     {

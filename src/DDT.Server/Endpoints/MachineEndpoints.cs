@@ -3,11 +3,16 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security.Claims;
+using System.Text.Json;
+using DDT.Contracts;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
+using DDT.Contracts.Sequences;
+using DDT.Contracts.Values;
 using DDT.Core.Machines;
+using DDT.Core.Values;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -99,11 +104,14 @@ public static class MachineEndpoints
         ]);
     }
 
+    // With a preview of the values a run would start with: of the run the machine has, or else of the sequence the rules
+    // choose, or of none, where only the machine, the rules, the machine roles and the deployment defaults give values.
     private static async Task<Results<Ok<MachineSequenceResolution>, NotFound>> ResolveSequenceAsync(
         Guid id,
         DdtDbContext database,
         SequenceResolver resolver,
         SequenceCatalog catalog,
+        DdtSettings settings,
         CancellationToken cancellationToken)
     {
         Machine? machine = await database.Machines.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
@@ -121,6 +129,42 @@ public static class MachineEndpoints
             ? resolution.Explanation
             : ServerMessages.ResolutionCannotRun.With("explanation", resolution.Explanation, "sequence", resolution.Sequence!.Name, "count", problems);
 
+        SequenceDefinition? definition = resolution.Sequence is { } chosen ? SequenceDocuments.Read(chosen.Definition) : null;
+
+        if (resolution.Deployment is { } active
+            && await database.DeploymentSnapshots
+                .AsNoTracking()
+                .Where(s => s.DeploymentId == active.Id)
+                .Select(s => s.Definition)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false) is { } frozen)
+        {
+            definition = SequenceDocuments.Read(frozen);
+        }
+
+        IReadOnlyList<ResolvedValue> values;
+        IReadOnlyList<ResolvedValue> inputDefaults = [];
+        IReadOnlyList<SequenceProblem> valueProblems = [];
+
+        // A run that started works with the values it started with.
+        if (resolution.Deployment is { State: DeploymentState.Running, Values: { } started })
+        {
+            values = JsonSerializer.Deserialize(started, DdtJsonContext.Default.IReadOnlyListResolvedValue) ?? [];
+        }
+        else
+        {
+            ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(
+                machine,
+                resolution.Machine,
+                resolution.Match,
+                definition,
+                MachineValues.Answers(RunAnswer.Read(resolution.Deployment?.Answers)),
+                settings.Current.Deployment));
+            values = preview.Values;
+            inputDefaults = preview.InputDefaults;
+            valueProblems = MachineValues.ProblemsOf(preview);
+        }
+
         return TypedResults.Ok(new MachineSequenceResolution(
             resolution.Source,
             resolution.Sequence?.Id,
@@ -129,7 +173,12 @@ public static class MachineEndpoints
             problems,
             explanation.Text,
             explanation.Code,
-            explanation.Args));
+            explanation.Args,
+            resolution.Match.MatchedRuleIds,
+            values,
+            [.. definition?.Inputs ?? []],
+            inputDefaults,
+            valueProblems));
     }
 
     // Without a cursor, the newest lines. Before pages back from the first line a page showed; after catches up from

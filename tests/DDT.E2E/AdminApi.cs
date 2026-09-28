@@ -132,11 +132,12 @@ internal sealed class AdminApi : IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task DeleteAsync(string path, CancellationToken cancellationToken)
+    // A rule's delete answers the rules that are left, whose places moved; everything else answers nothing.
+    public async Task DeleteAsync(string path, CancellationToken cancellationToken, HttpStatusCode expected = HttpStatusCode.NoContent)
     {
         using HttpRequestMessage request = new(HttpMethod.Delete, new Uri(path, UriKind.Relative));
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-        await ExpectAsync(response, HttpStatusCode.NoContent, cancellationToken).ConfigureAwait(false);
+        await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<ImageSummary>> UploadImageAsync(string file, CancellationToken cancellationToken)

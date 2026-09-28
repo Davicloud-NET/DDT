@@ -38,6 +38,11 @@ msgid "''{locale}'' is not a language and region that Windows knows. Use a name 
 msgstr "''{locale}'' is not a language and region that Windows knows. Use a name such as de-DE."
 
 #: src/lib/serverMessages.ts
+msgctxt "namedValue.nameInvalid"
+msgid "''{name}'' cannot name a value. Start with a letter, and use only letters, digits and _, at most {max} characters."
+msgstr "''{name}'' cannot name a value. Start with a letter, and use only letters, digits and _, at most {max} characters."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.certificate.nameInvalid"
 msgid "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5."
 msgstr "''{name}'' is not a host name or an address. Write each name alone, such as ddt.corp.example or 10.0.0.5."
@@ -288,6 +293,11 @@ msgstr "{count, plural, one {# warning} other {# warnings}}"
 msgctxt "sequence.chosenByRules"
 msgid "{count, plural, one {A rule chooses this sequence. Delete the rule or let it choose another sequence, then delete this one.} other {# rules choose this sequence. Delete them or let them choose another sequence, then delete this one.}}"
 msgstr "{count, plural, one {A rule chooses this sequence. Delete the rule or let it choose another sequence, then delete this one.} other {# rules choose this sequence. Delete them or let them choose another sequence, then delete this one.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineRole.givenByRules"
+msgid "{count, plural, one {A rule gives this machine role. Take it out of the rule, then delete the role.} other {# rules give this machine role. Take it out of them, then delete the role.}}"
+msgstr "{count, plural, one {A rule gives this machine role. Take it out of the rule, then delete the role.} other {# rules give this machine role. Take it out of them, then delete the role.}}"
 
 #: src/images/ImagesPage.tsx
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
@@ -564,6 +574,11 @@ msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} has {warnings}. It runs, but look at the sequence first."
 
 #: src/lib/serverMessages.ts
+msgctxt "rule.conditionRunVariable"
+msgid "{name} has a value only while a run goes on, so a rule cannot test it."
+msgstr "{name} has a value only while a run goes on, so a rule cannot test it."
+
+#: src/lib/serverMessages.ts
 msgctxt "values.fact"
 msgid "{name} is a fact of the machine, which a value cannot set."
 msgstr "{name} is a fact of the machine, which a value cannot set."
@@ -625,9 +640,19 @@ msgctxt "settings.ldapTest.notDirectoryAccount"
 msgid "{name} is not a directory account, so its password is not sent to the directory."
 msgstr "{name} is not a directory account, so its password is not sent to the directory."
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionUnknownName"
+msgid "{name} is not a fact of the machine or a value that a rule or a machine role sets. Check the spelling."
+msgstr "{name} is not a fact of the machine or a value that a rule or a machine role sets. Check the spelling."
+
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "{name} is not a PNG image. Upload the logo as a PNG file."
 msgstr "{name} is not a PNG image. Upload the logo as a PNG file."
+
+#: src/lib/serverMessages.ts
+msgctxt "namedValue.repeated"
+msgid "{name} is set more than once here. Keep one."
+msgstr "{name} is set more than once here. Keep one."
 
 #: src/users/UsersPage.tsx
 msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working, until an administrator enables it again. Nothing is deleted."
@@ -1064,6 +1089,11 @@ msgid "A machine over the limit waits until a transfer ends."
 msgstr "A machine over the limit waits until a transfer ends."
 
 #: src/lib/serverMessages.ts
+msgctxt "rule.roleGone"
+msgid "A machine role this rule gives no longer exists. Take it out of the rule."
+msgstr "A machine role this rule gives no longer exists. Take it out of the rule."
+
+#: src/lib/serverMessages.ts
 msgctxt "model.manufacturerWhole"
 msgid "A manufacturer is matched whole, without {wildcard}."
 msgstr "A manufacturer is matched whole, without {wildcard}."
@@ -1103,6 +1133,11 @@ msgstr "A restart step restarts anyway, so it cannot restart again after it."
 msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.tooManyRoles"
+msgid "A rule can give at most {max} machine roles."
+msgstr "A rule can give at most {max} machine roles."
+
 #: src/rules/RulesPage.tsx
 msgid "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
 msgstr "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
@@ -1126,6 +1161,11 @@ msgstr "A rule for its model"
 #: src/rules/RulesPage.tsx
 msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 msgstr "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionTooLarge"
+msgid "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
+msgstr "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
 
 #: src/runs/RunHistoryPage.tsx
 msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
@@ -1263,6 +1303,11 @@ msgstr "A user name can have at most {max} characters."
 msgctxt "identity.loginAlreadyAssociated"
 msgid "A user with this login already exists."
 msgstr "A user with this login already exists."
+
+#: src/lib/serverMessages.ts
+msgctxt "namedValue.tooLong"
+msgid "A value's name can have at most {name} characters, and its text at most {text}."
+msgstr "A value's name can have at most {name} characters, and its text at most {text}."
 
 #: src/lib/serverMessages.ts
 msgctxt "role.aViewer"
@@ -1653,6 +1698,11 @@ msgstr "Another administrator saved this sequence while you were editing."
 #: src/settings/NetworkBootPage.tsx
 msgid "Another interface name or address"
 msgstr "Another interface name or address"
+
+#: src/lib/serverMessages.ts
+msgctxt "machineRole.nameTaken"
+msgid "Another machine role is already called {name}. Choose another name."
+msgstr "Another machine role is already called {name}. Choose another name."
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "another processor"
@@ -2065,6 +2115,11 @@ msgstr "Checking the join account"
 msgid "Choose {file} again to resume at {percent}%."
 msgstr "Choose {file} again to resume at {percent}%."
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionChooseName"
+msgid "Choose a fact or a value to test."
+msgstr "Choose a fact or a value to test."
+
 #: src/settings/AgentPanel.tsx
 #: src/settings/ConsoleLogoPanel.tsx
 #: src/uploads/UploadPanel.tsx
@@ -2312,6 +2367,11 @@ msgstr "DDT"
 #: src/settings/NetworkBootPage.tsx
 msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
 msgstr "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionUnreadable"
+msgid "DDT cannot read this rule's condition. Build it again."
+msgstr "DDT cannot read this rule's condition. Build it again."
 
 #: src/about/AboutPage.tsx
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
@@ -2773,6 +2833,11 @@ msgid "Enter a name for the step."
 msgstr "Enter a name for the step."
 
 #: src/lib/serverMessages.ts
+msgctxt "rule.conditionNumber"
+msgid "Enter a number, such as 8192."
+msgstr "Enter a number, such as 8192."
+
+#: src/lib/serverMessages.ts
 msgctxt "user.nameEmpty"
 msgid "Enter a user name."
 msgstr "Enter a user name."
@@ -2781,6 +2846,11 @@ msgstr "Enter a user name."
 msgctxt "user.email"
 msgid "Enter an email address such as jane@corp.example, or leave it empty."
 msgstr "Enter an email address such as jane@corp.example, or leave it empty."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionAddress"
+msgid "Enter an IPv4 address, such as 10.0.0.1."
+msgstr "Enter an IPv4 address, such as 10.0.0.1."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.rebootExitCodes"
@@ -2835,9 +2905,19 @@ msgctxt "sequence.conditionValue"
 msgid "Enter the value to compare with."
 msgstr "Enter the value to compare with."
 
+#: src/lib/serverMessages.ts
+msgctxt "namedValue.nameEmpty"
+msgid "Enter the value's name."
+msgstr "Enter the value's name."
+
 #: src/sequences/fields.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
 msgstr "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionYesNo"
+msgid "Enter yes or no."
+msgstr "Enter yes or no."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.enterPasswordAgain"
@@ -4003,6 +4083,11 @@ msgstr "Names"
 msgid "Names and addresses"
 msgstr "Names and addresses"
 
+#: src/lib/serverMessages.ts
+msgctxt "namedValue.reserved"
+msgid "Names that start with ddt are DDT's own. Choose another name."
+msgstr "Names that start with ddt are DDT's own. Choose another name."
+
 #: src/sequences/sequenceList.ts
 msgid "needs a computer name"
 msgstr "needs a computer name"
@@ -4254,6 +4339,11 @@ msgstr "No registered machine matches yet."
 #: src/users/UsersPage.tsx
 msgid "No role"
 msgstr "No role"
+
+#: src/lib/serverMessages.ts
+msgctxt "resolution.noRuleChooses"
+msgid "No rule chooses a sequence for this machine, so an operator chooses its sequence."
+msgstr "No rule chooses a sequence for this machine, so an operator chooses its sequence."
 
 #: src/lib/serverMessages.ts
 msgctxt "resolution.noRule"
@@ -5239,6 +5329,11 @@ msgstr "Role that {key} gives"
 msgid "Root SHA-256"
 msgstr "Root SHA-256"
 
+#: src/lib/serverMessages.ts
+msgctxt "resolution.ruleNumbered"
+msgid "Rule {number}, {rule}, chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
+msgstr "Rule {number}, {rule}, chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
+
 #: src/audit/auditView.ts
 msgid "Rule added"
 msgstr "Rule added"
@@ -5626,6 +5721,11 @@ msgstr "Set"
 #: src/account/AccountPage.tsx
 msgid "Set a password of your own first"
 msgstr "Set a password of your own first"
+
+#: src/lib/serverMessages.ts
+msgctxt "namedValue.tooMany"
+msgid "Set at most {max} values here."
+msgstr "Set at most {max} values here."
 
 #: src/users/userView.ts
 msgid "Set by an administrator"
@@ -6869,6 +6969,11 @@ msgstr "The normal course of events"
 msgid "The old password no longer works, and {name} is signed out within a minute. Hand over this one in person or through a channel you trust."
 msgstr "The old password no longer works, and {name} is signed out within a minute. Hand over this one in person or through a channel you trust."
 
+#: src/lib/serverMessages.ts
+msgctxt "rule.orderRepeats"
+msgid "The order names a rule more than once."
+msgstr "The order names a rule more than once."
+
 #: src/sequences/sequenceDraft.ts
 msgid "the order of the steps"
 msgstr "the order of the steps"
@@ -7302,6 +7407,16 @@ msgid "Their changes to {list} are lost."
 msgstr "Their changes to {list} are lost."
 
 #: src/lib/serverMessages.ts
+msgctxt "machineRole.tooMany"
+msgid "There can be at most {max} machine roles. Delete one before adding another."
+msgstr "There can be at most {max} machine roles. Delete one before adding another."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.tooMany"
+msgid "There can be at most {max} rules. Delete one before adding another."
+msgstr "There can be at most {max} rules. Delete one before adding another."
+
+#: src/lib/serverMessages.ts
 msgctxt "rule.exists"
 msgid "There is a rule for {rule} already. It chooses {sequence}; change that rule instead."
 msgstr "There is a rule for {rule} already. It chooses {sequence}; change that rule instead."
@@ -7386,6 +7501,11 @@ msgstr "This certificate does not come from DDT's root, which every boot image p
 msgctxt "upload.beyondLength"
 msgid "This chunk ends past the end of the file. Upload the file this session was created for."
 msgstr "This chunk ends past the end of the file. Upload the file this session was created for."
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionOperatorType"
+msgid "This comparison does not fit {name}, which holds {type, select, number {a number} yesNo {yes or no} ipv4 {an IPv4 address} mac {a MAC address} other {any text}}."
+msgstr "This comparison does not fit {name}, which holds {type, select, number {a number} yesNo {yes or no} ipv4 {an IPv4 address} mac {a MAC address} other {any text}}."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notServedNew"
@@ -8146,6 +8266,11 @@ msgstr "Write the answer file"
 #: src/sequences/steps.ts
 msgid "Write the cloud-init seed"
 msgstr "Write the cloud-init seed"
+
+#: src/lib/serverMessages.ts
+msgctxt "rule.conditionSubnet"
+msgid "Write the network as an address and a prefix length, such as 10.0.0.0/24."
+msgstr "Write the network as an address and a prefix length, such as 10.0.0.0/24."
 
 #: src/sequences/sequenceList.ts
 msgid "writes {image}"

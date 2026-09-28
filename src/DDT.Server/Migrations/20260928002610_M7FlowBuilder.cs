@@ -327,13 +327,75 @@ namespace DDT.Server.Migrations
                 table: "RunCredentials",
                 column: "ProvidedByUserId");
 
-            // Hand-written, in M7FlowBuilder.AssignmentRules.cs. Call it again when this migration is generated again.
+            // Hand-written, in M7FlowBuilder.AssignmentRules.cs. Call it again when this migration is generated again, before
+            // the table it copies from is dropped.
             CopyAssignmentRules(migrationBuilder);
+
+            migrationBuilder.DropTable(
+                name: "AssignmentRules",
+                schema: "ddt");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Empty: the rules the ordered list has since cannot all be said as MAC or model rules.
+            migrationBuilder.CreateTable(
+                name: "AssignmentRules",
+                schema: "ddt",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Description = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    Kind = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    Mac = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: true),
+                    Manufacturer = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    MatchKey = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    Model = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    TaskSequenceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UpdatedByName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    UpdatedUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssignmentRules", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AssignmentRules_AspNetUsers_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalSchema: "ddt",
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_AssignmentRules_TaskSequences_TaskSequenceId",
+                        column: x => x.TaskSequenceId,
+                        principalSchema: "ddt",
+                        principalTable: "TaskSequences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_MatchKey",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "MatchKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_TaskSequenceId",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "TaskSequenceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRules_UpdatedByUserId",
+                schema: "ddt",
+                table: "AssignmentRules",
+                column: "UpdatedByUserId");
+
             migrationBuilder.DropTable(
                 name: "Accounts",
                 schema: "ddt");

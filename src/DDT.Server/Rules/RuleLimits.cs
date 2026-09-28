@@ -13,4 +13,27 @@ public static class RuleLimits
     public const int MaxDescriptionLength = 1024;
 
     public const int MaxRoleNameLength = 128;
+
+    // Every change pushes the whole list, with the machines each rule matches counted, so it stays short enough to send
+    // and count at once.
+    public const int MaxRules = 500;
+
+    public const int MaxRoles = 200;
+
+    // As many as a step's condition may have.
+    public const int MaxTests = 20;
+
+    public const int MaxConditionDepth = 4;
+
+    public const int MaxRolesPerRule = 32;
+
+    // What a rule or a machine role sets. A name longer than a value's name can be is a problem; one longer than
+    // MaxStoredValueNameLength is not stored at all.
+    public const int MaxValues = 64;
+
+    public const int MaxValueNameLength = 64;
+
+    public const int MaxStoredValueNameLength = 128;
+
+    public const int MaxValueLength = 1024;
 }

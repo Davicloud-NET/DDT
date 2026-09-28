@@ -238,7 +238,7 @@ with a row of pages, and every setting sits on the page of the thing it configur
 | Category | Pages |
 |---|---|
 | Machines | All machines, a page for each machine with its run and live log, Run history, Approval and zero touch |
-| Deployment | Task sequences, Assignment rules, Deployment defaults |
+| Deployment | Task sequences, Rules, Machine roles, Accounts, Deployment defaults |
 | Library | OS images, Drivers, Files |
 | Boot | Boot image, Network boot |
 | Administration | Users and roles, Sign-in, API tokens, Server, Audit log |

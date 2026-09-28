@@ -10,7 +10,7 @@ namespace DDT.Agent.Sequences;
 // Runs each step with the runner for its kind, inside the accounts it uses, and names the step in every log line
 // meanwhile. A step that throws fails with the exception's message; after a stop the exception goes on, which the engine
 // takes as the stop. A 401 goes to tokenRejected, which stops the run as a refused beat does, and then on to the engine
-// too.
+// too. Without pause, a Pause step is a kind this runner cannot run.
 public sealed class AgentStepRunner(
     PartitionStepRunner partition,
     ApplyImageStepRunner applyImage,
@@ -23,7 +23,8 @@ public sealed class AgentStepRunner(
     StepAccounts accounts,
     Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
-    TimeProvider timeProvider) : IStepRunner
+    TimeProvider timeProvider,
+    PauseStepRunner? pause = null) : IStepRunner
 {
     public const string JoinDomainInWindowsPE =
         "Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in Windows PE.";
@@ -55,6 +56,7 @@ public sealed class AgentStepRunner(
                     WriteRawImageStep writeRawImageStep => await writeRawImage.RunAsync(writeRawImageStep, context, cancellationToken).ConfigureAwait(false),
                     WriteCloudInitSeedStep seedStep => await writeCloudInitSeed.RunAsync(seedStep, context, cancellationToken).ConfigureAwait(false),
                     RebootStep => StepResult.RebootRequired(),
+                    PauseStep pauseStep when pause is not null => await pause.RunAsync(pauseStep, context, cancellationToken).ConfigureAwait(false),
                     JoinDomainStep when context.Phase == SequencePhase.WindowsPE => StepResult.Failed(JoinDomainInWindowsPE),
                     JoinDomainStep joinDomainStep => await joinDomain.RunAsync(joinDomainStep, context, cancellationToken).ConfigureAwait(false),
                     _ => StepResult.Failed(UnknownKind),

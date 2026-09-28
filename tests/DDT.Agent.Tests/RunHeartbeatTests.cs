@@ -157,6 +157,118 @@ public sealed class RunHeartbeatTests
         Assert.Empty(_savedTokens);
     }
 
+    // The sequence's variables go along once each time they change, without the agent's own, until the server has them:
+    // a report that did not get through leaves them for the next.
+    [Fact]
+    public async Task ReportsTheVariablesWhenTheyChanged()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SequenceState state = State(StepState.Done, StepState.Running);
+        _server.OnRunReport(DeploymentState.Running, _ => throw new HttpRequestException("Refused.", null, System.Net.HttpStatusCode.BadRequest));
+
+        _heartbeat.Update(state with { Variables = new Dictionary<string, string> { [RunVariables.WindowsPartition] = "e1", ["Office"] = "Vienna" } });
+        await Assert.ThrowsAsync<HttpRequestException>(() => _heartbeat.ReportAsync(_heartbeat.Snapshot(DeploymentState.Running), cancellationToken));
+        await _heartbeat.ReportNowAsync(cancellationToken);
+        await _heartbeat.ReportNowAsync(cancellationToken);
+        _heartbeat.Update(state with { Variables = new Dictionary<string, string> { ["Office"] = "Vienna", ["Floor"] = new string('4', 2000) } });
+        await _heartbeat.ReportNowAsync(cancellationToken);
+
+        Assert.Equal(
+            [
+                new Dictionary<string, string> { ["Office"] = "Vienna" },
+                new Dictionary<string, string> { ["Office"] = "Vienna" },
+                null,
+                new Dictionary<string, string> { ["Floor"] = new string('4', RunHeartbeat.MaxReportedValueLength), ["Office"] = "Vienna" },
+            ],
+            _server.RunReports.Select(report => report.Variables));
+    }
+
+    // The pause's message goes with every report while the run is paused, and the console at the machine hears of it.
+    [Fact]
+    public void ReportsThePauseWithItsMessage()
+    {
+        int changes = 0;
+        _heartbeat.Changed += () => changes++;
+
+        _heartbeat.Pause("Plug the dock in.");
+        AgentRunReport paused = _heartbeat.Snapshot(DeploymentState.Running);
+        _heartbeat.Resume();
+        AgentRunReport going = _heartbeat.Snapshot(DeploymentState.Running);
+
+        Assert.Equal((RunActivity.Paused, "Plug the dock in."), (paused.Activity, paused.PauseMessage));
+        Assert.Equal((RunActivity.Step, (string?)null), (going.Activity, going.PauseMessage));
+        Assert.Equal(2, changes);
+    }
+
+    // A continue on the web names the visit of the Pause step, so a click that comes late continues no later one, and it
+    // counts even when it came with a report before the wait began.
+    [Fact]
+    public async Task AContinueOnTheWebEndsTheWaitOfItsVisitOnly()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        Guid pause = TestRuns.Apply.Id;
+        _server.OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-1", "resume-1", null, ContinueStepId: pause, ContinuePass: 1))
+            .OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-2", "resume-2", null, ContinueStepId: pause, ContinuePass: 2));
+
+        Task second = _heartbeat.WaitForContinueAsync(pause, 2, cancellationToken);
+        await _heartbeat.ReportNowAsync(cancellationToken);
+
+        Assert.True(_heartbeat.WaitForContinueAsync(pause, 1, cancellationToken).IsCompletedSuccessfully);
+        Assert.False(second.IsCompleted);
+
+        await _heartbeat.ReportNowAsync(cancellationToken);
+        await second.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+    }
+
+    // Once the inputs a run waited for are answered, a report's answer brings the run's values.
+    [Fact]
+    public async Task HandsOnTheValuesAReportsAnswerBrings()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        Dictionary<string, string> values = new() { ["Office"] = "Vienna" };
+        _server.OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-1", "resume-1", null))
+            .OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-2", "resume-2", null, Values: values));
+
+        Task<IReadOnlyDictionary<string, string>> waiting = _heartbeat.WaitForValuesAsync(cancellationToken);
+        await _heartbeat.ReportNowAsync(cancellationToken);
+
+        Assert.False(waiting.IsCompleted);
+
+        await _heartbeat.ReportNowAsync(cancellationToken);
+
+        Assert.Same(values, await waiting.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken));
+        Assert.Same(values, await _heartbeat.WaitForValuesAsync(cancellationToken));
+    }
+
+    // While someone is to answer, the heartbeat reports as often as the server asks, every 5 s unless it says otherwise.
+    [Theory]
+    [InlineData(RunActivity.Paused, null, 5)]
+    [InlineData(RunActivity.WaitingForInput, 2, 2)]
+    [InlineData(RunActivity.Step, 2, 10)]
+    public async Task WhileSomeoneIsToAnswerItReportsAsOftenAsTheServerAsks(RunActivity activity, int? askedSeconds, int seconds)
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        ManualTimeProvider time = new();
+        RunHeartbeat heartbeat = new(
+            _server,
+            new AgentLog(time, TextWriter.Null),
+            _tokens,
+            s_machineId,
+            TestRuns.RunId,
+            _ => Task.CompletedTask,
+            TimeSpan.FromSeconds(10),
+            time);
+        using CancellationTokenSource run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _server.AnswerRunReports = (_, token) => new AgentRunReportResult(token, "resume", null, ReportAfterSeconds: askedSeconds);
+
+        heartbeat.Update(State(StepState.Running));
+        heartbeat.Activity = activity;
+        heartbeat.Start(run, cancellationToken);
+        await WaitForAsync(() => _server.RunReports.Count == 1 && time.HasTimerDueIn(TimeSpan.FromSeconds(seconds)));
+
+        await heartbeat.StopAsync();
+    }
+
     // Quick steps change the run many times a second, and the server takes only so many calls a minute from a machine.
     [Fact]
     public async Task ChangesSoonAfterABeatWaitForTheSpacingAndShareTheNextBeat()

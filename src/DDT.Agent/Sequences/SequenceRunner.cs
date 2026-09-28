@@ -756,7 +756,8 @@ public sealed class SequenceRunner(
                 timeProvider),
             heartbeat.TokenRejected,
             log,
-            timeProvider);
+            timeProvider,
+            new PauseStepRunner(heartbeat, status?.Console, log, timeProvider));
     }
 
     // What Windows needs to go on with the run, if anything, then, as in Microsoft's sequence after applying, the applied

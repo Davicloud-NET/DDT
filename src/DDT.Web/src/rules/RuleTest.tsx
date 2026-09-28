@@ -61,7 +61,7 @@ export function RuleTest({ rules }: { rules: readonly RuleView[] }) {
         <ComboBox
           label={<span className="sr-only">{translate`Machine to test`}</span>}
           placeholder={translate`Choose a machine`}
-          className="w-75 max-w-full"
+          className="w-44 sm:w-75"
           value={machineId}
           onChange={(key) => {
             setMachineId(key === null ? null : String(key));
@@ -146,14 +146,14 @@ function Outcome({
   const count = resolution.problemCount;
 
   return (
-    <dl className="grid grid-cols-[minmax(7rem,11rem)_minmax(0,1fr)] gap-x-4 gap-y-2 type-body">
-      <dt className="text-muted">
+    <dl className="grid grid-cols-1 gap-y-0.5 type-body sm:grid-cols-[minmax(7rem,11rem)_minmax(0,1fr)] sm:gap-x-4 sm:gap-y-2">
+      <dt className="mt-1.5 text-muted first:mt-0 sm:mt-0">
         <Trans>Matches</Trans>
       </dt>
       <dd className="min-w-0">
         {matched.length === 0 ? <Trans>No rule matches this machine.</Trans> : ruleNames(matched)}
       </dd>
-      <dt className="text-muted">
+      <dt className="mt-1.5 text-muted first:mt-0 sm:mt-0">
         <Trans>Task sequence</Trans>
       </dt>
       <dd className="flex min-w-0 flex-col">
@@ -173,7 +173,10 @@ function Outcome({
 
         return (
           <div key={line.name} className="contents">
-            <dt className="min-w-0 truncate pt-px type-data text-ink-2" title={line.name}>
+            <dt
+              className="mt-1.5 min-w-0 truncate pt-px type-data text-ink-2 sm:mt-0"
+              title={line.name}
+            >
               {line.name}
             </dt>
             <dd className="flex min-w-0 flex-col break-words">
@@ -195,7 +198,9 @@ function Outcome({
       })}
       {problems.map((problem, index) => (
         <div key={index} className="contents">
-          <dt className="min-w-0 truncate pt-px type-data text-fail-text">{problem.field}</dt>
+          <dt className="mt-1.5 min-w-0 truncate pt-px type-data text-fail-text sm:mt-0">
+            {problem.field}
+          </dt>
           <dd className="text-fail-text">{findingText(problem)}</dd>
         </div>
       ))}

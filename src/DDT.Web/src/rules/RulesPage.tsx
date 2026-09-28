@@ -372,10 +372,11 @@ function RuleRow({
       data-rule-id={rule.id}
       className={({ isFocusVisible, isDragging }) =>
         cx(
-          "grid cursor-pointer items-center gap-3 px-4 py-3 shadow-[inset_0_-1px_0_var(--color-line-soft)] outline-none motion-highlight hover:bg-hover",
+          "grid cursor-pointer items-center gap-x-3 gap-y-1 px-4 py-3 shadow-[inset_0_-1px_0_var(--color-line-soft)] outline-none motion-highlight hover:bg-hover",
+          // On a phone the count goes under the rule, so the rule keeps the width.
           canEdit
-            ? "grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_6rem_2rem]"
-            : "grid-cols-[2.125rem_minmax(0,1fr)_6rem]",
+            ? "grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_2rem] sm:grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_6rem_2rem]"
+            : "grid-cols-[2.125rem_minmax(0,1fr)] sm:grid-cols-[2.125rem_minmax(0,1fr)_6rem]",
           isOpen && "bg-selected hover:bg-selected",
           isFocusVisible && "outline-2 -outline-offset-2 outline-focus",
           isDragging && "opacity-50",
@@ -387,13 +388,20 @@ function RuleRow({
         <AriaButton
           slot="drag"
           aria-label={t`Move ${name}`}
-          className="flex h-8 w-5.5 cursor-grab items-center justify-center rounded-key text-control outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+          className="row-span-2 flex h-8 w-5.5 cursor-grab items-center justify-center rounded-key text-control outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:row-span-1"
         >
           <IconGripVertical aria-hidden="true" size={16} stroke={2} />
         </AriaButton>
       ) : null}
-      <span className="type-numeral text-ink-2 tabular-nums">{number}</span>
-      <div className="flex min-w-0 flex-col gap-1.25">
+      <span className="row-span-2 type-numeral text-ink-2 tabular-nums sm:row-span-1">
+        {number}
+      </span>
+      <div
+        className={cx(
+          "row-start-1 flex min-w-0 flex-col gap-1.25",
+          canEdit ? "col-start-3" : "col-start-2",
+        )}
+      >
         <span className="flex min-w-0 items-center gap-2">
           <span className={cx("truncate type-label", rule.enabled ? "text-ink" : "text-ink-2")}>
             {rule.name}
@@ -409,7 +417,10 @@ function RuleRow({
             </StateTag>
           ) : null}
         </span>
-        <span className="truncate type-small text-muted" title={sentence}>
+        <span
+          className="line-clamp-2 type-small break-words text-muted sm:line-clamp-1"
+          title={sentence}
+        >
           {sentence}
         </span>
         {effects.length > 0 ? (
@@ -417,7 +428,7 @@ function RuleRow({
             {effects.map((effect, index) => (
               <span
                 key={index}
-                className="inline-flex h-5.5 items-center rounded-tag px-2 type-small text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)]"
+                className="inline-flex h-5.5 max-w-full items-center truncate rounded-tag px-2 type-small whitespace-nowrap text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)]"
               >
                 {effect}
               </span>
@@ -425,7 +436,14 @@ function RuleRow({
           </span>
         ) : null}
       </div>
-      <span className="text-right type-small text-muted">{count}</span>
+      <span
+        className={cx(
+          "row-start-2 type-small text-muted sm:row-start-1 sm:text-right",
+          canEdit ? "col-start-3 sm:col-start-4" : "col-start-2 sm:col-start-3",
+        )}
+      >
+        {count}
+      </span>
       {canEdit ? (
         <RuleMenu
           name={name}
@@ -462,7 +480,7 @@ function RuleMenu({
     <MenuTrigger>
       <AriaButton
         aria-label={label}
-        className="flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        className="col-start-4 row-span-2 row-start-1 flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none hover:bg-hover pressed:bg-key-quiet-pressed hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:col-start-5 sm:row-span-1"
       >
         <IconDots size={18} stroke={2} />
       </AriaButton>

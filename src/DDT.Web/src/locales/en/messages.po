@@ -465,6 +465,11 @@ msgstr "{kind}, in {phaseName}"
 msgid "{kind}: {file}, {size}"
 msgstr "{kind}: {file}, {size}"
 
+#: src/lib/serverMessages.ts
+msgctxt "values.inputRequired"
+msgid "{label} needs an answer before the run can start."
+msgstr "{label} needs an answer before the run can start."
+
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
 msgstr "{level} at {at}, during {step}. Received {received}."
@@ -536,6 +541,16 @@ msgid "{name} and its API tokens are deleted. The audit log keeps its entries. T
 msgstr "{name} and its API tokens are deleted. The audit log keeps its entries. This cannot be undone; to keep the account out for now, disable it instead."
 
 #: src/lib/serverMessages.ts
+msgctxt "values.cycle"
+msgid "{name} cannot be worked out, because it is made from itself: {path}."
+msgstr "{name} cannot be worked out, because it is made from itself: {path}."
+
+#: src/lib/serverMessages.ts
+msgctxt "values.cannotWorkOut"
+msgid "{name} cannot be worked out. {problem}"
+msgstr "{name} cannot be worked out. {problem}"
+
+#: src/lib/serverMessages.ts
 msgctxt "directory.roleFromGroup"
 msgid "{name} gets {role} from {group}."
 msgstr "{name} gets {role} from {group}."
@@ -547,6 +562,11 @@ msgstr "{name} gives {label}"
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} has {warnings}. It runs, but look at the sequence first."
+
+#: src/lib/serverMessages.ts
+msgctxt "values.fact"
+msgid "{name} is a fact of the machine, which a value cannot set."
+msgstr "{name} is a fact of the machine, which a value cannot set."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.localAccount"
@@ -6273,6 +6293,11 @@ msgstr "The cloud-init seed can be written only after a step that writes a raw d
 msgctxt "upload.compressedDamaged"
 msgid "The compressed file is damaged: {detail}"
 msgstr "The compressed file is damaged: {detail}"
+
+#: src/lib/serverMessages.ts
+msgctxt "values.computerName"
+msgid "The computer name ''{value}'' cannot be used. {problem}"
+msgstr "The computer name ''{value}'' cannot be used. {problem}"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionEmpty"

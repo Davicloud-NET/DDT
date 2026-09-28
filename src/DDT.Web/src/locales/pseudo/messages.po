@@ -465,6 +465,11 @@ msgstr ""
 msgid "{kind}: {file}, {size}"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "values.inputRequired"
+msgid "{label} needs an answer before the run can start."
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
 msgstr ""
@@ -536,6 +541,16 @@ msgid "{name} and its API tokens are deleted. The audit log keeps its entries. T
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "values.cycle"
+msgid "{name} cannot be worked out, because it is made from itself: {path}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "values.cannotWorkOut"
+msgid "{name} cannot be worked out. {problem}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "directory.roleFromGroup"
 msgid "{name} gets {role} from {group}."
 msgstr ""
@@ -546,6 +561,11 @@ msgstr ""
 
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "values.fact"
+msgid "{name} is a fact of the machine, which a value cannot set."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6272,6 +6292,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "upload.compressedDamaged"
 msgid "The compressed file is damaged: {detail}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "values.computerName"
+msgid "The computer name ''{value}'' cannot be used. {problem}"
 msgstr ""
 
 #: src/lib/serverMessages.ts

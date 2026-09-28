@@ -1813,6 +1813,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "valueTemplate.unknownName",
     message: "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling.",
   }),
+  "values.cannotWorkOut": msg({
+    context: "values.cannotWorkOut",
+    message: "{name} cannot be worked out. {problem}",
+  }),
+  "values.computerName": msg({
+    context: "values.computerName",
+    message: "The computer name ''{value}'' cannot be used. {problem}",
+  }),
+  "values.cycle": msg({
+    context: "values.cycle",
+    message: "{name} cannot be worked out, because it is made from itself: {path}.",
+  }),
+  "values.fact": msg({
+    context: "values.fact",
+    message: "{name} is a fact of the machine, which a value cannot set.",
+  }),
+  "values.inputRequired": msg({
+    context: "values.inputRequired",
+    message: "{label} needs an answer before the run can start.",
+  }),
   "wim.compressedList": msg({
     context: "wim.compressedList",
     message: "This WIM file stores its image list compressed, which DDT cannot read.",

@@ -556,6 +556,28 @@ public static class ServerMessages
         "valueTemplate.noValue",
         "The machine has no value for {placeholder}.");
 
+    // The values of a run, worked out when it starts. Name is the value's name, such as ComputerName.
+
+    public static readonly MessageTemplate ValuesCannotWorkOut = Define(
+        "values.cannotWorkOut",
+        "{name} cannot be worked out. {problem}");
+
+    public static readonly MessageTemplate ValuesCycle = Define(
+        "values.cycle",
+        "{name} cannot be worked out, because it is made from itself: {path}.");
+
+    public static readonly MessageTemplate ValuesComputerName = Define(
+        "values.computerName",
+        "The computer name ''{value}'' cannot be used. {problem}");
+
+    public static readonly MessageTemplate ValuesInputRequired = Define(
+        "values.inputRequired",
+        "{label} needs an answer before the run can start.");
+
+    public static readonly MessageTemplate ValuesFact = Define(
+        "values.fact",
+        "{name} is a fact of the machine, which a value cannot set.");
+
     // Organizational units, for a Join the domain step and the domain check.
 
     public static readonly MessageTemplate OrganizationalUnitWithPrefix = Define(

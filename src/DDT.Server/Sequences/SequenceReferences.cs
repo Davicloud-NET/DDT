@@ -17,4 +17,8 @@ public sealed record SequenceReferences(
 {
     // The stored accounts steps may name, by id.
     public IReadOnlyDictionary<Guid, AccountFacts> Accounts { get; init; } = new Dictionary<Guid, AccountFacts>();
+
+    // The names rules and machine roles give values, and the deployment defaults', ignoring case: a sequence may use them
+    // without declaring them.
+    public IReadOnlySet<string> ValueNames { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 }

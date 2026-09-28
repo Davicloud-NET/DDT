@@ -83,6 +83,12 @@ public static class SequenceChecks
 
         problems.AddRange(SequenceAccountChecks.Check(definition, references));
 
+        // The validator leaves the names only rules and machine roles can give a value to the server, which knows them. A
+        // name nothing gives one is most likely a slip, but a rule added later may still give it one.
+        warnings.AddRange(analysis.ValueNames
+            .Where(name => !references.ValueNames.Contains(name))
+            .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
+
         return new SequenceValidation(problems, warnings);
     }
 

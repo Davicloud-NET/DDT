@@ -33,6 +33,8 @@ public sealed class MachineValues(SequenceResolver resolver)
     public const string OrganizationalUnit = "OrganizationalUnit";
     public const string AdministratorName = "AdministratorName";
 
+    public static IReadOnlyList<string> DeploymentDefaultNames { get; } = [TimeZone, Locale, Keyboard, OrganizationalUnit, AdministratorName];
+
     public async Task<ValueResolution> ResolveAsync(
         Machine machine,
         SequenceDefinition? sequence,

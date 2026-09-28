@@ -1365,6 +1365,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.valueNameReserved",
     message: "Names that start with DDT are kept for DDT's own values. Choose another name.",
   }),
+  "sequence.valueUndefined": msg({
+    context: "sequence.valueUndefined",
+    message: "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.",
+  }),
   "sequence.variableNotDeclared": msg({
     context: "sequence.variableNotDeclared",
     message: "{name} is not a variable of this sequence. Declare it first.",

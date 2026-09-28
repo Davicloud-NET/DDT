@@ -239,6 +239,10 @@ public static class ServerMessages
         "deployment.notPaused",
         "The run no longer waits at that pause. Look at the machine again.");
 
+    public static readonly MessageTemplate SequenceValueUndefined = Define(
+        "sequence.valueUndefined",
+        "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");
+
     public static readonly MessageTemplate DeploymentApproveThenNameValue = Define(
         "deployment.approveThenNameValue",
         "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a " +

@@ -82,7 +82,9 @@ Two lines say what matters, and the rest goes to the documentation:
   enforces those two.
 - **Nested types** are fine when they're private, small and only make sense inside their parent.
 - **Partial classes are for generators and designers**: `JsonSerializerContext`, `[LoggerMessage]`,
-  Avalonia's code-behind. They are not a way to hide a big class across several files.
+  Avalonia's code-behind. They are not a way to hide a big class across several files. The one
+  exception is a data catalogue like `ServerMessages`, which may keep one part per area in
+  `ServerMessages.Area.cs`.
 
 **TypeScript**
 
@@ -111,6 +113,9 @@ These are smoke alarms, not laws. Past the second number, split it before you ad
 | TypeScript file | 300 lines | 400 |
 | Component or function | 80 lines | 120 |
 | Test class or test file | 500 lines | 700 |
+
+The dependency limit is for services. A record or another data type has as many members as its
+data has.
 
 **Split by responsibility, not by line count.** Some signs a class does two jobs:
 
@@ -155,8 +160,8 @@ out what it duplicates.
 - **Records for data**, like the contracts. Options classes use `set`, because the configuration
   binding generator skips `init` without a warning.
 - **Async all the way.** Never `.Result` or `.Wait()`. The `CancellationToken` comes last and is
-  passed on. `ConfigureAwait(false)` goes everywhere except code that needs the UI thread (the
-  console's view models).
+  passed on. `ConfigureAwait(false)` goes on every awaited call except in code that needs the UI
+  thread (the console's view models). `await using` goes without it.
 - **Time comes from `TimeProvider`**, never from `DateTime.Now` or `DateTimeOffset.UtcNow`, so the
   tests can move the clock.
 - **Logging** uses source-generated `[LoggerMessage]` methods, each with its own event id.
@@ -213,7 +218,13 @@ You don't have to remember any of this, because the build fails when it's wrong:
 
 - **.NET:** formatting, naming, `var` usage, braces, file-scoped namespaces and the licence header,
   all from `.editorconfig`, with warnings as errors.
-- **Web:** ESLint's strict type-checked rules, and Prettier for formatting.
+- **One type per file and method length:** the Meziantou analyzers MA0048 and MA0051. Every other
+  Meziantou rule is off.
+- **Class size, dependencies, parameters and comment length:** `CodeShapeTests`, because no
+  analyzer checks those.
+- **Web:** ESLint's strict type-checked rules, its size limits (`max-lines`,
+  `max-lines-per-function`, `max-depth`, `max-params`), and Prettier for formatting. A test checks
+  one component per file.
 - **Tests:** the licence header in every other language, stale generated files, and missing
   translations.
 

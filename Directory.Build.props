@@ -12,6 +12,12 @@
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <!-- Binds without reflection. It skips a property with an init accessor without a warning, so options use set. -->
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <!-- Only the rules .editorconfig turns on. -->
+    <MeziantouAnalysisMode>None</MeziantouAnalysisMode>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' != '.esproj'">
+    <PackageReference Include="Meziantou.Analyzer" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>

@@ -239,7 +239,21 @@ public sealed class SequenceValidatorValueTests
 
         AssertOnly(Validate(Declaring(null, null, tooMany)), tooMany, "shares", "sequence.tooManyShares");
         AssertOnly(Validate(Declaring(null, null, noAccount)), noAccount, "shares[0].account", "sequence.accountChoose");
-        Assert.Empty(Validate(Declaring(null, null, Group(Reboot()) with { Shares = [.. Enumerable.Repeat(good, SequenceValidator.MaxShares)] })));
+        Assert.Empty(Validate(Declaring(null, null, Reboot() with { Shares = [.. Enumerable.Repeat(good, SequenceValidator.MaxShares)] })));
+    }
+
+    // A share is connected while its step runs, and a container runs nothing itself.
+    [Fact]
+    public void ConnectsSharesOnlyForAStep()
+    {
+        ShareConnection share = new(@"\\files.corp.example\drivers", new AccountReference(s_accountId, null));
+
+        foreach (SequenceStep container in new SequenceStep[] { Group(Reboot()), If([Reboot()]), Repeat(Reboot()) })
+        {
+            SequenceStep holding = container with { Shares = [share] };
+
+            AssertOnly(Validate(Declaring(null, null, holding)), holding, "shares", "sequence.sharesOnlyOnSteps");
+        }
     }
 
     // A step could otherwise send the account to a host of its choosing, by a variable it sets or a script's exit code.

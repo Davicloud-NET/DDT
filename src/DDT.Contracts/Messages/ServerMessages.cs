@@ -689,6 +689,10 @@ public static class ServerMessages
         "sequence.shareHostFixed",
         "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs.");
 
+    public static readonly MessageTemplate SequenceSharesOnlyOnSteps = Define(
+        "sequence.sharesOnlyOnSteps",
+        "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.");
+
     public static readonly MessageTemplate SequencePauseMinutes = Define(
         "sequence.pauseMinutes",
         "A pause can go on by itself after 1 to {max} minutes.");

@@ -272,6 +272,7 @@
   "sequence.setVariableChoose": "Choose the variable to set.",
   "sequence.shareHostFixed": "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs.",
   "sequence.sharePath": "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.",
+  "sequence.sharesOnlyOnSteps": "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.",
   "sequence.stepCount": "A sequence needs 1 to {max} steps.",
   "sequence.stepEmpty": "A step is empty.",
   "sequence.stepIdRepeated": "Step {number} has the id of an earlier step.",

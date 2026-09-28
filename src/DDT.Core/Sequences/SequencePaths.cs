@@ -183,7 +183,15 @@ internal sealed class SequencePaths
         Count((step as IfStep)?.Test, ConditionEvaluator.TestPath);
         Count((step as RepeatStep)?.Until, ConditionEvaluator.UntilPath);
 
-        _names.CheckShares(step.Shares, add);
+        // A share is connected for as long as its step runs, so a container, which runs nothing itself, has none.
+        if (step.IsContainer && step.Shares is { Count: > 0 })
+        {
+            add("shares", ServerMessages.SequenceSharesOnlyOnSteps.With());
+        }
+        else
+        {
+            _names.CheckShares(step.Shares, add);
+        }
     }
 
     private PathState Leaf(

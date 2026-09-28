@@ -1101,6 +1101,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.sharePath",
     message: "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.",
   }),
+  "sequence.sharesOnlyOnSteps": msg({
+    context: "sequence.sharesOnlyOnSteps",
+    message: "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.",
+  }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
     message: "A sequence needs 1 to {max} steps.",

@@ -4633,6 +4633,10 @@ msgstr "Es nennt {names} nicht, obwohl der Server darüber erreicht wird, daher 
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "Sie wird um {time} von selbst fortgesetzt, oder früher, wenn jemand sie hier oder am Gerät fortsetzt."
 
+#: src/machines/approval.ts
+msgid "It is named {named}."
+msgstr "Es erhält den Namen {named}."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
 msgid "It is valid from {from} to {until}, not now."
@@ -6278,6 +6282,14 @@ msgstr "Das Objekt wurde zwischenzeitlich geändert."
 #: src/users/UserDialogs.tsx
 msgid "Optional."
 msgstr "Optional."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+msgstr "Optional. Leer gelassen, erhält das Gerät den Namen {valuesName} aus seinen Werten und tritt unter ihm der Domäne bei."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
+msgstr "Optional. Leer gelassen, erhält das Gerät den Namen {valuesName} aus seinen Werten, den sein cloud-init-Seed erhält."
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."

@@ -72,6 +72,37 @@ export function isRuleChoice(resolution: MachineSequenceResolution): boolean {
   );
 }
 
+// The computer name a run gets from the machine's values when none is given, such as a rule's
+// PC-{{SerialNumber|alnum|right:8}}, as the server takes it: the ComputerName value that is used, when it is one Windows
+// takes. Null when nothing gives one. The preview is of the sequence the resolution names, so for another sequence
+// (sameSequence false) only what the machine, the rules and the machine roles give counts, not that sequence's default.
+export function valuesComputerName(
+  resolution: MachineSequenceResolution,
+  sameSequence = true,
+): string | null {
+  const computerName = (name: string | null) => name?.toLowerCase() === "computername";
+
+  if ((resolution.valueProblems ?? []).some((problem) => computerName(problem.field))) {
+    return null;
+  }
+
+  const used = (resolution.values ?? []).find(
+    (value) => !value.overridden && computerName(value.name),
+  );
+  const name = used?.value?.trim() ?? "";
+
+  if (used === undefined || name === "") {
+    return null;
+  }
+
+  return sameSequence ||
+    used.source === "Machine" ||
+    used.source === "Rule" ||
+    used.source === "Role"
+    ? name
+    : null;
+}
+
 // The rule that chose a machine's sequence, as the subject of a sentence and inside one: "Rule 2" and "rule 2".
 export function ruleChoiceWords(resolution: MachineSequenceResolution): {
   subject: string;

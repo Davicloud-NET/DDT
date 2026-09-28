@@ -143,19 +143,22 @@ public sealed class DeploymentService(
                     .Where(input => input.AskAt is InputAsk.Machine or InputAsk.Both)
                     .Select(input => RunValues.Asked(input, preview)),
             ];
+            bool needsName = SequenceChecks.ComputerNameUse(definition) is not null;
 
+            // The console asks for the name all the same, starting with the one the values give, which a typed one beats.
             choices.Add(new AgentSequenceChoice(
                 sequence.Id,
                 sequence.Name,
                 sequence.Description,
                 Erases(definition),
-                SequenceChecks.ComputerNameUse(definition) is not null,
+                needsName,
                 RunSnapshots.RequiredBytes(definition, artifacts),
                 sequence.Id == suggested,
                 SequenceChecks.RawImage(definition, references)?.Name,
                 SequenceChecks.RawImage(definition, references)?.BootCapability,
                 SequenceChecks.RawImage(definition, references)?.SignedUnder,
-                inputs.Length == 0 ? null : inputs));
+                inputs.Length == 0 ? null : inputs,
+                needsName && Named(preview) ? preview.Effective[MachineVariableNames.ComputerName] : null));
         }
 
         return choices;

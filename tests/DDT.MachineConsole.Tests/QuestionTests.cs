@@ -147,6 +147,21 @@ public sealed class QuestionTests
             console.Answers);
     }
 
+    // The name a rule gives the machine is in the field, so Enter keeps it; what the person types instead goes.
+    [Fact]
+    public void StartsTheComputerNameWithTheOneTheMachineGetsWithoutOne()
+    {
+        TestConsole console = Asked(6, Scenarios.ComputerName() with { Name = "PC-00042" });
+        ComputerNameViewModel name = Assert.IsType<ComputerNameViewModel>(console.Model.Question);
+
+        Assert.Equal("PC-00042", name.Name);
+        Assert.True(name.CanSubmit);
+
+        name.SubmitCommand.Execute(null);
+
+        Assert.Equal([(6, new ConsoleAnswer(Text: "PC-00042"))], console.Answers);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("erase")]

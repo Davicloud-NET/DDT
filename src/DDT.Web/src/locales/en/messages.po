@@ -4633,6 +4633,10 @@ msgstr "It does not name {names}, which the server is reached by, so browsers an
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 
+#: src/machines/approval.ts
+msgid "It is named {named}."
+msgstr "It is named {named}."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
 msgid "It is valid from {from} to {until}, not now."
@@ -6278,6 +6282,14 @@ msgstr "Optimistic concurrency failure, object has been modified."
 #: src/users/UserDialogs.tsx
 msgid "Optional."
 msgstr "Optional."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+msgstr "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
+msgstr "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."

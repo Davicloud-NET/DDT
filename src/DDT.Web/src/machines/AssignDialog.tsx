@@ -27,7 +27,12 @@ import {
   type MachineSummary,
 } from "@/machines/machines";
 import { secureBootRisk } from "@/machines/secureBoot";
-import { isRuleChoice, resolutionText, sequenceResolutionQuery } from "@/rules/rules";
+import {
+  isRuleChoice,
+  resolutionText,
+  sequenceResolutionQuery,
+  valuesComputerName,
+} from "@/rules/rules";
 import { canRun, sequenceQuery, sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
@@ -100,7 +105,13 @@ export function AssignDialog({
   const risk = secureBootRisk(machine, sequence);
   const allowanceKey = sequence === null ? null : `${sequence.id} ${sequence.rawImageName ?? ""}`;
   const allowed = risk !== null && allowedFor !== null && allowedFor === allowanceKey;
-  const nameRequired = sequence?.needsComputerName === true && machine.assignedName === null;
+  // A name the machine's values give, such as a rule's pattern, is as good as one typed here, which beats it.
+  const valuesName =
+    resolution.data === undefined || sequence === null
+      ? null
+      : valuesComputerName(resolution.data, resolved);
+  const nameRequired =
+    sequence?.needsComputerName === true && machine.assignedName === null && valuesName === null;
   const severalDisks = machine.eligibleDiskCount !== null && machine.eligibleDiskCount > 1;
   const serverNameProblem =
     assign.error instanceof ApiError
@@ -251,7 +262,7 @@ export function AssignDialog({
           isRequired={nameRequired}
           isInvalid={fieldProblem !== null}
           errorMessage={fieldProblem}
-          hint={`${nameHint(machine, sequence)} ${translate`Up to 15 letters A to Z, digits and hyphens.`}`}
+          hint={`${nameHint(machine, sequence, valuesName)} ${translate`Up to 15 letters A to Z, digits and hyphens.`}`}
         />
 
         {inputs.length > 0 ? (
@@ -403,12 +414,22 @@ function nameRequiredText(sequence: SequenceSummary): string {
     : t`Enter a computer name. ${name} gives this name to the machine in its cloud-init seed.`;
 }
 
-// The server asks for a name only when the sequence uses it and the machine has none yet.
-function nameHint(machine: MachineSummary, sequence: SequenceSummary | null): string {
+// The server asks for a name only when the sequence uses it and neither the machine nor its values give one.
+function nameHint(
+  machine: MachineSummary,
+  sequence: SequenceSummary | null,
+  valuesName: string | null,
+): string {
   const uses = sequence?.needsComputerName === true;
   const current = machine.assignedName;
 
   if (current === null) {
+    if (uses && valuesName !== null) {
+      return sequence.rawImageName === null
+        ? t`Optional. Left empty, the machine is named ${valuesName}, as its values say, and joins the domain under it.`
+        : t`Optional. Left empty, the machine is named ${valuesName}, as its values say, which its cloud-init seed gets.`;
+    }
+
     if (uses) {
       const name = sequence.name;
 

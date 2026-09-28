@@ -77,7 +77,7 @@ public sealed class ConsoleProtocolTests
         ["sign-in"] = new QuestionMessage(1, new SignInQuestion(SignInField.Password, "bob", "Wrong user name or password.")),
         ["sequence"] = new QuestionMessage(2, new SequenceQuestion([new SequenceOption(Guid.NewGuid(), "Install Windows", "Office", true, true, false, 30_000, false, false)])),
         ["disk"] = new QuestionMessage(3, new DiskQuestion("Install Windows", [s_disk])),
-        ["computer name"] = new QuestionMessage(4, new ComputerNameQuestion("Install Windows", 15, "A computer name holds at most 15 characters.")),
+        ["computer name"] = new QuestionMessage(4, new ComputerNameQuestion("Install Windows", 15, "A computer name holds at most 15 characters.", "PC-00042")),
         ["erase"] = new QuestionMessage(5, new EraseQuestion("Install Windows", s_disk, "ERASE")),
         ["secure boot"] = new QuestionMessage(6, new SecureBootQuestion("Install Linux", "noble", SecureBootProblem.UntrustedCa, MicrosoftUefiCas.Ca2023, "ANYWAY")),
         ["withdraw"] = new WithdrawMessage(6),

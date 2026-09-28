@@ -4633,6 +4633,10 @@ msgstr ""
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr ""
 
+#: src/machines/approval.ts
+msgid "It is named {named}."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
 msgid "It is valid from {from} to {until}, not now."
@@ -6277,6 +6281,14 @@ msgstr ""
 
 #: src/users/UserDialogs.tsx
 msgid "Optional."
+msgstr ""
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+msgstr ""
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
 msgstr ""
 
 #: src/machines/AssignDialog.tsx

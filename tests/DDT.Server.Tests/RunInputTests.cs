@@ -478,4 +478,35 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
             values: [new NamedValue(MachineVariableNames.ComputerName, "PC-{{PrimaryMacAddress|right:6}}")]));
         (await administrator.AssignAsync(assigned.Id, sequence.Id)).EnsureSuccessStatusCode();
     }
+
+    // The console asks for the name all the same, starting with the one the rule gives, and a pick without a name typed
+    // takes that one: the machine gets no name of its own.
+    [Fact]
+    public async Task TheConsoleStartsTheComputerNameWithTheOneARuleGives()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName);
+        SequenceView named = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly() with
+        {
+            Variables = [new VariableDeclaration { Name = MachineVariableNames.ComputerName }],
+        });
+        SequenceView plain = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
+        await administrator.CreatedRuleAsync(RuleRequests.Rule(
+            $"Name {machine.Registration.PrimaryMac}",
+            new TestCondition(MachineVariableNames.MacAddress, ConditionOperator.Equals, machine.Registration.PrimaryMac),
+            values: [new NamedValue(MachineVariableNames.ComputerName, "PC-{{PrimaryMacAddress|right:6}}")]));
+
+        IReadOnlyList<AgentSequenceChoice> choices = await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(
+            await machine.Agent.SequencesAsync(machine.Id, machine.Token));
+
+        Assert.Equal($"PC-{machine.Registration.PrimaryMac[^6..]}", Assert.Single(choices, c => c.Id == named.Id).ComputerName);
+        Assert.Null(Assert.Single(choices, c => c.Id == plain.Id).ComputerName);
+
+        AgentRun picked = await RegisteredMachine.ReadAsync<AgentRun>(
+            await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(named.Id, null, null)));
+
+        Assert.Equal(DeploymentState.Assigned, picked.State);
+        Assert.Null(picked.ComputerName);
+    }
 }

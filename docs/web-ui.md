@@ -28,7 +28,7 @@ Every package that ships in the bundle is listed with its licence in `THIRD-PART
 | `src/live` | The live connection: hub events, machine watches, the live status and how lists stay fresh. |
 | `src/lib` | The API client with its CSRF handling, formatting of sizes, durations and times, autosave. |
 | `src/i18n`, `src/locales` | Choosing and loading a language, and the catalogs. |
-| One folder per subject | `machines`, `runs`, `log`, `sequences`, `rules`, `images`, `packages`, `uploads`, `account`, `users`, `tokens`: the page, its components, and the module that reads and writes the server's data for it. |
+| One folder per subject | `machines`, `runs`, `log`, `sequences`, `rules`, `images`, `packages`, `uploads`, `account`, `users`, `tokens`: the page, its components, and the module that reads and writes the server's data for it. `inputs` asks a sequence's inputs on the web, `values` says where a run's values came from, and `machines/facts.ts` names what a machine reports, for the machine's page and for conditions. |
 
 ## Pages
 

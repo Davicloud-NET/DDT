@@ -89,6 +89,8 @@ export default function RunFlow({
   const nodes = useRef(new Map<string, HTMLElement>());
   // The canvas moves itself while it follows the run; any other move is the person's, which ends the following.
   const moving = useRef(false);
+  // A node the pointer chose is on the screen already, so only a node the keys went to is brought into view.
+  const pointing = useRef(false);
 
   const boxOf = (id: string) => layout.boxes.find((box) => box.id === id);
 
@@ -101,12 +103,13 @@ export default function RunFlow({
     }
   });
 
-  // The node the run is at, where the run is followed; on a first look at a run that ended, the node it failed at.
+  // The node the run is at, while the run is followed; a run that ended shows the node it failed at, until the person
+  // moves the canvas.
   useEffect(() => {
-    if (currentId !== null && (following || !active)) {
+    if (currentId !== null && following) {
       follow(currentId);
     }
-  }, [currentId, following, active]);
+  }, [currentId, following]);
 
   const tone = (route: WireRoute): WireTone => path.tone(route);
   const tabbableId = selectedId !== null && boxOf(selectedId) !== undefined ? selectedId : null;
@@ -254,10 +257,18 @@ export default function RunFlow({
               className="absolute cursor-pointer rounded-key outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
               onClick={() => {
+                pointing.current = false;
                 choose(box.id, false);
               }}
+              onPointerDown={() => {
+                pointing.current = true;
+              }}
               onFocus={() => {
-                viewport.current?.reveal(box);
+                if (pointing.current) {
+                  pointing.current = false;
+                } else {
+                  viewport.current?.reveal(box);
+                }
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {

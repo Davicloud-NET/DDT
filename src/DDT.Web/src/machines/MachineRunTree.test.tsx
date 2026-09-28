@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DeploymentView } from "@/deployments/deployments";
@@ -447,6 +447,37 @@ describe("a machine's page with a tree run", () => {
       );
     });
     expect(await screen.findByRole("region", { name: "The run waits" })).toBeInTheDocument();
+  });
+
+  it("follows the run until the person moves the flow, and goes from node to node with the keys", async () => {
+    await open();
+
+    const follow = await screen.findByRole("button", { name: "Follow the run" });
+    expect(follow).toHaveAttribute("aria-pressed", "true");
+
+    press(screen.getByRole("button", { name: "Zoom in" }));
+    await waitFor(() => {
+      expect(follow).toHaveAttribute("aria-pressed", "false");
+    });
+    press(follow);
+    await waitFor(() => {
+      expect(follow).toHaveAttribute("aria-pressed", "true");
+    });
+
+    // One stop of the Tab key, on the node chosen; Up goes back the way the flow runs, into the repeat.
+    const paused = flowNode(/Check the asset tag, Paused$/);
+    expect(paused).toHaveAttribute("tabindex", "0");
+    paused.focus();
+    fireEvent.keyDown(paused, { key: "ArrowUp" });
+
+    await waitFor(() => {
+      expect(within(region("The chosen step")).getByRole("heading")).toHaveTextContent(
+        "Test the share",
+      );
+    });
+    expect(flowNode(/Test the share, Done$/)).toHaveFocus();
+    expect(region("The chosen step")).toHaveTextContent("Repeat: Wait for the share");
+    expect(region("The chosen step")).toHaveTextContent("Ran 2 times, the last is shown.");
   });
 
   it("shows the log of a step chosen in the flow", async () => {

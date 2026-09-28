@@ -28,18 +28,44 @@ public static class SequenceDocuments
             return "The sequence has no list of steps.";
         }
 
-        if (definition.Steps.Any(step => step is null))
+        int nodes = 0;
+
+        if (!Whole(definition.Steps, ref nodes))
         {
             return "A step of the sequence is empty.";
         }
 
-        if (definition.Steps.Count > SequenceLimits.MaxStoredSteps)
+        if (nodes > SequenceLimits.MaxStoredNodes)
         {
-            return $"A sequence can have at most {SequenceLimits.MaxStoredSteps} steps.";
+            return $"A sequence can have at most {SequenceLimits.MaxStoredNodes} steps, groups, IFs and repeats together.";
         }
 
         return Encoding.UTF8.GetByteCount(Write(definition)) > SequenceLimits.MaxDefinitionBytes
             ? $"A sequence can have at most {SequenceLimits.MaxDefinitionBytes / 1024} KiB."
             : null;
+    }
+
+    // Whether no list of the tree has an empty place, counting the nodes on the way.
+    private static bool Whole(IReadOnlyList<SequenceStep?> steps, ref int nodes)
+    {
+        foreach (SequenceStep? step in steps)
+        {
+            if (step is null)
+            {
+                return false;
+            }
+
+            nodes++;
+
+            foreach (StepBody body in step.Bodies)
+            {
+                if (!Whole(body.Steps, ref nodes))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

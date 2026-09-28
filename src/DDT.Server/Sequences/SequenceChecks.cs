@@ -9,6 +9,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
+using DDT.Core.Templates;
 using DDT.Core.Unattend;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -17,7 +18,8 @@ using DDT.Server.Packages;
 namespace DDT.Server.Sequences;
 
 // SequenceValidator's rules plus what only the server can check: the library, its settings, and culture names,
-// which the agent cannot check because it runs without globalization data.
+// which the agent cannot check because it runs without globalization data. Every node of the tree is checked, on every
+// branch of every IF, since any of them may run.
 public static class SequenceChecks
 {
     public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
@@ -25,14 +27,13 @@ public static class SequenceChecks
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
 
-        List<SequenceProblem> problems = [.. SequenceValidator.Validate(definition)];
-        List<SequenceProblem> warnings = [];
-        bool continuesInWindows = false;
+        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
+        List<SequenceProblem> problems = [.. analysis.Problems];
+        List<SequenceProblem> warnings = [.. analysis.Warnings];
         bool addsAdministrator = false;
 
-        for (int index = 0; index < definition.Steps.Count; index++)
+        foreach (SequenceStep step in SequenceTree.Nodes(definition))
         {
-            SequenceStep step = definition.Steps[index];
             Guid? stepId = step.Id == Guid.Empty ? null : step.Id;
 
             void Add(string? field, ServerMessage message) => problems.Add(SequenceProblem.From(stepId, field, message));
@@ -74,11 +75,10 @@ public static class SequenceChecks
                     CheckPackage(packageId, references, Add);
                     break;
             }
-
-            continuesInWindows |= SequencePhases.Of(definition, index) == SequencePhase.Windows;
         }
 
-        if (continuesInWindows && !addsAdministrator)
+        // Some path reaches Windows, and no answer file on any path adds the administrator.
+        if (InWindows(analysis.NodePhases) && !addsAdministrator)
         {
             warnings.Add(SequenceProblem.From(null, null, ServerMessages.SequenceNoAdministratorWarning.With()));
         }
@@ -86,6 +86,7 @@ public static class SequenceChecks
         return new SequenceValidation(problems, warnings);
     }
 
+    // The phase of each step at the top, as a list of steps shows them. NodePhases has every node of the tree.
     public static IReadOnlyList<SequencePhase> Phases(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -93,21 +94,36 @@ public static class SequenceChecks
         return [.. definition.Steps.Select((_, index) => SequencePhases.Of(definition, index))];
     }
 
-    // Why a sequence needs a computer name, or null when it needs none: it joins the domain under it, or its cloud-init
-    // seed names the machine with it.
+    // The phases each node may run in, in the order of SequenceTree.Nodes: more than one where it depends on the path.
+    public static IReadOnlyList<NodePhase> NodePhases(SequenceDefinition definition) => SequenceValidator.Analyse(definition).NodePhases;
+
+    // Whether some path through the sequence goes on in Windows.
+    public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
+
+    // Why a sequence needs a computer name, or null when it needs none: it joins the domain under it, its cloud-init
+    // seed names the machine with it, or it declares the ComputerName variable, whose value names the machine. A join or
+    // a seed on any branch counts, since any branch may run.
     public static ServerMessage? ComputerNameUse(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.Steps.Any(step => step is JoinDomainStep))
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
+
+        if (nodes.Any(node => node is JoinDomainStep))
         {
             return ServerMessages.DeploymentJoinsDomainUnderName.With();
         }
 
-        return definition.Steps.OfType<WriteCloudInitSeedStep>().Any(seed => SeedTexts(seed)
+        if (nodes.OfType<WriteCloudInitSeedStep>().Any(seed => SeedTexts(seed)
             .SelectMany(text => CloudInitTemplate.Placeholders(text.Text ?? ""))
-            .Any(placeholder => CloudInitTemplate.Known(placeholder) == MachineVariableNames.ComputerName))
-            ? ServerMessages.DeploymentSeedNamesMachine.With()
+            .Any(placeholder => CloudInitTemplate.Known(placeholder) == MachineVariableNames.ComputerName)))
+        {
+            return ServerMessages.DeploymentSeedNamesMachine.With();
+        }
+
+        return (definition.Variables ?? []).Any(variable =>
+            string.Equals(variable?.Name, MachineVariableNames.ComputerName, StringComparison.OrdinalIgnoreCase))
+            ? ServerMessages.SequenceNamesMachineWithValue.With()
             : null;
     }
 
@@ -117,10 +133,12 @@ public static class SequenceChecks
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
 
-        return definition.Steps.OfType<WriteRawImageStep>()
+        return SequenceTree.Nodes(definition).OfType<WriteRawImageStep>()
             .Select(step => references.Images.GetValueOrDefault(step.ImageId))
             .FirstOrDefault(image => image is { Kind: ImageKind.RawDisk });
     }
+
+    private static bool InWindows(IReadOnlyList<NodePhase> nodes) => nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
 
     private static void CheckImage(Guid imageId, ImageKind kind, SequenceReferences references, Action<string?, ServerMessage> add)
     {
@@ -244,5 +262,8 @@ public static class SequenceChecks
         return value.Length > 0 && IsSpecificCulture(value);
     }
 
-    private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();
+    // A setting as it is written, or null when it is empty or a template, whose values are checked when the run takes
+    // them, as the answer file and the join are made.
+    private static string? Value(string? setting) =>
+        string.IsNullOrWhiteSpace(setting) || ValueTemplate.Parse(setting).Placeholders.Count > 0 ? null : setting.Trim();
 }

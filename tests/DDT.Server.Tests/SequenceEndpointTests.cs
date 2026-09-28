@@ -185,6 +185,7 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
     [InlineData("""{"version":1,"steps":[{"id":"8d4c2c5e-8a0f-4d6c-9d38-3f7ad4d4c1a1","name":"Restart","kind":"format"}]}""")]
     [InlineData("""{"version":1,"steps":[{"name":"Restart","kind":"reboot"}]}""")]
     [InlineData("""{"version":1,"steps":[null]}""")]
+    [InlineData("""{"version":3,"steps":[{"kind":"group","id":"8d4c2c5e-8a0f-4d6c-9d38-3f7ad4d4c1a1","name":"Group","steps":[null]}]}""")]
     [InlineData("""{"version":1}""")]
     [InlineData("""{"version":1,"steps":[""")]
     [InlineData("null")]
@@ -210,13 +211,18 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
     public async Task RefusesMoreStepsThanItStoresAndABodyThatIsNotJson()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        SequenceStep[] steps = [.. Enumerable.Range(0, 201).Select(i => new RebootStep { Id = Guid.NewGuid(), Name = $"Restart {i}" })];
+        SequenceStep[] restarts = [.. Enumerable.Range(0, 200).Select(i => new RebootStep { Id = Guid.NewGuid(), Name = $"Restart {i}" })];
+        GroupStep group = new() { Id = Guid.NewGuid(), Name = "Restarts", Steps = [.. restarts.Select(step => step with { Id = Guid.NewGuid() })] };
 
-        HttpResponseMessage tooMany = await administrator.CreateSequenceAsync(SequenceRequests.Definition(steps));
+        // Every node of the tree counts, the group with the steps inside it.
+        HttpResponseMessage tooMany = await administrator.CreateSequenceAsync(SequenceRequests.Definition([.. restarts, group]));
         Assert.Equal(HttpStatusCode.BadRequest, tooMany.StatusCode);
         Assert.Equal(
-            "A sequence can have at most 200 steps.",
+            "A sequence can have at most 400 steps, groups, IFs and repeats together.",
             (await tooMany.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken))?.Detail);
+
+        HttpResponseMessage most = await administrator.CreateSequenceAsync(SequenceRequests.Definition([.. restarts[1..], group]));
+        Assert.Equal(HttpStatusCode.Created, most.StatusCode);
 
         using HttpRequestMessage text = new(HttpMethod.Post, new Uri(SequenceRequests.Sequences, UriKind.Relative))
         {
@@ -270,6 +276,49 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         // Its own name, in another case, is not taken.
         SequenceView renamed = await ReadAsync<SequenceView>(await administrator.SaveSequenceAsync(taken, name: name.ToUpperInvariant()));
         Assert.Equal(name.ToUpperInvariant(), renamed.Name);
+    }
+
+    // A node after an IF runs in the phases of both branches; the IF in those of its start and of what it holds.
+    [Fact]
+    public async Task ShowsThePhasesEveryNodeMayRunIn()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        RunScriptStep inWindows = new() { Id = Guid.NewGuid(), Name = "In Windows", Phase = SequencePhase.Windows, Script = "hostname" };
+        RebootStep otherwise = new() { Id = Guid.NewGuid(), Name = "Restart in Windows PE" };
+        IfStep choose = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "If a ThinkPad",
+            Test = new TestCondition(MachineVariableNames.FriendlyModel, ConditionOperator.Matches, "ThinkPad*"),
+            Then = [inWindows],
+            Else = [otherwise],
+        };
+        RebootStep last = new() { Id = Guid.NewGuid(), Name = "Restart" };
+        SequenceDefinition definition = SequenceRequests.Definition(
+            new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" },
+            new ApplyImageStep { Id = Guid.NewGuid(), Name = "Apply", ImageId = Guid.NewGuid() },
+            choose,
+            last);
+
+        SequenceView view = await administrator.CreatedSequenceAsync(definition);
+
+        Assert.Equal(
+            [
+                $"{definition.Steps[0].Id} WindowsPE",
+                $"{definition.Steps[1].Id} WindowsPE",
+                $"{choose.Id} WindowsPE, Windows",
+                $"{inWindows.Id} Windows",
+                $"{otherwise.Id} WindowsPE",
+                $"{last.Id} WindowsPE, Windows",
+            ],
+            view.NodePhases!.Select(node => $"{node.NodeId} {string.Join(", ", node.Phases)}"));
+        Assert.Equal([SequencePhase.WindowsPE, SequencePhase.WindowsPE, SequencePhase.WindowsPE, SequencePhase.WindowsPE], view.StepPhases);
+
+        IReadOnlyList<SequenceSummary> listed = await ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences));
+        SequenceSummary summary = Assert.Single(listed, s => s.Id == view.Id);
+        // The steps of both branches, but not the IF that holds them.
+        Assert.Equal(5, summary.StepCount);
+        Assert.True(summary.ContinuesInWindows);
     }
 
     [Fact]

@@ -186,7 +186,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
             return "The report names a phase or an activity this server does not know. Use the agent this server provides.";
         }
 
-        if (report.Steps is null || report.Steps.Count > SequenceLimits.MaxStoredSteps || report.Steps.Any(s => s is null || !Enum.IsDefined(s.State)))
+        if (report.Steps is null || report.Steps.Count > SequenceLimits.MaxStoredNodes || report.Steps.Any(s => s is null || !Enum.IsDefined(s.State)))
         {
             return "The report's steps are missing, too many, or in a state this server does not know.";
         }

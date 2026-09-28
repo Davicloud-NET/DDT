@@ -34,6 +34,8 @@ public sealed class RunHeartbeat(
     private readonly Lock _lock = new();
     private TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private SequenceState? _state;
+    private SequenceDefinition? _definition;
+    private HashSet<Guid> _containers = [];
     private Guid? _stepId;
     private int _percent;
     private bool _percentKnown;
@@ -93,7 +95,8 @@ public sealed class RunHeartbeat(
         }
     }
 
-    // Every state the run saves, which the store passes on once it is written.
+    // Every state the run saves, which the store passes on once it is written. In a tree the groups, IFs and repeats
+    // around the step that runs are Running too, and come before it; the current step is the leaf.
     public void Update(SequenceState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -102,7 +105,8 @@ public sealed class RunHeartbeat(
 
         lock (_lock)
         {
-            Guid? running = state.Steps.FirstOrDefault(step => step.State == StepState.Running)?.StepId;
+            HashSet<Guid> containers = ContainersOf(state.Definition);
+            Guid? running = state.Steps.FirstOrDefault(step => step.State == StepState.Running && !containers.Contains(step.StepId))?.StepId;
 
             if (running != _stepId)
             {
@@ -245,6 +249,18 @@ public sealed class RunHeartbeat(
         {
             _sender.Release();
         }
+    }
+
+    // Under the lock. The definition of a run never changes, so its containers are worked out once.
+    private HashSet<Guid> ContainersOf(SequenceDefinition definition)
+    {
+        if (!ReferenceEquals(definition, _definition))
+        {
+            _definition = definition;
+            _containers = [.. SequenceTree.Nodes(definition).Where(node => node.IsContainer).Select(node => node.Id)];
+        }
+
+        return _containers;
     }
 
     // The token on the disk only matters after a restart, and the next save writes it again, so a failure here does

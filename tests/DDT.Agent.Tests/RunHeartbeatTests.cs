@@ -108,6 +108,29 @@ public sealed class RunHeartbeatTests
         Assert.Equal("The server stopped the run.", report.Error);
     }
 
+    // The group and the repeat around the step that runs are Running too, and come first in the tree.
+    [Fact]
+    public void TheCurrentStepOfATreeIsTheLeafThatRuns()
+    {
+        RepeatStep repeat = new()
+        {
+            Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a2"),
+            Name = "Try again",
+            Steps = [TestRuns.Script(1)],
+            Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
+        };
+        GroupStep group = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a1"), Name = "Tools", Steps = [repeat] };
+        SequenceState state = SequenceStates.Start(TestRuns.RunId, new SequenceDefinition(SequenceDefinition.CurrentVersion, [group]));
+
+        _heartbeat.Update(state with { Steps = [.. state.Steps.Select(step => step with { State = StepState.Running, Pass = 1 })] });
+
+        Assert.Equal(TestRuns.Script(1).Id, _heartbeat.Snapshot(DeploymentState.Running).CurrentStepId);
+
+        _heartbeat.Update(state with { Steps = [.. state.Steps.Take(2).Select(step => step with { State = StepState.Running, Pass = 1 }), state.Steps[2]] });
+
+        Assert.Null(_heartbeat.Snapshot(DeploymentState.Running).CurrentStepId);
+    }
+
     [Fact]
     public async Task KeepsTheNewestRunTokenAndHasItWrittenToTheDisk()
     {

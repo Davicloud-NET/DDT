@@ -6,13 +6,14 @@ using System.Text;
 using System.Text.Json;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
+using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
 // A run's files in run under its directory, <Windows volume>\DDT: state.json, the state the engine saves after every
-// change, and token, the run token that resumes the run after a restart. Each is replaced whole, through a temporary
-// file written through to the disk, so a power loss leaves the old file or the new one, never part of one. The token
-// is a secret: it is never logged.
+// change, in Format 1 for a flat run and Format 2 for a tree's, and token, the run token that resumes the run after a
+// restart. Each is replaced whole, through a temporary file written through to the disk, so a power loss leaves the old
+// file or the new one, never part of one. The token is a secret: it is never logged.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");
@@ -76,10 +77,8 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
             byte[] json = await File.ReadAllBytesAsync(StatePath, cancellationToken).ConfigureAwait(false);
             SequenceState? state = JsonSerializer.Deserialize(json, AgentJsonContext.Default.SequenceState);
 
-            if (state is { Definition.Steps: { } steps, Steps: { } states, Variables: not null }
-                && steps.Count == states.Count
-                && state.NextIndex >= 0
-                && state.NextIndex <= steps.Count)
+            if (state is { Definition.Steps: not null, Steps: not null, Variables: not null }
+                && (state.Format < SequenceState.TreeFormat ? FitsList(state) : FitsTree(state)))
             {
                 return state;
             }
@@ -114,6 +113,22 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
 
             return null;
         }
+    }
+
+    // Format 1: one entry per step of a flat list, and the index of the step the run goes on at.
+    private static bool FitsList(SequenceState state) =>
+        state.Definition.Steps.Count == state.Steps.Count && state.NextIndex >= 0 && state.NextIndex <= state.Steps.Count;
+
+    // Format 2: one entry per node of the tree in pre-order, no index, and a cursor at one of its nodes, or none at the end.
+    private static bool FitsTree(SequenceState state)
+    {
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
+        IReadOnlyList<StepRunState?> steps = state.Steps;
+
+        return state.NextIndex == SequenceStates.NoNextIndex
+            && steps.Count == nodes.Count
+            && steps.Select((step, order) => step is not null && step.StepId == nodes[order].Id).All(fits => fits)
+            && (state.Cursor is not { } cursor || nodes.Any(node => node.Id == cursor.NodeId));
     }
 
     // The token goes first: without it the rest can no longer act as the machine.

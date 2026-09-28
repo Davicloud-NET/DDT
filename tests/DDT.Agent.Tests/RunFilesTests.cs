@@ -27,6 +27,14 @@ public sealed class RunFilesTests : IDisposable
         Variables = new Dictionary<string, string> { [RunVariables.WindowsPartition] = "0193a4b2-0000-7000-8000-0000000000e1" },
     };
 
+    private static readonly RunScriptStep s_insideRepeat = new()
+    {
+        Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a3"),
+        Name = "Until it works",
+        Phase = SequencePhase.WindowsPE,
+        Script = "exit /b 0",
+    };
+
     private readonly string _windows = Directory.CreateTempSubdirectory("ddt-run-files-").FullName;
     private readonly StringWriter _console = new();
     private readonly RunFiles _files;
@@ -90,6 +98,49 @@ public sealed class RunFilesTests : IDisposable
         Assert.Contains($"WARN  {_files.StatePath} ", _console.ToString(), StringComparison.Ordinal);
     }
 
+    // A tree's run goes on after a restart from an entry per node in pre-order and its cursor, which may sit inside a
+    // repeat.
+    [Fact]
+    public async Task KeepsATreesStateWithItsCursor()
+    {
+        SequenceState tree = TreeState();
+
+        await _files.SaveStateAsync(tree, TestContext.Current.CancellationToken);
+        SequenceState? loaded = await _files.LoadStateAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(Json(tree), Json(loaded));
+        Assert.Equal((SequenceState.TreeFormat, SequenceStates.NoNextIndex), (loaded?.Format, loaded?.NextIndex));
+        Assert.Equal(new NodeCursor(s_insideRepeat.Id, false), loaded?.Cursor);
+        Assert.Empty(_console.ToString());
+    }
+
+    public static TheoryData<string> BrokenTrees =>
+    [
+        "an entry short",
+        "entries out of order",
+        "an index",
+        "a cursor elsewhere",
+    ];
+
+    [Theory]
+    [MemberData(nameof(BrokenTrees))]
+    public async Task ATreesStateThatDoesNotFitItsTreeCountsAsNoRun(string broken)
+    {
+        SequenceState tree = TreeState();
+        tree = broken switch
+        {
+            "an entry short" => tree with { Steps = [.. tree.Steps.Take(2)] },
+            "entries out of order" => tree with { Steps = [.. tree.Steps.Reverse()] },
+            "an index" => tree with { NextIndex = 1 },
+            _ => tree with { Cursor = new NodeCursor(Guid.Parse("0193a4b2-0000-7000-8000-0000000000ff"), false) },
+        };
+
+        await _files.SaveStateAsync(tree, TestContext.Current.CancellationToken);
+
+        Assert.Null(await _files.LoadStateAsync(TestContext.Current.CancellationToken));
+        Assert.Contains($"WARN  {_files.StatePath} does not describe a run this agent can go on with", _console.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task KeepsHowTheRunEndedInTheRunsDirectory()
     {
@@ -132,6 +183,34 @@ public sealed class RunFilesTests : IDisposable
 
         Assert.False(Directory.Exists(Path.Combine(_windows, "DDT", "run")));
         Assert.True(Directory.Exists(Path.Combine(_windows, "DDT")));
+    }
+
+    // Partition, then a repeat around a script, stopped at the script in its second time through.
+    private static SequenceState TreeState()
+    {
+        RepeatStep repeat = new()
+        {
+            Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a2"),
+            Name = "Try again",
+            Steps = [s_insideRepeat],
+            Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
+        };
+        SequenceDefinition definition = new(
+            SequenceDefinition.CurrentVersion,
+            [new PartitionStep { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a1"), Name = "Partition" }, repeat]);
+        SequenceState start = SequenceStates.Start(Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1"), definition);
+
+        return start with
+        {
+            Steps =
+            [
+                new StepRunState(start.Steps[0].StepId, StepState.Done, null, Pass: 1),
+                new StepRunState(repeat.Id, StepState.Running, null, Pass: 1, Iteration: 2),
+                new StepRunState(s_insideRepeat.Id, StepState.Pending, null, Pass: 1),
+            ],
+            Cursor = new NodeCursor(s_insideRepeat.Id, false),
+            Variables = new Dictionary<string, string> { [MachineVariableNames.LastExitCode] = "1" },
+        };
     }
 
     private static string Json(SequenceState? state) =>

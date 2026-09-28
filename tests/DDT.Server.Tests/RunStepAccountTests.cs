@@ -11,6 +11,7 @@ using DDT.Contracts;
 using DDT.Contracts.Accounts;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
 using DDT.Server.Data;
@@ -117,6 +118,16 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         return application.QueryAsync(database => database.Deployments
             .Where(d => d.Id == runId)
             .ExecuteUpdateAsync(d => d.SetProperty(x => x.Values, json).SetProperty(x => x.Variables, variables), Cancellation));
+    }
+
+    // The facts of the machine's last registration.
+    private Task SetFactsAsync(Guid machineId, MachineFacts facts)
+    {
+        string json = MachineFactsDocuments.Write(facts);
+
+        return application.QueryAsync(database => database.Machines
+            .Where(m => m.Id == machineId)
+            .ExecuteUpdateAsync(m => m.SetProperty(x => x.Facts, json), Cancellation));
     }
 
     // As the runs keep the answer to an account input: from the declaration in the run's own copy of the sequence.
@@ -233,6 +244,29 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             StringComparison.Ordinal);
 
         Assert.Single(await SecretReadsAsync(run.Id));
+    }
+
+    // A share's server may be made of the machine's facts, as the validator lets it, as they were when the run started: a
+    // registration since, such as the service's in Windows, changes nothing.
+    [Fact]
+    public async Task ASharePathTakesTheMachinesFactsAsTheRunStartedWithThem()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example"]));
+        RunScriptStep script = Script(
+            SequencePhase.WindowsPE,
+            null,
+            new ShareConnection(@"\\files.{{DnsSuffix}}\drivers\{{BiosVersion|lower}}", new AccountReference(account.Id, null)));
+        (DeployingMachine machine, AgentRun run, _) = await AssignedAsync(null, script);
+        using DeployingMachine held = machine;
+
+        await SetFactsAsync(machine.Id, new MachineFacts { DnsSuffix = "corp.example", BiosVersion = "N3YET73W" });
+        await machine.ReportOkAsync(run.Id, Reached(run, 2));
+        await SetFactsAsync(machine.Id, new MachineFacts { DnsSuffix = "elsewhere.example", BiosVersion = "N3YET80W" });
+
+        AgentStepAccounts accounts = await AccountsAsync(await machine.Agent.RunAccountsAsync(machine.Id, machine.Token, run.Id, script.Id));
+
+        Assert.Equal(@"\\files.corp.example\drivers\n3yet73w", Assert.Single(accounts.Shares).Path);
     }
 
     [Fact]

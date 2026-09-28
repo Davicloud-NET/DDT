@@ -22,6 +22,12 @@ A graphical console in Windows PE, a new web UI, and the settings page that
 
 ## M7 The flow builder and the sequence model
 
+Built, as the README's [Status](../README.md#status) says, and not yet run on a test machine. What
+was built differs from the list below in three ways: the flow builder draws a tree of steps, groups,
+IF nodes and Repeat loops and lays it out itself, rather than showing nodes placed by hand; the
+secrets for steps are accounts, stored or asked for the run, that a step connects shares with, runs
+a script as or joins a domain with; and the roles that rules give are machine roles, sets of values.
+
 The task sequence flow builder is a node editor, in the manner of Blender's shader nodes or Unreal's
 Blueprints, with the elements of a flow chart such as decisions. It shows the sequence model, so the
 model grows with it:

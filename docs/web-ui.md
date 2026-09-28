@@ -23,7 +23,7 @@ Every package that ships in the bundle is listed with its licence in `THIRD-PART
 
 | Folder | What is in it |
 |---|---|
-| `src/ui` | The component library: buttons, fields, selects, tables, dialogs, the drawer, menus, tabs, notices, state tags, the sequence rail, filter controls, the QR code, the secret shown once. `/design` shows them all in a development build. |
+| `src/ui` | The component library: buttons, fields, selects, tables, dialogs, the drawer, menus, tabs, notices, state tags, the sequence rail, filter controls, the QR code, the secret shown once, and the flow's canvas, wires, node card and minimap. `/design` shows them all in a development build. |
 | `src/app` | The shell (top bar, category rows, user menu, command palette, connection banner), the router, the navigation model and the theme. |
 | `src/live` | The live connection: hub events, machine watches, the live status and how lists stay fresh. |
 | `src/lib` | The API client with its CSRF handling, formatting of sizes, durations and times, autosave. |
@@ -61,6 +61,84 @@ The pages never reload after an action, and never read a whole list again becaus
 - A page that shows one machine watches it, and receives its step changes and new log lines as well.
 - React Aria collections render a row again only when its item changes. Anything else a row shows, such as the
   clock or the signed-in person's permissions, goes into the collection's `dependencies`.
+
+## The flow builder
+
+The Task sequences page edits a sequence as a flow. The page is `src/sequences/builder`, over pure modules in
+`src/sequences/flow` and the canvas parts in `src/ui`:
+
+| Where | What |
+|---|---|
+| `sequences/flow/flowTree.ts` | The tree as the server's `SequenceTree` walks it, in pre-order: where each node sits, the slots where nodes can go, and the version a document needs. |
+| `sequences/flow/flowEdits.ts` | The reducer, grown from the rail editor's `SequenceEdit`: insert at a slot, move, remove, wrap in a group, an IF or a Repeat, unwrap, update, the sequence's variables and inputs, and renaming a name everywhere. |
+| `sequences/flow/conditionTree.ts` | Edits of a node's condition trees, its when, an IF's test and a Repeat's until, by path. |
+| `sequences/flow/references.ts` | Where a sequence names its variables and inputs, for "Used by" and "Rename everywhere". |
+| `sequences/flow/templates.ts` | The server's `ValueTemplate`, mirrored for completion and the preview on a sample machine. |
+| `sequences/flow/flowLayout.ts` | The layout, see below. |
+| `sequences/flow/flowKeyboard.ts` | The keys of the canvas, the labels a screen reader reads, and the clipboard's format. |
+| `sequences/flow/history.ts` | Undo and redo. |
+| `sequences/builder` | `FlowBuilder` (the page), `FlowCanvas` (cards, slots, the node's menu, drag and drop), `FlowOutline`, `Palette`, `AddNodeMenu`, the `Inspector` with its tabs Node, Variables, Problems and Sequence, `TemplateField` and `AccountSetting`. |
+| `src/conditions` | `ConditionBuilder`, which the rules share: nested all, any and none groups, the subjects in sections (the machine, the run, rules and machine roles, the sequence), the operators that fit each kind of value, and the sentence a condition reads as. |
+| `src/ui` | `FlowViewport` and `viewTransform.ts` (pan, wheel, Ctrl+wheel and pinch zoom, fit), `FlowWires` (SVG wires, arrows, ports and join dots under the cards), `FlowNode` (the card, with the rail's module along its top edge, and the frame of a container) and `Minimap`. |
+
+**The layout.** `flowLayout.ts` works out every box, frame, port, join, wire, arrow and slot from the tree alone, top
+to bottom, in pixels of the flow at 100 %. A series stacks its nodes on one axis. An IF is its card with the Then and
+Else ports on its bottom edge, the branches side by side, and curves from each port to its branch and back to a join
+dot. A group or a Repeat is a frame around its header card and its body, and a Repeat keeps a lane on the left for
+its wire back. Node sizes are fixed per kind, so nothing is measured, and the same tree always gives the same layout;
+nothing is placed by hand or saved. A collapsed container is one card with a strip of its steps, remembered per
+browser and sequence under `ddt.flow.collapsed.<id>` in local storage. The renderer only draws what the layout gives
+it. Cards change their colour with `motion-colors`; nothing slides when the tree changes.
+
+**No graph library.** A library such as React Flow is built around nodes placed freely and wires drawn by hand, which
+a tree laid out by rule never uses, and its own pointer and keyboard handling would fight React Aria's drag and drop
+and arrow keys that follow the flow. The tree is series-parallel, so a recursive layout is exact. So the canvas is
+DDT's own: no package added, nothing to stub in jsdom, and since the renderer only consumes the layout, a library
+could still take its place later.
+
+**Editing.** Every change goes through the reducer, so autosave, the conflict handling and `EditorLock` stay as the
+rail editor had them. The "+" on a slot opens the add menu. A node or a palette item is dragged with React Aria's
+`useDrag` onto a slot's `useDrop`, as `application/x-ddt-flow-node` or `application/x-ddt-flow-kind`; the outline
+moves rows with `useDragAndDrop` on a React Aria `Tree`. The keyboard moves a node with Alt and the arrows, with cut
+and paste, or from its menu, rather than by a keyboard drag.
+
+**The keyboard.** `flowKeyboard.ts` turns keys into commands from the tree alone. The canvas is one Tab stop with a
+roving focus: only the selected node, or else the first, has `tabIndex` 0. Up and Down follow the flow, Left and
+Right cross to the other branch of the nearest IF, Home and End go to the first and the last node, Escape to the
+container around, Enter to the inspector; Delete removes, Alt+Up and Alt+Down move within a list, Shift+F10 or the
+menu key open the node's menu. Ctrl+C, X, V and D go through the system clipboard as `{ddtFlow: 1, nodes}`, with an
+in-page copy where the clipboard is refused, and a paste gives the nodes new ids. Ctrl+Z and Ctrl+Y belong to the
+page.
+
+**History.** `history.ts` keeps whole copies of the document, 100 deep, and typing into one field with less than a
+second between keys is one step. An undo or a redo is saved at once like any other change, and both stacks are
+dropped when the page takes in another administrator's save. Removing a node shows "Removed X." with Undo for 10
+seconds; the toast and the history are two ways to the same undo.
+
+**Shares belong to steps.** A share is connected while its step runs, so only a leaf has shares: the inspector offers
+"Network shares" for a step and never for a group, an IF or a Repeat, and the server refuses shares on a container
+(`sequence.sharesOnlyOnSteps`) and hands a container no account. A new kind of container keeps it so.
+
+**Loading and tests.** The builder's route is loaded when it is opened (`lazyRouteComponent` in `app/router.tsx`),
+and a machine's page loads `RunFlow` the same way; both import the same layout and canvas modules. The pure modules
+have unit tests, the layout's among them against overlaps, children outside their frames and for 300 nodes in under
+5 ms. `src/test/fixtures` holds sequences and template cases that server tests write, so the web's mirror of the
+contracts and of `ValueTemplate` fails a test when the server's changes.
+
+## A run's flow
+
+A machine's page draws the run's own copy of the sequence with the same layout and canvas (`src/runs/RunFlow.tsx`).
+`runs/runPath.ts` works out the path from that tree and the steps the server keeps of the run, the latest visit of
+each node: a node in a branch an IF did not take, or inside a container that was skipped, is not taken; everything
+else is done, running, paused, waiting or still ahead, and an IF that has not decided keeps both branches ahead.
+`FlowWires` draws the taken wires in ink and the others dashed, and a node not taken has a dashed outline and muted
+text rather than a lower opacity, so it keeps its contrast. `runs/decisions.ts` says why a run went where
+it went from what the agent recorded when it decided, each test with whether it held and the value it met, such as
+"Took Then: Model contains Latitude holds for "Latitude 7450"", never from what the machine reports now. `RunSteps`
+lists the path's nodes with their place in the tree and that line. The canvas follows the node the run is at until
+any move it did not make itself, and "Follow the run" takes it up again while the run goes on.
+`machines/RunWaiting.tsx` is the notice of a run that waits at a Pause or for answers, with its keys for operators,
+and `src/inputs` asks a sequence's inputs there, in the assign dialog and in the approval.
 
 ## Motion
 

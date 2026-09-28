@@ -142,7 +142,9 @@ Since M5 these values are used by task sequence steps. TimeZone, Locale and Keyb
 that a Write the answer file step can override, and the local administrator is added only by such a
 step with "Add the local administrator" on. The domain is joined only by a Join the domain step,
 online in Windows, and Domain:OrganizationalUnit is a default that the step can override. The step
-has no domain field, because the join password is bound to Domain:Name (rule 6 in section 7).
+has no domain field, because the join password is bound to Domain:Name (rule 6 in section 7). Since
+M7 the step can name an account instead, which brings its own domain; the join account and the local
+administrator here stay the defaults (see "Accounts in M7" below).
 
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
@@ -677,7 +679,9 @@ stored secret in two ways:
 The same rule applies to the test endpoints: they use a stored secret only against the stored
 destination. The deployment passwords are outside the rule, because Operators can already read them
 from answer files (LocalAdministratorOptions.cs:7-8). Every future secret with a configurable
-destination gets the same rule.
+destination gets the same rule. The accounts steps use, added in M7, are the first: entities rather
+than settings, bound to their user name, domain and share hosts in the same way (see "Accounts in
+M7" below).
 
 **A secret that no longer decrypts** is reported as `isSet: false, unreadable: true`. keep is refused
 until the secret is set again, and the section fails closed (5.8).
@@ -1088,6 +1092,58 @@ m6.5-settings. Where the implementation deliberately differs from the plan above
   it replaces, so the names of a Generate stay; a name saved on the page alone reaches the
   certificate with the next Generate.
 - **Not built:** upgrade steps for a newer SchemaVersion, of which there is none yet.
+
+## Accounts in M7
+
+M7 lets a step use an account: a Run script step in Windows runs as one, any step that does
+something connects shares with one, and a Join the domain step joins with one. These accounts are
+not settings. Following rule 2 of section 7, they are entities in the database, `ddt."Accounts"`,
+with their own API at /api/accounts and the page Deployment > Accounts, because an administrator
+adds as many as the steps need and a sequence names one by its id. What 5.4 decided for secrets
+holds for them all the same:
+
+- **Encryption.** The password is protected with the key ring that protects the settings' secrets,
+  with the purpose "DDT.Accounts" plus the account's id plus "password" (AccountProtector.cs), so a
+  ciphertext moved into another account's row, whose destinations may differ, does not decrypt
+  there. As in 5.4, this protects a copy of the database alone.
+- **Write-only.** An account's view carries the password as the settings' SecretState, `{ isSet,
+  unreadable, updatedUtc }`, and a save takes the settings' SecretUpdate, keep, set or clear. No
+  answer, log line or hub event holds the password, and the audit row of a change names it only as
+  set or cleared. A password that no longer decrypts has to be set again before keep is taken.
+- **Bound to its destination.** An account's destinations are its user name, its domain, the share
+  hosts it may connect to, and whether scripts may run as it. keep is refused, with a 400 on the
+  password field and an `account.refused` audit row, when the user name or the domain changes or a
+  host is added; fewer hosts reach nothing new. Turning on "scripts may run as it" keeps the
+  password, since a script's logon goes to the account's own domain. The server hands the password
+  out only to those destinations, only to the step that uses it while it runs, and audits every read
+  (RunSecrets.cs): a join into the account's domain, a share on one of its hosts, a script run as
+  it.
+- **Re-authentication.** Creating, changing and deleting an account need the Administrator role, a
+  person signed in with a browser session rather than an API token, and the re-auth token of section
+  6, at most 5 minutes old. A refusal names the field `account`, so the page asks for the password
+  as it does for the settings' re-auth fields: an account reaches machines with whatever it may do
+  in the domain, as the fields that grant trust do.
+- **Reading and deleting.** Viewers read the accounts, their destinations and the sequences and
+  steps that use them, never a password. An account a sequence uses cannot be deleted.
+  `accountChanged` carries the view and `accountsRemoved` the ids, as the live push of M6.5 does for
+  settings.
+
+An account asked for one run, as an Account input of the sequence, is kept in
+`ddt."RunCredentials"`, protected with the purpose "DDT.RunCredentials" plus the run's id plus the
+input's name, together with the destination the input declared when the answer was given, so a later
+edit of the sequence sends it nowhere new. RunCredentialCleanup deletes it in the same save that
+moves the run out of Assigned or Running, whichever way the run ends, and RunCredentialSweeper
+removes at each start those of runs that ended some other way.
+
+**The deployment defaults keep their join account and local administrator.** Domain:UserName,
+Domain:Password and LocalAdministrator:Password stay fields of the deployment section, under the
+rules of 5.4: a Join the domain step without an account joins Domain:Name with them, and a Write the
+answer file step with "Add the local administrator" adds that account. A step may name a stored
+account or an Account input instead of the configured join account; its domain then comes from the
+account, and Domain:OrganizationalUnit applies only when that domain is Domain:Name. The deployment
+section also gives every run the values TimeZone, Locale, Keyboard, OrganizationalUnit and
+AdministratorName, below what inputs, the machine, rules, machine roles and the sequence set
+(README, "Variables and inputs").
 
 ## 8. Open questions for the maintainer
 

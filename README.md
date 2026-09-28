@@ -243,16 +243,23 @@ with a row of pages, and every setting sits on the page of the thing it configur
 | Boot | Boot image, Network boot |
 | Administration | Users and roles, Sign-in, API tokens, Server, Audit log |
 
+Under Deployment, Task sequences opens each sequence in the [flow builder](#the-flow-builder), Rules
+and Machine roles decide what each machine gets and with which values, see [Rules](#rules), and
+Accounts holds the accounts that steps connect shares with, run scripts as and join domains with,
+see [Accounts](#accounts). A machine's page shows its facts, the values a run starts with, and its
+run on the run's own flow, see [Watching a run](#watching-a-run).
+
 - **Live.** The pages hold one connection to the server's hub, and what anyone changes, a machine
   that registers, a step that finishes, a sequence another administrator saves, shows at once
   without a reload. An action puts the server's answer on the page instead of reading the list
   again. While the connection is down a banner says so, the lists are read every 5 seconds, and
   everything the hub would have changed is read once when it is back.
 - **Roles.** A viewer sees machines and runs and changes nothing. An operator also approves and
-  removes machines, starts and ends their deployments, and reads the deployment defaults and the
-  approval settings. An administrator changes everything else, the accounts, the sign-in and the
-  server's settings included, see [Users and roles](#users-and-roles). A page for administrators
-  only says so to anyone else, and reads nothing from the server.
+  removes machines, starts and ends their deployments, answers a waiting run's inputs and lets a
+  paused one go on, and reads the deployment defaults and the approval settings. An administrator
+  changes everything else, the users, the accounts steps use, the sign-in and the server's settings
+  included, see [Users and roles](#users-and-roles). A page for administrators only says so to
+  anyone else, and reads nothing from the server.
 - **Languages.** English and German. The UI starts in the first language of the browser that it
   has, else English, and the account menu changes it for that browser. The server's refusals and
   validation messages carry codes, so they are shown in the chosen language too. The graphical
@@ -288,11 +295,11 @@ lists the problems with keys and values in one message, each after its full key,
 checked only where the `pxe` role runs. Two checks stop it on their own, outside that message: an
 unknown role in `DDT:Roles`, checked first, and a missing HTTPS endpoint, checked later.
 
-What a deployed Windows is set up with comes from the Deployment defaults page,
-described under [What Windows shows at its first start](#what-windows-shows-at-its-first-start) and
-[Joining a domain](#joining-a-domain), as do the language and the logo of the console at the machine,
-see [The console at the machine](#the-console-at-the-machine). Task sequences, packages and rules are not configuration:
-they live in the database and are managed on their pages.
+What a deployed Windows is set up with comes from the Deployment defaults page, described under
+[What Windows shows at its first start](#what-windows-shows-at-its-first-start) and [Joining a
+domain](#joining-a-domain), as do the language and the logo of the console at the machine, see [The
+console at the machine](#the-console-at-the-machine). Task sequences, packages, rules, machine roles
+and accounts are not configuration: they live in the database and are managed on their pages.
 
 ### Settings in the web UI
 
@@ -904,8 +911,9 @@ build to open pages, so copying a build into the boot directory is enough.
 `DDT.Agent` is a single NativeAOT executable, because Windows PE has no .NET runtime. It reads the
 machine's SMBIOS UUID, manufacturer, model and serial number straight from the firmware table, so it
 does not depend on WMI, which an image built with `-SkipPowerShell` lacks, and it reports every MAC
-address it finds. The same executable goes on with a run in the installed Windows as the temporary
-`DdtSequence` service, see [In the installed Windows](#in-the-installed-windows).
+address it finds and the [facts](#machine-facts) that conditions and rules test. The same executable
+goes on with a run in the installed Windows as the temporary `DdtSequence` service, see [In the
+installed Windows](#in-the-installed-windows).
 
 ```bash
 .\build\Publish-Agent.ps1
@@ -1022,11 +1030,15 @@ whose input is redirected have no console, unless `--console <path>` names one t
 a development computer tries one.
 
 The questions are the text console's: the sign-in one field at a time with the error of the attempt
-before, the sequence, the disk and the computer name, each with what the text console lists for it,
-then `ERASE` before a disk is erased and `ANYWAY` before a disk image is written that the machine's
-Secure Boot would not start. On the graphical console a sequence and a disk are chosen by what they
-are, not by number, but the two words are still typed, and the agent checks every answer itself. An
-approval or an assignment on the web takes an open question away on either console.
+before, the sequence, the disk, the computer name and the sequence's
+[inputs](#variables-and-inputs), each with what the text console lists for it, then `ERASE` before a
+disk is erased and `ANYWAY` before a disk image is written that the machine's Secure Boot would not
+start; and during a run, the inputs a run waits for at its start, and Enter to let a Pause step go
+on. On the graphical console a sequence and a disk are chosen by what they are, not by number, and
+the inputs are one screen with a field for each, an account's password masked and forgotten once it
+is sent, but the two words are still typed, and the agent checks every answer itself. Nothing typed
+into an input is logged. An approval or an assignment on the web takes an open question away on
+either console, and so do answers or "Continue the run" on the machine's page.
 
 The graphical console is Avalonia, compiled ahead of time like the agent, and draws in software
 alone: Windows PE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP, and on a development
@@ -1161,6 +1173,41 @@ provisioning network has no route to either, so the server has to send its full 
 Always pass the root, even for a public CA: Windows PE carries only a handful of Microsoft roots,
 and none of the ones public web certificates chain to. When the server's certificate does not come
 from the pinned root, or does not name the server, the agent says on the console what to change.
+
+### Machine facts
+
+Besides its identity, the agent reports what the machine is every time it registers, in Windows PE
+and in the installed Windows, for [conditions](#conditions) and [rules](#rules) to test and for the
+machine's page to show under Machine facts. It reads each fact itself, through the firmware tables
+and Windows' own functions rather than WMI, and one it cannot read stays empty while the others are
+still reported:
+
+| Fact | Where it comes from |
+|---|---|
+| `SystemVersion`, `SystemFamily`, `SystemSku` | the SMBIOS system information, which also gives the manufacturer, model, serial number and UUID |
+| `BaseboardProduct`, `AssetTag` | the SMBIOS baseboard and enclosure |
+| `BiosVersion`, `BiosDate` | the SMBIOS BIOS information, the date as `yyyy-MM-dd` |
+| `ProcessorName` | the SMBIOS processor |
+| `ProcessorCores`, `LogicalProcessors` | Windows' list of the processor cores, across every processor group |
+| `MemoryMegabytes` | the memory the firmware says is installed, or what Windows can use where that says nothing, as on some virtual machines |
+| `TpmPresent`, `TpmVersion` | the ACPI table the firmware describes its TPM in: `TPM2` for a TPM 2.0, which firmware TPMs publish too, and `TCPA` for 1.2. Windows PE has no TPM Base Services, but the ACPI tables are there in both phases |
+| `SecureBootCapable` | whether the firmware has its `SecureBoot` variable, which it has when it can do Secure Boot, on or off; empty on a machine that did not start in UEFI mode |
+| `SecureBootEnabled` | whether Secure Boot is on, see [Secure Boot and raw disk images](#secure-boot-and-raw-disk-images) |
+| `IPv4Address`, `IPv4PrefixLength`, `DefaultGateway`, `DnsSuffix`, `DhcpServer` | the primary network adapter, the one that carries the default route: its first address that is not link-local, the connection's DNS suffix and the DHCP server of its lease |
+
+The server and the agent work out a few more from these: `DeviceKind`, one of Laptop, Desktop,
+Tablet, Server, Virtual and Unknown, from the enclosure's chassis type, and Virtual where the
+manufacturer or model is a hypervisor's, such as Hyper-V's "Virtual Machine"; `FriendlyModel`, the
+name a person knows the model by, which is the system version, such as "ThinkPad T14 Gen 4", on a
+Lenovo, whose model is a type number such as `21HD`, and the model otherwise; `Subnet`, the primary
+adapter's network, such as `10.0.0.0/24`; and `PrimaryMacAddress`.
+
+Board makers leave placeholders such as "Default string" or "To be filled by O.E.M." in the fields
+they do not fill in, which say nothing about the machine. The server drops them when the machine
+registers, as it drops a number, an address or a date that cannot be right, so a condition never
+matches one and the machine's page shows the fact as unknown. The agent drops them as well, so a
+condition tests the same values on both. An agent from before M7 reports no facts, and conditions on
+them hold only as for a fact without a value.
 
 ### Reaching a development host from a test machine
 
@@ -1346,8 +1393,9 @@ names a deleted package shows a problem.
 
 ## Task sequences
 
-A task sequence is the list of steps a machine runs, in order. Administrators create and edit
-sequences on the Sequences page. A deployment runs one sequence on one machine, as
+A task sequence is what a machine runs: steps in order, which groups, IF nodes and Repeat loops can
+arrange into a tree. Administrators create and edit sequences on the Task sequences page, in the
+[flow builder](#the-flow-builder). A deployment runs one sequence on one machine, as
 [Deploying a machine](#deploying-a-machine) describes.
 
 | Step | Runs in | What it does |
@@ -1355,20 +1403,40 @@ sequences on the Sequences page. A deployment runs one sequence on one machine, 
 | Partition the disk | Windows PE | Erases the disk and partitions it with one `diskpart` script: EFI system partition, 16 MB MSR, Windows, and a recovery partition at the end. The EFI system partition is 260 to 4096 MB, 300 by default, and the recovery partition 300 to 65536 MB, 1024 by default. |
 | Apply image | Windows PE | Downloads the chosen image from the library to the Windows partition, resuming after a dropped connection, checks its size and SHA-256, applies it with wimlib and deletes the download. It gives up when the download has not grown for 15 minutes. |
 | Inject drivers | Windows PE | Adds the drivers of every driver package that matches the machine's model to the applied Windows with `dism /Add-Driver /Recurse`. Without such a package the step does nothing, or fails with "Fail when no driver package matches the model" on. |
-| Write the answer file | Windows PE | Writes the answer file for Windows setup, see [What Windows shows at its first start](#what-windows-shows-at-its-first-start). Time zone, language and region, and keyboard left empty take the `DDT:Deployment` defaults. "Add the local administrator" adds the account configured there. |
+| Write the answer file | Windows PE | Writes the answer file for Windows setup, see [What Windows shows at its first start](#what-windows-shows-at-its-first-start). Time zone, language and region, and keyboard left empty take the run's `TimeZone`, `Locale` and `Keyboard` values, which a rule can set and the `DDT:Deployment` defaults give otherwise. "Add the local administrator" adds the account configured there. |
 | Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, or the domain of an [account](#accounts) the step names, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect, see [Joining a domain](#joining-a-domain). |
 | Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, or in Windows as an [account](#accounts), optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
 | Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
 | Write raw disk image | Windows PE | Erases the disk and writes the chosen [raw disk image](#raw-disk-images) over it as it downloads, see [Deploying Linux](#deploying-linux). |
 | Write the cloud-init seed | Windows PE | Adds a 64 MiB partition labelled `CIDATA` at the end of the disk with the `meta-data`, `user-data` and optionally `network-config` files the step holds, with the machine's values filled in, for cloud-init to find at the image's first start. |
+| Set a variable | the phase of the step before | Gives one of the sequence's variables a new value, a text made from values with [placeholders](#placeholders), see [Variables and inputs](#variables-and-inputs). |
+| Pause | the phase of the step before | Shows its message at the machine and on the machine's page, and waits until someone lets the run go on in either place, or until its limit of 1 to 1440 minutes, when it has one, is up, see [Watching a run](#watching-a-run). |
 
-Every step has a name, conditions and two switches. "Go on when this step fails" lets the run go on
-after the step failed, which stays marked as failed. "Restart after this step" restarts the machine
-after the step succeeded and goes on with the next one; a script asks for the same with a restart
-exit code. A script must not restart the machine itself: a step that was running when the machine
-restarted, lost power or the agent stopped is never run again. It fails as interrupted, and "Go on
-when this step fails" applies to it as to any failure. The machine's log shows it as an error in the
-step's log, which also says when the run goes on because that switch is on.
+Three kinds of node arrange the steps rather than doing something themselves:
+
+- A **Group** runs its steps in order. Its conditions and its "Go on when a step in here fails"
+  apply to all of them: when its conditions do not hold, the whole group is skipped.
+- An **If** tests its condition and runs its Then branch when it holds and its Else branch when it
+  does not; both paths meet again after it. An IF in Else makes an else-if. An IF has no conditions
+  of its own besides its test.
+- A **Repeat** runs its steps, then tests its condition, and runs them again until it holds, at most
+  as many times as its limit of 1 to 100, 3 by default. When the condition still does not hold after
+  the last time, the Repeat fails, unless "Go on when the limit is reached" is on. To try a step
+  again until it works, let the step go on when it fails and have the Repeat stop once
+  `LastStepFailed` is no, see [Conditions](#conditions). A restart inside a Repeat goes on where it
+  was, in the same time round.
+
+Every node has a name and "Go on when this step fails", every node but an IF has conditions, and
+every step has "Restart after this step" besides. "Go on when this step fails" lets the run go on
+after the step failed, which stays marked as failed. On a group, an IF or a Repeat it catches the
+failure of a step inside: the failure fails the containers on the way up to it, and the run goes on
+after it. Where nothing catches it, a failure ends the run. "Restart after this step" restarts the
+machine after the step succeeded and goes on with the next one; a script asks for the same with a
+restart exit code. A script must not restart the machine itself: a step that was running when the
+machine restarted, lost power or the agent stopped is never run again. It fails as interrupted, and
+"Go on when this step fails" applies to it as to any failure. The machine's log shows it as an error
+in the step's log, which also says when the run goes on because that switch is on. Set a variable
+and Pause are the exceptions: found running, they run again, since that does no harm.
 
 **Scripts.** The agent writes a script to a file and runs it with `cmd.exe /d /c`, or with Windows
 PowerShell as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`, see
@@ -1384,60 +1452,22 @@ Without one, the working directory is the folder the agent wrote the script to. 
 Partition the disk, `DDT_WINDOWS` is the root of the Windows partition, usually `W:\`, for a script
 that changes the applied Windows offline.
 
-**Phases.** A sequence runs in Windows PE first. When it has steps in Windows, a Join the domain or
-a Run script step set to Windows, the agent [hands the run over](#the-hand-over-to-windows) to the
-installed Windows once the Windows PE steps are done, and the rest runs there after Windows setup. A
-sequence without such steps ends in Windows PE, and the machine restarts into Windows setup. A
-sequence that writes a raw disk image runs in Windows PE only, and the machine restarts into the
-image.
+A script also finds the run's values and what steps set so far in its environment, each as
+`DDT_VAR_<Name>`, such as `DDT_VAR_Office`, and never pasted into its text. When the sequence has
+variables that steps may change, `DDT_VARIABLES_OUT` names a file for the script to write
+`Name=Value` lines to, in UTF-8, or in UTF-16 with a byte order mark as PowerShell's `Out-File`
+writes by default. After a script that succeeded, the run takes the lines that name such a variable,
+at most 64 lines of at most 1024 characters, and drops any other with a warning that names it. The
+log names the variables a script set, never their values. None of this is secret: a script never
+sees a password, see [Accounts](#accounts).
 
-**Conditions.** A step with conditions runs only when all of them hold, and is skipped otherwise.
-A condition compares one of the machine's values, Manufacturer, Model, Serial number, SMBIOS UUID,
-MAC address, Computer name (the name assigned to the machine) or Phase (`WindowsPE` or `Windows`),
-with equals, does not equal, starts with or contains, ignoring case. MAC addresses are compared
-without their separators, and a machine with several holds a condition when any of its addresses
-does, or for does not equal, when none equals. The machine's log names a skipped step with the
-conditions that did not hold and what the machine reported, such as
-`Model starts with "OptiPlex", and the machine reports "Latitude 5440"`. The step never ran, so that
-line is the run's, not the step's.
-
-**What makes a sequence runnable.** A sequence is saved with problems, as a draft, but one with a
-problem cannot be assigned, chosen at a machine or run by a rule. The editor shows each problem at
-its step and field. The rules:
-
-- A sequence has 1 to 100 steps, each with a name of at most 100 characters and at most 10
-  conditions. A MAC address condition needs 12 hex digits for equals and does not equal, 1 to 12
-  for starts with and contains.
-- It partitions the disk at most once and applies at most one image, in that order. Neither step
-  may have conditions or go on when it fails, because the steps after them rely on them.
-- Inject drivers and Write the answer file come after Apply image. The answer file is written at
-  most once, and the domain joined at most once.
-- Steps in Windows come after every step in Windows PE, and need an Apply image step without
-  conditions before them.
-- Windows PE restarts only after Partition the disk, because the run's state is kept on that disk.
-  That holds for Restart steps, "Restart after this step" and a script's restart exit codes. A
-  Windows PE script with a files package also runs only after it.
-- A script has at most 64 KiB, 1 to 16 exit codes for success and at most 16 for a restart, and no
-  code in both lists.
-- A sequence either installs Windows or writes a raw disk image. One that writes a raw disk image has
-  no Partition the disk, Apply image, Inject drivers, Write the answer file or Join the domain step,
-  and no step in Windows. It writes one image, whose step may have no conditions and not go on when
-  it fails, and at most one cloud-init seed after it. It keeps its state in memory, so Windows PE
-  cannot restart during it, and its scripts cannot have a package: the image leaves no partition to
-  keep the state on or unpack a package to. Each seed file has at most 64 KiB, and `meta-data` and
-  `user-data` must be there, though they can be empty.
-- The image of Apply image must be an x64 Windows image in the library, the image of Write raw disk
-  image a raw disk image in the library whose boot file is not for another processor, and a script's
-  package a files package in the library. A time zone, language and region, and keyboard must be
-  ones Windows knows. "Add the local administrator" needs
-  `DDT:Deployment:LocalAdministrator:Password`, and Join the domain needs `DDT:Deployment:Domain`.
-
-Three findings are only warnings. A sequence that goes on in Windows without a Write the answer file
-step that adds the local administrator: Windows setup then stops at its account page, and the run
-waits there until someone finishes it. A raw disk image that is not signed for Secure Boot, see
-[Secure Boot and raw disk images](#secure-boot-and-raw-disk-images). And a placeholder in a seed
-file that DDT does not know, which stays as it is. Deleting an image or a package, or changing a
-setting, can give a saved sequence a problem, which the page then shows.
+**Phases.** A run starts in Windows PE. The first step on its path that runs in Windows, a Join the
+domain or a Run script step set to Windows, [hands the run over](#the-hand-over-to-windows) to the
+installed Windows, and the rest runs there after Windows setup. A Restart, Set a variable or Pause
+step runs in the phase the run is in. A run whose path has no step in Windows ends in Windows PE,
+and the machine restarts into Windows setup. A sequence that writes a raw disk image runs in Windows
+PE only, and the machine restarts into the image. The flow builder draws a line where the run hands
+over, and shows each step's phase.
 
 **Templates.** "New from the Install Windows template" makes a sequence with Partition the disk,
 Apply image, Inject drivers, and Write the answer file, which adds the local administrator when one
@@ -1447,20 +1477,251 @@ Install Linux template" makes Write raw disk image, again without an image, and 
 seed, whose `meta-data` names the machine and whose `user-data` is a `#cloud-config` with an empty
 list of SSH keys for the image's default user. "New empty sequence" starts without steps.
 
-**Editing.** The editor saves by itself: 700 ms after typing stops, at least every 3 seconds while
-typing goes on, and at once for switches, choices and moves. Steps move with their Move buttons,
-with the arrow keys, Home and End on a Move button, or with Alt and the up or down arrow within a
-step. A removed step comes back with Undo for 10 seconds. Every save raises the sequence's revision,
-and a save based on an older revision is refused: the editor then says who saved meanwhile and what
-they changed, and offers "Use theirs", which drops your changes since your last save, or "Keep
-mine", which saves yours over theirs after a confirmation. With no unsaved changes, another
-administrator's save appears as it happens. Every save is written to the audit table with what
-changed, and the SHA-256 of every script that changed. Names are unique, ignoring case. A sequence a
-rule chooses cannot be deleted, and runs keep the copy they ran either way.
+**Who may change them.** Only administrators create and change sequences, packages, rules, machine
+roles and accounts, and operators assign, approve and stop runs. A sequence is code that runs as
+SYSTEM on every machine it goes to, see [Security model](#security-model).
 
-**Who may change them.** Only administrators create and change sequences, packages and rules, and
-operators assign, approve and stop runs. A sequence is code that runs as SYSTEM on every machine it
-goes to, see [Security model](#security-model).
+### Conditions
+
+A node with conditions runs only when they hold, and is skipped with everything in it otherwise. A
+condition is a test, or a group whose parts must all hold, of which at least one must hold, or of
+which none may hold; groups can hold groups, four deep. An IF's test and a Repeat's condition to
+stop are built the same way, and so are [rules](#rules). A test compares a name with a value:
+
+- **The machine's facts**, which the agent reads, see [Machine facts](#machine-facts): its
+  manufacturer, model and friendly model name, serial number, SMBIOS UUID and kind of device, its
+  MAC addresses, memory, processor, TPM and Secure Boot, the primary network adapter's address,
+  subnet, gateway, DNS suffix and DHCP server, and the SMBIOS and BIOS details; besides them
+  `ComputerName`, the name the machine gets, and `Phase`, `WindowsPE` or `Windows`, the phase the
+  step would run in.
+- **Values** that [rules and machine roles](#rules) set, and the sequence's own
+  [variables and inputs](#variables-and-inputs).
+- **The run's own**: `LastStepFailed`, whether the step that ran last failed, and `LastExitCode`,
+  the exit code of the last script that ran.
+
+What a test can ask depends on what it tests. Text is compared ignoring case: equals, does not
+equal, starts with, ends with, contains, does not contain, matches a pattern in which `*` stands for
+any text and `?` for one character, is one of a list separated by semicolons, has a value and has no
+value. Numbers, such as the memory in megabytes or the number of cores, are compared as numbers, and
+can also be greater than, at least, less than or at most a number. Yes or no facts, such as
+`TpmPresent`, are tested for yes or no. An IPv4 address can also be in a network written as
+`10.20.0.0/16`. MAC addresses are compared without their separators, whole or by their first bytes.
+A value of a rule, a machine role or the sequence is compared as text. `Manufacturer`, `Model` and
+`FriendlyModel` are compared as [driver packages](#packages) compare them, and the placeholders
+firmware leaves in unset fields count as no value. A name with several values, the MAC addresses,
+holds a test when any of them does, or for does not equal, does not contain and has no value, when
+none does; a name without a value holds only those three.
+
+The flow builder offers the names in sections, the machine's, the run's, those from rules and
+machine roles, and the sequence's, with the tests that fit each, and reads a condition back as a
+sentence, such as "Runs only where Model contains "Latitude"". The machine's log names a skipped
+step with the conditions that did not hold and what the machine reported, such as
+`Model starts with "OptiPlex", and the machine reports "Latitude 5440"`. The step never ran, so that
+line is the run's, not the step's. An IF says in the log which branch it took and why, and a Repeat
+says each time it goes round.
+
+### Variables and inputs
+
+A sequence can declare variables, the values its steps and settings use, such as `Office` or
+`ComputerName`, each with a default and a description. A name starts with a letter and has at most
+64 letters, digits and underscores. Names ignore case everywhere, in placeholders and conditions
+alike, may not start with `DDT`, and may not be a machine fact other than `ComputerName`, whose
+value names the machine.
+
+The server works out a run's values once, when it starts. For each name, the first of these sources
+that sets it wins:
+
+1. the answers to the sequence's inputs;
+2. the machine's own name, assigned on the web or typed at the machine, as `ComputerName`;
+3. the [rules](#rules) that match the machine, from the top;
+4. the machine roles those rules give, in the order they give them;
+5. the sequence's defaults, its inputs' first, then its variables';
+6. the deployment defaults, as `TimeZone`, `Locale`, `Keyboard`, `OrganizationalUnit` and
+   `AdministratorName`.
+
+The values of rules and machine roles and the variables' defaults may be made from other values and
+the machine's facts with [placeholders](#placeholders). A value made from itself, one that cannot be
+worked out and a computer name Windows refuses fail the run as it starts, before any disk is
+touched. The run keeps the values it started with, whatever changes on the Rules page later, and the
+machine's page shows each with where it came from. Only a variable with "Steps may change it" on
+changes while the run goes on, by a Set a variable step or a script's `DDT_VARIABLES_OUT`.
+
+An input asks for a value before the run starts, and its answer sets the variable of its name. It
+has a question, a help text, and one of five kinds of answer: text, of at most a given length; one
+of a list; several of a list, which the variable gets as their values separated by semicolons; yes
+or no; or an account. It is asked on the web, at the machine, or in either place, and may require an
+answer. A sequence has at most 16 inputs, and a list at most 50 choices. A question starts with what
+the machine, a rule or a default would give its name.
+
+- **On the web**, the dialogs that assign a sequence and that approve a machine for a rule's
+  sequence ask the inputs asked there. One asked only on the web must be answered there unless a
+  value or a default answers it; one asked in either place may be left for the machine.
+- **At the machine**, the console asks the inputs asked there after the sequence, the disk and the
+  computer name, before `ERASE`, see [Deploying a machine](#deploying-a-machine).
+- **At the start of the run.** A run that still lacks a required answer when it is about to start,
+  such as one assigned on the web or a zero touch run, waits there: the console at the machine asks
+  what is missing, and an operator can answer on the machine's page, whichever comes first. A run
+  that lacks an answer only the web asks for, such as one chosen at the machine, does not start and
+  fails with a message that says so.
+
+An account input asks for a user name and a password for this one run, and declares where the
+account may go, as a stored account does: the domain a Join the domain step joins with it, the share
+hosts it may connect to, and whether scripts may run as it. Its answer is never a value, so no
+placeholder, condition or script can read it: steps name it where they name an account, and the
+server keeps it encrypted until the run ends, see [Accounts](#accounts).
+
+### Placeholders
+
+Text fields that take values can hold placeholders: a variable's default, a value a rule or a
+machine role sets, a Set a variable step's value, a Pause step's message, the answer file's time
+zone, locale and keyboard, a Join the domain step's organizational unit and a share's path.
+`{{Name}}` stands for the value or machine fact of that name, ignoring case, and filters after bars
+change it, from left to right:
+
+| Filter | What it does |
+|---|---|
+| `upper`, `lower` | changes the case |
+| `trim` | takes the white space off both ends |
+| `alnum` | keeps only the letters A to Z and the digits |
+| `left:n`, `right:n` | keeps the first or the last n characters, at most 1024 |
+
+Nothing is cut short unless a filter says so. A computer name has at most 15 characters, so a
+pattern for one says how it fits: `PC-{{SerialNumber|alnum|right:8}}` makes `PC-4X7K2P9Q` of the
+serial number `CN-4X7K2P9Q`, and a rule that sets `ComputerName` to it names every machine it
+matches. A placeholder whose value is missing is an error that names it, which keeps a run from
+starting or fails the step that needed it. Text between double braces that is not a name and
+filters, such as cloud-init's own `{{ v1.local_hostname }}`, stays as it is.
+
+The server fills in the values when the run starts, and the answer file's settings and the
+organizational unit when their step fetches them, from the values the run started with, what steps
+set since and the machine's facts. A share's path it fills in from the values the run started with
+alone, when its step runs. The agent fills in a Set a variable step's value and a Pause step's
+message when the step runs, from the run's values, what steps set so far and the machine's facts. A
+script's text is never filled in: scripts read the values from their environment. The seed files of
+Write the cloud-init seed take only the placeholders listed under [Deploying
+Linux](#deploying-linux), with filters. The flow builder completes a name after `{{`, and shows what
+a field gives on a sample machine.
+
+### What makes a sequence runnable
+
+A sequence is saved with problems, as a draft, but one with a problem cannot be assigned, chosen at
+a machine or run by a rule. The flow builder shows each problem at its node and field, and lists
+them all on its Problems tab. A sequence is a tree, and what follows holds on every path a run can
+take through it: along either branch of each IF, past a node whose conditions may skip it or that
+goes on when it fails, and through a Repeat as often as it may go round.
+
+- A sequence has 1 to 100 steps and at most 200 nodes, groups, IFs and Repeats included, nested at
+  most 8 deep, in at most 1 MiB. Each node has a name of at most 100 characters, and its conditions
+  have at most 20 tests, in groups at most 4 deep. A MAC address needs 12 hex digits where it is
+  compared whole, and 1 to 12 where by its first bytes.
+- A path partitions the disk at most once and applies at most one image, in that order. Neither
+  step may have conditions of its own or go on when it fails, because the steps after them rely on
+  them. They may sit in the branches of an IF, so a sequence can apply a different image to each
+  model.
+- Inject drivers and Write the answer file come after Apply image on every path to them. A path
+  writes the answer file at most once and joins the domain at most once.
+- Steps in Windows come after every step in Windows PE on every path, and every path to them applies
+  an image, by an Apply image step without conditions of its own.
+- Windows PE restarts only after Partition the disk on every path, because the run's state is kept
+  on that disk. That holds for Restart steps, "Restart after this step" and a script's restart exit
+  codes. A Windows PE script with a files package also runs only after it.
+- An IF has its test and no conditions of its own. A Repeat has its condition to stop and a limit of
+  1 to 100 times, and nothing inside it partitions the disk, applies an image, injects drivers,
+  writes the answer file or a seed, joins the domain, writes a raw disk image or changes the phase,
+  since each of those happens once in a run. A restart inside it is allowed.
+- Only a step connects shares, at most 4, since a share is connected while its step runs: a group,
+  an IF or a Repeat has none. A share's path is `\\host\share`, and its host comes only from values
+  fixed when the run starts, never from `Phase`, `LastStepFailed`, `LastExitCode` or a variable
+  steps may change.
+- A script has at most 64 KiB, 1 to 16 exit codes for success and at most 16 for a restart, and no
+  code in both lists. Only a script in Windows runs as an account.
+- A sequence has at most 64 variables and 16 inputs, each name once. Set a variable and a script's
+  output set only variables that steps may change. An account input's answer is never used as a
+  value, and an account a step names is exactly one stored account or one account input of the
+  sequence. A Pause with a limit waits 1 to 1440 minutes.
+- A sequence either installs Windows or writes a raw disk image. One that writes a raw disk image has
+  no Partition the disk, Apply image, Inject drivers, Write the answer file or Join the domain step,
+  and no step in Windows. It writes one image, whose step may have no conditions and not go on when
+  it fails, and at most one cloud-init seed after it. It keeps its state in memory, so Windows PE
+  cannot restart during it, and its scripts cannot have a package: the image leaves no partition to
+  keep the state on or unpack a package to. Each seed file has at most 64 KiB, and `meta-data` and
+  `user-data` must be there, though they can be empty.
+- The image of Apply image must be an x64 Windows image in the library, the image of Write raw disk
+  image a raw disk image in the library whose boot file is not for another processor, and a script's
+  package a files package in the library, on every branch. A time zone, language and region, and
+  keyboard must be ones Windows knows. "Add the local administrator" needs
+  `DDT:Deployment:LocalAdministrator:Password`, and Join the domain without an account needs
+  `DDT:Deployment:Domain`. A stored account a step names must exist, with a password the server can
+  read, and may go where the step sends it: a join's account names a domain, a script's account
+  lets scripts run as it, and a share's host written in its path is one the account names.
+
+Some findings are only warnings. A sequence that goes on in Windows without a Write the answer file
+step that adds the local administrator: Windows setup then stops at its account page, and the run
+waits there until someone finishes it. A raw disk image that is not signed for Secure Boot, see
+[Secure Boot and raw disk images](#secure-boot-and-raw-disk-images). A placeholder in a seed file
+that DDT does not know, which stays as it is. A Pause in Windows PE before the disk is partitioned,
+where a restart while it waits ends the run. A group, an IF or a Repeat with nothing in it. And a
+name in a placeholder or a condition that the sequence does not declare and no rule or machine role
+sets, which a rule added later may still set. Deleting an image, a package or an account, or
+changing a setting, can give a saved sequence a problem, which the page then shows.
+
+**Older agents.** The server stores each sequence with the lowest version of its document that holds
+it. A list of steps whose conditions are those of M5, as the flow builder keeps a flat sequence with
+such conditions, stays version 1, or 2 with a raw disk image, so an agent in a boot image built
+before M7 still runs it. Anything else M7 added, a group, an IF, a Repeat, Set a variable, Pause, a
+condition with any or none, a new fact or test, shares, run as, a join's account, variables or
+inputs, makes it version 3, which only an agent of M7 runs. The server offers a machine only the
+sequences its agent runs, and hands an assigned run only to such an agent. Uploading the agent of M7
+on the Server page brings every machine up to it at its next netboot, see [Updating the agent
+without a new boot image](#updating-the-agent-without-a-new-boot-image).
+
+### The flow builder
+
+The Task sequences page opens a sequence in the flow builder, which draws it from top to bottom:
+each step as a card and the wires between them, an IF whose Then and Else leave from ports on its
+bottom edge and run side by side until they meet again at a dot below, a group or a Repeat as a
+frame with a header card around its steps, and a Repeat's wire back to its start. Nothing is placed
+by hand: the page lays the tree out the same way every time and saves no positions.
+
+- **Adding.** Every wire has a "+" that lists what can go there, and an empty branch or group has
+  one of its own. A wide screen also shows a palette, with a search, to drag onto a wire; a click in
+  it adds after the selected node.
+- **Moving.** A node is dragged onto another wire. Alt and the up or down arrow move it within its
+  list, and cut and paste move it anywhere.
+- **The node's menu**, by a right click, Shift+F10 or the menu key: add a step after it, wrap it in
+  a group, an IF or a Repeat, unwrap a container, which leaves what it holds in its place, collapse
+  or expand a container, copy, cut, duplicate and remove. A collapsed container shows as one card,
+  and each browser remembers which are collapsed.
+- **The keyboard.** The flow is one stop of the Tab key. Up and Down follow the flow, into Then and
+  into containers and on past where branches meet; Left and Right cross to the other branch of the
+  nearest IF; Home and End go to the first and the last node; Escape goes out to the container
+  around; Enter opens the node's fields; Delete removes it. Ctrl and C, X, V or D copy, cut, paste
+  and duplicate, through the clipboard, so a node can go into another sequence too. A screen reader
+  reads a node with where it is, such as "Step 2 of Then of 'If: Is it a Latitude?', Apply image, 1
+  problem".
+- **Undo.** Ctrl Z undoes and Ctrl Y or Ctrl Shift Z redoes, outside text fields, up to 100 changes
+  back; typing into one field counts as one change. A removed node also comes back with the Undo of
+  its notice, for 10 seconds.
+- **The view.** Dragging the background pans, and the wheel scrolls. Ctrl and the wheel, a
+  touchpad's pinch or two fingers zoom, from 25 % to 200 %, and `+`, `-`, `0` and `1` zoom in, out,
+  to 100 % and to fit. A minimap moves the view.
+- **The outline.** "Outline" shows the same sequence as a numbered tree, whose rows move by dragging
+  as well, for a screen reader or a flow too wide to follow. A phone shows the outline, with the
+  fields in a drawer.
+- **The inspector** beside the flow holds the selected node's fields on "Node", the sequence's
+  variables and inputs on "Variables", every problem and warning on "Problems", each with a way to
+  its field, and the sequence's name and description on "Sequence". "Rename everywhere" renames a
+  variable or an input in every placeholder, condition and step that names it.
+
+The builder saves by itself: 700 ms after typing stops, at least every 3 seconds while typing goes
+on, and at once for switches, choices, every change to the tree, and an undo or a redo. Every save
+raises the sequence's revision, and a save based on an older revision is refused: the builder then
+says who saved meanwhile and what they changed, and offers "Use theirs", which drops your changes
+since your last save, or "Keep mine", which saves yours over theirs after a confirmation. With no
+unsaved changes, another administrator's save appears as it happens, and what there was to undo is
+dropped. Every save is written to the audit table with what changed, and the SHA-256 of every script
+that changed. Names are unique, ignoring case. A sequence a rule chooses cannot be deleted, and runs
+keep the copy they ran either way.
 
 ### Accounts
 
@@ -1472,48 +1733,100 @@ and a Join the domain step can join with one instead of the configured join acco
 see the password: DDT connects the shares and starts the script itself.
 
 An account is bound to where its password may go: the domain a join with it joins, the servers whose
-shares it connects, and whether scripts may run as it. The server hands the password only to the step
-that uses it, while that step runs, only to those destinations, and writes an audit row for every
-read. A share's path may be made from values, such as `\\{{FileServer}}\drivers`, and the server fills
-it in from the values the run started with, never from what a step set since; a server the account
-does not name is refused. Changing the user name or the domain, or adding a server, needs the password
-again, so a stored password never reaches a destination it was not entered for. Only administrators
-change accounts, signed in on the web and with their password entered again, and an account that a
+shares it connects, and whether scripts may run as it. The server hands the password only to the
+step that uses it, while that step runs, only to those destinations, and writes an audit row for
+every read. A share's path may be made from values, such as `\\{{FileServer}}\drivers`, and the
+server fills it in from the values the run started with, never from what a step set since; a server
+the account does not name is refused. Changing the user name or the domain, or adding a server,
+needs the password again, so a stored password never reaches a destination it was not entered for.
+Everyone signed in sees the accounts, never a password. Only administrators change them, signed in
+on the web and with their password entered again, not with an API token, and an account that a
 sequence uses cannot be deleted; the page lists the sequences and steps that use it.
 
+A share is connected as `\\host\share`, whatever folder in it the path names, without a drive
+letter, before the step runs, and disconnected after it, however it ended. Windows allows one
+account per server in a logon session, so a connection to that server with another account that the
+step did not make is ended first. A script that runs as an account runs in that account's own logon:
+DDT signs the account in as someone at the keyboard would, loads its profile, and for an
+administrator uses its elevated token, as a script started from an elevated prompt would run. The
+script gets the account's environment with DDT's variables, a window station and desktop of its own,
+and only its own folder and package opened to that logon, and its timeout ends every process it
+started. Shares for such a step are connected in that logon.
+
 A sequence can instead ask for an account when its run starts, as an account input with the same
-destinations. The answer is kept encrypted for that run only and deleted when the run ends. What an
-account can and cannot protect is in [Security model](#security-model).
+destinations. The answer is kept encrypted for that run only, with the destinations the input
+declared when it was given, and deleted in the same save that ends the run, whichever way it ends;
+the server's start deletes any a run left behind. What an account can and cannot protect is in
+[Security model](#security-model).
 
 ## Rules
 
-A rule chooses the task sequence for a machine by one of its MAC addresses or by its model. An
-administrator adds rules on the Rules page. A rule never authorizes a machine: it only chooses what
-an operator's approval runs, or what is offered first at the machine.
+The Rules page holds one ordered list of rules, numbered from the top. A rule has a name, a
+condition over what the machine is, and what it gives a machine for which the condition holds: a
+task sequence, values, machine roles, or any of them. A rule without a condition holds for every
+machine; one that is switched off, or has a problem, holds for none. An administrator adds, changes,
+moves and deletes rules, and everyone signed in can read them. A new rule goes to the bottom.
 
-What counts first: a sequence assigned on the web or chosen at the machine comes before every rule.
-Then a rule for one of the machine's MAC addresses, the primary one first, then a rule for its
-model: an exact model before a model ending in `*`, the longest such prefix first, and a rule that
-names the manufacturer before one for any manufacturer. Models are matched as for
-[driver packages](#packages). The machine's page says which choice applies and why.
+The server walks the list from the top for each machine. The first rule that holds and chooses a
+sequence chooses it, and for each value, the first rule that holds and sets it sets it. The machine
+roles the rules give add their values after those of every rule, as
+[Variables and inputs](#variables-and-inputs) describes. A condition is built as a step's is, see
+[Conditions](#conditions), over the [machine facts](#machine-facts). It may also test a value, and
+then sees the machine's own name and what the rules above it that hold, and their machine roles,
+have set. So a rule's place decides what it wins: a rule moves by dragging it, with Alt and the up
+or down arrow, or from its menu. Each rule shows how many of the machines DDT knows its condition
+holds for. A run takes the rules' values when it starts, so a rule changed after a sequence was
+assigned counts for that run.
 
-A rule's sequence runs only in two ways:
+A sequence assigned on the web or chosen at the machine comes before every rule; the rules still set
+the run's values and give its machine roles. The machine's page says which choice applies and why,
+such as "Rule 3, Latitudes in Vienna, chooses Install Windows". "Test a machine" on the Rules page
+picks a machine DDT knows and shows which rules match it, the sequence it gets and from where, and
+each value with the rule or machine role it comes from, and which others set it too but come later.
+
+A rule never authorizes a machine: it only chooses what an operator's approval runs, or what is
+offered first at the machine, and sets the values of what runs. Its sequence runs only in two ways:
 
 - **Approved on the web.** Approving a waiting machine that a rule chooses a sequence for runs it,
-  after a confirmation that names the sequence and whether it erases the disk. The approval carries
-  the sequence the operator saw, and the server refuses it when the rules now choose another. When
-  the sequence has a problem, erases a disk on a machine that reported more than one, or joins a
-  domain or names the machine in its cloud-init seed and the machine has no name yet, the approval
-  only authorizes the machine. So does an approval with someone signed in at the machine, who
-  chooses there; with `DDT:Machines:RequireWebApproval` on, an approval therefore never runs a
-  rule's sequence. When the sequence writes a raw disk image that may not start with Secure Boot
-  on, the confirmation says so, and for a machine that reported Secure Boot on it approves only once
-  the operator allows the image.
+  after a confirmation that names the sequence and whether it erases the disk, and asks the
+  sequence's inputs that are asked on the web. The approval carries the sequence the operator saw,
+  and the server refuses it when the rules now choose another. When the sequence has a problem,
+  erases a disk on a machine that reported more than one, or needs a computer name, because it joins
+  a domain, names the machine in its cloud-init seed or declares `ComputerName`, and the machine has
+  no name yet, the approval only authorizes the machine. So does an approval with someone signed in
+  at the machine, who chooses there; with `DDT:Machines:RequireWebApproval` on, an approval
+  therefore never runs a rule's sequence. When the sequence writes a raw disk image that may not
+  start with Secure Boot on, the confirmation says so, and for a machine that reported Secure Boot
+  on it approves only once the operator allows the image.
 - **Suggested at the machine.** The technician signed in at the machine sees the rule's sequence
   first, marked as suggested, and still chooses it, confirming with `ERASE` when it erases a disk.
 
 A rule's run never counts as zero touch, and [Deploying a machine](#deploying-a-machine) says when
 it is cancelled. A new rule starts nothing by itself.
+
+**From earlier versions.** Before M7, a rule chose a sequence by one of the machine's MAC addresses
+or by its model. The upgrade to M7 turns each into a rule at the top of the list, in the order they
+were tried: MAC address rules first, then model rules, an exact model before a model ending in `*`,
+the longer model first, and a rule that names the manufacturer before one for any manufacturer. A
+MAC address rule becomes the test "MacAddress equals" its address, which holds when any of the
+machine's addresses is that one; a model rule tests "Manufacturer equals", where it named one, and
+"Model equals", or "Model matches" with the trailing `*`. Their names say what they matched, such as
+"MAC address 00:15:5D:01:02:03" or "Model Latitude 7* of any maker", and they match the machines
+they matched before, with one exception: where MAC address rules name two addresses of one machine,
+the higher rule now wins, where the rule for its primary address did. They keep their ids, so the
+runs they chose still name them. The upgrade copies them on PostgreSQL; a SQLite development
+database is made anew from the model.
+
+### Machine roles
+
+A machine role is a set of values that rules give machines together, such as the time zone and the
+computer name pattern of a kiosk, on the Machine roles page. It says nothing about what a person may
+do in DDT, which is a user's role, see [Users and roles](#users-and-roles). A rule gives at most 32
+machine roles, and a role's values come after those of every rule: a rule that sets a value wins it
+over a role, and among roles, the one a higher rule gave first wins. The page lists the rules that
+give each role. A role cannot be deleted while a rule gives it, and a value that a run could not
+use, such as a name that is a machine fact, is refused when the role is saved. Only administrators
+change machine roles, and everyone signed in can read them.
 
 ## Deploying a machine
 
@@ -1525,22 +1838,23 @@ these ways.
   those a rule suggests first, and leaves out those that erase a disk when the machine has no disk
   DDT could install on. The technician types the sequence's number, and then answers only what that
   sequence needs: the disk number when it erases a disk and there is more than one, a computer name
-  when it joins a domain or names the machine in its cloud-init seed, and `ERASE` when it erases a
+  when it joins a domain, names the machine in its cloud-init seed or declares `ComputerName`, the
+  sequence's [inputs](#variables-and-inputs) asked at the machine, and `ERASE` when it erases a
   disk. Anything but `ERASE` there goes back to the list. On a machine with Secure Boot on, a
   sequence that writes a raw disk image the machine would not start, one not signed for Secure Boot
   or signed under a CA its firmware does not trust, asks last for `ANYWAY`, and anything else goes
   back to the list too. A sequence with nothing more to ask starts once its number is typed.
 - **On the Machines page.** An operator or administrator assigns a sequence, optionally with a
-  computer name, which is required when the sequence joins a domain or names the machine in its
-  cloud-init seed and the machine has no name yet.
-  The dialog names the disks the machine reported and says what the assignment does. A machine
-  waiting at its prompt, seen in the last 90 seconds, is authorized by the assignment, unless
-  `DDT:Machines:RequireWebApproval` is on, in which case only a machine someone already signed in at
-  is. Any other machine stays `Pending` with the sequence assigned, and runs it as soon as someone
-  signs in at it. Assigning a sequence that erases a disk is refused for a machine that reported
-  more than one disk DDT could install on: sign in at it and choose the disk there. For a raw disk
-  image that may not start with Secure Boot on, the dialog warns and offers to write it anyway,
-  which it requires for a machine that reported Secure Boot on.
+  computer name, which is required when the sequence needs one and nothing names the machine yet:
+  neither a name it was given before nor a value, such as a rule's `ComputerName`. The dialog asks
+  the sequence's inputs asked on the web, names the disks the machine reported and says what the
+  assignment does. A machine waiting at its prompt, seen in the last 90 seconds, is authorized by
+  the assignment, unless `DDT:Machines:RequireWebApproval` is on, in which case only a machine
+  someone already signed in at is. Any other machine stays `Pending` with the sequence assigned, and
+  runs it as soon as someone signs in at it. Assigning a sequence that erases a disk is refused for
+  a machine that reported more than one disk DDT could install on: sign in at it and choose the disk
+  there. For a raw disk image that may not start with Secure Boot on, the dialog warns and offers to
+  write it anyway, which it requires for a machine that reported Secure Boot on.
 - **By an approval** of the sequence a rule chooses, as [Rules](#rules) describes.
 - **Zero touch.** `DDT:Machines:ZeroTouchNetworks` lists networks, for example `10.20.0.0/16`, and is
   empty by default. A machine with a sequence assigned on the page that netboots from one of them is
@@ -1552,11 +1866,15 @@ these ways.
   overlap a listed proxy network, see [Security model](#security-model).
 
 When a sequence is assigned, chosen or approved, the run keeps a copy of it and fixes the files it
-downloads: its image, the driver packages that match the machine's model at that moment, and its
-files packages. Editing the sequence or uploading a package later never changes the run; assign the
-sequence again for that. The `DDT:Deployment` values without passwords are taken when the run
-starts, and the passwords are read when a step fetches them. A run whose sequence needs a password
-that is no longer configured fails as it starts, before the disk is touched.
+downloads: its images, on every branch, the driver packages that match the machine's model at that
+moment, and its files packages. Editing the sequence or uploading a package later never changes the
+run; assign the sequence again for that. The answers given with it are kept with the run. The run's
+[values](#variables-and-inputs) and the `DDT:Deployment` values without passwords are taken when the
+run starts, from the rules and settings as they are then, and the passwords are read when a step
+fetches them. A run whose values have a problem, or whose sequence needs a password that is no
+longer configured, fails as it starts, before the disk is touched. One whose required inputs still
+lack an answer waits at its start for them, as [Variables and inputs](#variables-and-inputs)
+describes.
 
 A run that has not started can be cancelled on the Machines page, and a running one stopped. In
 Windows PE, stopping marks the run failed and makes the machine start over as `Pending`, and its
@@ -1575,11 +1893,35 @@ switch it to AHCI.
 
 ### Watching a run
 
-The Machines page shows how far each run is, and a machine's name opens its page. That page says
-what chooses the machine's sequence and why, and shows the run: each step with its state, start and
-end on the server's clock, duration, progress and error, or the conditions it was skipped for; a
-timeline from the machine's registration through each restart, with how long the machine was away,
-and the hand-over to the end; the machine's earlier runs, one of which `?run=` pins; and the log.
+The Machines page shows how far each run is, counting the steps of its path as far as its IFs have
+decided it, and marks a run that waits for someone, "Needs answers" or "Paused", in the colour for
+attention. A machine's name opens its page. That page says what chooses the machine's sequence and
+why, and shows the run:
+
+- **Its flow**, the run's copy of the sequence drawn as the flow builder draws it, with the path the
+  run took: the wires it went along in ink, and the branches it did not take dashed, their nodes
+  marked "Not taken". A Repeat says which time round it is, such as "Iteration 2 of at most 5". The
+  view follows the node the run is at until someone moves it, and "Follow the run" takes that up
+  again. A node opens its times, the decision that led there with each test and what it was tested
+  against, such as "Took Then: Model contains Latitude holds for "Latitude 7440"", and a way to its
+  log.
+- **Its steps**, in the order of its path, each with where it sits, its state, start and end on the
+  server's clock, duration, progress and error, or why it was skipped; a timeline from the machine's
+  registration through each restart, with how long the machine was away, and the hand-over to the
+  end; the machine's earlier runs, one of which `?run=` pins; and the log.
+- **Its values**, as the run started with them, each with where it came from, such as a rule, a
+  machine role, an answer or a default, and what steps set since. An account given for the run is
+  never among them. Without a run, the page shows the values a run would start with.
+- **The machine's facts**, as its agent last reported them, see [Machine facts](#machine-facts).
+
+When the run waits, a notice across the page says so: at a Pause, with its message, when it goes on
+by itself if it has a limit, and "Continue the run"; at its start, with "Give the answers", which
+asks the inputs that still lack an answer. Operators and administrators continue or answer there, as
+the person at the machine can on its console, without signing in again; whichever comes first
+counts, and a later one is told that the run went on already. Both are audited, the answers by the
+names of their inputs. While a run waits, the server asks its agent to report every 5 seconds, so
+the page and the machine learn soon of what the other did.
+
 While the machine restarts, and after the hand-over until the service in the installed Windows
 starts, the agent does not report, and the page shows the last contact. Once the service runs, it
 reports while it waits for Windows setup to finish. A run whose agent has been silent for longer
@@ -1614,7 +1956,8 @@ Before it touches the disk, the agent checks the run: the sequence again, that t
 image, that `dism.exe` is there for Inject drivers and `powershell.exe` for a PowerShell script in
 Windows PE, that it can load wimlib, and that the server has each image at its size. For a sequence
 that erases a disk, it checks that the disk is there and holds the partitions, each image's download
-and installed size, each package twice, for the download and unpacked, and 2 GB to spare. A failure
+and installed size, each package twice, for the download and unpacked, and 2 GB to spare, along the
+path through the sequence that needs the most. A failure
 here leaves the disk as it was. Then it runs the steps, and reports each one live.
 
 Partition the disk creates `DDT` on the new Windows partition, `W:\DDT` in Windows PE and `C:\DDT`
@@ -1624,7 +1967,7 @@ the run lives in `DDT`:
 
 | Path | Contents |
 |---|---|
-| `run\state.json` | The run's frozen sequence, its phase, the next step, each step's state and the partitions' ids, written before and after every step. |
+| `run\state.json` | The run's frozen sequence, its phase, where the run goes on, each node's state, the variables steps set and the partitions' ids, written before and after every step. |
 | `run\token` | The run token, see [Security model](#security-model). |
 | `run\final-report.json` | In the installed Windows only: how the run ended, until the server has it. |
 | `cache`, `packages`, `scripts`, `scratch` | Downloads, unpacked packages, scripts and DISM's scratch space. |
@@ -1746,8 +2089,11 @@ after every restart the run still has, and again after a sign-out, with the pass
 secret Winlogon reads rather than in the Winlogon key, which every user can read. Each time the
 session is up, the password changes.
 
-The steps still run in the service, as SYSTEM, and the session only shows them, over the protocol of
+The steps still run in the service, as SYSTEM, and the session shows them, over the protocol of
 Windows PE, on a pipe only SYSTEM and `DDTDeploy` may open and which the console checks SYSTEM owns.
+It also asks a Pause step's question, which Enter answers. The question stays open while no console
+is connected, is asked again when the console connects anew, and goes away when the run is continued
+on the machine's page.
 The console fills the screen, cannot be closed with Alt+F4, and opens no command prompt, so whoever
 gets past it is a standard user. When the agent's service stops, as Windows restarts, the console
 keeps the last state and waits for it.
@@ -1785,7 +2131,8 @@ the account pages. Configuring `Domain:Name` therefore requires `LocalAdministra
 because without any account setup would stop at the account page on every domain PC. A sequence
 that joins the domain still has to add the administrator in its Write the answer file step: without
 that, it only gets the warning described under [Task sequences](#task-sequences), and its run waits
-at the account page. The computer name is the one assigned to the machine, or one Windows makes up.
+at the account page. The computer name is the run's `ComputerName` value, which the name assigned to
+the machine, a rule, the sequence or a Set a variable step gives, or else one Windows makes up.
 
 The answer file holds the local administrator's password. Setup masks it after each pass, the
 service deletes the file before the first step in Windows, and a line the step adds to
@@ -1804,11 +2151,18 @@ created the computer object, or if its owner is allowed by the policy "Domain co
 computer account re-use during domain join" (KB5020276). A plain domain user without that delegation
 stops after its quota of joins, 10 by default. Home editions cannot join a domain.
 
-A Join the domain step can name an [account](#accounts) instead of using the configured one, stored
-on the Accounts page or asked for when the run starts. It then joins that account's domain, never one
-the sequence names, and an account without a domain joins none. The configured organizational unit
-applies only when that domain is the configured one; for another domain, the step names its own or
-the machine goes to the domain's default Computers container.
+A Join the domain step can name an [account](#accounts) instead of using the configured one: a
+stored one from the Accounts page, or one asked for the run, as an account input of the sequence
+that declares the domain it joins. That one is typed by the operator who assigns or approves the
+run, or by the technician at the machine's console, which masks the password and never logs it, and
+is kept encrypted until the run ends, so no password for it is stored for longer. Either way the
+step joins the account's domain, never one the sequence names, and an account without a domain joins
+none. The configured organizational unit applies only when that domain is the configured one; for
+another domain, the step names its own or the machine goes to the domain's default Computers
+container. The step's organizational unit may be made from values, such as
+`OU={{Office}},OU=Computers,DC=corp,DC=example`, filled in when the step fetches its account, and
+one that comes out as no usable distinguished name fails the step before the account leaves the
+server. "Check the join account" below checks the configured account only.
 
 **Checking the join account.** On a Join the domain step, "Check the join account" lets an
 administrator ask the domain before a machine does. The server signs in to a domain controller as
@@ -1857,11 +2211,13 @@ these placeholders, whose names it matches ignoring case:
 | `{{SmbiosUuid}}` | the machine's SMBIOS UUID |
 | `{{MacAddress}}` | the primary MAC address, in lowercase with colons |
 
-A value is escaped for a YAML string in double quotes, so put the placeholder in double quotes, as in
-`hostname: "{{ComputerName}}"`. Anything else in double braces, such as cloud-init's own jinja
-templates, stays as it is. A placeholder the machine has no value for fails the step, and a sequence
-that uses `{{ComputerName}}` needs a computer name when it is assigned or chosen, as a domain join
-does. The template's `instance-id` is the SMBIOS UUID, which differs from machine to machine.
+A value is escaped for a YAML string in double quotes, so put the placeholder in double quotes, as
+in `hostname: "{{ComputerName}}"`. The [filters](#placeholders) work here too, as in
+`{{SerialNumber|lower}}`. Anything else in double braces, such as cloud-init's own jinja templates
+or a name of the sequence's values, stays as it is. A placeholder the machine has no value for fails
+the step, and a sequence that uses `{{ComputerName}}` needs a computer name when it is assigned or
+chosen, as a domain join does. The template's `instance-id` is the SMBIOS UUID, which differs from
+machine to machine.
 
 At the end the agent adds a firmware boot entry for the image's `\EFI\BOOT\BOOTX64.EFI`, named after
 the image, puts it first in the boot order and restarts the machine into the image. As for Windows,
@@ -1951,26 +2307,28 @@ an image or a secret. That gate is the control that the published attacks agains
 system deployment walk straight through, and it is the reason the rest of this design exists.
 
 A run hands an authorized machine its sequence, the files the sequence downloads, and, while the
-steps that need them run, the `DDT:Deployment` passwords. Assigning a sequence on the Machines page
-is an operator's decision like an approval, with two consequences to keep in mind. A machine counts
-as waiting at its prompt for 90 seconds after it was last seen, and anyone presenting its UUID and a
-MAC address can register as it in that time, so the assign dialog shows where it was last seen from:
-check it, as for an approval. And with `DDT:Machines:ZeroTouchNetworks` set, a registration from a
-listed network that presents an assigned machine's UUID and a MAC receives the run and the
-passwords. Every viewer can see both values, and
+steps that need them run, the `DDT:Deployment` passwords and the accounts its steps use. Assigning a
+sequence on the Machines page is an operator's decision like an approval, with two consequences to
+keep in mind. A machine counts as waiting at its prompt for 90 seconds after it was last seen, and
+anyone presenting its UUID and a MAC address can register as it in that time, so the assign dialog
+shows where it was last seen from: check it, as for an approval. And with
+`DDT:Machines:ZeroTouchNetworks` set, a registration from a listed network that presents an assigned
+machine's UUID and a MAC receives the run and the passwords. Every viewer can see both values, and
 every PXE request carries them, so list only provisioning segments and cancel assignments that are
 not about to be used. Behind a reverse proxy listed in `DDT:ForwardedHeaders`, the network is judged
 by the address the proxy reports, and a listed proxy network that also holds clients lets them claim
 a zero touch address by sending `X-Forwarded-For` to DDT themselves. A request a proxy forwards
-without a client address, before `DDT:ForwardedHeaders` is set or from an nginx location that dropped
-the headers, comes from the proxy's own address, so a zero touch network must not contain a proxy or
-overlap a listed proxy network. DDT refuses zero touch to a request that still comes from a listed
-proxy, but it cannot tell a proxy it does not list from a machine.
+without a client address, before `DDT:ForwardedHeaders` is set or from an nginx location that
+dropped the headers, comes from the proxy's own address, so a zero touch network must not contain a
+proxy or overlap a listed proxy network. DDT refuses zero touch to a request that still comes from a
+listed proxy, but it cannot tell a proxy it does not list from a machine.
 
-**Rules never authorize.** A rule only chooses a sequence. It never counts as an approval, never
-makes a machine zero touch, and runs only through an operator's approval, which carries the sequence
-the operator was shown. Spoofing a MAC address or a model only changes the sequence of a machine
-that still has to be authorized.
+**Rules never authorize.** A rule only chooses a sequence, sets values and gives machine roles. It
+never counts as an approval, never makes a machine zero touch, and runs only through an operator's
+approval, which carries the sequence the operator was shown. Spoofing a MAC address, a model or any
+other fact the agent reports only changes the sequence and the values of a machine that still has to
+be authorized. Every signed-in user can read the values of rules, machine roles, sequences and runs:
+never put a password in one, and use an [account](#accounts) instead.
 
 Every operator can obtain the local administrator and domain join passwords by running a sequence
 that needs them on a machine they control, and they sit in DDT's settings. Treat the local
@@ -1982,9 +2340,9 @@ objects in its OU.
 provisioning network and in the installed Windows, and the packages it uses are unpacked and their
 drivers installed there as SYSTEM. A script can do anything SYSTEM can, including reading the domain
 join account's password when a later Join the domain step fetches it. Only administrators change
-sequences, packages and rules, and every change is audited, but every signed-in user can read the
-scripts: never put a password in one. The zip checks keep a package from writing outside its folder
-on the machine; they say nothing about what it contains.
+sequences, packages, rules, machine roles and accounts, and every change is audited, but every
+signed-in user can read the scripts: never put a password in one. The zip checks keep a package from
+writing outside its folder on the machine; they say nothing about what it contains.
 
 **A raw disk image is code too.** It runs whatever its boot loader and its system run, with the
 machine to itself and with what the seed gives it. A signature under Microsoft's UEFI CA only says
@@ -1994,13 +2352,26 @@ sequence, which every signed-in user can read, and a cloud-init seed on a disk c
 who holds the disk: put in public SSH keys, and passwords only hashed. Allowing an image that is not
 signed for Secure Boot is written to the audit table with the run.
 
-**Accounts steps use are no safer than the join account.** Every operator can obtain an account a
-sequence uses by running that sequence on a machine they control, and any step that runs as SYSTEM in
-the same run, a script or a driver package, could read the credentials of an account a script runs as
-from the logon session while it lasts. DDT guarantees only that scripts are never handed a password,
-and that a password goes to no domain or server it was not entered for. Give each account the least
-it needs, such as read access to one share, and prefer an account asked for when the run starts, which
-is kept only while that run lasts, to a stored one.
+**Accounts steps use.** The Accounts page keeps each password encrypted with the Data Protection key
+ring, under a purpose that names the account, so a password copied into another account's row does
+not decrypt there, and no answer ever carries one back. Changing an account needs an administrator
+signed in on the web, not an API token, who entered their password again in the last 5 minutes. A
+stored password stays bound to its user name, domain and servers: changing the user name or the
+domain, or adding a server, needs the password again, and a save that tries otherwise is refused and
+audited. The server
+hands a password only to the step that uses it, while that step runs, only for those destinations,
+and audits every read; the account a script runs as goes only to the service in the installed
+Windows. An account asked for the run is kept encrypted for that run and input, and deleted in the
+save that ends the run, whichever way it ends.
+
+That protects the passwords on the web and in the database, not on the machines, and an account is
+no safer than the join account. Every operator can obtain an account a sequence uses by running that
+sequence on a machine they control. Any step that runs as SYSTEM in the same run, a script or a
+driver package, could read from LSASS the credentials of an account a script runs as, or a share is
+connected with, while that logon or connection lasts. DDT guarantees only that scripts are never
+handed a password, and that a password goes to no domain or server it was not entered for. Give each
+account the least it needs, such as read access to one share, and prefer an account asked for when
+the run starts, which is not stored beyond that run, to one kept on the Accounts page.
 
 **Secrets are handed out just in time.** The run the agent receives holds no password. The agent
 fetches the answer file while its Write the answer file step runs, the join account while its
@@ -2048,10 +2419,10 @@ is being checked does not receive it.
 
 Every registration, re-registration, sign in at a machine, approval, rejection and removal by an
 operator is written to the audit table with the actor and source address, and so is every run that
-is assigned, starts, goes on after a restart, reads a password or ends, and every change to a
-sequence, package, rule, account or API token. Waiting machines removed after a day unseen are only
-counted in the server log. Since anyone can register, approve on the page only a machine you can tie
-to a real PC, by its address or by someone signing in at it.
+is assigned, starts, is answered or continued, goes on after a restart, reads a password or ends,
+and every change to a sequence, package, rule, machine role, account or API token. Waiting machines
+removed after a day unseen are only counted in the server log. Since anyone can register, approve on
+the page only a machine you can tie to a real PC, by its address or by someone signing in at it.
 
 Administrators read the audit table at `GET /api/audit`, newest first, a page of up to 500 rows at a
 time, filtered by the start of the action such as `machine.`, any part of the actor's name, the exact
@@ -2233,7 +2604,8 @@ Not checked on a machine yet:
 - a model rule;
 - two administrators editing one sequence.
 
-Letting the operator or the technician type the join credentials for a run is planned after M5.
+Letting the operator or the technician type the join credentials for a run, planned after M5, came
+with M7 as an account input, see [Joining a domain](#joining-a-domain).
 
 Linux raw disk images (M6) are built: the upload and conversion of raw, gzip, zstd, xz and qcow2
 images with the Secure Boot check of their boot file, the Write raw disk image and Write the
@@ -2316,12 +2688,52 @@ the console like the agent; the image `Build-BootImage.ps1` built afterwards car
 Last came the organisation's logo on the console, uploaded on the Deployment defaults page. That
 completes M6.5. The rebuilt image predates the logo, so the server offers it a newer agent and
 console; a machine has not yet been seen switching to a console the server offers, which the tests
-cover. The later milestones,
-in order, as [docs/roadmap.md](docs/roadmap.md) details them: M7 the task sequence flow builder and the sequence
-model it shows; M8 the Linux phase, in which a run goes on in the installed Linux; M9 applications
-and Windows configuration; M10 golden images and the machine lifecycle; M11 reach beyond netboot
-and a single site; M12 the documentation of the whole project,
-which this README stands in for until then. The roadmap also says what is not planned.
+cover.
+
+The flow builder and the sequence model (M7) are built: task sequences as trees of steps, groups, IF
+nodes and Repeat loops, with Set a variable and Pause steps, drawn and edited in the flow builder;
+conditions of all, any and none over the machine facts the agent now reads; variables, inputs asked
+on the web or at the machine, and values made with placeholders and filters, computer names from a
+pattern among them; rules as one ordered list that chooses a sequence, sets values and gives machine
+roles, with the MAC address and model rules of before at its top; accounts that steps connect shares
+with, run scripts as and join a domain with, stored or asked for the run; the run's flow, its path
+and its values on the machine's page; and version 3 of the console protocol, in which the console
+asks for inputs in Windows PE and lets a Pause go on there and in DDT's session. Sequences with
+nothing of M7 in them keep their version, so older agents still run them. On 2026-09-28, with branch
+`m7` at `079d5f7`, the .NET tests without the end-to-end ones numbered 2,862, 2 of them skipped on
+Windows, and the web's Vitest tests 702 in 72 files. The engine, the validator, the values, the
+server's runs, rules and accounts, the agent's runners, shares and run as, and the consoles are
+tested with fakes, the pages with Testing Library and axe checks, and the end-to-end dry runs of
+`DDT.E2E` still run the flat sequences of M5 and M6.
+
+Not yet verified on a machine, which is the maintainer's checklist for the test machines:
+
+- machine facts on real firmware: a Hyper-V Generation 2 machine with and without a virtual TPM, and
+  a laptop with a firmware TPM; Secure Boot capable reported as true or false, never empty, in
+  Windows PE and in Windows, and left empty after a start in BIOS mode; the memory of a Hyper-V
+  machine with dynamic memory; a Lenovo's friendly model name; and the DHCP server and DNS suffix in
+  Windows PE;
+- run as, with a domain account and with an administrator account: the script's environment and
+  profile, its output in the right code page, its exit code, no start failing with 0xC0000142, the
+  administrator's script elevated, and a timeout that stops the whole process tree;
+- shares, in Windows PE and in Windows: connected without a drive letter, reachable by the script
+  and disconnected after the step; under run as, connected in the account's own session; an existing
+  connection to the same server with another account (error 1219) ended and the connection tried
+  again; a wrong share failing with its name and no password in the log; and run as in Windows PE
+  refused at once;
+- the console: the inputs in Windows PE after the pick, a zero touch run waiting for its answers,
+  and a Pause continued with Enter in Windows PE and in DDT's session in Windows, and from the web;
+- a branching sequence through the Windows PE restart and the hand-over: an IF that chooses the
+  image by model, and a Repeat with a restart inside;
+- a domain join with an account typed at the machine;
+- the agent and the console of protocol version 3, served by the server, replacing older ones from a
+  boot image.
+
+The later milestones, in order, as [docs/roadmap.md](docs/roadmap.md) details them: M8 the Linux
+phase, in which a run goes on in the installed Linux; M9 applications and Windows configuration; M10
+golden images and the machine lifecycle; M11 reach beyond netboot and a single site; M12 the
+documentation of the whole project, which this README stands in for until then. The roadmap also
+says what is not planned.
 
 `DDT.Protocols` is pure: it binds no socket, reads no file and keeps no clock. It is a codec plus
 two state machines, driven by `DDT.Pxe`. Packet fixtures live under

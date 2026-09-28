@@ -20,6 +20,39 @@ A graphical console in Windows PE, a new web UI, and the settings page that
 - **A smaller boot image.** The build removes what DDT's Windows PE never uses, 37 % of `boot.wim`
   with PowerShell, which a netboot no longer has to fetch. [LiteTouchPE_x64.wim]
 
+## M6.6 Installation
+
+One command puts DDT on a new server, and a fresh install netboots its first machine without a
+compiler, a clone of this repository, a file copied by hand or a configuration file edited. MDT shops
+are the measure: MDT was an installer on a Windows Server that already ran WDS and the ADK, so
+Windows Server becomes a host for DDT beside the Linux container. It comes before M7 because nobody
+outside can try DDT until it installs this way. [install.md](install.md) is the plan.
+
+- **Releases.** Tagged releases carry the server for Windows and a container image for Linux, each
+  with the agent and the graphical console built in, so nobody needs the Visual C++ build tools and a
+  new server serves an agent of its own version. [MicrosoftDeploymentToolkit_x64.msi]
+- **DDT on Windows Server** as a Windows service, installed with `winget install` or one line of
+  PowerShell, which also sets up the firewall, the certificate, the database and the first
+  administrator.
+- **DDT on Linux with one line**: the script sets up the container and its database, names the
+  certificate after the host, starts it, and prints the address and the first password.
+- **The boot image built by the server.** On Windows the Boot image page builds it, with the ADK the
+  server found or installed, the server's own address and root, the flagged drivers and the agent the
+  server serves, and it says when the image has to be built again. A Linux server gets its boot image
+  from any Windows PC with the ADK: the page hands out a builder that uploads the result.
+  [Update Deployment Share]
+- **Netboot set up at the first start.** DDT finds a Microsoft DHCP server and WDS on its host and
+  offers what fits: options 66 and 67 pointing at DDT, DDT in place of WDS, or DDT's boot image added
+  to WDS next to LiteTouch, so a site tries DDT without changing its network. ProxyDHCP gets a
+  default boot target. [WDS with MDT]
+- **A checklist at the first start** in the web UI, from trusting the root certificate to the first
+  deployment.
+- **Import from MDT.** Windows images from an ISO or a folder on the server instead of a browser
+  upload, and a deployment share's operating systems and out-of-box drivers taken over as they are.
+  Its rules, applications and task sequences follow once M7 and M9 give them a place. [Import
+  Operating System, Import Drivers]
+- **A quick start** and a guide for MDT users: the part of M12's documentation an install needs.
+
 ## M7 The flow builder and the sequence model
 
 The task sequence flow builder is a node editor, in the manner of Blender's shader nodes or Unreal's

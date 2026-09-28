@@ -116,6 +116,28 @@ export function factLabel(name: string): string {
 export type ValueKind =
   "text" | "number" | "memory" | "yesNo" | "ipv4" | "network" | "mac" | "oneOf";
 
+// A kind of value as the subject picker names it beside a subject.
+export function valueKindLabel(kind: ValueKind): string {
+  switch (kind) {
+    case "text":
+      return t`text`;
+    case "number":
+      return t`number`;
+    case "memory":
+      return t`memory`;
+    case "yesNo":
+      return t`yes or no`;
+    case "ipv4":
+      return t`address`;
+    case "network":
+      return t`network`;
+    case "mac":
+      return t`MAC`;
+    case "oneOf":
+      return t`one of`;
+  }
+}
+
 export interface ValueChoice {
   value: string;
   label: string;

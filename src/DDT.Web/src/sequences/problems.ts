@@ -283,30 +283,3 @@ export function nodePhasesOf(
 
   return phases;
 }
-
-// The phase each step at the top runs in, for the step editor, as the server worked it out for the copy it holds. A
-// step the server has not seen yet, being new, runs in the phase of the step before it until the next save says
-// otherwise.
-export function phasesOf(
-  steps: readonly SequenceStep[],
-  saved: readonly SequenceStep[],
-  savedPhases: readonly SequencePhase[],
-): SequencePhase[] {
-  const known = new Map<string, SequencePhase>();
-
-  saved.forEach((step, index) => {
-    const phase = savedPhases[index];
-
-    if (phase !== undefined) {
-      known.set(step.id, phase);
-    }
-  });
-
-  const phases: SequencePhase[] = [];
-
-  for (const step of steps) {
-    phases.push(known.get(step.id) ?? phases.at(-1) ?? "WindowsPE");
-  }
-
-  return phases;
-}

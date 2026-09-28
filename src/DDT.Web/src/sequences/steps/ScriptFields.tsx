@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 
+import { AccountSetting } from "../builder/AccountSetting";
 import { ChoiceSetting, CodesSetting, NumberSetting, TextSetting, type Choice } from "../fields";
 import type { RebootStep, RunScriptStep, ScriptInterpreter, SequencePhase } from "../sequences";
 import { interpreterLabel, interpreters } from "../steps";
@@ -39,10 +40,18 @@ export function RunScriptFields({
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it
-          must hold no passwords.
-        </Trans>
+        {(step.runAs ?? null) === null ? (
+          <Trans>
+            Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so
+            it must hold no passwords.
+          </Trans>
+        ) : (
+          <Trans>
+            Runs as the account chosen below, which DDT signs in with; the script never sees its
+            password. Everyone who can sign in to DDT can read the script, so it must hold no
+            passwords.
+          </Trans>
+        )}
       </p>
       <ChoiceSetting
         label={<Trans>Runs in</Trans>}
@@ -54,6 +63,29 @@ export function RunScriptFields({
           onChange({ phase: phase as SequencePhase });
         }}
       />
+      {step.phase === "Windows" || (step.runAs ?? null) !== null ? (
+        <AccountSetting
+          label={<Trans>Run as</Trans>}
+          field="runAs"
+          findings={findings}
+          className="sm:col-span-2"
+          use="runAs"
+          noneLabel={t`SYSTEM`}
+          hint={
+            step.phase === "Windows" ? (
+              <Trans>An account in the installed Windows, signed in for the script alone.</Trans>
+            ) : (
+              <Trans>
+                Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM.
+              </Trans>
+            )
+          }
+          value={step.runAs ?? null}
+          onChange={(runAs) => {
+            onChange({ runAs }, true);
+          }}
+        />
+      ) : null}
       <ChoiceSetting
         label={<Trans>Interpreter</Trans>}
         field="interpreter"

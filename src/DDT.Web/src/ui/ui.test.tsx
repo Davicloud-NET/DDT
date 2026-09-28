@@ -4,12 +4,12 @@
 
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ConfirmDialog } from "./Dialog";
-import { SequenceRail, SequenceRailPicker, SequenceRailStrip } from "./SequenceRail";
+import { SequenceRail, SequenceRailStrip } from "./SequenceRail";
 
 function renderWithI18n(node: ReactNode) {
   return render(<I18nProvider i18n={i18n}>{node}</I18nProvider>);
@@ -86,44 +86,5 @@ describe("the sequence rail", () => {
     );
 
     expect(screen.getByRole("img", { name: "Step 1 of 1 running" })).toBeInTheDocument();
-  });
-});
-
-describe("the rail of a sequence being edited", () => {
-  it("picks a step, and moves the focused one with Alt and an arrow key", () => {
-    const onSelect = vi.fn();
-    const onMove = vi.fn();
-
-    renderWithI18n(
-      <SequenceRailPicker
-        label="Steps"
-        steps={[
-          { id: "a", state: "waiting", name: "Partition", label: "Step 1, Partition" },
-          { id: "b", state: "waiting", name: "Apply", label: "Step 2, Apply", mark: "problem" },
-        ]}
-        selectedId="a"
-        onSelect={onSelect}
-        onMove={onMove}
-      />,
-    );
-
-    expect(screen.getByRole("option", { name: "Step 1, Partition" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-
-    fireEvent.click(screen.getByRole("option", { name: "Step 2, Apply" }));
-    expect(onSelect).toHaveBeenCalledWith("b");
-
-    const first = screen.getByRole("option", { name: "Step 1, Partition" });
-    act(() => {
-      first.focus();
-    });
-    fireEvent.keyDown(first, { key: "ArrowRight", altKey: true });
-    expect(onMove).toHaveBeenCalledWith("a", 1);
-
-    // The first step goes no further ahead.
-    fireEvent.keyDown(first, { key: "ArrowLeft", altKey: true });
-    expect(onMove).toHaveBeenCalledTimes(1);
   });
 });

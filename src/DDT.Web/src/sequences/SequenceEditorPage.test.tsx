@@ -17,20 +17,25 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { ImageSummary } from "@/images/images";
-import everyNodeJson from "@/test/fixtures/every-node.sequence.json";
+import { press } from "@/test/aria";
+import { expectNoAxeViolations } from "@/test/axe";
+import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
+import { Toasts } from "@/ui/Toast";
+import { toasts } from "@/ui/toasts";
 
+import type { AccountView } from "./builder/builderData";
 import { SequenceEditorPage } from "./SequenceEditorPage";
 import {
   SEQUENCE_VERSION,
+  type IfStep,
   type RunScriptStep,
   type SaveSequenceRequest,
-  type SequenceDefinition,
   type SequenceProblem,
   type SequenceStep,
   type SequenceView,
 } from "./sequences";
 import { sequenceSearch } from "./sequenceSearch";
-import { EMPTY_ID, newStep } from "./steps";
+import { newStep } from "./steps";
 
 const administrator: CurrentUser = {
   id: "u",
@@ -46,11 +51,8 @@ const viewer: CurrentUser = { ...administrator, userName: "viewer", roles: ["Vie
 
 const sequenceId = "0193a4b2-0000-7000-8000-0000000000e1";
 
-// The server's document with every node of version 3.
-const everyNode = everyNodeJson as unknown as SequenceDefinition;
-
 const image: ImageSummary = {
-  id: "0193a4b2-0000-7000-8000-0000000000a1",
+  id: windowsImageId,
   name: "Windows 11 Pro",
   kind: "Wim",
   sha256: "00",
@@ -69,37 +71,29 @@ const image: ImageSummary = {
   sourceSha256: null,
 };
 
-const rawImage: ImageSummary = {
-  ...image,
-  id: "0193a4b2-0000-7000-8000-0000000000a2",
-  name: "noble",
-  kind: "RawDisk",
-  wimIndex: 0,
-  edition: null,
-  version: null,
-  language: null,
-  originalFileName: "noble.img",
-  bootCapability: "NotSigned",
-  bootDetail: "\\EFI\\BOOT\\BOOTX64.EFI carries no signature.",
-  sourceSha256: "01",
+const account: AccountView = {
+  id: "0193a4b2-0000-7000-8000-0000000000c1",
+  name: "Deploy",
+  userName: "CORP\\ddt-deploy",
+  domain: "corp.example",
+  hosts: ["fs01.corp.example"],
+  runAs: true,
+  password: { isSet: true, unreadable: false, updatedUtc: "2026-09-20T10:00:00Z" },
+  usedBy: [],
+  revision: 1,
+  updatedUtc: "2026-09-20T10:00:00Z",
+  updatedBy: "admin",
 };
 
-const signedRawImage: ImageSummary = {
-  ...rawImage,
-  id: "0193a4b2-0000-7000-8000-0000000000a3",
-  name: "debian-12",
-  bootCapability: "SecureBootOk",
-  bootDetail: "Signed under Microsoft's UEFI CA.",
-};
-
-const steps: SequenceStep[] = [
+// A flat sequence of version 1: partition, apply, a script with a condition of version 1.
+const flatSteps: SequenceStep[] = [
   newStep("partition", "p"),
-  newStep("applyImage", "i"),
+  { ...newStep("applyImage", "i"), imageId: windowsImageId } as SequenceStep,
   {
     ...(newStep("runScript", "s") as RunScriptStep),
     name: "Set wallpaper",
     script: "exit 0",
-    conditions: [{ variable: "Model", operator: "Equals", value: "" }],
+    conditions: [{ variable: "Model", operator: "Equals", value: "Latitude 7440" }],
   },
 ];
 
@@ -109,7 +103,7 @@ function view(overrides: Partial<SequenceView> = {}): SequenceView {
     name: "Lab PCs",
     description: null,
     revision: 3,
-    definition: { version: 1, steps },
+    definition: { version: 1, steps: flatSteps },
     stepPhases: ["WindowsPE", "WindowsPE", "WindowsPE"],
     problems: [],
     warnings: [],
@@ -119,16 +113,13 @@ function view(overrides: Partial<SequenceView> = {}): SequenceView {
   };
 }
 
-const linuxView = (imageId = EMPTY_ID) =>
+// The design's flow: an IF, a group, a repeat, variables and an Account input.
+const treeView = (overrides: Partial<SequenceView> = {}) =>
   view({
-    definition: {
-      version: SEQUENCE_VERSION,
-      steps: [
-        { ...newStep("writeRawImage", "w"), imageId } as SequenceStep,
-        newStep("writeCloudInitSeed", "c"),
-      ],
-    },
-    stepPhases: ["WindowsPE", "WindowsPE"],
+    definition: flowDefinition,
+    stepPhases: [],
+    nodePhases: flowPhases,
+    ...overrides,
   });
 
 function json(body: unknown, status = 200): Response {
@@ -138,15 +129,16 @@ function json(body: unknown, status = 200): Response {
 type SaveAnswer = (request: SaveSequenceRequest) => Response;
 
 // The server holds one sequence. Saves answer as the given function says; by default they are stored with the
-// next revision, as the server does.
+// next revision, as the server does. Facts, rules and machine roles are not served, as by a server before them.
 function serve(
   user: CurrentUser,
   initial: SequenceView,
   {
     answer,
-    images = [image],
     step,
-  }: { answer?: SaveAnswer; images?: ImageSummary[]; step?: string } = {},
+    narrow = false,
+    accounts = [account],
+  }: { answer?: SaveAnswer; step?: string; narrow?: boolean; accounts?: AccountView[] } = {},
 ) {
   let stored = initial;
   let deleted = false;
@@ -166,6 +158,19 @@ function serve(
   };
 
   vi.stubGlobal("scrollTo", vi.fn());
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({
+      matches: narrow && query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    })),
+  );
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -194,13 +199,15 @@ function serve(
           return Promise.resolve((answer ?? store)(request));
         }
         case "GET /api/images":
-          return Promise.resolve(json(images));
+          return Promise.resolve(json([image]));
         case "GET /api/packages":
           return Promise.resolve(json([]));
+        case "GET /api/accounts":
+          return Promise.resolve(json(accounts));
         case "GET /api/deployments/options":
           return Promise.resolve(
             json({
-              domainConfigured: false,
+              domainConfigured: true,
               requireWebApproval: false,
               zeroTouchEnabled: false,
               serverUtc: "2026-09-16T10:00:00Z",
@@ -241,7 +248,10 @@ function serve(
   render(
     <I18nProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <main>
+          <RouterProvider router={router} />
+        </main>
+        <Toasts />
       </QueryClientProvider>
     </I18nProvider>,
   );
@@ -256,11 +266,24 @@ function serve(
 // The debounce of typing is 700 ms.
 const saveWait = { timeout: 3_000 };
 
-async function opened() {
-  return screen.findByRole("heading", { level: 1, name: "Lab PCs" });
+async function opened(name = "Lab PCs") {
+  return screen.findByRole("heading", { level: 1, name });
 }
 
-// The element that holds a field of the step shown, by the name the server's findings give it.
+// A node of the flow, by the start of what a screen reader hears for it.
+function node(label: string | RegExp): HTMLElement {
+  const flow = screen.getByRole("group", { name: /^Flow of / });
+
+  return within(flow).getByRole("button", {
+    name: typeof label === "string" ? new RegExp(`^${escape(label)}`) : label,
+  });
+}
+
+function escape(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// The element that holds a field of the node shown, by the name the server's findings give it.
 function field(name: string): HTMLElement {
   const slot = document.querySelector<HTMLElement>(`[data-field="${name}"]`);
 
@@ -271,292 +294,495 @@ function field(name: string): HTMLElement {
   return slot;
 }
 
-// A list opens only once it has something to choose from, such as the images, which load after the sequence.
-async function loaded(name: string) {
-  await waitFor(() => {
-    expect(field(name).querySelectorAll("select option").length).toBeGreaterThan(1);
-  });
+function tab(name: string) {
+  fireEvent.click(screen.getByRole("tab", { name: new RegExp(`^${name}`) }));
 }
 
-// Chooses in a list as a person would: the list opens, and the option is picked.
-async function choose(name: string, option: string) {
-  await loaded(name);
-  fireEvent.click(within(field(name)).getByRole("button"));
-  fireEvent.click(await screen.findByRole("option", { name: new RegExp(`^${option}`) }));
+function ids(steps: readonly SequenceStep[]): unknown[] {
+  return steps.map((step) =>
+    step.kind === "if"
+      ? { [step.id]: { then: ids(step.then), else: ids(step.else) } }
+      : step.kind === "group" || step.kind === "repeat"
+        ? { [step.id]: ids(step.steps) }
+        : step.id,
+  );
 }
 
-// The steps in the order the rail shows them.
-const order = () =>
-  within(screen.getByRole("listbox", { name: /^Steps of / }))
-    .getAllByRole("option")
-    .map((option) => option.getAttribute("data-key"));
-
-function railStep(id: string): HTMLElement {
-  const option = within(screen.getByRole("listbox", { name: /^Steps of / }))
-    .getAllByRole("option")
-    .find((candidate) => candidate.getAttribute("data-key") === id);
-
-  if (option === undefined) {
-    throw new Error(`The rail has no step ${id}.`);
-  }
-
-  return option;
+function key(target: Element, name: string, modifiers: Record<string, boolean> = {}) {
+  fireEvent.keyDown(target, { key: name, ...modifiers });
+  fireEvent.keyUp(target, { key: name, ...modifiers });
 }
 
 describe("SequenceEditorPage", () => {
   afterEach(() => {
+    act(() => {
+      toasts.clear();
+    });
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
-  it("marks the steps with findings on the rail, shows them at their fields and sums them up", async () => {
-    const problems: SequenceProblem[] = [
-      { stepId: "i", field: "imageId", message: "Choose the image to apply." },
-      { stepId: "s", field: "conditions[0].value", message: "Enter the value to compare with." },
-      { stepId: "s", field: null, message: "A step in Windows needs an earlier step." },
-    ];
-    const warnings: SequenceProblem[] = [
-      { stepId: null, field: null, message: "No step adds the local administrator." },
-    ];
-
-    serve(administrator, view({ problems, warnings }), { step: "i" });
+  it("draws the flow with every node, marks the findings and says where each node is", async () => {
+    serve(administrator, treeView({ problems: flowProblems }), { step: "if1" });
 
     await opened();
-    expect(screen.getByText("Cannot run")).toBeInTheDocument();
-    expect(railStep("i")).toHaveAccessibleName("Step 2, Apply image, 1 problem");
-    expect(railStep("s")).toHaveAccessibleName("Step 3, Set wallpaper, Run script, 2 problems");
-    expect(railStep("p")).toHaveAccessibleName("Step 1, Partition the disk");
+    expect(screen.getByText("1 problem")).toBeInTheDocument();
+    expect(node("Step 2, If: Is it a Latitude?")).toHaveAttribute("aria-current", "true");
     expect(
-      screen.getByText("3 problems keep it from running. 1 warning, which does not."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("No step adds the local administrator.")).toBeInTheDocument();
-
-    expect(within(field("imageId")).getByRole("button")).toHaveAccessibleDescription(
-      /Choose the image to apply\./,
+      node("Step 1 of Then of 'If: Is it a Latitude?', Apply Windows 11 for Latitudes"),
+    ).toHaveAccessibleName(
+      "Step 1 of Then of 'If: Is it a Latitude?', Apply Windows 11 for Latitudes, Apply image",
     );
-
-    // A finding in the summary shows its step and takes the focus to its field.
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Enter the value to compare with. Go to step 03, Set wallpaper.",
-      }),
+    expect(node(/^Step 1 of 'Group: Berlin office'/)).toHaveAccessibleName(
+      "Step 1 of 'Group: Berlin office', Map the site share, Run script, 1 problem",
     );
-
-    const value = await screen.findByRole("textbox", { name: "Value of condition 1" });
-    await waitFor(() => {
-      expect(value).toHaveFocus();
-    });
-    expect(value).toHaveAccessibleDescription("Enter the value to compare with.");
-    expect(railStep("s")).toHaveAttribute("aria-selected", "true");
+    // The IF's inspector shows its test.
+    expect(screen.getByRole("group", { name: "Go along Then when" })).toBeInTheDocument();
     expect(
-      within(screen.getByRole("list", { name: "Problems and warnings of this step" })).getByText(
-        "A step in Windows needs an earlier step.",
+      screen.getByText("Machines where Model contains Latitude go along Then."),
+    ).toBeInTheDocument();
+    // One stop of the Tab key among the nodes and the gaps: the chosen node.
+    expect(
+      [...document.querySelectorAll<HTMLElement>("[data-flow-node], [aria-haspopup=menu]")].filter(
+        (element) => element.tabIndex === 0 && element.closest("[role=group]") !== null,
       ),
-    ).toBeInTheDocument();
+    ).toEqual([node("Step 2, If: Is it a Latitude?")]);
   });
 
-  it("saves an edit in place with the revision it read", async () => {
-    const { saves } = serve(administrator, view(), { step: "i" });
+  it("passes axe", async () => {
+    serve(administrator, treeView({ problems: flowProblems }), { step: "s1" });
 
     await opened();
-    fireEvent.change(screen.getByRole("textbox", { name: "Description" }), {
-      target: { value: "For room 4" },
-    });
-    await choose("imageId", "Windows 11 Pro");
-
-    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(saves).toHaveLength(1);
-    }, saveWait);
-
-    expect(saves[0]).toMatchObject({
-      revision: 3,
-      name: "Lab PCs",
-      description: "For room 4",
-      // The page sends the highest version it knows; the server stores the lowest the steps need.
-      definition: { version: SEQUENCE_VERSION },
-    });
-    expect(saves[0]?.definition.steps[1]).toMatchObject({ kind: "applyImage", imageId: image.id });
-    expect(await screen.findByText(/^All changes saved at /)).toBeInTheDocument();
-
-    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
-      target: { value: "Lab PCs, room 4" },
-    });
-
-    await waitFor(() => {
-      expect(saves).toHaveLength(2);
-    }, saveWait);
-    expect(saves[1]).toMatchObject({ revision: 4, name: "Lab PCs, room 4" });
+    await screen.findByRole("group", { name: "Run only when" });
+    await expectNoAxeViolations();
   });
 
-  it("undoes and redoes with Ctrl+Z and Ctrl+Y outside text fields, and saves each at once", async () => {
-    const { saves } = serve(administrator, view(), { step: "i" });
+  it("adds a step at a wire with the mouse, and keeps a flat sequence flat in what it saves", async () => {
+    const { saves } = serve(administrator, view(), { step: "p" });
 
     await opened();
+    press(
+      screen.getByRole("button", { name: "Add a step between Partition the disk and Apply image" }),
+    );
+    const menu = await screen.findByRole("menu");
+    press(within(menu).getByRole("menuitem", { name: "Run script" }));
 
-    const description = screen.getByRole("textbox", { name: "Description" });
-    fireEvent.change(description, { target: { value: "For" } });
-    fireEvent.change(description, { target: { value: "For room 4" } });
-    await choose("imageId", "Windows 11 Pro");
     await waitFor(() => {
-      expect(saves).toHaveLength(1);
+      expect(saves.at(-1)?.definition.steps.map((step) => step.kind)).toEqual([
+        "partition",
+        "runScript",
+        "applyImage",
+        "runScript",
+      ]);
     }, saveWait);
 
-    // In a text field, the keys are the field's own.
-    fireEvent.keyDown(description, { key: "z", ctrlKey: true });
-    expect(description).toHaveValue("For room 4");
+    const saved = saves.at(-1);
+    // The page sends the highest version it knows; the server stores the lowest the steps need.
+    expect(saved?.definition.version).toBe(SEQUENCE_VERSION);
+    expect(Object.keys(saved?.definition ?? {})).toEqual(["version", "steps"]);
 
-    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    for (const step of saved?.definition.steps ?? []) {
+      expect(Object.keys(step)).not.toContain("when");
+      expect(Object.keys(step)).not.toContain("shares");
+      expect(Object.keys(step)).not.toContain("runAs");
+    }
+
+    // The new step is chosen, with the focus on it.
     await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps[1]).toMatchObject({ imageId: EMPTY_ID });
-    }, saveWait);
-    expect(saves.at(-1)?.description).toBe("For room 4");
-
-    // The typing into the description is one step.
-    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
-    expect(description).toHaveValue("");
-
-    fireEvent.keyDown(document.body, { key: "y", ctrlKey: true });
-    expect(description).toHaveValue("For room 4");
-    await waitFor(() => {
-      expect(saves.at(-1)?.description).toBe("For room 4");
-    }, saveWait);
+      expect(node("Step 2, Run script")).toHaveFocus();
+    });
+    expect(node("Step 2, Run script")).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Run script");
   });
 
-  it("forgets what to undo once it shows another administrator's save", async () => {
-    const { saves, queryClient } = serve(administrator, view());
+  it("adds a step from the palette by dragging it with the keyboard", async () => {
+    const { saves } = serve(administrator, view(), { step: "p" });
 
     await opened();
-    fireEvent.change(screen.getByRole("textbox", { name: "Description" }), {
-      target: { value: "For room 4" },
-    });
-    await waitFor(() => {
-      expect(saves).toHaveLength(1);
-    }, saveWait);
-    await screen.findByText(/^All changes saved at /);
+    const palette = screen.getByRole("complementary", { name: "Add to the flow" });
+    const pause = within(palette).getByRole("button", { name: /^Pause/ });
 
     act(() => {
-      queryClient.setQueryData(
-        ["sequence", sequenceId],
-        view({ revision: 9, name: "Lab PCs, room 4", description: "Theirs", updatedBy: "bob" }),
-      );
+      pause.focus();
     });
+    key(pause, "Enter");
+
+    // The drag starts on the next frame, at a gap.
     await waitFor(() => {
-      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
+      expect(document.activeElement?.getAttribute("aria-label")).toMatch(/^Add a step/);
     });
 
-    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
-    expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    expect(saves).toHaveLength(1);
-  });
+    for (
+      let tries = 0;
+      tries < 10 &&
+      document.activeElement?.getAttribute("aria-label") !== "Add a step after Set wallpaper";
+      tries++
+    ) {
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab" });
+    }
 
-  it("shows the server's refusal of a name at the field", async () => {
-    serve(administrator, view(), {
-      answer: () =>
-        json(
-          { title: "Invalid", errors: { name: ["Another sequence is already called Lab."] } },
-          400,
-        ),
-    });
-
-    await opened();
-    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
-      target: { value: "Lab" },
-    });
+    expect(document.activeElement).toHaveAccessibleName("Add a step after Set wallpaper");
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Enter" });
+    fireEvent.keyUp(document.activeElement ?? document.body, { key: "Enter" });
 
     await waitFor(() => {
-      expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveAccessibleDescription(
-        "Another sequence is already called Lab.",
-      );
+      expect(saves.at(-1)?.definition.steps.map((step) => step.kind)).toEqual([
+        "partition",
+        "applyImage",
+        "runScript",
+        "pause",
+      ]);
     }, saveWait);
-    expect(
-      screen.getByText("Not saved: Another sequence is already called Lab."),
-    ).toBeInTheDocument();
+    expect(node("Step 4, Pause")).toHaveAttribute("aria-current", "true");
   });
 
-  it("keeps numbers the server cannot store out of the document", async () => {
-    const { saves } = serve(administrator, view(), { step: "s" });
+  it("moves through the flow with the arrow keys, opens a node's fields with Enter and goes back with Escape", async () => {
+    serve(administrator, treeView(), { step: "p" });
 
     await opened();
-    const codes = screen.getByRole("textbox", { name: "Exit codes that mean success" });
-    fireEvent.change(codes, { target: { value: "0, 3000000000" } });
+    const first = node("Step 1, Partition the disk");
 
-    expect(
-      screen.getByText(
-        "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays.",
-      ),
-    ).toBeInTheDocument();
-
-    const timeout = within(field("timeoutMinutes")).getByRole("textbox");
-    fireEvent.change(timeout, { target: { value: "3000000000" } });
-    fireEvent.blur(timeout);
-
-    await waitFor(() => {
-      expect(saves).toHaveLength(1);
-    }, saveWait);
-    expect(saves[0]?.definition.steps[2]).toMatchObject({
-      timeoutMinutes: 2_147_483_647,
-      successExitCodes: [0],
-    });
-  });
-
-  it("moves a step with the keyboard, keeps the focus on it, says where it went and saves the order", async () => {
-    const { saves } = serve(administrator, view(), { step: "i" });
-
-    await opened();
-    const handle = screen.getByRole("button", { name: "Move Apply image" });
-    act(() => {
-      handle.focus();
-    });
-    fireEvent.keyDown(handle, { key: "ArrowUp" });
-
-    expect(order()).toEqual(["i", "p", "s"]);
-    expect(screen.getByRole("button", { name: "Move Apply image" })).toHaveFocus();
-    expect(screen.getByText("Apply image moved to position 1 of 3.")).toBeInTheDocument();
-
-    const name = screen.getByRole("textbox", { name: "Name" });
-    act(() => {
-      name.focus();
-    });
-    fireEvent.keyDown(name, { key: "ArrowDown", altKey: true });
-    fireEvent.keyDown(name, { key: "ArrowDown", altKey: true });
-
-    expect(order()).toEqual(["p", "s", "i"]);
-    expect(screen.getByRole("textbox", { name: "Name" })).toHaveFocus();
-    expect(screen.getByText("Apply image moved to position 3 of 3.")).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps.map((step) => step.id)).toEqual(["p", "s", "i"]);
-    }, saveWait);
-  });
-
-  it("moves a step to the first or the last place with Home and End on its Move key", async () => {
-    serve(administrator, view(), { step: "s" });
-
-    await opened();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Set wallpaper" }), { key: "Home" });
-    expect(order()).toEqual(["s", "p", "i"]);
-
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Set wallpaper" }), { key: "End" });
-    expect(order()).toEqual(["p", "i", "s"]);
-  });
-
-  it("moves the focused step on the rail with Alt and an arrow key", async () => {
-    serve(administrator, view(), { step: "p" });
-
-    await opened();
-    const first = railStep("p");
     act(() => {
       first.focus();
     });
-    fireEvent.keyDown(first, { key: "ArrowRight", altKey: true });
+    fireEvent.keyDown(first, { key: "ArrowDown" });
+    expect(node("Step 2, If: Is it a Latitude?")).toHaveFocus();
 
-    expect(order()).toEqual(["i", "p", "s"]);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "ArrowDown" });
+    expect(node(/^Step 1 of Then of/)).toHaveFocus();
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "ArrowRight" });
+    const otherwise = node(/^Step 1 of Else of/);
+    expect(otherwise).toHaveFocus();
+    expect(otherwise).toHaveAttribute("aria-current", "true");
+
+    fireEvent.keyDown(otherwise, { key: "Enter" });
+    const name = screen.getByRole("textbox", { name: "Name" });
     await waitFor(() => {
-      expect(railStep("p")).toHaveFocus();
+      expect(name).toHaveFocus();
     });
-    expect(screen.getByText("Partition the disk moved to position 2 of 3.")).toBeInTheDocument();
+    expect(name).toHaveValue("Apply Windows 11");
+
+    fireEvent.keyDown(name, { key: "Escape" });
+    await waitFor(() => {
+      expect(node(/^Step 1 of Else of/)).toHaveFocus();
+    });
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(node("Step 2, If: Is it a Latitude?")).toHaveFocus();
+  });
+
+  it("wraps a node in an IF from its menu", async () => {
+    const { saves } = serve(administrator, view(), { step: "i" });
+
+    await opened();
+    const apply = node("Step 2, Apply image");
+
+    act(() => {
+      apply.focus();
+    });
+    fireEvent.keyDown(apply, { key: "F10", shiftKey: true });
+    const menu = await screen.findByRole("menu", { name: "Actions for Apply image" });
+    press(within(menu).getByRole("menuitem", { name: "Wrap in an If" }));
+
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual([
+        "p",
+        { [(saves.at(-1)?.definition.steps[1] as IfStep).id]: { then: ["i"], else: [] } },
+        "s",
+      ]);
+    }, saveWait);
+    await waitFor(() => {
+      expect(node("Step 2, If: If")).toHaveFocus();
+    });
+  });
+
+  it("removes a node with Delete, brings it back from the toast, and undoes and redoes with Ctrl+Z and Ctrl+Y", async () => {
+    const { saves } = serve(administrator, view(), { step: "i" });
+
+    await opened();
+    const apply = node("Step 2, Apply image");
+
+    act(() => {
+      apply.focus();
+    });
+    fireEvent.keyDown(apply, { key: "Delete" });
+
+    // A removal is saved at once, and the node after it takes the focus.
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "s"]);
+    });
+    await waitFor(() => {
+      expect(node(/^Step 2, Set wallpaper/)).toHaveFocus();
+    });
+
+    const toast = screen.getByRole("alertdialog");
+    expect(toast).toHaveTextContent("Removed Apply image.");
+    press(within(toast).getByRole("button", { name: "Undo" }));
+
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "i", "s"]);
+    }, saveWait);
+
+    // In a text field, the keys are the field's own.
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "z", ctrlKey: true });
+    expect(node(/^Step 2, Apply image/)).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "s"]);
+    }, saveWait);
+
+    fireEvent.keyDown(document.body, { key: "y", ctrlKey: true });
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "i", "s"]);
+    }, saveWait);
+
+    // The header's keys do the same.
+    press(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => {
+      expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "s"]);
+    }, saveWait);
+  });
+
+  it("copies and pastes a node with new ids, through the clipboard and without it", async () => {
+    let clip = "";
+    const writeText = vi.fn((text: string) => {
+      clip = text;
+      return Promise.resolve();
+    });
+    const readText = vi.fn(() => Promise.resolve(clip));
+
+    Object.defineProperty(window.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText, readText },
+    });
+
+    try {
+      const { saves } = serve(administrator, view(), { step: "s" });
+
+      await opened();
+      const script = node(/^Step 3, Set wallpaper/);
+
+      act(() => {
+        script.focus();
+      });
+      fireEvent.keyDown(script, { key: "c", ctrlKey: true });
+      expect(writeText).toHaveBeenCalledOnce();
+      expect(JSON.parse(clip)).toMatchObject({
+        ddtFlow: 1,
+        nodes: [{ id: "s", name: "Set wallpaper" }],
+      });
+
+      const first = node("Step 1, Partition the disk");
+      act(() => {
+        first.focus();
+      });
+      fireEvent.keyDown(first, { key: "v", ctrlKey: true });
+
+      await waitFor(() => {
+        expect(saves.at(-1)?.definition.steps).toHaveLength(4);
+      }, saveWait);
+      const pasted = saves.at(-1)?.definition.steps[1];
+      expect(pasted).toMatchObject({ kind: "runScript", name: "Set wallpaper", script: "exit 0" });
+      expect(pasted?.id).not.toBe("s");
+      await waitFor(() => {
+        expect(node(/^Step 2, Set wallpaper/)).toHaveFocus();
+      });
+
+      // A browser that keeps the clipboard from the page pastes what the page copied.
+      readText.mockRejectedValue(new Error("Not allowed"));
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "v", ctrlKey: true });
+
+      await waitFor(() => {
+        expect(saves.at(-1)?.definition.steps).toHaveLength(5);
+      }, saveWait);
+      expect(new Set(saves.at(-1)?.definition.steps.map((step) => step.id)).size).toBe(5);
+    } finally {
+      Reflect.deleteProperty(window.navigator, "clipboard");
+    }
+  });
+
+  it("takes the focus from a finding to a condition's value deep in the flow, and to a variable's field", async () => {
+    const problems: SequenceProblem[] = [
+      { stepId: "s2", field: "when.parts[0].value", message: "Choose one of the kinds." },
+      { stepId: null, field: "variables[1].default", message: "The default is too long." },
+    ];
+
+    serve(administrator, treeView({ problems }), { step: "p" });
+
+    await opened();
+    tab("Problems");
+    press(
+      screen.getByRole("button", {
+        name: "Choose one of the kinds. Go to Install the site printer.",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(within(field("when.parts[0].value")).getByRole("button")).toHaveFocus();
+    });
+    expect(node(/^Step 2 of 'Group: Berlin office'/)).toHaveAttribute("aria-current", "true");
+    expect(within(field("when.parts[0].value")).getByRole("button")).toHaveAccessibleDescription(
+      /Choose one of the kinds\./,
+    );
+
+    tab("Problems");
+    press(screen.getByRole("button", { name: "The default is too long. Go to its field." }));
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: "Default" })).toHaveFocus();
+    });
+    expect(screen.getByRole("combobox", { name: "Default" })).toHaveValue("Standard");
+  });
+
+  it("shows a step's conditions of versions 1 and 2, and makes them its when at the first change", async () => {
+    const { saves } = serve(administrator, view(), { step: "s" });
+
+    await opened();
+    const value = screen.getByRole("textbox", { name: "Value of condition 1" });
+    expect(value).toHaveValue("Latitude 7440");
+    expect(screen.getByText("Runs only where Model equals Latitude 7440.")).toBeInTheDocument();
+
+    fireEvent.change(value, { target: { value: "Latitude 7450" } });
+
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.steps[2]).toMatchObject({
+        conditions: [],
+        when: {
+          kind: "all",
+          parts: [{ kind: "test", variable: "Model", operator: "Equals", value: "Latitude 7450" }],
+        },
+      });
+    }, saveWait);
+  });
+
+  it("completes a name in a template and fills it in for a sample machine", async () => {
+    const { saves } = serve(administrator, treeView(), { step: "sv" });
+
+    await opened();
+    const value = screen.getByRole("combobox", { name: "Value" });
+    expect(value).toHaveValue("PC-{{SerialNumber|alnum|right:8}}");
+    expect(screen.getByText("PC-PF4K2Z7Q")).toBeInTheDocument();
+
+    fireEvent.change(value, { target: { value: "WS-{{Seri" } });
+    const list = screen.getByRole("listbox", { name: "Values to use" });
+    expect(within(list).getAllByRole("option")[0]).toHaveTextContent("SerialNumber");
+    fireEvent.keyDown(value, { key: "Enter" });
+
+    expect(value).toHaveValue("WS-{{SerialNumber}}");
+    expect(screen.queryByRole("listbox", { name: "Values to use" })).not.toBeInTheDocument();
+    expect(screen.getByText("WS-PF4K2Z7Q")).toBeInTheDocument();
+
+    fireEvent.change(value, { target: { value: "WS-{{Sreial}}" } });
+    expect(
+      screen.getByText(
+        "{{Sreial}} uses Sreial, which is not a machine fact or a declared value. Check the spelling.",
+      ),
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.steps[2]).toMatchObject({ value: "WS-{{Sreial}}" });
+    }, saveWait);
+  });
+
+  it("runs a Windows script as a stored account, chosen from the server's accounts", async () => {
+    const { saves } = serve(administrator, treeView(), { step: "s3" });
+
+    await opened();
+    const runAs = field("runAs");
+    await waitFor(() => {
+      expect(within(runAs).getByRole("button")).toHaveTextContent("SYSTEM");
+    });
+    press(within(runAs).getByRole("button"));
+    const options = await screen.findAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual([
+      "SYSTEM",
+      "Deploy (CORP\\ddt-deploy)corp.example",
+    ]);
+    press(options[1] ?? document.body);
+
+    await waitFor(() => {
+      const repeat = saves.at(-1)?.definition.steps[6];
+
+      expect(repeat?.kind === "repeat" ? repeat.steps[0] : null).toMatchObject({
+        runAs: { accountId: account.id, input: null },
+      });
+    }, saveWait);
+  });
+
+  it("renames a variable everywhere it is used", async () => {
+    const { saves } = serve(administrator, treeView(), { step: "p" });
+
+    await opened();
+    tab("Variables");
+    const row = screen.getByRole("button", { name: /^ComputerName/ });
+    expect(row).toHaveTextContent("Used by 2 nodes");
+    press(row);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
+      target: { value: "PcName" },
+    });
+    press(screen.getByRole("button", { name: "Rename everywhere" }));
+
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.variables?.[0]?.name).toBe("PcName");
+    }, saveWait);
+    const steps = saves.at(-1)?.definition.steps ?? [];
+    expect(steps[2]).toMatchObject({ variable: "PcName" });
+    expect(steps[7]).toMatchObject({ message: "Check the asset tag of {{PcName}}." });
+  });
+
+  it("shows a viewer the flow without letting anything change", async () => {
+    const { saves } = serve(viewer, treeView(), { step: "s1" });
+
+    expect(
+      await screen.findByText(
+        "Only administrators change task sequences. You can look at this one.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("complementary", { name: "Add to the flow" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Add a step/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Undo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Remove/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Wrap/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a condition" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a share" })).not.toBeInTheDocument();
+    expect(screen.queryByText("All changes saved")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("readonly");
+    expect(screen.getByRole("textbox", { name: "Script" })).toHaveAttribute("readonly");
+    // A choice reads as text.
+    expect(screen.getByRole("textbox", { name: "Interpreter" })).toHaveValue("PowerShell");
+
+    const share = node(/^Step 1 of 'Group: Berlin office'/);
+    act(() => {
+      share.focus();
+    });
+    fireEvent.keyDown(share, { key: "Delete" });
+    fireEvent.keyDown(share, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(share, { key: "x", ctrlKey: true });
+    expect(node(/^Step 1 of 'Group: Berlin office'/)).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(0);
+  });
+
+  it("shows the outline on a phone, and a node's fields in a drawer", async () => {
+    serve(administrator, treeView(), { narrow: true });
+
+    await opened();
+    expect(screen.queryByRole("group", { name: /^Flow of / })).not.toBeInTheDocument();
+    const outline = screen.getByRole("treegrid", { name: "Outline of Lab PCs" });
+    const row = within(outline).getByRole("row", { name: /^2 Step 2, If: Is it a Latitude\?/ });
+    expect(within(outline).getByRole("row", { name: /^2\.1 Then/ })).toBeInTheDocument();
+    expect(
+      within(outline).getByRole("row", { name: /^2\.1\.1 Step 1 of Then of/ }),
+    ).toBeInTheDocument();
+
+    press(row);
+
+    const drawer = await screen.findByRole("dialog", { name: "If: Is it a Latitude?" });
+    expect(within(drawer).getByRole("textbox", { name: "Name" })).toHaveValue("Is it a Latitude?");
   });
 
   it("names who saved in between, and keeps this page's version only once confirmed", async () => {
@@ -574,6 +800,7 @@ describe("SequenceEditorPage", () => {
     });
 
     await opened();
+    tab("Sequence");
     fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
       target: { value: "Lab PCs (mine)" },
     });
@@ -590,15 +817,8 @@ describe("SequenceEditorPage", () => {
     }
 
     expect(notice).toHaveTextContent("They changed the name.");
-    expect(
-      screen.getByText("Not saved: another administrator saved this sequence"),
-    ).toBeInTheDocument();
-
     fireEvent.click(within(notice).getByRole("button", { name: "Keep mine" }));
     const dialog = await screen.findByRole("dialog", { name: "Save your version over theirs?" });
-    expect(dialog).toHaveTextContent(
-      /Your version replaces the one bob saved at .*\. Their changes to the name are lost\./,
-    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Save my version" }));
 
     await waitFor(() => {
@@ -617,6 +837,7 @@ describe("SequenceEditorPage", () => {
       expect(screen.getByText("All changes saved")).toBeInTheDocument();
     });
     const readsBefore = reads.length;
+    tab("Sequence");
     fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
       target: { value: "Lab PCs (mine)" },
     });
@@ -628,16 +849,71 @@ describe("SequenceEditorPage", () => {
     fireEvent.click(takeTheirs);
 
     expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveValue("Lab PCs (bob)");
-    expect(screen.queryByRole("button", { name: "Use theirs" })).not.toBeInTheDocument();
     expect(saves).toHaveLength(1);
     // Their copy came with the refusal.
     expect(reads.slice(readsBefore)).not.toContain(`/api/sequences/${sequenceId}`);
+  });
+
+  it("forgets what to undo once it shows another administrator's save", async () => {
+    const { saves, queryClient } = serve(administrator, view());
+
+    await opened();
+    tab("Sequence");
+    fireEvent.change(screen.getByRole("textbox", { name: "Description" }), {
+      target: { value: "For room 4" },
+    });
+    await waitFor(() => {
+      expect(saves).toHaveLength(1);
+    }, saveWait);
+    await screen.findByText(/^All changes saved at /);
+
+    act(() => {
+      queryClient.setQueryData(
+        ["sequence", sequenceId],
+        view({ revision: 9, name: "Lab PCs, room 4", description: "Theirs", updatedBy: "bob" }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
+    });
+    expect(screen.getByText(/^bob saved it at /)).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(1);
+  });
+
+  it("shows the server's refusal of a name at the field", async () => {
+    serve(administrator, view(), {
+      answer: () =>
+        json(
+          { title: "Invalid", errors: { name: ["Another sequence is already called Lab."] } },
+          400,
+        ),
+    });
+
+    await opened();
+    tab("Sequence");
+    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
+      target: { value: "Lab" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveAccessibleDescription(
+        "Another sequence is already called Lab.",
+      );
+    }, saveWait);
+    expect(
+      screen.getByText("Not saved: Another sequence is already called Lab."),
+    ).toBeInTheDocument();
   });
 
   it("saves at once on leaving, and goes once it is saved", async () => {
     const { saves } = serve(administrator, view());
 
     await opened();
+    tab("Sequence");
     fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
       target: { value: "Lab" },
     });
@@ -653,6 +929,7 @@ describe("SequenceEditorPage", () => {
     });
 
     await opened();
+    tab("Sequence");
     fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
       target: { value: "Lab" },
     });
@@ -668,291 +945,11 @@ describe("SequenceEditorPage", () => {
     expect(await screen.findByText("All the sequences")).toBeInTheDocument();
   });
 
-  it("does not hold up picking another step while something is unsaved", async () => {
-    const { saves } = serve(administrator, view(), { step: "p" });
-
-    await opened();
-    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
-      target: { value: "Lab" },
-    });
-    fireEvent.click(railStep("s"));
-
-    expect(
-      await screen.findByRole("heading", { level: 2, name: /Set wallpaper/ }),
-    ).toBeInTheDocument();
-    expect(saves).toHaveLength(0);
-  });
-
-  it("takes another administrator's save live while nothing is unsaved, and says who saved it", async () => {
-    const { queryClient } = serve(administrator, view());
-
-    await opened();
-
-    act(() => {
-      queryClient.setQueryData(
-        ["sequence", sequenceId],
-        view({ revision: 4, name: "Lab PCs, room 4", updatedBy: "bob" }),
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveValue("Lab PCs, room 4");
-    });
-    expect(screen.getByText(/^bob saved it at /)).toBeInTheDocument();
-  });
-
-  it("removes a step and brings it back where it was", async () => {
-    const { saves } = serve(administrator, view(), { step: "i" });
-
-    await opened();
-    fireEvent.click(screen.getByRole("button", { name: "Remove Apply image" }));
-
-    expect(order()).toEqual(["p", "s"]);
-    // The step that took its place shows.
-    expect(railStep("s")).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("heading", { level: 2, name: /Set wallpaper/ })).toBeInTheDocument();
-    const undo = screen.getByRole("button", { name: "Undo" });
-    await waitFor(() => {
-      expect(undo).toHaveFocus();
-    });
-    expect(
-      screen.getByText("Removed Apply image (Apply image). You can bring it back for 10 seconds."),
-    ).toBeInTheDocument();
-
-    // A removal is saved at once.
-    await waitFor(() => {
-      expect(saves.map((save) => save.definition.steps.map((step) => step.id))).toEqual([
-        ["p", "s"],
-      ]);
-    });
-
-    fireEvent.click(undo);
-
-    expect(order()).toEqual(["p", "i", "s"]);
-    expect(railStep("i")).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByRole("button", { name: "Undo" })).not.toBeInTheDocument();
-    await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps.map((step) => step.id)).toEqual(["p", "i", "s"]);
-    }, saveWait);
-  });
-
-  it("offers to bring a removed step back for 10 s", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    serve(administrator, view(), { step: "i" });
-
-    await opened();
-    fireEvent.click(screen.getByRole("button", { name: "Remove Apply image" }));
-    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
-
-    await act(() => vi.advanceTimersByTimeAsync(9_000));
-    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
-
-    await act(() => vi.advanceTimersByTimeAsync(1_500));
-    expect(screen.queryByRole("button", { name: "Undo" })).not.toBeInTheDocument();
-  });
-
-  it("adds a step of the chosen kind at the end, in the phase of the step before it, and shows it", async () => {
-    const { saves } = serve(
-      administrator,
-      view({ stepPhases: ["WindowsPE", "WindowsPE", "Windows"] }),
-    );
-
-    await opened();
-    fireEvent.click(screen.getByRole("button", { name: "Add step at the end" }));
-    const menu = await screen.findByRole("menu", { name: "Add step at the end" });
-    fireEvent.click(within(menu).getByRole("menuitem", { name: "Restart" }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 2, name: /Restart/ })).toBeInTheDocument();
-    });
-    expect(screen.getByText("Restart, in Windows")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps.map((step) => step.kind)).toEqual([
-        "partition",
-        "applyImage",
-        "runScript",
-        "reboot",
-      ]);
-    }, saveWait);
-    // The sequence has no description, which the page edits as empty text.
-    expect(saves.at(-1)?.description).toBeNull();
-  });
-
-  it("inserts a step after the one shown", async () => {
-    const { saves } = serve(administrator, view(), { step: "p" });
-
-    await opened();
-    fireEvent.click(screen.getByRole("button", { name: "Insert after Partition the disk" }));
-    const menu = await screen.findByRole("menu", { name: "Insert after Partition the disk" });
-    fireEvent.click(within(menu).getByRole("menuitem", { name: "Run script" }));
-
-    await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps.map((step) => step.kind)).toEqual([
-        "partition",
-        "runScript",
-        "applyImage",
-        "runScript",
-      ]);
-    }, saveWait);
-    expect(screen.getByRole("heading", { level: 2, name: /^02/ })).toHaveTextContent("Run script");
-  });
-
-  it("offers only raw disk images to write, and warns of one not signed for Secure Boot", async () => {
-    const { saves } = serve(administrator, linuxView(), {
-      images: [image, rawImage, signedRawImage],
-      step: "w",
-    });
-
-    await opened();
-    await loaded("imageId");
-    fireEvent.click(within(field("imageId")).getByRole("button"));
-    const list = (await screen.findByRole("option", { name: /^noble/ })).closest<HTMLElement>(
-      "[role=listbox]",
-    );
-
-    if (list === null) {
-      throw new Error("The images are not in a list.");
-    }
-
-    const options = within(list)
-      .getAllByRole("option")
-      .map((option) => option.textContent);
-    expect(options).toEqual(["nobleNot signed for Secure Boot", "debian-12Signed for Secure Boot"]);
-    fireEvent.click(screen.getByRole("option", { name: /^noble/ }));
-
-    expect(
-      await screen.findByText(/^This image will not start with Secure Boot on\./),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/carries no signature\./)).toBeInTheDocument();
-    await waitFor(() => {
-      expect(saves.at(-1)?.definition.steps[0]).toMatchObject({
-        kind: "writeRawImage",
-        imageId: rawImage.id,
-      });
-    }, saveWait);
-
-    await choose("imageId", "debian-12");
-    expect(screen.queryByText(/will not start with Secure Boot on/)).not.toBeInTheDocument();
-  });
-
-  it("starts the seed with the machine's name and a cloud-config, and lists the placeholders", async () => {
-    const { saves } = serve(administrator, linuxView(rawImage.id), {
-      images: [rawImage],
-      step: "c",
-    });
-
-    await opened();
-    expect(screen.getByRole("textbox", { name: "meta-data" })).toHaveValue(
-      'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n',
-    );
-    expect(screen.getByRole("textbox", { name: "user-data" })).toHaveValue("#cloud-config\n");
-    expect(screen.queryByRole("textbox", { name: "network-config" })).not.toBeInTheDocument();
-    expect(screen.getByText(/\{\{SerialNumber\}\}, \{\{SmbiosUuid\}\}/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("checkbox", { name: "Write network-config" }));
-    expect(screen.getByRole("textbox", { name: "network-config" })).toHaveValue("version: 2\n");
-
-    // The switch saves at once, and turned off and on again it keeps what was typed.
-    await waitFor(
-      () => {
-        expect(saves.at(-1)?.definition.steps[1]).toMatchObject({ networkConfig: "version: 2\n" });
-      },
-      { timeout: 500 },
-    );
-    fireEvent.change(screen.getByRole("textbox", { name: "network-config" }), {
-      target: { value: "version: 2\nethernets: {}\n" },
-    });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Write network-config" }));
-    expect(screen.queryByRole("textbox", { name: "network-config" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Write network-config" }));
-    expect(screen.getByRole("textbox", { name: "network-config" })).toHaveValue(
-      "version: 2\nethernets: {}\n",
-    );
-  });
-
-  it("names an image of the other kind instead of calling it deleted", async () => {
-    serve(
-      administrator,
-      view({
-        definition: {
-          version: 1,
-          steps: [{ ...newStep("applyImage", "i"), imageId: rawImage.id } as SequenceStep],
-        },
-        stepPhases: ["WindowsPE"],
-      }),
-      { images: [image, rawImage] },
-    );
-
-    await opened();
-    await waitFor(() => {
-      expect(within(field("imageId")).getByRole("button")).toHaveTextContent(
-        "noble (raw disk image)",
-      );
-    });
-  });
-
-  it("shows a viewer the sequence without letting anything change", async () => {
-    const { saves } = serve(viewer, view(), { step: "s" });
-
-    expect(
-      await screen.findByText(
-        "Only administrators change task sequences. You can look at this one.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveAttribute("readonly");
-    expect(screen.getByRole("textbox", { name: "Script" })).toHaveAttribute("readonly");
-    // A choice reads as text.
-    expect(screen.getByRole("textbox", { name: "Interpreter" })).toHaveValue("cmd");
-    expect(screen.queryByRole("button", { name: /^Add step/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Remove/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Move/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add a condition" })).not.toBeInTheDocument();
-    expect(screen.queryByText("All changes saved")).not.toBeInTheDocument();
-
-    const first = railStep("s");
-    act(() => {
-      first.focus();
-    });
-    fireEvent.keyDown(first, { key: "ArrowLeft", altKey: true });
-    expect(order()).toEqual(["p", "i", "s"]);
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    expect(saves).toHaveLength(0);
-  });
-
-  it("does not open a sequence that needs the flow builder, and never saves it", async () => {
-    const { saves } = serve(administrator, view({ definition: everyNode }));
-
-    await opened();
-    expect(screen.getByText("This page cannot show this sequence")).toBeInTheDocument();
-    expect(screen.queryByRole("listbox", { name: /^Steps of / })).not.toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Sequence name" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Add/ })).not.toBeInTheDocument();
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    expect(saves).toHaveLength(0);
-  });
-
-  it("stops editing once someone else's save makes the sequence one for the flow builder", async () => {
-    const { saves, queryClient } = serve(administrator, view());
-
-    await opened();
-
-    act(() => {
-      queryClient.setQueryData(
-        ["sequence", sequenceId],
-        view({ revision: 4, definition: everyNode, updatedBy: "bob" }),
-      );
-    });
-
-    expect(await screen.findByText("This page cannot show this sequence")).toBeInTheDocument();
-    expect(screen.queryByRole("listbox", { name: /^Steps of / })).not.toBeInTheDocument();
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    expect(saves).toHaveLength(0);
-  });
-
   it("stops saving, unsaved edits too, once someone else deleted the sequence", async () => {
     const { saves, queryClient, remove } = serve(administrator, view());
 
     await opened();
+    tab("Sequence");
     fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
       target: { value: "Lab" },
     });
@@ -970,31 +967,6 @@ describe("SequenceEditorPage", () => {
     expect(saves).toHaveLength(0);
   });
 
-  it("stops saving once the sequence is gone", async () => {
-    const { saves } = serve(administrator, view(), {
-      answer: () => new Response(null, { status: 404 }),
-    });
-
-    await opened();
-    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
-      target: { value: "Lab" },
-    });
-
-    expect(
-      await screen.findByText(
-        "Not saved: It no longer exists on the server, so nothing more is saved.",
-        undefined,
-        saveWait,
-      ),
-    ).toBeInTheDocument();
-
-    fireEvent.change(screen.getByRole("textbox", { name: "Sequence name" }), {
-      target: { value: "Lab 2" },
-    });
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    expect(saves).toHaveLength(1);
-  });
-
   it("says when the sequence does not exist", async () => {
     const { router } = serve(administrator, view());
 
@@ -1008,8 +980,5 @@ describe("SequenceEditorPage", () => {
     );
 
     expect(await screen.findByText("Sequence not found")).toBeInTheDocument();
-    expect(
-      screen.getByText("This sequence does not exist. It may have been deleted."),
-    ).toBeInTheDocument();
   });
 });

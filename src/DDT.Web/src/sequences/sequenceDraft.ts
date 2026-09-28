@@ -6,7 +6,7 @@ import { t } from "@lingui/core/macro";
 
 import { equalJson } from "@/lib/equalJson";
 
-import { requiredVersion, walk } from "./flow/flowTree";
+import { walk } from "./flow/flowTree";
 import {
   SEQUENCE_VERSION,
   type InputDeclaration,
@@ -56,13 +56,6 @@ export function saveRequestOf(draft: SequenceDraft, revision: number): SaveSeque
 
 export function sameDraft(a: SequenceDraft, b: SequenceDraft): boolean {
   return equalJson(a, b);
-}
-
-// Whether the sequence uses what only the flow builder shows: containers, Set variable and Pause, when, shares,
-// accounts, variables, inputs, or the operators and names of version 3. The step editor opens only the rest, so it
-// never changes a document it cannot show whole.
-export function needsFlowBuilder(draft: SequenceDraft): boolean {
-  return requiredVersion(draft) >= 3;
 }
 
 // A node without the nodes inside it, so a container counts as changed only for its own fields.

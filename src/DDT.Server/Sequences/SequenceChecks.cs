@@ -83,6 +83,8 @@ public static class SequenceChecks
             warnings.Add(SequenceProblem.From(null, null, ServerMessages.SequenceNoAdministratorWarning.With()));
         }
 
+        problems.AddRange(SequenceAccountChecks.Check(definition, references));
+
         return new SequenceValidation(problems, warnings);
     }
 
@@ -198,9 +200,10 @@ public static class SequenceChecks
         }
     }
 
+    // A join with an account joins that account's domain, so only a join without one needs the configured domain.
     private static void CheckJoin(JoinDomainStep step, SequenceReferences references, Action<string?, ServerMessage> add)
     {
-        if (!references.DomainConfigured)
+        if (step.Account is null && !references.DomainConfigured)
         {
             add(null, ServerMessages.SequenceNoDomain.With());
         }

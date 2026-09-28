@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Sequences;
+using DDT.Server.Accounts;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -13,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Sequences;
 
 // Reads stored sequences with their problems, which depend on the library and the settings of the moment.
-public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings)
+public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings, AccountViews accounts)
 {
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
@@ -25,7 +26,10 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings)
             images.ToDictionary(i => i.Id),
             packages.ToDictionary(p => p.Id),
             !string.IsNullOrWhiteSpace(deployment.Domain.Name),
-            !string.IsNullOrEmpty(deployment.LocalAdministrator.Password));
+            !string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
+        {
+            Accounts = await accounts.FactsAsync(cancellationToken).ConfigureAwait(false),
+        };
     }
 
     public async Task<SequenceView> ViewAsync(TaskSequence sequence, CancellationToken cancellationToken) =>

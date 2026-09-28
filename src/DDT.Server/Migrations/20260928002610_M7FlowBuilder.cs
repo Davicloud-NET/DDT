@@ -326,6 +326,9 @@ namespace DDT.Server.Migrations
                 schema: "ddt",
                 table: "RunCredentials",
                 column: "ProvidedByUserId");
+
+            // Hand-written, in M7FlowBuilder.AssignmentRules.cs. Call it again when this migration is generated again.
+            CopyAssignmentRules(migrationBuilder);
         }
 
         /// <inheritdoc />

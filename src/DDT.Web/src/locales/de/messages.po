@@ -7599,6 +7599,11 @@ msgstr "Der Verlauf konnte nicht geladen werden."
 msgid "The run is done"
 msgstr "Die Ausführung ist fertig"
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.notPaused"
+msgid "The run no longer waits at that pause. Look at the machine again."
+msgstr "Die Ausführung wartet nicht mehr an dieser Pause. Sehen Sie sich das Gerät erneut an."
+
 #: src/runs/runs.ts
 msgid "The run was cancelled"
 msgstr "Die Ausführung wurde abgebrochen"

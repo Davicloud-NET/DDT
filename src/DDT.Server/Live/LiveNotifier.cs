@@ -89,6 +89,14 @@ public sealed partial class LiveNotifier(
         }
     }
 
+    // The variables a run's steps set, only to the connections that watch the machine.
+    public void RunVariablesChanged(Guid machineId, Guid deploymentId, IReadOnlyDictionary<string, string> variables)
+    {
+        ArgumentNullException.ThrowIfNull(variables);
+
+        _ = PushToWatchersAsync(machineId, LiveEvents.RunVariablesChanged, new RunVariablesChangedEvent(machineId, deploymentId, variables));
+    }
+
     public void MachineLogAppended(Guid machineId, long lastLineId) =>
         _logs.Push(
             machineId,

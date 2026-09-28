@@ -116,6 +116,66 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(0, await CredentialsAsync(application, abandoned.Id));
     }
 
+    // A tree's rows, the answers the run waits for, compared and replaced in one statement, its values and variables as
+    // JSON, and a pause, each with a NUL where the agent or a person could put one.
+    [Fact]
+    public async Task RunsATreeThatWaitsForAnswersAndPauses()
+    {
+        PostgreSqlContainer? started = await TestPostgres.StartAsync();
+        Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
+
+        await using PostgreSqlContainer container = started;
+        using PostgresApplication application = new(container.GetConnectionString());
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        RunScriptStep before = TreeSequences.Script("Before");
+        PauseStep pause = TreeSequences.Pause();
+        GroupStep group = TreeSequences.Group("Then", pause, TreeSequences.Script("After"));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(before, group) with
+        {
+            Variables = [new VariableDeclaration { Name = "Office", SetBySteps = true }],
+            Inputs = [new InputDeclaration { Name = "Room", Label = "Room", Required = true, AskAt = InputAsk.Machine }],
+        });
+        Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
+        AgentRun run = (await machine.NextAsync()).Run!;
+
+        Assert.Equal("Room", Assert.Single(run.PendingInputs!).Name);
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        DeploymentView answered = await RegisteredMachine.ReadAsync<DeploymentView>(
+            await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "A 1")));
+        Assert.False(answered.Summary.Waiting);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "B 2"))).StatusCode);
+
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        Assert.Equal("A 1", machine.LastReported!.Values!["Room"]);
+
+        StepRunState[] paused =
+        [
+            TreeSequences.Visit(before, StepState.Done) with { Evaluation = [new TestEvaluation("when\0", true, "A NUL\0 here")] },
+            TreeSequences.Visit(group, StepState.Running),
+            TreeSequences.Visit(pause, StepState.Running),
+        ];
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused) with
+        {
+            PauseMessage = "Check\0 the BIOS.",
+            Variables = new Dictionary<string, string> { ["Office"] = "Pro\0Plus" },
+        });
+
+        DeploymentView waiting = await administrator.RunAsync(runId);
+        Assert.Equal(("Check the BIOS.", "ProPlus"), (waiting.Pause!.Message, waiting.Variables!["Office"]));
+        Assert.Equal(new TestEvaluation("when", true, "A NUL here"), Assert.Single(waiting.Steps[0].Evaluation!));
+        Assert.Equal([(Guid?)null, null, group.Id, group.Id], waiting.Steps.Select(step => step.ParentId));
+
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/deployments/current/continue", new ContinueRunRequest(pause.Id, 1))).EnsureSuccessStatusCode();
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused));
+        Assert.Equal(pause.Id, machine.LastReported!.ContinueStepId);
+
+        await machine.ReportOkAsync(runId, TestReports.Report(
+            DeploymentState.Done,
+            [.. SequenceTree.Nodes(run.Sequence).Select(node => TreeSequences.Visit(node, StepState.Done))]));
+        Assert.Equal(DeploymentState.Done, (await administrator.RunAsync(runId)).Summary.State);
+    }
+
     private static RunCredential Credential(Guid runId) => new()
     {
         DeploymentId = runId,

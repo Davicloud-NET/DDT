@@ -25,6 +25,9 @@ public static class AuditActions
 
     // Names the inputs only, never an answer.
     public const string DeploymentInputsAnswered = "deployment.inputs-answered";
+
+    // Someone continued a run that waits at a Pause step.
+    public const string DeploymentContinued = "deployment.continued";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
     public const string DomainJoinChecked = "domain.join-checked";
     public const string SequenceCreated = "sequence.created";

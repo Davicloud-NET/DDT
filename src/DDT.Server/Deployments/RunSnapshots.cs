@@ -62,6 +62,9 @@ public static class RunSnapshots
         ];
     }
 
+    // A Pause step's kind, as its rows name it.
+    public static string PauseKind { get; } = Kind(new PauseStep { Id = Guid.Empty, Name = "" });
+
     // Whether a run's row is a group, an IF or a repeat rather than a step that does something.
     public static bool IsContainer(DeploymentStep row)
     {

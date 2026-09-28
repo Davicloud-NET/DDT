@@ -103,10 +103,24 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                     return DeploymentDecision.Accepted(run) with { InputsPending = pending };
                 }
 
-                return Progress(run, steps, report, now, lenient: false) ?? DeploymentDecision.Accepted(run) with { Started = true };
+                if (Progress(run, steps, report, now, lenient: false) is { } refusedStart)
+                {
+                    return refusedStart;
+                }
+
+                await KeepVariablesAsync(run, report, cancellationToken).ConfigureAwait(false);
+
+                return DeploymentDecision.Accepted(run) with { Started = true };
 
             case (DeploymentState.Running, DeploymentState.Running):
-                return Progress(run, steps, report, now, lenient: false) ?? DeploymentDecision.Accepted(run);
+                if (Progress(run, steps, report, now, lenient: false) is { } refusedReport)
+                {
+                    return refusedReport;
+                }
+
+                await KeepVariablesAsync(run, report, cancellationToken).ConfigureAwait(false);
+
+                return DeploymentDecision.Accepted(run);
 
             case (DeploymentState.Running, DeploymentState.Done):
                 if (Progress(run, steps, report, now, lenient: false) is { } refused)
@@ -119,6 +133,8 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                     return notDone;
                 }
 
+                await KeepVariablesAsync(run, report, cancellationToken).ConfigureAwait(false);
+
                 End(machine, run, DeploymentState.Done, null, now);
                 machine.State = MachineState.Done;
                 database.AuditEvents.Add(Audit(AuditActions.DeploymentDone, run, machine, now, address, $"{run.Title} on machine {machine.Id:D}."));
@@ -128,6 +144,11 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
             // A failure always ends the run, even when the steps it reports do not fit: the agent has stopped anyway.
             case (DeploymentState.Assigned or DeploymentState.Running, DeploymentState.Failed):
                 Progress(run, steps, report, now, lenient: true);
+
+                if (run.State == DeploymentState.Running)
+                {
+                    await KeepVariablesAsync(run, report, cancellationToken).ConfigureAwait(false);
+                }
 
                 string error = StoredText.Bound(report.Error, DeploymentLimits.MaxErrorLength) ?? "The agent reported a failure without saying why.";
                 FailRunning(steps, error, now);
@@ -249,6 +270,11 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
         if (report.Steps.Any(s => s.Pass < 0 || s.Iteration < 0 || (s.Branch is { } branch && !Enum.IsDefined(branch))))
         {
             return "The report names a visit, a time through a repeat or a branch that cannot be.";
+        }
+
+        if (report.Variables is { Count: > RunVariables.MaxCount })
+        {
+            return $"The report holds more than {RunVariables.MaxCount} variables.";
         }
 
         return report.Steps.Select(s => s.StepId).Distinct().Count() == report.Steps.Count
@@ -433,8 +459,55 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
         run.CurrentPhase = report.Phase;
         run.Activity = report.Activity;
         run.UpdatedUtc = now;
+        Waits(run, byId, current, report);
 
         return null;
+    }
+
+    // The Pause step the run waits at, as the report names it: its current step, running, with the message the agent
+    // worked out. A report of anything else ends the wait. A continue someone gave is kept until the visit it continued is
+    // over, since the agent honours it with any report's answer until then.
+    private static void Waits(Deployment run, Dictionary<Guid, DeploymentStep> byId, DeploymentStep? current, AgentRunReport report)
+    {
+        bool paused = report.Activity == RunActivity.Paused && current is { State: StepState.Running } && current.Kind == RunSnapshots.PauseKind;
+
+        run.PauseStepId = paused ? current!.StepId : null;
+        run.PausePass = paused ? current!.Pass : null;
+        run.PauseMessage = paused ? StoredText.Bound(report.PauseMessage, DeploymentLimits.MaxPauseMessageLength) : null;
+
+        if (run.ContinueStepId is { } continued
+            && !(byId.GetValueOrDefault(continued) is { State: StepState.Running } visit && visit.Pass == run.ContinuePass))
+        {
+            run.ContinueStepId = null;
+            run.ContinuePass = null;
+            run.ContinuedByName = null;
+        }
+    }
+
+    // The variables the agent sends when they changed, merged into those the run has; an Account input's name never among
+    // them. A report without them leaves them as they are.
+    private async Task KeepVariablesAsync(Deployment run, AgentRunReport report, CancellationToken cancellationToken)
+    {
+        if (report.Variables is null)
+        {
+            return;
+        }
+
+        SequenceDefinition definition = await DefinitionAsync(run, cancellationToken).ConfigureAwait(false);
+
+        if (RunVariables.Merged(run.Variables, report.Variables, definition) is { } merged)
+        {
+            run.Variables = merged;
+        }
+    }
+
+    // Whether the report changed the variables of the run, which a save is about to store. The save forgets it.
+    public static bool VariablesChanged(DdtDbContext database, Deployment run)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(run);
+
+        return database.Entry(run).Property(d => d.Variables).IsModified;
     }
 
     // A new visit of the node, as the report has it, with the server's times.

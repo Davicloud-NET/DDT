@@ -7599,6 +7599,11 @@ msgstr "The run history could not be loaded."
 msgid "The run is done"
 msgstr "The run is done"
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.notPaused"
+msgid "The run no longer waits at that pause. Look at the machine again."
+msgstr "The run no longer waits at that pause. Look at the machine again."
+
 #: src/runs/runs.ts
 msgid "The run was cancelled"
 msgstr "The run was cancelled"

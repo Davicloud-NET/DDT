@@ -32,6 +32,7 @@
   "deployment.machineRejected": "The machine was rejected, so it cannot be given a sequence. Assign the sequence to another machine.",
   "deployment.machineRetired": "The machine was retired, so it cannot be given a sequence. Assign the sequence to another machine.",
   "deployment.machineRunning": "The machine is running a task sequence. Stop that run before assigning another sequence.",
+  "deployment.notPaused": "The run no longer waits at that pause. Look at the machine again.",
   "deployment.notStartingWithSecureBoot": "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.",
   "deployment.nothingToEnd": "This machine has no run that is assigned or running. Load the page again to see its current state.",
   "deployment.rulesNoLongerChoose": "The rules no longer choose that sequence for this machine. {explanation} Look at the machine again.",

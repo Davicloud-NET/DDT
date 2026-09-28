@@ -685,6 +685,53 @@ public sealed class DeploymentService(
         return new RunAnswering(before, waiting.AskedAtMachine, [], check, Refused: false);
     }
 
+    // Continues the pause the run waits at, the visit the page showed, so a click that comes late continues no later one.
+    // The agent learns it with the answer to its next report, which comes within seconds while it waits.
+    public async Task<DeploymentDecision> ContinueAsync(
+        Machine machine,
+        ContinueRunRequest request,
+        Guid? userId,
+        string? userName,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(request);
+
+        Deployment? run = await ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+
+        if (run is not { State: DeploymentState.Running, PauseStepId: { } stepId, PausePass: { } pass }
+            || stepId != request.StepId
+            || pass != request.Pass
+            || DeploymentSummaries.Continued(run))
+        {
+            return DeploymentDecision.Conflict(ServerMessages.DeploymentNotPaused.With());
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        string? step = await database.DeploymentSteps
+            .AsNoTracking()
+            .Where(s => s.DeploymentId == run.Id && s.StepId == stepId)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        run.ContinueStepId = stepId;
+        run.ContinuePass = pass;
+        run.ContinuedByName = StoredText.Bound(userName, 256);
+        run.UpdatedUtc = now;
+        database.AuditEvents.Add(Audit(
+            AuditActions.DeploymentContinued,
+            run,
+            now,
+            address,
+            $"{run.Title} on machine {machine.Id:D}, at {step ?? "its pause"} ({stepId:D}), visit {pass}.",
+            actorUserId: userId,
+            actorName: userName));
+
+        return DeploymentDecision.Accepted(run);
+    }
+
     // Cancels an assigned run, or stops a running one: the agent's next call is refused, and its resume token no
     // longer matches, so the machine starts over as Pending when it registers again.
     public async Task<DeploymentDecision> EndCurrentAsync(

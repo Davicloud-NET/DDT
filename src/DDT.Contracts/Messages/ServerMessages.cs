@@ -235,6 +235,10 @@ public static class ServerMessages
         "deployment.answerYesNo",
         "{label} is answered with yes or no.");
 
+    public static readonly MessageTemplate DeploymentNotPaused = Define(
+        "deployment.notPaused",
+        "The run no longer waits at that pause. Look at the machine again.");
+
     public static readonly MessageTemplate DeploymentApproveThenNameValue = Define(
         "deployment.approveThenNameValue",
         "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a " +

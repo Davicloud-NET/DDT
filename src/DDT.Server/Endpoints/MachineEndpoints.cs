@@ -51,6 +51,7 @@ public static class MachineEndpoints
         // An operator answers what the run waits for at its start. Like the questions at the machine, it needs no new
         // sign-in: whoever may assign the run may answer it.
         group.MapPost("/{id:guid}/deployments/current/answers", AnswerAsync).RequireAuthorization(DdtPolicies.Operator);
+        group.MapPost("/{id:guid}/deployments/current/continue", ContinueAsync).RequireAuthorization(DdtPolicies.Operator);
 
         // Anyone who reaches the server can register machines, so an operator can throw away the ones nobody
         // vouched for, one at a time or everything waiting from one address.
@@ -594,6 +595,49 @@ public static class MachineEndpoints
             database.ChangeTracker.Clear();
 
             return await AsItIsAsync(machine, database, deployments, cancellationToken).ConfigureAwait(false);
+        }
+
+        live.MachineChanged(machine, run);
+
+        return TypedResults.Ok((await DeploymentViews.ReadAsync(database, run.Id, cancellationToken).ConfigureAwait(false))!);
+    }
+
+    // Continues the pause the run waits at. The answer is the run as it is then.
+    private static async Task<Results<Ok<DeploymentView>, NotFound, ProblemHttpResult>> ContinueAsync(
+        Guid id,
+        ContinueRunRequest request,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        DeploymentService deployments,
+        LiveNotifier live,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        DeploymentDecision decision = await deployments
+            .ContinueAsync(machine, request, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (decision.Outcome != DeploymentOutcome.Accepted)
+        {
+            return DecisionProblem(decision, StatusCodes.Status409Conflict);
+        }
+
+        Deployment run = decision.Deployment!;
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServerProblems.Problem(ServerMessages.DeploymentNotPaused.With(), StatusCodes.Status409Conflict);
         }
 
         live.MachineChanged(machine, run);

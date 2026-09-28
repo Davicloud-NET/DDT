@@ -260,6 +260,7 @@ public static class AgentDeploymentEndpoints
 
             Deployment run = decision.Deployment!;
             IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
+            bool variablesChanged = RunReports.VariablesChanged(database, run);
             LastSeen.Record(machine, timeProvider.GetUtcNow(), address);
 
             try
@@ -279,6 +280,11 @@ public static class AgentDeploymentEndpoints
             live.MachineChanged(machine, run);
             live.RunStepsChanged(machine.Id, changedSteps);
 
+            if (variablesChanged && RunVariables.Read(run.Variables) is { } variables)
+            {
+                live.RunVariablesChanged(machine.Id, run.Id, variables);
+            }
+
             return decision.Outcome == DeploymentOutcome.Refused
                 ? TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict)
                 : TypedResults.Ok(Answer(Tokens(machine, run, registrar, tokens), run, report, decision));
@@ -286,8 +292,9 @@ public static class AgentDeploymentEndpoints
     }
 
     // What the agent learns besides its tokens. The values go with the report that started the run, and with every
-    // report before the agent has begun, since the answer that started it can be lost: the agent waits for them. While the
-    // run waits for someone the agent is asked to report sooner.
+    // report before the agent has begun, since the answer that started it can be lost: the agent waits for them. A pause
+    // someone continued goes with every answer until its visit is over. While the run waits for someone the agent is
+    // asked to report sooner.
     private static AgentRunReportResult Answer(AgentRunReportResult tokens, Deployment run, AgentRunReport report, DeploymentDecision decision) =>
         tokens with
         {
@@ -295,6 +302,8 @@ public static class AgentDeploymentEndpoints
                 ? RunValues.Effective(run)
                 : null,
             InputsPending = run.InputsPending ? decision.InputsPending ?? [] : null,
+            ContinueStepId = run.ContinueStepId,
+            ContinuePass = run.ContinueStepId is null ? null : run.ContinuePass,
             ReportAfterSeconds = DeploymentSummaries.Waiting(run) ? WaitingReportSeconds : null,
         };
 

@@ -274,12 +274,27 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
             "Chosen by a rule",
             [Script("Chosen by a rule", SequencePhase.WindowsPE, "echo chosen") with { RebootExitCodes = [] }],
             cancellationToken);
-        AssignmentRuleView rule = await lab.Api.SendAsync(
+        RuleView rule = await lab.Api.SendAsync(
             HttpMethod.Post,
             "api/rules",
-            new SaveAssignmentRuleRequest(AssignmentRuleKind.Model, null, DryRunLab.Manufacturer, DryRunLab.Model, sequence.Id, "Made by the end-to-end tests."),
-            DdtJsonContext.Default.SaveAssignmentRuleRequest,
-            DdtJsonContext.Default.AssignmentRuleView,
+            new SaveRuleRequest(
+                0,
+                $"Model {DryRunLab.Model}",
+                "Made by the end-to-end tests.",
+                true,
+                new AllCondition
+                {
+                    Parts =
+                    [
+                        new TestCondition(MachineVariableNames.Manufacturer, ConditionOperator.Equals, DryRunLab.Manufacturer),
+                        new TestCondition(MachineVariableNames.Model, ConditionOperator.Equals, DryRunLab.Model),
+                    ],
+                },
+                sequence.Id,
+                [],
+                []),
+            DdtJsonContext.Default.SaveRuleRequest,
+            DdtJsonContext.Default.RuleView,
             HttpStatusCode.Created,
             cancellationToken);
 
@@ -294,7 +309,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
                 $"api/machines/{machine.Id:D}/sequence",
                 DdtJsonContext.Default.MachineSequenceResolution,
                 cancellationToken);
-            Assert.Equal((SequenceResolutionSource.ModelRule, sequence.Id, rule.Id), (resolution.Source, resolution.SequenceId, resolution.RuleId));
+            Assert.Equal((SequenceResolutionSource.Rule, sequence.Id, rule.Id), (resolution.Source, resolution.SequenceId, resolution.RuleId));
             Assert.Empty(await lab.RunsAsync(machine.Id, cancellationToken));
 
             MachineSummary approved = await lab.ApproveAsync(machine.Id, sequence.Id, cancellationToken);
@@ -315,7 +330,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         }
         finally
         {
-            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None);
+            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None, HttpStatusCode.OK);
         }
     }
 

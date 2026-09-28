@@ -1041,66 +1041,6 @@ namespace DDT.Server.Migrations
                     b.ToTable("Packages", "ddt");
                 });
 
-            modelBuilder.Entity("DDT.Server.Rules.AssignmentRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("Mac")
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)");
-
-                    b.Property<string>("Manufacturer")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("MatchKey")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<string>("Model")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<Guid>("TaskSequenceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("UpdatedByName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MatchKey")
-                        .IsUnique();
-
-                    b.HasIndex("TaskSequenceId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("AssignmentRules", "ddt");
-                });
-
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1575,20 +1515,6 @@ namespace DDT.Server.Migrations
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
                         .HasForeignKey("UploadedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-                });
-
-            modelBuilder.Entity("DDT.Server.Rules.AssignmentRule", b =>
-                {
-                    b.HasOne("DDT.Server.Sequences.TaskSequence", null)
-                        .WithMany()
-                        .HasForeignKey("TaskSequenceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DDT.Server.Data.DdtUser", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 

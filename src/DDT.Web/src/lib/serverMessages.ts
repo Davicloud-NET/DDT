@@ -513,6 +513,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "machine.runChangedWhileStopping",
     message: "The run changed while it was being stopped. Look at the machine again.",
   }),
+  "machineRole.givenByRules": msg({
+    context: "machineRole.givenByRules",
+    message: "{count, plural, one {A rule gives this machine role. Take it out of the rule, then delete the role.} other {# rules give this machine role. Take it out of them, then delete the role.}}",
+  }),
+  "machineRole.nameTaken": msg({
+    context: "machineRole.nameTaken",
+    message: "Another machine role is already called {name}. Choose another name.",
+  }),
+  "machineRole.tooMany": msg({
+    context: "machineRole.tooMany",
+    message: "There can be at most {max} machine roles. Delete one before adding another.",
+  }),
   "machineState.approved": msg({
     context: "machineState.approved",
     message: "Approved",
@@ -564,6 +576,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "model.wildcardPrefix": msg({
     context: "model.wildcardPrefix",
     message: "Put at least {min} characters before {wildcard}, so it matches only one family of models.",
+  }),
+  "namedValue.nameEmpty": msg({
+    context: "namedValue.nameEmpty",
+    message: "Enter the value's name.",
+  }),
+  "namedValue.nameInvalid": msg({
+    context: "namedValue.nameInvalid",
+    message: "''{name}'' cannot name a value. Start with a letter, and use only letters, digits and _, at most {max} characters.",
+  }),
+  "namedValue.repeated": msg({
+    context: "namedValue.repeated",
+    message: "{name} is set more than once here. Keep one.",
+  }),
+  "namedValue.reserved": msg({
+    context: "namedValue.reserved",
+    message: "Names that start with ddt are DDT's own. Choose another name.",
+  }),
+  "namedValue.tooLong": msg({
+    context: "namedValue.tooLong",
+    message: "A value's name can have at most {name} characters, and its text at most {text}.",
+  }),
+  "namedValue.tooMany": msg({
+    context: "namedValue.tooMany",
+    message: "Set at most {max} values here.",
   }),
   "organizationalUnit.isComputers": msg({
     context: "organizationalUnit.isComputers",
@@ -709,9 +745,17 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "resolution.noRule",
     message: "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence.",
   }),
+  "resolution.noRuleChooses": msg({
+    context: "resolution.noRuleChooses",
+    message: "No rule chooses a sequence for this machine, so an operator chooses its sequence.",
+  }),
   "resolution.ruleChooses": msg({
     context: "resolution.ruleChooses",
     message: "The rule for {rule} chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered.",
+  }),
+  "resolution.ruleNumbered": msg({
+    context: "resolution.ruleNumbered",
+    message: "Rule {number}, {rule}, chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered.",
   }),
   "role.aViewer": msg({
     context: "role.aViewer",
@@ -741,6 +785,46 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "rule.chooseKind",
     message: "Choose a rule by MAC address or by model.",
   }),
+  "rule.conditionAddress": msg({
+    context: "rule.conditionAddress",
+    message: "Enter an IPv4 address, such as 10.0.0.1.",
+  }),
+  "rule.conditionChooseName": msg({
+    context: "rule.conditionChooseName",
+    message: "Choose a fact or a value to test.",
+  }),
+  "rule.conditionNumber": msg({
+    context: "rule.conditionNumber",
+    message: "Enter a number, such as 8192.",
+  }),
+  "rule.conditionOperatorType": msg({
+    context: "rule.conditionOperatorType",
+    message: "This comparison does not fit {name}, which holds {type, select, number {a number} yesNo {yes or no} ipv4 {an IPv4 address} mac {a MAC address} other {any text}}.",
+  }),
+  "rule.conditionRunVariable": msg({
+    context: "rule.conditionRunVariable",
+    message: "{name} has a value only while a run goes on, so a rule cannot test it.",
+  }),
+  "rule.conditionSubnet": msg({
+    context: "rule.conditionSubnet",
+    message: "Write the network as an address and a prefix length, such as 10.0.0.0/24.",
+  }),
+  "rule.conditionTooLarge": msg({
+    context: "rule.conditionTooLarge",
+    message: "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep.",
+  }),
+  "rule.conditionUnknownName": msg({
+    context: "rule.conditionUnknownName",
+    message: "{name} is not a fact of the machine or a value that a rule or a machine role sets. Check the spelling.",
+  }),
+  "rule.conditionUnreadable": msg({
+    context: "rule.conditionUnreadable",
+    message: "DDT cannot read this rule's condition. Build it again.",
+  }),
+  "rule.conditionYesNo": msg({
+    context: "rule.conditionYesNo",
+    message: "Enter yes or no.",
+  }),
   "rule.exists": msg({
     context: "rule.exists",
     message: "There is a rule for {rule} already. It chooses {sequence}; change that rule instead.",
@@ -757,9 +841,25 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "rule.forModelOfAnyMaker",
     message: "model {model} of any maker",
   }),
+  "rule.orderRepeats": msg({
+    context: "rule.orderRepeats",
+    message: "The order names a rule more than once.",
+  }),
+  "rule.roleGone": msg({
+    context: "rule.roleGone",
+    message: "A machine role this rule gives no longer exists. Take it out of the rule.",
+  }),
   "rule.sequenceGone": msg({
     context: "rule.sequenceGone",
     message: "The sequence no longer exists. Choose another one.",
+  }),
+  "rule.tooMany": msg({
+    context: "rule.tooMany",
+    message: "There can be at most {max} rules. Delete one before adding another.",
+  }),
+  "rule.tooManyRoles": msg({
+    context: "rule.tooManyRoles",
+    message: "A rule can give at most {max} machine roles.",
   }),
   "sequence.accountChoose": msg({
     context: "sequence.accountChoose",

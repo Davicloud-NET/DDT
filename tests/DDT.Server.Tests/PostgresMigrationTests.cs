@@ -9,6 +9,7 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Core.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -368,8 +369,29 @@ public sealed class PostgresMigrationTests
         Assert.Equal((ubuntu, "Finance laptops", "alice"), (views[dellExact].SequenceId, views[dellExact].Description, views[dellExact].UpdatedBy));
         Assert.Equal((windows, (string?)null, (string?)null), (views[tieLow].SequenceId, views[tieLow].Description, views[tieLow].UpdatedBy));
 
-        // The assignment rules stay until the rules code moves over, and a run still names the rule that chose it.
-        Assert.Equal(10, await database.AssignmentRules.CountAsync(cancellationToken));
+        // Walked from the top, the copies choose for each machine the rule the assignment rules chose.
+        RuleBook book = RuleBook.From(rules, []);
+        Assert.All(book.Rules, rule => Assert.Empty(rule.Problems));
+
+        Guid? Chosen(string manufacturer, string model, params string[] macs) =>
+            book.Match(new MachineVariables(manufacturer, model, null, "uuid", macs, null, SequencePhase.WindowsPE), []).Chooser?.Rule.Id;
+
+        Assert.Equal(macLow, Chosen("Dell Inc.", "Latitude 5440", "00155D010203"));
+        Assert.Equal(dellExact, Chosen("DELL INC.", "latitude  5440"));
+
+        // Only where rules name two addresses of one machine, the higher rule now wins over the one for its primary address.
+        Assert.Equal(macLow, Chosen("Dell Inc.", "Latitude 5440", "00155D0102FF", "00155D010203"));
+        Assert.Equal(anyExact, Chosen("HP", "Latitude 5440"));
+        Assert.Equal(dellPrefix, Chosen("Dell Inc.", "Latitude 7440"));
+        Assert.Equal(anyPrefix, Chosen("LENOVO", "Latitude 7440"));
+        Assert.Equal(shortPrefix, Chosen("Dell Inc.", "Latitude 9440"));
+        Assert.Equal(quoted, Chosen(quotedMaker, quotedModel));
+        Assert.Null(Chosen("To Be Filled By O.E.M.", "To Be Filled By O.E.M."));
+
+        // The assignment rules are gone once copied, and a run still names the rule that chose it.
+        Assert.False(await database.Database
+            .SqlQuery<bool>($"""SELECT to_regclass('ddt."AssignmentRules"') IS NOT NULL AS "Value" """)
+            .SingleAsync(cancellationToken));
         Deployment old = await database.Deployments.AsNoTracking().SingleAsync(d => d.Id == run, cancellationToken);
         Assert.Equal("MAC address 00:15:5D:01:02:03", (await database.Rules.AsNoTracking().SingleAsync(r => r.Id == old.RuleId, cancellationToken)).Name);
         Assert.Equal(

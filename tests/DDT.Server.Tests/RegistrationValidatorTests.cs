@@ -193,6 +193,35 @@ public sealed class RegistrationValidatorTests
         Assert.Null(normalised.BiosDate);
     }
 
+    // A Gigabyte Z790 board leaves the system's version and SKU and the enclosure's asset tag as "Default string", and
+    // AMI firmware fills others with "To be filled by O.E.M.": none of them may match a condition as the machine's.
+    [Fact]
+    public void DropsThePlaceholdersABoardMakerLeftInTheFacts()
+    {
+        MachineFacts facts = new()
+        {
+            ProcessorName = "To Be Filled By O.E.M.",
+            SystemVersion = "Default string",
+            SystemFamily = "Z790 AORUS ELITE AX",
+            SystemSku = "Default string",
+            AssetTag = " default   STRING ",
+            BaseboardProduct = "Z790 AORUS ELITE AX",
+            BiosVersion = "System Version",
+            DnsSuffix = "corp.example.com",
+        };
+
+        MachineFacts normalised = WithFacts(facts).Facts!;
+
+        Assert.Equal(
+            new MachineFacts
+            {
+                SystemFamily = "Z790 AORUS ELITE AX",
+                BaseboardProduct = "Z790 AORUS ELITE AX",
+                DnsSuffix = "corp.example.com",
+            },
+            normalised);
+    }
+
     private static NormalisedRegistration WithFacts(MachineFacts? facts)
     {
         AgentRegistration registration = new(Guid.NewGuid().ToString(), "00155D010203", ["00155D010203"], null, null, null, "1", Facts: facts);

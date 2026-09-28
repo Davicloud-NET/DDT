@@ -40,6 +40,6 @@ public sealed class RuleAuthorizationTests(DdtApplication application) : IClassF
         Assert.False(listed.EverApproved);
 
         // The rules did match; they only chose.
-        Assert.Equal(SequenceResolutionSource.MacRule, (await administrator.ResolutionAsync(machine.Id)).Source);
+        Assert.Equal(SequenceResolutionSource.Rule, (await administrator.ResolutionAsync(machine.Id)).Source);
     }
 }

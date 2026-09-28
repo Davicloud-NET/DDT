@@ -5,6 +5,7 @@
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Live;
+using DDT.Server.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +18,7 @@ namespace DDT.Server.Machines;
 public sealed partial class WaitingMachineSweeper(
     IServiceScopeFactory scopes,
     LiveNotifier live,
+    RuleRecount recount,
     TimeProvider timeProvider,
     ILogger<WaitingMachineSweeper> logger) : BackgroundService
 {
@@ -57,6 +59,7 @@ public sealed partial class WaitingMachineSweeper(
         {
             LogSwept(removed);
             live.MachinesRemoved(stale);
+            recount.MachinesChanged();
         }
 
         return removed;

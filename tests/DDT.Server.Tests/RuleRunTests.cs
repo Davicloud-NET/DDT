@@ -17,12 +17,12 @@ namespace DDT.Server.Tests;
 // A rule's sequence runs only when an operator approves the machine with it, having seen which one it is.
 public sealed class RuleRunTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
-    private async Task<(AssignmentRuleView Rule, SequenceView Sequence, RegisteredMachine Machine)> MatchedMachineAsync()
+    private async Task<(RuleView Rule, SequenceView Sequence, RegisteredMachine Machine)> MatchedMachineAsync()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         string model = RuleRequests.UniqueModel();
-        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
 
         return (rule, sequence, await application.RegisterModelAsync("Dell Inc.", model));
     }
@@ -31,7 +31,7 @@ public sealed class RuleRunTests(DdtApplication application) : IClassFixture<Ddt
     public async Task ApprovingWithTheRulesSequenceRunsIt()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        (AssignmentRuleView rule, SequenceView sequence, RegisteredMachine registered) = await MatchedMachineAsync();
+        (RuleView rule, SequenceView sequence, RegisteredMachine registered) = await MatchedMachineAsync();
         using RegisteredMachine machine = registered;
 
         MachineSummary approved = await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.ApproveAsync(machine.Id, sequence.Id));
@@ -53,7 +53,7 @@ public sealed class RuleRunTests(DdtApplication application) : IClassFixture<Ddt
             .ToListAsync(TestContext.Current.CancellationToken));
 
         Assert.Contains(
-            $"{AuditActions.DeploymentAssigned} {sequence.Name}, revision 1, to machine {machine.Id:D}, chosen by the rule for model {rule.Model} of any maker and approved by {run.RequestedBy}.",
+            $"{AuditActions.DeploymentAssigned} {sequence.Name}, revision 1, to machine {machine.Id:D}, chosen by rule {rule.Position + 1}, {rule.Name}, and approved by {run.RequestedBy}.",
             audit);
         Assert.Contains($"{AuditActions.MachineApproved} Was Pending. Approved to run {sequence.Name}, which a rule chose.", audit);
     }
@@ -62,14 +62,17 @@ public sealed class RuleRunTests(DdtApplication application) : IClassFixture<Ddt
     public async Task AnApprovalIsRefusedWhenTheRulesChoseAnotherSequenceMeanwhile()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        (AssignmentRuleView rule, SequenceView sequence, RegisteredMachine registered) = await MatchedMachineAsync();
+        (RuleView rule, SequenceView sequence, RegisteredMachine registered) = await MatchedMachineAsync();
         using RegisteredMachine machine = registered;
         SequenceView other = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
 
         HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, other.Id);
 
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-        Assert.StartsWith("The rules no longer choose that sequence for this machine. The rule for ", await TestDatabase.TitleAsync(refused), StringComparison.Ordinal);
+        Assert.Equal(
+            $"The rules no longer choose that sequence for this machine. Rule {rule.Position + 1}, {rule.Name}, chooses {sequence.Name}. A rule only "
+                + "chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered. Look at the machine again.",
+            await TestDatabase.TitleAsync(refused));
 
         Machine stored = await application.MachineAsync(machine.Id);
         Assert.Equal(MachineState.Pending, stored.State);

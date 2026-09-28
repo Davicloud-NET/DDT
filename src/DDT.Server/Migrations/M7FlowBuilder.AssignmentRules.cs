@@ -8,7 +8,8 @@ namespace DDT.Server.Migrations;
 
 // The hand-written part of M7FlowBuilder, kept apart because the migration is generated again once at the end of M7,
 // when every track's model changes are in: carry this file over and call CopyAssignmentRules from Up again, after the
-// Rules table is created. SQLite development databases are created from the model and have nothing to copy.
+// Rules table is created and before the AssignmentRules table is dropped. SQLite development databases are created from
+// the model and have nothing to copy.
 public partial class M7FlowBuilder
 {
     // Today's assignment rules become the top of the ordered list, in the order SequenceResolver tries them: MAC rules

@@ -11,6 +11,7 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Values;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
@@ -164,11 +165,37 @@ public sealed class PostgresDeploymentTests
         await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
 
-        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "Latitude 5440", "Dell Inc."));
+        MachineRoleView role = await administrator.CreatedRoleAsync(new SaveMachineRoleRequest(0, "Finance\0 laptops", "A NUL\0 here", [new NamedValue("Office", "Vienna\0")]));
+        RuleView other = await administrator.CreatedRuleAsync(RuleRequests.MacRule(saved.Id, RuleRequests.RandomMac()));
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "Latitude 5440", "Dell Inc.") with
+        {
+            Name = "Dell\0 laptops",
+            Values = [new NamedValue("ComputerName", "PC-{{SerialNumber|alnum}}\0")],
+            RoleIds = [role.Id],
+        });
+        RuleView last = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "LATITUDE 5440", "dell inc."));
         using RegisteredMachine machine = await application.RegisterModelAsync("DELL INC.", "latitude 5440");
 
-        Assert.Equal(rule.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
-        Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync(RuleRequests.Rules, RuleRequests.ModelRule(saved.Id, "LATITUDE 5440", "dell inc."))).StatusCode);
+        Assert.Equal(("Finance laptops", "Vienna"), (role.Name, role.Values[0].Value));
+        Assert.Equal(("Dell laptops", "PC-{{SerialNumber|alnum}}"), (rule.Name, rule.Values[0].Value));
+        MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
+        Assert.Equal(rule.Id, resolution.RuleId);
+        Assert.Equal([rule.Id, last.Id], resolution.MatchedRuleIds);
+        Assert.Contains(new ResolvedValue("ComputerName", "PC-00000000", ValueSource.Rule, rule.Id, rule.Name, false), resolution.Values!);
+        Assert.Contains(new ResolvedValue("Office", "Vienna", ValueSource.Role, role.Id, role.Name, false), resolution.Values!);
+
+        // The places are unique, so a reorder and a delete move rules through places no rule has, in one transaction.
+        IReadOnlyList<RuleView> rules = await administrator.RulesAsync();
+        IReadOnlyList<RuleView> reordered = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(
+            await administrator.ReorderAsync([.. rules.Select(r => r.Id).Reverse()]));
+        Assert.Equal(rules.Select(r => r.Id).Reverse(), reordered.Select(r => r.Id));
+        Assert.Equal(last.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
+
+        IReadOnlyList<RuleView> left = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(await administrator.DeleteAsync($"{RuleRequests.Rules}/{last.Id}"));
+        Assert.Equal([rule.Id, other.Id], left.Select(r => r.Id));
+        Assert.Equal([0, 1], left.Select(r => r.Position));
+
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{RuleRequests.Roles}/{role.Id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{saved.Id}")).StatusCode);
     }
 }

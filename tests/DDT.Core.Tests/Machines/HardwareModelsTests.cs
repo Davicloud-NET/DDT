@@ -11,7 +11,7 @@ namespace DDT.Core.Tests.Machines;
 
 public sealed class HardwareModelsTests
 {
-    // The rules and driver targets of the server's tests (SequenceResolutionTests, AssignmentRuleTests,
+    // The rules and driver targets of the server's tests (SequenceResolutionTests, the assignment rule tests before M7,
     // PackageLibraryTests, SequenceAssignmentTests, PostgresDeploymentTests), each with a machine it was tried on:
     // manufacturer and model of the rule, manufacturer and model the machine reported, and whether it matched.
     public static TheoryData<string?, string, string?, string?, bool> Cases { get; } = new()
@@ -83,6 +83,9 @@ public sealed class HardwareModelsTests
         Assert.Null(HardwareModels.Clean("   "));
         Assert.Equal("DELL INC.", HardwareModels.Normalize(" dell  inc."));
         Assert.True(HardwareModels.IsPlaceholder(" to be filled by o.e.m. "));
+        Assert.True(HardwareModels.IsPlaceholder("Default string"));
+        Assert.True(HardwareModels.IsPlaceholder("System Version"));
+        Assert.True(HardwareModels.IsPlaceholder("Chassis Asset Tag"));
         Assert.False(HardwareModels.IsPlaceholder("Dell Inc."));
         Assert.True(HardwareModels.IsPrefix("Latitude 7*"));
         Assert.True(HardwareModels.Matches(null, null));

@@ -56,20 +56,21 @@ public sealed class RunInputsTests : IDisposable
         Assert.Contains("The server took the answers, and the run starts.", _lines.ToString(), StringComparison.Ordinal);
     }
 
-    // Answered on the web meanwhile: the question at the machine goes away, and nothing is sent from here.
+    // Answered on the web meanwhile: the question at the machine goes away, and nothing is sent from here. The web answers
+    // only once the machine asked, so there is a question to go away.
     [Fact]
     public async Task AnswersOnTheWebEndTheQuestionAtTheMachine()
     {
         ScriptedMachineConsole console = new();
         ScriptedAgentServer server = new();
-        int reports = 0;
-        server.AnswerRunReports = (_, token) => Interlocked.Increment(ref reports) < 3
+        server.AnswerRunReports = (_, token) => console.Questions.Count == 0
             ? new AgentRunReportResult(token, "resume", null, InputsPending: [s_office], ReportAfterSeconds: 5)
             : new AgentRunReportResult(token, "resume", null, Values: new Dictionary<string, string> { ["Office"] = "VIE" });
 
         RunResult result = await RunAsync(server, console);
 
         Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Single(console.Questions);
         Assert.Equal(1, console.Withdrawn);
         Assert.Empty(server.Answers);
         Assert.Equal("VIE", Assert.Single(_toolRunner.Options).Environment!["DDT_VAR_Office"]);
@@ -99,6 +100,26 @@ public sealed class RunInputsTests : IDisposable
         Assert.Equal("Graz is closed this week.", again.Inputs[0].Error);
         Assert.Equal(refused ? "Graz is closed." : null, again.Error);
         Assert.Equal(["GRZ", "VIE"], server.Answers.Select(answers => answers.Answers[0].Value));
+    }
+
+    // Answered on the web before the machine could ask, as the answer to the report that says the run waits: the run
+    // starts with those values, and no question is left open at the machine.
+    [Fact]
+    public async Task AnswersOnTheWebBeforeTheMachineAsksLeaveNoQuestion()
+    {
+        ScriptedMachineConsole console = new();
+        ScriptedAgentServer server = new()
+        {
+            AnswerRunReports = (_, token) => new AgentRunReportResult(token, "resume", null, Values: new Dictionary<string, string> { ["Office"] = "GRZ" }),
+        };
+
+        RunResult result = await RunAsync(server, console);
+
+        Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Empty(console.Questions);
+        Assert.Empty(server.Answers);
+        Assert.Equal("GRZ", Assert.Single(_toolRunner.Options).Environment!["DDT_VAR_Office"]);
+        Assert.Contains("The inputs were answered on the web, and the run starts.", _lines.ToString(), StringComparison.Ordinal);
     }
 
     private Task<RunResult> RunAsync(ScriptedAgentServer server, ScriptedMachineConsole console)

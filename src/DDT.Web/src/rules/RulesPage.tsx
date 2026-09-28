@@ -79,7 +79,11 @@ export function RulesPage() {
   // A rule named in the address, such as from a machine role's page, opens once the list is there.
   const [linked, setLinked] = useState(search.rule ?? null);
   const [deleting, setDeleting] = useState<RuleView | null>(null);
-  const [moveProblem, setMoveProblem] = useState<string | null>(null);
+  // Why the last move did not happen as it was made: someone changed the rules meanwhile, or it failed.
+  const [moveProblem, setMoveProblem] = useState<{
+    text: string;
+    tone: "attention" | "fail";
+  } | null>(null);
 
   const list = rules.data ?? [];
   const roleList = roles.data ?? [];
@@ -130,13 +134,14 @@ export function RulesPage() {
       queryClient.setQueryData(rulesQuery.queryKey, current ?? context?.before);
 
       if (current !== null) {
-        setMoveProblem(
-          t`Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there.`,
-        );
+        setMoveProblem({
+          text: t`Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there.`,
+          tone: "attention",
+        });
       } else {
         const message = error.message;
 
-        setMoveProblem(t`The rule could not be moved: ${message}`);
+        setMoveProblem({ text: t`The rule could not be moved: ${message}`, tone: "fail" });
       }
     },
   });
@@ -229,7 +234,7 @@ export function RulesPage() {
         </Notice>
       ) : null}
 
-      {moveProblem !== null ? <Notice tone="attention">{moveProblem}</Notice> : null}
+      {moveProblem !== null ? <Notice tone={moveProblem.tone}>{moveProblem.text}</Notice> : null}
 
       {rules.isPending ? (
         <Panel>

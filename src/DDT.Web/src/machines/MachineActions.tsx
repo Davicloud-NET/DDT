@@ -27,6 +27,8 @@ import { ConfirmDialog } from "@/ui/Dialog";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Notice } from "@/ui/Notice";
 
+import { InputsDialog } from "@/inputs/InputsDialog";
+
 import { AssignDialog } from "./AssignDialog";
 
 // The server refuses an assignment while the machine deploys, and for good in these states.
@@ -239,6 +241,44 @@ function ApprovalConfirm({
   // From the machine as the list has it now, which may have registered again since the plan was made.
   const risk = plan === null ? null : secureBootRisk(machine, plan.sequence);
   const label = machineLabel(machine);
+
+  // A sequence that asks something on the web asks it with the approval that runs it.
+  if (plan !== null && plan.inputs.length > 0) {
+    return (
+      <InputsDialog
+        title={<Trans>Approve {label}?</Trans>}
+        inputs={plan.inputs}
+        defaults={plan.defaults}
+        confirmLabel={plan.confirmLabel}
+        isBusy={actions.approveWithPlan.isPending}
+        error={actions.approveWithPlan.error}
+        isConfirmDisabled={risk?.required === true && !allowMismatch}
+        onClose={() => {
+          actions.setApproveOn(null);
+          actions.approveWithPlan.reset();
+          setAllowMismatch(false);
+        }}
+        onSubmit={(answers) => {
+          actions.approveWithPlan.mutate({
+            id: machine.id,
+            plan,
+            allowSecureBootMismatch: risk !== null && allowMismatch,
+            answers,
+          });
+        }}
+      >
+        <p>{plan.consequence}</p>
+        {risk !== null ? (
+          <>
+            <p>{risk.warning}</p>
+            <Checkbox isSelected={allowMismatch} onChange={setAllowMismatch}>
+              {risk.allowLabel}
+            </Checkbox>
+          </>
+        ) : null}
+      </InputsDialog>
+    );
+  }
 
   return (
     <ConfirmDialog

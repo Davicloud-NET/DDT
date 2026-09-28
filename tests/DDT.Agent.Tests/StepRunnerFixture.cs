@@ -24,19 +24,21 @@ internal sealed class StepRunnerFixture : IDisposable
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
     // secureBootEnabled and trustedUefiCas are what the firmware says; allowSecureBootMismatch what the run was allowed.
+    // variables are the sequence's.
     public StepRunnerFixture(
         IReadOnlyList<SequenceStep> steps,
         IReadOnlyList<AgentRunImage>? images = null,
         IReadOnlyList<AgentRunPackage>? packages = null,
         bool? secureBootEnabled = null,
         bool allowSecureBootMismatch = false,
-        UefiCa? trustedUefiCas = null)
+        UefiCa? trustedUefiCas = null,
+        IReadOnlyList<VariableDeclaration>? variables = null)
     {
         AgentRun run = new(
             RunId,
             DeploymentState.Running,
             "Test sequence",
-            new SequenceDefinition(SequenceDefinition.CurrentVersion, steps),
+            new SequenceDefinition(SequenceDefinition.CurrentVersion, steps) { Variables = variables },
             images ?? [],
             packages ?? [],
             null,
@@ -105,11 +107,18 @@ internal sealed class StepRunnerFixture : IDisposable
     public AgentStepRunner Steps =>
         new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed, StepAccounts, TokenRejections.Add, Log, Time);
 
-    public StepContext Context(SequencePhase phase = SequencePhase.WindowsPE, IReadOnlyDictionary<string, string>? variables = null) =>
+    // variables are what steps output so far, values the run's values, which the machine carries.
+    public StepContext Context(
+        SequencePhase phase = SequencePhase.WindowsPE,
+        IReadOnlyDictionary<string, string>? variables = null,
+        IReadOnlyDictionary<string, string>? values = null) =>
         new(
             RunId,
             phase,
-            new MachineVariables("Dell Inc.", "Latitude 5440", "SN-1", "4c4c4544-0042-3510-8052-b4c04f4d3232", ["00155D010203"], "PC-042", phase),
+            new MachineVariables("Dell Inc.", "Latitude 5440", "SN-1", "4c4c4544-0042-3510-8052-b4c04f4d3232", ["00155D010203"], "PC-042", phase)
+            {
+                Variables = values,
+            },
             variables ?? new Dictionary<string, string>(),
             Progress);
 

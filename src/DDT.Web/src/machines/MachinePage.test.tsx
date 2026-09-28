@@ -710,7 +710,7 @@ describe("MachinePage", () => {
     expect(await screen.findByText("No runs yet")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Assign a sequence above, or add an assignment rule for its model under Deployment, Assignment rules.",
+        "Assign a sequence above, or add a rule that chooses one for machines like it under Deployment, Rules.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "Install Windows" })).toBeNull();

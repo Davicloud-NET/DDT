@@ -21,12 +21,13 @@ public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState 
     }
 
     // The answer file holds passwords. It may be there once its step started, even if the step never finished: a step
-    // the engine found interrupted is Failed by then.
+    // the engine found interrupted is Failed by then. The state has an entry per node of the tree, so the step may sit
+    // inside a group or an IF.
     public static void DeleteAnswerFile(SequenceState state, string windowsRoot, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        bool started = state.Definition.Steps
+        bool started = SequenceTree.Nodes(state.Definition)
             .Zip(state.Steps)
             .Any(pair => pair.First is WriteUnattendStep && pair.Second.State is not (StepState.Pending or StepState.Skipped));
 

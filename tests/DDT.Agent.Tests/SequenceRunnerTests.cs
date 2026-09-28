@@ -288,6 +288,58 @@ public sealed class SequenceRunnerTests : IDisposable
         Assert.Contains("partition 0", _tools.Calls);
     }
 
+    // Which branch a run takes it finds out only as it goes, so the image of every branch is checked before anything is
+    // erased, and only the branch taken applies its own.
+    [Fact]
+    public async Task ChecksTheImageOfEveryBranchBeforeErasing()
+    {
+        TestImage enterprise = new();
+        AgentRun run = ImagePerModel(enterprise, 10_000);
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer()).ServeFile(enterprise.Sha256, enterprise.Content);
+
+        RunResult result = await RunAsync(server, run);
+
+        Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Equal([$"head-file {_image.Sha256} session-0", $"head-file {enterprise.Sha256} session-0", "run-report Running session-0"], server.Calls.Take(3));
+        Assert.Single(_tools.Calls, call => call.StartsWith("apply", StringComparison.Ordinal));
+        Assert.DoesNotContain(server.Calls, call => call.StartsWith($"open-file {enterprise.Sha256}", StringComparison.Ordinal));
+    }
+
+    // The disk has to hold the path that needs the most, whichever the machine takes.
+    [Fact]
+    public async Task ADiskTooSmallForAnyBranchIsNotErased()
+    {
+        TestImage enterprise = new();
+        AgentRun run = ImagePerModel(enterprise, 300L * 1024 * 1024 * 1024);
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer()).ServeFile(enterprise.Sha256, enterprise.Content);
+
+        RunResult result = await RunAsync(server, run);
+
+        Assert.Equal(new RunResult(RunOutcome.Failed), result);
+        string? error = Assert.Single(server.RunReports).Error;
+        Assert.StartsWith("Disk 0 holds 256 GB, but Install Windows needs 303 GB on the path through it that needs the most, 2 GB to spare included.", error, StringComparison.Ordinal);
+        Assert.DoesNotContain(_tools.Calls, call => call.StartsWith("partition", StringComparison.Ordinal));
+    }
+
+    // An IF on the model applies this build's test image on the dry run's machine, and another image elsewhere.
+    private AgentRun ImagePerModel(TestImage other, long otherInstalledBytes)
+    {
+        ApplyImageStep enterprise = TestRuns.Apply with { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b012"), ImageId = Guid.Parse("0193a4b2-0000-7000-8000-00000000a002") };
+        IfStep byModel = new()
+        {
+            Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b011"),
+            Name = "Image by model",
+            Test = new TestCondition(MachineVariableNames.Model, ConditionOperator.Equals, s_identity.Model!),
+            Then = [TestRuns.Apply],
+            Else = [enterprise],
+        };
+
+        return TestRuns.Run([TestRuns.Partition, byModel, TestRuns.Unattend], _image) with
+        {
+            Images = [_image.RunImage, other.RunImage with { ImageId = enterprise.ImageId, Name = "Windows 11 Enterprise", InstalledBytes = otherInstalledBytes }],
+        };
+    }
+
     private AgentRun LargeRun() => InstallWindows() with
     {
         Images = [_image.RunImage with { SizeBytes = 4608L * 1024 * 1024, InstalledBytes = 20L * 1024 * 1024 * 1024 }],

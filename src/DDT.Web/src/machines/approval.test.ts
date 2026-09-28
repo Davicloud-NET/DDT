@@ -75,7 +75,56 @@ describe("approvalPlan", () => {
         "Approving PC-042 also runs Install Windows on it, which a rule for its MAC address chose. Its disk is not erased.",
       confirmLabel: "Approve and run Install Windows",
       sequence: installWindows,
+      inputs: [],
+      defaults: [],
     });
+  });
+
+  it("asks the inputs of the rule's sequence that are asked on the web, with what they start with", () => {
+    const input = {
+      name: "Department",
+      label: "Department",
+      help: null,
+      kind: "Text" as const,
+      choices: [],
+      default: null,
+      required: true,
+      maxLength: null,
+      account: null,
+    };
+    const defaults = [
+      {
+        name: "Department",
+        value: "Sales",
+        source: "Rule" as const,
+        sourceId: "r1",
+        sourceName: "Berlin office",
+        overridden: false,
+      },
+    ];
+    const plan = approvalPlan(
+      machine,
+      {
+        ...chosen,
+        inputs: [
+          { ...input, askAt: "Both" },
+          { ...input, name: "AssetTag", label: "Asset tag", askAt: "Machine" },
+        ],
+        inputDefaults: defaults,
+      },
+      [installWindows],
+    );
+
+    expect(plan?.inputs).toEqual([input]);
+    expect(plan?.defaults).toEqual(defaults);
+  });
+
+  it("says a rule of the ordered list chose the sequence", () => {
+    expect(
+      approvalPlan(machine, { ...chosen, source: "Rule" }, [installWindows])?.consequence,
+    ).toBe(
+      "Approving PC-042 also runs Install Windows on it, which a rule chose. Its disk is not erased.",
+    );
   });
 
   it("carries the sequence it runs, and none when it only authorizes the machine", () => {

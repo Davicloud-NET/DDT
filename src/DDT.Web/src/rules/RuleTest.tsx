@@ -20,7 +20,7 @@ import {
   ruleNames,
   sequenceResolutionQuery,
   valueLines,
-  valueSourceText,
+  ruleValueSource,
   type MachineSequenceResolution,
   type RuleView,
 } from "./rules";
@@ -168,7 +168,7 @@ function Outcome({
         ) : null}
       </dd>
       {lines.map((line) => {
-        const source = valueSourceText(line.used, rules);
+        const source = ruleValueSource(line.used, rules);
         const value = line.used.value;
 
         return (
@@ -184,7 +184,7 @@ function Outcome({
                 {value === null ? t`A secret, set by ${source}` : t`${value}, from ${source}`}
               </span>
               {line.overridden.map((other, index) => {
-                const also = valueSourceText(other, rules);
+                const also = ruleValueSource(other, rules);
 
                 return (
                   <span key={index} className="type-small text-muted">

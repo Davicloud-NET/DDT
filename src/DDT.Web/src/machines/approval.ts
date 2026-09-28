@@ -4,10 +4,11 @@
 
 import { plural, t } from "@lingui/core/macro";
 
+import { webInputs, type AskedInput } from "@/inputs/inputs";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
-
 import { isRuleChoice, ruleChoiceWords, type MachineSequenceResolution } from "@/rules/rules";
 import type { SequenceSummary } from "@/sequences/sequences";
+import type { ResolvedValue } from "@/values/values";
 
 // What approving a waiting machine does when a rule chose its sequence.
 export interface ApprovalPlan {
@@ -18,6 +19,10 @@ export interface ApprovalPlan {
   confirmLabel: string;
   // The sequence the approval runs, for what the dialog says of it as the machine changes; null when it runs none.
   sequence: SequenceSummary | null;
+  // The inputs of that sequence asked on the web, which the approval sends answers to, and what their fields start
+  // with for this machine.
+  inputs: AskedInput[];
+  defaults: ResolvedValue[];
 }
 
 // Null when the approval runs nothing and needs no confirmation: no rule chooses a sequence, or someone signed
@@ -44,6 +49,8 @@ export function approvalPlan(
     consequence,
     confirmLabel: t`Approve without a sequence`,
     sequence: null,
+    inputs: [],
+    defaults: [],
   });
 
   if (resolution.problemCount > 0) {
@@ -82,5 +89,7 @@ export function approvalPlan(
     consequence: `${runs}${effects}`,
     confirmLabel: t`Approve and run ${name}`,
     sequence: sequence ?? null,
+    inputs: webInputs(resolution.inputs),
+    defaults: resolution.inputDefaults ?? [],
   };
 }

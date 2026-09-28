@@ -3,15 +3,20 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { MessageDescriptor } from "@lingui/core";
-import { msg } from "@lingui/core/macro";
+import { msg, t } from "@lingui/core/macro";
 
-import type {
-  DeploymentSource,
-  DeploymentState,
-  DeploymentStepView,
+import {
+  isWaiting,
+  type DeploymentSource,
+  type DeploymentState,
+  type DeploymentStepView,
+  type DeploymentSummary,
 } from "@/deployments/deployments";
+import { nodeTitle } from "@/sequences/flow/flowKeyboard";
 import type { StepState } from "@/sequences/sequences";
 import type { StateTone } from "@/ui/StateTag";
+
+import type { PathNode, PathState } from "./runPath";
 
 // How the run pages show a run and its steps: the words and tones of their states, and the phases of the rail.
 
@@ -47,6 +52,57 @@ export const stepStateLabel: Record<StepState, MessageDescriptor> = {
   Skipped: msg`Skipped`,
 };
 
+// A node of a run's path: its state as its step has it, paused where a Pause step holds the run, and not taken in a
+// branch the run did not go along.
+export const pathStateTone: Record<PathState, StateTone> = {
+  waiting: "idle",
+  running: "run",
+  paused: "attention",
+  done: "ok",
+  failed: "fail",
+  skipped: "retired",
+  notTaken: "retired",
+};
+
+export const pathStateLabel: Record<PathState, MessageDescriptor> = {
+  waiting: msg`Not started`,
+  running: msg`Running`,
+  paused: msg`Paused`,
+  done: msg`Done`,
+  failed: msg`Failed`,
+  skipped: msg`Skipped`,
+  notTaken: msg`Not taken`,
+};
+
+// Where a node sits: its containers, outermost first, each with the branch of an IF, such as "If: Is it a Latitude?,
+// Then".
+export function crumbText(ancestors: PathNode["ancestors"]): string {
+  return ancestors
+    .map(({ node, branch }) => {
+      const title = nodeTitle(node);
+
+      return branch === "then" ? t`${title}, Then` : branch === "else" ? t`${title}, Else` : title;
+    })
+    .join(", ");
+}
+
+// The tag of a run: its state, unless it waits for someone, for answers to its inputs or at a pause.
+export function runTag(run: DeploymentSummary): { tone: StateTone; label: MessageDescriptor } {
+  if (isWaiting(run)) {
+    return {
+      tone: "attention",
+      label:
+        run.activity === "WaitingForInput"
+          ? msg`Needs answers`
+          : run.activity === "Paused"
+            ? msg`Paused`
+            : msg`Needs someone`,
+    };
+  }
+
+  return { tone: runStateTone[run.state], label: runStateLabel[run.state] };
+}
+
 export const runSourceLabel: Record<DeploymentSource, MessageDescriptor> = {
   Web: msg`Assigned on the web`,
   Rule: msg`Chosen by a rule, approved on the web`,
@@ -55,7 +111,7 @@ export const runSourceLabel: Record<DeploymentSource, MessageDescriptor> = {
 
 // Consecutive steps in the same phase, for the labels above the rail. A run that stays in one phase needs none.
 export function runPhases(
-  steps: readonly DeploymentStepView[],
+  steps: readonly Pick<DeploymentStepView, "index" | "phase">[],
 ): { phase: DeploymentStepView["phase"]; steps: number }[] {
   const phases: { phase: DeploymentStepView["phase"]; steps: number }[] = [];
 

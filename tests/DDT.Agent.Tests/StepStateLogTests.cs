@@ -147,6 +147,62 @@ public sealed class StepStateLogTests
         Assert.Equal([(Guid?)null, s_tool.Id, running], server.SentLines.Select(line => line.StepId));
     }
 
+    // The engine walks a tree and the log follows the states it saves: the branch an IF took and why, each time through
+    // a repeat, a repeat that stops at its limit, a group that failed and lets the run go on, and a step whose own
+    // condition did not hold. The step on the branch not taken and the one after the failure inside the group pass in
+    // silence, and so does everything that ran.
+    [Fact]
+    public async Task TellsWhatATreesRunDecided()
+    {
+        SequenceState start = SequenceStates.Start(Guid.NewGuid(), TestTree.Definition);
+        StepStateLog steps = new(_log, start, s_machine);
+        TestTree.Runner runner = new();
+
+        SequenceRunResult result = await new SequenceEngine(runner, new TestTree.Store(steps.Saved), new Progress<StepPercent>())
+            .RunAsync(start, s_machine, TestContext.Current.CancellationToken);
+
+        Assert.Equal(SequenceOutcome.Completed, result.Outcome);
+        Assert.Equal(
+            [
+                "INFO  IF Pick the image took Then: Model contains \"Latitude\", and the machine reports \"Latitude 5440\".",
+                "INFO  Repeat Until the tool works runs its steps, at most 3 times.",
+                "INFO  Repeat Until the tool works runs its steps again (2 of at most 3 times), because its condition to stop did not " +
+                    "hold: LastExitCode is \"0\", and the run's value is \"1\".",
+                "INFO  Repeat Try twice runs its steps, at most 2 times.",
+                "INFO  Repeat Try twice runs its steps again (2 of at most 2 times), because its condition to stop did not hold: " +
+                    "LastExitCode is \"9\", and the run's value is \"0\".",
+                "WARN  Repeat Try twice ran 2 times, the most it may, and its condition to stop did not hold: LastExitCode is \"9\", " +
+                    "and the run's value is \"0\". The run goes on, because the repeat lets it go on at its limit.",
+                "ERROR Group Optional tools failed: The tool failed. The run goes on after it, because \"Go on when this step fails\" is on for it.",
+                "INFO  Step Only on an OptiPlex was skipped, because this condition did not hold: Model starts with \"OptiPlex\", and " +
+                    "the machine reports \"Latitude 5440\".",
+            ],
+            Lines());
+        Assert.Equal([TestTree.OnLatitude.Id, TestTree.UntilItWorks.Id, TestTree.UntilItWorks.Id, TestTree.Twice.Id, TestTree.Twice.Id, TestTree.Failing.Id], runner.Ran);
+    }
+
+    // After a restart the log goes on from the state found, and says nothing twice.
+    [Fact]
+    public async Task SaysNothingOfATreesDecisionsBeforeTheRunWentOn()
+    {
+        SequenceState start = SequenceStates.Start(Guid.NewGuid(), TestTree.Definition);
+        List<SequenceState> saved = [];
+        await new SequenceEngine(new TestTree.Runner(), new TestTree.Store(saved.Add), new Progress<StepPercent>())
+            .RunAsync(start, s_machine, TestContext.Current.CancellationToken);
+
+        // Gone on from the state saved while the tool ran for the second time.
+        SequenceState resumed = saved.First(state => state.Steps.Any(step => step.StepId == TestTree.UntilItWorks.Id && step is { State: StepState.Running, Pass: 2 }));
+        StepStateLog steps = new(_log, resumed, s_machine);
+
+        foreach (SequenceState state in saved.SkipWhile(state => !ReferenceEquals(state, resumed)))
+        {
+            steps.Saved(state);
+        }
+
+        Assert.DoesNotContain(Lines(), line => line.Contains("Pick the image", StringComparison.Ordinal) || line.Contains("Until the tool works", StringComparison.Ordinal));
+        Assert.Contains(Lines(), line => line.StartsWith("WARN  Repeat Try twice ran 2 times", StringComparison.Ordinal));
+    }
+
     private static RunScriptStep Script(string id, string name) => new()
     {
         Id = Guid.Parse(id),

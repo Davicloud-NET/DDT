@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts;
 using DDT.Contracts.Sequences;
+using DDT.Core.Sequences;
 using DDT.Server.Sequences;
 using Xunit;
 
@@ -114,7 +115,9 @@ public sealed class SequenceFixtureTests
     }
 
     // Every kind of node, nested (an IF in a repeat in a group), every kind of condition and operator, the members of
-    // version 3 on the kinds before it, and the sequence's variables and inputs of every kind.
+    // version 3 on the kinds before it, and the sequence's variables and inputs of every kind. The document runs, so an
+    // editor opens it without problems. A sequence either installs Windows or writes a raw disk image, so the steps of the
+    // latter are in every-step.sequence.json alone.
     [Fact]
     public async Task TheWebFixtureHoldsEveryNode()
     {
@@ -141,6 +144,7 @@ public sealed class SequenceFixtureTests
                     Interpreter = ScriptInterpreter.PowerShell,
                     Script = "exit 0",
                     RunAs = new AccountReference(null, "Installer"),
+                    Shares = [new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null))],
                 },
             ],
             Else = [new SetVariableStep { Id = StepId(8), Name = "Office for the rest", Variable = "Office", Value = "{{Office|upper}}" }],
@@ -159,10 +163,7 @@ public sealed class SequenceFixtureTests
                 {
                     Id = StepId(9),
                     Name = "Restart",
-                    When = new AllCondition
-                    {
-                        Parts = [.. Enum.GetValues<ConditionOperator>().Select(op => new TestCondition(MachineVariableNames.Model, op, "Latitude 7440"))],
-                    },
+                    When = new AllCondition { Parts = [.. Enum.GetValues<ConditionOperator>().Select(Fitting)] },
                 },
             ],
         };
@@ -184,15 +185,8 @@ public sealed class SequenceFixtureTests
                 },
             },
             new WriteUnattendStep { Id = StepId(3), Name = "Answer file" },
-            new GroupStep
-            {
-                Id = StepId(4),
-                Name = "Configure",
-                Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
-                ContinueOnError = true,
-                Shares = [new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null))],
-                Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
-            },
+
+            // The join comes before the group, so the repeat in it runs in Windows throughout.
             new JoinDomainStep
             {
                 Id = StepId(11),
@@ -200,8 +194,14 @@ public sealed class SequenceFixtureTests
                 OrganizationalUnit = "OU={{Office}},DC=corp,DC=example",
                 Account = new AccountReference(null, "JoinAccount"),
             },
-            new WriteRawImageStep { Id = StepId(12), Name = "Write raw", ImageId = s_imageId },
-            new WriteCloudInitSeedStep { Id = StepId(13), Name = "Seed", MetaData = "instance-id: a\n", UserData = "#cloud-config\n" },
+            new GroupStep
+            {
+                Id = StepId(4),
+                Name = "Configure",
+                Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
+                ContinueOnError = true,
+                Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
+            },
         ];
         SequenceDefinition definition = new SequenceDefinition(SequenceDefinition.CurrentVersion, steps)
         {
@@ -259,14 +259,27 @@ public sealed class SequenceFixtureTests
         InputKind[] inputKinds = [.. definition.Inputs!.Select(input => input.Kind).Distinct().Order()];
         InputAsk[] asks = [.. definition.Inputs!.Select(input => input.AskAt).Distinct().Order()];
 
-        Assert.Equal(Kinds(maximumVersion: SequenceDefinition.CurrentVersion), built);
+        Assert.Equal(
+            Kinds(maximumVersion: SequenceDefinition.CurrentVersion).Except([nameof(WriteRawImageStep), nameof(WriteCloudInitSeedStep)]),
+            built);
         Assert.Equal(conditionKinds, conditionsBuilt);
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
         Assert.Equal(SequenceDefinition.CurrentVersion, definition.Version);
+        Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
     }
+
+    // Every operator on a machine fact of a type it takes: numbers are compared as numbers, and only an address is in a
+    // network.
+    private static TestCondition Fitting(ConditionOperator op) => op switch
+    {
+        ConditionOperator.Greater or ConditionOperator.GreaterOrEqual or ConditionOperator.Less or ConditionOperator.LessOrEqual =>
+            new TestCondition(MachineVariableNames.MemoryMegabytes, op, "8192"),
+        ConditionOperator.InSubnet => new TestCondition(MachineVariableNames.IPv4Address, op, "10.0.0.0/24"),
+        _ => new TestCondition(MachineVariableNames.Model, op, "Latitude 7440"),
+    };
 
     // The kinds agents of this version run, by their type's name.
     private static string[] Kinds(int maximumVersion) =>

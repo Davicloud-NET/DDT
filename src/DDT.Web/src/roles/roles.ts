@@ -6,7 +6,7 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { RuleView } from "@/rules/rules";
-import { namedValues, valueRows, type NamedValue, type ValueRow } from "@/values/values";
+import { editedValues, namedValues, type EditedValue, type NamedValue } from "@/values/values";
 
 // A machine role, such as "Kiosk" or "Finance laptop": values that rules give machines together. Not a user role,
 // which says what a person may do. ruleCount is how many rules give it.
@@ -78,13 +78,13 @@ export function rulesGiving(rules: readonly RuleView[], roleId: string): RuleVie
 export interface RoleEdit {
   name: string;
   description: string;
-  values: ValueRow[];
+  values: EditedValue[];
 }
 
 export function roleEditOf(role: MachineRoleView | null): RoleEdit {
   return role === null
     ? { name: "", description: "", values: [] }
-    : { name: role.name, description: role.description ?? "", values: valueRows(role.values) };
+    : { name: role.name, description: role.description ?? "", values: editedValues(role.values) };
 }
 
 export function roleRequestOf(revision: number, edit: RoleEdit): SaveMachineRoleRequest {

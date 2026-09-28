@@ -10,23 +10,27 @@ import {
   assignedBy,
   currentStepLabel,
   isSilentActivity,
+  isWaiting,
+  type DeploymentStepView,
   type DeploymentSummary,
   type DeploymentView,
 } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { formatBytes, formatDuration } from "@/lib/format";
-import { railFromSteps, railFromSummary, railStepText } from "@/machines/machineView";
+import { railFromPath, railFromSummary, railStepText } from "@/machines/machineView";
 import { phaseLabel, stepKindLabel } from "@/sequences/steps";
 import { Panel } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 import { SequenceRail, type RailStep } from "@/ui/SequenceRail";
 import { StateTag } from "@/ui/StateTag";
 
-import { runPercent, secureBootAllowance, stepDuration } from "./runs";
-import { runPhases, runStateLabel, runStateTone } from "./runView";
+import { pathPercent, reachedCount, runPath, type PathNode } from "./runPath";
+import { secureBootAllowance, stepDuration } from "./runs";
+import { runPhases, runTag } from "./runView";
 
 // Where a run is and for how long: its state, the step it is on with that step's percentage in large type, and
-// the rail of every step with the phases they run in.
+// the rail of the steps on its path with the phases they run in. A run of a tree leaves out the steps of the branches
+// it did not take, and counts the steps of its path.
 export function RunPanel({
   run,
   view,
@@ -42,12 +46,19 @@ export function RunPanel({
 }) {
   const { i18n } = useLingui();
   const locale = formattingLocale();
-  const steps = [...(view?.steps ?? [])].sort((a, b) => a.index - b.index);
+  const path =
+    view === null || view.steps.length === 0
+      ? null
+      : runPath(view.definition, view.steps, {
+          activity: run.activity,
+          pause: view.pause ?? null,
+        });
+  const leaves = path?.leaves ?? [];
   const rail: RailStep[] =
-    steps.length > 0
-      ? railFromSteps(steps).map((step, index) => ({ ...step, meta: stepMeta(steps[index], now) }))
+    path !== null && leaves.length > 0
+      ? railFromPath(path).map((step, index) => ({ ...step, meta: leafMeta(leaves[index], now) }))
       : railFromSummary(run);
-  const phases = runPhases(steps).map((phase) => ({
+  const phases = runPhases(phasesOf(leaves)).map((phase) => ({
     label:
       phase.phase === "WindowsPE" ? (
         <Trans>In Windows PE</Trans>
@@ -56,18 +67,27 @@ export function RunPanel({
       ),
     steps: phase.steps,
   }));
-  const running = steps.find((step) => step.state === "Running") ?? null;
+  const current = path?.current ?? null;
+  const running =
+    current?.state === "running" && current.step !== null && current.entry.number !== null
+      ? current
+      : null;
   const artifact =
     running === null
       ? null
-      : (view?.artifacts.find((candidate) => candidate.stepId === running.stepId) ?? null);
+      : (view?.artifacts.find((candidate) => candidate.stepId === running.node.id) ?? null);
+  const waiting = isWaiting(run);
   const activity = activityLabel(run.activity);
   const allowance = view === null ? null : secureBootAllowance(view);
-  const overall = steps.length > 0 ? runPercent(steps) : run.state === "Done" ? 100 : null;
+  const overall = path !== null ? pathPercent(path) : run.state === "Done" ? 100 : null;
   const revision = view?.sequenceRevision ?? null;
   const after = currentStepLabel(run);
   const silentFor = formatDuration(now - Date.parse(lastSeenUtc));
   const assigned = assignedBy(run);
+  const tag = runTag(run);
+  const reached = path === null ? 0 : reachedCount(path);
+  const count = leaves.length;
+  const pausedSince = view?.pause?.sinceUtc ?? current?.step?.startedUtc ?? null;
 
   return (
     <Panel>
@@ -75,11 +95,22 @@ export function RunPanel({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-3">
             <h2 className="type-subtitle">{run.title}</h2>
-            <StateTag tone={runStateTone[run.state]}>{i18n._(runStateLabel[run.state])}</StateTag>
+            <StateTag tone={tag.tone}>{i18n._(tag.label)}</StateTag>
           </span>
-          <span className="type-small text-muted">{runLine(run, revision, now, locale)}</span>
+          <span className="type-small text-muted">
+            {runLine(run, revision, now, locale, pausedSince)}
+          </span>
         </div>
-        {overall !== null && run.state === "Running" ? (
+        {path?.isTree === true && count > 0 ? (
+          <span className="flex items-baseline gap-2 pt-1 type-small text-muted">
+            <Trans>
+              <span className="type-numeral text-ink">
+                {reached} of {count}
+              </span>{" "}
+              steps on this path
+            </Trans>
+          </span>
+        ) : overall !== null && run.state === "Running" ? (
           <span className="flex items-baseline gap-2 pt-1">
             <span className="type-numeral text-ink">{overall}%</span>
             <span className="type-small text-muted">
@@ -91,9 +122,15 @@ export function RunPanel({
 
       {allowance !== null ? <p className="type-small text-attention-text">{allowance}</p> : null}
 
-      {run.state === "Running" ? (
-        running !== null && activity === null ? (
-          <CurrentStep step={running} count={steps.length} artifact={artifact} now={now} />
+      {run.state === "Running" && !waiting ? (
+        running !== null && (activity === null || run.activity === "Step") ? (
+          <CurrentStep
+            step={running}
+            count={count}
+            isTree={path?.isTree === true}
+            artifact={artifact}
+            now={now}
+          />
         ) : (
           <div className="flex flex-col gap-1 py-1">
             <span className="type-heading text-run-text">
@@ -138,7 +175,7 @@ export function RunPanel({
           phases={phases}
           describe={railStepText}
           className="pt-1"
-          showNames={steps.length > 0}
+          showNames={leaves.length > 0}
         />
       ) : view !== null && view.steps.length === 0 ? (
         <p className="type-small text-muted">
@@ -149,36 +186,59 @@ export function RunPanel({
   );
 }
 
+// The phase of each leaf, for the labels above the rail; a leaf the server has not reported yet runs where the one
+// before it does.
+function phasesOf(leaves: readonly PathNode[]): Pick<DeploymentStepView, "index" | "phase">[] {
+  let phase: DeploymentStepView["phase"] = "WindowsPE";
+
+  return leaves.map((leaf, index) => {
+    phase = leaf.step?.phase ?? phase;
+
+    return { index, phase };
+  });
+}
+
 // The step that runs now, with its percentage in large type and the file it works on.
 function CurrentStep({
   step,
   count,
+  isTree,
   artifact,
   now,
 }: {
-  step: DeploymentView["steps"][number];
+  step: PathNode;
+  // The steps on the run's path.
   count: number;
+  isTree: boolean;
   artifact: DeploymentView["artifacts"][number] | null;
   now: number;
 }) {
-  const number = step.index + 1;
-  const phase = phaseLabel(step.phase);
-  const kind = stepKindLabel(step.kind);
+  const reported = step.step;
+  const number = step.entry.number ?? (reported?.index ?? 0) + 1;
+  const phase = phaseLabel(reported?.phase ?? "WindowsPE");
+  const kind = stepKindLabel(step.node.kind);
   const file = artifact?.name ?? null;
   const size = artifact === null ? "" : formatBytes(artifact.sizeBytes);
-  const runningFor =
-    step.startedUtc === null ? null : formatDuration(now - Date.parse(step.startedUtc));
+  const started = reported?.startedUtc ?? null;
+  const runningFor = started === null ? null : formatDuration(now - Date.parse(started));
+  const name = reported?.name ?? step.node.name;
 
   return (
     <div className="flex flex-wrap items-end gap-x-5 gap-y-1 py-1">
-      <span className="type-display text-run-text">{step.percent}%</span>
+      <span className="type-display text-run-text">{reported?.percent ?? 0}%</span>
       <span className="flex min-w-0 flex-col gap-0.5 pb-1">
         <span className="type-small text-muted">
-          <Trans>
-            Step {number} of {count}, {phase}
-          </Trans>
+          {isTree ? (
+            <Trans>
+              Step {number}, {phase}
+            </Trans>
+          ) : (
+            <Trans>
+              Step {number} of {count}, {phase}
+            </Trans>
+          )}
         </span>
-        <span className="type-heading">{step.name}</span>
+        <span className="type-heading">{name}</span>
         <span className="type-small text-ink-2">
           {file === null ? kind : t`${kind}: ${file}, ${size}`}
         </span>
@@ -193,22 +253,38 @@ function CurrentStep({
   );
 }
 
-// The short line under a step's number on the rail: its percentage while it runs, else how long it took.
-function stepMeta(
-  step: DeploymentView["steps"][number] | undefined,
-  now: number,
-): string | undefined {
-  if (step === undefined) {
+// The short line under a step's number on the rail: its percentage while it runs, how long it has been paused, how
+// many times a step in a repeat ran, else how long it took.
+function leafMeta(leaf: PathNode | undefined, now: number): string | undefined {
+  const step = leaf?.step ?? null;
+
+  if (leaf === undefined || step === null) {
     return undefined;
   }
 
-  if (step.state === "Running") {
-    return `${String(step.percent)}%`;
+  switch (leaf.state) {
+    case "running":
+      return `${String(step.percent)}%`;
+    case "paused":
+      return step.startedUtc === null
+        ? undefined
+        : formatDuration(now - Date.parse(step.startedUtc));
+    case "skipped":
+      return t`skipped`;
+    case "done": {
+      const passes = step.pass ?? 0;
+
+      if (passes > 1) {
+        return t`${passes} passes`;
+      }
+
+      const duration = stepDuration(step, now);
+
+      return duration === null ? undefined : formatDuration(duration);
+    }
+    default:
+      return undefined;
   }
-
-  const duration = step.state === "Done" ? stepDuration(step, now) : null;
-
-  return duration === null ? undefined : formatDuration(duration);
 }
 
 // "Revision 14, started 09:41, running for 12 min", or how the run ended.
@@ -217,6 +293,7 @@ function runLine(
   revision: number | null,
   now: number,
   locale: string,
+  pausedSince: string | null,
 ): string {
   const parts: string[] = [];
 
@@ -232,8 +309,13 @@ function runLine(
     parts.push(t`started ${started}`);
 
     if (run.finishedUtc === null) {
-      const running = formatDuration(now - Date.parse(run.startedUtc));
-      parts.push(t`running for ${running}`);
+      if (isWaiting(run) && run.activity === "Paused" && pausedSince !== null) {
+        const paused = formatDuration(now - Date.parse(pausedSince));
+        parts.push(t`paused for ${paused}`);
+      } else {
+        const running = formatDuration(now - Date.parse(run.startedUtc));
+        parts.push(t`running for ${running}`);
+      }
     } else {
       const took = formatDuration(Date.parse(run.finishedUtc) - Date.parse(run.startedUtc));
       parts.push(t`took ${took}`);

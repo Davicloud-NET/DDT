@@ -64,6 +64,19 @@
       "rebootAfter": false
     },
     {
+      "kind": "joinDomain",
+      "organizationalUnit": "OU={{Office}},DC=corp,DC=example",
+      "account": {
+        "accountId": null,
+        "input": "JoinAccount"
+      },
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Join",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
       "kind": "group",
       "steps": [
         {
@@ -110,7 +123,16 @@
                   "name": "Install the dock's firmware",
                   "conditions": [],
                   "continueOnError": false,
-                  "rebootAfter": false
+                  "rebootAfter": false,
+                  "shares": [
+                    {
+                      "path": "\\\\files.corp.example\\drivers",
+                      "account": {
+                        "accountId": "0193a4b2-0000-7000-8000-0000000000c1",
+                        "input": null
+                      }
+                    }
+                  ]
                 }
               ],
               "else": [
@@ -203,33 +225,33 @@
                   },
                   {
                     "kind": "test",
-                    "variable": "Model",
+                    "variable": "MemoryMegabytes",
                     "operator": "Greater",
-                    "value": "Latitude 7440"
+                    "value": "8192"
                   },
                   {
                     "kind": "test",
-                    "variable": "Model",
+                    "variable": "MemoryMegabytes",
                     "operator": "GreaterOrEqual",
-                    "value": "Latitude 7440"
+                    "value": "8192"
                   },
                   {
                     "kind": "test",
-                    "variable": "Model",
+                    "variable": "MemoryMegabytes",
                     "operator": "Less",
-                    "value": "Latitude 7440"
+                    "value": "8192"
                   },
                   {
                     "kind": "test",
-                    "variable": "Model",
+                    "variable": "MemoryMegabytes",
                     "operator": "LessOrEqual",
-                    "value": "Latitude 7440"
+                    "value": "8192"
                   },
                   {
                     "kind": "test",
-                    "variable": "Model",
+                    "variable": "IPv4Address",
                     "operator": "InSubnet",
-                    "value": "Latitude 7440"
+                    "value": "10.0.0.0/24"
                   }
                 ]
               }
@@ -270,48 +292,6 @@
         }
       ],
       "continueOnError": true,
-      "rebootAfter": false,
-      "shares": [
-        {
-          "path": "\\\\files.corp.example\\drivers",
-          "account": {
-            "accountId": "0193a4b2-0000-7000-8000-0000000000c1",
-            "input": null
-          }
-        }
-      ]
-    },
-    {
-      "kind": "joinDomain",
-      "organizationalUnit": "OU={{Office}},DC=corp,DC=example",
-      "account": {
-        "accountId": null,
-        "input": "JoinAccount"
-      },
-      "id": "00000000-0000-4000-8000-000000000012",
-      "name": "Join",
-      "conditions": [],
-      "continueOnError": false,
-      "rebootAfter": false
-    },
-    {
-      "kind": "writeRawImage",
-      "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
-      "id": "00000000-0000-4000-8000-000000000013",
-      "name": "Write raw",
-      "conditions": [],
-      "continueOnError": false,
-      "rebootAfter": false
-    },
-    {
-      "kind": "writeCloudInitSeed",
-      "metaData": "instance-id: a\n",
-      "userData": "#cloud-config\n",
-      "networkConfig": null,
-      "id": "00000000-0000-4000-8000-000000000014",
-      "name": "Seed",
-      "conditions": [],
-      "continueOnError": false,
       "rebootAfter": false
     }
   ],

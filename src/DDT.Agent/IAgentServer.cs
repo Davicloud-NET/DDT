@@ -37,6 +37,10 @@ public interface IAgentServer
 
     Task<AgentRunReportResult> ReportRunAsync(Guid machineId, string token, Guid runId, AgentRunReport report, CancellationToken cancellationToken);
 
+    // The answers given at the machine to the inputs a run waits for at its start. The answer to an Account input holds
+    // a password.
+    Task<AgentAnswersResult> AnswerRunInputsAsync(Guid machineId, string token, Guid runId, AgentInputAnswers answers, CancellationToken cancellationToken);
+
     // The length of one of the run's images or packages, or null when the server did not say.
     Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken);
 

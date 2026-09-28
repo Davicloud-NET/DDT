@@ -14,6 +14,9 @@ import {
   type AssignSequenceRequest,
   type DeploymentOptionsView,
 } from "@/deployments/deployments";
+import { answerErrors, hasAnswerErrors, webInputs } from "@/inputs/inputs";
+import { InputsForm } from "@/inputs/InputsForm";
+import { useAnswers } from "@/inputs/useAnswers";
 import { ApiError } from "@/lib/api";
 import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
@@ -25,7 +28,7 @@ import {
 } from "@/machines/machines";
 import { secureBootRisk } from "@/machines/secureBoot";
 import { isRuleChoice, resolutionText, sequenceResolutionQuery } from "@/rules/rules";
-import { canRun, sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
+import { canRun, sequenceQuery, sequencesQuery, type SequenceSummary } from "@/sequences/sequences";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import { Dialog } from "@/ui/Dialog";
@@ -34,8 +37,10 @@ import { ListBoxItem, Select } from "@/ui/Select";
 import { TextField } from "@/ui/TextField";
 
 // Assigns a task sequence and says what that does to this machine before anything is sent: whether its disk is
-// erased, and for a waiting machine whether the assignment also authorizes it. The answer is the machine as the
-// server stored it, which replaces the one in the list; nothing is read again.
+// erased, and for a waiting machine whether the assignment also authorizes it. It asks the sequence's inputs that are
+// asked on the web, starting from what the server works out for this machine where the sequence is the one the
+// machine would get. The answer is the machine as the server stored it, which replaces the one in the list; nothing
+// is read again.
 export function AssignDialog({
   machine,
   onClose,
@@ -78,6 +83,18 @@ export function AssignDialog({
     runnable.find((candidate) => candidate.id === ruleChoice?.sequenceId) ??
     runnable[0] ??
     null;
+  // The inputs of the sequence the machine would get come with what it would get; another sequence's are read from it.
+  const resolved = sequence !== null && sequence.id === resolution.data?.sequenceId;
+  const document = useQuery({
+    ...sequenceQuery(sequence?.id ?? ""),
+    enabled: sequence !== null && !resolution.isPending && !resolved,
+  });
+  const inputs = webInputs(
+    resolved ? resolution.data?.inputs : (document.data?.definition.inputs ?? null),
+  );
+  const defaults = resolved ? (resolution.data?.inputDefaults ?? []) : [];
+  const inputsKnown = resolved || document.isSuccess || document.isError;
+  const answers = useAnswers(inputs, defaults);
   const erases = sequence?.erasesDisk === true;
   const sequenceName = sequence?.name ?? "";
   const risk = secureBootRisk(machine, sequence);
@@ -90,7 +107,11 @@ export function AssignDialog({
       ? (assign.error.problem?.errors?.computerName?.[0] ?? null)
       : null;
   const fieldProblem = nameProblem ?? serverNameProblem;
-  const error = assign.isError && serverNameProblem === null ? assign.error.message : null;
+  const refused = assign.error instanceof ApiError ? assign.error : null;
+  const error =
+    assign.isError && serverNameProblem === null && !hasAnswerErrors(refused)
+      ? assign.error.message
+      : null;
   // Without the settings the dialog cannot say what the assignment does, so it does not offer it.
   const canSubmit =
     sequence !== null &&
@@ -98,7 +119,8 @@ export function AssignDialog({
     !(risk?.required === true && !allowed) &&
     !assign.isPending &&
     options.data !== undefined &&
-    !sequences.isPending;
+    !sequences.isPending &&
+    inputsKnown;
 
   function submit() {
     if (sequence === null) {
@@ -107,16 +129,21 @@ export function AssignDialog({
 
     const name = computerName.trim();
 
-    if (nameRequired && name === "") {
-      setNameProblem(nameRequiredText(sequence));
+    const missingName = nameRequired && name === "";
+
+    setNameProblem(missingName ? nameRequiredText(sequence) : null);
+
+    const given = answers.collect();
+
+    if (missingName || given === null) {
       return;
     }
 
-    setNameProblem(null);
     assign.mutate({
       sequenceId: sequence.id,
       computerName: name === "" ? null : name,
       ...(allowed ? { allowSecureBootMismatch: true } : {}),
+      ...(given.length > 0 ? { answers: given } : {}),
     });
   }
 
@@ -127,6 +154,7 @@ export function AssignDialog({
       isOpen
       onOpenChange={(open) => {
         if (!open) {
+          answers.forgetPasswords();
           onClose();
         }
       }}
@@ -135,7 +163,14 @@ export function AssignDialog({
       width="lg"
       footer={
         <>
-          <Button variant="secondary" isDisabled={assign.isPending} onPress={onClose}>
+          <Button
+            variant="secondary"
+            isDisabled={assign.isPending}
+            onPress={() => {
+              answers.forgetPasswords();
+              onClose();
+            }}
+          >
             <Trans>Cancel</Trans>
           </Button>
           <Button type="submit" form={formId} variant="primary" isDisabled={!canSubmit}>
@@ -218,6 +253,31 @@ export function AssignDialog({
           errorMessage={fieldProblem}
           hint={`${nameHint(machine, sequence)} ${translate`Up to 15 letters A to Z, digits and hyphens.`}`}
         />
+
+        {inputs.length > 0 ? (
+          <section
+            aria-label={translate`Answers for ${sequenceName}`}
+            className="flex flex-col gap-3"
+          >
+            <h3 className="type-label text-ink">
+              <Trans>What {sequenceName} asks before it runs</Trans>
+            </h3>
+            <InputsForm
+              inputs={inputs}
+              answers={answers}
+              defaults={defaults}
+              errors={answerErrors(refused)}
+            />
+          </section>
+        ) : null}
+        {document.isError ? (
+          <Notice tone="fail">
+            <Trans>
+              What {sequenceName} asks before it runs could not be loaded, so it is assigned without
+              answers.
+            </Trans>
+          </Notice>
+        ) : null}
 
         <div className="flex flex-col gap-2">
           {sequence !== null ? (

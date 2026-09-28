@@ -13,7 +13,7 @@ import { TextSetting } from "@/sequences/fields";
 import { fieldFindings, type Findings } from "@/sequences/problems";
 import { cx } from "@/ui/cx";
 
-import type { ValueRow } from "./values";
+import type { EditedValue } from "./values";
 
 // The values a rule or a machine role sets: a name in the mono face, such as TimeZone, and its value, a template that
 // may use the machine's facts and other values. Each row's fields are named values[1].name and values[1].value, as
@@ -32,16 +32,16 @@ export function ValuesEditor({
 }: {
   label: ReactNode;
   hint?: ReactNode;
-  rows: readonly ValueRow[];
+  rows: readonly EditedValue[];
   findings: Findings;
-  onChange: (rows: ValueRow[]) => void;
+  onChange: (rows: EditedValue[]) => void;
 }) {
   const { t } = useLingui();
   const locked = useContext(EditorLock);
   const labelId = useId();
   const own = fieldFindings(findings, "values");
 
-  const change = (key: string, patch: Partial<ValueRow>) => {
+  const change = (key: string, patch: Partial<EditedValue>) => {
     onChange(rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
   };
 

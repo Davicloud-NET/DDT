@@ -73,6 +73,34 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "deployment.alreadyHasRun",
     message: "This machine already has a run. Cancel it before assigning another sequence.",
   }),
+  "deployment.answerAskedElsewhere": msg({
+    context: "deployment.answerAskedElsewhere",
+    message: "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}",
+  }),
+  "deployment.answerNoInput": msg({
+    context: "deployment.answerNoInput",
+    message: "An answer names no input. Load the page again.",
+  }),
+  "deployment.answerNotAChoice": msg({
+    context: "deployment.answerNotAChoice",
+    message: "''{value}'' is not one of the choices of {label}.",
+  }),
+  "deployment.answerTooLong": msg({
+    context: "deployment.answerTooLong",
+    message: "{label} takes at most {max} characters.",
+  }),
+  "deployment.answerTwice": msg({
+    context: "deployment.answerTwice",
+    message: "{label} is answered twice. Give one answer.",
+  }),
+  "deployment.answerUnknown": msg({
+    context: "deployment.answerUnknown",
+    message: "The sequence asks nothing called {name}. Load the page again.",
+  }),
+  "deployment.answerYesNo": msg({
+    context: "deployment.answerYesNo",
+    message: "{label} is answered with yes or no.",
+  }),
   "deployment.approveThenChooseDisk": msg({
     context: "deployment.approveThenChooseDisk",
     message: "{sequence} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.",
@@ -80,6 +108,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "deployment.approveThenName": msg({
     context: "deployment.approveThenName",
     message: "{sequence} {use, select, domain {joins the domain} other {names the machine in its cloud-init seed}}, and this machine has no name yet. Approve it without a sequence, then assign the sequence with a computer name.",
+  }),
+  "deployment.approveThenNameValue": msg({
+    context: "deployment.approveThenNameValue",
+    message: "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a sequence, then assign the sequence with a computer name.",
   }),
   "deployment.enterComputerName": msg({
     context: "deployment.enterComputerName",
@@ -1328,6 +1360,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.valueNameReserved": msg({
     context: "sequence.valueNameReserved",
     message: "Names that start with DDT are kept for DDT's own values. Choose another name.",
+  }),
+  "sequence.valueUndefined": msg({
+    context: "sequence.valueUndefined",
+    message: "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.",
   }),
   "sequence.variableNotDeclared": msg({
     context: "sequence.variableNotDeclared",

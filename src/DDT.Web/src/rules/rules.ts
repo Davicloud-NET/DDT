@@ -10,11 +10,11 @@ import { apiDelete, apiErrorFrom, apiFetch, apiGet, apiPost, apiPut } from "@/li
 import { serverText, type ServerArguments } from "@/lib/serverText";
 import type { ConditionNode, InputDeclaration, SequenceProblem } from "@/sequences/sequences";
 import {
+  editedValues,
   namedValues,
-  valueRows,
+  type EditedValue,
   type NamedValue,
   type ResolvedValue,
-  type ValueRow,
 } from "@/values/values";
 
 // Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine, the
@@ -27,10 +27,11 @@ export type SequenceResolutionSource =
 // sign-in. problemCount above zero means the chosen sequence cannot run until it is fixed. explanation is the
 // server's English; resolutionText says it in the person's language.
 //
-// The rest previews what a run of that sequence would start with. matchedRuleIds are the rules that match the
-// machine, top first, whether they chose the sequence or only set values or gave machine roles. values are the values
-// the run would have, each with where it came from; valueProblems would keep the run from starting as things are now,
-// each with the value's or the input's name as its field.
+// The rest previews what a run of that sequence would start with, from servers that send it. matchedRuleIds are the
+// rules that match the machine, top first. values are the values the run would have, each with its source; a run
+// that is running shows the values it started with. inputs are the chosen sequence's inputs, and inputDefaults what
+// their questions start with. valueProblems would keep the run from starting as things are now; a problem's field
+// is the value's or the input's name.
 export interface MachineSequenceResolution {
   source: SequenceResolutionSource;
   sequenceId: string | null;
@@ -307,7 +308,7 @@ export interface RuleEdit {
   enabled: boolean;
   when: ConditionNode | null;
   sequenceId: string | null;
-  values: ValueRow[];
+  values: EditedValue[];
   roleIds: string[];
 }
 
@@ -318,7 +319,7 @@ export function editOf(rule: RuleView): RuleEdit {
     enabled: rule.enabled,
     when: rule.when,
     sequenceId: rule.sequenceId,
-    values: valueRows(rule.values),
+    values: editedValues(rule.values),
     roleIds: rule.roleIds,
   };
 }
@@ -351,7 +352,7 @@ export function requestOf(revision: number, edit: RuleEdit): SaveRuleRequest {
 }
 
 // A value's source inside a sentence, such as "rule 2" or "the machine role Office PC".
-export function valueSourceText(value: ResolvedValue, rules: readonly RuleView[]): string {
+export function ruleValueSource(value: ResolvedValue, rules: readonly RuleView[]): string {
   const name = value.sourceName ?? "";
 
   switch (value.source) {

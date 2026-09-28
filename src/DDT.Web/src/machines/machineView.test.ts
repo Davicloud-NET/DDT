@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeploymentStepView } from "@/deployments/deployments";
-import { deploymentSummary, machineSummary } from "@/test/builders";
+import { deploymentSummary, deploymentView, machineSummary } from "@/test/builders";
 
 import { machinesSearch } from "./machineSearch";
 import {
@@ -14,8 +14,8 @@ import {
   hardwareLine,
   inFilter,
   matchesSearch,
-  railFromSteps,
   railFromSummary,
+  railFromView,
   railLabel,
 } from "./machineView";
 
@@ -192,18 +192,22 @@ function step(
   };
 }
 
-describe("railFromSteps", () => {
-  it("orders the steps and keeps skipped ones", () => {
-    const rail = railFromSteps([
-      step(1, "Apply image", "Running", 30),
-      step(0, "Partition", "Done", 100),
-      step(2, "Join domain", "Skipped", 0),
-    ]);
+describe("railFromView", () => {
+  it("orders the steps of a run without its definition and keeps skipped ones", () => {
+    const rail = railFromView(
+      deploymentView({
+        steps: [
+          step(1, "Apply image", "Running", 30),
+          step(0, "Partition", "Done", 100),
+          step(2, "Join domain", "Skipped", 0),
+        ],
+      }),
+    );
 
     expect(rail).toEqual([
-      { state: "done", name: "Partition" },
-      { state: "running", percent: 30, name: "Apply image" },
-      { state: "skipped", name: "Join domain" },
+      { state: "done", name: "Partition", number: 1 },
+      { state: "running", percent: 30, name: "Apply image", number: 2 },
+      { state: "skipped", name: "Join domain", number: 3 },
     ]);
   });
 });

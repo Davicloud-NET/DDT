@@ -8,6 +8,7 @@ using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
+using DDT.Server.Rules;
 using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,13 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         DeploymentOptions deployment = settings.Current.Deployment;
+        List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        // A disabled rule counts: it names a value on purpose, and may be enabled again.
+        HashSet<string> valueNames = new(
+            [.. ruleValues.Concat(roleValues).SelectMany(RuleDocuments.ReadValues).Select(value => value.Name), .. MachineValues.DeploymentDefaultNames],
+            StringComparer.OrdinalIgnoreCase);
 
         return new SequenceReferences(
             images.ToDictionary(i => i.Id),
@@ -29,6 +37,7 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             !string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
         {
             Accounts = await accounts.FactsAsync(cancellationToken).ConfigureAwait(false),
+            ValueNames = valueNames,
         };
     }
 

@@ -205,7 +205,8 @@ public static class ServerMessages
         "deployment.historyCursor",
         "The cursor is not one this server handed out. Start again from the first page.");
 
-    // The answers to a run's inputs, a run that waits for them or at a pause, and a computer name a run's values give.
+    // The answers to a run's inputs, a computer name a run's values give, and a name a sequence uses that nothing gives a
+    // value.
 
     public static readonly MessageTemplate DeploymentAnswerNoInput = Define(
         "deployment.answerNoInput",
@@ -235,14 +236,14 @@ public static class ServerMessages
         "deployment.answerYesNo",
         "{label} is answered with yes or no.");
 
-    public static readonly MessageTemplate SequenceValueUndefined = Define(
-        "sequence.valueUndefined",
-        "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");
-
     public static readonly MessageTemplate DeploymentApproveThenNameValue = Define(
         "deployment.approveThenNameValue",
         "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a " +
         "sequence, then assign the sequence with a computer name.");
+
+    public static readonly MessageTemplate SequenceValueUndefined = Define(
+        "sequence.valueUndefined",
+        "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");
 
     // Computer names, as the Windows answer file takes them.
 

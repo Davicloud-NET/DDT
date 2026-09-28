@@ -25,6 +25,7 @@ import {
   operator,
   sequenceResolution,
   sequenceSummary,
+  sequenceView,
   viewer,
 } from "@/test/builders";
 import { renderPage, type RenderedPage } from "@/test/renderPage";
@@ -104,11 +105,18 @@ function moreFor(name: string): HTMLElement {
   return screen.getByRole("button", { name: `More for ${name}` });
 }
 
-// The answers the assign dialog reads, plus what the test adds.
+// The answers the assign dialog reads, plus what the test adds. It reads a chosen sequence's inputs from its document,
+// and these ask nothing.
 function assigning(extra: Routes = {}): Routes {
   return {
     "GET /api/sequences": { body: [installWindows] },
     "GET /api/deployments/options": { body: deploymentOptions({ serverUtc: now.toISOString() }) },
+    ...Object.fromEntries(
+      [installWindows, labPcs, linux].map((sequence) => [
+        `GET /api/sequences/${sequence.id}`,
+        { body: sequenceView(sequence, []) },
+      ]),
+    ),
     ...extra,
   };
 }

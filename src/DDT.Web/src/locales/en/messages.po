@@ -523,6 +523,10 @@ msgstr "{label} {operator}"
 msgid "{label} {operator} {value}"
 msgstr "{label} {operator} {value}"
 
+#: src/inputs/InputsForm.tsx
+msgid "{label} <0>(required)</0>"
+msgstr "{label} <0>(required)</0>"
+
 #: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
 msgid "{label} needs an answer before the run can start."
@@ -1318,6 +1322,14 @@ msgstr "A restart step restarts anyway, so it cannot restart again after it."
 msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 
+#: src/machines/approval.ts
+msgid "a rule"
+msgstr "a rule"
+
+#: src/machines/approval.ts
+msgid "A rule"
+msgstr "A rule"
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.tooManyRoles"
 msgid "A rule can give at most {max} machine roles."
@@ -1936,6 +1948,10 @@ msgctxt "stepAccount.tooManyHosts"
 msgid "An account can name at most {max} servers."
 msgstr "An account can name at most {max} servers."
 
+#: src/inputs/InputsForm.tsx
+msgid "An account for this run only, which DDT uses and never shows or hands to a script."
+msgstr "An account for this run only, which DDT uses and never shows or hands to a script."
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "An account in the installed Windows, signed in for the script alone."
@@ -2100,6 +2116,10 @@ msgstr "Answered for this run"
 #: src/settings/NetworkBootPage.tsx
 msgid "Answering machines that netboot"
 msgstr "Answering machines that netboot"
+
+#: src/machines/AssignDialog.tsx
+msgid "Answers for {sequenceName}"
+msgstr "Answers for {sequenceName}"
 
 #: src/rules/RuleDialog.tsx
 msgid "Any of the machine's network adapters, with or without separators."
@@ -2417,6 +2437,7 @@ msgid "By MAC address"
 msgstr "By MAC address"
 
 #: src/account/AccountPage.tsx
+#: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -2587,6 +2608,10 @@ msgstr "Choose Administrator, Operator or Viewer."
 #: src/sequences/builder/AccountSetting.tsx
 msgid "Choose an account"
 msgstr "Choose an account"
+
+#: src/inputs/InputsForm.tsx
+msgid "Choose an answer"
+msgstr "Choose an answer"
 
 #: src/inputs/inputs.ts
 msgid "Choose an answer."
@@ -5159,6 +5184,7 @@ msgstr "New value"
 msgid "no"
 msgstr "no"
 
+#: src/inputs/InputsForm.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "No"
@@ -5972,6 +5998,10 @@ msgstr "Password changed."
 #: src/account/AccountPage.tsx
 msgid "Password changed. The rest of DDT is open to you now."
 msgstr "Password changed. The rest of DDT is open to you now."
+
+#: src/inputs/InputsForm.tsx
+msgid "Password for {label}"
+msgstr "Password for {label}"
 
 #: src/users/UserDialogs.tsx
 msgid "Password for {name}"
@@ -9644,6 +9674,10 @@ msgstr "User is not in role ''{role}''."
 msgid "User name"
 msgstr "User name"
 
+#: src/inputs/InputsForm.tsx
+msgid "User name for {label}"
+msgstr "User name for {label}"
+
 #: src/settings/DirectorySettings.tsx
 msgid "User name, optional"
 msgstr "User name, optional"
@@ -9785,6 +9819,14 @@ msgstr "Was served this certificate."
 #: src/audit/AuditPage.tsx
 msgid "What"
 msgstr "What"
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs"
+msgstr "What {sequenceName} asks before it runs"
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs could not be loaded, so it is assigned without answers."
+msgstr "What {sequenceName} asks before it runs could not be loaded, so it is assigned without answers."
 
 #: src/conditions/ConditionBuilder.tsx
 msgid "What condition {number} tests"
@@ -10010,6 +10052,7 @@ msgstr "Writes the answer file Windows setup reads at its first start. An empty 
 msgid "yes"
 msgstr "yes"
 
+#: src/inputs/InputsForm.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Yes"

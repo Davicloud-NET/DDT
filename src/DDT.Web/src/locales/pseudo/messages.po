@@ -523,6 +523,10 @@ msgstr ""
 msgid "{label} {operator} {value}"
 msgstr ""
 
+#: src/inputs/InputsForm.tsx
+msgid "{label} <0>(required)</0>"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
 msgid "{label} needs an answer before the run can start."
@@ -1318,6 +1322,14 @@ msgstr ""
 msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr ""
 
+#: src/machines/approval.ts
+msgid "a rule"
+msgstr ""
+
+#: src/machines/approval.ts
+msgid "A rule"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.tooManyRoles"
 msgid "A rule can give at most {max} machine roles."
@@ -1936,6 +1948,10 @@ msgctxt "stepAccount.tooManyHosts"
 msgid "An account can name at most {max} servers."
 msgstr ""
 
+#: src/inputs/InputsForm.tsx
+msgid "An account for this run only, which DDT uses and never shows or hands to a script."
+msgstr ""
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr ""
@@ -2099,6 +2115,10 @@ msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Answering machines that netboot"
+msgstr ""
+
+#: src/machines/AssignDialog.tsx
+msgid "Answers for {sequenceName}"
 msgstr ""
 
 #: src/rules/RuleDialog.tsx
@@ -2417,6 +2437,7 @@ msgid "By MAC address"
 msgstr ""
 
 #: src/account/AccountPage.tsx
+#: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -2586,6 +2607,10 @@ msgstr ""
 
 #: src/sequences/builder/AccountSetting.tsx
 msgid "Choose an account"
+msgstr ""
+
+#: src/inputs/InputsForm.tsx
+msgid "Choose an answer"
 msgstr ""
 
 #: src/inputs/inputs.ts
@@ -5159,6 +5184,7 @@ msgstr ""
 msgid "no"
 msgstr ""
 
+#: src/inputs/InputsForm.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "No"
@@ -5971,6 +5997,10 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 msgid "Password changed. The rest of DDT is open to you now."
+msgstr ""
+
+#: src/inputs/InputsForm.tsx
+msgid "Password for {label}"
 msgstr ""
 
 #: src/users/UserDialogs.tsx
@@ -9644,6 +9674,10 @@ msgstr ""
 msgid "User name"
 msgstr ""
 
+#: src/inputs/InputsForm.tsx
+msgid "User name for {label}"
+msgstr ""
+
 #: src/settings/DirectorySettings.tsx
 msgid "User name, optional"
 msgstr ""
@@ -9784,6 +9818,14 @@ msgstr ""
 
 #: src/audit/AuditPage.tsx
 msgid "What"
+msgstr ""
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs"
+msgstr ""
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs could not be loaded, so it is assigned without answers."
 msgstr ""
 
 #: src/conditions/ConditionBuilder.tsx
@@ -10010,6 +10052,7 @@ msgstr ""
 msgid "yes"
 msgstr ""
 
+#: src/inputs/InputsForm.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Yes"

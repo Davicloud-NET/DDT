@@ -705,7 +705,7 @@ public sealed class DeploymentService(
             || pass != request.Pass
             || DeploymentSummaries.Continued(run))
         {
-            return DeploymentDecision.Conflict(ServerMessages.DeploymentNotPaused.With());
+            return DeploymentDecision.Conflict("The run no longer waits at that pause.");
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
@@ -1180,9 +1180,11 @@ public sealed class DeploymentService(
             machine.AssignedName = computerName.Trim();
         }
 
+        Guid id = Guid.CreateVersion7(now);
+        IReadOnlyList<DeploymentStep> steps = RunSnapshots.Steps(id, definition);
         Deployment deployment = new()
         {
-            Id = Guid.CreateVersion7(now),
+            Id = id,
             MachineId = machine.Id,
             TaskSequenceId = sequence.Id,
             SequenceRevision = sequence.Revision,
@@ -1193,7 +1195,7 @@ public sealed class DeploymentService(
             Source = source,
             RequestedByUserId = requestedByUserId,
             RequestedByName = requestedByName,
-            StepCount = SequenceTree.Leaves(definition).Count,
+            StepCount = RunPaths.Leaves(definition, steps).Count,
             AllowSecureBootMismatch = allowSecureBootMismatch,
             Answers = answers.Count == 0 ? null : RunAnswer.Write(answers),
             CreatedUtc = now,
@@ -1202,7 +1204,7 @@ public sealed class DeploymentService(
 
         database.Deployments.Add(deployment);
         database.DeploymentSnapshots.Add(new DeploymentSnapshot { DeploymentId = deployment.Id, Definition = sequence.Definition });
-        database.DeploymentSteps.AddRange(RunSnapshots.Steps(deployment.Id, definition));
+        database.DeploymentSteps.AddRange(steps);
         database.DeploymentArtifacts.AddRange(RunSnapshots.Artifacts(deployment.Id, definition, references, machine));
         machine.ActiveDeploymentId = deployment.Id;
         machine.LastDeploymentId = deployment.Id;

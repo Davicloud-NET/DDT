@@ -141,10 +141,6 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "deployment.machineRunning",
     message: "The machine is running a task sequence. Stop that run before assigning another sequence.",
   }),
-  "deployment.notPaused": msg({
-    context: "deployment.notPaused",
-    message: "The run no longer waits at that pause. Look at the machine again.",
-  }),
   "deployment.notStartingWithSecureBoot": msg({
     context: "deployment.notStartingWithSecureBoot",
     message: "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first.",

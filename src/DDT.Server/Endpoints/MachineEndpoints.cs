@@ -602,8 +602,9 @@ public static class MachineEndpoints
         return TypedResults.Ok((await DeploymentViews.ReadAsync(database, run.Id, cancellationToken).ConfigureAwait(false))!);
     }
 
-    // Continues the pause the run waits at. The answer is the run as it is then.
-    private static async Task<Results<Ok<DeploymentView>, NotFound, ProblemHttpResult>> ContinueAsync(
+    // Continues the pause the run waits at. The answer is the run as it is then; when it no longer waits at that pause,
+    // the run as it is with 409.
+    private static async Task<Results<Ok<DeploymentView>, Conflict<DeploymentView>, NotFound, ValidationProblem>> ContinueAsync(
         Guid id,
         ContinueRunRequest request,
         ClaimsPrincipal user,
@@ -626,7 +627,7 @@ public static class MachineEndpoints
 
         if (decision.Outcome != DeploymentOutcome.Accepted)
         {
-            return DecisionProblem(decision, StatusCodes.Status409Conflict);
+            return await AsItIsAsync(machine, database, deployments, cancellationToken).ConfigureAwait(false);
         }
 
         Deployment run = decision.Deployment!;
@@ -637,7 +638,9 @@ public static class MachineEndpoints
         }
         catch (DbUpdateConcurrencyException)
         {
-            return ServerProblems.Problem(ServerMessages.DeploymentNotPaused.With(), StatusCodes.Status409Conflict);
+            database.ChangeTracker.Clear();
+
+            return await AsItIsAsync(machine, database, deployments, cancellationToken).ConfigureAwait(false);
         }
 
         live.MachineChanged(machine, run);

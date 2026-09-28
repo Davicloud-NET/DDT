@@ -76,6 +76,8 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // A tree's path depends on its IFs, which only the definition says how to follow.
+        SequenceDefinition? tree = steps.Any(RunSnapshots.IsContainer) ? await DefinitionAsync(run, cancellationToken).ConfigureAwait(false) : null;
         DateTimeOffset now = timeProvider.GetUtcNow();
 
         switch (run.State, report.State)
@@ -103,7 +105,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                     return DeploymentDecision.Accepted(run) with { InputsPending = pending };
                 }
 
-                if (Progress(run, steps, report, now, lenient: false) is { } refusedStart)
+                if (Progress(run, steps, tree, report, now, lenient: false) is { } refusedStart)
                 {
                     return refusedStart;
                 }
@@ -113,7 +115,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                 return DeploymentDecision.Accepted(run) with { Started = true };
 
             case (DeploymentState.Running, DeploymentState.Running):
-                if (Progress(run, steps, report, now, lenient: false) is { } refusedReport)
+                if (Progress(run, steps, tree, report, now, lenient: false) is { } refusedReport)
                 {
                     return refusedReport;
                 }
@@ -123,7 +125,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                 return DeploymentDecision.Accepted(run);
 
             case (DeploymentState.Running, DeploymentState.Done):
-                if (Progress(run, steps, report, now, lenient: false) is { } refused)
+                if (Progress(run, steps, tree, report, now, lenient: false) is { } refused)
                 {
                     return refused;
                 }
@@ -143,7 +145,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
 
             // A failure always ends the run, even when the steps it reports do not fit: the agent has stopped anyway.
             case (DeploymentState.Assigned or DeploymentState.Running, DeploymentState.Failed):
-                Progress(run, steps, report, now, lenient: true);
+                Progress(run, steps, tree, report, now, lenient: true);
 
                 if (run.State == DeploymentState.Running)
                 {
@@ -362,6 +364,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
     private static DeploymentDecision? Progress(
         Deployment run,
         List<DeploymentStep> steps,
+        SequenceDefinition? tree,
         AgentRunReport report,
         DateTimeOffset now,
         bool lenient)
@@ -448,10 +451,14 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
             current.Percent = percent;
         }
 
+        // The steps a list counts are those of the path, which grows and shrinks as IFs decide.
+        IReadOnlyList<Guid> path = RunPaths.Leaves(tree, steps);
+        run.StepCount = path.Count;
+
         // A failure names no current step, and the run keeps showing the step it failed at.
         if (current is not null || !lenient)
         {
-            run.CurrentStepIndex = current is null ? null : StepNumber(steps, current);
+            run.CurrentStepIndex = current is null ? null : RunPaths.Number(path, steps, current);
             run.CurrentStepName = current?.Name;
         }
 
@@ -599,11 +606,6 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
 
         return kept.Length <= maxLength ? kept : kept[..maxLength];
     }
-
-    // The steps before the node, as StepCount counts them: a group, an IF or a repeat is not a step. For a flat run it is
-    // the row's Index.
-    private static int StepNumber(List<DeploymentStep> steps, DeploymentStep node) =>
-        steps.Count(step => step.Index < node.Index && !RunSnapshots.IsContainer(step));
 
     private static void End(Machine machine, Deployment run, DeploymentState state, string? error, DateTimeOffset now)
     {

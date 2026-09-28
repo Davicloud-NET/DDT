@@ -98,8 +98,9 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
             Assert.Equal(SequencePhase.WindowsPE, step.Phase);
         });
 
-        // The steps are the leaves, as the list of runs counts them.
-        Assert.Equal(5, view.Summary.StepCount);
+        // The list of runs counts the steps of the path: before the IF decides, those of its branch with more steps, the
+        // first when both have as many.
+        Assert.Equal(4, view.Summary.StepCount);
 
         // Either image may be applied, so both are the run's and the agent gets both.
         Assert.Equal(
@@ -129,8 +130,8 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(StepState.Skipped, Row(applying, tree.ThinkPadImage).State);
         Assert.Null(Row(applying, tree.ThinkPadImage).StartedUtc);
 
-        // The step number counts steps, not the IF that holds the image.
-        Assert.Equal((2, "Apply the other image"), (applying.Summary.StepIndex, applying.Summary.StepName));
+        // The step number counts the steps of the path, not the IF that holds the image nor the image it did not choose.
+        Assert.Equal((1, "Apply the other image", 4), (applying.Summary.StepIndex, applying.Summary.StepName, applying.Summary.StepCount));
 
         StepRunState[] imaged = [partitioned, chose with { State = StepState.Done }, notThinkPad, Visit(tree.OtherImage, StepState.Done)];
         StepRunState[] prepared = [.. imaged, Visit(tree.Prepare, StepState.Failed, error: "Clean up failed."), Visit(tree.MayFail, StepState.Failed, error: "Exit code 1.")];

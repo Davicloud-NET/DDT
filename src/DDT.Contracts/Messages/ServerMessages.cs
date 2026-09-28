@@ -235,10 +235,6 @@ public static class ServerMessages
         "deployment.answerYesNo",
         "{label} is answered with yes or no.");
 
-    public static readonly MessageTemplate DeploymentNotPaused = Define(
-        "deployment.notPaused",
-        "The run no longer waits at that pause. Look at the machine again.");
-
     public static readonly MessageTemplate SequenceValueUndefined = Define(
         "sequence.valueUndefined",
         "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");

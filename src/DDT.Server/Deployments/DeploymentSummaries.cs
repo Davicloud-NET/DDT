@@ -34,7 +34,7 @@ public static class DeploymentSummaries
             deployment.UpdatedUtc,
             deployment.Error,
             Waiting(deployment),
-            deployment.PauseStepId is null || Continued(deployment) ? null : deployment.PauseMessage);
+            deployment is { State: DeploymentState.Running, PauseStepId: not null } && !Continued(deployment) ? deployment.PauseMessage : null);
     }
 
     // The run needs someone: answers to its inputs before it can start, or someone to continue the pause it waits at.

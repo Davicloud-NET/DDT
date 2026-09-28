@@ -14,7 +14,6 @@ using DDT.Server.Authentication;
 using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using static DDT.Server.Tests.TestReports;
@@ -108,10 +107,10 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
             Assert.Equal(HttpStatusCode.Forbidden, (await ContinueAsync(viewer, machine.Id, paused.Pause.Id, 1)).StatusCode);
         }
 
-        // A click meant for another visit, or another step, continues nothing.
+        // A click meant for another visit, or another step, continues nothing, and is answered with the run as it is.
         HttpResponseMessage later = await ContinueAsync(administrator, machine.Id, paused.Pause.Id, 2);
         Assert.Equal(HttpStatusCode.Conflict, later.StatusCode);
-        Assert.Equal("deployment.notPaused", (await later.Content.ReadFromJsonAsync<ProblemDetails>(TestJson.Options, Cancellation))!.Extensions["code"]?.ToString());
+        Assert.Equal(1, (await later.Content.ReadFromJsonAsync<DeploymentView>(TestJson.Options, Cancellation))!.Pause!.Pass);
         Assert.Equal(HttpStatusCode.Conflict, (await ContinueAsync(administrator, machine.Id, paused.Before.Id, 1)).StatusCode);
 
         DeploymentView continued = await RegisteredMachine.ReadAsync<DeploymentView>(await ContinueAsync(administrator, machine.Id, paused.Pause.Id, 1));
@@ -166,6 +165,10 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         Deployment waiting = await application.QueryAsync(database => database.Deployments.AsNoTracking().SingleAsync(d => d.Id == paused.Run.Id, Cancellation));
         Assert.Equal(DeploymentLimits.MaxPauseMessageLength, waiting.PauseMessage!.Length);
         Assert.StartsWith("A NUL x", waiting.PauseMessage, StringComparison.Ordinal);
+
+        // A run stopped at its pause waits for nobody.
+        MachineSummary stopped = await RegisteredMachine.ReadAsync<MachineSummary>(await (await application.AdministratorAsync()).EndCurrentAsync(machine.Id));
+        Assert.Equal((DeploymentState.Failed, false, (string?)null), (stopped.Deployment!.State, stopped.Deployment.Waiting, stopped.Deployment.PauseMessage));
     }
 
     [Fact]

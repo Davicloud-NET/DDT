@@ -203,6 +203,132 @@ public sealed class QuestionTests
         Assert.Equal([(9, new ConsoleAnswer(Text: "ANYWAY"))], console.Answers);
     }
 
+    [Fact]
+    public void SendsTheInputsOnlyOnceEveryFieldThatNeedsAnAnswerHasOne()
+    {
+        TestConsole console = Asked(9, Scenarios.Inputs());
+        InputsViewModel inputs = Assert.IsType<InputsViewModel>(console.Model.Question);
+        TextFieldViewModel owner = Assert.IsType<TextFieldViewModel>(inputs.Fields[1]);
+        ChoiceFieldViewModel bitLocker = Assert.IsType<ChoiceFieldViewModel>(inputs.Fields[2]);
+        AccountFieldViewModel account = Assert.IsType<AccountFieldViewModel>(inputs.Fields[3]);
+
+        // The choices start with their defaults; the owner and the account have none.
+        Assert.Equal("Standard", Assert.IsType<ChoiceFieldViewModel>(inputs.Fields[0]).Selected?.Value);
+        Assert.Equal("Yes", bitLocker.Selected?.Label);
+        Assert.False(inputs.SubmitCommand.CanExecute(null));
+
+        owner.Text = " anna.berger ";
+        account.UserName = @"LAB\svc-join";
+        Assert.False(inputs.SubmitCommand.CanExecute(null));
+
+        account.Password = "correct horse";
+        bitLocker.Selected = bitLocker.Items[1];
+        Assert.True(inputs.SubmitCommand.CanExecute(null));
+        inputs.SubmitCommand.Execute(null);
+
+        (int id, ConsoleAnswer answer) = Assert.Single(console.Answers);
+        Assert.Equal(9, id);
+        Assert.Equal(
+            [
+                new ConsoleInputValue("Office", "Standard"),
+                new ConsoleInputValue("Owner", "anna.berger"),
+                new ConsoleInputValue("BitLocker", "false"),
+                new ConsoleInputValue("JoinAccount", null, @"LAB\svc-join", "correct horse"),
+            ],
+            answer.Values);
+
+        // Sent, the password leaves the screen at once.
+        Assert.Equal(string.Empty, account.Password);
+        Assert.True(inputs.IsSending);
+    }
+
+    // Refused, the same page takes the agent's words under the fields: what was typed stays to be put right, but the
+    // password is typed again.
+    [Fact]
+    public void KeepsWhatWasTypedWhenTheAgentAsksAgainButNeverThePassword()
+    {
+        TestConsole console = Asked(9, Scenarios.Inputs());
+        InputsViewModel inputs = Assert.IsType<InputsViewModel>(console.Model.Question);
+        ((TextFieldViewModel)inputs.Fields[1]).Text = "annaa";
+        AccountFieldViewModel account = (AccountFieldViewModel)inputs.Fields[3];
+        account.UserName = @"LAB\svc-join";
+        account.Password = "correct horse";
+        inputs.SubmitCommand.Execute(null);
+
+        console.Ask(10, Scenarios.Inputs(refused: true));
+
+        Assert.Same(inputs, console.Model.Question);
+        Assert.Equal(10, inputs.Id);
+        Assert.False(inputs.IsSending);
+        Assert.Equal(["Office", "Owner", "Languages", "BitLocker", "JoinAccount"], inputs.Fields.Select(field => field.Input.Name));
+
+        TextFieldViewModel owner = Assert.IsType<TextFieldViewModel>(inputs.Fields[1]);
+        AccountFieldViewModel again = Assert.IsType<AccountFieldViewModel>(inputs.Fields[4]);
+        Assert.Equal("annaa", owner.Text);
+        Assert.Equal("annaa is not a user in lab.local.", owner.Error);
+        Assert.Equal(@"LAB\svc-join", again.UserName);
+        Assert.Equal(string.Empty, again.Password);
+        Assert.Equal("Type the password again.", again.Error);
+        Assert.False(inputs.SubmitCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void LeavesWhatMayStayEmptyAndJoinsTheChoicesOfAMultipleChoice()
+    {
+        TestConsole console = Asked(3, new InputsQuestion(
+            "Windows 11 24H2 with Office",
+            [
+                new ConsoleInput("Note", "Note", null, ConsoleInputKind.Text, [], null, false, null, null),
+                Scenarios.Inputs(refused: true).Inputs[2],
+                new ConsoleInput("Share", "Share account", null, ConsoleInputKind.Account, [], null, false, null, null),
+            ],
+            null));
+        InputsViewModel inputs = Assert.IsType<InputsViewModel>(console.Model.Question);
+        MultiChoiceFieldViewModel languages = Assert.IsType<MultiChoiceFieldViewModel>(inputs.Fields[1]);
+
+        Assert.True(inputs.SubmitCommand.CanExecute(null));
+
+        languages.Items[2].IsChosen = true;
+        inputs.SubmitCommand.Execute(null);
+
+        Assert.Equal(
+            [new ConsoleInputValue("Note", string.Empty), new ConsoleInputValue("Languages", "de-DE;it-IT"), new ConsoleInputValue("Share", null)],
+            Assert.Single(console.Answers).Answer.Values);
+    }
+
+    // After the pick the list of sequences is a step back; at the start of a run there is none to go back to.
+    [Fact]
+    public void GoesBackFromTheInputsOnlyAfterThePick()
+    {
+        TestConsole picked = Asked(9, Scenarios.Inputs());
+        picked.Model.Question!.BackCommand.Execute(null);
+
+        Assert.Equal([(9, new ConsoleAnswer(Back: true))], picked.Answers);
+
+        TestConsole waiting = new TestConsole().Show(Scenarios.WaitingForInputs).Ask(9, Scenarios.Inputs());
+
+        Assert.False(waiting.Model.Question!.CanGoBack);
+        Assert.False(waiting.Model.Question.BackCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void ContinuesThePausedRunAndShowsWhereOnThePathItWaits()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Paused).Ask(11, Scenarios.Pause);
+        PauseViewModel pause = Assert.IsType<PauseViewModel>(console.Model.Screen);
+
+        Assert.Equal("Check the BIOS", pause.Title);
+        Assert.Equal("PAUSED", pause.Tag.Text);
+        Assert.Equal(TagTone.Attention, pause.Tag.Tone);
+        Assert.Equal("Pause, step 4 of 8 on this path, in Windows PE", pause.Position);
+        Assert.Equal(8, pause.Steps.Count);
+
+        pause.SubmitCommand.Execute(null);
+
+        Assert.Equal([(11, new ConsoleAnswer(Continue: true))], console.Answers);
+        Assert.False(pause.CanGoBack);
+    }
+
     private static TestConsole Asked(int id, ConsoleQuestion question)
     {
         ConsoleStage stage = question is SignInQuestion ? ConsoleStage.WaitingForAuthorization : ConsoleStage.Choosing;

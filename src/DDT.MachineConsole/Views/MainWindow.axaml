@@ -131,6 +131,12 @@
           <DataTemplate DataType="vm:SecureBootViewModel">
             <v:SecureBootView />
           </DataTemplate>
+          <DataTemplate DataType="vm:InputsViewModel">
+            <v:InputsView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:PauseViewModel">
+            <v:PauseView />
+          </DataTemplate>
         </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
 

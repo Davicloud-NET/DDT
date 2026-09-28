@@ -215,6 +215,14 @@
     <Setter Property="Transitions" Value="{x:Null}" />
   </Style>
 
+  <!-- The two bars of a Pause step's sign, in the attention colour, where the run screen has its percent. -->
+  <Style Selector="Border.pauseBar">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="112" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Background" Value="{DynamicResource SgAttentionText}" />
+  </Style>
+
   <Style Selector="c|HazardBand">
     <Setter Property="Ink" Value="{DynamicResource SgInk}" />
     <Setter Property="Attention" Value="{DynamicResource SgAttention}" />

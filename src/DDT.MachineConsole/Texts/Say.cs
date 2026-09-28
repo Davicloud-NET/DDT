@@ -75,6 +75,8 @@ public static class Say
         ConsoleActivity.Restarting => l.T("Restarting"),
         ConsoleActivity.WaitingForWindowsSetup => l.T("Waiting for Windows setup"),
         ConsoleActivity.Finishing => l.T("Making the disk bootable and sending the last reports"),
+        ConsoleActivity.WaitingForInput => l.T("Waiting for answers"),
+        ConsoleActivity.Paused => l.T("Paused"),
         _ => l.T("Removing the agent"),
     };
 
@@ -103,6 +105,8 @@ public static class Say
         "reboot" => l.T("Restarting"),
         "writeRawImage" => l.T("Writing the disk image"),
         "writeCloudInitSeed" => l.T("Writing the cloud-init seed"),
+        "setVariable" => l.T("Setting a variable"),
+        "pause" => l.T("Paused"),
         _ => null,
     };
 

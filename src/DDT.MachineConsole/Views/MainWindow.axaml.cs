@@ -79,7 +79,7 @@ public sealed partial class MainWindow : Window
 
     private void OnKeyDownFirst(object? sender, KeyEventArgs e)
     {
-        _frames?.Measure($"key {e.Key}", Motion.Press);
+        _frames?.Measure(FrameMeter.KeyName(e.Key), Motion.Press);
 
         if (_model is not null && _model.Press(e.Key, e.KeyModifiers))
         {

@@ -109,6 +109,18 @@ public sealed class TextsTests
     public void SaysTheStagesInGerman(ConsoleStage stage, string german) =>
         Assert.Equal(german, Say.Stage(Localizer.Embedded(UiLanguage.German), stage));
 
+    // Each activity in words of its own; one that fell through to the last would say the agent removes itself.
+    [Fact]
+    public void SaysEveryActivityInWordsOfItsOwn()
+    {
+        Localizer english = Localizer.Embedded(UiLanguage.English);
+        string[] said = [.. Enum.GetValues<ConsoleActivity>().Select(activity => Say.Activity(english, activity))];
+
+        Assert.Equal(said.Length, said.Distinct().Count());
+        Assert.Equal("Waiting for answers", Say.Activity(english, ConsoleActivity.WaitingForInput));
+        Assert.Equal("Angehalten", Say.Activity(Localizer.Embedded(UiLanguage.German), ConsoleActivity.Paused));
+    }
+
     [Fact]
     public void CarriesEveryLegalTextItNamesAndTheAttributionNoticeWordForWord()
     {

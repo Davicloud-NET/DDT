@@ -354,6 +354,153 @@
     </Style>
   </ControlTheme>
 
+  <!-- A choice as a key in a row of keys: a secondary key until it is chosen, then filled as the primary key is. The
+       fill fades in over fast, as the selected row of a list does. ChoiceKey is a list's item, one of which is chosen;
+       ChoiceToggle a key that turns on and off by itself. -->
+  <ControlTheme x:Key="ChoiceKey" TargetType="ListBoxItem">
+    <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="MinHeight" Value="{DynamicResource ConsoleKeyHeight}" />
+    <Setter Property="MinWidth" Value="72" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="focus"
+                  Margin="-4"
+                  BorderThickness="2"
+                  BorderBrush="Transparent"
+                  CornerRadius="7" />
+          <Border Name="face"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border Name="hover"
+                  Margin="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Background="{DynamicResource SgKeySecondaryHover}"
+                  Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <Border Name="chosen" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource SgKeyPrimary}" Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            TextElement.Foreground="{TemplateBinding Foreground}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:focus-visible /template/ Border#focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ Border#hover">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:selected /template/ Border#chosen">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:selected">
+      <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="ChoiceToggle" TargetType="ToggleButton">
+    <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
+    <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusKey}" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="MinHeight" Value="{DynamicResource ConsoleKeyHeight}" />
+    <Setter Property="MinWidth" Value="72" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="focus"
+                  Margin="-4"
+                  BorderThickness="2"
+                  BorderBrush="Transparent"
+                  CornerRadius="7" />
+          <Border Name="face"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border Name="hover"
+                  Margin="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Background="{DynamicResource SgKeySecondaryHover}"
+                  Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <Border Name="chosen" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource SgKeyPrimary}" Opacity="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{StaticResource SgMotionFast}" Easing="{StaticResource SgMotionEasing}" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            TextElement.Foreground="{TemplateBinding Foreground}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:focus-visible /template/ Border#focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgFocus}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ Border#hover">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#chosen">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:checked">
+      <Setter Property="Foreground" Value="{DynamicResource SgOnKeyPrimary}" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+  </ControlTheme>
+
   <!-- A thin bar with a thumb in the control tone and nothing else. -->
   <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
     <Setter Property="Background" Value="Transparent" />

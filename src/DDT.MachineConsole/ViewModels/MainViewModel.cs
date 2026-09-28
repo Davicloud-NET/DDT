@@ -41,6 +41,7 @@ public sealed class MainViewModel : ObservableObject
     private ConsoleState? _state;
     private QuestionViewModel? _question;
     private ConsoleStage? _stageWhenAnswered;
+    private ConsoleActivity? _activityWhenAnswered;
     private StageViewModel? _stageScreen;
     private ScreenViewModel _screen;
     private Overlay _overlay;
@@ -522,12 +523,15 @@ public sealed class MainViewModel : ObservableObject
     {
         _state = state;
 
-        // An answered question stays until the agent moves on, which it does by another stage.
-        if (_question is { IsSending: true } && _stageWhenAnswered != state.Stage)
+        // An answered question stays until the agent moves on, which it does by another stage, or, for the questions of a
+        // run, such as a Pause step's, by another activity of the run.
+        if (_question is { IsSending: true } && (_stageWhenAnswered != state.Stage || _activityWhenAnswered != state.Run?.Activity))
         {
             _question = null;
             Raise(nameof(Question));
         }
+
+        _question?.Update(state);
 
         Machine.Update(state);
         ShowScreen();
@@ -620,6 +624,16 @@ public sealed class MainViewModel : ObservableObject
                 ComputerNameQuestion computerName => new ComputerNameViewModel(_l, id, computerName, Answer),
                 EraseQuestion erase => new EraseViewModel(_l, id, erase, Answer),
                 SecureBootQuestion secureBoot => new SecureBootViewModel(_l, id, secureBoot, _state?.Machine.TrustedUefiCas, Answer),
+
+                // After the pick the list of sequences is a step back; at the start of a run there is none.
+                InputsQuestion inputs => new InputsViewModel(
+                    _l,
+                    id,
+                    inputs,
+                    canGoBack: _state?.Stage == ConsoleStage.Choosing,
+                    _state?.Machine.KeyboardLayout,
+                    Answer),
+                PauseQuestion pause => new PauseViewModel(_l, id, pause, _state, Answer),
                 _ => null,
             };
         }
@@ -643,6 +657,7 @@ public sealed class MainViewModel : ObservableObject
     private void Answer(int id, ConsoleAnswer answer)
     {
         _stageWhenAnswered = _state?.Stage;
+        _activityWhenAnswered = _state?.Run?.Activity;
         _send(id, answer);
     }
 

@@ -1,0 +1,157 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- A sequence's inputs on one panel, a field for each: a line of text, a row of keys to choose one from, keys that turn
+     on and off, Yes and No, or an account's user name and masked password. The author's help is under a field, and the
+     agent's words about a refused answer under that. Tab goes from field to field, Enter sends them all, Esc goes back to
+     the sequences where it can. The panel scrolls where the fields are more than the screen holds. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.InputsView"
+             x:DataType="vm:InputsViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16" VerticalAlignment="Center">
+    <StackPanel Spacing="8">
+      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" />
+      <TextBlock Classes="lead ink2" Text="{Binding Intro}" />
+      <Border Name="ErrorBox" Classes="well" Padding="14,10" Margin="0,6,0,0" IsVisible="{Binding HasError}">
+        <TextBlock Classes="body failText" Text="{Binding Error}" />
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="panel" VerticalAlignment="Top">
+      <ScrollViewer Name="Scroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ItemsControl Name="Fields" ItemsSource="{Binding Fields}" IsEnabled="{Binding IsEditable}" Margin="24,18,24,20">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="16" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.DataTemplates>
+
+            <DataTemplate DataType="vm:TextFieldViewModel">
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
+                </StackPanel>
+                <TextBox Classes.invalid="{Binding HasError}"
+                         Width="420"
+                         HorizontalAlignment="Left"
+                         MaxLength="{Binding MaxLength}"
+                         Text="{Binding Text}" />
+                <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
+                <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
+              </StackPanel>
+            </DataTemplate>
+
+            <DataTemplate DataType="vm:ChoiceFieldViewModel">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding Items}"
+                         SelectedItem="{Binding Selected}"
+                         ItemContainerTheme="{StaticResource ChoiceKey}"
+                         HorizontalAlignment="Left"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         Padding="4">
+                  <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />
+                    </ItemsPanelTemplate>
+                  </ListBox.ItemsPanel>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate DataType="vm:ChoiceItem">
+                      <TextBlock Text="{Binding Label}" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
+                <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
+              </StackPanel>
+            </DataTemplate>
+
+            <DataTemplate DataType="vm:MultiChoiceFieldViewModel">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Items}" Margin="4">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:ChoiceItem">
+                      <ToggleButton Theme="{StaticResource ChoiceToggle}" IsChecked="{Binding IsChosen}">
+                        <TextBlock Text="{Binding Label}" TextWrapping="NoWrap" />
+                      </ToggleButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
+                <TextBlock Classes="small muted" Text="{Binding Hint}" />
+                <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
+              </StackPanel>
+            </DataTemplate>
+
+            <DataTemplate DataType="vm:AccountFieldViewModel">
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Classes="label" Text="{Binding Label}" />
+                  <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
+                </StackPanel>
+                <Grid ColumnDefinitions="320,320" ColumnSpacing="16" HorizontalAlignment="Left">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="small muted" Text="{Binding UserNameLabel}" />
+                    <TextBox Classes.invalid="{Binding HasError}" Text="{Binding UserName}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Classes="small muted" Text="{Binding PasswordLabel}" />
+                    <TextBox Classes.invalid="{Binding HasError}" PasswordChar="•" Text="{Binding Password}" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
+                <TextBlock Classes="body muted" Text="{Binding Note}" />
+                <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
+              </StackPanel>
+            </DataTemplate>
+
+          </ItemsControl.DataTemplates>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="20">
+      <Button Name="Back" Classes="quiet" IsCancel="True" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Esc" />
+          <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <c:KeyCap Key="Tab" />
+          <TextBlock Classes="body ink2" Text="{Binding NextFieldHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasChoices}">
+          <c:KeyCap Key="←" />
+          <c:KeyCap Key="→" />
+          <TextBlock Classes="body ink2" Text="{Binding ChooseHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
+        </StackPanel>
+      </StackPanel>
+      <Button Name="Submit" Grid.Column="3" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Grid>
+</UserControl>

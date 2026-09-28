@@ -158,12 +158,15 @@ public static class RunSnapshots
     }
 
     // Never a secret: the answer file and the join credentials are fetched while their step runs. An image a Write raw
-    // disk image step names is a raw disk image, whatever the library holds by now.
+    // disk image step names is a raw disk image, whatever the library holds by now. Values are those the run started with,
+    // never an Account input's answer; pendingInputs what the machine asks before the run can start.
     public static AgentRun ForAgent(
         Deployment run,
         SequenceDefinition definition,
         IReadOnlyList<DeploymentArtifact> artifacts,
-        string? computerName)
+        string? computerName,
+        IReadOnlyDictionary<string, string>? values = null,
+        IReadOnlyList<AgentInput>? pendingInputs = null)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(artifacts);
@@ -187,7 +190,9 @@ public static class RunSnapshots
             [.. artifacts.Where(a => a.Kind != ArtifactKind.Image).Select(a => new AgentRunPackage(a.StepId, a.Name, a.Sha256, a.SizeBytes))],
             run.DiskNumber,
             computerName,
-            run.AllowSecureBootMismatch);
+            run.AllowSecureBootMismatch,
+            values,
+            pendingInputs is { Count: > 0 } ? pendingInputs : null);
     }
 
     // The discriminator the document gives the step, as the serializer writes it, so a new kind needs nothing here.

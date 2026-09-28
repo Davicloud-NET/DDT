@@ -22,6 +22,9 @@ public static class AuditActions
     public const string DeploymentSecretRead = "deployment.secret-read";
     public const string DeploymentResumed = "deployment.resumed";
     public const string DeploymentRunTokenRefused = "deployment.run-token-refused";
+
+    // Names the inputs only, never an answer.
+    public const string DeploymentInputsAnswered = "deployment.inputs-answered";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
     public const string DomainJoinChecked = "domain.join-checked";
     public const string SequenceCreated = "sequence.created";

@@ -17,4 +17,5 @@ public sealed record AgentInput(
     IReadOnlyList<InputChoice> Choices,
     string? Default,
     bool Required,
-    int? MaxLength);
+    int? MaxLength,
+    string? Domain = null);

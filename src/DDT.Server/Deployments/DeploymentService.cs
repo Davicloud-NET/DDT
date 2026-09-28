@@ -9,8 +9,10 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Values;
 using DDT.Core.Boot;
 using DDT.Core.Unattend;
+using DDT.Core.Values;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Images;
@@ -34,6 +36,7 @@ public sealed class DeploymentService(
     UserManager<DdtUser> users,
     SequenceCatalog catalog,
     SequenceResolver resolver,
+    RunValues values,
     DdtSettings settings,
     TimeProvider timeProvider)
 {
@@ -115,7 +118,9 @@ public sealed class DeploymentService(
 
         List<TaskSequence> sequences = await database.TaskSequences.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
-        Guid? suggested = await SuggestedAsync(machine, references, cancellationToken).ConfigureAwait(false);
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+        Guid? suggested = Suggested(resolution, references);
+        DeploymentOptions deployment = settings.Current.Deployment;
         List<AgentSequenceChoice> choices = [];
 
         foreach (TaskSequence sequence in sequences.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Id))
@@ -129,6 +134,16 @@ public sealed class DeploymentService(
 
             IReadOnlyList<DeploymentArtifact> artifacts = RunSnapshots.Artifacts(Guid.Empty, definition, references, machine);
 
+            // What the console asks after the pick, starting with what the machine, the rules and the defaults give.
+            ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(machine, resolution.Machine, resolution.Match, definition, null, deployment));
+            AgentInput[] inputs =
+            [
+                .. (definition.Inputs ?? [])
+                    .OfType<InputDeclaration>()
+                    .Where(input => input.AskAt is InputAsk.Machine or InputAsk.Both)
+                    .Select(input => RunValues.Asked(input, preview)),
+            ];
+
             choices.Add(new AgentSequenceChoice(
                 sequence.Id,
                 sequence.Name,
@@ -139,7 +154,8 @@ public sealed class DeploymentService(
                 sequence.Id == suggested,
                 SequenceChecks.RawImage(definition, references)?.Name,
                 SequenceChecks.RawImage(definition, references)?.BootCapability,
-                SequenceChecks.RawImage(definition, references)?.SignedUnder));
+                SequenceChecks.RawImage(definition, references)?.SignedUnder,
+                inputs.Length == 0 ? null : inputs));
         }
 
         return choices;
@@ -152,7 +168,7 @@ public sealed class DeploymentService(
 
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
 
-        return await SuggestedAsync(machine, references, cancellationToken).ConfigureAwait(false);
+        return Suggested(await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false), references);
     }
 
     public async Task<DeploymentDecision> AssignAsync(
@@ -209,9 +225,18 @@ public sealed class DeploymentService(
             return DeploymentDecision.Conflict(ServerMessages.DeploymentErasesOneOfManyDisks.With("sequence", sequence.Name));
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition)) is { } nameProblem)
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        GivenAnswers given = await GivenAsync(machine, definition, request.Answers, atMachine: false, userName, request.ComputerName, null, now, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition), given.Values) is { } nameProblem)
         {
             return DeploymentDecision.Invalid("computerName", nameProblem);
+        }
+
+        if (given.Problems.Count > 0)
+        {
+            return DeploymentDecision.InvalidAnswers(given.Problems);
         }
 
         (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
@@ -221,7 +246,6 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem);
         }
 
-        DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
             sequence,
@@ -234,7 +258,14 @@ public sealed class DeploymentService(
             diskNumber: null,
             request.ComputerName,
             allowMismatch,
+            given.Answers,
             now);
+
+        if (await KeepAsync(deployment, definition, request.Answers, given, new RunCredentialGiver(userId, userName, false), address, cancellationToken)
+            .ConfigureAwait(false) is { } kept)
+        {
+            return kept;
+        }
 
         database.AuditEvents.Add(Audit(
             AuditActions.DeploymentAssigned,
@@ -284,6 +315,7 @@ public sealed class DeploymentService(
         Machine machine,
         Guid expectedSequenceId,
         bool allowSecureBootMismatch,
+        IReadOnlyList<InputAnswer>? answers,
         Guid? userId,
         string? userName,
         string? address,
@@ -316,11 +348,26 @@ public sealed class DeploymentService(
             return DeploymentDecision.Conflict(ServerMessages.DeploymentApproveThenChooseDisk.With("sequence", sequence.Name));
         }
 
-        if (SequenceChecks.ComputerNameUse(definition) is not null && string.IsNullOrWhiteSpace(machine.AssignedName))
-        {
-            string use = SequenceTree.Nodes(definition).Any(step => step is JoinDomainStep) ? "domain" : "seed";
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        GivenAnswers given = await GivenAsync(machine, definition, answers, atMachine: false, userName, null, resolution, now, cancellationToken)
+            .ConfigureAwait(false);
 
-            return DeploymentDecision.Conflict(ServerMessages.DeploymentApproveThenName.With("sequence", sequence.Name, "use", use));
+        // A rule's value such as PC-{{SerialNumber|alnum|right:8}} names every machine, so only a machine that nothing
+        // names needs its name given with an assignment.
+        if (SequenceChecks.ComputerNameUse(definition) is { } nameUse && string.IsNullOrWhiteSpace(machine.AssignedName) && !Named(given.Values))
+        {
+            return DeploymentDecision.Conflict(nameUse.Code == ServerMessages.SequenceNamesMachineWithValue.Code
+                ? ServerMessages.DeploymentApproveThenNameValue.With("sequence", sequence.Name)
+                : ServerMessages.DeploymentApproveThenName.With(
+                    "sequence",
+                    sequence.Name,
+                    "use",
+                    nameUse.Code == ServerMessages.DeploymentJoinsDomainUnderName.Code ? "domain" : "seed"));
+        }
+
+        if (given.Problems.Count > 0)
+        {
+            return DeploymentDecision.InvalidAnswers(given.Problems);
         }
 
         (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, allowSecureBootMismatch);
@@ -330,7 +377,6 @@ public sealed class DeploymentService(
             return DeploymentDecision.Conflict(secureBootProblem);
         }
 
-        DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
             sequence,
@@ -343,7 +389,14 @@ public sealed class DeploymentService(
             diskNumber: null,
             computerName: null,
             allowMismatch,
+            given.Answers,
             now);
+
+        if (await KeepAsync(deployment, definition, answers, given, new RunCredentialGiver(userId, userName, false), address, cancellationToken)
+            .ConfigureAwait(false) is { } kept)
+        {
+            return kept;
+        }
 
         database.AuditEvents.Add(Audit(
             AuditActions.DeploymentAssigned,
@@ -417,9 +470,28 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("diskNumber", "Choose one of the disks the agent listed.");
         }
 
-        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition)) is { } nameProblem)
+        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        GivenAnswers given = await GivenAsync(
+                machine,
+                definition,
+                request.Answers,
+                atMachine: true,
+                machine.SignedInUserName,
+                request.ComputerName,
+                resolution,
+                now,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (ComputerNameProblem(machine, request.ComputerName, SequenceChecks.ComputerNameUse(definition), given.Values) is { } nameProblem)
         {
             return DeploymentDecision.Invalid("computerName", nameProblem);
+        }
+
+        if (given.Problems.Count > 0)
+        {
+            return DeploymentDecision.InvalidAnswers(given.Problems);
         }
 
         (bool allowMismatch, ServerMessage? secureBootProblem) = SecureBootDecision(machine, definition, references, request.AllowSecureBootMismatch);
@@ -429,8 +501,6 @@ public sealed class DeploymentService(
             return DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem);
         }
 
-        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
-        DateTimeOffset now = timeProvider.GetUtcNow();
         Deployment deployment = Create(
             machine,
             sequence,
@@ -443,7 +513,21 @@ public sealed class DeploymentService(
             erases ? request.DiskNumber : null,
             request.ComputerName,
             allowMismatch,
+            given.Answers,
             now);
+
+        if (await KeepAsync(
+                deployment,
+                definition,
+                request.Answers,
+                given,
+                new RunCredentialGiver(machine.SignedInByUserId, machine.SignedInUserName, true),
+                address,
+                cancellationToken)
+            .ConfigureAwait(false) is { } kept)
+        {
+            return kept;
+        }
 
         machine.State = MachineState.Approved;
 
@@ -496,7 +580,109 @@ public sealed class DeploymentService(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return RunSnapshots.ForAgent(run, SequenceDocuments.Read(snapshot.Definition), artifacts, machine.AssignedName);
+        SequenceDefinition definition = SequenceDocuments.Read(snapshot.Definition);
+
+        return RunSnapshots.ForAgent(
+            run,
+            definition,
+            artifacts,
+            machine.AssignedName,
+            RunValues.Effective(run),
+            await PendingInputsAsync(machine, run, definition, cancellationToken).ConfigureAwait(false));
+    }
+
+    // The inputs the machine asks before an assigned run can start: none unless a required one it asks has no answer,
+    // and then every one it asks without an answer, so they are asked together. A run that started has its values.
+    public async Task<IReadOnlyList<AgentInput>?> PendingInputsAsync(
+        Machine machine,
+        Deployment run,
+        SequenceDefinition definition,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(definition);
+
+        if (run.State != DeploymentState.Assigned || definition.Inputs is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        RunValueCheck check = await values.CheckAsync(machine, run, definition, settings.Current.Deployment, cancellationToken).ConfigureAwait(false);
+
+        return check.Missing.Any(input => input.AskAt is InputAsk.Machine or InputAsk.Both) ? check.AskedAtMachine : null;
+    }
+
+    // Answers to the inputs of an assigned run that lacks a required one, given on the machine's page or at the machine
+    // while the run waits at its start; the machine answers only what it asks. The answers go with those the run has, and
+    // the run no longer waits once no required input lacks an answer: the machine's agent starts it then. Before is the
+    // run's answers as they were, over which the caller saves these, so that answers given elsewhere in the meantime win
+    // and these are refused; Refusal is set when nothing waits for answers.
+    public async Task<RunAnswering> AnswerAsync(
+        Machine machine,
+        Deployment run,
+        IReadOnlyList<InputAnswer>? answers,
+        bool atMachine,
+        Guid? userId,
+        string? userName,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+
+        SequenceDefinition definition = await DefinitionAsync(run, cancellationToken).ConfigureAwait(false);
+        DeploymentOptions deployment = settings.Current.Deployment;
+
+        if (run.State != DeploymentState.Assigned)
+        {
+            return new RunAnswering(run.Answers, [], [], null, Refused: true);
+        }
+
+        RunValueCheck waiting = await values.CheckAsync(machine, run, definition, deployment, cancellationToken).ConfigureAwait(false);
+
+        if (waiting.Missing.Count == 0)
+        {
+            return new RunAnswering(run.Answers, [], [], null, Refused: true);
+        }
+
+        List<AnswerProblem> problems = [.. RunValues.Check(definition, answers, input => !atMachine || input.AskAt is InputAsk.Machine or InputAsk.Both)];
+
+        if (problems.Count > 0)
+        {
+            return new RunAnswering(run.Answers, waiting.AskedAtMachine, problems, null, Refused: false);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        string? before = run.Answers;
+        IReadOnlyList<RunAnswer> merged = RunValues.Merge(definition, RunAnswer.Read(run.Answers), answers, userName, atMachine, now);
+        run.Answers = merged.Count == 0 ? null : RunAnswer.Write(merged);
+
+        if (await values.KeepAccountsAsync(run, definition, answers, new RunCredentialGiver(userId, userName, atMachine), cancellationToken)
+            .ConfigureAwait(false) is { } account)
+        {
+            return new RunAnswering(before, waiting.AskedAtMachine, [account], null, Refused: false);
+        }
+
+        RunValueCheck check = await values.CheckAsync(machine, run, definition, deployment, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<string> answered = RunValues.Answered(definition, answers);
+
+        // A value an answer makes that cannot be used, such as a computer name Windows refuses, is the answer's to fix.
+        problems.AddRange(check.Problems
+            .Select(problem => (Problem: problem, Input: answered.FirstOrDefault(name => string.Equals(name, problem.Name, StringComparison.OrdinalIgnoreCase))))
+            .Where(found => found.Input is not null)
+            .Select(found => new AnswerProblem(found.Input!, $"{RunValues.AnswersField}.{found.Input}", found.Problem.Message)));
+
+        if (problems.Count > 0)
+        {
+            return new RunAnswering(before, waiting.AskedAtMachine, problems, null, Refused: false);
+        }
+
+        run.InputsPending = check.Missing.Count > 0 && (atMachine || run.InputsPending);
+        run.UpdatedUtc = now;
+        AuditAnswers(run, answered, atMachine, now, address, userId, userName, atMachine ? machine.Id : null);
+
+        return new RunAnswering(before, waiting.AskedAtMachine, [], check, Refused: false);
     }
 
     // Cancels an assigned run, or stops a running one: the agent's next call is refused, and its resume token no
@@ -727,15 +913,11 @@ public sealed class DeploymentService(
         return (definition, references, problem);
     }
 
-    private async Task<Guid?> SuggestedAsync(Machine machine, SequenceReferences references, CancellationToken cancellationToken)
-    {
-        SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
-
-        return resolution is { Rule: not null, Sequence: { } sequence }
+    private static Guid? Suggested(SequenceResolution resolution, SequenceReferences references) =>
+        resolution is { Rule: not null, Sequence: { } sequence }
             && SequenceChecks.Check(SequenceDocuments.Read(sequence.Definition), references).Problems.Count == 0
                 ? sequence.Id
                 : null;
-    }
 
     // A raw disk image the machine will not start with Secure Boot on is written only where someone allowed it for the
     // run, or where the machine did not say Secure Boot is on; the agent checks the firmware again before it writes. An
@@ -798,17 +980,130 @@ public sealed class DeploymentService(
     }
 
     // A machine joins the domain under its name, and a cloud-init seed may name it, so such a sequence needs a name.
-    // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none.
-    private static ServerMessage? ComputerNameProblem(Machine machine, string? computerName, ServerMessage? use)
+    // Otherwise Windows setup or the image makes one up. use says why the sequence needs one, null when it needs none. A
+    // name the run's values give, such as a rule's pattern, is as good as one given here.
+    private static ServerMessage? ComputerNameProblem(Machine machine, string? computerName, ServerMessage? use, ValueResolution values)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
         {
             return ComputerNames.Problem(computerName.Trim());
         }
 
-        return use is not null && string.IsNullOrWhiteSpace(machine.AssignedName)
+        return use is not null && string.IsNullOrWhiteSpace(machine.AssignedName) && !Named(values)
             ? ServerMessages.DeploymentEnterComputerName.With("use", use)
             : null;
+    }
+
+    // The values give the machine a name Windows takes.
+    private static bool Named(ValueResolution values) =>
+        values.Effective.TryGetValue(MachineVariableNames.ComputerName, out string? name)
+        && !string.IsNullOrWhiteSpace(name)
+        && !values.Problems.Any(problem => string.Equals(problem.Name, MachineVariableNames.ComputerName, StringComparison.OrdinalIgnoreCase));
+
+    // The answers given with an assignment, an approval or a pick, checked against the inputs asked there, and the values
+    // they make with the rules as they are now. An input only asked there must be answered unless a value or a default
+    // answers it; one asked in both places may be left for the other, and the run then waits for it. A value an answer
+    // makes that cannot be used is the answer's problem. ComputerName is the name the request gives the machine.
+    private async Task<GivenAnswers> GivenAsync(
+        Machine machine,
+        SequenceDefinition definition,
+        IReadOnlyList<InputAnswer>? answers,
+        bool atMachine,
+        string? answeredBy,
+        string? computerName,
+        SequenceResolution? resolution,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        InputAsk only = atMachine ? InputAsk.Machine : InputAsk.Web;
+        List<AnswerProblem> problems = [.. RunValues.Check(definition, answers, input => input.AskAt == only || input.AskAt == InputAsk.Both)];
+        IReadOnlyList<RunAnswer> kept = problems.Count == 0 ? RunValues.Merge(definition, [], answers, answeredBy, atMachine, now) : [];
+        IReadOnlyList<string> answered = problems.Count == 0 ? RunValues.Answered(definition, answers) : [];
+        IReadOnlyDictionary<string, string> byName = MachineValues.Answers(kept);
+
+        resolution ??= await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
+        ValueSources sources = MachineValues.Sources(machine, resolution.Machine, resolution.Match, definition, byName, settings.Current.Deployment);
+
+        if (!string.IsNullOrWhiteSpace(computerName))
+        {
+            sources = sources with { Machine = [new NamedValue(MachineVariableNames.ComputerName, computerName.Trim())] };
+        }
+
+        ValueResolution resolved = ValueResolver.Resolve(sources);
+
+        if (problems.Count > 0)
+        {
+            return new GivenAnswers([], [], resolved, problems);
+        }
+
+        RunValueCheck check = RunValues.Check(definition, resolved, byName, answered.ToHashSet(StringComparer.OrdinalIgnoreCase));
+
+        problems.AddRange(check.Missing
+            .Where(input => input.AskAt == only)
+            .Select(input => new AnswerProblem(input.Name, $"{RunValues.AnswersField}.{input.Name}", ServerMessages.ValuesInputRequired.With("label", input.Label))));
+        problems.AddRange(check.Problems
+            .Select(problem => (Problem: problem, Input: answered.FirstOrDefault(name => string.Equals(name, problem.Name, StringComparison.OrdinalIgnoreCase))))
+            .Where(found => found.Input is not null)
+            .Select(found => new AnswerProblem(found.Input!, $"{RunValues.AnswersField}.{found.Input}", found.Problem.Message)));
+
+        return new GivenAnswers(kept, answered, resolved, problems);
+    }
+
+    // Keeps the Account answers for the new run and audits the answers by name. Null when all are kept.
+    private async Task<DeploymentDecision?> KeepAsync(
+        Deployment run,
+        SequenceDefinition definition,
+        IReadOnlyList<InputAnswer>? answers,
+        GivenAnswers given,
+        RunCredentialGiver giver,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        if (await values.KeepAccountsAsync(run, definition, answers, giver, cancellationToken).ConfigureAwait(false) is { } problem)
+        {
+            return DeploymentDecision.InvalidAnswers([problem]);
+        }
+
+        AuditAnswers(run, given.Answered, giver.AtMachine, run.CreatedUtc, address, giver.UserId, giver.Name, giver.AtMachine ? run.MachineId : null);
+
+        return null;
+    }
+
+    // Names only: an answer can be anything a person typed, and an Account input's is a password.
+    private void AuditAnswers(
+        Deployment run,
+        IReadOnlyList<string> answered,
+        bool atMachine,
+        DateTimeOffset now,
+        string? address,
+        Guid? userId,
+        string? userName,
+        Guid? machineId)
+    {
+        if (answered.Count == 0)
+        {
+            return;
+        }
+
+        database.AuditEvents.Add(Audit(
+            AuditActions.DeploymentInputsAnswered,
+            run,
+            now,
+            address,
+            $"{string.Join(", ", answered)} of {run.Title} on machine {run.MachineId:D}, answered {(atMachine ? "at the machine" : "on the web")}.",
+            actorUserId: userId,
+            actorName: userName,
+            actorMachineId: machineId));
+    }
+
+    private async Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
+    {
+        DeploymentSnapshot snapshot = await database.DeploymentSnapshots
+            .AsNoTracking()
+            .SingleAsync(s => s.DeploymentId == run.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return SequenceDocuments.Read(snapshot.Definition);
     }
 
     // Off: only a machine seen moments ago is at the prompt now; whoever holds the tokens of one seen earlier may
@@ -830,6 +1125,7 @@ public sealed class DeploymentService(
         int? diskNumber,
         string? computerName,
         bool allowSecureBootMismatch,
+        IReadOnlyList<RunAnswer> answers,
         DateTimeOffset now)
     {
         if (!string.IsNullOrWhiteSpace(computerName))
@@ -852,6 +1148,7 @@ public sealed class DeploymentService(
             RequestedByName = requestedByName,
             StepCount = SequenceTree.Leaves(definition).Count,
             AllowSecureBootMismatch = allowSecureBootMismatch,
+            Answers = answers.Count == 0 ? null : RunAnswer.Write(answers),
             CreatedUtc = now,
             UpdatedUtc = now,
         };
@@ -906,3 +1203,20 @@ public sealed class DeploymentService(
             Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
         };
 }
+
+// The answers given with an assignment, an approval or a pick: those to keep as the run's, the inputs they answer,
+// Account inputs included, the values they make, and their problems.
+internal sealed record GivenAnswers(
+    IReadOnlyList<RunAnswer> Answers,
+    IReadOnlyList<string> Answered,
+    ValueResolution Values,
+    IReadOnlyList<AnswerProblem> Problems);
+
+// What answers to a waiting run came to. Refused: the run waits for no answers. Before is the run's answers as they
+// were and Asked what the machine asked then, Problems what is wrong with these, and Check the run's values with them.
+public sealed record RunAnswering(
+    string? Before,
+    IReadOnlyList<AgentInput> Asked,
+    IReadOnlyList<AnswerProblem> Problems,
+    RunValueCheck? Check,
+    bool Refused);

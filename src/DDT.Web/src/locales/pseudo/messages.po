@@ -148,6 +148,11 @@ msgid "''{value}'' is not an IPv4 address."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerNotAChoice"
+msgid "''{value}'' is not one of the choices of {label}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 msgstr ""
@@ -496,8 +501,23 @@ msgid "{kind}: {file}, {size}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerTwice"
+msgid "{label} is answered twice. Give one answer."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerYesNo"
+msgid "{label} is answered with yes or no."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
 msgid "{label} needs an answer before the run can start."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerTooLong"
+msgid "{label} takes at most {max} characters."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -876,6 +896,11 @@ msgctxt "deployment.erasesOneOfManyDisks"
 msgid "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.approveThenNameValue"
+msgid "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a sequence, then assign the sequence with a computer name."
+msgstr ""
+
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
 msgstr ""
@@ -1020,6 +1045,11 @@ msgstr ""
 
 #: src/tokens/TokenTable.tsx
 msgid "{when} from <0>{address}</0>"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerAskedElsewhere"
+msgid "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}"
 msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
@@ -1756,6 +1786,11 @@ msgstr ""
 
 #: src/sequences/SequencesPage.tsx
 msgid "An administrator creates task sequences here. Until then, no machine can be given one."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerNoInput"
+msgid "An answer names no input. Load the page again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7596,6 +7631,11 @@ msgstr ""
 
 #: src/sequences/FindingsSummary.tsx
 msgid "The sequence"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerUnknown"
+msgid "The sequence asks nothing called {name}. Load the page again."
 msgstr ""
 
 #: src/lib/serverMessages.ts

@@ -48,6 +48,10 @@ public static class MachineEndpoints
         group.MapPost("/{id:guid}/deployments", AssignAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapDelete("/{id:guid}/deployments/current", EndCurrentAsync).RequireAuthorization(DdtPolicies.Operator);
 
+        // An operator answers what the run waits for at its start. Like the questions at the machine, it needs no new
+        // sign-in: whoever may assign the run may answer it.
+        group.MapPost("/{id:guid}/deployments/current/answers", AnswerAsync).RequireAuthorization(DdtPolicies.Operator);
+
         // Anyone who reaches the server can register machines, so an operator can throw away the ones nobody
         // vouched for, one at a time or everything waiting from one address.
         group.MapDelete("/{id:guid}", RemoveAsync).RequireAuthorization(DdtPolicies.Operator);
@@ -240,7 +244,7 @@ public static class MachineEndpoints
     }
 
     // With the sequence the page showed a rule choosing, the approval also runs it. Without one it runs nothing.
-    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> ApproveAsync(
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> ApproveAsync(
         Guid id,
         ApproveMachineRequest? request,
         ClaimsPrincipal user,
@@ -309,11 +313,17 @@ public static class MachineEndpoints
                     machine,
                     expected,
                     request?.AllowSecureBootMismatch ?? false,
+                    request?.Answers,
                     Principals.UserId(user),
                     user.Identity?.Name,
                     address,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+            if (decision.Outcome == DeploymentOutcome.Invalid)
+            {
+                return Invalid(decision);
+            }
 
             if (decision.Outcome != DeploymentOutcome.Accepted)
             {
@@ -385,7 +395,7 @@ public static class MachineEndpoints
         ]);
     }
 
-    private static Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> RejectAsync(
+    private static Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> RejectAsync(
         Guid id,
         ClaimsPrincipal user,
         HttpContext context,
@@ -522,9 +532,7 @@ public static class MachineEndpoints
             case DeploymentOutcome.Conflict:
                 return DecisionProblem(decision, StatusCodes.Status409Conflict);
             case DeploymentOutcome.Invalid:
-                return decision.Message is { } invalid
-                    ? ServerProblems.Validation(decision.Field!, invalid)
-                    : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+                return Invalid(decision);
         }
 
         Deployment deployment = decision.Deployment!;
@@ -544,6 +552,67 @@ public static class MachineEndpoints
         live.RunStepsChanged(machine.Id, changedSteps);
 
         return TypedResults.Ok(MachineSummaries.From(machine, deployment));
+    }
+
+    // Answers the inputs the run waits for at its start. The answer is the run as it is then; while it waits for nothing,
+    // or when the machine answered first, the run as it is with 409.
+    private static async Task<Results<Ok<DeploymentView>, Conflict<DeploymentView>, NotFound, ValidationProblem>> AnswerAsync(
+        Guid id,
+        AnswerInputsRequest request,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        DeploymentService deployments,
+        LiveNotifier live,
+        CancellationToken cancellationToken)
+    {
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        Deployment? run = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+
+        if (run is not { InputsPending: true })
+        {
+            return await AsItIsAsync(machine, database, deployments, cancellationToken).ConfigureAwait(false);
+        }
+
+        RunAnswering answering = await deployments
+            .AnswerAsync(machine, run, request.Answers, atMachine: false, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (answering.Problems.Count > 0)
+        {
+            return Invalid(DeploymentDecision.InvalidAnswers(answering.Problems));
+        }
+
+        if (answering.Refused || !await RunAnswerSaves.SaveAsync(database, run, answering.Before, cancellationToken).ConfigureAwait(false))
+        {
+            database.ChangeTracker.Clear();
+
+            return await AsItIsAsync(machine, database, deployments, cancellationToken).ConfigureAwait(false);
+        }
+
+        live.MachineChanged(machine, run);
+
+        return TypedResults.Ok((await DeploymentViews.ReadAsync(database, run.Id, cancellationToken).ConfigureAwait(false))!);
+    }
+
+    // The machine's run as it is now, for a request that came too late to change it.
+    private static async Task<Results<Ok<DeploymentView>, Conflict<DeploymentView>, NotFound, ValidationProblem>> AsItIsAsync(
+        Machine machine,
+        DdtDbContext database,
+        DeploymentService deployments,
+        CancellationToken cancellationToken)
+    {
+        Guid? shown = (await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false))?.Id;
+
+        return shown is { } runId && await DeploymentViews.ReadAsync(database, runId, cancellationToken).ConfigureAwait(false) is { } view
+            ? TypedResults.Conflict(view)
+            : TypedResults.NotFound();
     }
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveAsync(
@@ -646,7 +715,7 @@ public static class MachineEndpoints
         return TypedResults.NoContent();
     }
 
-    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult>> TransitionAsync(
+    private static async Task<Results<Ok<MachineSummary>, NotFound, ProblemHttpResult, ValidationProblem>> TransitionAsync(
         Guid id,
         ClaimsPrincipal user,
         HttpContext context,
@@ -727,6 +796,26 @@ public static class MachineEndpoints
         MachineState.Retired => ServerMessages.MachineStateRetired,
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
     }).With();
+
+    // Every field problem of the decision with its code, such as one for each answer that cannot be taken.
+    private static ValidationProblem Invalid(DeploymentDecision decision)
+    {
+        if (decision.Problems.Count == 0)
+        {
+            return decision.Message is { } invalid
+                ? ServerProblems.Validation(decision.Field!, invalid)
+                : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+        }
+
+        FieldProblems problems = new();
+
+        foreach (AnswerProblem problem in decision.Problems)
+        {
+            problems.Add(problem.Field, problem.Message);
+        }
+
+        return problems.ToResult();
+    }
 
     // Every decision the web can get has a message; one without keeps its English alone.
     private static ProblemHttpResult DecisionProblem(DeploymentDecision decision, int statusCode) =>

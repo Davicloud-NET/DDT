@@ -32,6 +32,12 @@ public static class AgentDeploymentEndpoints
 {
     private const int MaxAttempts = 3;
 
+    // How soon the agent reports again while its run waits for someone to answer or to continue it.
+    private const int WaitingReportSeconds = 5;
+
+    private const string AnsweredAlready =
+        "The run waits for no answers: it started, or its inputs were answered on the machine's page first. Ask the server for the current run.";
+
     public static RouteGroupBuilder MapAgentDeploymentEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -49,6 +55,11 @@ public static class AgentDeploymentEndpoints
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxReportBytes));
+
+        group.MapPost("/{id:guid}/runs/{runId:guid}/answers", AnswerAsync)
+            .RequireAuthorization(DdtPolicies.Machine)
+            .RequireRateLimiting(RateLimitPolicies.AgentMachine)
+            .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxRequestBytes));
 
         // HEAD explicitly: the agent checks a file's size before it erases the disk, and a HEAD no endpoint matches
         // would fall through to the web UI's index page with 200.
@@ -166,7 +177,7 @@ public static class AgentDeploymentEndpoints
                 case DeploymentOutcome.Conflict:
                     return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
                 case DeploymentOutcome.Invalid:
-                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
+                    return Invalid(decision);
             }
 
             run = decision.Deployment!;
@@ -270,9 +281,114 @@ public static class AgentDeploymentEndpoints
 
             return decision.Outcome == DeploymentOutcome.Refused
                 ? TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict)
-                : TypedResults.Ok(Tokens(machine, run, registrar, tokens));
+                : TypedResults.Ok(Answer(Tokens(machine, run, registrar, tokens), run, report, decision));
         }
     }
+
+    // What the agent learns besides its tokens. The values go with the report that started the run, and with every
+    // report before the agent has begun, since the answer that started it can be lost: the agent waits for them. While the
+    // run waits for someone the agent is asked to report sooner.
+    private static AgentRunReportResult Answer(AgentRunReportResult tokens, Deployment run, AgentRunReport report, DeploymentDecision decision) =>
+        tokens with
+        {
+            Values = run.State == DeploymentState.Running && (decision.Started || report.Activity is RunActivity.Preparing or RunActivity.WaitingForInput)
+                ? RunValues.Effective(run)
+                : null,
+            InputsPending = run.InputsPending ? decision.InputsPending ?? [] : null,
+            ReportAfterSeconds = DeploymentSummaries.Waiting(run) ? WaitingReportSeconds : null,
+        };
+
+    // Answers given at the machine while its run waits at its start for them, or before its agent reported: only inputs the
+    // machine asks. Answers that complete what the run lacks start it here, and the answer carries its values; problems
+    // are said by input, and the machine asks again. Answers given on the machine's page first win, and these are refused.
+    private static async Task<Results<Ok<AgentAnswersResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> AnswerAsync(
+        Guid id,
+        Guid runId,
+        AgentInputAnswers answers,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        DeploymentService deployments,
+        RunReports reports,
+        LiveNotifier live,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        if (!Principals.IsMachine(user, id))
+        {
+            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+        }
+
+        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+
+        if (machine is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!Principals.HoldsCurrentGeneration(user, machine))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        Deployment? run = machine.ActiveDeploymentId == runId
+            ? await database.Deployments.FindAsync([runId], cancellationToken).ConfigureAwait(false)
+            : null;
+
+        if (run is null)
+        {
+            return TypedResults.Problem(title: "This machine has no such run. Ask the server for the current run.", statusCode: StatusCodes.Status404NotFound);
+        }
+
+        string? address = context.Connection.RemoteIpAddress?.ToString();
+        DeploymentState before = run.State;
+        RunAnswering answering = await deployments
+            .AnswerAsync(machine, run, answers.Answers, atMachine: true, machine.SignedInByUserId, machine.SignedInUserName, address, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (answering.Refused)
+        {
+            return TypedResults.Problem(title: AnsweredAlready, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (answering.Problems.Count > 0)
+        {
+            return TypedResults.Ok(new AgentAnswersResult(
+                null,
+                answering.Asked,
+                [.. answering.Problems.Select(problem => new InputProblem(problem.Name, problem.Message.Text))]));
+        }
+
+        RunStart? start = answering.Check!.Missing.Count == 0
+            ? await reports.StartAsync(machine, run, address, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false)
+            : null;
+
+        if (!await RunAnswerSaves.SaveAsync(database, run, answering.Before, cancellationToken).ConfigureAwait(false))
+        {
+            return TypedResults.Problem(title: AnsweredAlready, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(AgentDeploymentEndpoints)), run, before);
+        live.MachineChanged(machine, run);
+
+        if (start?.Error is { } error)
+        {
+            return TypedResults.Problem(title: error, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        return TypedResults.Ok(start is { InputsPending: null }
+            ? new AgentAnswersResult(RunValues.Effective(run), [], [])
+            : new AgentAnswersResult(null, start?.InputsPending ?? answering.Check.AskedAtMachine, []));
+    }
+
+    // Every answer the console asks again, by its field, and all of them in the title, which the console shows.
+    private static ValidationProblem Invalid(DeploymentDecision decision) =>
+        decision.Problems.Count == 0
+            ? TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] })
+            : TypedResults.ValidationProblem(
+                decision.Problems.GroupBy(problem => problem.Field).ToDictionary(field => field.Key, field => field.Select(problem => problem.Message.Text).ToArray()),
+                title: string.Join(" ", decision.Problems.Select(problem => problem.Message.Text)));
 
     // Content addressed: the tag is the hash, so a resumed range can never splice two different files. Only the files
     // frozen with the machine's active run, so a machine never reads the library at large.

@@ -5,9 +5,11 @@
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Machines;
+using DDT.Server.Rules;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +19,7 @@ namespace DDT.Server.Deployments;
 // Applies an agent's report to its run. A report names every step that has left Pending, so a report sent again
 // changes nothing, and a step only moves forward: from Pending to Running, and on to Done, Skipped or Failed. The
 // server stamps the times, because the Windows PE clock can be hours off. Nothing here saves, see DeploymentService.
-public sealed class RunReports(DdtDbContext database, DdtSettings settings, TimeProvider timeProvider)
+public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunValues values, TimeProvider timeProvider)
 {
     private const string AskAgain = "Ask the server for the current run.";
 
@@ -79,26 +81,29 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
         switch (run.State, report.State)
         {
             case (DeploymentState.Assigned, DeploymentState.Running):
-                // One snapshot for the check and for what the run captures, so a save between them cannot start a run
-                // with values nobody checked.
-                SettingsSnapshot snapshot = settings.Current;
+                RunStart start = await StartAsync(machine, run, address, now, cancellationToken).ConfigureAwait(false);
 
-                if (StartProblem(snapshot, await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)) is { } problem)
+                if (start.Error is { } problem)
                 {
-                    End(machine, run, DeploymentState.Failed, problem, now);
-                    machine.State = MachineState.Failed;
-                    database.AuditEvents.Add(Audit(AuditActions.DeploymentFailed, run, machine, now, address, $"{run.Title} on machine {machine.Id:D} did not start: {problem}"));
-
                     return DeploymentDecision.Refused(run, problem);
                 }
 
-                run.State = DeploymentState.Running;
-                run.StartedUtc = now;
-                run.Inputs = RunInputs.Capture(machine, snapshot.Deployment, now).Write();
-                machine.State = MachineState.Deploying;
-                database.AuditEvents.Add(Audit(AuditActions.DeploymentStarted, run, machine, now, address, $"{run.Title} on machine {machine.Id:D}."));
+                if (start.InputsPending is { } pending)
+                {
+                    // Nothing runs before the run has its values.
+                    if (report.Steps.Any(step => step.State != StepState.Pending))
+                    {
+                        return DeploymentDecision.Conflict($"The run waits at its start for answers to its inputs, so none of its steps can have run. {AskAgain}");
+                    }
 
-                return Progress(run, steps, report, now, lenient: false) ?? DeploymentDecision.Accepted(run);
+                    run.CurrentPhase = report.Phase;
+                    run.Activity = report.Activity;
+                    run.UpdatedUtc = now;
+
+                    return DeploymentDecision.Accepted(run) with { InputsPending = pending };
+                }
+
+                return Progress(run, steps, report, now, lenient: false) ?? DeploymentDecision.Accepted(run) with { Started = true };
 
             case (DeploymentState.Running, DeploymentState.Running):
                 return Progress(run, steps, report, now, lenient: false) ?? DeploymentDecision.Accepted(run);
@@ -143,6 +148,63 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
             default:
                 return DeploymentDecision.Conflict($"A run that is {Word(run.State)} cannot be reported as {Word(report.State)}. {AskAgain}");
         }
+    }
+
+    // Starts an assigned run once it has its values, as its agent's first report or the answers given at the machine ask.
+    // One settings snapshot for the checks and for what the run captures, so a save between them cannot start a run with
+    // values nobody checked. The values are worked out from the run's answers and the rules as they are now. What keeps
+    // the run from starting ends it, before any disk is touched, except a required input the machine asks: then the run
+    // waits at its start, still assigned, until the machine or the machine's page answers it. Nothing here saves.
+    public async Task<RunStart> StartAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+
+        SettingsSnapshot snapshot = settings.Current;
+        SequenceDefinition definition = await DefinitionAsync(run, cancellationToken).ConfigureAwait(false);
+        string? problem = StartProblem(snapshot, definition);
+
+        if (problem is null)
+        {
+            RunValueCheck check = await values.CheckAsync(machine, run, definition, snapshot.Deployment, cancellationToken).ConfigureAwait(false);
+            InputDeclaration[] webOnly = [.. check.Missing.Where(input => input.AskAt == InputAsk.Web)];
+
+            if (webOnly.Length == 0 && check.Missing.Count > 0)
+            {
+                run.InputsPending = true;
+
+                return new RunStart(null, check.AskedAtMachine);
+            }
+
+            RunInputs inputs = RunInputs.From(check.Resolution.Effective, snapshot.Deployment, now);
+            problem = webOnly.Length > 0
+                ? $"The run did not start, because only the web asks what it lacks: {Sentences(webOnly.Select(input => ServerMessages.ValuesInputRequired.With("label", input.Label).Text))} Assign the sequence again and answer it."
+                : check.Problems.Count > 0
+                    ? $"The run's values have problems, so it did not start: {Sentences(check.Problems.Select(value => value.Message.Text))}"
+                    : SettingsProblem(definition, inputs);
+
+            if (problem is null)
+            {
+                run.InputsPending = false;
+                run.State = DeploymentState.Running;
+                run.StartedUtc = now;
+                run.UpdatedUtc = now;
+                run.Values = RunValues.Write(check.Resolution.Values);
+                run.Inputs = inputs.Write();
+                machine.State = MachineState.Deploying;
+                database.AuditEvents.Add(Audit(AuditActions.DeploymentStarted, run, machine, now, address, $"{run.Title} on machine {machine.Id:D}."));
+
+                return new RunStart(null, null);
+            }
+        }
+
+        string error = StoredText.Bound(problem, DeploymentLimits.MaxErrorLength)!;
+        run.InputsPending = false;
+        End(machine, run, DeploymentState.Failed, error, now);
+        machine.State = MachineState.Failed;
+        database.AuditEvents.Add(Audit(AuditActions.DeploymentFailed, run, machine, now, address, $"{run.Title} on machine {machine.Id:D} did not start: {error}"));
+
+        return new RunStart(error, null);
     }
 
     // A run that ends while a step runs ends that step with it.
@@ -221,6 +283,40 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
                 ? "The sequence joins the domain, but DDT:Deployment:Domain no longer names a domain and an account to join it with. Configure them and assign the sequence again."
                 : null;
     }
+
+    // The settings of the answer file and the join, as the run's values give them: a rule or an input can give a time
+    // zone, a locale, a keyboard or an organizational unit that the settings page would have refused. Only what the
+    // sequence uses is checked; the computer name was checked with the values.
+    private static string? SettingsProblem(SequenceDefinition definition, RunInputs inputs)
+    {
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
+
+        if (nodes.Any(node => node is WriteUnattendStep))
+        {
+            if (inputs.TimeZone is { } timeZone && !WindowsSettings.IsTimeZone(timeZone))
+            {
+                return $"The run's {MachineValues.TimeZone} value, {timeZone}, is not a Windows time zone, so it did not start.";
+            }
+
+            if (inputs.Locale is { } locale && !WindowsSettings.IsLocale(locale))
+            {
+                return $"The run's {MachineValues.Locale} value, {locale}, is not a locale that names a region, so it did not start.";
+            }
+
+            if (inputs.Keyboard is { } keyboard && !WindowsSettings.IsKeyboard(keyboard))
+            {
+                return $"The run's {MachineValues.Keyboard} value, {keyboard}, is not a list of keyboards Windows knows, so it did not start.";
+            }
+        }
+
+        return nodes.Any(node => node is JoinDomainStep)
+            && inputs.DomainOrganizationalUnit is { } organizationalUnit
+            && DeploymentOptionsValidation.OrganizationalUnitMessage(organizationalUnit) is { } refused
+                ? $"The run's {MachineValues.OrganizationalUnit} value, {organizationalUnit}, cannot be used, so it did not start. {refused.Text}"
+                : null;
+    }
+
+    private static string Sentences(IEnumerable<string> sentences) => string.Join(" ", sentences);
 
     private async Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
     {
@@ -458,3 +554,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
         Detail = StoredText.Bound(detail, AuditEvent.MaxDetailLength),
     };
 }
+
+// Error is why the run could not start, which ended it; InputsPending the inputs the machine asks while the run waits at
+// its start for a required one. Neither: the run started.
+public sealed record RunStart(string? Error, IReadOnlyList<AgentInput>? InputsPending);

@@ -205,6 +205,41 @@ public static class ServerMessages
         "deployment.historyCursor",
         "The cursor is not one this server handed out. Start again from the first page.");
 
+    // The answers to a run's inputs, a run that waits for them or at a pause, and a computer name a run's values give.
+
+    public static readonly MessageTemplate DeploymentAnswerNoInput = Define(
+        "deployment.answerNoInput",
+        "An answer names no input. Load the page again.");
+
+    public static readonly MessageTemplate DeploymentAnswerUnknown = Define(
+        "deployment.answerUnknown",
+        "The sequence asks nothing called {name}. Load the page again.");
+
+    public static readonly MessageTemplate DeploymentAnswerTwice = Define(
+        "deployment.answerTwice",
+        "{label} is answered twice. Give one answer.");
+
+    public static readonly MessageTemplate DeploymentAnswerAskedElsewhere = Define(
+        "deployment.answerAskedElsewhere",
+        "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}");
+
+    public static readonly MessageTemplate DeploymentAnswerTooLong = Define(
+        "deployment.answerTooLong",
+        "{label} takes at most {max} characters.");
+
+    public static readonly MessageTemplate DeploymentAnswerNotAChoice = Define(
+        "deployment.answerNotAChoice",
+        "''{value}'' is not one of the choices of {label}.");
+
+    public static readonly MessageTemplate DeploymentAnswerYesNo = Define(
+        "deployment.answerYesNo",
+        "{label} is answered with yes or no.");
+
+    public static readonly MessageTemplate DeploymentApproveThenNameValue = Define(
+        "deployment.approveThenNameValue",
+        "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a " +
+        "sequence, then assign the sequence with a computer name.");
+
     // Computer names, as the Windows answer file takes them.
 
     public static readonly MessageTemplate ComputerNameEmpty = Define("computerName.empty", "Enter a computer name.");

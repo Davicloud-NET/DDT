@@ -148,6 +148,11 @@ msgid "''{value}'' is not an IPv4 address."
 msgstr "''{value}'' ist keine IPv4-Adresse."
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerNotAChoice"
+msgid "''{value}'' is not one of the choices of {label}."
+msgstr "''{value}'' ist keine der Auswahlmöglichkeiten von {label}."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 msgstr "''{value}'' muss als DOMAIN\\user oder user@domain.example geschrieben werden."
@@ -496,9 +501,24 @@ msgid "{kind}: {file}, {size}"
 msgstr "{kind}: {file}, {size}"
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerTwice"
+msgid "{label} is answered twice. Give one answer."
+msgstr "{label} ist zweimal beantwortet. Geben Sie eine Antwort."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerYesNo"
+msgid "{label} is answered with yes or no."
+msgstr "{label} wird mit Ja oder Nein beantwortet."
+
+#: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
 msgid "{label} needs an answer before the run can start."
 msgstr "{label} braucht eine Antwort, bevor die Ausführung beginnen kann."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerTooLong"
+msgid "{label} takes at most {max} characters."
+msgstr "{label} darf höchstens {max} Zeichen haben."
 
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
@@ -876,6 +896,11 @@ msgctxt "deployment.erasesOneOfManyDisks"
 msgid "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
 msgstr "{sequence} löscht einen Datenträger, und dieses Gerät hat mehr als einen. Melden Sie sich daran an und wählen Sie dort den Datenträger."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.approveThenNameValue"
+msgid "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a sequence, then assign the sequence with a computer name."
+msgstr "{sequence} benennt das Gerät mit ihrem Wert ComputerName, und diesem Gerät gibt noch nichts einen. Geben Sie es ohne Tasksequenz frei und weisen Sie die Tasksequenz dann mit einem Computernamen zu."
+
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
 msgstr "{sequenceName} löscht den Datenträger von {label} nicht."
@@ -1021,6 +1046,11 @@ msgstr "{when} von {by}"
 #: src/tokens/TokenTable.tsx
 msgid "{when} from <0>{address}</0>"
 msgstr "{when} von <0>{address}</0>"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerAskedElsewhere"
+msgid "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}"
+msgstr "{where, select, web {{label} wird im Web gefragt, nicht am Gerät.} other {{label} wird am Gerät gefragt, nicht im Web.}}"
 
 #: src/sequences/SequenceConflict.tsx
 msgid "{who} saved this sequence at {when} while you were editing."
@@ -1757,6 +1787,11 @@ msgstr "Ein Administrator ändert alles, auch die Konten hier; ein Operator gibt
 #: src/sequences/SequencesPage.tsx
 msgid "An administrator creates task sequences here. Until then, no machine can be given one."
 msgstr "Ein Administrator legt hier Tasksequenzen an. Bis dahin kann keinem Gerät eine zugewiesen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerNoInput"
+msgid "An answer names no input. Load the page again."
+msgstr "Eine Antwort nennt keine Eingabe. Laden Sie die Seite neu."
 
 #: src/lib/serverMessages.ts
 msgctxt "account.apiTokenCannotChange"
@@ -7597,6 +7632,11 @@ msgstr "Die Suche nach {name} unter {baseDn} ist fehlgeschlagen: {error}"
 #: src/sequences/FindingsSummary.tsx
 msgid "The sequence"
 msgstr "Die Tasksequenz"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerUnknown"
+msgid "The sequence asks nothing called {name}. Load the page again."
+msgstr "Die Tasksequenz fragt nichts namens {name}. Laden Sie die Seite neu."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.cannotGoOn"

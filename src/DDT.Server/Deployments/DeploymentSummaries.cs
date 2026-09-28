@@ -32,7 +32,30 @@ public static class DeploymentSummaries
             deployment.StartedUtc,
             deployment.FinishedUtc,
             deployment.UpdatedUtc,
-            deployment.Error);
+            deployment.Error,
+            Waiting(deployment),
+            deployment.PauseStepId is null || Continued(deployment) ? null : deployment.PauseMessage);
+    }
+
+    // The run needs someone: answers to its inputs before it can start, or someone to continue the pause it waits at.
+    public static bool Waiting(Deployment deployment)
+    {
+        ArgumentNullException.ThrowIfNull(deployment);
+
+        return deployment switch
+        {
+            { State: DeploymentState.Assigned, InputsPending: true } => true,
+            { State: DeploymentState.Running, PauseStepId: not null } => !Continued(deployment),
+            _ => false,
+        };
+    }
+
+    // Someone continued the pause the run waits at, and its agent goes on once its next report learns it.
+    public static bool Continued(Deployment deployment)
+    {
+        ArgumentNullException.ThrowIfNull(deployment);
+
+        return deployment.PauseStepId is { } stepId && deployment.ContinueStepId == stepId && deployment.ContinuePass == deployment.PausePass;
     }
 
     public static DeploymentStepView Step(DeploymentStep step)

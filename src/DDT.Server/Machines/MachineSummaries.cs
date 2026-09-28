@@ -38,6 +38,7 @@ public static class MachineSummaries
             deployment is null ? null : DeploymentSummaries.From(deployment),
             machine.SecureBootEnabled,
             machine.TrustedUefiCas,
-            DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType));
+            DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType),
+            MachineFactsDocuments.Read(machine.Facts));
     }
 }

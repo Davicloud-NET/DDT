@@ -32,4 +32,21 @@ public sealed class DeploymentStep
     public DateTimeOffset? FinishedUtc { get; set; }
 
     public string? Error { get; set; }
+
+    // A run of a tree has a row per node, containers included, and Index is the node's place in pre-order. ParentId is
+    // the container the node sits in, null at the top, and Depth counts containers from 0.
+    public Guid? ParentId { get; set; }
+
+    public int Depth { get; set; }
+
+    // The node's latest visit, as StepRunState has it. A run from before trees, or of an agent that sends no passes, has
+    // Pass 0 on every row.
+    public int Pass { get; set; }
+
+    public int Iteration { get; set; }
+
+    public IfBranch? Branch { get; set; }
+
+    // The node's tests as they were decided, as DdtJsonContext writes a list of TestEvaluation; null for none.
+    public string? Evaluation { get; set; }
 }

@@ -12,6 +12,8 @@ using DDT.Contracts;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Images;
 using DDT.Contracts.Packages;
+using DDT.Contracts.Settings;
+using DDT.Server.Settings;
 
 namespace DDT.E2E;
 
@@ -116,6 +118,35 @@ internal sealed class AdminApi : IDisposable
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
+    // A write that needs the signed-in user's password entered again, such as an account's: the proof of it goes with the
+    // request, as the page sends it after its dialog.
+    public async Task<TResult> SendReauthenticatedAsync<TBody, TResult>(
+        HttpMethod method,
+        string path,
+        string password,
+        TBody body,
+        JsonTypeInfo<TBody> bodyType,
+        JsonTypeInfo<TResult> resultType,
+        HttpStatusCode expected,
+        CancellationToken cancellationToken)
+    {
+        ReauthenticationToken proof = await SendAsync(
+            HttpMethod.Post,
+            "api/settings/reauthenticate",
+            new ReauthenticateRequest(password, null),
+            DdtJsonContext.Default.ReauthenticateRequest,
+            DdtJsonContext.Default.ReauthenticationToken,
+            HttpStatusCode.OK,
+            cancellationToken).ConfigureAwait(false);
+
+        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = JsonContent.Create(body, bodyType) };
+        request.Headers.Add(ReauthenticationTokens.HeaderName, proof.Token);
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
+
+        return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
+    }
+
     // For a request the server is to refuse: returns the body of its answer.
     public async Task<string> SendRefusedAsync<TBody>(
         HttpMethod method,
@@ -132,11 +163,12 @@ internal sealed class AdminApi : IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task DeleteAsync(string path, CancellationToken cancellationToken)
+    // A rule's delete answers the rules that are left, whose places moved; everything else answers nothing.
+    public async Task DeleteAsync(string path, CancellationToken cancellationToken, HttpStatusCode expected = HttpStatusCode.NoContent)
     {
         using HttpRequestMessage request = new(HttpMethod.Delete, new Uri(path, UriKind.Relative));
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-        await ExpectAsync(response, HttpStatusCode.NoContent, cancellationToken).ConfigureAwait(false);
+        await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<ImageSummary>> UploadImageAsync(string file, CancellationToken cancellationToken)

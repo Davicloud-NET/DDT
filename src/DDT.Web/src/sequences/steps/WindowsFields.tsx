@@ -9,8 +9,10 @@ import { useContext } from "react";
 
 import { isDeployable, type ImageSummary } from "@/images/images";
 
+import { AccountSetting } from "../builder/AccountSetting";
+import { TemplateField } from "../builder/TemplateField";
 import { EditorLock } from "../editorLock";
-import { ChoiceSetting, FlagSetting, NumberSetting, TextSetting, type Choice } from "../fields";
+import { ChoiceSetting, FlagSetting, NumberSetting, type Choice } from "../fields";
 import type {
   ApplyImageStep,
   InjectDriversStep,
@@ -184,9 +186,11 @@ export function WriteUnattendFields({
           server's default.
         </Trans>
       </p>
-      <TextSetting
+      <TemplateField
         label={<Trans>Time zone</Trans>}
         field="timeZone"
+        mono={false}
+        howTo={false}
         findings={findings}
         className="sm:col-span-2"
         hint={
@@ -200,25 +204,25 @@ export function WriteUnattendFields({
           onChange({ timeZone: orNull(text) });
         }}
       />
-      <TextSetting
+      <TemplateField
         label={<Trans>Language and region</Trans>}
         field="locale"
         findings={findings}
         hint={<Trans>Such as de-DE.</Trans>}
         placeholder={serverDefault}
-        mono
+        howTo={false}
         value={step.locale ?? ""}
         onChange={(text) => {
           onChange({ locale: orNull(text) });
         }}
       />
-      <TextSetting
+      <TemplateField
         label={<Trans>Keyboard</Trans>}
         field="keyboard"
         findings={findings}
         hint={<Trans>An input locale such as de-DE or 0407:00000407.</Trans>}
         placeholder={serverDefault}
-        mono
+        howTo={false}
         value={step.keyboard ?? ""}
         onChange={(text) => {
           onChange({ keyboard: orNull(text) });
@@ -251,11 +255,17 @@ export function JoinDomainFields({
   onChange,
 }: KindFieldsProps<JoinDomainStep>) {
   const locked = useContext(EditorLock);
+  const own = (step.account ?? null) !== null;
 
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        {catalog.domainConfigured === false ? (
+        {own ? (
+          <Trans>
+            Joins the domain of the account chosen below, in Windows after the hand-over. The
+            machine needs a computer name.
+          </Trans>
+        ) : catalog.domainConfigured === false ? (
           <Trans>No domain is set on the Deployment defaults page, so this step cannot run.</Trans>
         ) : (
           <Trans>
@@ -264,7 +274,20 @@ export function JoinDomainFields({
           </Trans>
         )}
       </p>
-      <TextSetting
+      <AccountSetting
+        label={<Trans>Join with</Trans>}
+        field="account"
+        findings={findings}
+        className="sm:col-span-2"
+        use="join"
+        noneLabel={t`The join account on the Deployment defaults page`}
+        hint={<Trans>The account also names the domain the machine joins.</Trans>}
+        value={step.account ?? null}
+        onChange={(account) => {
+          onChange({ account }, true);
+        }}
+      />
+      <TemplateField
         label={<Trans>Organizational unit</Trans>}
         field="organizationalUnit"
         findings={findings}
@@ -276,13 +299,13 @@ export function JoinDomainFields({
           </Trans>
         }
         placeholder={t`The default`}
-        mono
+        howTo={false}
         value={step.organizationalUnit ?? ""}
         onChange={(text) => {
           onChange({ organizationalUnit: orNull(text) });
         }}
       />
-      {catalog.domainConfigured === true && !locked ? (
+      {catalog.domainConfigured === true && !locked && !own ? (
         <DomainJoinCheck
           organizationalUnit={step.organizationalUnit ?? null}
           className="sm:col-span-2"

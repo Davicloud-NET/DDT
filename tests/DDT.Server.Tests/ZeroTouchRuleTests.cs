@@ -35,7 +35,7 @@ public sealed class ZeroTouchRuleTests(ZeroTouchApplication application) : IClas
         Assert.Equal(MachineState.Pending, next.State);
         Assert.Null(next.Deployment);
         Assert.Null(next.Run);
-        Assert.Equal(SequenceResolutionSource.ModelRule, (await administrator.ResolutionAsync(machine.Id)).Source);
+        Assert.Equal(SequenceResolutionSource.Rule, (await administrator.ResolutionAsync(machine.Id)).Source);
     }
 
     // Nor is an approval that took the rule's sequence: it belonged to that boot, so the next netboot from a listed

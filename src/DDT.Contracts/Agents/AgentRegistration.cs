@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
 using DDT.Contracts.Images;
+using DDT.Contracts.Machines;
 
 namespace DDT.Contracts.Agents;
 
@@ -15,7 +17,11 @@ namespace DDT.Contracts.Agents;
 // TrustedUefiCas says which of Microsoft's third-party UEFI CAs, which sign the shims of Linux distributions, the
 // firmware's db holds; null when the agent cannot read or parse db, or is older than this field. ChassisType is the
 // SMBIOS System Enclosure's chassis type without its lock bit, so the web can tell a laptop from a desktop; null when
-// the firmware lists no enclosure or the agent is older than this field.
+// the firmware lists no enclosure or the agent is older than this field. Facts are the rest of what conditions test,
+// null from an agent older than version 3 sequences.
+//
+// Members from version 3 sequences on are left out of the JSON while unset, here and in every agent record, so an
+// older server or agent reads the same JSON as before.
 public sealed record AgentRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -31,4 +37,5 @@ public sealed record AgentRegistration(
     AgentEnvironment Environment = AgentEnvironment.WindowsPE,
     bool? SecureBootEnabled = null,
     UefiCa? TrustedUefiCas = null,
-    int? ChassisType = null);
+    int? ChassisType = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] MachineFacts? Facts = null);

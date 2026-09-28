@@ -26,13 +26,16 @@ public static class DataServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.AddSingleton<AuditInterceptor>();
 
+        // Deletes a run's credentials in the save that ends the run.
+        services.AddSingleton<RunCredentialCleanup>();
+
         if (string.IsNullOrWhiteSpace(postgres))
         {
             Directory.CreateDirectory(options.StorePath);
             string file = Path.Combine(options.StorePath, "ddt-dev.db");
             services.AddDbContextPool<DdtDbContext>((provider, db) => db
                 .UseSqlite($"Data Source={file}")
-                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>()));
+                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>()));
         }
         else
         {
@@ -41,7 +44,7 @@ public static class DataServiceCollectionExtensions
                     .MigrationsHistoryTable("__EFMigrationsHistory", DdtDbContext.Schema)
                     .MigrationsAssembly(typeof(DdtDbContext).Assembly.GetName().Name)
                     .EnableRetryOnFailure())
-                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>()));
+                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>()));
         }
 
         services.AddHostedService<DatabaseInitializer>();

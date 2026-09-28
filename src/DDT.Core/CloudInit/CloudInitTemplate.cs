@@ -4,16 +4,18 @@
 
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using DDT.Contracts.Sequences;
+using DDT.Core.Templates;
 
 namespace DDT.Core.CloudInit;
 
 // The seed files of a Write the cloud-init seed step are text with placeholders such as {{ComputerName}} for the
-// machine's values. A value is escaped for a double-quoted YAML string, where the placeholders belong. Only these
-// names are placeholders, ignoring case; anything else between double braces stays as it is, because cloud-init's own
-// Jinja templates use the same braces.
-public static partial class CloudInitTemplate
+// machine's values, written as ValueTemplate writes them, filters included. A value is escaped for a double-quoted YAML
+// string, where the placeholders belong. The names in Names are placeholders, ignoring case, and so is the name of any
+// of the run's values, such as a variable of the sequence or a value a rule sets, as long as the run has that value.
+// Anything else between double braces stays as it is, because cloud-init's own Jinja templates use the same braces, and
+// so does a known name with a filter DDT does not have.
+public static class CloudInitTemplate
 {
     public static IReadOnlyList<string> Names { get; } =
     [
@@ -30,34 +32,58 @@ public static partial class CloudInitTemplate
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return [.. Placeholder().Matches(text).Select(match => match.Groups[1].Value).Distinct(StringComparer.OrdinalIgnoreCase)];
+        return ValueTemplate.Parse(text).Names;
     }
 
     // The known name a placeholder stands for, or null.
     public static string? Known(string placeholder) =>
         Names.FirstOrDefault(name => string.Equals(name, placeholder, StringComparison.OrdinalIgnoreCase));
 
-    // Replaces each known placeholder with its value from values, keyed by the names in Names. Throws
-    // InvalidOperationException, whose message names the placeholder, when a value the text uses is missing. Line ends
-    // become LF, which shell scripts in user-data need.
+    // Replaces each placeholder with its value from values, whose names are looked up ignoring case: those in Names, and
+    // any other name values has a value for, the run's values. Throws InvalidOperationException, whose message names the
+    // placeholder, when a name in Names that the text uses has no value. Line ends become LF, which shell scripts in
+    // user-data need.
     public static string Render(string text, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(values);
 
-        string rendered = Placeholder().Replace(text, match =>
+        string rendered = ValueTemplate.Replace(text, placeholder =>
         {
-            if (Known(match.Groups[1].Value) is not { } name)
+            if (placeholder.Filters.Any(filter => ValueTemplate.FilterProblem(placeholder, filter) is not null))
             {
-                return match.Value;
+                return null;
             }
 
-            return values.TryGetValue(name, out string? value) && value is not null
-                ? Escape(value)
+            if (Known(placeholder.Name) is not { } name)
+            {
+                return Value(values, placeholder.Name) is { } runs ? Escape(ValueTemplate.Apply(placeholder, runs)) : null;
+            }
+
+            return Value(values, name) is { } value
+                ? Escape(ValueTemplate.Apply(placeholder, value))
                 : throw new InvalidOperationException($"The machine has no value for {{{{{name}}}}}.");
         });
 
         return rendered.ReplaceLineEndings("\n");
+    }
+
+    private static string? Value(IReadOnlyDictionary<string, string?> values, string name)
+    {
+        if (values.TryGetValue(name, out string? value))
+        {
+            return value;
+        }
+
+        foreach ((string key, string? found) in values)
+        {
+            if (string.Equals(key, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     // What YAML needs escaped in a double-quoted string: the backslash, the quote and control characters, the C1 ones
@@ -87,7 +113,4 @@ public static partial class CloudInitTemplate
 
         return escaped.ToString();
     }
-
-    [GeneratedRegex(@"\{\{\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}", RegexOptions.CultureInvariant)]
-    private static partial Regex Placeholder();
 }

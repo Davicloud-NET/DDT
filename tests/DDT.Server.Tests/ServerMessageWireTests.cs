@@ -67,31 +67,50 @@ public sealed class ServerMessageWireTests(DdtApplication application) : IClassF
         Assert.Equal("{}", problem["args"]!.ToJsonString());
     }
 
-    // The explanation names the rule in a message of its own, which the web says in the same language.
+    // The explanation names the rule by its place and name, which the web says in the same language.
     [Fact]
     public async Task TheResolutionCarriesItsExplanationAsCodes()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         string model = RuleRequests.UniqueModel();
-        await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(sequence.Id, model));
         using RegisteredMachine machine = await application.RegisterModelAsync(null, model);
 
         JsonObject resolution = await JsonAsync(await administrator.GetAsync($"/api/machines/{machine.Id}/sequence"));
 
-        Assert.Equal(nameof(SequenceResolutionSource.ModelRule), (string?)resolution["source"]);
+        Assert.Equal(nameof(SequenceResolutionSource.Rule), (string?)resolution["source"]);
         Assert.StartsWith(
-            $"The rule for model {model} of any maker chooses {sequence.Name}.",
+            $"Rule {rule.Position + 1}, Model {model}, chooses {sequence.Name}.",
             (string?)resolution["explanation"],
             StringComparison.Ordinal);
-        Assert.Equal("resolution.ruleChooses", (string?)resolution["explanationCode"]);
+        Assert.Equal("resolution.ruleNumbered", (string?)resolution["explanationCode"]);
+        Assert.Equal(
+            new JsonObject { ["number"] = rule.Position + 1, ["rule"] = $"Model {model}", ["sequence"] = sequence.Name }.ToJsonString(),
+            resolution["explanationArgs"]!.ToJsonString());
+    }
+
+    // A rule's problem is a sequence problem without a step: its field is the path within the rule.
+    [Fact]
+    public async Task ARuleProblemCarriesItsCodeAndValues()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        HttpResponseMessage created = await administrator.PostAsync(
+            RuleRequests.Rules,
+            RuleRequests.Rule("Typo", new TestCondition("Modle", ConditionOperator.Equals, "Latitude 5440")));
+
+        JsonObject problem = (await JsonAsync(created))["problems"]!.AsArray().Single()!.AsObject();
+
         Assert.Equal(
             new JsonObject
             {
-                ["rule"] = new JsonObject { ["code"] = "rule.forModelOfAnyMaker", ["args"] = new JsonObject { ["model"] = model } },
-                ["sequence"] = sequence.Name,
+                ["stepId"] = null,
+                ["field"] = "when.variable",
+                ["message"] = "Modle is not a fact of the machine or a value that a rule or a machine role sets. Check the spelling.",
+                ["code"] = "rule.conditionUnknownName",
+                ["args"] = new JsonObject { ["name"] = "Modle" },
             }.ToJsonString(),
-            resolution["explanationArgs"]!.ToJsonString());
+            problem.ToJsonString());
     }
 
     // Identity's own refusals get codes too, by Identity's code as the field.

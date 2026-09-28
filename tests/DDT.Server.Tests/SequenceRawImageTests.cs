@@ -129,7 +129,8 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.Equal(["userData", "networkConfig"], validation.Warnings.Select(warning => warning.Field));
         Assert.Equal(
             "{{Hostname}} is not one of DDT's placeholders, so it stays as it is. DDT fills in {{ComputerName}}, {{Manufacturer}}, " +
-            "{{Model}}, {{SerialNumber}}, {{SmbiosUuid}}, {{MacAddress}}.",
+            "{{Model}}, {{SerialNumber}}, {{SmbiosUuid}}, {{MacAddress}}, {{AdministratorName}}, {{Keyboard}}, {{Locale}}, " +
+            "{{OrganizationalUnit}}, {{TimeZone}}.",
             validation.Warnings[0].Message);
         Assert.StartsWith("{{Gateway}}, {{Dns}} are not DDT's placeholders", validation.Warnings[1].Message, StringComparison.Ordinal);
     }

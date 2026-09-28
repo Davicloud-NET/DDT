@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
+using DDT.Contracts.Machines;
 using DDT.Server.Machines;
 using Xunit;
 
@@ -116,6 +117,118 @@ public sealed class RegistrationValidatorTests
 
         Assert.Null(none.Disks);
         Assert.Equal(0, none.EligibleDiskCount);
+    }
+
+    [Fact]
+    public void AnAgentOlderThanVersion3SequencesSendsNoFacts()
+    {
+        Assert.Null(WithFacts(null).Facts);
+    }
+
+    [Fact]
+    public void KeepsFactsThatCanBeRight()
+    {
+        MachineFacts facts = new()
+        {
+            MemoryMegabytes = 16384,
+            ProcessorName = "13th Gen Intel(R) Core(TM) i7-1365U",
+            ProcessorCores = 10,
+            LogicalProcessors = 12,
+            TpmPresent = true,
+            TpmVersion = "2.0",
+            SecureBootCapable = true,
+            IPv4Address = "10.0.0.23",
+            IPv4PrefixLength = 24,
+            DefaultGateway = "10.0.0.1",
+            DnsSuffix = "corp.example.com",
+            DhcpServer = "10.0.0.2",
+            SystemVersion = "ThinkPad T14 Gen 4",
+            SystemFamily = "ThinkPad T14 Gen 4",
+            SystemSku = "LENOVO_MT_21HD_BU_Think_FM_ThinkPad T14 Gen 4",
+            AssetTag = "No Asset Information",
+            BaseboardProduct = "21HDCTO1WW",
+            BiosVersion = "R2FET53W (1.33 )",
+            BiosDate = "2024-03-12",
+        };
+
+        Assert.Equal(facts, WithFacts(facts).Facts);
+    }
+
+    // Whoever booted boot.wim can send anything, and a fact that cannot be right reads as unknown rather than refusing
+    // the machine.
+    [Fact]
+    public void BoundsAndCleansTheFacts()
+    {
+        MachineFacts facts = new()
+        {
+            MemoryMegabytes = -1,
+            ProcessorName = "  Intel\0 Xeon\n" + new string('x', 200),
+            ProcessorCores = 0,
+            LogicalProcessors = 1 << 20,
+            TpmVersion = "banana",
+            IPv4Address = "10.1",
+            IPv4PrefixLength = 33,
+            DefaultGateway = "fe80::1",
+            DnsSuffix = new string('d', 300),
+            DhcpServer = "010.0.0.1",
+            SystemVersion = "   ",
+            AssetTag = "Tag \ud800 1",
+            BiosDate = "03/12/2024",
+        };
+
+        MachineFacts normalised = WithFacts(facts).Facts!;
+
+        Assert.Null(normalised.MemoryMegabytes);
+        Assert.Equal("Intel Xeon" + new string('x', 118), normalised.ProcessorName);
+        Assert.Null(normalised.ProcessorCores);
+        Assert.Null(normalised.LogicalProcessors);
+        Assert.Null(normalised.TpmVersion);
+        Assert.Null(normalised.IPv4Address);
+        Assert.Null(normalised.IPv4PrefixLength);
+        Assert.Null(normalised.DefaultGateway);
+        Assert.Equal(253, normalised.DnsSuffix!.Length);
+        Assert.Null(normalised.DhcpServer);
+        Assert.Null(normalised.SystemVersion);
+        Assert.Equal("Tag  1", normalised.AssetTag);
+        Assert.Null(normalised.BiosDate);
+    }
+
+    // A Gigabyte Z790 board leaves the system's version and SKU and the enclosure's asset tag as "Default string", and
+    // AMI firmware fills others with "To be filled by O.E.M.": none of them may match a condition as the machine's.
+    [Fact]
+    public void DropsThePlaceholdersABoardMakerLeftInTheFacts()
+    {
+        MachineFacts facts = new()
+        {
+            ProcessorName = "To Be Filled By O.E.M.",
+            SystemVersion = "Default string",
+            SystemFamily = "Z790 AORUS ELITE AX",
+            SystemSku = "Default string",
+            AssetTag = " default   STRING ",
+            BaseboardProduct = "Z790 AORUS ELITE AX",
+            BiosVersion = "System Version",
+            DnsSuffix = "corp.example.com",
+        };
+
+        MachineFacts normalised = WithFacts(facts).Facts!;
+
+        Assert.Equal(
+            new MachineFacts
+            {
+                SystemFamily = "Z790 AORUS ELITE AX",
+                BaseboardProduct = "Z790 AORUS ELITE AX",
+                DnsSuffix = "corp.example.com",
+            },
+            normalised);
+    }
+
+    private static NormalisedRegistration WithFacts(MachineFacts? facts)
+    {
+        AgentRegistration registration = new(Guid.NewGuid().ToString(), "00155D010203", ["00155D010203"], null, null, null, "1", Facts: facts);
+
+        Assert.True(RegistrationValidator.TryNormalise(registration, out NormalisedRegistration? normalised, out _));
+
+        return normalised!;
     }
 
     private static NormalisedRegistration WithDisks(params AgentDisk[] disks)

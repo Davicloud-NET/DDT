@@ -401,6 +401,85 @@ public sealed class HttpAgentServerTests
         Assert.Equal(TestRuns.JoinAccount, credentials);
     }
 
+    [Fact]
+    public async Task FetchesTheAccountsOfARunningStep()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = Encoding.UTF8.GetBytes(
+            """{"runAs":{"userName":"CORP\\installer","password":"Run4s-never-logged"},"shares":[{"path":"\\\\files.corp.example\\drivers","userName":"CORP\\svc","password":"Sh4re-never-logged"}]}""");
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentStepAccounts accounts = await server.GetRunStepAccountsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
+
+        string request = await serving;
+        Assert.StartsWith(
+            $"GET /api/agents/{s_machineId:D}/runs/{s_runId:D}/steps/{s_stepId:D}/accounts HTTP/1.1",
+            request,
+            StringComparison.Ordinal);
+        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
+        Assert.Equal(@"CORP\installer", accounts.RunAs?.UserName);
+        Assert.Equal("Run4s-never-logged", accounts.RunAs?.Password);
+        AgentShareConnection share = Assert.Single(accounts.Shares);
+        Assert.Equal(@"\\files.corp.example\drivers", share.Path);
+        Assert.Equal("Sh4re-never-logged", share.Password);
+    }
+
+    [Fact]
+    public async Task SendsTheAnswersGivenAtTheMachine()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = """{"values":{"Office":"VIE"},"inputsPending":[],"problems":[]}"""u8.ToArray();
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentAnswersResult result = await server.AnswerRunInputsAsync(
+            s_machineId,
+            "session",
+            s_runId,
+            new AgentInputAnswers([new InputAnswer("Office", "VIE"), new InputAnswer("JoinAccount", null, @"CORP\join", "J0in-never-logged")]),
+            cancellationToken);
+
+        string request = await serving;
+        Assert.StartsWith($"POST /api/agents/{s_machineId:D}/runs/{s_runId:D}/answers HTTP/1.1", request, StringComparison.Ordinal);
+        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
+        Assert.Contains(
+            """{"answers":[{"name":"Office","value":"VIE","userName":null,"password":null},{"name":"JoinAccount","value":null,"userName":"CORP\\join","password":"J0in-never-logged"}]}""",
+            request,
+            StringComparison.Ordinal);
+        Assert.Equal(new Dictionary<string, string> { ["Office"] = "VIE" }, result.Values);
+    }
+
+    // A validation problem names the fields it refused, such as an answer to an input, which the console shows at it.
+    [Fact]
+    public async Task ARefusalCarriesTheFieldsTheServerRefused()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] problem = """{"title":"One or more validation errors occurred.","status":400,"errors":{"answers.Office":["Graz is closed.","Also full."],"note":[]}}"""u8.ToArray();
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(
+            listener,
+            $"HTTP/1.1 400 Bad Request\r\nContent-Type: application/problem+json\r\nContent-Length: {problem.Length}\r\n",
+            problem,
+            cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
+            () => server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 0, null), cancellationToken));
+        await serving;
+
+        Assert.Equal("One or more validation errors occurred.", exception.ProblemTitle);
+        Assert.Equal(new Dictionary<string, string> { ["answers.Office"] = "Graz is closed." }, exception.FieldErrors);
+    }
+
     private static string Json(byte[] body) =>
         $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\n";
 

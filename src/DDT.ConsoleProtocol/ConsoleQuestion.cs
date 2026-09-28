@@ -15,4 +15,6 @@ namespace DDT.ConsoleProtocol;
 [JsonDerivedType(typeof(ComputerNameQuestion), "computerName")]
 [JsonDerivedType(typeof(EraseQuestion), "erase")]
 [JsonDerivedType(typeof(SecureBootQuestion), "secureBoot")]
+[JsonDerivedType(typeof(InputsQuestion), "inputs")]
+[JsonDerivedType(typeof(PauseQuestion), "pause")]
 public abstract record ConsoleQuestion;

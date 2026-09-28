@@ -18,8 +18,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { MachineSummary } from "@/machines/machines";
-import type { AssignmentRuleView } from "@/rules/rules";
-import { deploymentSummary, machineSummary } from "@/test/builders";
+import type { RuleView } from "@/rules/rules";
+import { deploymentSummary, machineSummary, ruleView } from "@/test/builders";
 
 import {
   SEQUENCE_VERSION,
@@ -77,20 +77,8 @@ const labDraft = sequence({
   erasesDisk: false,
 });
 
-function rule(overrides: Partial<AssignmentRuleView>): AssignmentRuleView {
-  return {
-    id: "0193a4b2-0000-7000-8000-0000000000f1",
-    kind: "Model",
-    mac: null,
-    manufacturer: null,
-    model: "Latitude 7440",
-    sequenceId: installId,
-    sequenceName: "Install Windows",
-    description: null,
-    updatedUtc: "2026-09-15T10:00:00Z",
-    updatedBy: "admin",
-    ...overrides,
-  };
+function rule(overrides: Partial<RuleView>): RuleView {
+  return ruleView({ sequenceId: installId, ...overrides });
 }
 
 const template: SequenceTemplate = {
@@ -295,7 +283,7 @@ describe("SequencesPage", () => {
       "GET /api/sequences": () =>
         json([sequence({ continuesInWindows: true, needsComputerName: true }), labDraft]),
       "GET /api/rules": () =>
-        json([rule({}), rule({ id: "r2", kind: "Mac", mac: "00155D010203", model: null })]),
+        json([rule({}), rule({ id: "r2", position: 1, name: "Kiosk in the lobby" })]),
       "GET /api/machines": () => json([runningMachine(installId), runningMachine("other")]),
     });
 
@@ -309,9 +297,9 @@ describe("SequencesPage", () => {
     );
     expect(install).toHaveTextContent("Ready to run");
     await waitFor(() => {
-      expect(within(install).getByText("Rule for model Latitude 7440")).toBeInTheDocument();
+      expect(within(install).getByText("Rule 1, Latitude laptops")).toBeInTheDocument();
     });
-    expect(within(install).getByText("Rule for MAC 00:15:5D:01:02:03")).toBeInTheDocument();
+    expect(within(install).getByText("Rule 2, Kiosk in the lobby")).toBeInTheDocument();
     expect(install).toHaveTextContent("Assigned to or running on 1 machine");
     expect(install).toHaveTextContent("2 minutes ago");
     expect(install).toHaveTextContent("by admin");
@@ -457,17 +445,17 @@ describe("SequencesPage", () => {
 
     await screen.findByRole("link", { name: "Install Windows" });
     await waitFor(() => {
-      expect(screen.getByText("Rule for model Latitude 7440")).toBeInTheDocument();
+      expect(screen.getByText("Rule 1, Latitude laptops")).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole("button", { name: "Delete Install Windows" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Delete Install Windows?" });
     expect(dialog).toHaveTextContent(
-      "The rule for model Latitude 7440 chooses Install Windows. Delete that rule or let it choose another sequence, then delete this one.",
+      "Rule 1, Latitude laptops chooses Install Windows. Let that rule choose another sequence or none, then delete this one.",
     );
     expect(within(dialog).getByRole("button", { name: "Delete sequence" })).toBeDisabled();
 
-    fireEvent.click(within(dialog).getByRole("link", { name: "Go to the assignment rules" }));
+    fireEvent.click(within(dialog).getByRole("link", { name: "Go to the rules" }));
     expect(await screen.findByText("The rules")).toBeInTheDocument();
   });
 

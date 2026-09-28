@@ -52,6 +52,10 @@ public sealed class Machine
     // listed no enclosure or the agent is older than this field.
     public int? ChassisType { get; set; }
 
+    // The MachineFacts of the last registration that sent any, as MachineFactsDocuments writes them; null until an agent
+    // of version 3 sequences registers.
+    public string? Facts { get; set; }
+
     public MachineState State { get; set; } = MachineState.Pending;
 
     // Every issued machine token carries the generation it was minted under. Bumping this

@@ -38,7 +38,10 @@ your coffee.
   Microsoft's own signed boot manager from the Windows ADK and does its magic after that.
 - **Runs task sequences.** Partition, apply an image, inject drivers, write the answer file, run
   scripts, join a domain, and restart as often as it takes, in Windows PE and in the installed
-  Windows. Rules can pick the right sequence for a machine.
+  Windows. You draw them as a flow, with IF branches, loops, groups and pauses, and conditions on the
+  machine's model, memory, TPM or network. Rules pick the sequence for a machine and fill in values
+  such as its name or time zone, a sequence can ask its questions on the web or at the machine, and
+  a step can use an account whose password its script never sees.
 - **Does Linux, too.** Raw disk images (raw, gzip, zstd, xz or qcow2) with a cloud-init seed,
   written from the very same Windows PE. One agent, one boot path.
 - **Has a web UI that stays live.** Changes show up the moment they happen, no reload button

@@ -19,6 +19,10 @@ msgstr ".NET: enthaltene Software anderer"
 msgid "1 partition"
 msgstr "1 Partition"
 
+#: ViewModels/InputsViewModel.cs
+msgid "A few answers first"
+msgstr "Zuerst ein paar Antworten"
+
 #: Texts/Say.cs
 msgid "A step asked for a restart. The run goes on after it."
 msgstr "Ein Schritt hat einen Neustart verlangt. Die Ausführung geht danach weiter."
@@ -119,6 +123,10 @@ msgstr "Wählen"
 msgid "Choose a task sequence"
 msgstr "Tasksequenz wählen"
 
+#: ViewModels/InputFieldViewModel.cs
+msgid "Choose any of these. Space turns one on or off."
+msgstr "Wählen Sie beliebig viele. Die Leertaste schaltet eine ein oder aus."
+
 #: ViewModels/DiskChoiceViewModel.cs
 msgid "Choose the disk"
 msgstr "Datenträger wählen"
@@ -183,6 +191,10 @@ msgstr "Konsolen-Version"
 msgid "Continue"
 msgstr "Weiter"
 
+#: ViewModels/PauseViewModel.cs
+msgid "Continue the run"
+msgstr "Ausführung fortsetzen"
+
 #: ViewModels/MainViewModel.cs
 msgid "Dark"
 msgstr "Dunkel"
@@ -194,6 +206,10 @@ msgstr "DDT kann nicht feststellen, ob {image} für Secure Boot signiert ist, un
 #: ViewModels/MainViewModel.cs
 msgid "DDT is done with this machine"
 msgstr "DDT ist mit diesem Gerät fertig"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "DDT keeps it for this run only and never shows it."
+msgstr "DDT behält es nur für diese Ausführung und zeigt es nie an."
 
 #: Legal/LegalTexts.cs
 msgid "DDT: GNU General Public License, version 3"
@@ -274,6 +290,10 @@ msgstr "Firmware"
 #: ViewModels/LogViewModel.cs
 msgid "Follow the end"
 msgstr "Dem Ende folgen"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "For {domain}. DDT keeps it for this run only and never shows it."
+msgstr "Für {domain}. DDT behält es nur für diese Ausführung und zeigt es nie an."
 
 #: Texts/Say.cs
 msgid "Handing the run over to the installed Windows"
@@ -415,6 +435,10 @@ msgstr "Netzwerk"
 msgid "Next"
 msgstr "Weiter"
 
+#: ViewModels/InputsViewModel.cs
+msgid "Next field"
+msgstr "Nächstes Feld"
+
 #: ViewModels/MachineViewModel.cs
 msgid "No"
 msgstr "Nein"
@@ -455,6 +479,14 @@ msgstr "Nicht gemeldet"
 msgid "Not trusted by this machine"
 msgstr "Von diesem Gerät nicht vertraut"
 
+#: ViewModels/RunViewModel.cs
+msgid "Nothing runs until someone continues the run, here or on the machine's page on the web."
+msgstr "Es läuft nichts, bis jemand die Ausführung fortsetzt, hier oder auf der Seite des Geräts im Web."
+
+#: ViewModels/RunViewModel.cs
+msgid "Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."
+msgstr "Es läuft nichts, bis die Eingaben der Tasksequenz beantwortet sind, hier oder auf der Seite des Geräts im Web."
+
 #: Texts/Say.cs
 msgid "Off"
 msgstr "Aus"
@@ -471,6 +503,10 @@ msgstr "Ein"
 msgid "One moment"
 msgstr "Einen Moment"
 
+#: ViewModels/InputFieldViewModel.cs
+msgid "Optional"
+msgstr "Optional"
+
 #: Texts/Say.cs
 msgid "Partitioning the disk"
 msgstr "Datenträger wird partitioniert"
@@ -482,6 +518,18 @@ msgstr "Bestanden"
 #: ViewModels/SignInViewModel.cs
 msgid "Password"
 msgstr "Kennwort"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the installed Windows"
+msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, im installierten Windows"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in Windows PE"
+msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, in Windows PE"
+
+#: Texts/Say.cs
+msgid "Paused"
+msgstr "Angehalten"
 
 #: Texts/Say.cs
 msgid "Removing the agent"
@@ -559,6 +607,10 @@ msgstr "Seriennummer"
 msgid "Server"
 msgstr "Server"
 
+#: Texts/Say.cs
+msgid "Setting a variable"
+msgstr "Variable wird gesetzt"
+
 #: ViewModels/SignInViewModel.cs
 msgid "Sign in"
 msgstr "Anmelden"
@@ -628,6 +680,14 @@ msgid "Starting the agent"
 msgstr "Der Agent startet"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the installed Windows"
+msgstr "Schritt {number} von {count} auf diesem Pfad, im installierten Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in Windows PE"
+msgstr "Schritt {number} von {count} auf diesem Pfad, in Windows PE"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in the installed Windows"
 msgstr "Schritt {number} von {count}, im installierten Windows"
 
@@ -635,7 +695,7 @@ msgstr "Schritt {number} von {count}, im installierten Windows"
 msgid "Step {number} of {count}, in Windows PE"
 msgstr "Schritt {number} von {count}, in Windows PE"
 
-#: ViewModels/RunViewModel.cs
+#: ViewModels/RunPath.cs
 msgid "Step {number}, {name}: {state}"
 msgstr "Schritt {number}, {name}: {state}"
 
@@ -726,6 +786,10 @@ msgstr "die HarfBuzz-Autoren"
 #: ViewModels/SignInViewModel.cs
 msgid "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
 msgstr "Das Tastaturlayout ist {layout}. Ein Kennwort, das mit einem anderen Layout eingegeben wird, wird als falsch abgelehnt."
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "The keyboard layout is {layout}. A password typed with another layout would be wrong."
+msgstr "Das Tastaturlayout ist {layout}. Ein Kennwort, das mit einem anderen Layout eingegeben wird, wäre falsch."
 
 #: ViewModels/ConnectionViewModel.cs
 msgid "The last request failed. The agent tries again by itself."
@@ -856,6 +920,10 @@ msgid "Waiting for a task sequence"
 msgstr "Wartet auf eine Tasksequenz"
 
 #: Texts/Say.cs
+msgid "Waiting for answers"
+msgstr "Warten auf Antworten"
+
+#: Texts/Say.cs
 msgid "Waiting for authorization"
 msgstr "Wartet auf Freigabe"
 
@@ -883,6 +951,10 @@ msgstr "Was zu tun ist"
 msgid "What went wrong"
 msgstr "Was schiefging"
 
+#: ViewModels/PauseViewModel.cs
+msgid "When it is done, press Enter. An operator can also let the run go on from the web."
+msgstr "Wenn es erledigt ist, drücken Sie die Eingabetaste. Ein Operator kann die Ausführung auch im Web fortsetzen."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "Write it anyway"
 msgstr "Trotzdem schreiben"
@@ -902,6 +974,10 @@ msgstr "Cloud-init-Seed wird geschrieben"
 #: Texts/Say.cs
 msgid "Writing the disk image"
 msgstr "Datenträgerimage wird geschrieben"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "Yes"
+msgstr "Ja"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Yes, nothing on the disks changes"
@@ -934,6 +1010,10 @@ msgstr "{image} ist nur unter {cas} signiert, der die Firmware dieses Geräts ni
 #: ViewModels/AuthorizationViewModel.cs
 msgid "{name} signed in here. An operator or administrator still has to approve this machine on the Machines page."
 msgstr "{name} hat sich hier angemeldet. Ein Operator oder Administrator muss dieses Gerät noch auf der Seite „Geräte“ freigeben."
+
+#: ViewModels/InputsViewModel.cs
+msgid "{sequence} asks these before it starts."
+msgstr "{sequence} fragt diese Angaben ab, bevor sie startet."
 
 #: ViewModels/TypedWordViewModel.cs
 msgid "{sequence} erases everything on this disk, and it cannot be undone."

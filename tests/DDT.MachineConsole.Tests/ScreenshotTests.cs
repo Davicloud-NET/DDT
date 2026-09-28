@@ -94,6 +94,23 @@ public sealed class ScreenshotTests
         {
             Logo = LogoTests.Write(Path.Combine(Path.GetTempPath(), $"ddt-console-logo-{Guid.NewGuid():N}.png")),
         }),
+        ["28-inputs"] = console =>
+        {
+            console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(9, Scenarios.Inputs());
+            Answer((InputsViewModel)console.Model.Question!);
+        },
+        ["29-inputs-refused"] = console =>
+        {
+            console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(9, Scenarios.Inputs());
+            InputsViewModel inputs = (InputsViewModel)console.Model.Question!;
+            Answer(inputs);
+            ((TextFieldViewModel)inputs.Fields[1]).Text = "annaa";
+            inputs.SubmitCommand.Execute(null);
+            console.Ask(10, Scenarios.Inputs(refused: true));
+        },
+        ["30-pause"] = console => console.Show(Scenarios.Paused).Ask(11, Scenarios.Pause),
+        ["31-waiting-for-inputs"] = console => console.Show(Scenarios.WaitingForInputs),
+        ["32-running-tree"] = console => console.Show(Scenarios.RunningTree),
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];
@@ -108,6 +125,8 @@ public sealed class ScreenshotTests
         { "03-sign-in-user-name", 2560, 1440 },
         { "08-choose-sequence", 1920, 1080 },
         { "21-log", 1920, 1080 },
+        { "28-inputs", 1920, 1080 },
+        { "30-pause", 1920, 1080 },
     };
 
     private static string? Folder => Environment.GetEnvironmentVariable("DDT_CONSOLE_SHOTS");
@@ -167,6 +186,15 @@ public sealed class ScreenshotTests
         {
             window.Close();
         }
+    }
+
+    // What a technician types into the inputs: an owner and the account's user name and password.
+    private static void Answer(InputsViewModel inputs)
+    {
+        ((TextFieldViewModel)inputs.Fields[1]).Text = "anna.berger";
+        AccountFieldViewModel account = (AccountFieldViewModel)inputs.Fields[^1];
+        account.UserName = @"LAB\svc-join";
+        account.Password = "correct horse";
     }
 
     // More than a handful of colours: a screen that failed to draw is one colour.

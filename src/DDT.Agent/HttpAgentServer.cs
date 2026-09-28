@@ -260,6 +260,25 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await ReadAsync(response, AgentJsonContext.Default.AgentRunReportResult, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<AgentAnswersResult> AnswerRunInputsAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        AgentInputAnswers answers,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, AgentRoutes.RunAnswers(machineId, runId))
+        {
+            Content = JsonContent.Create(answers, AgentJsonContext.Default.AgentInputAnswers),
+        };
+
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentAnswersResult, cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken) =>
         HeadAsync(AgentRoutes.RunFile(machineId, runId, sha256), token, cancellationToken);
 
@@ -295,6 +314,21 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         return await ReadAsync(response, AgentJsonContext.Default.AgentJoinDomainCredentials, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AgentStepAccounts> GetRunStepAccountsAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        Guid stepId,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, AgentRoutes.RunStepAccounts(machineId, runId, stepId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return await ReadAsync(response, AgentJsonContext.Default.AgentStepAccounts, cancellationToken).ConfigureAwait(false);
     }
 
     // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
@@ -426,14 +460,14 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             string detail = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             response.Dispose();
 
-            string? title = ProblemTitle(detail);
+            (string? title, IReadOnlyDictionary<string, string>? fieldErrors) = Problem(detail);
 
             if (detail.Length > MaxErrorDetailLength)
             {
                 detail = detail[..MaxErrorDetailLength];
             }
 
-            throw new AgentRequestException($"The server answered {(int)status} {status} for {request.RequestUri}: {detail}", title, status);
+            throw new AgentRequestException($"The server answered {(int)status} {status} for {request.RequestUri}: {detail}", title, status, fieldErrors);
         }
 
         return response;
@@ -476,26 +510,45 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         ? string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalSeconds:0.#} s")
         : string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalMinutes:0.#} minutes");
 
-    private static string? ProblemTitle(string body)
+    // The title of the server's problem details, and a validation problem's errors: the first message for each field.
+    private static (string? Title, IReadOnlyDictionary<string, string>? FieldErrors) Problem(string body)
     {
         if (body.Length == 0)
         {
-            return null;
+            return (null, null);
         }
 
         try
         {
             using JsonDocument problem = JsonDocument.Parse(body);
+            JsonElement root = problem.RootElement;
 
-            return problem.RootElement.ValueKind == JsonValueKind.Object
-                && problem.RootElement.TryGetProperty("title", out JsonElement title)
-                && title.ValueKind == JsonValueKind.String
-                ? title.GetString()
-                : null;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return (null, null);
+            }
+
+            string? title = root.TryGetProperty("title", out JsonElement found) && found.ValueKind == JsonValueKind.String ? found.GetString() : null;
+            Dictionary<string, string>? fieldErrors = null;
+
+            if (root.TryGetProperty("errors", out JsonElement errors) && errors.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty field in errors.EnumerateObject())
+                {
+                    if (field.Value.ValueKind == JsonValueKind.Array
+                        && field.Value.EnumerateArray().FirstOrDefault(message => message.ValueKind == JsonValueKind.String) is { ValueKind: JsonValueKind.String } first)
+                    {
+                        fieldErrors ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        fieldErrors[field.Name] = first.GetString()!;
+                    }
+                }
+            }
+
+            return (title, fieldErrors);
         }
         catch (JsonException)
         {
-            return null;
+            return (null, null);
         }
     }
 

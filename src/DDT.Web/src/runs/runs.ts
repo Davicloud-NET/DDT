@@ -13,6 +13,7 @@ import type {
 } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
+import { walk } from "@/sequences/flow/flowTree";
 import type {
   ConditionOperator,
   SequenceDefinition,
@@ -20,7 +21,9 @@ import type {
   SequenceStep,
   StepCondition,
 } from "@/sequences/sequences";
-import { phaseLabel, variableLabel } from "@/sequences/steps";
+import { operatorTakesValue, phaseLabel, variableLabel } from "@/sequences/steps";
+
+import { leafNumbers } from "./runPath";
 
 // One moment of a run, on the server's clock.
 export interface TimelineEntry {
@@ -34,6 +37,17 @@ const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
   NotEquals: msg`is not`,
   StartsWith: msg`starts with`,
   Contains: msg`contains`,
+  NotContains: msg`does not contain`,
+  EndsWith: msg`ends with`,
+  Matches: msg`matches`,
+  In: msg`is one of`,
+  Exists: msg`has a value`,
+  NotExists: msg`has no value`,
+  Greater: msg`is greater than`,
+  GreaterOrEqual: msg`is at least`,
+  Less: msg`is less than`,
+  LessOrEqual: msg`is at most`,
+  InSubnet: msg`is in the network`,
 };
 
 export function describeCondition(condition: StepCondition): string {
@@ -41,7 +55,9 @@ export function describeCondition(condition: StepCondition): string {
   const operator = i18n._(operatorLabels[condition.operator]);
   const value = condition.value;
 
-  return t`${variable} ${operator} "${value}"`;
+  return operatorTakesValue(condition.operator)
+    ? t`${variable} ${operator} "${value}"`
+    : t`${variable} ${operator}`;
 }
 
 // What the machine reports for a condition's variable now; the run checked what it reported then.
@@ -66,8 +82,9 @@ function reported(variable: string, machine: MachineSummary, phase: SequencePhas
   }
 }
 
-// The engine skips a step only when one of its conditions does not hold, and the agent does not say which, so
-// the page shows each condition next to what the machine reports.
+// Why a step was skipped, for a run whose agent did not record the tests it decided with, as agents before version 3
+// sequences do not: the engine skips a step only when one of its conditions does not hold, so the page shows each
+// condition next to what the machine reports now. A run that recorded its tests says them instead (decisionLine).
 export function skipReason(
   step: DeploymentStepView,
   planned: SequenceStep | undefined,
@@ -93,8 +110,9 @@ export function skipReason(
   return t`Skipped, because not every condition held: ${conditions}.`;
 }
 
+// Every node of the run's tree by its id, containers and what is inside them included.
 export function plannedSteps(definition: SequenceDefinition | null): Map<string, SequenceStep> {
-  return new Map((definition?.steps ?? []).map((step) => [step.id, step]));
+  return new Map(walk(definition?.steps ?? []).map((entry) => [entry.node.id, entry.node]));
 }
 
 // Whether the run went on after a failed step. Stopping or rejecting the run also marks its running step
@@ -170,6 +188,7 @@ export function runTimeline(
   definition: SequenceDefinition | null,
 ): TimelineEntry[] {
   const planned = plannedSteps(definition);
+  const numbers = leafNumbers(steps);
   const entries: TimelineEntry[] = [];
 
   if (machine !== null && Date.parse(machine.firstSeenUtc) <= Date.parse(run.createdUtc)) {
@@ -191,17 +210,22 @@ export function runTimeline(
     entries.push({ key: "started", utc: run.startedUtc, text: t`The agent started the run` });
   }
 
-  steps.forEach((step, position) => {
+  // Containers neither restart nor hand over; the leaves in them do.
+  const leaves = [...steps]
+    .sort((a, b) => a.index - b.index)
+    .filter((step) => numbers.get(step.stepId) !== null);
+
+  leaves.forEach((step, position) => {
     if (step.finishedUtc === null || step.state !== "Done") {
       return;
     }
 
     // Skipped steps never start, so the machine was back when the next started step did.
-    const next = steps.slice(position + 1).find((later) => later.startedUtc !== null) ?? null;
+    const next = leaves.slice(position + 1).find((later) => later.startedUtc !== null) ?? null;
     const back = next?.startedUtc ?? null;
-    const handsOver = step.phase === "WindowsPE" && steps[position + 1]?.phase === "Windows";
+    const handsOver = step.phase === "WindowsPE" && leaves[position + 1]?.phase === "Windows";
     const restarts = step.kind === "reboot" || planned.get(step.stepId)?.rebootAfter === true;
-    const number = step.index + 1;
+    const number = numbers.get(step.stepId) ?? step.index + 1;
     const name = step.name;
     const took = back === null ? "" : gap(step.finishedUtc, back);
 
@@ -253,7 +277,9 @@ export function secureBootAllowance(view: DeploymentView): string | null {
     return null;
   }
 
-  const step = view.definition?.steps.find((candidate) => candidate.kind === "writeRawImage");
+  const step = [...plannedSteps(view.definition).values()].find(
+    (candidate) => candidate.kind === "writeRawImage",
+  );
   const image = view.artifacts.find((artifact) => artifact.stepId === step?.id)?.name;
 
   return image === undefined

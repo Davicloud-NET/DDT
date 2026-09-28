@@ -338,7 +338,7 @@ function UsedBy({ targets, activeRuns }: { targets: string[]; activeRuns: number
     <span className="flex min-w-0 flex-col type-small">
       {targets.map((target) => (
         <span key={target} className="truncate text-ink">
-          <Trans>Rule for {target}</Trans>
+          {target}
         </span>
       ))}
       {activeRuns > 0 ? (

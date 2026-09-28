@@ -14,8 +14,9 @@ namespace DDT.MachineConsole.Controls;
 
 // One module of the sequence rail: a trough one shade below the panel, filled as its step goes. Done is filled with
 // the done tone, failed and skipped are hatched, and the running step fills with blue to its percent under stripes
-// that move, the one thing on the screen that does. A running step that gives no percent fills a paler blue. The fill
-// grows to a new percent over slow, and a new state fades in over the one before, over slow too.
+// that move, the one thing on the screen that does. A running step that gives no percent fills a paler blue. The step
+// the run waits at for someone, a Pause step, is filled with the attention colour and does not move, as nothing runs.
+// The fill grows to a new percent over slow, and a new state fades in over the one before, over slow too.
 public sealed class RailModule : Control
 {
     public static readonly StyledProperty<ConsoleStepState> StateProperty =
@@ -39,6 +40,11 @@ public sealed class RailModule : Control
 
     public static readonly StyledProperty<IBrush?> FailTextProperty = AvaloniaProperty.Register<RailModule, IBrush?>(nameof(FailText));
 
+    public static readonly StyledProperty<IBrush?> AttentionProperty = AvaloniaProperty.Register<RailModule, IBrush?>(nameof(Attention));
+
+    // The step is current but waits for someone to act, so it is not drawn as running.
+    public static readonly StyledProperty<bool> AwaitsSomeoneProperty = AvaloniaProperty.Register<RailModule, bool>(nameof(AwaitsSomeone));
+
     // The percent the running fill shows, which follows Percent over slow.
     public static readonly StyledProperty<double> FillProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Fill));
 
@@ -59,6 +65,7 @@ public sealed class RailModule : Control
     private ConsoleStepState _before;
     private double _fillBefore;
     private bool _softBefore;
+    private bool _awaitsBefore;
     private CancellationTokenSource? _changing;
 
     static RailModule()
@@ -74,6 +81,8 @@ public sealed class RailModule : Control
             StripeProperty,
             FailProperty,
             FailTextProperty,
+            AttentionProperty,
+            AwaitsSomeoneProperty,
             FillProperty,
             ChangeProperty);
     }
@@ -146,6 +155,18 @@ public sealed class RailModule : Control
         set => SetValue(FailTextProperty, value);
     }
 
+    public IBrush? Attention
+    {
+        get => GetValue(AttentionProperty);
+        set => SetValue(AttentionProperty, value);
+    }
+
+    public bool AwaitsSomeone
+    {
+        get => GetValue(AwaitsSomeoneProperty);
+        set => SetValue(AwaitsSomeoneProperty, value);
+    }
+
     public double Fill
     {
         get => GetValue(FillProperty);
@@ -173,23 +194,30 @@ public sealed class RailModule : Control
 
         if (Change < 1)
         {
-            DrawState(context, bounds, trough, _before, _fillBefore, _softBefore);
+            DrawState(context, bounds, trough, _before, _fillBefore, _softBefore, _awaitsBefore);
 
             using (context.PushOpacity(Change))
             {
-                DrawState(context, bounds, trough, State, Fill, Percent is null);
+                DrawState(context, bounds, trough, State, Fill, Percent is null, AwaitsSomeone);
             }
         }
         else
         {
-            DrawState(context, bounds, trough, State, Fill, Percent is null);
+            DrawState(context, bounds, trough, State, Fill, Percent is null, AwaitsSomeone);
         }
     }
 
-    // soft is a running step that gives no percent, which fills a paler blue.
-    private void DrawState(DrawingContext context, Rect bounds, RoundedRect trough, ConsoleStepState state, double fill, bool soft)
+    // soft is a running step that gives no percent, which fills a paler blue; awaits one that waits for someone.
+    private void DrawState(DrawingContext context, Rect bounds, RoundedRect trough, ConsoleStepState state, double fill, bool soft, bool awaits)
     {
         const double radius = 2;
+
+        if (state == ConsoleStepState.Running && awaits)
+        {
+            context.DrawRectangle(Attention, null, trough);
+
+            return;
+        }
 
         using (context.PushClip(trough))
         {
@@ -233,6 +261,10 @@ public sealed class RailModule : Control
             ChangeFrom(change.GetOldValue<ConsoleStepState>());
             Animate();
         }
+        else if (change.Property == AwaitsSomeoneProperty)
+        {
+            Animate();
+        }
         else if (change.Property == PercentProperty)
         {
             Fill = Percent ?? 0;
@@ -256,6 +288,7 @@ public sealed class RailModule : Control
         _before = before;
         _fillBefore = Fill;
         _softBefore = Percent is null;
+        _awaitsBefore = AwaitsSomeone;
         _changing = new CancellationTokenSource();
         Change = 0;
 
@@ -274,11 +307,14 @@ public sealed class RailModule : Control
         _ = fade.RunAsync(this, _changing.Token);
     }
 
+    // Only what runs moves.
+    public bool IsMoving => State == ConsoleStepState.Running && !AwaitsSomeone;
+
     private static Color ColorOf(IBrush? brush) => brush is ISolidColorBrush solid ? solid.Color : Colors.Transparent;
 
     private void Animate()
     {
-        if (_animating || !Animates || State != ConsoleStepState.Running || TopLevel.GetTopLevel(this) is not { } top)
+        if (_animating || !Animates || !IsMoving || TopLevel.GetTopLevel(this) is not { } top)
         {
             return;
         }
@@ -291,7 +327,7 @@ public sealed class RailModule : Control
     {
         _animating = false;
 
-        if (State != ConsoleStepState.Running || TopLevel.GetTopLevel(this) is not { } top)
+        if (!IsMoving || TopLevel.GetTopLevel(this) is not { } top)
         {
             return;
         }

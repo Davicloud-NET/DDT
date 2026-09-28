@@ -14,6 +14,8 @@ import {
   ModalOverlay,
 } from "react-aria-components";
 
+import { cx } from "./cx";
+
 // A panel that slides in from the right over the page, for details and forms that belong to the page underneath,
 // such as a machine picked in a list on a narrow screen. It is an overlay, so it casts the overlay shadow. Being
 // fixed to that edge, it is the one thing that travels further than the motion distance: in from the edge in slow,
@@ -24,12 +26,15 @@ export function Drawer({
   title,
   children,
   footer,
+  wide = false,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  // Wider, for a form whose rows hold several fields side by side, such as a rule's conditions.
+  wide?: boolean;
 }) {
   const { t } = useLingui();
 
@@ -40,7 +45,13 @@ export function Drawer({
       isDismissable
       className="fixed inset-0 z-40 flex justify-end bg-backdrop entering:animate-overlay-in exiting:animate-overlay-out"
     >
-      <AriaModal className="h-full w-full max-w-110 bg-raised shadow-overlay outline-none entering:animate-drawer-in exiting:animate-drawer-out">
+      <AriaModal
+        className={cx(
+          "h-full w-full bg-raised shadow-overlay outline-none entering:animate-drawer-in exiting:animate-drawer-out",
+          wide ? "max-w-130" : "max-w-110",
+        )}
+      >
+        {" "}
         <AriaDialog className="flex h-full flex-col outline-none">
           <div className="flex items-start gap-3 border-b border-line-soft px-5 py-4">
             <Heading slot="title" className="flex-1 type-heading text-ink">

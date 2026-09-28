@@ -6,6 +6,7 @@ using System.Security.Claims;
 using DDT.Contracts;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
+using DDT.Server.Accounts;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -117,6 +118,7 @@ public static class SequenceEndpoints
         HttpContext context,
         DdtDbContext database,
         SequenceCatalog catalog,
+        AccountViews accounts,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -171,6 +173,7 @@ public static class SequenceEndpoints
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
+        await accounts.PushUsesAsync(live, AccountViews.UsesChanged(null, null, sequence.Definition, sequence.Name), cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Created($"/api/sequences/{sequence.Id:D}", await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
     }
@@ -182,6 +185,7 @@ public static class SequenceEndpoints
         HttpContext context,
         DdtDbContext database,
         SequenceCatalog catalog,
+        AccountViews accounts,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -229,6 +233,7 @@ public static class SequenceEndpoints
         }
 
         bool renamed = name != sequence.Name;
+        (string savedName, string savedDefinition) = (sequence.Name, sequence.Definition);
         string changes = SequenceChanges.Describe(
             sequence.Name,
             sequence.Description,
@@ -274,11 +279,14 @@ public static class SequenceEndpoints
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
+        await accounts
+            .PushUsesAsync(live, AccountViews.UsesChanged(savedDefinition, savedName, sequence.Definition, sequence.Name), cancellationToken)
+            .ConfigureAwait(false);
 
         // A rule shows the name of the sequence it chooses.
-        if (renamed && await database.AssignmentRules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))
+        if (renamed && await database.Rules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))
         {
-            live.RulesChanged(await AssignmentRuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
+            live.RulesChanged(await RuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false));
         }
 
         return TypedResults.Ok(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
@@ -289,6 +297,7 @@ public static class SequenceEndpoints
         ClaimsPrincipal user,
         HttpContext context,
         DdtDbContext database,
+        AccountViews accounts,
         LiveNotifier live,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -300,7 +309,7 @@ public static class SequenceEndpoints
             return TypedResults.NotFound();
         }
 
-        int rules = await database.AssignmentRules.CountAsync(r => r.TaskSequenceId == id, cancellationToken).ConfigureAwait(false);
+        int rules = await database.Rules.CountAsync(r => r.TaskSequenceId == id, cancellationToken).ConfigureAwait(false);
 
         if (rules > 0)
         {
@@ -327,6 +336,7 @@ public static class SequenceEndpoints
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, null, user.Identity?.Name));
+        await accounts.PushUsesAsync(live, AccountViews.UsesChanged(sequence.Definition, sequence.Name, null, null), cancellationToken).ConfigureAwait(false);
 
         return TypedResults.NoContent();
     }

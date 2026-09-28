@@ -75,7 +75,56 @@ describe("approvalPlan", () => {
         "Approving PC-042 also runs Install Windows on it, which a rule for its MAC address chose. Its disk is not erased.",
       confirmLabel: "Approve and run Install Windows",
       sequence: installWindows,
+      inputs: [],
+      defaults: [],
     });
+  });
+
+  it("asks the inputs of the rule's sequence that are asked on the web, with what they start with", () => {
+    const input = {
+      name: "Department",
+      label: "Department",
+      help: null,
+      kind: "Text" as const,
+      choices: [],
+      default: null,
+      required: true,
+      maxLength: null,
+      account: null,
+    };
+    const defaults = [
+      {
+        name: "Department",
+        value: "Sales",
+        source: "Rule" as const,
+        sourceId: "r1",
+        sourceName: "Berlin office",
+        overridden: false,
+      },
+    ];
+    const plan = approvalPlan(
+      machine,
+      {
+        ...chosen,
+        inputs: [
+          { ...input, askAt: "Both" },
+          { ...input, name: "AssetTag", label: "Asset tag", askAt: "Machine" },
+        ],
+        inputDefaults: defaults,
+      },
+      [installWindows],
+    );
+
+    expect(plan?.inputs).toEqual([input]);
+    expect(plan?.defaults).toEqual(defaults);
+  });
+
+  it("says a rule of the ordered list chose the sequence", () => {
+    expect(
+      approvalPlan(machine, { ...chosen, source: "Rule" }, [installWindows])?.consequence,
+    ).toBe(
+      "Approving PC-042 also runs Install Windows on it, which a rule chose. Its disk is not erased.",
+    );
   });
 
   it("carries the sequence it runs, and none when it only authorizes the machine", () => {
@@ -88,6 +137,46 @@ describe("approvalPlan", () => {
 
     expect(approvalPlan(machine, chosen, [linux])?.sequence).toBe(linux);
     expect(approvalPlan(machine, { ...chosen, problemCount: 1 }, [linux])?.sequence).toBeNull();
+  });
+
+  // A rule's name pattern names every machine it matches, so the approval runs the sequence and says the name.
+  it("runs a sequence that needs a computer name when the machine's values give one", () => {
+    const unnamed = { ...machine, assignedName: null };
+    const joins = { ...installWindows, needsComputerName: true };
+    const named: MachineSequenceResolution = {
+      ...chosen,
+      values: [
+        {
+          name: "ComputerName",
+          value: "PC-00042",
+          source: "Rule",
+          sourceId: "r1",
+          sourceName: "Office PCs",
+          overridden: false,
+        },
+      ],
+    };
+
+    const plan = approvalPlan(unnamed, named, [joins]);
+
+    expect(plan?.expectedSequenceId).toBe("s1");
+    expect(plan?.consequence).toBe(
+      "Approving Latitude 7440 (00:15:5D:01:02:03) also runs Install Windows on it, which a rule for its MAC address chose. It is named PC-00042. Its disk is not erased.",
+    );
+
+    // A name Windows would refuse is none.
+    const refused = approvalPlan(
+      unnamed,
+      {
+        ...named,
+        valueProblems: [
+          { stepId: null, field: "ComputerName", message: "The computer name cannot be used." },
+        ],
+      },
+      [joins],
+    );
+
+    expect(refused?.expectedSequenceId).toBeNull();
   });
 
   it.each([

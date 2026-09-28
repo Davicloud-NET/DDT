@@ -13,9 +13,10 @@ namespace DDT.Agent.Consoles;
 
 // The console in the installed Windows: ddt-console.exe as the shell of DDT's session, which Windows starts at its
 // auto-logon, not the agent. The agent keeps one pipe open for it for as long as it runs, and the console connects
-// whenever it starts, again after a restart of either, and gets the whole state and the newest log lines each time.
-// Nothing is asked here, as the Windows phase needs no answers, and nothing falls back: the service has no text
-// console, and the log goes to the server and to its file all the same.
+// whenever it starts, again after a restart of either, and gets the whole state, the newest log lines and the open
+// question each time. A question waits for a console while none is connected, as a Pause step's does while Windows
+// restarts the session; the web can answer it meanwhile, and the asker then withdraws it. Nothing falls back: the service
+// has no text console, and the log goes to the server and to its file all the same.
 public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
 {
     private const int BacklogLines = 500;
@@ -30,6 +31,8 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly Queue<ConsoleLogLine> _recent = new();
     private readonly Queue<ConsoleLogLine> _unsent = new();
+    private readonly Queue<ConsoleMessage> _control = new();
+    private readonly QuestionSlot _questions;
     private TaskCompletionSource _wake = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private ConsoleState? _state;
     private bool _stateUnsent;
@@ -46,9 +49,11 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         _log = log;
         _agentVersion = agentVersion;
         _connected = connected;
+        _questions = new QuestionSlot(Send);
     }
 
-    public bool CanAsk => false;
+    // Someone can answer while a console is connected. A question asked meanwhile waits for the next one all the same.
+    public bool CanAsk => IsConnected;
 
     public bool IsConnected
     {
@@ -148,11 +153,19 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    public Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken) => Task.FromResult<ConsoleAnswer?>(null);
+    // Completes with the answer, or with null once cancelled, which withdraws the question, or once the agent ends.
+    public async Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(question);
+
+        return (await _questions.AskAsync(question, cancellationToken).ConfigureAwait(false)).Answer;
+    }
 
     // The last state and lines go out to a console that is connected, then the pipe closes.
     public async ValueTask DisposeAsync()
     {
+        _questions.Close();
+
         bool connected;
 
         lock (_lock)
@@ -259,6 +272,8 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
             _wake.TrySetResult();
         }
 
+        // After the state and the lines, as the console shows the question over them.
+        _questions.Connected();
         _connected?.Invoke();
 
         using CancellationTokenSource serving = CancellationTokenSource.CreateLinkedTokenSource(stop);
@@ -323,16 +338,25 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         return null;
     }
 
-    // Until the pipe closes. The console has nothing to answer here, so whatever it sends is left unread.
-    private static async Task<string?> ReadAsync(ConsoleChannel channel, CancellationToken cancellationToken)
+    // Answers until the pipe closes. An answer to a question no longer open, withdrawn or asked by an agent before a
+    // restart, is left alone. Returns why it stopped.
+    private async Task<string?> ReadAsync(ConsoleChannel channel, CancellationToken cancellationToken)
     {
         try
         {
-            while (await channel.ReceiveAsync(cancellationToken).ConfigureAwait(false) is not null)
+            while (true)
             {
+                switch (await channel.ReceiveAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    case null:
+                        return "closed its pipe";
+                    case AnswerMessage answer:
+                        _questions.Answer(answer.Id, answer.Answer);
+                        break;
+                    default:
+                        return "sent a message only the agent sends";
+                }
             }
-
-            return "closed its pipe";
         }
         catch (ConsoleProtocolException exception)
         {
@@ -344,8 +368,8 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // Sends the newest state and the lines as they come. Returns null once the agent closes and everything is sent,
-    // otherwise why it stopped.
+    // Sends the newest state, the lines and the questions as they come. Returns null once the agent closes and everything
+    // is sent, otherwise why it stopped.
     private async Task<string?> WriteAsync(ConsoleChannel channel, CancellationToken cancellationToken)
     {
         while (true)
@@ -372,6 +396,11 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
                     }
 
                     messages.Add(new LogMessage(batch));
+                }
+
+                while (_control.TryDequeue(out ConsoleMessage? message))
+                {
+                    messages.Add(message);
                 }
 
                 if (messages.Count == 0)
@@ -446,6 +475,22 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
             _isConnected = false;
             _stateUnsent = false;
             _unsent.Clear();
+            _control.Clear();
+        }
+
+        _questions.Disconnected();
+    }
+
+    // A question or a withdrawal from the slot, for the console that is connected.
+    private void Send(ConsoleMessage message)
+    {
+        lock (_lock)
+        {
+            if (_isConnected)
+            {
+                _control.Enqueue(message);
+                _wake.TrySetResult();
+            }
         }
     }
 

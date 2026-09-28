@@ -23,6 +23,13 @@ public sealed record RunScriptStep : SequenceStep
 
     public IReadOnlyList<int> RebootExitCodes { get; init; } = [3010];
 
+    // Version 3, Windows phase only: the script runs as this account instead of SYSTEM, and never sees its password.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AccountReference? RunAs { get; init; }
+
     [JsonIgnore]
     public override SequencePhase? RequiredPhase => Phase;
+
+    [JsonIgnore]
+    public override int MinimumVersion => RunAs is null ? 1 : 3;
 }

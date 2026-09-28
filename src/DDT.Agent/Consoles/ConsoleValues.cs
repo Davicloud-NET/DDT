@@ -50,6 +50,8 @@ public static class ConsoleValues
         RunActivity.WaitingForWindowsSetup => ConsoleActivity.WaitingForWindowsSetup,
         RunActivity.Finishing => ConsoleActivity.Finishing,
         RunActivity.Removing => ConsoleActivity.Removing,
+        RunActivity.WaitingForInput => ConsoleActivity.WaitingForInput,
+        RunActivity.Paused => ConsoleActivity.Paused,
         _ => ConsoleActivity.Preparing,
     };
 
@@ -65,6 +67,11 @@ public static class ConsoleValues
         RebootStep => "reboot",
         WriteRawImageStep => "writeRawImage",
         WriteCloudInitSeedStep => "writeCloudInitSeed",
+        GroupStep => "group",
+        IfStep => "if",
+        RepeatStep => "repeat",
+        SetVariableStep => "setVariable",
+        PauseStep => "pause",
         _ => "step",
     };
 }

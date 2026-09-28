@@ -33,6 +33,14 @@ public sealed class RunScriptStepRunnerTests
         Script = "Write-Output 'Grüße'",
     };
 
+    // Office and Floor may be set by steps, Region only when the run starts.
+    private static readonly VariableDeclaration[] s_variables =
+    [
+        new() { Name = "Office", SetBySteps = true },
+        new() { Name = "Floor", SetBySteps = true },
+        new() { Name = "Region" },
+    ];
+
     [Fact]
     public async Task RunsACmdScriptFromTheAgentsDirectoryBeforeTheDiskIsPartitioned()
     {
@@ -117,10 +125,131 @@ public sealed class RunScriptStepRunnerTests
 
         Assert.Equal(outcome, result.Outcome);
 
+        // Kept as LastExitCode, for a repeat that tries again until a script works.
+        Assert.Equal(exitCode, result.ExitCode);
+
         if (outcome == StepOutcome.Failed)
         {
             Assert.Equal("The script ended with exit code 5, which is not one of its success codes (0).", result.Error);
         }
+    }
+
+    // In its environment, never in its text: what the run started with and what steps set, but not the agent's own
+    // variables, and no name an environment cannot hold. A sequence without variables for steps to set gives the script
+    // no file to set them in.
+    [Fact]
+    public async Task GivesTheScriptTheRunsValuesAndVariables()
+    {
+        using StepRunnerFixture run = new([s_cmd]);
+        StepContext context = run.Context(
+            variables: new Dictionary<string, string>
+            {
+                [RunVariables.WindowsPartition] = "0193a4b2-0000-7000-8000-0000000000e1",
+                ["Floor"] = "3",
+                [MachineVariableNames.LastExitCode] = "0",
+            },
+            values: new Dictionary<string, string> { ["Office"] = "Vienna", ["Floor"] = "1", ["Not a name"] = "x" });
+
+        await run.RunScript.RunAsync(s_cmd, context, TestContext.Current.CancellationToken);
+
+        IReadOnlyDictionary<string, string> environment = Assert.Single(run.ToolRunner.Options).Environment!;
+        Assert.Equal(
+            [("DDT_VAR_Floor", "3"), ("DDT_VAR_LastExitCode", "0"), ("DDT_VAR_Office", "Vienna")],
+            environment.Where(pair => pair.Key.StartsWith(RunScriptStepRunner.VariablePrefix, StringComparison.Ordinal))
+                .Select(pair => (pair.Key, pair.Value))
+                .Order());
+        Assert.False(environment.ContainsKey(RunScriptStepRunner.VariablesOut));
+        Assert.DoesNotContain(await File.ReadAllTextAsync(Path.Combine(run.WorkDirectory, "scripts", $"{s_cmd.Id:D}.cmd"), TestContext.Current.CancellationToken), "Vienna", StringComparison.Ordinal);
+    }
+
+    // Only the variables the sequence lets steps set are taken, in its spelling, and only their names reach the log.
+    [Fact]
+    public async Task TakesTheVariablesTheSequenceLetsStepsSet()
+    {
+        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        string? file = null;
+        run.ToolRunner.AnswerExitCode = (_, _, options) =>
+        {
+            file = options.Environment![RunScriptStepRunner.VariablesOut];
+            File.WriteAllText(file, "office = Graz-Süd \r\n\r\nFloor=4\nRegion=EU\nUnknown=secret-looking\nno equals here\n");
+
+            return 0;
+        };
+
+        StepResult result = await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepOutcome.Done, result.Outcome);
+        Assert.Equal(new Dictionary<string, string> { ["Office"] = "Graz-Süd", ["Floor"] = "4" }, result.Outputs);
+        Assert.Equal(Path.Combine(run.WorkDirectory, "scripts", $"{s_cmd.Id:D}.variables"), file);
+        Assert.False(File.Exists(file));
+
+        List<string> lines = [.. (await run.SentLinesAsync()).Select(line => line.Message)];
+        Assert.Contains($"Line 6 of {RunScriptStepRunner.VariablesOut} is not Name=Value, so it was not read.", lines);
+        Assert.Contains("The script set Region, Unknown, which the sequence does not let steps set, so the run does not take them.", lines);
+        Assert.Contains("The script set Office, Floor.", lines);
+        Assert.DoesNotContain(lines, line => line.Contains("Graz", StringComparison.Ordinal) || line.Contains("secret", StringComparison.Ordinal));
+    }
+
+    // A failed script sets nothing, and a restart code counts as done.
+    [Theory]
+    [InlineData(5, false)]
+    [InlineData(3010, true)]
+    public async Task TakesVariablesOnlyFromAScriptThatWorked(int exitCode, bool taken)
+    {
+        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        run.ToolRunner.AnswerExitCode = (_, _, options) =>
+        {
+            File.WriteAllText(options.Environment![RunScriptStepRunner.VariablesOut], "Floor=4\n");
+
+            return exitCode;
+        };
+
+        StepResult result = await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(taken ? new Dictionary<string, string> { ["Floor"] = "4" } : null, result.Outputs);
+        Assert.Equal(exitCode, result.ExitCode);
+    }
+
+    // At most 64 lines of at most 1024 characters, however much the script writes.
+    [Fact]
+    public async Task ReadsNoMoreThanTheLinesAVariablesFileMayHold()
+    {
+        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        run.ToolRunner.AnswerExitCode = (_, _, options) =>
+        {
+            File.WriteAllLines(
+                options.Environment![RunScriptStepRunner.VariablesOut],
+                [$"Office={new string('x', RunScriptStepRunner.MaxOutputLineLength)}", .. Enumerable.Repeat("Floor=4", 63), "Floor=5"]);
+
+            return 0;
+        };
+
+        StepResult result = await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new Dictionary<string, string> { ["Floor"] = "4" }, result.Outputs);
+        List<string> lines = [.. (await run.SentLinesAsync()).Select(line => line.Message)];
+        Assert.Contains($"Line 1 of {RunScriptStepRunner.VariablesOut}, for Office, is longer than 1024 characters, so it was not read.", lines);
+        Assert.Contains($"The script wrote more than 64 lines to {RunScriptStepRunner.VariablesOut}, and those after line 64 were not read.", lines);
+    }
+
+    // The real interpreters: cmd writes UTF-8 after the chcp line, Windows PowerShell's Out-File UTF-16 with a byte order
+    // mark.
+    [Theory]
+    [InlineData(ScriptInterpreter.Cmd, ">\"%DDT_VARIABLES_OUT%\" echo Office=Grüße aus Wien\r\n>>\"%DDT_VARIABLES_OUT%\" echo Floor=%DDT_VAR_Floor%")]
+    [InlineData(ScriptInterpreter.PowerShell, "\"Office=Grüße aus Wien\", \"Floor=$env:DDT_VAR_Floor\" | Out-File $env:DDT_VARIABLES_OUT")]
+    public async Task ARealScriptSetsVariables(ScriptInterpreter interpreter, string script)
+    {
+        RunScriptStep step = s_cmd with { Interpreter = interpreter, Script = script };
+        using StepRunnerFixture run = new([step], variables: s_variables);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+
+        StepResult result = await runner.RunAsync(
+            step,
+            run.Context(values: new Dictionary<string, string> { ["Floor"] = "7" }),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepOutcome.Done, result.Outcome);
+        Assert.Equal(new Dictionary<string, string> { ["Office"] = "Grüße aus Wien", ["Floor"] = "7" }, result.Outputs);
     }
 
     [Fact]

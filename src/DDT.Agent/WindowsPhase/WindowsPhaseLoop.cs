@@ -259,7 +259,8 @@ public sealed class WindowsPhaseLoop(
                         Environment: AgentEnvironment.Windows,
                         SecureBootEnabled: identity.SecureBootEnabled,
                         TrustedUefiCas: identity.TrustedUefiCas,
-                        ChassisType: identity.ChassisType),
+                        ChassisType: identity.ChassisType,
+                        Facts: identity.Facts),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)

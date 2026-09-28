@@ -8,4 +8,5 @@ namespace DDT.Server.Deployments;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(RunInputs))]
+[JsonSerializable(typeof(IReadOnlyList<RunAnswer>))]
 internal sealed partial class DeploymentJsonContext : JsonSerializerContext;

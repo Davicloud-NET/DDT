@@ -22,6 +22,12 @@ public static class AuditActions
     public const string DeploymentSecretRead = "deployment.secret-read";
     public const string DeploymentResumed = "deployment.resumed";
     public const string DeploymentRunTokenRefused = "deployment.run-token-refused";
+
+    // Names the inputs only, never an answer.
+    public const string DeploymentInputsAnswered = "deployment.inputs-answered";
+
+    // Someone continued a run that waits at a Pause step.
+    public const string DeploymentContinued = "deployment.continued";
     public const string CertificateAnchorAcknowledged = "certificate.anchor-acknowledged";
     public const string DomainJoinChecked = "domain.join-checked";
     public const string SequenceCreated = "sequence.created";
@@ -33,6 +39,12 @@ public static class AuditActions
     public const string RuleCreated = "rule.created";
     public const string RuleChanged = "rule.changed";
     public const string RuleDeleted = "rule.deleted";
+    public const string RuleReordered = "rule.reordered";
+
+    // Machine roles, which rules give machines; not the roles of users.
+    public const string RoleCreated = "role.created";
+    public const string RoleChanged = "role.changed";
+    public const string RoleDeleted = "role.deleted";
     public const string UserCreated = "user.created";
     public const string UserChanged = "user.changed";
     public const string UserDisabled = "user.disabled";
@@ -56,4 +68,8 @@ public static class AuditActions
     public const string CertificateReplaced = "certificate.replaced";
     public const string CertificateConfirmed = "certificate.confirmed";
     public const string CertificateRolledBack = "certificate.rolled-back";
+    public const string AccountCreated = "account.created";
+    public const string AccountChanged = "account.changed";
+    public const string AccountDeleted = "account.deleted";
+    public const string AccountRefused = "account.refused";
 }

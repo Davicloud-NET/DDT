@@ -14,6 +14,11 @@ namespace DDT.Agent.Sequences;
 // interval, and when the run's state or activity changes, at once or MinimumSpacing after the last beat, it reports a
 // snapshot of the run and sends one log batch. Each report brings fresh tokens, which keeps the session alive through
 // a download of any length, and the run token, which saveRunToken writes to the disk when it is a new one.
+//
+// While the run waits for someone, at a pause or for the answers to its inputs, it beats as often as the server asks,
+// every WaitingInterval unless it says otherwise, as someone on the web may answer at any moment, and the answers come
+// back with the reports: a pause continued on the web, and the run's values once its inputs are answered. A report
+// carries the sequence's variables whenever they changed since the server last took them.
 public sealed class RunHeartbeat(
     IAgentServer server,
     AgentLog log,
@@ -30,14 +35,34 @@ public sealed class RunHeartbeat(
     // steps change the run many times a second, so the changes that follow a beat this closely share the next one.
     public static readonly TimeSpan MinimumSpacing = TimeSpan.FromSeconds(3);
 
+    public static readonly TimeSpan WaitingInterval = TimeSpan.FromSeconds(5);
+
+    // What a report holds of the variables at most, so a sequence that sets many long ones cannot make it too large.
+    public const int MaxReportedVariables = 64;
+
+    public const int MaxReportedValueLength = 1024;
+
+    // What the server may ask for, so a mistake neither floods it nor leaves the run waiting unseen.
+    private static readonly TimeSpan s_shortestWait = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan s_longestWait = TimeSpan.FromMinutes(5);
+
     private readonly SemaphoreSlim _sender = new(1, 1);
     private readonly Lock _lock = new();
+    private readonly TaskCompletionSource<IReadOnlyDictionary<string, string>> _valuesArrived = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private SequenceState? _state;
+    private SequenceDefinition? _definition;
+    private HashSet<Guid> _containers = [];
     private Guid? _stepId;
     private int _percent;
     private bool _percentKnown;
     private RunActivity _activity = RunActivity.Preparing;
+    private string? _pauseMessage;
+    private IReadOnlyDictionary<string, string>? _reportedVariables;
+    private TimeSpan? _reportAfter;
+    private (Guid StepId, int Pass)? _continued;
+    private (Guid StepId, int Pass, TaskCompletionSource Continued)? _continueWaiter;
+    private IReadOnlyDictionary<string, string>? _values;
     private CancellationTokenSource? _stop;
     private CancellationTokenSource? _run;
     private Task? _loop;
@@ -93,7 +118,8 @@ public sealed class RunHeartbeat(
         }
     }
 
-    // Every state the run saves, which the store passes on once it is written.
+    // Every state the run saves, which the store passes on once it is written. In a tree the groups, IFs and repeats
+    // around the step that runs are Running too, and come before it; the current step is the leaf.
     public void Update(SequenceState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -102,7 +128,8 @@ public sealed class RunHeartbeat(
 
         lock (_lock)
         {
-            Guid? running = state.Steps.FirstOrDefault(step => step.State == StepState.Running)?.StepId;
+            HashSet<Guid> containers = ContainersOf(state.Definition);
+            Guid? running = state.Steps.FirstOrDefault(step => step.State == StepState.Running && !containers.Contains(step.StepId))?.StepId;
 
             if (running != _stepId)
             {
@@ -146,7 +173,8 @@ public sealed class RunHeartbeat(
     }
 
     // The run as it stands, as a report in the given state: every step that has left Pending, the running one and its
-    // percent. A failed report names the step that was running as the one that failed.
+    // percent. A failed report names the step that was running as the one that failed. The variables come along only
+    // when they changed since the last report the server took, and the pause's message while the run is paused.
     public AgentRunReport Snapshot(DeploymentState state, string? error = null)
     {
         lock (_lock)
@@ -158,7 +186,79 @@ public sealed class RunHeartbeat(
                 steps = steps.Select(step => step.State == StepState.Running ? step with { State = StepState.Failed, Error = error } : step);
             }
 
-            return new AgentRunReport(state, _state?.Phase ?? SequencePhase.WindowsPE, [.. steps], _stepId, _percent, _activity, error);
+            IReadOnlyDictionary<string, string> variables = ReportedVariables(_state);
+
+            return new AgentRunReport(state, _state?.Phase ?? SequencePhase.WindowsPE, [.. steps], _stepId, _percent, _activity, error)
+            {
+                Variables = Same(variables, _reportedVariables ?? new Dictionary<string, string>()) ? null : variables,
+                PauseMessage = _activity == RunActivity.Paused ? _pauseMessage : null,
+            };
+        }
+    }
+
+    // A Pause step waits, with its message worked out. The activity tells the server and the console at once.
+    public void Pause(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        lock (_lock)
+        {
+            _pauseMessage = message;
+        }
+
+        Activity = RunActivity.Paused;
+    }
+
+    // The pause is over, and the run goes on with its steps.
+    public void Resume()
+    {
+        Activity = RunActivity.Step;
+
+        lock (_lock)
+        {
+            _pauseMessage = null;
+        }
+    }
+
+    // Completes once a report's answer says that someone continued this visit of the Pause step on the web, which may
+    // have happened before the wait began, as the answer to the pause's first report.
+    public Task WaitForContinueAsync(Guid stepId, int pass, CancellationToken cancellationToken)
+    {
+        TaskCompletionSource continued = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        lock (_lock)
+        {
+            if (_continued == (stepId, pass))
+            {
+                return Task.CompletedTask;
+            }
+
+            _continueWaiter = (stepId, pass, continued);
+        }
+
+        return continued.Task.WaitAsync(cancellationToken);
+    }
+
+    // The run's values as a report's answer brought them: the one that started the run, or the first after the inputs
+    // it waited for at its start were answered. Null before any did.
+    public IReadOnlyDictionary<string, string>? Values
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _values;
+            }
+        }
+    }
+
+    // Completes with the run's values once a report's answer brings them, which it does once the inputs the run waited
+    // for at its start are answered, on the web or at the machine.
+    public Task<IReadOnlyDictionary<string, string>> WaitForValuesAsync(CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            return _values is { } values ? Task.FromResult(values) : _valuesArrived.Task.WaitAsync(cancellationToken);
         }
     }
 
@@ -207,6 +307,7 @@ public sealed class RunHeartbeat(
                 .ConfigureAwait(false);
 
             tokens.Update(result.Token, result.ResumeToken, result.RunToken);
+            Took(report, result);
 
             // Once a run is over, its files are gone from the disk and must stay gone.
             if (result.RunToken is not null && report.State == DeploymentState.Running)
@@ -245,6 +346,88 @@ public sealed class RunHeartbeat(
         {
             _sender.Release();
         }
+    }
+
+    // What a report the server took says back: how soon it wants the next one while the run waits, a pause continued on
+    // the web, and the run's values once the inputs it waited for are answered.
+    private void Took(AgentRunReport report, AgentRunReportResult result)
+    {
+        TaskCompletionSource? continued = null;
+        TaskCompletionSource<IReadOnlyDictionary<string, string>>? valuesArrived = null;
+
+        lock (_lock)
+        {
+            if (report.Variables is { } variables)
+            {
+                _reportedVariables = variables;
+            }
+
+            _reportAfter = result.ReportAfterSeconds is { } seconds
+                ? TimeSpan.FromSeconds(Math.Clamp(seconds, s_shortestWait.TotalSeconds, s_longestWait.TotalSeconds))
+                : null;
+
+            if (result.ContinueStepId is { } stepId && result.ContinuePass is { } pass)
+            {
+                _continued = (stepId, pass);
+
+                if (_continueWaiter is { } waiter && waiter.StepId == stepId && waiter.Pass == pass)
+                {
+                    continued = waiter.Continued;
+                    _continueWaiter = null;
+                }
+            }
+
+            if (result.Values is { } values && _values is null)
+            {
+                _values = values;
+                valuesArrived = _valuesArrived;
+            }
+        }
+
+        continued?.TrySetResult();
+        valuesArrived?.TrySetResult(result.Values!);
+    }
+
+    // The variables of the sequence as steps set them, in order of their names, never the agent's own, at most
+    // MaxReportedVariables of them and each cut to MaxReportedValueLength.
+    private static IReadOnlyDictionary<string, string> ReportedVariables(SequenceState? state)
+    {
+        Dictionary<string, string> variables = new(StringComparer.Ordinal);
+
+        foreach ((string name, string value) in (state?.Variables ?? new Dictionary<string, string>())
+            .Where(pair => !RunVariables.IsOwn(pair.Key))
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Take(MaxReportedVariables))
+        {
+            variables[name] = value.Length > MaxReportedValueLength ? value[..MaxReportedValueLength] : value;
+        }
+
+        return variables;
+    }
+
+    private static bool Same(IReadOnlyDictionary<string, string> first, IReadOnlyDictionary<string, string> second) =>
+        first.Count == second.Count
+        && first.All(pair => second.TryGetValue(pair.Key, out string? value) && string.Equals(value, pair.Value, StringComparison.Ordinal));
+
+    // How long a beat waits for the next when nothing changes: while someone is to answer, as often as the server asks.
+    private TimeSpan Interval()
+    {
+        lock (_lock)
+        {
+            return _activity is RunActivity.Paused or RunActivity.WaitingForInput ? _reportAfter ?? WaitingInterval : interval;
+        }
+    }
+
+    // Under the lock. The definition of a run never changes, so its containers are worked out once.
+    private HashSet<Guid> ContainersOf(SequenceDefinition definition)
+    {
+        if (!ReferenceEquals(definition, _definition))
+        {
+            _definition = definition;
+            _containers = [.. SequenceTree.Nodes(definition).Where(node => node.IsContainer).Select(node => node.Id)];
+        }
+
+        return _containers;
     }
 
     // The token on the disk only matters after a restart, and the next save writes it again, so a failure here does
@@ -368,7 +551,7 @@ public sealed class RunHeartbeat(
         }
 
         using CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(stop);
-        Task elapsed = Task.Delay(interval, timeProvider, waiting.Token);
+        Task elapsed = Task.Delay(Interval(), timeProvider, waiting.Token);
         await Task.WhenAny(changed, elapsed).ConfigureAwait(false);
         await waiting.CancelAsync().ConfigureAwait(false);
 

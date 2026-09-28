@@ -192,7 +192,7 @@ public sealed class SequenceValidatorTests
     [Theory]
     [InlineData("BiosVersion", ConditionOperator.Equals, "1.0", "conditions[1].variable")]
     [InlineData("model", ConditionOperator.Equals, "Latitude", "conditions[1].variable")]
-    [InlineData(MachineVariableNames.Model, (ConditionOperator)9, "Latitude", "conditions[1].operator")]
+    [InlineData(MachineVariableNames.Model, (ConditionOperator)99, "Latitude", "conditions[1].operator")]
     [InlineData(MachineVariableNames.Model, ConditionOperator.Equals, "", "conditions[1].value")]
     [InlineData(MachineVariableNames.Model, ConditionOperator.Equals, " ", "conditions[1].value")]
     public void RefusesAConditionWithAnUnknownVariableOrOperatorOrNoValue(

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import {
   Header,
   Menu as AriaMenu,
@@ -18,16 +18,29 @@ import {
 import { cx } from "./cx";
 
 // A menu floats above the page, so it is an overlay: the lightest surface, and one of the few things with a shadow.
-// It comes from the side of its trigger and leaves towards it.
+// It comes from the side of its trigger and leaves towards it. Outside a MenuTrigger, triggerRef names what it opens
+// from and isOpen and onOpenChange whether it is open, as for a node's menu opened by a key.
 export function Menu<T extends object>({
   className,
   placement = "bottom end",
+  triggerRef,
+  isOpen,
+  onOpenChange,
   ...props
-}: AriaMenuProps<T> & { className?: string; placement?: "bottom end" | "bottom start" }) {
+}: AriaMenuProps<T> & {
+  className?: string;
+  placement?: "bottom end" | "bottom start";
+  triggerRef?: RefObject<Element | null>;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   return (
     <Popover
       placement={placement}
       offset={6}
+      {...(triggerRef === undefined ? {} : { triggerRef })}
+      {...(isOpen === undefined ? {} : { isOpen })}
+      {...(onOpenChange === undefined ? {} : { onOpenChange })}
       className="min-w-56 rounded-overlay bg-raised shadow-overlay outline-none entering:animate-pop-in exiting:animate-pop-out"
     >
       <AriaMenu

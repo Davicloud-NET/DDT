@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Accounts;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
@@ -88,6 +89,14 @@ public sealed partial class LiveNotifier(
         }
     }
 
+    // The variables a run's steps set, only to the connections that watch the machine.
+    public void RunVariablesChanged(Guid machineId, Guid deploymentId, IReadOnlyDictionary<string, string> variables)
+    {
+        ArgumentNullException.ThrowIfNull(variables);
+
+        _ = PushToWatchersAsync(machineId, LiveEvents.RunVariablesChanged, new RunVariablesChangedEvent(machineId, deploymentId, variables));
+    }
+
     public void MachineLogAppended(Guid machineId, long lastLineId) =>
         _logs.Push(
             machineId,
@@ -149,11 +158,18 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.PackagesRemoved, new PackagesRemovedEvent([.. packageIds]));
     }
 
-    public void RulesChanged(AssignmentRuleView[] rules)
+    public void RulesChanged(RuleView[] rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
 
         _ = PushEventAsync(LiveEvents.RulesChanged, rules);
+    }
+
+    public void RolesChanged(MachineRoleView[] roles)
+    {
+        ArgumentNullException.ThrowIfNull(roles);
+
+        _ = PushEventAsync(LiveEvents.RolesChanged, roles);
     }
 
     public void BootImageChanged(BootImageView bootImage)
@@ -243,6 +259,21 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(view);
 
         _ = PushToAdministratorsAsync(LiveEvents.CertificateChanged, view);
+    }
+
+    // Everyone who may read the Accounts page gets it: the view holds no password, only whether one is set.
+    public void AccountChanged(AccountView account)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        _ = PushEventAsync(LiveEvents.AccountChanged, account);
+    }
+
+    public void AccountsRemoved(IEnumerable<Guid> accountIds)
+    {
+        ArgumentNullException.ThrowIfNull(accountIds);
+
+        _ = PushEventAsync(LiveEvents.AccountsRemoved, new AccountsRemovedEvent([.. accountIds]));
     }
 
     // Every event carries what changed, so a page patches what it shows rather than loading it again.

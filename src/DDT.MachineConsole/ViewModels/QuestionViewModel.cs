@@ -55,6 +55,11 @@ public abstract class QuestionViewModel : ScreenViewModel
     // screen does not change under the person. False where a new screen has to show it.
     public virtual bool Accept(int id, ConsoleQuestion question) => false;
 
+    // The agent's state, each time it changes while the question is on the screen, for a question that shows some of it.
+    public virtual void Update(ConsoleState state)
+    {
+    }
+
     // What the screen sends for its current input, or null when there is nothing to send yet.
     protected abstract ConsoleAnswer? Answer();
 

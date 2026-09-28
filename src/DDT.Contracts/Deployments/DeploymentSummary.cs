@@ -9,7 +9,8 @@ namespace DDT.Contracts.Deployments;
 
 // A run of a task sequence. Title is the sequence's name when it was assigned, or the image's for a deployment from
 // before task sequences, which has no steps. StepIndex counts from 0; it, StepName, Percent and Phase are the step the
-// agent reported last, and Activity is what the agent does between steps. UpdatedUtc is the last change.
+// agent reported last, and Activity is what the agent does between steps. UpdatedUtc is the last change. Waiting says
+// the run needs someone, for answers to its inputs or to continue a pause, whose message is PauseMessage.
 public sealed record DeploymentSummary(
     Guid Id,
     Guid? SequenceId,
@@ -27,4 +28,6 @@ public sealed record DeploymentSummary(
     DateTimeOffset? StartedUtc,
     DateTimeOffset? FinishedUtc,
     DateTimeOffset UpdatedUtc,
-    string? Error);
+    string? Error,
+    bool Waiting = false,
+    string? PauseMessage = null);

@@ -207,7 +207,7 @@ public sealed class AgentLoop(
                         ? local
                         : null;
 
-                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && run.Sequence.Steps.Any(step => step.ErasesDisk))
+                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && SequenceTree.Nodes(run.Sequence).Any(step => step.ErasesDisk))
                     {
                         // The picker said why when the server answered the choice.
                         AgentRunReportResult reported = await server
@@ -441,7 +441,7 @@ public sealed class AgentLoop(
         }
         catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
         {
-            picker.Refused(ServerCallRules.Reason(exception, "the choice"));
+            picker.Refused(ServerCallRules.Reason(exception, "the choice"), (exception as AgentRequestException)?.FieldErrors);
         }
         catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
         {
@@ -575,7 +575,8 @@ public sealed class AgentLoop(
                         SequenceDefinition.CurrentVersion,
                         SecureBootEnabled: identity.SecureBootEnabled,
                         TrustedUefiCas: identity.TrustedUefiCas,
-                        ChassisType: identity.ChassisType),
+                        ChassisType: identity.ChassisType,
+                        Facts: identity.Facts),
                     cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException exception)

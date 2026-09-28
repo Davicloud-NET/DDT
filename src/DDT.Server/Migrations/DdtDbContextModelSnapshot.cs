@@ -27,6 +27,71 @@ namespace DDT.Server.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DDT.Server.Accounts.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Domain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)");
+
+                    b.Property<string>("Hosts")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset?>("PasswordUpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProtectedPassword")
+                        .HasColumnType("text");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("RunAs")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Accounts", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Data.AuditEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -279,6 +344,19 @@ namespace DDT.Server.Migrations
                     b.Property<bool>("AllowSecureBootMismatch")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Answers")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ContinuePass")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ContinueStepId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContinuedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<DateTimeOffset>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -306,7 +384,20 @@ namespace DDT.Server.Migrations
                     b.Property<string>("Inputs")
                         .HasColumnType("text");
 
+                    b.Property<bool>("InputsPending")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("MachineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PauseMessage")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<int?>("PausePass")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("PauseStepId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Percent")
@@ -352,6 +443,12 @@ namespace DDT.Server.Migrations
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Values")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Variables")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -450,14 +547,27 @@ namespace DDT.Server.Migrations
                     b.Property<Guid>("StepId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Branch")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<int>("Depth")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Error")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("Evaluation")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("FinishedUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Index")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Iteration")
                         .HasColumnType("integer");
 
                     b.Property<string>("Kind")
@@ -469,6 +579,12 @@ namespace DDT.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Pass")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Percent")
                         .HasColumnType("integer");
@@ -490,6 +606,55 @@ namespace DDT.Server.Migrations
                     b.HasKey("DeploymentId", "StepId");
 
                     b.ToTable("DeploymentSteps", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.RunCredential", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InputName")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Domain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)");
+
+                    b.Property<string>("Hosts")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProtectedPassword")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ProvidedAtMachine")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProvidedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("ProvidedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("RunAs")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("DeploymentId", "InputName");
+
+                    b.HasIndex("ProvidedByUserId");
+
+                    b.ToTable("RunCredentials", "ddt");
                 });
 
             modelBuilder.Entity("DDT.Server.Images.Image", b =>
@@ -668,6 +833,9 @@ namespace DDT.Server.Migrations
 
                     b.Property<int?>("EligibleDiskCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Facts")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("FirstApprovedUtc")
                         .HasColumnType("timestamp with time zone");
@@ -870,7 +1038,7 @@ namespace DDT.Server.Migrations
                     b.ToTable("Packages", "ddt");
                 });
 
-            modelBuilder.Entity("DDT.Server.Rules.AssignmentRule", b =>
+            modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -880,32 +1048,80 @@ namespace DDT.Server.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
 
-                    b.Property<string>("Kind")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("Mac")
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)");
-
-                    b.Property<string>("Manufacturer")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<string>("MatchKey")
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("MachineRoles", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Rules.Rule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
-                    b.Property<string>("Model")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
 
-                    b.Property<Guid>("TaskSequenceId")
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RoleIds")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TaskSequenceId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("UpdatedByName")
@@ -918,16 +1134,23 @@ namespace DDT.Server.Migrations
                     b.Property<DateTimeOffset>("UpdatedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("When")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("MatchKey")
+                    b.HasIndex("Position")
                         .IsUnique();
 
                     b.HasIndex("TaskSequenceId");
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("AssignmentRules", "ddt");
+                    b.ToTable("Rules", "ddt");
                 });
 
             modelBuilder.Entity("DDT.Server.Sequences.TaskSequence", b =>
@@ -1168,6 +1391,14 @@ namespace DDT.Server.Migrations
                     b.ToTable("AspNetUserTokens", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Accounts.Account", b =>
+                {
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("DDT.Server.Data.SettingsSection", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
@@ -1222,6 +1453,20 @@ namespace DDT.Server.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("DDT.Server.Deployments.RunCredential", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("ProvidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("DDT.Server.Images.Image", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
@@ -1270,13 +1515,20 @@ namespace DDT.Server.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
-            modelBuilder.Entity("DDT.Server.Rules.AssignmentRule", b =>
+            modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
+                {
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Rules.Rule", b =>
                 {
                     b.HasOne("DDT.Server.Sequences.TaskSequence", null)
                         .WithMany()
                         .HasForeignKey("TaskSequenceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()

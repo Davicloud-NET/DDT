@@ -5,6 +5,13 @@
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { QueryClient } from "@tanstack/react-query";
 
+import {
+  accountsQuery,
+  putAccount,
+  removeAccounts,
+  type AccountsRemoved,
+  type AccountView,
+} from "@/accounts/accounts";
 import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
@@ -31,7 +38,8 @@ import {
   type PackageSummary,
   type PackagesRemoved,
 } from "@/packages/packages";
-import { rulesQuery, sequenceResolutionsKey, type AssignmentRuleView } from "@/rules/rules";
+import { machineRolesQuery, type MachineRoleView } from "@/roles/roles";
+import { rulesQuery, sequenceResolutionsKey, type RuleView } from "@/rules/rules";
 import {
   removeMachinesFromRuns,
   renameMachineInRuns,
@@ -83,17 +91,26 @@ export interface MachineLogAppended {
   lastLineId: number;
 }
 
-// The server's RunStepChangedEvent: a step of the machine's run changed.
+// The server's RunStepChangedEvent: a step of the machine's run changed. A node of a tree carries its place in it
+// and its latest visit: pass, iteration, branch and evaluation.
 export interface RunStepChanged {
   machineId: string;
   deploymentId: string;
   step: DeploymentStepView;
 }
 
+// The server's runVariablesChanged: the agent reported the sequence's variables anew, all of them.
+export interface RunVariablesChanged {
+  machineId: string;
+  deploymentId: string;
+  variables: Record<string, string>;
+}
+
 // The server sends these events only to the connections that watch the machine.
 export interface MachineWatchHandlers {
   onLogAppended?: (event: MachineLogAppended) => void;
   onRunStepChanged?: (event: RunStepChanged) => void;
+  onRunVariablesChanged?: (event: RunVariablesChanged) => void;
   // Called once the machine is watched again after the connection was lost, or first came up after the
   // watch began. Events sent meanwhile are lost, so this is when a watcher reads what it missed.
   onReconnect?: () => void;
@@ -208,6 +225,8 @@ export function createLiveConnection(
       packagesQuery.queryKey,
       uploadsQuery.queryKey,
       rulesQuery.queryKey,
+      machineRolesQuery.queryKey,
+      accountsQuery.queryKey,
       sequencesQuery.queryKey,
       sequenceDocumentsKey,
       sequenceResolutionsKey,
@@ -305,9 +324,25 @@ export function createLiveConnection(
     current.on("sequenceChanged", sequenceChanged);
 
     // Rules are few and reorder together, so the event carries the whole ordered list.
-    current.on("rulesChanged", (rules: AssignmentRuleView[]) => {
+    current.on("rulesChanged", (rules: RuleView[]) => {
       queryClient.setQueryData(rulesQuery.queryKey, rules);
       refetchResolutions();
+    });
+
+    // Machine roles too, as a change of one changes what the rules that give it do.
+    current.on("rolesChanged", (roles: MachineRoleView[]) => {
+      queryClient.setQueryData(machineRolesQuery.queryKey, roles);
+      refetchResolutions();
+    });
+
+    // An account carries no password, only whether one is set, and comes again when a sequence starts or stops
+    // naming it.
+    current.on("accountChanged", (account: AccountView) => {
+      putAccount(queryClient, account);
+    });
+
+    current.on("accountsRemoved", (event: AccountsRemoved) => {
+      removeAccounts(queryClient, event.accountIds);
     });
 
     current.on("bootImageChanged", (view: BootImageView) => {
@@ -384,6 +419,12 @@ export function createLiveConnection(
     current.on("runStepChanged", (event: RunStepChanged) => {
       for (const watch of watchesOf(event.machineId)) {
         watch.handlers.onRunStepChanged?.(event);
+      }
+    });
+
+    current.on("runVariablesChanged", (event: RunVariablesChanged) => {
+      for (const watch of watchesOf(event.machineId)) {
+        watch.handlers.onRunVariablesChanged?.(event);
       }
     });
 

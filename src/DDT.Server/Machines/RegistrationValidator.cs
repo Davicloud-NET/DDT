@@ -3,13 +3,18 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Machines;
+using DDT.Core.Machines;
 
 namespace DDT.Server.Machines;
 
 // Everything here was typed by whoever booted boot.wim, so it is bounded and normalised before it
 // reaches the database or the web UI.
-public static class RegistrationValidator
+public static partial class RegistrationValidator
 {
     private const int MaxMacAddresses = 16;
     private const int MaxTextLength = 128;
@@ -25,6 +30,13 @@ public static class RegistrationValidator
     internal const int MaxDisksLength = 512;
 
     private const double BytesPerGigabyte = 1024d * 1024 * 1024;
+
+    // Far beyond any machine: a pebibyte of memory, and 65536 processors.
+    private const long MaxMemoryMegabytes = 1L << 30;
+    private const int MaxProcessors = 1 << 16;
+
+    // A DNS name's longest.
+    private const int MaxDnsNameLength = 253;
 
     public static bool TryNormalise(
         AgentRegistration registration,
@@ -98,11 +110,63 @@ public static class RegistrationValidator
             registration.Environment,
             registration.SecureBootEnabled,
             registration.TrustedUefiCas,
-            registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null);
+            registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null,
+            registration.Facts is { } facts ? Normalise(facts) : null);
         error = string.Empty;
 
         return true;
     }
+
+    // Conditions and rules test these, and the machine's page shows them. Text is cleaned and cut like the names above,
+    // and a number, an address or a date that cannot be right reads as unknown rather than refusing the registration.
+    private static MachineFacts Normalise(MachineFacts facts) => new()
+    {
+        MemoryMegabytes = facts.MemoryMegabytes is > 0 and <= MaxMemoryMegabytes ? facts.MemoryMegabytes : null,
+        ProcessorName = FirmwareText(facts.ProcessorName),
+        ProcessorCores = facts.ProcessorCores is > 0 and <= MaxProcessors ? facts.ProcessorCores : null,
+        LogicalProcessors = facts.LogicalProcessors is > 0 and <= MaxProcessors ? facts.LogicalProcessors : null,
+        TpmPresent = facts.TpmPresent,
+        TpmVersion = FactText(facts.TpmVersion, MaxVersionLength) is { } version && TpmVersionPattern().IsMatch(version) ? version : null,
+        SecureBootCapable = facts.SecureBootCapable,
+        IPv4Address = IPv4(facts.IPv4Address),
+        IPv4PrefixLength = facts.IPv4PrefixLength is >= 0 and <= 32 ? facts.IPv4PrefixLength : null,
+        DefaultGateway = IPv4(facts.DefaultGateway),
+        DnsSuffix = FactText(facts.DnsSuffix, MaxDnsNameLength),
+        DhcpServer = IPv4(facts.DhcpServer),
+        SystemVersion = FirmwareText(facts.SystemVersion),
+        SystemFamily = FirmwareText(facts.SystemFamily),
+        SystemSku = FirmwareText(facts.SystemSku),
+        AssetTag = FirmwareText(facts.AssetTag),
+        BaseboardProduct = FirmwareText(facts.BaseboardProduct),
+        BiosVersion = FirmwareText(facts.BiosVersion),
+        BiosDate = FactText(facts.BiosDate, MaxVersionLength) is { } date
+            && DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly day)
+                ? day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                : null,
+    };
+
+    // Only the plain dotted form, which conditions compare and subnets are worked out from. The parser also takes forms
+    // such as 10.1 or 010.0.0.1, which read as other addresses than a person would think.
+    private static string? IPv4(string? value) =>
+        FactText(value, MaxTextLength) is { } text
+        && IPAddress.TryParse(text, out IPAddress? address)
+        && address.AddressFamily == AddressFamily.InterNetwork
+        && address.ToString() == text
+            ? text
+            : null;
+
+    // Board makers leave placeholders such as "Default string" or "To be filled by O.E.M." in the fields they did not fill
+    // in, which say nothing about the machine. They are dropped here, where every agent's facts arrive, so a condition
+    // never matches one and the machine's page shows the field as unknown.
+    private static string? FirmwareText(string? value) =>
+        FactText(value, MaxTextLength) is { } text && !HardwareModels.IsPlaceholder(text) ? text : null;
+
+    // PostgreSQL text holds neither a NUL nor half of a surrogate pair, and a line break has no place in one value.
+    private static string? FactText(string? value, int maxLength) =>
+        Bound(value is null ? null : new string([.. value.Where(c => !char.IsControl(c) && !char.IsSurrogate(c))]), maxLength);
+
+    [GeneratedRegex(@"^[0-9]{1,2}\.[0-9]{1,2}$", RegexOptions.CultureInvariant)]
+    private static partial Regex TpmVersionPattern();
 
     // One line per disk, whole lines only, so the list stays readable when it has to be cut short. The count
     // stays exact: it decides whether a web assignment can pick the disk by itself.

@@ -4,21 +4,28 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-import type { SequenceDefinition } from "@/sequences/sequences";
 import {
   currentUser,
   deploymentSummary,
-  deploymentView,
   imageSummary,
   logLine,
   machineSummary,
   sequenceResolution,
   sequenceSummary,
   sequenceView,
-  stepView,
 } from "@/test/builders";
 
-import installWindows from "../src/test/fixtures/install-windows.sequence.json" with { type: "json" };
+import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
+import { node, treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
+
+import {
+  accounts,
+  roles,
+  rules,
+  sequences as ruleSequences,
+  testedMachine,
+  testedResolution,
+} from "./rules";
 import { sampleLogo } from "./sampleLogo";
 import { serve } from "./server";
 
@@ -113,43 +120,22 @@ const machines = [
   }),
 ];
 
-const definition = installWindows.definition as SequenceDefinition;
-const phases = definition.steps.map((step) =>
-  step.kind === "joinDomain" ? "Windows" : "WindowsPE",
+// A run of a tree that waits at a pause, as the design canvas draws one: the IF took Then, the office's printer step
+// was skipped on a laptop, and the share test went round twice.
+const tree = treeRunView();
+const treeLines = [
+  ["Partitioned disk 0 as GPT: EFI 300 MB, MSR 16 MB, Windows, recovery 1024 MB.", node.partition],
+  [
+    "Is it a Latitude? Model contains Latitude holds for Latitude 7450, so Then runs.",
+    node.latitude,
+  ],
+  ["Applied Windows 11 for Latitudes to W:\\ in 3 min 0 s.", node.applyLatitude],
+  ["Joined corp.example as PC-G2341KXQ.", node.join],
+  ["Test the share: exit code 1, going round again (2 of at most 5).", node.test],
+  ["Paused: Stick the asset tag on the lid and note it in the inventory.", node.pause],
+].map(([message, stepId], index) =>
+  logLine(index + 1, { message, stepId, deploymentId: treeRunId }),
 );
-
-const run = deploymentView({
-  summary: running,
-  machineId,
-  definition,
-  steps: definition.steps.map((step, index) =>
-    stepView({
-      stepId: step.id,
-      index,
-      name: step.name,
-      kind: step.kind,
-      phase: phases[index],
-      ...(index < 2
-        ? {
-            state: "Done",
-            percent: 100,
-            startedUtc: `2026-09-16T10:0${String(index + 1)}:00Z`,
-            finishedUtc: `2026-09-16T10:0${String(index + 2)}:00Z`,
-          }
-        : index === 2
-          ? { state: "Running", percent: 45, startedUtc: "2026-09-16T10:03:00Z" }
-          : {}),
-    }),
-  ),
-});
-
-const lines = [
-  "Partitioned disk 0 as GPT: EFI 300 MB, MSR 16 MB, Windows, recovery 1024 MB.",
-  "Downloading Windows 11 Pro, 4.6 GB.",
-  "Applied Windows 11 Pro to W:\\ in 2 min 41 s.",
-  "Model LENOVO ThinkPad T14 Gen 4: 3 driver packages match.",
-  "Adding drivers from Lenovo T14 Gen 4 (1 of 3).",
-].map((message, index) => logLine(index + 1, { message, deploymentId: runId }));
 
 async function show(
   page: Page,
@@ -182,48 +168,106 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page).toHaveScreenshot(`machines-${scheme}.png`);
     });
 
+    // The design canvas's run artboard is 1440 by 1080 pixels.
     test("a machine's run", async ({ page }) => {
-      await show(page, `/machines/${machineId}`, {
-        "GET /api/machines": machines,
-        [`GET /api/machines/${machineId}/deployments`]: [running],
-        [`GET /api/machines/${machineId}/sequence`]: sequenceResolution({
+      await page.setViewportSize({ width: 1440, height: 1080 });
+      await show(page, `/machines/${treeMachineId}`, {
+        "GET /api/machines": [treeMachine(), ...machines],
+        [`GET /api/machines/${treeMachineId}/deployments`]: [tree.summary],
+        [`GET /api/machines/${treeMachineId}/sequence`]: sequenceResolution({
           source: "Assigned",
-          sequenceId: installWindows.key,
-          sequenceName: "Install Windows",
-          explanation: "admin assigned Install Windows on the web, which comes before every rule.",
+          sequenceId: tree.summary.sequenceId,
+          sequenceName: tree.summary.title,
+          explanation:
+            "anna assigned Windows 11 office PCs on the web, which comes before every rule.",
         }),
-        [`GET /api/deployments/${runId}`]: run,
-        [`GET /api/machines/${machineId}/log`]: { lines, hasOlder: false },
+        [`GET /api/deployments/${treeRunId}`]: tree,
+        [`GET /api/machines/${treeMachineId}/log`]: { lines: treeLines, hasOlder: false },
       });
-      await expect(page.getByText("Adding drivers from Lenovo T14 Gen 4 (1 of 3).")).toBeVisible();
+      await expect(page.getByRole("group", { name: "Flow of this run" })).toBeVisible();
+      await expect(page.getByText("Joined corp.example as PC-G2341KXQ.")).toBeAttached();
 
       await expect(page).toHaveScreenshot(`machine-run-${scheme}.png`);
     });
   });
 }
 
-test("a task sequence", async ({ page }) => {
-  const summary = sequenceSummary({ stepCount: definition.steps.length, continuesInWindows: true });
-
-  await show(page, `/deployment/sequences/${summary.id}`, {
-    [`GET /api/sequences/${summary.id}`]: {
-      ...sequenceView(summary, definition.steps),
-      stepPhases: phases,
-    },
-    "GET /api/sequences": [summary],
-    "GET /api/images": [imageSummary({ name: "Windows 11 Pro 25H2" })],
-    "GET /api/packages": [],
-    "GET /api/deployments/options": {
-      domainConfigured: true,
-      requireWebApproval: false,
-      zeroTouchEnabled: false,
-      serverUtc: now.toISOString(),
-    },
-  });
-  await expect(page.getByRole("heading", { name: "Install Windows" })).toBeVisible();
-
-  await expect(page).toHaveScreenshot("sequence-light.png");
+// The flow builder with a sequence of every shape: an IF, a group, a repeat, a template and a problem, the IF chosen.
+const flowSummary = sequenceSummary({
+  name: "Windows 11 office PCs",
+  stepCount: 12,
+  problemCount: flowProblems.length,
+  continuesInWindows: true,
 });
+const facts = [
+  ["Manufacturer", "Text"],
+  ["Model", "Text"],
+  ["FriendlyModel", "Text"],
+  ["SerialNumber", "Text"],
+  ["SmbiosUuid", "Text"],
+  ["DeviceKind", "Text"],
+  ["MacAddress", "Mac"],
+  ["PrimaryMacAddress", "Mac"],
+  ["ComputerName", "Text"],
+  ["Phase", "Text"],
+  ["MemoryMegabytes", "Number"],
+  ["ProcessorName", "Text"],
+  ["ProcessorCores", "Number"],
+  ["LogicalProcessors", "Number"],
+  ["TpmPresent", "YesNo"],
+  ["TpmVersion", "Number"],
+  ["SecureBootCapable", "YesNo"],
+  ["SecureBootEnabled", "YesNo"],
+  ["IPv4Address", "IPv4"],
+  ["IPv4PrefixLength", "Number"],
+  ["Subnet", "Text"],
+  ["DefaultGateway", "IPv4"],
+  ["DnsSuffix", "Text"],
+  ["DhcpServer", "IPv4"],
+  ["LastStepFailed", "YesNo"],
+  ["LastExitCode", "Number"],
+].map(([name, type]) => ({
+  name,
+  type,
+  changesDuringRun: name === "Phase" || name === "LastStepFailed" || name === "LastExitCode",
+}));
+const builderAnswers = {
+  [`GET /api/sequences/${flowSummary.id}`]: {
+    ...sequenceView(flowSummary, flowDefinition.steps),
+    definition: flowDefinition,
+    nodePhases: flowPhases,
+    problems: flowProblems,
+  },
+  "GET /api/sequences": [flowSummary],
+  "GET /api/sequences/facts": facts,
+  "GET /api/rules": [],
+  "GET /api/machine-roles": [],
+  "GET /api/accounts": [],
+  "GET /api/images": [imageSummary({ id: windowsImageId, name: "Windows 11 Pro 25H2" })],
+  "GET /api/packages": [],
+  "GET /api/deployments/options": {
+    domainConfigured: true,
+    requireWebApproval: false,
+    zeroTouchEnabled: false,
+    serverUtc: now.toISOString(),
+  },
+};
+
+for (const scheme of ["light", "dark"] as const) {
+  test.describe(scheme, () => {
+    test.use({ colorScheme: scheme });
+
+    test("a task sequence", async ({ page }) => {
+      await show(page, `/deployment/sequences/${flowSummary.id}?step=if1`, builderAnswers);
+      await expect(page.getByRole("heading", { name: "Windows 11 office PCs" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /^Step 2, If: Is it a Latitude\?/ }),
+      ).toBeVisible();
+
+      await expect(page).toHaveScreenshot(`sequence-${scheme}.png`);
+    });
+  });
+}
 
 // The deployment defaults, and the console's logo on their page.
 const deploymentDefaults = {
@@ -281,6 +325,43 @@ test.describe("dark", () => {
   });
 });
 
+// The rules of an office in the order they are checked, with a Latitude in Berlin tested against them; and the accounts
+// its steps use, one of them with a password this server cannot read.
+const ruleAnswers = {
+  "GET /api/rules": rules,
+  "GET /api/machine-roles": roles,
+  "GET /api/sequences": ruleSequences,
+  "GET /api/sequences/facts": facts,
+  "GET /api/machines": [testedMachine],
+  [`GET /api/machines/${testedMachine.id}/sequence`]: testedResolution,
+};
+
+test.describe("tall", () => {
+  test.use({ viewport: { width: 1440, height: 1080 } });
+
+  test("rules", async ({ page }) => {
+    await show(page, "/deployment/rules", ruleAnswers);
+    await expect(page.getByRole("grid", { name: "Rules in order" })).toBeVisible();
+    await page.getByRole("button", { name: /Show suggestions/ }).click();
+    await page.getByRole("option", { name: /PC-G2341KXQ/ }).click();
+    await expect(page.getByText("Windows 11 office PCs, from rule 4")).toBeVisible();
+    await page.getByRole("heading", { name: "Rules", exact: true }).click();
+
+    await expect(page).toHaveScreenshot("rules-light.png");
+  });
+});
+
+test.describe("dark", () => {
+  test.use({ colorScheme: "dark" });
+
+  test("accounts", async ({ page }) => {
+    await show(page, "/deployment/accounts", { "GET /api/accounts": accounts });
+    await expect(page.getByRole("grid", { name: "Accounts" })).toBeVisible();
+
+    await expect(page).toHaveScreenshot("accounts-dark.png");
+  });
+});
+
 test("the console's logo", async ({ page }) => {
   await show(page, "/deployment/defaults", deploymentDefaults);
   const panel = page
@@ -302,5 +383,15 @@ test.describe("phone", () => {
     await expect(page.getByText("PC-042")).toBeVisible();
 
     await expect(page).toHaveScreenshot("machines-phone.png");
+  });
+
+  // On a phone the flow is its outline.
+  test("a task sequence", async ({ page }) => {
+    await show(page, `/deployment/sequences/${flowSummary.id}`, builderAnswers);
+    await expect(
+      page.getByRole("treegrid", { name: "Outline of Windows 11 office PCs" }),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot("sequence-phone.png");
   });
 });

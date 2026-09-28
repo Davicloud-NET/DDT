@@ -219,4 +219,18 @@ public sealed class AgentLoopTests : IDisposable
 
         Assert.Equal(10, Assert.Single(server.Registrations).ChassisType);
     }
+
+    [Fact]
+    public async Task ReportsTheFactsWhenRegistering()
+    {
+        MachineFacts facts = new() { MemoryMegabytes = 16384, TpmPresent = false, SystemVersion = "ThinkPad T14 Gen 4" };
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Registered(MachineState.Rejected, token: null, resumeToken: null));
+
+        (AgentLoop loop, _) = Create(server, new SequenceIdentityReader(new DryRunMachineIdentityReader(1).Read() with { Facts = facts }));
+
+        await loop.RunAsync(server.Stop.Token);
+
+        Assert.Same(facts, Assert.Single(server.Registrations).Facts);
+    }
 }

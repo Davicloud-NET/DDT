@@ -10,6 +10,9 @@ internal enum PickerQuestion
     Sequence,
     Disk,
     ComputerName,
+
+    // The sequence's inputs asked at the machine, all on one page.
+    Inputs,
     Confirmation,
 
     // ANYWAY, for a disk image that will not start with the Secure Boot the machine has on.

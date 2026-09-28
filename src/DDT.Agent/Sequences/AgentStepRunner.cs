@@ -7,9 +7,10 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs each step with the runner for its kind and names the step in every log line meanwhile. A step that throws
-// fails with the exception's message; after a stop the exception goes on, which the engine takes as the stop. A 401
-// goes to tokenRejected, which stops the run as a refused beat does, and then on to the engine too.
+// Runs each step with the runner for its kind, inside the accounts it uses, and names the step in every log line
+// meanwhile. A step that throws fails with the exception's message; after a stop the exception goes on, which the engine
+// takes as the stop. A 401 goes to tokenRejected, which stops the run as a refused beat does, and then on to the engine
+// too. Without pause, a Pause step is a kind this runner cannot run.
 public sealed class AgentStepRunner(
     PartitionStepRunner partition,
     ApplyImageStepRunner applyImage,
@@ -19,9 +20,11 @@ public sealed class AgentStepRunner(
     RunScriptStepRunner runScript,
     WriteRawImageStepRunner writeRawImage,
     WriteCloudInitSeedStepRunner writeCloudInitSeed,
+    StepAccounts accounts,
     Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
-    TimeProvider timeProvider) : IStepRunner
+    TimeProvider timeProvider,
+    PauseStepRunner? pause = null) : IStepRunner
 {
     public const string JoinDomainInWindowsPE =
         "Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in Windows PE.";
@@ -43,20 +46,21 @@ public sealed class AgentStepRunner(
 
             try
             {
-                result = step switch
+                result = await accounts.RunAsync(step, context, async account => step switch
                 {
                     PartitionStep partitionStep => await partition.RunAsync(partitionStep, context, cancellationToken).ConfigureAwait(false),
                     ApplyImageStep applyImageStep => await applyImage.RunAsync(applyImageStep, context, cancellationToken).ConfigureAwait(false),
                     InjectDriversStep injectDriversStep => await injectDrivers.RunAsync(injectDriversStep, context, cancellationToken).ConfigureAwait(false),
                     WriteUnattendStep writeUnattendStep => await writeUnattend.RunAsync(writeUnattendStep, context, cancellationToken).ConfigureAwait(false),
-                    RunScriptStep runScriptStep => await runScript.RunAsync(runScriptStep, context, cancellationToken).ConfigureAwait(false),
+                    RunScriptStep runScriptStep => await runScript.RunAsync(runScriptStep, context, account, cancellationToken).ConfigureAwait(false),
                     WriteRawImageStep writeRawImageStep => await writeRawImage.RunAsync(writeRawImageStep, context, cancellationToken).ConfigureAwait(false),
                     WriteCloudInitSeedStep seedStep => await writeCloudInitSeed.RunAsync(seedStep, context, cancellationToken).ConfigureAwait(false),
                     RebootStep => StepResult.RebootRequired(),
+                    PauseStep pauseStep when pause is not null => await pause.RunAsync(pauseStep, context, cancellationToken).ConfigureAwait(false),
                     JoinDomainStep when context.Phase == SequencePhase.WindowsPE => StepResult.Failed(JoinDomainInWindowsPE),
                     JoinDomainStep joinDomainStep => await joinDomain.RunAsync(joinDomainStep, context, cancellationToken).ConfigureAwait(false),
                     _ => StepResult.Failed(UnknownKind),
-                };
+                }, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

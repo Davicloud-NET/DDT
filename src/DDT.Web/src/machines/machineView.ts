@@ -5,8 +5,8 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg, t } from "@lingui/core/macro";
 
-import type { DeploymentStepView, DeploymentSummary } from "@/deployments/deployments";
-import type { StepState } from "@/sequences/sequences";
+import { isWaiting, type DeploymentSummary, type DeploymentView } from "@/deployments/deployments";
+import { runPath, type PathState, type RunPath } from "@/runs/runPath";
 import type { DeviceKind } from "@/ui/DeviceGlyph";
 import type { RailStep, RailStepState } from "@/ui/SequenceRail";
 import type { StateTone } from "@/ui/StateTag";
@@ -37,6 +37,29 @@ export const stateLabel: Record<MachineState, MessageDescriptor> = {
   Rejected: msg`Rejected`,
   Retired: msg`Retired`,
 };
+
+// The state a machine shows: its own, unless its run waits for someone, for answers to its inputs or at a pause,
+// which asks for attention as a waiting machine does.
+export function machineTag(machine: MachineSummary): {
+  tone: StateTone;
+  label: MessageDescriptor;
+} {
+  const run = machine.deployment;
+
+  if (isWaiting(run)) {
+    return {
+      tone: "attention",
+      label:
+        run?.activity === "WaitingForInput"
+          ? msg`Needs answers`
+          : run?.activity === "Paused"
+            ? msg`Paused`
+            : msg`Needs someone`,
+    };
+  }
+
+  return { tone: stateTone[machine.state], label: stateLabel[machine.state] };
+}
 
 export type MachineFilter =
   "all" | "deploying" | "waiting" | "failed" | "done" | "ready" | "retired";
@@ -69,8 +92,12 @@ export function isMachineFilter(value: unknown): value is MachineFilter {
   return typeof value === "string" && machineFilters.some((filter) => filter.id === value);
 }
 
+// A machine whose run waits for someone is among the waiting ones, not the deploying ones.
 export function inFilter(machine: MachineSummary, filter: MachineFilter): boolean {
-  return filter === "all" || filterOfState[machine.state] === filter;
+  return (
+    filter === "all" ||
+    (isWaiting(machine.deployment) ? "waiting" : filterOfState[machine.state]) === filter
+  );
 }
 
 // What needs someone comes first, then what runs, then what rests. Within a state the newest machine comes first;
@@ -85,9 +112,13 @@ const rank: Record<MachineState, number> = {
   Retired: 6,
 };
 
+function rankOf(machine: MachineSummary): number {
+  return isWaiting(machine.deployment) ? rank.Pending : rank[machine.state];
+}
+
 export function byAttention(a: MachineSummary, b: MachineSummary): number {
   return (
-    rank[a.state] - rank[b.state] ||
+    rankOf(a) - rankOf(b) ||
     Date.parse(b.firstSeenUtc) - Date.parse(a.firstSeenUtc) ||
     a.id.localeCompare(b.id)
   );
@@ -177,7 +208,9 @@ export function railFromSummary(run: DeploymentSummary): RailStep[] {
       }
 
       if (run.state === "Running") {
-        return { state: "running", percent: run.percent };
+        return run.activity === "Paused"
+          ? { state: "paused" }
+          : { state: "running", percent: run.percent };
       }
     }
 
@@ -185,22 +218,39 @@ export function railFromSummary(run: DeploymentSummary): RailStep[] {
   });
 }
 
-const railStates: Record<StepState, RailStepState> = {
-  Pending: "waiting",
-  Running: "running",
-  Done: "done",
-  Failed: "failed",
-  Skipped: "skipped",
+const railStates: Record<Exclude<PathState, "notTaken">, RailStepState> = {
+  waiting: "waiting",
+  running: "running",
+  paused: "paused",
+  done: "done",
+  failed: "failed",
+  skipped: "skipped",
 };
 
-export function railFromSteps(steps: readonly DeploymentStepView[]): RailStep[] {
-  return [...steps]
-    .sort((a, b) => a.index - b.index)
-    .map((step) => ({
-      state: railStates[step.state],
-      ...(step.state === "Running" ? { percent: step.percent } : {}),
-      name: step.name,
-    }));
+// The rail of a run's path: the leaf steps it went through, the one it is at, and those still ahead, each with its
+// number in the sequence. The steps of branches it did not take are left out.
+export function railFromPath(path: RunPath): RailStep[] {
+  return path.leaves.flatMap((leaf): RailStep[] =>
+    leaf.state === "notTaken"
+      ? []
+      : [
+          {
+            state: railStates[leaf.state],
+            ...(leaf.state === "running" ? { percent: leaf.step?.percent ?? 0 } : {}),
+            name: leaf.step?.name ?? leaf.node.name,
+            ...(leaf.entry.number === null ? {} : { number: leaf.entry.number }),
+          },
+        ],
+  );
+}
+
+export function railFromView(view: DeploymentView): RailStep[] {
+  return railFromPath(
+    runPath(view.definition, view.steps, {
+      activity: view.summary.activity,
+      pause: view.pause ?? null,
+    }),
+  );
 }
 
 // The rail in words, for screen readers and as its tooltip. A run that ended before its first step, as when the
@@ -232,7 +282,7 @@ export function railLabel(run: DeploymentSummary): string {
 
 // One step of the rail in words, for screen readers: its number, its name when there is one, and how it stands.
 export function railStepText(step: RailStep, index: number): string {
-  const number = index + 1;
+  const number = step.number ?? index + 1;
   const name = typeof step.name === "string" ? step.name : null;
   const percent = step.percent ?? 0;
 
@@ -251,5 +301,7 @@ export function railStepText(step: RailStep, index: number): string {
       return name === null
         ? t`Step ${number}, not started`
         : t`Step ${number}, ${name}, not started`;
+    case "paused":
+      return name === null ? t`Step ${number}, paused` : t`Step ${number}, ${name}, paused`;
   }
 }

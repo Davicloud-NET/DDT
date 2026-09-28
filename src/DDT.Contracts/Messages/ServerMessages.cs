@@ -205,6 +205,46 @@ public static class ServerMessages
         "deployment.historyCursor",
         "The cursor is not one this server handed out. Start again from the first page.");
 
+    // The answers to a run's inputs, a computer name a run's values give, and a name a sequence uses that nothing gives a
+    // value.
+
+    public static readonly MessageTemplate DeploymentAnswerNoInput = Define(
+        "deployment.answerNoInput",
+        "An answer names no input. Load the page again.");
+
+    public static readonly MessageTemplate DeploymentAnswerUnknown = Define(
+        "deployment.answerUnknown",
+        "The sequence asks nothing called {name}. Load the page again.");
+
+    public static readonly MessageTemplate DeploymentAnswerTwice = Define(
+        "deployment.answerTwice",
+        "{label} is answered twice. Give one answer.");
+
+    public static readonly MessageTemplate DeploymentAnswerAskedElsewhere = Define(
+        "deployment.answerAskedElsewhere",
+        "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}");
+
+    public static readonly MessageTemplate DeploymentAnswerTooLong = Define(
+        "deployment.answerTooLong",
+        "{label} takes at most {max} characters.");
+
+    public static readonly MessageTemplate DeploymentAnswerNotAChoice = Define(
+        "deployment.answerNotAChoice",
+        "''{value}'' is not one of the choices of {label}.");
+
+    public static readonly MessageTemplate DeploymentAnswerYesNo = Define(
+        "deployment.answerYesNo",
+        "{label} is answered with yes or no.");
+
+    public static readonly MessageTemplate DeploymentApproveThenNameValue = Define(
+        "deployment.approveThenNameValue",
+        "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a " +
+        "sequence, then assign the sequence with a computer name.");
+
+    public static readonly MessageTemplate SequenceValueUndefined = Define(
+        "sequence.valueUndefined",
+        "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");
+
     // Computer names, as the Windows answer file takes them.
 
     public static readonly MessageTemplate ComputerNameEmpty = Define("computerName.empty", "Enter a computer name.");
@@ -534,6 +574,236 @@ public static class ServerMessages
         "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then stops at " +
         "the account page, and the sequence waits there until someone finishes it.");
 
+    // Task sequences as trees: the paths through groups, IFs and repeats, conditions, the sequence's variables and
+    // inputs, templates, accounts and shares. Name is a variable's, an input's or a fact's.
+
+    public static readonly MessageTemplate SequenceNodeCount = Define(
+        "sequence.nodeCount",
+        "A sequence can have at most {max} steps, groups, IFs and repeats together.");
+
+    public static readonly MessageTemplate SequenceTooDeep = Define(
+        "sequence.tooDeep",
+        "Groups, IFs and repeats can be nested at most {max} levels deep.");
+
+    public static readonly MessageTemplate SequenceWindowsNeedsImageOnEveryPath = Define(
+        "sequence.windowsNeedsImageOnEveryPath",
+        "A step in Windows needs the image applied before it on every path through the sequence, and on some path no step applies it.");
+
+    public static readonly MessageTemplate SequenceIfNeedsTest = Define("sequence.ifNeedsTest", "Enter the condition the IF tests.");
+
+    public static readonly MessageTemplate SequenceIfOnlyTest = Define(
+        "sequence.ifOnlyTest",
+        "An IF decides by its test alone. Move this condition into the test.");
+
+    public static readonly MessageTemplate SequenceRepeatNeedsUntil = Define(
+        "sequence.repeatNeedsUntil",
+        "Enter the condition that ends the repeat.");
+
+    public static readonly MessageTemplate SequenceRepeatTimes = Define("sequence.repeatTimes", "A repeat runs 1 to {max} times.");
+
+    public static readonly MessageTemplate SequenceOnceInRepeat = Define(
+        "sequence.onceInRepeat",
+        "This step can run only once in a run, so it cannot be inside a repeat.");
+
+    public static readonly MessageTemplate SequencePhaseChangeInRepeat = Define(
+        "sequence.phaseChangeInRepeat",
+        "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.");
+
+    public static readonly MessageTemplate SequenceConditionTooDeep = Define(
+        "sequence.conditionTooDeep",
+        "A condition can nest groups at most {max} levels deep.");
+
+    public static readonly MessageTemplate SequenceTooManyTests = Define(
+        "sequence.tooManyTests",
+        "The conditions of a step can have at most {max} tests together.");
+
+    public static readonly MessageTemplate SequenceConditionName = Define(
+        "sequence.conditionName",
+        "Choose a machine fact or a value to test.");
+
+    public static readonly MessageTemplate SequenceOperatorDoesNotFit = Define(
+        "sequence.operatorDoesNotFit",
+        "This operator does not fit {name}, which holds {type, select, Number {a number} YesNo {yes or no} IPv4 {an IPv4 address} " +
+        "Mac {a MAC address} other {plain text}}.");
+
+    public static readonly MessageTemplate SequenceConditionNumber = Define(
+        "sequence.conditionNumber",
+        "{list, select, yes {Enter numbers separated by semicolons, such as 8192;16384.} other {Enter a number, such as 8192.}}");
+
+    public static readonly MessageTemplate SequenceConditionYesNo = Define("sequence.conditionYesNo", "Enter true or false.");
+
+    public static readonly MessageTemplate SequenceConditionIPv4 = Define(
+        "sequence.conditionIPv4",
+        "{list, select, yes {Enter IPv4 addresses separated by semicolons, such as 10.0.0.1;10.0.0.2.} " +
+        "other {Enter an IPv4 address, such as 10.0.0.1.}}");
+
+    public static readonly MessageTemplate SequenceConditionSubnet = Define(
+        "sequence.conditionSubnet",
+        "Enter a network as an address and the length of its prefix, such as 10.0.0.0/24.");
+
+    public static readonly MessageTemplate SequenceDeclarationEmpty = Define("sequence.declarationEmpty", "The declaration is empty.");
+
+    public static readonly MessageTemplate SequenceValueName = Define(
+        "sequence.valueName",
+        "A name starts with a letter and has at most {max} letters, digits and underscores.");
+
+    public static readonly MessageTemplate SequenceValueNameReserved = Define(
+        "sequence.valueNameReserved",
+        "Names that start with DDT are kept for DDT's own values. Choose another name.");
+
+    public static readonly MessageTemplate SequenceValueNameRepeated = Define(
+        "sequence.valueNameRepeated",
+        "{name} is declared already. Names ignore case.");
+
+    public static readonly MessageTemplate SequenceTooManyVariables = Define(
+        "sequence.tooManyVariables",
+        "A sequence can have at most {max} variables.");
+
+    public static readonly MessageTemplate SequenceTooManyInputs = Define(
+        "sequence.tooManyInputs",
+        "A sequence can ask at most {max} inputs.");
+
+    public static readonly MessageTemplate SequenceInputLabel = Define("sequence.inputLabel", "Enter a label of 1 to {max} characters.");
+
+    public static readonly MessageTemplate SequenceInputKind = Define("sequence.inputKind", "Choose the kind of answer.");
+
+    public static readonly MessageTemplate SequenceInputAskAt = Define(
+        "sequence.inputAskAt",
+        "Choose where the input is asked: on the web, at the machine, or both.");
+
+    public static readonly MessageTemplate SequenceInputChoices = Define("sequence.inputChoices", "Enter 1 to {max} choices.");
+
+    public static readonly MessageTemplate SequenceInputChoiceEmpty = Define("sequence.inputChoiceEmpty", "Enter the value of the choice.");
+
+    public static readonly MessageTemplate SequenceInputChoiceRepeated = Define(
+        "sequence.inputChoiceRepeated",
+        "Another choice already has the value {value}.");
+
+    public static readonly MessageTemplate SequenceInputChoiceSemicolon = Define(
+        "sequence.inputChoiceSemicolon",
+        "A choice of an input with several answers cannot hold a semicolon, which separates the answers.");
+
+    public static readonly MessageTemplate SequenceInputDefaultNotChoice = Define(
+        "sequence.inputDefaultNotChoice",
+        "The default has to be one of the choices.");
+
+    public static readonly MessageTemplate SequenceInputMaxLength = Define(
+        "sequence.inputMaxLength",
+        "The longest answer can have 1 to {max} characters.");
+
+    public static readonly MessageTemplate SequenceAccountInputAsValue = Define(
+        "sequence.accountInputAsValue",
+        "{name} is an Account input. Its answer holds a password, which DDT never uses as a value.");
+
+    public static readonly MessageTemplate SequenceSetVariableChoose = Define("sequence.setVariableChoose", "Choose the variable to set.");
+
+    public static readonly MessageTemplate SequenceVariableNotDeclared = Define(
+        "sequence.variableNotDeclared",
+        "{name} is not a variable of this sequence. Declare it first.");
+
+    public static readonly MessageTemplate SequenceVariableNotSetBySteps = Define(
+        "sequence.variableNotSetBySteps",
+        "Steps cannot set {name}. Let steps set it where the variable is declared.");
+
+    public static readonly MessageTemplate SequenceAccountChoose = Define(
+        "sequence.accountChoose",
+        "Choose a stored account or an Account input.");
+
+    public static readonly MessageTemplate SequenceAccountInputUnknown = Define(
+        "sequence.accountInputUnknown",
+        "{name} is not an Account input of this sequence.");
+
+    public static readonly MessageTemplate SequenceRunAsWindowsOnly = Define(
+        "sequence.runAsWindowsOnly",
+        "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.");
+
+    public static readonly MessageTemplate SequenceTooManyShares = Define(
+        "sequence.tooManyShares",
+        "A step can connect at most {max} shares.");
+
+    public static readonly MessageTemplate SequenceSharePath = Define(
+        "sequence.sharePath",
+        "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.");
+
+    public static readonly MessageTemplate SequenceShareHostFixed = Define(
+        "sequence.shareHostFixed",
+        "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs.");
+
+    public static readonly MessageTemplate SequenceSharesOnlyOnSteps = Define(
+        "sequence.sharesOnlyOnSteps",
+        "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.");
+
+    public static readonly MessageTemplate SequencePauseMinutes = Define(
+        "sequence.pauseMinutes",
+        "A pause can go on by itself after 1 to {max} minutes.");
+
+    public static readonly MessageTemplate SequenceNamesMachineWithValue = Define(
+        "sequence.namesMachineWithValue",
+        "The sequence names the machine by its ComputerName variable.");
+
+    public static readonly MessageTemplate SequencePauseBeforePartitionWarning = Define(
+        "sequence.pauseBeforePartitionWarning",
+        "The run's state is kept only in memory here, so the run ends if the machine restarts while it is paused.");
+
+    public static readonly MessageTemplate SequenceEmptyContainerWarning = Define(
+        "sequence.emptyContainerWarning",
+        "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, " +
+        "so it does nothing.");
+
+    public static readonly MessageTemplate SequenceSecretValueWarning = Define(
+        "sequence.secretValueWarning",
+        "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences " +
+        "and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets.");
+
+    public static readonly MessageTemplate SequenceShareHostAddressWarning = Define(
+        "sequence.shareHostAddressWarning",
+        "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another " +
+        "machine on the network can relay. Name the server instead, best by its full DNS name.");
+
+    // Value templates, such as PC-{{SerialNumber|alnum|right:12}}. Placeholder is the whole placeholder, braces included.
+
+    public static readonly MessageTemplate ValueTemplateUnknownName = Define(
+        "valueTemplate.unknownName",
+        "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling.");
+
+    public static readonly MessageTemplate ValueTemplateUnknownFilter = Define(
+        "valueTemplate.unknownFilter",
+        "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}.");
+
+    public static readonly MessageTemplate ValueTemplateFilterNeedsCount = Define(
+        "valueTemplate.filterNeedsCount",
+        "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12.");
+
+    public static readonly MessageTemplate ValueTemplateFilterTakesNoCount = Define(
+        "valueTemplate.filterTakesNoCount",
+        "In {placeholder}, {filter} takes no number. Remove the colon and what follows it.");
+
+    public static readonly MessageTemplate ValueTemplateNoValue = Define(
+        "valueTemplate.noValue",
+        "The machine has no value for {placeholder}.");
+
+    // The values of a run, worked out when it starts. Name is the value's name, such as ComputerName.
+
+    public static readonly MessageTemplate ValuesCannotWorkOut = Define(
+        "values.cannotWorkOut",
+        "{name} cannot be worked out. {problem}");
+
+    public static readonly MessageTemplate ValuesCycle = Define(
+        "values.cycle",
+        "{name} cannot be worked out, because it is made from itself: {path}.");
+
+    public static readonly MessageTemplate ValuesComputerName = Define(
+        "values.computerName",
+        "The computer name ''{value}'' cannot be used. {problem}");
+
+    public static readonly MessageTemplate ValuesInputRequired = Define(
+        "values.inputRequired",
+        "{label} needs an answer before the run can start.");
+
+    public static readonly MessageTemplate ValuesFact = Define(
+        "values.fact",
+        "{name} is a fact of the machine, which a value cannot set.");
+
     // Organizational units, for a Join the domain step and the domain check.
 
     public static readonly MessageTemplate OrganizationalUnitWithPrefix = Define(
@@ -559,6 +829,96 @@ public static class ServerMessages
     public static readonly MessageTemplate RuleExists = Define(
         "rule.exists",
         "There is a rule for {rule} already. It chooses {sequence}; change that rule instead.");
+
+    // The ordered rules, the machine roles and the values both set. A rule is saved with its problems, which keep it from
+    // matching until they are fixed; a machine role with a problem is refused.
+
+    public static readonly MessageTemplate RuleTooMany = Define(
+        "rule.tooMany",
+        "There can be at most {max} rules. Delete one before adding another.");
+
+    public static readonly MessageTemplate RuleConditionTooLarge = Define(
+        "rule.conditionTooLarge",
+        "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep.");
+
+    public static readonly MessageTemplate RuleTooManyRoles = Define("rule.tooManyRoles", "A rule can give at most {max} machine roles.");
+
+    public static readonly MessageTemplate RuleOrderRepeats = Define("rule.orderRepeats", "The order names a rule more than once.");
+
+    public static readonly MessageTemplate RuleConditionUnreadable = Define(
+        "rule.conditionUnreadable",
+        "DDT cannot read this rule's condition. Build it again.");
+
+    public static readonly MessageTemplate RuleConditionChooseName = Define("rule.conditionChooseName", "Choose a fact or a value to test.");
+
+    public static readonly MessageTemplate RuleConditionUnknownName = Define(
+        "rule.conditionUnknownName",
+        "{name} is not a fact of the machine or a value that a rule or a machine role sets. Check the spelling.");
+
+    public static readonly MessageTemplate RuleConditionRunVariable = Define(
+        "rule.conditionRunVariable",
+        "{name} has a value only while a run goes on, so a rule cannot test it.");
+
+    public static readonly MessageTemplate RuleConditionOperatorType = Define(
+        "rule.conditionOperatorType",
+        "This comparison does not fit {name}, which holds {type, select, number {a number} yesNo {yes or no} ipv4 {an IPv4 address} " +
+        "mac {a MAC address} other {any text}}.");
+
+    public static readonly MessageTemplate RuleConditionNumber = Define("rule.conditionNumber", "Enter a number, such as 8192.");
+
+    public static readonly MessageTemplate RuleConditionYesNo = Define("rule.conditionYesNo", "Enter yes or no.");
+
+    public static readonly MessageTemplate RuleConditionAddress = Define(
+        "rule.conditionAddress",
+        "Enter an IPv4 address, such as 10.0.0.1.");
+
+    public static readonly MessageTemplate RuleConditionSubnet = Define(
+        "rule.conditionSubnet",
+        "Write the network as an address and a prefix length, such as 10.0.0.0/24.");
+
+    public static readonly MessageTemplate RuleRoleGone = Define(
+        "rule.roleGone",
+        "A machine role this rule gives no longer exists. Take it out of the rule.");
+
+    public static readonly MessageTemplate NamedValueTooMany = Define("namedValue.tooMany", "Set at most {max} values here.");
+
+    public static readonly MessageTemplate NamedValueTooLong = Define(
+        "namedValue.tooLong",
+        "A value's name can have at most {name} characters, and its text at most {text}.");
+
+    public static readonly MessageTemplate NamedValueNameEmpty = Define("namedValue.nameEmpty", "Enter the value's name.");
+
+    public static readonly MessageTemplate NamedValueNameInvalid = Define(
+        "namedValue.nameInvalid",
+        "''{name}'' cannot name a value. Start with a letter, and use only letters, digits and _, at most {max} characters.");
+
+    public static readonly MessageTemplate NamedValueReserved = Define(
+        "namedValue.reserved",
+        "Names that start with ddt are DDT's own. Choose another name.");
+
+    public static readonly MessageTemplate NamedValueRepeated = Define("namedValue.repeated", "{name} is set more than once here. Keep one.");
+
+    public static readonly MessageTemplate MachineRoleNameTaken = Define(
+        "machineRole.nameTaken",
+        "Another machine role is already called {name}. Choose another name.");
+
+    public static readonly MessageTemplate MachineRoleTooMany = Define(
+        "machineRole.tooMany",
+        "There can be at most {max} machine roles. Delete one before adding another.");
+
+    public static readonly MessageTemplate MachineRoleGivenByRules = Define(
+        "machineRole.givenByRules",
+        "{count, plural, one {A rule gives this machine role. Take it out of the rule, then delete the role.} " +
+        "other {# rules give this machine role. Take it out of them, then delete the role.}}");
+
+    public static readonly MessageTemplate ResolutionRuleNumbered = Define(
+        "resolution.ruleNumbered",
+        "Rule {number}, {rule}, chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone " +
+        "who signs in at it, where the sequence is offered.");
+
+    public static readonly MessageTemplate ResolutionNoRuleChooses = Define(
+        "resolution.noRuleChooses",
+        "No rule chooses a sequence for this machine, so an operator chooses its sequence.");
 
     public static readonly MessageTemplate ModelEnter = Define("model.enter", "Enter the model as the machine reports it.");
 
@@ -1812,6 +2172,98 @@ public static class ServerMessages
         "privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP " +
         "service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other " +
         "service holds the port.}}");
+
+    // Accounts that steps use (Deployment > Accounts), the accounts given for one run, and the problems of a sequence that
+    // names them. Account is an account's name, input an input's name and host a share's server.
+
+    public static readonly MessageTemplate StepAccountNameTaken = Define(
+        "stepAccount.nameTaken",
+        "Another account is already called {name}. Choose another name.");
+
+    public static readonly MessageTemplate StepAccountUserNameForm = Define(
+        "stepAccount.userNameForm",
+        "Enter the user name with its domain, as DOMAIN\\user or user@corp.example, in at most {max} characters.");
+
+    public static readonly MessageTemplate StepAccountDomainInvalid = Define(
+        "stepAccount.domainInvalid",
+        "''{value}'' is not a domain name. Enter one such as corp.example, or leave it empty.");
+
+    public static readonly MessageTemplate StepAccountHostInvalid = Define(
+        "stepAccount.hostInvalid",
+        "''{value}'' is not a server name. Enter it as share paths name it, such as files.corp.example.");
+
+    public static readonly MessageTemplate StepAccountHostRepeated = Define("stepAccount.hostRepeated", "{value} is listed twice.");
+
+    public static readonly MessageTemplate StepAccountTooManyHosts = Define(
+        "stepAccount.tooManyHosts",
+        "An account can name at most {max} servers.");
+
+    public static readonly MessageTemplate StepAccountPasswordRequired = Define("stepAccount.passwordRequired", "Enter the password.");
+
+    public static readonly MessageTemplate StepAccountPasswordLength = Define(
+        "stepAccount.passwordLength",
+        "The password can have at most {max} characters.");
+
+    public static readonly MessageTemplate StepAccountPasswordForNewDestination = Define(
+        "stepAccount.passwordForNewDestination",
+        "Enter the password again: a stored password goes only to the user name, domain and servers it was entered for.");
+
+    public static readonly MessageTemplate StepAccountPasswordUnreadable = Define(
+        "stepAccount.passwordUnreadable",
+        "The stored password no longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it.");
+
+    public static readonly MessageTemplate StepAccountInUse = Define(
+        "stepAccount.inUse",
+        "{count, plural, one {The sequence {sequences} uses this account. Choose another account there first.} " +
+        "other {The sequences {sequences} use this account. Choose another account there first.}}");
+
+    public static readonly MessageTemplate StepAccountChangedMeanwhile = Define(
+        "stepAccount.changedMeanwhile",
+        "Someone changed the account meanwhile. Look at it again.");
+
+    public static readonly MessageTemplate StepAccountReauthenticate = Define(
+        "stepAccount.reauthenticate",
+        "Enter your password again to change the accounts that steps use.");
+
+    public static readonly MessageTemplate StepAccountApiToken = Define(
+        "stepAccount.apiToken",
+        "An API token cannot change the accounts that steps use. Sign in on the web to do this.");
+
+    public static readonly MessageTemplate SequenceAccountGone = Define(
+        "sequence.accountGone",
+        "The account is no longer on the Accounts page. Choose another one.");
+
+    public static readonly MessageTemplate SequenceAccountNoPassword = Define(
+        "sequence.accountNoPassword",
+        "The account {account} has no password. Set it on the Accounts page.");
+
+    public static readonly MessageTemplate SequenceAccountPasswordUnreadable = Define(
+        "sequence.accountPasswordUnreadable",
+        "The password of the account {account} no longer decrypts with this server's key ring. Enter it again on the Accounts page.");
+
+    public static readonly MessageTemplate SequenceAccountNoDomain = Define(
+        "sequence.accountNoDomain",
+        "The account {account} names no domain, so it cannot join one. Enter its domain on the Accounts page, or choose another account.");
+
+    public static readonly MessageTemplate SequenceAccountNoRunAs = Define(
+        "sequence.accountNoRunAs",
+        "The account {account} does not let scripts run as it. Allow that on the Accounts page, or choose another account.");
+
+    public static readonly MessageTemplate SequenceAccountHostNotAllowed = Define(
+        "sequence.accountHostNotAllowed",
+        "The account {account} may not connect to {host}. Add the server to it on the Accounts page, or choose another account.");
+
+    public static readonly MessageTemplate SequenceAccountInputNoDomain = Define(
+        "sequence.accountInputNoDomain",
+        "The input {input} names no domain, so the account given for it cannot join one. Name the domain in the input.");
+
+    public static readonly MessageTemplate SequenceAccountInputNoRunAs = Define(
+        "sequence.accountInputNoRunAs",
+        "The input {input} does not let scripts run as the account given for it. Allow that in the input.");
+
+    public static readonly MessageTemplate SequenceAccountInputHostNotAllowed = Define(
+        "sequence.accountInputHostNotAllowed",
+        "The input {input} does not let the account given for it connect to {host}. Add the server to the input.");
 
     // The sentences one after another, as one message, which the web says in the person's language as a whole: the
     // first, then the rest as a message of its own.

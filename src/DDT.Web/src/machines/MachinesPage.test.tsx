@@ -25,6 +25,7 @@ import {
   operator,
   sequenceResolution,
   sequenceSummary,
+  sequenceView,
   viewer,
 } from "@/test/builders";
 import { renderPage, type RenderedPage } from "@/test/renderPage";
@@ -104,11 +105,18 @@ function moreFor(name: string): HTMLElement {
   return screen.getByRole("button", { name: `More for ${name}` });
 }
 
-// The answers the assign dialog reads, plus what the test adds.
+// The answers the assign dialog reads, plus what the test adds. It reads a chosen sequence's inputs from its document,
+// and these ask nothing.
 function assigning(extra: Routes = {}): Routes {
   return {
     "GET /api/sequences": { body: [installWindows] },
     "GET /api/deployments/options": { body: deploymentOptions({ serverUtc: now.toISOString() }) },
+    ...Object.fromEntries(
+      [installWindows, labPcs, linux].map((sequence) => [
+        `GET /api/sequences/${sequence.id}`,
+        { body: sequenceView(sequence, []) },
+      ]),
+    ),
     ...extra,
   };
 }
@@ -850,6 +858,54 @@ describe("MachinesPage", () => {
         /Enter a computer name\. Install Windows joins the domain under this name\./,
       );
       expect(server.changes()).toEqual([]);
+    });
+
+    // A rule's name pattern gives the machine a name, as the server takes it; a name typed here would beat it.
+    it("takes the computer name the machine's values give when none is typed", async () => {
+      const machine = machineSummary();
+      const { server } = await open(
+        [machine],
+        assigning({
+          "GET /api/sequences": { body: [sequenceSummary({ needsComputerName: true })] },
+          "GET /api/deployments/options": { body: deploymentOptions({ domainConfigured: true }) },
+          [`GET /api/machines/${machine.id}/sequence`]: {
+            body: sequenceResolution({
+              values: [
+                {
+                  name: "ComputerName",
+                  value: "PC-00042",
+                  source: "Rule",
+                  sourceId: "0193a4b2-0000-7000-8000-0000000000f1",
+                  sourceName: "Office PCs",
+                  overridden: false,
+                },
+              ],
+            }),
+          },
+          [`POST /api/machines/${machine.id}/deployments`]: {
+            body: { ...machine, state: "Approved" },
+          },
+        }),
+      );
+
+      const dialog = await openAssign();
+      const name = within(dialog).getByLabelText("Computer name");
+
+      await waitFor(() => {
+        expect(name).toHaveAccessibleDescription(
+          /^Optional\. Left empty, the machine is named PC-00042, as its values say, and joins the domain under it\./,
+        );
+      });
+      expect(name).not.toBeRequired();
+      await assignable(dialog);
+
+      press(assignKey(dialog));
+
+      await waitFor(() => {
+        expect(server.changes().map((request) => request.body)).toEqual([
+          { sequenceId: installWindowsId, computerName: null },
+        ]);
+      });
     });
 
     it("asks for no computer name when a domain is configured but the sequence does not join it", async () => {

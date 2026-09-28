@@ -9,6 +9,7 @@ using DDT.Contracts.Machines;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Live;
+using DDT.Server.Rules;
 using DDT.Server.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,7 @@ public sealed partial class MachineRegistrar(
     MachineTokenService tokens,
     DeploymentService deployments,
     LiveNotifier live,
+    RuleRecount recount,
     DdtSettings settings,
     TimeProvider timeProvider,
     ILogger<MachineRegistrar> logger)
@@ -74,6 +76,7 @@ public sealed partial class MachineRegistrar(
         DateTimeOffset now = timeProvider.GetUtcNow();
         string? address = remoteAddress?.ToString();
         Machine? machine = await FindAsync(registration, cancellationToken).ConfigureAwait(false);
+        string? tested = machine is null ? null : RuleTested(machine);
         Deployment? active = machine is null ? null : await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
         DeploymentState? before = active?.State;
         bool resumes = machine is not null && Resumes(registration, machine);
@@ -163,6 +166,13 @@ public sealed partial class MachineRegistrar(
             machine.EligibleDiskCount = registration.EligibleDiskCount;
         }
 
+        // The same for facts: an agent older than version 3 sequences sends none, as when an old boot image starts the
+        // machine, and the facts a newer one sent stay.
+        if (registration.Facts is { } facts)
+        {
+            machine.Facts = MachineFactsDocuments.Write(facts);
+        }
+
         IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -174,6 +184,12 @@ public sealed partial class MachineRegistrar(
 
         live.RunStepsChanged(machine.Id, changedSteps);
         live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
+
+        // A rule counts the machines it matches, which a new machine, or one that reports otherwise now, may change.
+        if (tested != RuleTested(machine))
+        {
+            recount.MachinesChanged();
+        }
 
         return new MachineRegistration(
             machine.State == MachineState.Rejected
@@ -190,6 +206,19 @@ public sealed partial class MachineRegistrar(
                     ConsoleLanguage),
             RegistrationRefusal.None);
     }
+
+    // What a rule's condition may test about the machine that a registration sets.
+    private static string RuleTested(Machine machine) => string.Join(
+        '|',
+        machine.PrimaryMac,
+        machine.MacAddresses,
+        machine.Manufacturer,
+        machine.Model,
+        machine.SerialNumber,
+        machine.AgentEnvironment,
+        machine.SecureBootEnabled,
+        machine.ChassisType,
+        machine.Facts);
 
     // Anyone who reaches the server can present a machine's UUID and MAC. Unless the registration proves it comes
     // from the agent already holding this machine, with its resume token or its run's token, it starts over: any

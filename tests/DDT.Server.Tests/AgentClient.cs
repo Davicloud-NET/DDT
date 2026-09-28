@@ -47,6 +47,13 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RunReportAsync(Guid machineId, string token, Guid runId, AgentRunReport report) =>
         SendAsync(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId), token, JsonContent.Create(report, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> RunAnswersAsync(Guid machineId, string token, Guid runId, params InputAnswer[] answers) =>
+        SendAsync(
+            HttpMethod.Post,
+            AgentRoutes.RunAnswers(machineId, runId),
+            token,
+            JsonContent.Create(new AgentInputAnswers(answers), options: TestJson.Options));
+
     public Task<HttpResponseMessage> RunFileAsync(
         Guid machineId,
         string token,
@@ -61,6 +68,9 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
 
     public Task<HttpResponseMessage> RunCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunStepCredentials(machineId, runId, stepId), token, null);
+
+    public Task<HttpResponseMessage> RunAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunStepAccounts(machineId, runId, stepId), token, null);
 
     public void Dispose() => client.Dispose();
 

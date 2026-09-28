@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { isActive, type DeploymentSummary } from "@/deployments/deployments";
+import type { InputAnswer } from "@/inputs/inputs";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type MachineState =
@@ -13,6 +14,32 @@ export type MachineState =
 
 // What kind of computer the server takes the machine for, from its firmware's chassis type and its maker's name.
 export type DeviceKindName = "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
+
+// The server's MachineFacts: what the agent found out about the machine besides its identity, for conditions and rules
+// to test. Every member is null where the agent could not tell. The network members are the primary adapter's.
+// systemVersion, systemFamily and systemSku are the SMBIOS system's, assetTag its enclosure's, baseboardProduct the
+// baseboard's, biosVersion and biosDate the BIOS's, the date as yyyy-MM-dd. tpmVersion is 2.0 or 1.2.
+export interface MachineFacts {
+  memoryMegabytes?: number | null;
+  processorName?: string | null;
+  processorCores?: number | null;
+  logicalProcessors?: number | null;
+  tpmPresent?: boolean | null;
+  tpmVersion?: string | null;
+  secureBootCapable?: boolean | null;
+  iPv4Address?: string | null;
+  iPv4PrefixLength?: number | null;
+  defaultGateway?: string | null;
+  dnsSuffix?: string | null;
+  dhcpServer?: string | null;
+  systemVersion?: string | null;
+  systemFamily?: string | null;
+  systemSku?: string | null;
+  assetTag?: string | null;
+  baseboardProduct?: string | null;
+  biosVersion?: string | null;
+  biosDate?: string | null;
+}
 
 export interface MachineSummary {
   id: string;
@@ -45,6 +72,9 @@ export interface MachineSummary {
   // What kind of computer it is, from its SMBIOS chassis type, or Virtual from its maker and model. Unknown until
   // an agent that reports the chassis registers it.
   deviceKind: DeviceKindName;
+  // What the agent last registered with; null for an agent older than version 3 sequences, and left out by servers
+  // before them.
+  facts?: MachineFacts | null;
 }
 
 // A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A
@@ -109,19 +139,22 @@ export function removeMachines(queryClient: QueryClient, machineIds: readonly st
 
 // With the sequence the page showed a rule choosing, the approval also runs it, and the server refuses when the
 // rules choose otherwise by now. Without one the approval runs nothing. allowSecureBootMismatch lets that run write a
-// raw disk image that is not signed for Secure Boot.
+// raw disk image that is not signed for Secure Boot, and answers are the answers to its inputs asked on the web.
 export function approveMachine(
   id: string,
   expectedSequenceId: string | null = null,
   allowSecureBootMismatch = false,
+  answers: InputAnswer[] = [],
 ): Promise<MachineSummary> {
   return apiPost<MachineSummary>(
     `/api/machines/${id}/approve`,
     expectedSequenceId === null
       ? undefined
-      : allowSecureBootMismatch
-        ? { expectedSequenceId, allowSecureBootMismatch }
-        : { expectedSequenceId },
+      : {
+          expectedSequenceId,
+          ...(allowSecureBootMismatch ? { allowSecureBootMismatch } : {}),
+          ...(answers.length > 0 ? { answers } : {}),
+        },
   );
 }
 

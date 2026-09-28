@@ -137,9 +137,11 @@ export function WriteCloudInitSeedFields({
       </p>
       <p className="type-small text-ink-2 sm:col-span-2">
         <Trans>
-          DDT fills in <span className="type-data">{placeholders}</span> with the machine's values.
-          Put them in double quotes, such as <span className="type-data">{example}</span>. Anything
-          else in double braces stays as it is, for cloud-init's own templates.
+          DDT fills in <span className="type-data">{placeholders}</span> with the machine's values,
+          and the name of any of the run's values, such as a variable of the sequence or a value a
+          rule sets, with that value. Put them in double quotes, such as{" "}
+          <span className="type-data">{example}</span>. Anything else in double braces stays as it
+          is, for cloud-init's own templates.
         </Trans>
       </p>
       <TextSetting

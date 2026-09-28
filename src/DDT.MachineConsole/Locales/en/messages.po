@@ -19,6 +19,10 @@ msgstr ".NET: software by others in it"
 msgid "1 partition"
 msgstr "1 partition"
 
+#: ViewModels/InputsViewModel.cs
+msgid "A few answers first"
+msgstr "A few answers first"
+
 #: Texts/Say.cs
 msgid "A step asked for a restart. The run goes on after it."
 msgstr "A step asked for a restart. The run goes on after it."
@@ -119,6 +123,10 @@ msgstr "Choose"
 msgid "Choose a task sequence"
 msgstr "Choose a task sequence"
 
+#: ViewModels/InputFieldViewModel.cs
+msgid "Choose any of these. Space turns one on or off."
+msgstr "Choose any of these. Space turns one on or off."
+
 #: ViewModels/DiskChoiceViewModel.cs
 msgid "Choose the disk"
 msgstr "Choose the disk"
@@ -183,6 +191,10 @@ msgstr "Console version"
 msgid "Continue"
 msgstr "Continue"
 
+#: ViewModels/PauseViewModel.cs
+msgid "Continue the run"
+msgstr "Continue the run"
+
 #: ViewModels/MainViewModel.cs
 msgid "Dark"
 msgstr "Dark"
@@ -194,6 +206,10 @@ msgstr "DDT cannot tell whether {image} is signed for Secure Boot, and this mach
 #: ViewModels/MainViewModel.cs
 msgid "DDT is done with this machine"
 msgstr "DDT is done with this machine"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "DDT keeps it for this run only and never shows it."
+msgstr "DDT keeps it for this run only and never shows it."
 
 #: Legal/LegalTexts.cs
 msgid "DDT: GNU General Public License, version 3"
@@ -274,6 +290,10 @@ msgstr "Firmware"
 #: ViewModels/LogViewModel.cs
 msgid "Follow the end"
 msgstr "Follow the end"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "For {domain}. DDT keeps it for this run only and never shows it."
+msgstr "For {domain}. DDT keeps it for this run only and never shows it."
 
 #: Texts/Say.cs
 msgid "Handing the run over to the installed Windows"
@@ -415,6 +435,10 @@ msgstr "Network"
 msgid "Next"
 msgstr "Next"
 
+#: ViewModels/InputsViewModel.cs
+msgid "Next field"
+msgstr "Next field"
+
 #: ViewModels/MachineViewModel.cs
 msgid "No"
 msgstr "No"
@@ -455,6 +479,14 @@ msgstr "Not reported"
 msgid "Not trusted by this machine"
 msgstr "Not trusted by this machine"
 
+#: ViewModels/RunViewModel.cs
+msgid "Nothing runs until someone continues the run, here or on the machine's page on the web."
+msgstr "Nothing runs until someone continues the run, here or on the machine's page on the web."
+
+#: ViewModels/RunViewModel.cs
+msgid "Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."
+msgstr "Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."
+
 #: Texts/Say.cs
 msgid "Off"
 msgstr "Off"
@@ -471,6 +503,10 @@ msgstr "On"
 msgid "One moment"
 msgstr "One moment"
 
+#: ViewModels/InputFieldViewModel.cs
+msgid "Optional"
+msgstr "Optional"
+
 #: Texts/Say.cs
 msgid "Partitioning the disk"
 msgstr "Partitioning the disk"
@@ -482,6 +518,18 @@ msgstr "Passed"
 #: ViewModels/SignInViewModel.cs
 msgid "Password"
 msgstr "Password"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the installed Windows"
+msgstr "Pause, step {number} of {count} on this path, in the installed Windows"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in Windows PE"
+msgstr "Pause, step {number} of {count} on this path, in Windows PE"
+
+#: Texts/Say.cs
+msgid "Paused"
+msgstr "Paused"
 
 #: Texts/Say.cs
 msgid "Removing the agent"
@@ -559,6 +607,10 @@ msgstr "Serial number"
 msgid "Server"
 msgstr "Server"
 
+#: Texts/Say.cs
+msgid "Setting a variable"
+msgstr "Setting a variable"
+
 #: ViewModels/SignInViewModel.cs
 msgid "Sign in"
 msgstr "Sign in"
@@ -628,6 +680,14 @@ msgid "Starting the agent"
 msgstr "Starting the agent"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the installed Windows"
+msgstr "Step {number} of {count} on this path, in the installed Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in Windows PE"
+msgstr "Step {number} of {count} on this path, in Windows PE"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in the installed Windows"
 msgstr "Step {number} of {count}, in the installed Windows"
 
@@ -635,7 +695,7 @@ msgstr "Step {number} of {count}, in the installed Windows"
 msgid "Step {number} of {count}, in Windows PE"
 msgstr "Step {number} of {count}, in Windows PE"
 
-#: ViewModels/RunViewModel.cs
+#: ViewModels/RunPath.cs
 msgid "Step {number}, {name}: {state}"
 msgstr "Step {number}, {name}: {state}"
 
@@ -726,6 +786,10 @@ msgstr "the HarfBuzz authors"
 #: ViewModels/SignInViewModel.cs
 msgid "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
 msgstr "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "The keyboard layout is {layout}. A password typed with another layout would be wrong."
+msgstr "The keyboard layout is {layout}. A password typed with another layout would be wrong."
 
 #: ViewModels/ConnectionViewModel.cs
 msgid "The last request failed. The agent tries again by itself."
@@ -856,6 +920,10 @@ msgid "Waiting for a task sequence"
 msgstr "Waiting for a task sequence"
 
 #: Texts/Say.cs
+msgid "Waiting for answers"
+msgstr "Waiting for answers"
+
+#: Texts/Say.cs
 msgid "Waiting for authorization"
 msgstr "Waiting for authorization"
 
@@ -883,6 +951,10 @@ msgstr "What to do"
 msgid "What went wrong"
 msgstr "What went wrong"
 
+#: ViewModels/PauseViewModel.cs
+msgid "When it is done, press Enter. An operator can also let the run go on from the web."
+msgstr "When it is done, press Enter. An operator can also let the run go on from the web."
+
 #: ViewModels/TypedWordViewModel.cs
 msgid "Write it anyway"
 msgstr "Write it anyway"
@@ -902,6 +974,10 @@ msgstr "Writing the cloud-init seed"
 #: Texts/Say.cs
 msgid "Writing the disk image"
 msgstr "Writing the disk image"
+
+#: ViewModels/InputFieldViewModel.cs
+msgid "Yes"
+msgstr "Yes"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Yes, nothing on the disks changes"
@@ -934,6 +1010,10 @@ msgstr "{image} is signed only under {cas}, which this machine's firmware does n
 #: ViewModels/AuthorizationViewModel.cs
 msgid "{name} signed in here. An operator or administrator still has to approve this machine on the Machines page."
 msgstr "{name} signed in here. An operator or administrator still has to approve this machine on the Machines page."
+
+#: ViewModels/InputsViewModel.cs
+msgid "{sequence} asks these before it starts."
+msgstr "{sequence} asks these before it starts."
 
 #: ViewModels/TypedWordViewModel.cs
 msgid "{sequence} erases everything on this disk, and it cannot be undone."

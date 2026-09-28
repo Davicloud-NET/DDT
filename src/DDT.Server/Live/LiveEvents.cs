@@ -33,12 +33,20 @@ public static class LiveEvents
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
-    // Carries every rule, AssignmentRuleView in the order the Rules page lists them: rules are few, and one change can
-    // move a rule among the others or rename the sequence several of them choose.
+    // Carries every rule, RuleView top first, as GET /api/rules answers: rules are few, and one change can move rules,
+    // rename the sequence several of them choose, change what another rule's condition may test, or change how many
+    // machines each matches, which a registration or a removal of machines does too.
     public const string RulesChanged = "rulesChanged";
+
+    // Carries every machine role, MachineRoleView by name, as GET /api/machine-roles answers: a change of a rule changes
+    // how many rules give a role.
+    public const string RolesChanged = "rolesChanged";
 
     // Carries a RunStepChangedEvent, only to the connections that watch the machine.
     public const string RunStepChanged = "runStepChanged";
+
+    // Carries a RunVariablesChangedEvent, only to the connections that watch the machine.
+    public const string RunVariablesChanged = "runVariablesChanged";
 
     // Carries a MachineLogAppendedEvent, only to the connections that watch the machine.
     public const string MachineLogAppended = "machineLogAppended";
@@ -78,4 +86,11 @@ public static class LiveEvents
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";
+
+    // Carries the AccountView of an account that steps use, as GET /api/accounts/{id} answers it, whenever it was created or
+    // changed or a sequence started or stopped naming it. It holds no password, only whether one is set.
+    public const string AccountChanged = "accountChanged";
+
+    // Carries an AccountsRemovedEvent, so clients drop the accounts without loading the list again.
+    public const string AccountsRemoved = "accountsRemoved";
 }

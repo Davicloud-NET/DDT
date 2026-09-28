@@ -9,8 +9,9 @@ using DDT.MachineConsole.Texts;
 namespace DDT.MachineConsole.ViewModels;
 
 // A run and how it ended: running, restarting, finished, failed, or the agent stopped. The sequence rail shows every
-// step of the run, one module each; above it the step that runs, with its percent where the step says how far it is,
-// or why the run stopped and what to do about it.
+// step of the run's path, one module each; above it the step that runs, with its percent where the step says how far it
+// is, or why the run stopped and what to do about it. While the run waits for answers or a Pause step, the tag and the
+// note say so.
 public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private ConsoleState? _state;
@@ -25,6 +26,8 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public Tag Tag => Stage switch
     {
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused => Tag.Of(T("Paused"), TagTone.Attention),
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput => Tag.Of(T("Waiting"), TagTone.Attention),
         ConsoleStage.Running => Tag.Of(Say.Stage(L, Stage), TagTone.Run),
         ConsoleStage.Restarting => Tag.Of(Say.Stage(L, Stage), TagTone.Run),
         ConsoleStage.Finished => Tag.Of(T("Done"), TagTone.Ok),
@@ -32,9 +35,12 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         _ => Tag.Of(Say.Stage(L, Stage), TagTone.Fail),
     };
 
-    private int? CurrentIndex => Run is { CurrentStepId: { } id } run ? IndexOf(run, id) : null;
+    // The steps on the run's path, which the rail shows and the position counts.
+    private IReadOnlyList<ConsoleStep> PathSteps => Run is { } run ? RunPath.Steps(run) : [];
 
-    private ConsoleStep? CurrentStep => CurrentIndex is { } index ? Run!.Steps[index] : null;
+    private int? CurrentIndex => RunPath.IndexOf(PathSteps, Run?.CurrentStepId);
+
+    private ConsoleStep? CurrentStep => Run is { CurrentStepId: { } id } run ? run.Steps.FirstOrDefault(step => step.Id == id) : null;
 
     public bool ShowsPercent => Stage == ConsoleStage.Running && CurrentStep is not null && Run?.Percent is not null;
 
@@ -65,18 +71,24 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     {
         get
         {
-            if (Run is not { } run || run.Steps.Count == 0)
+            IReadOnlyList<ConsoleStep> steps = PathSteps;
+
+            if (Run is not { } run || steps.Count == 0)
             {
                 return null;
             }
 
             if (Stage == ConsoleStage.Running && CurrentIndex is { } index)
             {
-                (string, string)[] values = [("number", L.Number(index + 1)), ("count", L.Number(run.Steps.Count))];
+                (string, string)[] values = [("number", L.Number(index + 1)), ("count", L.Number(steps.Count))];
 
-                return run.Steps[index].Phase == ConsolePhase.WindowsPE
-                    ? F("Step {number} of {count}, in Windows PE", values)
-                    : F("Step {number} of {count}, in the installed Windows", values);
+                return (steps[index].Phase, RunPath.IsTree(run)) switch
+                {
+                    (ConsolePhase.WindowsPE, false) => F("Step {number} of {count}, in Windows PE", values),
+                    (_, false) => F("Step {number} of {count}, in the installed Windows", values),
+                    (ConsolePhase.WindowsPE, true) => F("Step {number} of {count} on this path, in Windows PE", values),
+                    _ => F("Step {number} of {count} on this path, in the installed Windows", values),
+                };
             }
 
             if (FailedIndex is { } failed)
@@ -84,13 +96,13 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
                 return F(
                     "Failed at step {number} of {count}, {name}",
                     ("number", L.Number(failed + 1)),
-                    ("count", L.Number(run.Steps.Count)),
-                    ("name", run.Steps[failed].Name));
+                    ("count", L.Number(steps.Count)),
+                    ("name", steps[failed].Name));
             }
 
-            int done = run.Steps.Count(step => step.State is ConsoleStepState.Done or ConsoleStepState.Skipped);
+            int done = steps.Count(step => step.State is ConsoleStepState.Done or ConsoleStepState.Skipped);
 
-            return F("{done} of {count} steps done", ("done", L.Number(done)), ("count", L.Number(run.Steps.Count)));
+            return F("{done} of {count} steps done", ("done", L.Number(done)), ("count", L.Number(steps.Count)));
         }
     }
 
@@ -100,14 +112,11 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     {
         get
         {
-            if (Run is not { } run)
-            {
-                return null;
-            }
+            IReadOnlyList<ConsoleStep> steps = PathSteps;
 
-            for (int index = 0; index < run.Steps.Count; index++)
+            for (int index = 0; index < steps.Count; index++)
             {
-                if (run.Steps[index].State == ConsoleStepState.Failed)
+                if (steps[index].State == ConsoleStepState.Failed)
                 {
                     return index;
                 }
@@ -119,7 +128,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     // The failed step's error, in the agent's words, where the problem does not say it already.
     public string? StepError =>
-        FailedIndex is { } index && Run!.Steps[index].Error is { } error && _state?.Problem?.Reason.Contains(error, StringComparison.Ordinal) != true
+        FailedIndex is { } index && PathSteps[index].Error is { } error && _state?.Problem?.Reason.Contains(error, StringComparison.Ordinal) != true
             ? error
             : null;
 
@@ -136,11 +145,16 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
-    // Only while steps in Windows PE are still to come does the machine have the move into Windows ahead of it.
+    // Why nothing runs while the run waits; otherwise to leave the machine on, and only while steps in Windows PE are still
+    // to come does the machine have the move into Windows ahead of it.
     public string? Note => Stage switch
     {
-        ConsoleStage.Running when Run?.Steps.Any(step => step.Phase == ConsolePhase.Windows) == true
-            && Run.Steps.Any(step => step.Phase == ConsolePhase.WindowsPE && step.State is ConsoleStepState.Pending or ConsoleStepState.Running) =>
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput =>
+            T("Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."),
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused =>
+            T("Nothing runs until someone continues the run, here or on the machine's page on the web."),
+        ConsoleStage.Running when PathSteps.Any(step => step.Phase == ConsolePhase.Windows)
+            && PathSteps.Any(step => step.Phase == ConsolePhase.WindowsPE && step.State is ConsoleStepState.Pending or ConsoleStepState.Running) =>
             T("Leave this machine on. It restarts by itself and finishes in Windows."),
         ConsoleStage.Running => T("Leave this machine on. This screen says when the run is done."),
         ConsoleStage.Restarting => T("Leave this machine on. It starts again by itself."),
@@ -149,42 +163,10 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public bool HasNote => !string.IsNullOrEmpty(Note);
 
-    public IReadOnlyList<RailStep> Steps => Run is { } run
-        ? [.. run.Steps.Select((step, index) => new RailStep(
-            (index + 1).ToString("00", CultureInfo.InvariantCulture),
-            step.Name,
-            step.State,
-            step.Id == run.CurrentStepId ? run.Percent : null,
-            F("Step {number}, {name}: {state}", ("number", L.Number(index + 1)), ("name", step.Name), ("state", Say.StepState(L, step.State)))))]
-        : [];
+    public IReadOnlyList<RailStep> Steps => Run is { } run ? RunPath.Rail(L, run, PathSteps) : [];
 
     // The phases the steps run in, above the rail, where the run has more than one.
-    public IReadOnlyList<RailPhase> Phases
-    {
-        get
-        {
-            if (Run is not { } run || run.Steps.Select(step => step.Phase).Distinct().Count() < 2)
-            {
-                return [];
-            }
-
-            List<RailPhase> phases = [];
-
-            foreach (ConsoleStep step in run.Steps)
-            {
-                if (phases.Count > 0 && phases[^1].Phase == step.Phase)
-                {
-                    phases[^1] = phases[^1] with { Steps = phases[^1].Steps + 1 };
-                }
-                else
-                {
-                    phases.Add(new RailPhase(step.Phase, Say.Phase(L, step.Phase), 1));
-                }
-            }
-
-            return phases;
-        }
-    }
+    public IReadOnlyList<RailPhase> Phases => RunPath.Phases(L, PathSteps);
 
     public override void Update(ConsoleState state)
     {
@@ -193,25 +175,13 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         _state = state;
         RaiseAll();
     }
-
-    private static int? IndexOf(ConsoleRun run, Guid id)
-    {
-        for (int index = 0; index < run.Steps.Count; index++)
-        {
-            if (run.Steps[index].Id == id)
-            {
-                return index;
-            }
-        }
-
-        return null;
-    }
 }
 
-// A module of the sequence rail. Percent is set on the running step where it says how far it is.
-public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description)
+// A module of the sequence rail. Percent is set on the running step where it says how far it is. AwaitsSomeone is set on
+// the step the run waits at for someone to act, a Pause step or answers, which is not running although it is current.
+public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description, bool AwaitsSomeone = false)
 {
-    public bool IsRunning => State == ConsoleStepState.Running;
+    public bool IsRunning => State == ConsoleStepState.Running && !AwaitsSomeone;
 
     public bool IsWaiting => State == ConsoleStepState.Pending;
 }

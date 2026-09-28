@@ -31,7 +31,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }
 
         LocalDisk disk = session.Disk ?? throw new DeploymentStepException(NoImageMessage);
-        (string metaData, string userData, string? networkConfig) = Render(step, session.Run.ComputerName, context.Machine);
+        (string metaData, string userData, string? networkConfig) = Render(step, context.Machine.Value(MachineVariableNames.ComputerName), context.Machine);
 
         using IRawDisk raw = disks.Open(disk);
         byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
@@ -88,8 +88,8 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }));
     }
 
-    // The seed's files with the machine's values filled in. The preflight renders them too, so a value the machine lacks
-    // stops the run before the disk is erased.
+    // The seed's files with the machine's values filled in. The run renders them too before its first step, so a value the
+    // machine lacks stops the run before the disk is erased.
     public static (string MetaData, string UserData, string? NetworkConfig) Render(
         WriteCloudInitSeedStep step,
         string? computerName,
@@ -98,15 +98,24 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(machine);
 
-        Dictionary<string, string?> values = new(StringComparer.Ordinal)
+        // The run's values too, the variables its steps set among them, but only by a name the run has a value for, so
+        // cloud-init's own templates stay as they are. The machine's own names come after them and win.
+        Dictionary<string, string?> values = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string name, string value) in machine.Variables ?? new Dictionary<string, string>())
         {
-            [MachineVariableNames.ComputerName] = computerName,
-            [MachineVariableNames.Manufacturer] = machine.Manufacturer,
-            [MachineVariableNames.Model] = machine.Model,
-            [MachineVariableNames.SerialNumber] = machine.SerialNumber,
-            [MachineVariableNames.SmbiosUuid] = machine.SmbiosUuid,
-            [MachineVariableNames.MacAddress] = machine.MacAddresses.Count > 0 ? ColonSeparated(machine.MacAddresses[0]) : null,
-        };
+            if (!RunVariables.IsOwn(name))
+            {
+                values[name] = value;
+            }
+        }
+
+        values[MachineVariableNames.ComputerName] = computerName;
+        values[MachineVariableNames.Manufacturer] = machine.Manufacturer;
+        values[MachineVariableNames.Model] = machine.Model;
+        values[MachineVariableNames.SerialNumber] = machine.SerialNumber;
+        values[MachineVariableNames.SmbiosUuid] = machine.SmbiosUuid;
+        values[MachineVariableNames.MacAddress] = machine.MacAddresses.Count > 0 ? ColonSeparated(machine.MacAddresses[0]) : null;
 
         try
         {

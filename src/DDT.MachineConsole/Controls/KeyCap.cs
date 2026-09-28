@@ -66,10 +66,13 @@ public sealed class KeyCap : Border
     {
         "Esc" => key == Avalonia.Input.Key.Escape,
         "Enter" => key == Avalonia.Input.Key.Enter,
+        "Tab" => key == Avalonia.Input.Key.Tab,
         "Shift" => key is Avalonia.Input.Key.LeftShift or Avalonia.Input.Key.RightShift,
         "End" => key == Avalonia.Input.Key.End,
         "↑" => key == Avalonia.Input.Key.Up,
         "↓" => key == Avalonia.Input.Key.Down,
+        "←" => key == Avalonia.Input.Key.Left,
+        "→" => key == Avalonia.Input.Key.Right,
         ['F', _, ..] => Enum.TryParse(cap, out Key named) && named is >= Avalonia.Input.Key.F1 and <= Avalonia.Input.Key.F24 && named == key,
         _ => false,
     };

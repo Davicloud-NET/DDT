@@ -11,9 +11,11 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Values;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -67,8 +69,17 @@ public sealed class PostgresDeploymentTests
             [run.Id],
             (await RegisteredMachine.ReadAsync<IReadOnlyList<DeploymentSummary>>(await administrator.GetAsync($"/api/machines/{machine.Id}/deployments"))).Select(r => r.Id));
 
+        // An account given for the run lives until the run ends.
+        await application.QueryAsync(database =>
+        {
+            database.RunCredentials.Add(Credential(run.Id));
+
+            return database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
         AgentRun handed = (await machine.NextAsync()).Run!;
         await machine.ReportOkAsync(handed.Id, TestReports.Running(TestReports.Step(handed.Sequence.Steps[0], StepState.Running)));
+        Assert.Equal(1, await CredentialsAsync(application, run.Id));
         await machine.ReportOkAsync(handed.Id, TestReports.Report(
             DeploymentState.Done,
             [.. handed.Sequence.Steps.Select(step => TestReports.Step(step, StepState.Done, "A NUL\0 in a note"))]));
@@ -76,6 +87,7 @@ public sealed class PostgresDeploymentTests
         DeploymentView done = await administrator.RunAsync(run.Id);
 
         Assert.Equal(DeploymentState.Done, done.Summary.State);
+        Assert.Equal(0, await CredentialsAsync(application, run.Id));
         Assert.All(done.Steps, step => Assert.Equal("A NUL in a note", step.Error));
         Assert.Equal(TimeSpan.Zero, done.Steps[0].StartedUtc?.Offset);
         Assert.Equal(MachineState.Done, Assert.Single(
@@ -91,7 +103,91 @@ public sealed class PostgresDeploymentTests
 
         Assert.Equal(1, await application.Services.GetRequiredService<AbandonedRunSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
         Assert.Equal(DeploymentState.Failed, (await administrator.RunAsync(abandoned.Id)).Summary.State);
+
+        // An account stored for a run that is over, as a change by hand would leave it, goes at the next start.
+        await application.QueryAsync(database =>
+        {
+            database.RunCredentials.Add(Credential(abandoned.Id));
+
+            return database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(1, await application.Services.GetRequiredService<RunCredentialSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0, await CredentialsAsync(application, abandoned.Id));
     }
+
+    // A tree's rows, the answers the run waits for, compared and replaced in one statement, its values and variables as
+    // JSON, and a pause, each with a NUL where the agent or a person could put one.
+    [Fact]
+    public async Task RunsATreeThatWaitsForAnswersAndPauses()
+    {
+        PostgreSqlContainer? started = await TestPostgres.StartAsync();
+        Assert.SkipWhen(started is null, "Docker is not running, so there is no PostgreSQL to test against. Start Docker to run this test.");
+
+        await using PostgreSqlContainer container = started;
+        using PostgresApplication application = new(container.GetConnectionString());
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
+        RunScriptStep before = TreeSequences.Script("Before");
+        PauseStep pause = TreeSequences.Pause();
+        GroupStep group = TreeSequences.Group("Then", pause, TreeSequences.Script("After"));
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(before, group) with
+        {
+            Variables = [new VariableDeclaration { Name = "Office", SetBySteps = true }],
+            Inputs = [new InputDeclaration { Name = "Room", Label = "Room", Required = true, AskAt = InputAsk.Machine }],
+        });
+        Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
+        AgentRun run = (await machine.NextAsync()).Run!;
+
+        Assert.Equal("Room", Assert.Single(run.PendingInputs!).Name);
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        DeploymentView answered = await RegisteredMachine.ReadAsync<DeploymentView>(
+            await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "A 1")));
+        Assert.False(answered.Summary.Waiting);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "B 2"))).StatusCode);
+
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        Assert.Equal("A 1", machine.LastReported!.Values!["Room"]);
+
+        StepRunState[] paused =
+        [
+            TreeSequences.Visit(before, StepState.Done) with { Evaluation = [new TestEvaluation("when\0", true, "A NUL\0 here")] },
+            TreeSequences.Visit(group, StepState.Running),
+            TreeSequences.Visit(pause, StepState.Running),
+        ];
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused) with
+        {
+            PauseMessage = "Check\0 the BIOS.",
+            Variables = new Dictionary<string, string> { ["Office"] = "Pro\0Plus" },
+        });
+
+        DeploymentView waiting = await administrator.RunAsync(runId);
+        Assert.Equal(("Check the BIOS.", "ProPlus"), (waiting.Pause!.Message, waiting.Variables!["Office"]));
+        Assert.Equal(new TestEvaluation("when", true, "A NUL here"), Assert.Single(waiting.Steps[0].Evaluation!));
+        Assert.Equal([(Guid?)null, null, group.Id, group.Id], waiting.Steps.Select(step => step.ParentId));
+
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/deployments/current/continue", new ContinueRunRequest(pause.Id, 1))).EnsureSuccessStatusCode();
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused));
+        Assert.Equal(pause.Id, machine.LastReported!.ContinueStepId);
+
+        await machine.ReportOkAsync(runId, TestReports.Report(
+            DeploymentState.Done,
+            [.. SequenceTree.Nodes(run.Sequence).Select(node => TreeSequences.Visit(node, StepState.Done))]));
+        Assert.Equal(DeploymentState.Done, (await administrator.RunAsync(runId)).Summary.State);
+    }
+
+    private static RunCredential Credential(Guid runId) => new()
+    {
+        DeploymentId = runId,
+        InputName = "JoinAccount",
+        UserName = @"CORP\alice",
+        ProtectedPassword = "ciphertext",
+        Hosts = """["files.corp.example.com"]""",
+        CreatedUtc = DateTimeOffset.UtcNow,
+    };
+
+    private static Task<int> CredentialsAsync(PostgresApplication application, Guid runId) =>
+        application.QueryAsync(database => database.RunCredentials.CountAsync(c => c.DeploymentId == runId, TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task StoresTheLibraryOfSequencesPackagesAndRules()
@@ -129,11 +225,37 @@ public sealed class PostgresDeploymentTests
         await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
 
-        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "Latitude 5440", "Dell Inc."));
+        MachineRoleView role = await administrator.CreatedRoleAsync(new SaveMachineRoleRequest(0, "Finance\0 laptops", "A NUL\0 here", [new NamedValue("Office", "Vienna\0")]));
+        RuleView other = await administrator.CreatedRuleAsync(RuleRequests.MacRule(saved.Id, RuleRequests.RandomMac()));
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "Latitude 5440", "Dell Inc.") with
+        {
+            Name = "Dell\0 laptops",
+            Values = [new NamedValue("ComputerName", "PC-{{SerialNumber|alnum}}\0")],
+            RoleIds = [role.Id],
+        });
+        RuleView last = await administrator.CreatedRuleAsync(RuleRequests.ModelRule(saved.Id, "LATITUDE 5440", "dell inc."));
         using RegisteredMachine machine = await application.RegisterModelAsync("DELL INC.", "latitude 5440");
 
-        Assert.Equal(rule.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
-        Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync(RuleRequests.Rules, RuleRequests.ModelRule(saved.Id, "LATITUDE 5440", "dell inc."))).StatusCode);
+        Assert.Equal(("Finance laptops", "Vienna"), (role.Name, role.Values[0].Value));
+        Assert.Equal(("Dell laptops", "PC-{{SerialNumber|alnum}}"), (rule.Name, rule.Values[0].Value));
+        MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
+        Assert.Equal(rule.Id, resolution.RuleId);
+        Assert.Equal([rule.Id, last.Id], resolution.MatchedRuleIds);
+        Assert.Contains(new ResolvedValue("ComputerName", "PC-00000000", ValueSource.Rule, rule.Id, rule.Name, false), resolution.Values!);
+        Assert.Contains(new ResolvedValue("Office", "Vienna", ValueSource.Role, role.Id, role.Name, false), resolution.Values!);
+
+        // The places are unique, so a reorder and a delete move rules through places no rule has, in one transaction.
+        IReadOnlyList<RuleView> rules = await administrator.RulesAsync();
+        IReadOnlyList<RuleView> reordered = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(
+            await administrator.ReorderAsync([.. rules.Select(r => r.Id).Reverse()]));
+        Assert.Equal(rules.Select(r => r.Id).Reverse(), reordered.Select(r => r.Id));
+        Assert.Equal(last.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
+
+        IReadOnlyList<RuleView> left = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(await administrator.DeleteAsync($"{RuleRequests.Rules}/{last.Id}"));
+        Assert.Equal([rule.Id, other.Id], left.Select(r => r.Id));
+        Assert.Equal([0, 1], left.Select(r => r.Position));
+
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{RuleRequests.Roles}/{role.Id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{saved.Id}")).StatusCode);
     }
 }

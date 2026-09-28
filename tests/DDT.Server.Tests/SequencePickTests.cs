@@ -338,7 +338,7 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName);
         SequenceView suggested = await SequenceAsync(SequenceRequests.ScriptOnly());
         SequenceView other = await SequenceAsync(SequenceRequests.ScriptOnly());
-        AssignmentRuleView rule = await administrator.CreatedRuleAsync(RuleRequests.MacRule(suggested.Id, machine.Registration.PrimaryMac));
+        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.MacRule(suggested.Id, machine.Registration.PrimaryMac));
 
         AgentNextResult next = await machine.NextAsync();
         IReadOnlyList<AgentSequenceChoice> choices = await ChoicesAsync(machine);

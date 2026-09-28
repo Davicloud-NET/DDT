@@ -122,6 +122,69 @@ public sealed class KeyboardTests
         window.Close();
     });
 
+    // The first field has the focus; Tab goes from field to field, the arrow keys choose, and Enter sends them all.
+    [Fact]
+    public Task AnswersTheInputsWithTheKeyboardAlone() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.Choosing)).Ask(9, Scenarios.Inputs());
+        MainWindow window = Open(console);
+
+        Press(window, Key.Right);
+        Press(window, Key.Tab);
+        Type(window, "anna.berger");
+        Press(window, Key.Tab);
+        Press(window, Key.Right);
+        Press(window, Key.Tab);
+        Type(window, @"LAB\svc-join");
+        Press(window, Key.Tab);
+        Type(window, "correct horse");
+        TextBox password = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<TextBox>().Single(box => box.PasswordChar == '•');
+        Assert.True(password.IsFocused);
+        Press(window, Key.Enter);
+
+        (int id, ConsoleAnswer answer) = Assert.Single(console.Answers);
+        Assert.Equal(9, id);
+        Assert.Equal(
+            [
+                new ConsoleInputValue("Office", "ProPlus"),
+                new ConsoleInputValue("Owner", "anna.berger"),
+                new ConsoleInputValue("BitLocker", "false"),
+                new ConsoleInputValue("JoinAccount", null, @"LAB\svc-join", "correct horse"),
+            ],
+            answer.Values);
+        Assert.Equal(string.Empty, password.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public Task SendsNoInputsWithEnterUntilTheyAreAnsweredAndGoesBackWithEsc() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.Choosing)).Ask(9, Scenarios.Inputs());
+        MainWindow window = Open(console);
+
+        Press(window, Key.Enter);
+        Assert.Empty(console.Answers);
+
+        Press(window, Key.Escape);
+        Assert.Equal([(9, new ConsoleAnswer(Back: true))], console.Answers);
+        window.Close();
+    });
+
+    [Fact]
+    public Task ContinuesAPauseWithEnter() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Paused).Ask(11, Scenarios.Pause);
+        MainWindow window = Open(console);
+
+        Press(window, Key.Escape);
+        Assert.Empty(console.Answers);
+
+        Press(window, Key.Enter);
+
+        Assert.Equal([(11, new ConsoleAnswer(Continue: true))], console.Answers);
+        window.Close();
+    });
+
     [Fact]
     public Task OpensTheLogOverTheScreenAndClosesItBeforeEscGoesBack() => Headless.RunAsync(() =>
     {

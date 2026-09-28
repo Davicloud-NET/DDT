@@ -22,7 +22,8 @@ namespace DDT.E2E;
 // The real host and the published agent in dry runs, which run whole task sequences on this computer without changing
 // it: every run goes through Windows PE and, after the hand-over, the installed Windows in one agent process.
 [Trait("Category", "E2E")]
-public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
+[Collection(DryRunCollection.Name)]
+public sealed class DryRunTests(DryRunLab lab)
 {
     // The agent's exit codes: stopped, and a run that finished.
     private const int Stopped = 0;
@@ -274,12 +275,27 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
             "Chosen by a rule",
             [Script("Chosen by a rule", SequencePhase.WindowsPE, "echo chosen") with { RebootExitCodes = [] }],
             cancellationToken);
-        AssignmentRuleView rule = await lab.Api.SendAsync(
+        RuleView rule = await lab.Api.SendAsync(
             HttpMethod.Post,
             "api/rules",
-            new SaveAssignmentRuleRequest(AssignmentRuleKind.Model, null, DryRunLab.Manufacturer, DryRunLab.Model, sequence.Id, "Made by the end-to-end tests."),
-            DdtJsonContext.Default.SaveAssignmentRuleRequest,
-            DdtJsonContext.Default.AssignmentRuleView,
+            new SaveRuleRequest(
+                0,
+                $"Model {DryRunLab.Model}",
+                "Made by the end-to-end tests.",
+                true,
+                new AllCondition
+                {
+                    Parts =
+                    [
+                        new TestCondition(MachineVariableNames.Manufacturer, ConditionOperator.Equals, DryRunLab.Manufacturer),
+                        new TestCondition(MachineVariableNames.Model, ConditionOperator.Equals, DryRunLab.Model),
+                    ],
+                },
+                sequence.Id,
+                [],
+                []),
+            DdtJsonContext.Default.SaveRuleRequest,
+            DdtJsonContext.Default.RuleView,
             HttpStatusCode.Created,
             cancellationToken);
 
@@ -294,7 +310,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
                 $"api/machines/{machine.Id:D}/sequence",
                 DdtJsonContext.Default.MachineSequenceResolution,
                 cancellationToken);
-            Assert.Equal((SequenceResolutionSource.ModelRule, sequence.Id, rule.Id), (resolution.Source, resolution.SequenceId, resolution.RuleId));
+            Assert.Equal((SequenceResolutionSource.Rule, sequence.Id, rule.Id), (resolution.Source, resolution.SequenceId, resolution.RuleId));
             Assert.Empty(await lab.RunsAsync(machine.Id, cancellationToken));
 
             MachineSummary approved = await lab.ApproveAsync(machine.Id, sequence.Id, cancellationToken);
@@ -315,7 +331,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
         }
         finally
         {
-            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None);
+            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None, HttpStatusCode.OK);
         }
     }
 
@@ -498,7 +514,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
 
     // In the dry run's terms, as it only logs what the removal would change: the service deleted, and what is left of
     // the agent marked for deletion when Windows next starts. The dry run's disk goes whatever the removal did.
-    private static void AssertRemovedItself(AgentProcess agent)
+    internal static void AssertRemovedItself(AgentProcess agent)
     {
         Assert.Equal(1, agent.Output.Count("The run is over here, so the agent removes itself."));
         Assert.Equal(1, agent.Output.Count($"Dry run: not run: {Path.Combine(Environment.SystemDirectory, "sc.exe")} delete DdtSequence"));
@@ -509,9 +525,9 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
     // A sequence that joins the domain needs one.
     private static string ComputerName(AgentProcess agent) => string.Create(CultureInfo.InvariantCulture, $"E2E-{agent.DryRunId % 100_000:D5}");
 
-    private static PartitionStep Partition() => new() { Id = Guid.CreateVersion7(), Name = "Partition" };
+    internal static PartitionStep Partition() => new() { Id = Guid.CreateVersion7(), Name = "Partition" };
 
-    private static RunScriptStep Script(string name, SequencePhase phase, string script, ScriptInterpreter interpreter = ScriptInterpreter.Cmd) =>
+    internal static RunScriptStep Script(string name, SequencePhase phase, string script, ScriptInterpreter interpreter = ScriptInterpreter.Cmd) =>
         new() { Id = Guid.CreateVersion7(), Name = name, Phase = phase, Interpreter = interpreter, Script = script };
 
     private static string Text(FatVolume volume, string name) => Encoding.UTF8.GetString(volume.ReadFile(volume.Find(name)!, 64 * 1024));
@@ -519,7 +535,7 @@ public sealed class DryRunTests(DryRunLab lab) : IClassFixture<DryRunLab>
     private static string Json(SequenceDefinition definition) => JsonSerializer.Serialize(definition, DdtJsonContext.Default.SequenceDefinition);
 
     // Where the agent went on, from "Continued <title> (<run>) from Windows with its run token.".
-    private static string ResumedIn(AuditEvent resumed) =>
+    internal static string ResumedIn(AuditEvent resumed) =>
         resumed.Detail switch
         {
             { } detail when detail.Contains(" from WindowsPE ", StringComparison.Ordinal) => "WindowsPE",

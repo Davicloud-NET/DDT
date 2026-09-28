@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { SequenceStep } from "../sequences";
+import { PauseFields, SetVariableFields } from "./FlowFields";
 import type { KindFieldsProps } from "./kindFields";
 import { WriteCloudInitSeedFields, WriteRawImageFields } from "./RawImageFields";
 import { RebootFields, RunScriptFields } from "./ScriptFields";
@@ -14,7 +15,7 @@ import {
   WriteUnattendFields,
 } from "./WindowsFields";
 
-// The fields of the step's own kind, laid out in the two columns of the step's panel.
+// The fields of the step's own kind.
 export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
   switch (step.kind) {
     case "partition":
@@ -35,5 +36,14 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <WriteRawImageFields step={step} {...rest} />;
     case "writeCloudInitSeed":
       return <WriteCloudInitSeedFields step={step} {...rest} />;
+    case "setVariable":
+      return <SetVariableFields step={step} {...rest} />;
+    case "pause":
+      return <PauseFields step={step} {...rest} />;
+    // A container's own fields are the inspector's.
+    case "group":
+    case "if":
+    case "repeat":
+      return null;
   }
 }

@@ -9,7 +9,8 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
-using DDT.Core.Unattend;
+using DDT.Core.Templates;
+using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
@@ -17,22 +18,25 @@ using DDT.Server.Packages;
 namespace DDT.Server.Sequences;
 
 // SequenceValidator's rules plus what only the server can check: the library, its settings, and culture names,
-// which the agent cannot check because it runs without globalization data.
+// which the agent cannot check because it runs without globalization data. Every node of the tree is checked, on every
+// branch of every IF, since any of them may run.
 public static class SequenceChecks
 {
+    // Parts of a name that say its value is a password or another secret, ignoring case.
+    private static readonly string[] s_secretNames = ["password", "passwd", "passwort", "kennwort", "pwd", "secret", "token"];
+
     public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
 
-        List<SequenceProblem> problems = [.. SequenceValidator.Validate(definition)];
-        List<SequenceProblem> warnings = [];
-        bool continuesInWindows = false;
+        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
+        List<SequenceProblem> problems = [.. analysis.Problems];
+        List<SequenceProblem> warnings = [.. analysis.Warnings];
         bool addsAdministrator = false;
 
-        for (int index = 0; index < definition.Steps.Count; index++)
+        foreach (SequenceStep step in SequenceTree.Nodes(definition))
         {
-            SequenceStep step = definition.Steps[index];
             Guid? stepId = step.Id == Guid.Empty ? null : step.Id;
 
             void Add(string? field, ServerMessage message) => problems.Add(SequenceProblem.From(stepId, field, message));
@@ -61,7 +65,7 @@ public static class SequenceChecks
 
                     break;
                 case WriteCloudInitSeedStep seed:
-                    CheckPlaceholders(seed, Warn);
+                    CheckPlaceholders(seed, SeedValueNames(definition, references), Warn);
                     break;
                 case WriteUnattendStep unattend:
                     CheckUnattend(unattend, references, Add);
@@ -73,19 +77,34 @@ public static class SequenceChecks
                 case RunScriptStep { PackageId: { } packageId }:
                     CheckPackage(packageId, references, Add);
                     break;
+                case SetVariableStep set when SecretValue(set.Variable, set.Value):
+                    Warn("value", ServerMessages.SequenceSecretValueWarning.With("name", set.Variable));
+                    break;
             }
 
-            continuesInWindows |= SequencePhases.Of(definition, index) == SequencePhase.Windows;
+            CheckShareHosts(step, Warn);
         }
 
-        if (continuesInWindows && !addsAdministrator)
+        CheckDeclaredSecrets(definition, warnings);
+
+        // Some path reaches Windows, and no answer file on any path adds the administrator.
+        if (InWindows(analysis.NodePhases) && !addsAdministrator)
         {
             warnings.Add(SequenceProblem.From(null, null, ServerMessages.SequenceNoAdministratorWarning.With()));
         }
 
+        problems.AddRange(SequenceAccountChecks.Check(definition, references));
+
+        // The validator leaves the names only rules and machine roles can give a value to the server, which knows them. A
+        // name nothing gives one is most likely a slip, but a rule added later may still give it one.
+        warnings.AddRange(analysis.ValueNames
+            .Where(name => !references.ValueNames.Contains(name))
+            .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
+
         return new SequenceValidation(problems, warnings);
     }
 
+    // The phase of each step at the top, as a list of steps shows them. NodePhases has every node of the tree.
     public static IReadOnlyList<SequencePhase> Phases(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -93,21 +112,36 @@ public static class SequenceChecks
         return [.. definition.Steps.Select((_, index) => SequencePhases.Of(definition, index))];
     }
 
-    // Why a sequence needs a computer name, or null when it needs none: it joins the domain under it, or its cloud-init
-    // seed names the machine with it.
+    // The phases each node may run in, in the order of SequenceTree.Nodes: more than one where it depends on the path.
+    public static IReadOnlyList<NodePhase> NodePhases(SequenceDefinition definition) => SequenceValidator.Analyse(definition).NodePhases;
+
+    // Whether some path through the sequence goes on in Windows.
+    public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
+
+    // Why a sequence needs a computer name, or null when it needs none: it joins the domain under it, its cloud-init
+    // seed names the machine with it, or it declares the ComputerName variable, whose value names the machine. A join or
+    // a seed on any branch counts, since any branch may run.
     public static ServerMessage? ComputerNameUse(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.Steps.Any(step => step is JoinDomainStep))
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
+
+        if (nodes.Any(node => node is JoinDomainStep))
         {
             return ServerMessages.DeploymentJoinsDomainUnderName.With();
         }
 
-        return definition.Steps.OfType<WriteCloudInitSeedStep>().Any(seed => SeedTexts(seed)
+        if (nodes.OfType<WriteCloudInitSeedStep>().Any(seed => SeedTexts(seed)
             .SelectMany(text => CloudInitTemplate.Placeholders(text.Text ?? ""))
-            .Any(placeholder => CloudInitTemplate.Known(placeholder) == MachineVariableNames.ComputerName))
-            ? ServerMessages.DeploymentSeedNamesMachine.With()
+            .Any(placeholder => CloudInitTemplate.Known(placeholder) == MachineVariableNames.ComputerName)))
+        {
+            return ServerMessages.DeploymentSeedNamesMachine.With();
+        }
+
+        return (definition.Variables ?? []).Any(variable =>
+            string.Equals(variable?.Name, MachineVariableNames.ComputerName, StringComparison.OrdinalIgnoreCase))
+            ? ServerMessages.SequenceNamesMachineWithValue.With()
             : null;
     }
 
@@ -117,10 +151,12 @@ public static class SequenceChecks
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
 
-        return definition.Steps.OfType<WriteRawImageStep>()
+        return SequenceTree.Nodes(definition).OfType<WriteRawImageStep>()
             .Select(step => references.Images.GetValueOrDefault(step.ImageId))
             .FirstOrDefault(image => image is { Kind: ImageKind.RawDisk });
     }
+
+    private static bool InWindows(IReadOnlyList<NodePhase> nodes) => nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
 
     private static void CheckImage(Guid imageId, ImageKind kind, SequenceReferences references, Action<string?, ServerMessage> add)
     {
@@ -144,13 +180,38 @@ public static class SequenceChecks
         }
     }
 
-    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, Action<string?, ServerMessage> warn)
+    // Besides the machine's names, a seed may use the run's values, as the agent fills them in: the sequence's variables
+    // and the answers to its inputs, what rules and machine roles set, and the deployment defaults. An Account input's
+    // answer is never a value.
+    private static List<string> SeedValueNames(SequenceDefinition definition, SequenceReferences references)
     {
-        string known = string.Join(", ", CloudInitTemplate.Names.Select(name => $"{{{{{name}}}}}"));
+        IEnumerable<string?> names =
+        [
+            .. (definition.Variables ?? []).Select(variable => variable?.Name),
+            .. (definition.Inputs ?? []).Where(input => input is { Kind: not InputKind.Account }).Select(input => input!.Name),
+            .. references.ValueNames.Order(StringComparer.OrdinalIgnoreCase),
+        ];
+
+        return
+        [
+            .. names
+                .OfType<string>()
+                .Where(name => name.Length > 0 && CloudInitTemplate.Known(name) is null)
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
+    }
+
+    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, IReadOnlyList<string> valueNames, Action<string?, ServerMessage> warn)
+    {
+        string known = string.Join(", ", CloudInitTemplate.Names.Concat(valueNames).Select(name => $"{{{{{name}}}}}"));
 
         foreach ((string field, string? text) in SeedTexts(seed))
         {
-            string[] unknown = [.. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder => CloudInitTemplate.Known(placeholder) is null)];
+            string[] unknown =
+            [
+                .. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder =>
+                    CloudInitTemplate.Known(placeholder) is null && !valueNames.Contains(placeholder, StringComparer.OrdinalIgnoreCase)),
+            ];
 
             if (unknown.Length > 0)
             {
@@ -159,6 +220,65 @@ public static class SequenceChecks
             }
         }
     }
+
+    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is no secret. Only a
+    // value written out counts: one made of other values, such as {{Token}}, holds none itself.
+    private static bool SecretValue(string? name, string? value) =>
+        name is not null
+        && s_secretNames.Any(part => name.Contains(part, StringComparison.OrdinalIgnoreCase))
+        && !string.IsNullOrWhiteSpace(value)
+        && ValueTemplate.Parse(value).Placeholders.Count == 0;
+
+    // The defaults of the sequence's variables and inputs. An Account input keeps its answer apart, and has no default.
+    private static void CheckDeclaredSecrets(SequenceDefinition definition, List<SequenceProblem> warnings)
+    {
+        void Check(string field, string? name, string? value)
+        {
+            if (SecretValue(name, value))
+            {
+                warnings.Add(SequenceProblem.From(null, field, ServerMessages.SequenceSecretValueWarning.With("name", name!)));
+            }
+        }
+
+        IReadOnlyList<VariableDeclaration?> variables = definition.Variables ?? [];
+
+        for (int index = 0; index < variables.Count; index++)
+        {
+            Check(string.Create(CultureInfo.InvariantCulture, $"variables[{index}].default"), variables[index]?.Name, variables[index]?.Default);
+        }
+
+        IReadOnlyList<InputDeclaration?> inputs = definition.Inputs ?? [];
+
+        for (int index = 0; index < inputs.Count; index++)
+        {
+            if (inputs[index] is { Kind: not InputKind.Account } input)
+            {
+                Check(string.Create(CultureInfo.InvariantCulture, $"inputs[{index}].default"), input.Name, input.Default);
+            }
+        }
+    }
+
+    // A server named by its address gets no Kerberos ticket, so the account's password goes to it by NTLM, which a
+    // machine in the middle can relay to another server. Only a host written out can be told; one made of values is
+    // known when the step runs.
+    private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
+    {
+        IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
+
+        for (int index = 0; index < shares.Count; index++)
+        {
+            if (AccountRules.WrittenHost(shares[index]?.Path) is { } host && ValueTemplate.Parse(host).Placeholders.Count == 0 && IsAddress(host))
+            {
+                warn(
+                    string.Create(CultureInfo.InvariantCulture, $"shares[{index}].path"),
+                    ServerMessages.SequenceShareHostAddressWarning.With("host", host));
+            }
+        }
+    }
+
+    // An IPv4 address, or an IPv6 address written as a name Windows takes in a share path.
+    private static bool IsAddress(string host) =>
+        Uri.CheckHostName(host) == UriHostNameType.IPv4 || host.EndsWith(".ipv6-literal.net", StringComparison.OrdinalIgnoreCase);
 
     private static IEnumerable<(string Field, string? Text)> SeedTexts(WriteCloudInitSeedStep seed) =>
         [("metaData", seed.MetaData), ("userData", seed.UserData), ("networkConfig", seed.NetworkConfig)];
@@ -177,17 +297,17 @@ public static class SequenceChecks
 
     private static void CheckUnattend(WriteUnattendStep step, SequenceReferences references, Action<string?, ServerMessage> add)
     {
-        if (Value(step.TimeZone) is { } timeZone && !WindowsTimeZones.IsValidId(timeZone))
+        if (Value(step.TimeZone) is { } timeZone && !WindowsSettings.IsTimeZone(timeZone))
         {
             add("timeZone", ServerMessages.SequenceTimeZone.With("timeZone", timeZone));
         }
 
-        if (Value(step.Locale) is { } locale && !IsSpecificCulture(locale))
+        if (Value(step.Locale) is { } locale && !WindowsSettings.IsLocale(locale))
         {
             add("locale", ServerMessages.SequenceLocale.With("locale", locale));
         }
 
-        if (Value(step.Keyboard) is { } keyboard && !keyboard.Split(';').All(IsInputLocale))
+        if (Value(step.Keyboard) is { } keyboard && !WindowsSettings.IsKeyboard(keyboard))
         {
             add("keyboard", ServerMessages.SequenceKeyboard.With("keyboard", keyboard));
         }
@@ -198,9 +318,10 @@ public static class SequenceChecks
         }
     }
 
+    // A join with an account joins that account's domain, so only a join without one needs the configured domain.
     private static void CheckJoin(JoinDomainStep step, SequenceReferences references, Action<string?, ServerMessage> add)
     {
-        if (!references.DomainConfigured)
+        if (step.Account is null && !references.DomainConfigured)
         {
             add(null, ServerMessages.SequenceNoDomain.With());
         }
@@ -212,37 +333,8 @@ public static class SequenceChecks
         }
     }
 
-    // A neutral culture such as de names no region, and Windows needs one for its locales.
-    private static bool IsSpecificCulture(string name)
-    {
-        try
-        {
-            return !CultureInfo.GetCultureInfo(name, predefinedOnly: true).IsNeutralCulture;
-        }
-        catch (CultureNotFoundException)
-        {
-            return false;
-        }
-    }
-
-    // A culture name, a language and keyboard layout pair such as 0407:00000407, or a language and a text service
-    // written as two GUIDs, as Windows lists them.
-    private static bool IsInputLocale(string part)
-    {
-        string value = part.Trim();
-
-        if (value.Length > 5 && value[4] == ':' && value[..4].All(char.IsAsciiHexDigit))
-        {
-            string layout = value[5..];
-
-            return (layout.Length == 8 && layout.All(char.IsAsciiHexDigit))
-                || (layout.Length == 76
-                    && Guid.TryParseExact(layout[..38], "B", out _)
-                    && Guid.TryParseExact(layout[38..], "B", out _));
-        }
-
-        return value.Length > 0 && IsSpecificCulture(value);
-    }
-
-    private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();
+    // A setting as it is written, or null when it is empty or a template, whose values are checked when the run takes
+    // them, as the answer file and the join are made.
+    private static string? Value(string? setting) =>
+        string.IsNullOrWhiteSpace(setting) || ValueTemplate.Parse(setting).Placeholders.Count > 0 ? null : setting.Trim();
 }

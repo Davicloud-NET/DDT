@@ -429,4 +429,14 @@ public sealed class ConsoleSeamTests : IDisposable
             Assert.Equal(kind.TypeDiscriminator, ConsoleValues.KindOf(step));
         }
     }
+
+    // The console says what the agent does between steps, so every activity has one of the same name.
+    [Fact]
+    public void GivesEveryActivityOfARunItsConsoleActivity()
+    {
+        foreach (RunActivity activity in Enum.GetValues<RunActivity>())
+        {
+            Assert.Equal(activity.ToString(), ConsoleValues.ToConsole(activity).ToString());
+        }
+    }
 }

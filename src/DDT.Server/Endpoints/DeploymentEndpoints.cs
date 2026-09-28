@@ -199,44 +199,10 @@ public static class DeploymentEndpoints
     private static async Task<Results<Ok<DeploymentView>, NotFound>> ReadAsync(
         Guid id,
         DdtDbContext database,
-        CancellationToken cancellationToken)
-    {
-        Deployment? run = await database.Deployments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken).ConfigureAwait(false);
-
-        if (run is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        DeploymentSnapshot? snapshot = await database.DeploymentSnapshots
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.DeploymentId == id, cancellationToken)
-            .ConfigureAwait(false);
-
-        List<DeploymentStep> steps = await database.DeploymentSteps
-            .AsNoTracking()
-            .Where(s => s.DeploymentId == id)
-            .OrderBy(s => s.Index)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        List<DeploymentArtifact> artifacts = await database.DeploymentArtifacts
-            .AsNoTracking()
-            .Where(a => a.DeploymentId == id)
-            .OrderBy(a => a.Id)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return TypedResults.Ok(new DeploymentView(
-            DeploymentSummaries.From(run),
-            run.MachineId,
-            run.SequenceRevision,
-            run.RuleId,
-            snapshot is null ? null : SequenceDocuments.Read(snapshot.Definition),
-            [.. steps.Select(DeploymentSummaries.Step)],
-            [.. artifacts.Select(DeploymentSummaries.Artifact)],
-            run.AllowSecureBootMismatch));
-    }
+        CancellationToken cancellationToken) =>
+        await DeploymentViews.ReadAsync(database, id, cancellationToken).ConfigureAwait(false) is { } view
+            ? TypedResults.Ok(view)
+            : TypedResults.NotFound();
 
     // A class rather than an anonymous type, so the query can be passed to Matching and filtered further.
     private sealed class HistoryRow

@@ -134,7 +134,7 @@ if (options.DryRun)
 
 // The agent's directory is X:\DDT in Windows PE, on the RAM disk that every restart builds anew. What it stages into
 // Windows needs to reach the server, and nothing else.
-ToolRunner tools = new(log, TimeProvider.System);
+ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log));
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);

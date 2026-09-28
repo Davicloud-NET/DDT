@@ -5,6 +5,7 @@
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
+using DDT.Core.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
@@ -13,14 +14,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// The sequence a machine gets, first match first: an assignment on the web, a choice at the machine, a rule for one
-// of its MAC addresses, a rule for its model. Resolving changes nothing and authorizes nothing: an approval on the web
-// runs a rule's sequence, and a console only offers it.
+// The sequence a machine gets, first match first: an assignment on the web, a choice at the machine, then the first
+// rule of the ordered list that matches the machine and chooses a sequence. The rules are walked in every case, since
+// they set values and give machine roles for whatever runs. Resolving changes nothing and authorizes nothing: an
+// approval on the web runs a rule's sequence, and a console only offers it.
 public sealed class SequenceResolver(DdtDbContext database)
 {
     public async Task<SequenceResolution> ResolveAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
+
+        RuleBook book = await RuleBook.LoadAsync(database, cancellationToken).ConfigureAwait(false);
+
+        return await ResolveAsync(machine, book, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<SequenceResolution> ResolveAsync(Machine machine, RuleBook book, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(book);
+
+        MachineVariables variables = MachineVariableReader.Read(machine);
+        RuleMatch match = book.Match(variables, MachineValues.Own(machine));
 
         if (machine.ActiveDeploymentId is { } activeId
             && await database.Deployments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == activeId, cancellationToken).ConfigureAwait(false)
@@ -34,61 +49,43 @@ public sealed class SequenceResolver(DdtDbContext database)
                     null,
                     null,
                     active,
-                    ServerMessages.ResolutionChosenAtMachine.With("by", by, "sequence", active.Title))
+                    ServerMessages.ResolutionChosenAtMachine.With("by", by, "sequence", active.Title),
+                    match,
+                    variables)
                 : new SequenceResolution(
                     SequenceResolutionSource.Assigned,
                     null,
                     null,
                     active,
-                    ServerMessages.ResolutionAssignedOnWeb.With("by", by, "sequence", active.Title));
+                    ServerMessages.ResolutionAssignedOnWeb.With("by", by, "sequence", active.Title),
+                    match,
+                    variables);
         }
 
-        List<AssignmentRule> rules = await database.AssignmentRules.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        // The foreign key keeps a rule's sequence, so it is there unless it was deleted a moment ago.
+        TaskSequence? sequence = match.Chooser?.Rule.TaskSequenceId is { } sequenceId
+            ? await database.TaskSequences.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sequenceId, cancellationToken).ConfigureAwait(false)
+            : null;
 
-        if ((MacRule(rules, machine) ?? ModelRule(rules, machine)) is not { } rule)
+        if (match.Chooser is not { } chooser || sequence is null)
         {
             return new SequenceResolution(
                 SequenceResolutionSource.None,
                 null,
                 null,
                 null,
-                ServerMessages.ResolutionNoRule.With());
+                ServerMessages.ResolutionNoRuleChooses.With(),
+                match,
+                variables);
         }
 
-        TaskSequence sequence = await database.TaskSequences
-            .AsNoTracking()
-            .FirstAsync(s => s.Id == rule.TaskSequenceId, cancellationToken)
-            .ConfigureAwait(false);
-
         return new SequenceResolution(
-            rule.Kind == AssignmentRuleKind.Mac ? SequenceResolutionSource.MacRule : SequenceResolutionSource.ModelRule,
+            SequenceResolutionSource.Rule,
             sequence,
-            rule,
+            chooser.Rule,
             null,
-            ServerMessages.ResolutionRuleChooses.With("rule", AssignmentRuleKeys.DescribeMessage(rule), "sequence", sequence.Name));
+            ServerMessages.ResolutionRuleNumbered.With("number", chooser.Rule.Position + 1, "rule", chooser.Rule.Name, "sequence", sequence.Name),
+            match,
+            variables);
     }
-
-    // The primary MAC address first, then the others in the order the machine reported them.
-    private static AssignmentRule? MacRule(List<AssignmentRule> rules, Machine machine)
-    {
-        Dictionary<string, AssignmentRule> byMac = rules
-            .Where(r => r.Kind == AssignmentRuleKind.Mac && r.Mac is not null)
-            .ToDictionary(r => r.Mac!, StringComparer.Ordinal);
-        string[] macs = [machine.PrimaryMac, .. machine.MacAddresses.Split(',', StringSplitOptions.RemoveEmptyEntries)];
-
-        return macs.Select(mac => byMac.GetValueOrDefault(mac)).FirstOrDefault(rule => rule is not null);
-    }
-
-    // The exact model before a prefix, the longest prefix first, and a rule for the machine's maker before one for
-    // any maker.
-    private static AssignmentRule? ModelRule(List<AssignmentRule> rules, Machine machine) =>
-        rules
-            .Where(r => r.Kind == AssignmentRuleKind.Model
-                && HardwareModels.Matches(r.Manufacturer, machine.Manufacturer)
-                && HardwareModels.Matches(r.Model, machine.Model))
-            .OrderBy(r => HardwareModels.IsPrefix(r.Model))
-            .ThenByDescending(r => r.Model?.Length ?? 0)
-            .ThenBy(r => r.Manufacturer is null)
-            .ThenBy(r => r.Id)
-            .FirstOrDefault();
 }

@@ -143,7 +143,6 @@ export function RunScriptFields({
           onChange({ timeoutMinutes });
         }}
       />
-      <div className="hidden sm:block" />
       <CodesSetting
         label={<Trans>Exit codes that mean success</Trans>}
         field="successExitCodes"

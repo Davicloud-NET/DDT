@@ -3258,10 +3258,6 @@ msgstr ""
 msgid "Everything, a line for every packet and request"
 msgstr ""
 
-#: src/conditions/conditions.ts
-msgid "Exit code of the last script"
-msgstr ""
-
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Exit codes that ask for a restart"
 msgstr ""
@@ -3996,6 +3992,10 @@ msgstr ""
 msgid "Last build"
 msgstr ""
 
+#: src/conditions/conditions.ts
+msgid "Last exit code"
+msgstr ""
+
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Last seen"
@@ -4019,6 +4019,10 @@ msgstr ""
 
 #: src/users/UsersPage.tsx
 msgid "Last sign-in"
+msgstr ""
+
+#: src/conditions/conditions.ts
+msgid "Last step failed"
 msgstr ""
 
 #: src/tokens/TokenTable.tsx
@@ -4456,6 +4460,10 @@ msgstr ""
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Move {name} up"
+msgstr ""
+
+#: src/sequences/builder/FlowOutline.tsx
+msgid "Move {title}"
 msgstr ""
 
 #: src/sequences/builder/FlowCanvas.tsx
@@ -7645,10 +7653,6 @@ msgstr ""
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
-msgstr ""
-
-#: src/conditions/conditions.ts
-msgid "The last step failed"
 msgstr ""
 
 #: src/sequences/steps/RawImageFields.tsx

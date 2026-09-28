@@ -126,7 +126,12 @@ export function ConditionBuilder({
   const context: RowContext = { subjects, place, findings, onChange, remove, locked, numbers };
 
   return (
-    <div role="group" aria-labelledby={labelId} data-field={root} className="flex flex-col gap-1.5">
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      data-field={root}
+      className="@container flex flex-col gap-1.5"
+    >
       <span id={labelId} className="type-label text-ink">
         {label}
       </span>
@@ -347,7 +352,8 @@ function TestRow({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,6rem)_minmax(4.5rem,1fr)_1.75rem] items-start gap-1.5">
+      {/* Narrow, as in the inspector, the value takes a line of its own under what is tested and how. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_1.75rem] items-start gap-1.5 @lg:grid-cols-[minmax(0,10rem)_minmax(0,9rem)_minmax(0,1fr)_1.75rem]">
         <SubjectPicker
           label={t`What condition ${number} tests`}
           field={`${where}.variable`}
@@ -379,23 +385,26 @@ function TestRow({
           }}
         />
         {operatorTakesValue(test.operator) ? (
-          <ValueEditor
-            label={t`Value of condition ${number}`}
-            field={`${where}.value`}
-            findings={shown}
-            subject={subject}
-            test={test}
-            onChange={(value) => {
-              update({ value });
-            }}
-          />
-        ) : (
-          <span />
-        )}
+          <div className="col-span-2 row-start-2 @lg:col-span-1 @lg:row-start-auto">
+            <ValueEditor
+              label={t`Value of condition ${number}`}
+              field={`${where}.value`}
+              findings={shown}
+              subject={subject}
+              test={test}
+              onChange={(value) => {
+                update({ value });
+              }}
+            />
+          </div>
+        ) : null}
         {locked ? null : (
           <AriaButton
             aria-label={t`Remove condition ${number}`}
-            className={cx(iconKey, "mt-0.75 size-7")}
+            className={cx(
+              iconKey,
+              "col-start-3 row-start-1 mt-3 size-7 @lg:col-start-auto @lg:row-start-auto",
+            )}
             onPress={() => {
               remove(path);
             }}
@@ -648,8 +657,9 @@ function SubjectPicker({
     );
   }
 
+  // Beside the fields with a label kept for screen readers, which stand as far down as its gap.
   return (
-    <div data-field={field}>
+    <div data-field={field} className="pt-1.5">
       <Select
         aria-label={label}
         value={subject.name}

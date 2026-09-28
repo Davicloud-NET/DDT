@@ -3258,10 +3258,6 @@ msgstr "Every task sequence has problems, so none can run. An administrator fixe
 msgid "Everything, a line for every packet and request"
 msgstr "Everything, a line for every packet and request"
 
-#: src/conditions/conditions.ts
-msgid "Exit code of the last script"
-msgstr "Exit code of the last script"
-
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Exit codes that ask for a restart"
 msgstr "Exit codes that ask for a restart"
@@ -3996,6 +3992,10 @@ msgstr "Largest TFTP window"
 msgid "Last build"
 msgstr "Last build"
 
+#: src/conditions/conditions.ts
+msgid "Last exit code"
+msgstr "Last exit code"
+
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Last seen"
@@ -4020,6 +4020,10 @@ msgstr "Last seen from {from} {when}; signed in by {by}."
 #: src/users/UsersPage.tsx
 msgid "Last sign-in"
 msgstr "Last sign-in"
+
+#: src/conditions/conditions.ts
+msgid "Last step failed"
+msgstr "Last step failed"
 
 #: src/tokens/TokenTable.tsx
 msgid "Last used"
@@ -4457,6 +4461,10 @@ msgstr "Move {name} down"
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Move {name} up"
 msgstr "Move {name} up"
+
+#: src/sequences/builder/FlowOutline.tsx
+msgid "Move {title}"
+msgstr "Move {title}"
 
 #: src/sequences/builder/FlowCanvas.tsx
 msgid "Move here"
@@ -7646,10 +7654,6 @@ msgstr "The language of Windows PE"
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
-
-#: src/conditions/conditions.ts
-msgid "The last step failed"
-msgstr "The last step failed"
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."

@@ -3258,10 +3258,6 @@ msgstr "Jede Tasksequenz hat Probleme, daher kann keine laufen. Ein Administrato
 msgid "Everything, a line for every packet and request"
 msgstr "Alles, eine Zeile für jedes Paket und jede Anfrage"
 
-#: src/conditions/conditions.ts
-msgid "Exit code of the last script"
-msgstr "Exitcode des letzten Skripts"
-
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Exit codes that ask for a restart"
 msgstr "Exitcodes, die einen Neustart anfordern"
@@ -3996,6 +3992,10 @@ msgstr "Größtes TFTP-Fenster"
 msgid "Last build"
 msgstr "Letzter Build"
 
+#: src/conditions/conditions.ts
+msgid "Last exit code"
+msgstr "Letzter Exitcode"
+
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 msgid "Last seen"
@@ -4020,6 +4020,10 @@ msgstr "Zuletzt gesehen {when} von {from}; angemeldet von {by}."
 #: src/users/UsersPage.tsx
 msgid "Last sign-in"
 msgstr "Letzte Anmeldung"
+
+#: src/conditions/conditions.ts
+msgid "Last step failed"
+msgstr "Letzter Schritt fehlgeschlagen"
 
 #: src/tokens/TokenTable.tsx
 msgid "Last used"
@@ -4457,6 +4461,10 @@ msgstr "{name} nach unten verschieben"
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Move {name} up"
 msgstr "{name} nach oben verschieben"
+
+#: src/sequences/builder/FlowOutline.tsx
+msgid "Move {title}"
+msgstr "{title} verschieben"
 
 #: src/sequences/builder/FlowCanvas.tsx
 msgid "Move here"
@@ -7646,10 +7654,6 @@ msgstr "Die Sprache von Windows PE"
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr "Die Sprache, in der die Konsole startet, in Windows PE und im installierten Windows. Am Gerät lässt sie sich mit F5 umschalten."
-
-#: src/conditions/conditions.ts
-msgid "The last step failed"
-msgstr "Der letzte Schritt ist fehlgeschlagen"
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."

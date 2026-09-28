@@ -192,7 +192,7 @@ describe("a condition in words", () => {
         { kind: "test", variable: "LastExitCode", operator: "In", value: "0;3010" },
         subjects,
       ),
-    ).toBe("Stops repeating once Exit code of the last script is one of 0 or 3010.");
+    ).toBe("Stops repeating once Last exit code is one of 0 or 3010.");
     expect(
       conditionText(
         { kind: "test", variable: "SerialNumber", operator: "Exists", value: "" },

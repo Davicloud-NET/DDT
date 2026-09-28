@@ -101,8 +101,8 @@ const factLabels: Record<string, MessageDescriptor> = {
   BaseboardProduct: msg`Baseboard`,
   BiosVersion: msg`BIOS version`,
   BiosDate: msg`BIOS date`,
-  LastStepFailed: msg`The last step failed`,
-  LastExitCode: msg`Exit code of the last script`,
+  LastStepFailed: msg`Last step failed`,
+  LastExitCode: msg`Last exit code`,
 };
 
 export function factLabel(name: string): string {

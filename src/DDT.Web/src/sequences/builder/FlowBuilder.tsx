@@ -175,6 +175,15 @@ export function FlowBuilder({ initial, readOnly }: { initial: SequenceView; read
     withResolver: true,
   });
 
+  // Another node's fields start at their top. Before the focus a finding sends, which scrolls to its field.
+  useEffect(() => {
+    const panel = inspector.current?.querySelector<HTMLElement>('[role="tabpanel"]');
+
+    if (panel !== null && panel !== undefined) {
+      panel.scrollTop = 0;
+    }
+  }, [selectedId]);
+
   useEffect(() => {
     const pending = pendingFocus.current;
 
@@ -519,7 +528,7 @@ export function FlowBuilder({ initial, readOnly }: { initial: SequenceView; read
       warningCount={warningCount}
       panelRef={inspector}
       onKeyDown={inspectorKey}
-      className={phone ? "shadow-none" : "w-92 shrink-0"}
+      className={phone ? "-mx-5 -my-4 rounded-none bg-transparent shadow-none" : "w-92 shrink-0"}
       node={nodeTab}
       variables={
         <VariablesPanel

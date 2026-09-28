@@ -73,7 +73,8 @@ export function useConditionData(declared: {
 
     return {
       subjects: subjectsOf({
-        facts: facts.data ?? factCatalogue,
+        // A server that lists no facts yet leaves the catalogue this build knows.
+        facts: facts.data !== undefined && facts.data.length > 0 ? facts.data : factCatalogue,
         valueNames: ruleValues.map((value) => value.name),
         variables,
         inputs,

@@ -168,7 +168,7 @@ export function NodeInspector({
       />
 
       {container ? null : (
-        <div className="grid gap-4">
+        <div className="flex flex-col gap-4">
           <StepFields step={node} findings={findings} catalog={catalog} onChange={change} />
         </div>
       )}

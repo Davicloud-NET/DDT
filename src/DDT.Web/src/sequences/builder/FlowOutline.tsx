@@ -3,7 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useLingui } from "@lingui/react/macro";
-import { IconChevronRight } from "@tabler/icons-react";
+import { IconChevronRight, IconGripVertical } from "@tabler/icons-react";
 import { useState } from "react";
 import {
   Button as AriaButton,
@@ -289,6 +289,18 @@ export function FlowOutline({
                   >
                     {title}
                   </span>
+                  {locked ? null : row.kind === "branch" ? (
+                    // A Then or an Else stays with its IF; the tree still looks for the key.
+                    <AriaButton slot="drag" isDisabled className="invisible size-7 shrink-0" />
+                  ) : (
+                    <AriaButton
+                      slot="drag"
+                      aria-label={t`Move ${title}`}
+                      className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-key text-control outline-none hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+                    >
+                      <IconGripVertical aria-hidden="true" size={14} stroke={2} />
+                    </AriaButton>
+                  )}
                   {counts === null || own === null ? null : (
                     <StateTag tone={own.problems.length > 0 ? "fail" : "attention"} className="h-5">
                       {counts}

@@ -549,6 +549,40 @@ public sealed class TreeEngineTests
         Assert.Equal(store.Latest, Json(result.State));
     }
 
+    // The engine runs a step without a phase of its own in the phase the run is in, which for a flat document is the
+    // phase SequencePhases gives it, even after a skipped step of the other phase, since the phase is checked first.
+    [Fact]
+    public async Task RunsAFlatDocumentInThePhasesSequencePhasesGives()
+    {
+        RunScriptStep precisionOnly = Script("Only on a Precision", SequencePhase.Windows) with
+        {
+            Conditions = [new StepCondition(MachineVariableNames.Model, ConditionOperator.StartsWith, "Precision")],
+        };
+        SequenceDefinition flat = new(
+            2,
+            [
+                Script("In Windows PE"),
+                Reboot("Restart in Windows PE"),
+                precisionOnly,
+                Reboot("Restart in Windows"),
+                Script("In Windows", SequencePhase.Windows),
+            ]);
+
+        Driven run = await DriveAsync(SequenceStates.Start(Guid.NewGuid(), flat), s_noBehaviours);
+
+        Assert.Equal(SequenceOutcome.Completed, run.Result.Outcome);
+        Assert.Equal(
+            [
+                "In Windows PE Done 0", "Restart in Windows PE Done 0", "Only on a Precision Skipped 0", "Restart in Windows Done 0",
+                "In Windows Done 0",
+            ],
+            Lines(run.Result.State));
+        Assert.All(
+            run.Runner.Runs,
+            ran => Assert.Equal(SequencePhases.Of(flat, SequenceTree.Index(flat)[ran.StepId].Order), ran.Context.Phase));
+        Assert.All(run.Store.States, state => Assert.Equal((SequenceState.CurrentFormat, null), (state.Format, state.Cursor)));
+    }
+
     // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave it.
     private static async Task<string> BlobWhileRunningAsync(SequenceStep step, SequenceState start)
     {

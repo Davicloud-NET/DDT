@@ -305,6 +305,7 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
                 NextIndex = Cursor is { } cursor ? _index[cursor.NodeId].Order : _nodes.Count,
                 Steps = [.. _steps.Select(step => new StepRunState(step.StepId, step.State, step.Error))],
                 Variables = Variables,
+                Cursor = null,
             }
             : _given with { NextIndex = SequenceStates.NoNextIndex, Steps = [.. _steps], Variables = Variables, Cursor = Cursor };
 

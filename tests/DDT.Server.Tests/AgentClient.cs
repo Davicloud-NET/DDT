@@ -62,6 +62,9 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RunCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunStepCredentials(machineId, runId, stepId), token, null);
 
+    public Task<HttpResponseMessage> RunAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunStepAccounts(machineId, runId, stepId), token, null);
+
     public void Dispose() => client.Dispose();
 
     private async Task<HttpResponseMessage> SendAsync(

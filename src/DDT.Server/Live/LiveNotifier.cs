@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Accounts;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
@@ -243,6 +244,21 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(view);
 
         _ = PushToAdministratorsAsync(LiveEvents.CertificateChanged, view);
+    }
+
+    // Everyone who may read the Accounts page gets it: the view holds no password, only whether one is set.
+    public void AccountChanged(AccountView account)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        _ = PushEventAsync(LiveEvents.AccountChanged, account);
+    }
+
+    public void AccountsRemoved(IEnumerable<Guid> accountIds)
+    {
+        ArgumentNullException.ThrowIfNull(accountIds);
+
+        _ = PushEventAsync(LiveEvents.AccountsRemoved, new AccountsRemovedEvent([.. accountIds]));
     }
 
     // Every event carries what changed, so a page patches what it shows rather than loading it again.

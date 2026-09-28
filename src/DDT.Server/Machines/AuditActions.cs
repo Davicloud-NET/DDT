@@ -56,4 +56,8 @@ public static class AuditActions
     public const string CertificateReplaced = "certificate.replaced";
     public const string CertificateConfirmed = "certificate.confirmed";
     public const string CertificateRolledBack = "certificate.rolled-back";
+    public const string AccountCreated = "account.created";
+    public const string AccountChanged = "account.changed";
+    public const string AccountDeleted = "account.deleted";
+    public const string AccountRefused = "account.refused";
 }

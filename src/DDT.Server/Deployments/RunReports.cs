@@ -213,7 +213,8 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
             return "The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more. Configure one and assign the sequence again.";
         }
 
-        return definition.Steps.OfType<JoinDomainStep>().Any()
+        // A join that names an account joins that account's domain, and needs none of the configured one.
+        return definition.Steps.OfType<JoinDomainStep>().Any(join => join.Account is null)
             && (string.IsNullOrWhiteSpace(deployment.Domain.Name)
                 || string.IsNullOrWhiteSpace(deployment.Domain.UserName)
                 || string.IsNullOrEmpty(deployment.Domain.Password))

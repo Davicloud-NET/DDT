@@ -1356,8 +1356,8 @@ sequences on the Sequences page. A deployment runs one sequence on one machine, 
 | Apply image | Windows PE | Downloads the chosen image from the library to the Windows partition, resuming after a dropped connection, checks its size and SHA-256, applies it with wimlib and deletes the download. It gives up when the download has not grown for 15 minutes. |
 | Inject drivers | Windows PE | Adds the drivers of every driver package that matches the machine's model to the applied Windows with `dism /Add-Driver /Recurse`. Without such a package the step does nothing, or fails with "Fail when no driver package matches the model" on. |
 | Write the answer file | Windows PE | Writes the answer file for Windows setup, see [What Windows shows at its first start](#what-windows-shows-at-its-first-start). Time zone, language and region, and keyboard left empty take the `DDT:Deployment` defaults. "Add the local administrator" adds the account configured there. |
-| Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect, see [Joining a domain](#joining-a-domain). |
-| Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
+| Join the domain | Windows | Joins the domain configured in `DDT:Deployment:Domain`, or the domain of an [account](#accounts) the step names, in the organizational unit the step names or else the configured one, and restarts Windows for the join to take effect, see [Joining a domain](#joining-a-domain). |
+| Run script | Windows PE or Windows | Runs a cmd or PowerShell script as SYSTEM, or in Windows as an [account](#accounts), optionally with a files package, within a timeout of 1 to 1440 minutes, 60 by default. Its exit codes decide: 0 means success and 3010 a restart unless the step lists others, and any other code fails it. |
 | Restart | the phase of the step before | Restarts the machine and goes on with the next step. |
 | Write raw disk image | Windows PE | Erases the disk and writes the chosen [raw disk image](#raw-disk-images) over it as it downloads, see [Deploying Linux](#deploying-linux). |
 | Write the cloud-init seed | Windows PE | Adds a 64 MiB partition labelled `CIDATA` at the end of the disk with the `meta-data`, `user-data` and optionally `network-config` files the step holds, with the machine's values filled in, for cloud-init to find at the image's first start. |
@@ -1461,6 +1461,29 @@ rule chooses cannot be deleted, and runs keep the copy they ran either way.
 **Who may change them.** Only administrators create and change sequences, packages and rules, and
 operators assign, approve and stop runs. A sequence is code that runs as SYSTEM on every machine it
 goes to, see [Security model](#security-model).
+
+### Accounts
+
+Deployment > Accounts holds the accounts steps use: a name, a user name with its domain, such as
+`CORP\svc-drivers` or `svc-drivers@corp.example`, and a password the page never shows again. Any step
+that does something, rather than a group, an IF or a Repeat, can connect shares with an account while
+it runs, such as `\\files.corp.example\drivers`. A Run script step in Windows can run as an account,
+and a Join the domain step can join with one instead of the configured join account. Scripts never
+see the password: DDT connects the shares and starts the script itself.
+
+An account is bound to where its password may go: the domain a join with it joins, the servers whose
+shares it connects, and whether scripts may run as it. The server hands the password only to the step
+that uses it, while that step runs, only to those destinations, and writes an audit row for every
+read. A share's path may be made from values, such as `\\{{FileServer}}\drivers`, and the server fills
+it in from the values the run started with, never from what a step set since; a server the account
+does not name is refused. Changing the user name or the domain, or adding a server, needs the password
+again, so a stored password never reaches a destination it was not entered for. Only administrators
+change accounts, signed in on the web and with their password entered again, and an account that a
+sequence uses cannot be deleted; the page lists the sequences and steps that use it.
+
+A sequence can instead ask for an account when its run starts, as an account input with the same
+destinations. The answer is kept encrypted for that run only and deleted when the run ends. What an
+account can and cannot protect is in [Security model](#security-model).
 
 ## Rules
 
@@ -1781,6 +1804,12 @@ created the computer object, or if its owner is allowed by the policy "Domain co
 computer account re-use during domain join" (KB5020276). A plain domain user without that delegation
 stops after its quota of joins, 10 by default. Home editions cannot join a domain.
 
+A Join the domain step can name an [account](#accounts) instead of using the configured one, stored
+on the Accounts page or asked for when the run starts. It then joins that account's domain, never one
+the sequence names, and an account without a domain joins none. The configured organizational unit
+applies only when that domain is the configured one; for another domain, the step names its own or
+the machine goes to the domain's default Computers container.
+
 **Checking the join account.** On a Join the domain step, "Check the join account" lets an
 administrator ask the domain before a machine does. The server signs in to a domain controller as
 the join account and reports, step by step: whether the controller accepted the account and why not
@@ -1965,16 +1994,27 @@ sequence, which every signed-in user can read, and a cloud-init seed on a disk c
 who holds the disk: put in public SSH keys, and passwords only hashed. Allowing an image that is not
 signed for Secure Boot is written to the audit table with the run.
 
+**Accounts steps use are no safer than the join account.** Every operator can obtain an account a
+sequence uses by running that sequence on a machine they control, and any step that runs as SYSTEM in
+the same run, a script or a driver package, could read the credentials of an account a script runs as
+from the logon session while it lasts. DDT guarantees only that scripts are never handed a password,
+and that a password goes to no domain or server it was not entered for. Give each account the least
+it needs, such as read access to one share, and prefer an account asked for when the run starts, which
+is kept only while that run lasts, to a stored one.
+
 **Secrets are handed out just in time.** The run the agent receives holds no password. The agent
-fetches the answer file while its Write the answer file step runs, and the join account while its
-Join the domain step runs. The server answers only for the machine's running run, only for that
-step while it knows the step runs, with `Cache-Control: no-store`, and writes an audit row for every
-read. The passwords are read from the settings at that moment and never stored with the run.
-The join account goes only to an agent that registered as the service in the installed Windows,
-which is what the agent says of itself, and only for the domain that was configured when the run
-started. It lives in the agent's memory and is never written to disk or logged. The local
-administrator's password stays in the answer file until Windows setup is done, as
-[What Windows shows at its first start](#what-windows-shows-at-its-first-start) describes.
+fetches the answer file while its Write the answer file step runs, the join account while its
+Join the domain step runs, and the accounts a step connects shares with or runs a script as while
+that step runs. The server answers only for the machine's running run, only for that step while it
+knows the step runs, with `Cache-Control: no-store`, and writes an audit row for every read. The
+passwords are read from the settings and the Accounts page at that moment and never stored with the
+run; only an account asked for when the run starts is kept with it, encrypted, until it ends. The
+join account, and an account a script runs as, go only to an agent that registered as the service in
+the installed Windows, which is what the agent says of itself, and the configured join account only
+for the domain that was configured when the run started. They live in the agent's memory and are
+never written to disk or logged. The local administrator's password stays in the answer file until
+Windows setup is done, as [What Windows shows at its first start](#what-windows-shows-at-its-first-start)
+describes.
 
 **The run token.** From Partition the disk on, the agent keeps a run token in `DDT\run\token` on
 the Windows partition, in a folder only SYSTEM can open. It lets the agent register again after a

@@ -88,6 +88,11 @@ msgid "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC
 msgstr "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com."
 
 #: src/lib/serverMessages.ts
+msgctxt "stepAccount.domainInvalid"
+msgid "''{value}'' is not a domain name. Enter one such as corp.example, or leave it empty."
+msgstr "''{value}'' is not a domain name. Enter one such as corp.example, or leave it empty."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.controllerInvalid"
 msgid "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
 msgstr "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
@@ -111,6 +116,11 @@ msgstr "''{value}'' is not a network such as 10.20.0.0/24 with no address bits s
 msgctxt "settings.machines.networkInvalid"
 msgid "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine."
 msgstr "''{value}'' is not a network. Write each one as an address and a prefix length with no address bits set after the prefix, such as 10.20.0.0/16, fd00:20::/64 or 10.20.1.5/32 for one machine."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.hostInvalid"
+msgid "''{value}'' is not a server name. Enter it as share paths name it, such as files.corp.example."
+msgstr "''{value}'' is not a server name. Enter it as share paths name it, such as files.corp.example."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.deployment.administratorNameInvalid"
@@ -308,6 +318,11 @@ msgstr "{count, plural, one {The rule for {list} chooses {name}. Delete that rul
 #: src/packages/packages.ts
 msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
 msgstr "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.inUse"
+msgid "{count, plural, one {The sequence {sequences} uses this account. Choose another account there first.} other {The sequences {sequences} use this account. Choose another account there first.}}"
+msgstr "{count, plural, one {The sequence {sequences} uses this account. Choose another account there first.} other {The sequences {sequences} use this account. Choose another account there first.}}"
 
 #: src/lib/format.ts
 msgid "{count} bytes"
@@ -944,6 +959,11 @@ msgstr "{user} may not sign in at this time of day (logon hours)."
 msgctxt "domain.logonWorkstations"
 msgid "{user} may not sign in from the DDT server (Log On To workstations)."
 msgstr "{user} may not sign in from the DDT server (Log On To workstations)."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.hostRepeated"
+msgid "{value} is listed twice."
+msgstr "{value} is listed twice."
 
 #: src/lib/serverMessages.ts
 msgctxt "model.placeholder"
@@ -1672,6 +1692,11 @@ msgid "Also approve every machine on the web"
 msgstr "Also approve every machine on the web"
 
 #: src/lib/serverMessages.ts
+msgctxt "stepAccount.tooManyHosts"
+msgid "An account can name at most {max} servers."
+msgstr "An account can name at most {max} servers."
+
+#: src/lib/serverMessages.ts
 msgctxt "role.anAdministrator"
 msgid "an Administrator"
 msgstr "an Administrator"
@@ -1692,6 +1717,11 @@ msgstr "An administrator creates task sequences here. Until then, no machine can
 msgctxt "account.apiTokenCannotChange"
 msgid "An API token cannot change the account it belongs to. Sign in on the web to do this."
 msgstr "An API token cannot change the account it belongs to. Sign in on the web to do this."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.apiToken"
+msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
+msgstr "An API token cannot change the accounts that steps use. Sign in on the web to do this."
 
 #: src/sequences/NewSequenceDialog.tsx
 msgid "An empty sequence, to which you add the steps in the editor."
@@ -1745,6 +1775,11 @@ msgstr "An operator"
 msgctxt "identity.defaultError"
 msgid "An unknown failure has occurred."
 msgstr "An unknown failure has occurred."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.nameTaken"
+msgid "Another account is already called {name}. Choose another name."
+msgstr "Another account is already called {name}. Choose another name."
 
 #: src/sequences/SaveState.tsx
 msgid "Another administrator saved it at {time}"
@@ -2197,6 +2232,11 @@ msgstr "Choose a rule by MAC address or by model."
 #: src/rules/RuleDialog.tsx
 msgid "Choose a sequence"
 msgstr "Choose a sequence"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountChooseOne"
+msgid "Choose a stored account or an account input."
+msgstr "Choose a stored account or an account input."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.accountChoose"
@@ -2985,6 +3025,16 @@ msgid "Enter the name DDT shows for the account."
 msgstr "Enter the name DDT shows for the account."
 
 #: src/lib/serverMessages.ts
+msgctxt "stepAccount.passwordForNewDestination"
+msgid "Enter the password again: a stored password goes only to the user name, domain and servers it was entered for."
+msgstr "Enter the password again: a stored password goes only to the user name, domain and servers it was entered for."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.passwordRequired"
+msgid "Enter the password."
+msgstr "Enter the password."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.authorityInvalid"
 msgid "Enter the provider's https address, such as https://login.example.com/realms/ddt."
 msgstr "Enter the provider's https address, such as https://login.example.com/realms/ddt."
@@ -3009,6 +3059,11 @@ msgid "Enter the user name to check."
 msgstr "Enter the user name to check."
 
 #: src/lib/serverMessages.ts
+msgctxt "stepAccount.userNameForm"
+msgid "Enter the user name with its domain, as DOMAIN\\user or user@corp.example, in at most {max} characters."
+msgstr "Enter the user name with its domain, as DOMAIN\\user or user@corp.example, in at most {max} characters."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.inputChoiceEmpty"
 msgid "Enter the value of the choice."
 msgstr "Enter the value of the choice."
@@ -3031,6 +3086,11 @@ msgstr "Enter whole numbers from -2147483648 to 2147483647, separated by commas.
 msgctxt "settings.enterPasswordAgain"
 msgid "Enter your password again to change {fields}."
 msgstr "Enter your password again to change {fields}."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.reauthenticate"
+msgid "Enter your password again to change the accounts that steps use."
+msgstr "Enter your password again to change the accounts that steps use."
 
 #: src/users/DirectoryPanel.tsx
 msgid "Entry"
@@ -6127,6 +6187,11 @@ msgstr "Skipped."
 msgid "SMBIOS UUID"
 msgstr "SMBIOS UUID"
 
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.changedMeanwhile"
+msgid "Someone changed the account meanwhile. Look at it again."
+msgstr "Someone changed the account meanwhile. Look at it again."
+
 #: src/sequences/SequenceEditor.tsx
 msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 msgstr "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
@@ -6451,6 +6516,26 @@ msgstr "The {file} file is missing. It can be empty."
 msgid "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
 msgstr "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountNoRunAs"
+msgid "The account {account} does not let scripts run as it. Allow that on the Accounts page, or choose another account."
+msgstr "The account {account} does not let scripts run as it. Allow that on the Accounts page, or choose another account."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountNoPassword"
+msgid "The account {account} has no password. Set it on the Accounts page."
+msgstr "The account {account} has no password. Set it on the Accounts page."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountHostNotAllowed"
+msgid "The account {account} may not connect to {host}. Add the server to it on the Accounts page, or choose another account."
+msgstr "The account {account} may not connect to {host}. Add the server to it on the Accounts page, or choose another account."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountNoDomain"
+msgid "The account {account} names no domain, so it cannot join one. Enter its domain on the Accounts page, or choose another account."
+msgstr "The account {account} names no domain, so it cannot join one. Enter its domain on the Accounts page, or choose another account."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "The account and its password are set on the Deployment defaults page, never in the sequence."
 msgstr "The account and its password are set on the Deployment defaults page, never in the sequence."
@@ -6468,6 +6553,11 @@ msgstr "The account has no role yet, so it reaches nothing."
 msgctxt "settings.reauthenticate.lockedOut"
 msgid "The account is locked out. Try again later."
 msgstr "The account is locked out. Try again later."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountGone"
+msgid "The account is no longer on the Accounts page. Choose another one."
+msgstr "The account is no longer on the Accounts page. Choose another one."
 
 #: src/users/UserDialogs.tsx
 msgid "The account is ready. Hand over this password in person or through a channel you trust."
@@ -7011,6 +7101,26 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputNotAccount"
+msgid "The input {input} does not ask for an account. Choose an account input."
+msgstr "The input {input} does not ask for an account. Choose an account input."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputNoRunAs"
+msgid "The input {input} does not let scripts run as the account given for it. Allow that in the input."
+msgstr "The input {input} does not let scripts run as the account given for it. Allow that in the input."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputHostNotAllowed"
+msgid "The input {input} does not let the account given for it connect to {host}. Add the server to the input."
+msgstr "The input {input} does not let the account given for it connect to {host}. Add the server to the input."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputNoDomain"
+msgid "The input {input} names no domain, so the account given for it cannot join one. Name the domain in the input."
+msgstr "The input {input} names no domain, so the account given for it cannot join one. Name the domain in the input."
+
 #: src/sequences/sequenceDraft.ts
 msgid "the inputs"
 msgstr "the inputs"
@@ -7231,9 +7341,19 @@ msgid "The page manages the certificate only when Kestrel:Certificates:Default:P
 msgstr "The page manages the certificate only when Kestrel:Certificates:Default:Path and KeyPath both name PEM files and no Password is set. A PFX, a key under a password, or TLS at a proxy is managed by hand."
 
 #: src/lib/serverMessages.ts
+msgctxt "stepAccount.passwordLength"
+msgid "The password can have at most {max} characters."
+msgstr "The password can have at most {max} characters."
+
+#: src/lib/serverMessages.ts
 msgctxt "domain.joinPasswordExpired"
 msgid "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page."
 msgstr "The password of {user} has expired. Give it a new one, in the domain and on the Deployment defaults page."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountPasswordUnreadable"
+msgid "The password of the account {account} no longer decrypts with this server's key ring. Enter it again on the Accounts page."
+msgstr "The password of the account {account} no longer decrypts with this server's key ring. Enter it again on the Accounts page."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.reauthenticate.notRight"
@@ -7408,6 +7528,11 @@ msgid "The sequence could not be loaded."
 msgstr "The sequence could not be loaded."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputMissing"
+msgid "The sequence has no input called {input}. Choose one of its account inputs."
+msgstr "The sequence has no input called {input}. Choose one of its account inputs."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.versionTooLow"
 msgid "The sequence has steps of version {required}, but says it is of version {version}."
 msgstr "The sequence has steps of version {required}, but says it is of version {version}."
@@ -7561,6 +7686,11 @@ msgstr "The store volume ran out of space while the image was converted. Free so
 #: src/settings/NetworkBootPage.tsx
 msgid "The stored method does not suit this architecture."
 msgstr "The stored method does not suit this architecture."
+
+#: src/lib/serverMessages.ts
+msgctxt "stepAccount.passwordUnreadable"
+msgid "The stored password no longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
+msgstr "The stored password no longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.storedValueUnreadable"

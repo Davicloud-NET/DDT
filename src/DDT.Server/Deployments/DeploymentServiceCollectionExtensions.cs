@@ -24,6 +24,8 @@ public static class DeploymentServiceCollectionExtensions
         // The passwords of stored accounts and of accounts given for one run, which reach only the steps of runs.
         services.AddSingleton<AccountProtector>();
         services.AddSingleton<RunCredentialProtector>();
+        services.AddScoped<AccountViews>();
+        services.AddScoped<RunCredentials>();
         services.TryAddSingleton<IDomainDirectory, LdapDomainDirectory>();
         services.AddScoped<DomainJoinCheck>();
         services.AddSingleton<AbandonedRunSweeper>();

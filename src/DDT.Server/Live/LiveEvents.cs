@@ -78,4 +78,11 @@ public static class LiveEvents
     // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
     // administrators.
     public const string CertificateChanged = "certificateChanged";
+
+    // Carries the AccountView of an account that steps use, as GET /api/accounts/{id} answers it, whenever it was created or
+    // changed or a sequence started or stopped naming it. It holds no password, only whether one is set.
+    public const string AccountChanged = "accountChanged";
+
+    // Carries an AccountsRemovedEvent, so clients drop the accounts without loading the list again.
+    public const string AccountsRemoved = "accountsRemoved";
 }

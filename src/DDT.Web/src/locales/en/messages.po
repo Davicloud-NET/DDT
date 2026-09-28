@@ -681,6 +681,16 @@ msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent}% of {total}, {took} so far"
 
 #: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownName"
+msgid "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling."
+msgstr "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownFilter"
+msgid "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}."
+msgstr "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.pxe.httpBootPortInvalid"
 msgid "{port} is not a port number."
 msgstr "{port} is not a port number."
@@ -3172,6 +3182,16 @@ msgstr "Image deleted"
 #: src/audit/auditView.ts
 msgid "Image uploaded"
 msgstr "Image uploaded"
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterNeedsCount"
+msgid "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12."
+msgstr "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterTakesNoCount"
+msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
+msgstr "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
 
 #: src/boot/BootImagePage.tsx
 msgid "In the image"
@@ -6721,6 +6741,11 @@ msgstr "The machine changed while this decision was made. Look at it again befor
 #: src/machines/MachinePage.tsx
 msgid "The machine could not be loaded."
 msgstr "The machine could not be loaded."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.noValue"
+msgid "The machine has no value for {placeholder}."
+msgstr "The machine has no value for {placeholder}."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.inState"

@@ -681,6 +681,16 @@ msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent} % von {total}, bisher {took}"
 
 #: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownName"
+msgid "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling."
+msgstr "{placeholder} verwendet {name}, das weder ein Gerätemerkmal noch ein deklarierter Wert ist. Prüfen Sie die Schreibweise."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownFilter"
+msgid "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}."
+msgstr "{placeholder} verwendet den Filter ''{filter}'', den DDT nicht kennt. Die Filter sind {filters}."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.pxe.httpBootPortInvalid"
 msgid "{port} is not a port number."
 msgstr "{port} ist keine Portnummer."
@@ -3172,6 +3182,16 @@ msgstr "Image gelöscht"
 #: src/audit/auditView.ts
 msgid "Image uploaded"
 msgstr "Image hochgeladen"
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterNeedsCount"
+msgid "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12."
+msgstr "In {placeholder} braucht {filter} eine Anzahl von Zeichen von 1 bis {max}, etwa {filter}:12."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterTakesNoCount"
+msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
+msgstr "In {placeholder} nimmt {filter} keine Zahl. Entfernen Sie den Doppelpunkt und alles danach."
 
 #: src/boot/BootImagePage.tsx
 msgid "In the image"
@@ -6721,6 +6741,11 @@ msgstr "Das Gerät hat sich geändert, während diese Entscheidung getroffen wur
 #: src/machines/MachinePage.tsx
 msgid "The machine could not be loaded."
 msgstr "Das Gerät konnte nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.noValue"
+msgid "The machine has no value for {placeholder}."
+msgstr "Das Gerät hat keinen Wert für {placeholder}."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.inState"

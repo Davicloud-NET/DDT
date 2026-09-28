@@ -1793,6 +1793,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "user.singleSignOnPassword",
     message: "{name} signs in through single sign-on and has no password in DDT.",
   }),
+  "valueTemplate.filterNeedsCount": msg({
+    context: "valueTemplate.filterNeedsCount",
+    message: "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12.",
+  }),
+  "valueTemplate.filterTakesNoCount": msg({
+    context: "valueTemplate.filterTakesNoCount",
+    message: "In {placeholder}, {filter} takes no number. Remove the colon and what follows it.",
+  }),
+  "valueTemplate.noValue": msg({
+    context: "valueTemplate.noValue",
+    message: "The machine has no value for {placeholder}.",
+  }),
+  "valueTemplate.unknownFilter": msg({
+    context: "valueTemplate.unknownFilter",
+    message: "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}.",
+  }),
+  "valueTemplate.unknownName": msg({
+    context: "valueTemplate.unknownName",
+    message: "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling.",
+  }),
   "wim.compressedList": msg({
     context: "wim.compressedList",
     message: "This WIM file stores its image list compressed, which DDT cannot read.",

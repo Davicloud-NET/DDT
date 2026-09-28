@@ -1,0 +1,666 @@
+{
+  "filters": [
+    "upper",
+    "lower",
+    "trim",
+    "alnum",
+    "left",
+    "right"
+  ],
+  "maxCount": 1024,
+  "cases": [
+    {
+      "template": "PC-{{SerialNumber|alnum|right:12}}",
+      "values": {
+        "SerialNumber": "CN-0K2P1X-12345-ABC-9876"
+      },
+      "names": [
+        "SerialNumber"
+      ],
+      "problems": [],
+      "output": "PC-12345ABC9876",
+      "error": null
+    },
+    {
+      "template": "{{ComputerName}}",
+      "values": {
+        "ComputerName": "PC-01"
+      },
+      "names": [
+        "ComputerName"
+      ],
+      "problems": [],
+      "output": "PC-01",
+      "error": null
+    },
+    {
+      "template": "{{ computername | lower }}",
+      "values": {
+        "ComputerName": "PC-01"
+      },
+      "names": [
+        "computername"
+      ],
+      "problems": [],
+      "output": "pc-01",
+      "error": null
+    },
+    {
+      "template": "{{Office|upper}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "PROPLUS",
+      "error": null
+    },
+    {
+      "template": "{{Office|lower}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "proplus",
+      "error": null
+    },
+    {
+      "template": "[{{Padded|trim}}]",
+      "values": {
+        "Padded": "  Wien \t"
+      },
+      "names": [
+        "Padded"
+      ],
+      "problems": [],
+      "output": "[Wien]",
+      "error": null
+    },
+    {
+      "template": "{{Office|left:3}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "Pro",
+      "error": null
+    },
+    {
+      "template": "{{Office|right:4}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "Plus",
+      "error": null
+    },
+    {
+      "template": "{{Office|left:50}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "ProPlus",
+      "error": null
+    },
+    {
+      "template": "{{Office|left:1024}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "ProPlus",
+      "error": null
+    },
+    {
+      "template": "{{Office|Left : 3}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "Pro",
+      "error": null
+    },
+    {
+      "template": "{{Office|upper|left:3|lower}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "pro",
+      "error": null
+    },
+    {
+      "template": "{{SerialNumber|right:6|alnum}}",
+      "values": {
+        "SerialNumber": "CN-0K2P1X-12345-ABC-9876"
+      },
+      "names": [
+        "SerialNumber"
+      ],
+      "problems": [],
+      "output": "C9876",
+      "error": null
+    },
+    {
+      "template": "{{Owner|alnum|upper}}",
+      "values": {
+        "Owner": "Grüße-1 à"
+      },
+      "names": [
+        "Owner"
+      ],
+      "problems": [],
+      "output": "GRE1",
+      "error": null
+    },
+    {
+      "template": "[{{Empty|upper}}]",
+      "values": {
+        "Empty": ""
+      },
+      "names": [
+        "Empty"
+      ],
+      "problems": [],
+      "output": "[]",
+      "error": null
+    },
+    {
+      "template": "{{Site_2}}-{{office}}",
+      "values": {
+        "Site_2": "Graz",
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Site_2",
+        "office"
+      ],
+      "problems": [],
+      "output": "Graz-ProPlus",
+      "error": null
+    },
+    {
+      "template": "{{{Office}}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "{ProPlus}",
+      "error": null
+    },
+    {
+      "template": "line\r\nnext {{Office}}\n",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [],
+      "output": "line\r\nnext ProPlus\n",
+      "error": null
+    },
+    {
+      "template": "{{ v1.local_hostname }} {{ }} {{1x}} {Office} {{Office",
+      "values": {},
+      "names": [],
+      "problems": [],
+      "output": "{{ v1.local_hostname }} {{ }} {{1x}} {Office} {{Office",
+      "error": null
+    },
+    {
+      "template": "OU={{Site}},DC=corp,DC=example",
+      "values": {},
+      "names": [
+        "Site"
+      ],
+      "problems": [
+        {
+          "kind": "unknownName",
+          "placeholder": "{{Site}}",
+          "name": "Site",
+          "filter": null,
+          "code": "valueTemplate.unknownName",
+          "args": {
+            "name": "Site",
+            "placeholder": "{{Site}}"
+          },
+          "message": "{{Site}} uses Site, which is not a machine fact or a declared value. Check the spelling."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "missingValue",
+        "placeholder": "{{Site}}",
+        "name": "Site",
+        "filter": null,
+        "code": "valueTemplate.noValue",
+        "args": {
+          "placeholder": "{{Site}}"
+        },
+        "message": "The machine has no value for {{Site}}."
+      }
+    },
+    {
+      "template": "{{Ofice}} and {{Ofice}}",
+      "values": {},
+      "names": [
+        "Ofice"
+      ],
+      "problems": [
+        {
+          "kind": "unknownName",
+          "placeholder": "{{Ofice}}",
+          "name": "Ofice",
+          "filter": null,
+          "code": "valueTemplate.unknownName",
+          "args": {
+            "name": "Ofice",
+            "placeholder": "{{Ofice}}"
+          },
+          "message": "{{Ofice}} uses Ofice, which is not a machine fact or a declared value. Check the spelling."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "missingValue",
+        "placeholder": "{{Ofice}}",
+        "name": "Ofice",
+        "filter": null,
+        "code": "valueTemplate.noValue",
+        "args": {
+          "placeholder": "{{Ofice}}"
+        },
+        "message": "The machine has no value for {{Ofice}}."
+      }
+    },
+    {
+      "template": "{{Office|capitalise}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "unknownFilter",
+          "placeholder": "{{Office|capitalise}}",
+          "name": "Office",
+          "filter": "capitalise",
+          "code": "valueTemplate.unknownFilter",
+          "args": {
+            "filter": "capitalise",
+            "filters": "upper, lower, trim, alnum, left:n, right:n",
+            "placeholder": "{{Office|capitalise}}"
+          },
+          "message": "{{Office|capitalise}} uses the filter 'capitalise', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "unknownFilter",
+        "placeholder": "{{Office|capitalise}}",
+        "name": "Office",
+        "filter": "capitalise",
+        "code": "valueTemplate.unknownFilter",
+        "args": {
+          "filter": "capitalise",
+          "filters": "upper, lower, trim, alnum, left:n, right:n",
+          "placeholder": "{{Office|capitalise}}"
+        },
+        "message": "{{Office|capitalise}} uses the filter 'capitalise', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+      }
+    },
+    {
+      "template": "{{Office|}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "unknownFilter",
+          "placeholder": "{{Office|}}",
+          "name": "Office",
+          "filter": "",
+          "code": "valueTemplate.unknownFilter",
+          "args": {
+            "filter": "",
+            "filters": "upper, lower, trim, alnum, left:n, right:n",
+            "placeholder": "{{Office|}}"
+          },
+          "message": "{{Office|}} uses the filter '', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "unknownFilter",
+        "placeholder": "{{Office|}}",
+        "name": "Office",
+        "filter": "",
+        "code": "valueTemplate.unknownFilter",
+        "args": {
+          "filter": "",
+          "filters": "upper, lower, trim, alnum, left:n, right:n",
+          "placeholder": "{{Office|}}"
+        },
+        "message": "{{Office|}} uses the filter '', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+      }
+    },
+    {
+      "template": "{{Office|left}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "filterNeedsCount",
+          "placeholder": "{{Office|left}}",
+          "name": "Office",
+          "filter": "left",
+          "code": "valueTemplate.filterNeedsCount",
+          "args": {
+            "filter": "left",
+            "max": 1024,
+            "placeholder": "{{Office|left}}"
+          },
+          "message": "In {{Office|left}}, left needs a number of characters from 1 to 1024, such as left:12."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "filterNeedsCount",
+        "placeholder": "{{Office|left}}",
+        "name": "Office",
+        "filter": "left",
+        "code": "valueTemplate.filterNeedsCount",
+        "args": {
+          "filter": "left",
+          "max": 1024,
+          "placeholder": "{{Office|left}}"
+        },
+        "message": "In {{Office|left}}, left needs a number of characters from 1 to 1024, such as left:12."
+      }
+    },
+    {
+      "template": "{{Office|left:0}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "filterNeedsCount",
+          "placeholder": "{{Office|left:0}}",
+          "name": "Office",
+          "filter": "left",
+          "code": "valueTemplate.filterNeedsCount",
+          "args": {
+            "filter": "left",
+            "max": 1024,
+            "placeholder": "{{Office|left:0}}"
+          },
+          "message": "In {{Office|left:0}}, left needs a number of characters from 1 to 1024, such as left:12."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "filterNeedsCount",
+        "placeholder": "{{Office|left:0}}",
+        "name": "Office",
+        "filter": "left",
+        "code": "valueTemplate.filterNeedsCount",
+        "args": {
+          "filter": "left",
+          "max": 1024,
+          "placeholder": "{{Office|left:0}}"
+        },
+        "message": "In {{Office|left:0}}, left needs a number of characters from 1 to 1024, such as left:12."
+      }
+    },
+    {
+      "template": "{{Office|right:1025}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "filterNeedsCount",
+          "placeholder": "{{Office|right:1025}}",
+          "name": "Office",
+          "filter": "right",
+          "code": "valueTemplate.filterNeedsCount",
+          "args": {
+            "filter": "right",
+            "max": 1024,
+            "placeholder": "{{Office|right:1025}}"
+          },
+          "message": "In {{Office|right:1025}}, right needs a number of characters from 1 to 1024, such as right:12."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "filterNeedsCount",
+        "placeholder": "{{Office|right:1025}}",
+        "name": "Office",
+        "filter": "right",
+        "code": "valueTemplate.filterNeedsCount",
+        "args": {
+          "filter": "right",
+          "max": 1024,
+          "placeholder": "{{Office|right:1025}}"
+        },
+        "message": "In {{Office|right:1025}}, right needs a number of characters from 1 to 1024, such as right:12."
+      }
+    },
+    {
+      "template": "{{Office|right:x}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "filterNeedsCount",
+          "placeholder": "{{Office|right:x}}",
+          "name": "Office",
+          "filter": "right",
+          "code": "valueTemplate.filterNeedsCount",
+          "args": {
+            "filter": "right",
+            "max": 1024,
+            "placeholder": "{{Office|right:x}}"
+          },
+          "message": "In {{Office|right:x}}, right needs a number of characters from 1 to 1024, such as right:12."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "filterNeedsCount",
+        "placeholder": "{{Office|right:x}}",
+        "name": "Office",
+        "filter": "right",
+        "code": "valueTemplate.filterNeedsCount",
+        "args": {
+          "filter": "right",
+          "max": 1024,
+          "placeholder": "{{Office|right:x}}"
+        },
+        "message": "In {{Office|right:x}}, right needs a number of characters from 1 to 1024, such as right:12."
+      }
+    },
+    {
+      "template": "{{Office|upper:2}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "filterTakesNoCount",
+          "placeholder": "{{Office|upper:2}}",
+          "name": "Office",
+          "filter": "upper",
+          "code": "valueTemplate.filterTakesNoCount",
+          "args": {
+            "filter": "upper",
+            "placeholder": "{{Office|upper:2}}"
+          },
+          "message": "In {{Office|upper:2}}, upper takes no number. Remove the colon and what follows it."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "filterTakesNoCount",
+        "placeholder": "{{Office|upper:2}}",
+        "name": "Office",
+        "filter": "upper",
+        "code": "valueTemplate.filterTakesNoCount",
+        "args": {
+          "filter": "upper",
+          "placeholder": "{{Office|upper:2}}"
+        },
+        "message": "In {{Office|upper:2}}, upper takes no number. Remove the colon and what follows it."
+      }
+    },
+    {
+      "template": "{{Missing}}-{{Office|bad}}",
+      "values": {
+        "Office": "ProPlus"
+      },
+      "names": [
+        "Missing",
+        "Office"
+      ],
+      "problems": [
+        {
+          "kind": "unknownName",
+          "placeholder": "{{Missing}}",
+          "name": "Missing",
+          "filter": null,
+          "code": "valueTemplate.unknownName",
+          "args": {
+            "name": "Missing",
+            "placeholder": "{{Missing}}"
+          },
+          "message": "{{Missing}} uses Missing, which is not a machine fact or a declared value. Check the spelling."
+        },
+        {
+          "kind": "unknownFilter",
+          "placeholder": "{{Office|bad}}",
+          "name": "Office",
+          "filter": "bad",
+          "code": "valueTemplate.unknownFilter",
+          "args": {
+            "filter": "bad",
+            "filters": "upper, lower, trim, alnum, left:n, right:n",
+            "placeholder": "{{Office|bad}}"
+          },
+          "message": "{{Office|bad}} uses the filter 'bad', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "missingValue",
+        "placeholder": "{{Missing}}",
+        "name": "Missing",
+        "filter": null,
+        "code": "valueTemplate.noValue",
+        "args": {
+          "placeholder": "{{Missing}}"
+        },
+        "message": "The machine has no value for {{Missing}}."
+      }
+    },
+    {
+      "template": "{{Missing|bad}}",
+      "values": {},
+      "names": [
+        "Missing"
+      ],
+      "problems": [
+        {
+          "kind": "unknownName",
+          "placeholder": "{{Missing|bad}}",
+          "name": "Missing",
+          "filter": null,
+          "code": "valueTemplate.unknownName",
+          "args": {
+            "name": "Missing",
+            "placeholder": "{{Missing|bad}}"
+          },
+          "message": "{{Missing|bad}} uses Missing, which is not a machine fact or a declared value. Check the spelling."
+        },
+        {
+          "kind": "unknownFilter",
+          "placeholder": "{{Missing|bad}}",
+          "name": "Missing",
+          "filter": "bad",
+          "code": "valueTemplate.unknownFilter",
+          "args": {
+            "filter": "bad",
+            "filters": "upper, lower, trim, alnum, left:n, right:n",
+            "placeholder": "{{Missing|bad}}"
+          },
+          "message": "{{Missing|bad}} uses the filter 'bad', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+        }
+      ],
+      "output": null,
+      "error": {
+        "kind": "unknownFilter",
+        "placeholder": "{{Missing|bad}}",
+        "name": "Missing",
+        "filter": "bad",
+        "code": "valueTemplate.unknownFilter",
+        "args": {
+          "filter": "bad",
+          "filters": "upper, lower, trim, alnum, left:n, right:n",
+          "placeholder": "{{Missing|bad}}"
+        },
+        "message": "{{Missing|bad}} uses the filter 'bad', which DDT does not have. The filters are upper, lower, trim, alnum, left:n, right:n."
+      }
+    }
+  ]
+}

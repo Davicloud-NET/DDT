@@ -7,8 +7,8 @@ import { msg, plural, t } from "@lingui/core/macro";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { isActive } from "@/deployments/deployments";
-import { formatMac, type MachineSummary } from "@/machines/machines";
-import type { AssignmentRuleView } from "@/rules/rules";
+import type { MachineSummary } from "@/machines/machines";
+import { ruleName, ruleNames, type RuleView } from "@/rules/rules";
 
 import {
   sequencesQuery,
@@ -42,26 +42,13 @@ export function withNewStepIds(definition: SequenceDefinition): SequenceDefiniti
   };
 }
 
-export function rulesChoosing(
-  rules: readonly AssignmentRuleView[],
-  sequenceId: string,
-): AssignmentRuleView[] {
+export function rulesChoosing(rules: readonly RuleView[], sequenceId: string): RuleView[] {
   return rules.filter((rule) => rule.sequenceId === sequenceId);
 }
 
-// What a rule matches, to put in a sentence: "MAC 00:15:5D:01:02:03" or "model Dell Inc. Latitude 7440".
-export function ruleTarget(rule: AssignmentRuleView): string {
-  if (rule.kind === "Mac") {
-    const mac = formatMac(rule.mac ?? "");
-
-    return t`MAC ${mac}`;
-  }
-
-  const model = [rule.manufacturer, rule.model]
-    .filter((part) => part !== null && part !== "")
-    .join(" ");
-
-  return t`model ${model}`;
+// A rule as a sequence's list names it: "Rule 2, Berlin office".
+export function ruleTarget(rule: RuleView): string {
+  return ruleName(rule);
 }
 
 // The machines the sequence is assigned to or running on now. Each keeps the copy of the sequence it got.
@@ -74,7 +61,7 @@ export function activeRunsOf(machines: readonly MachineSummary[], sequenceId: st
 // Why the server refuses to delete the sequence now, or null when it deletes it: a rule still chooses it.
 export function deletionBlocker(
   sequence: SequenceSummary,
-  rules: readonly AssignmentRuleView[],
+  rules: readonly RuleView[],
 ): string | null {
   if (rules.length === 0) {
     return null;
@@ -82,11 +69,11 @@ export function deletionBlocker(
 
   const name = sequence.name;
   const count = rules.length;
-  const list = rules.map(ruleTarget).join(", ");
+  const list = ruleNames(rules);
 
   return plural(count, {
-    one: `The rule for ${list} chooses ${name}. Delete that rule or let it choose another sequence, then delete this one.`,
-    other: `The rules for ${list} choose ${name}. Delete those rules or let them choose another sequence, then delete this one.`,
+    one: `${list} chooses ${name}. Let that rule choose another sequence or none, then delete this one.`,
+    other: `${list} choose ${name}. Let those rules choose another sequence or none, then delete this one.`,
   });
 }
 

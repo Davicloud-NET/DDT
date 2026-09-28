@@ -31,7 +31,8 @@ import {
   type PackageSummary,
   type PackagesRemoved,
 } from "@/packages/packages";
-import { rulesQuery, sequenceResolutionsKey, type AssignmentRuleView } from "@/rules/rules";
+import { machineRolesQuery, type MachineRoleView } from "@/roles/roles";
+import { rulesQuery, sequenceResolutionsKey, type RuleView } from "@/rules/rules";
 import {
   removeMachinesFromRuns,
   renameMachineInRuns,
@@ -208,6 +209,7 @@ export function createLiveConnection(
       packagesQuery.queryKey,
       uploadsQuery.queryKey,
       rulesQuery.queryKey,
+      machineRolesQuery.queryKey,
       sequencesQuery.queryKey,
       sequenceDocumentsKey,
       sequenceResolutionsKey,
@@ -305,8 +307,14 @@ export function createLiveConnection(
     current.on("sequenceChanged", sequenceChanged);
 
     // Rules are few and reorder together, so the event carries the whole ordered list.
-    current.on("rulesChanged", (rules: AssignmentRuleView[]) => {
+    current.on("rulesChanged", (rules: RuleView[]) => {
       queryClient.setQueryData(rulesQuery.queryKey, rules);
+      refetchResolutions();
+    });
+
+    // Machine roles too, as a change of one changes what the rules that give it do.
+    current.on("rolesChanged", (roles: MachineRoleView[]) => {
+      queryClient.setQueryData(machineRolesQuery.queryKey, roles);
       refetchResolutions();
     });
 

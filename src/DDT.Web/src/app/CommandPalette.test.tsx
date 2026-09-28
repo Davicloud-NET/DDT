@@ -60,7 +60,8 @@ describe("CommandPalette", () => {
     expect(results(dialog)).toEqual(
       expect.arrayContaining([
         "All machinesMachines",
-        "Assignment rulesDeployment",
+        "RulesDeployment",
+        "Machine rolesDeployment",
         "Install Windows",
         "Windows 11 Proinstall.wim",
       ]),
@@ -115,9 +116,9 @@ describe("CommandPalette", () => {
     fill(within(dialog).getByRole("searchbox", { name: "Search" }), "rules");
 
     await waitFor(() => {
-      expect(results(dialog)).toEqual(["Assignment rulesDeployment"]);
+      expect(results(dialog)).toEqual(["RulesDeployment"]);
     });
-    press(within(dialog).getByRole("menuitem", { name: /^Assignment rules/ }));
+    press(within(dialog).getByRole("menuitem", { name: /^Rules/ }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/deployment/rules");

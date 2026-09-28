@@ -13,7 +13,8 @@ import type { ImageSummary } from "@/images/images";
 import type { MachineLogEntry } from "@/log/log";
 import type { MachineSummary } from "@/machines/machines";
 import type { PackageSummary } from "@/packages/packages";
-import type { AssignmentRuleView, MachineSequenceResolution } from "@/rules/rules";
+import type { MachineRoleView } from "@/roles/roles";
+import type { MachineSequenceResolution, RuleView } from "@/rules/rules";
 import type { SequenceStep, SequenceSummary, SequenceView } from "@/sequences/sequences";
 
 // Whole objects for tests, so a field the page reads is never missing from a fixture.
@@ -220,16 +221,42 @@ export function packageSummary(overrides: Partial<PackageSummary> = {}): Package
   };
 }
 
-export function assignmentRule(overrides: Partial<AssignmentRuleView> = {}): AssignmentRuleView {
+// A rule at the top of the list that chooses Install Windows for Dell Latitudes.
+export function ruleView(overrides: Partial<RuleView> = {}): RuleView {
   return {
     id: "0193a4b2-0000-7000-8000-0000000000f1",
-    kind: "Model",
-    mac: null,
-    manufacturer: "Dell Inc.",
-    model: "Latitude*",
+    position: 0,
+    name: "Latitude laptops",
+    description: null,
+    enabled: true,
+    when: {
+      kind: "all",
+      parts: [
+        { kind: "test", variable: "Manufacturer", operator: "Equals", value: "Dell Inc." },
+        { kind: "test", variable: "Model", operator: "StartsWith", value: "Latitude" },
+      ],
+    },
     sequenceId: "0193a4b2-0000-7000-8000-0000000000e1",
     sequenceName: "Install Windows",
+    values: [],
+    roleIds: [],
+    revision: 1,
+    problems: [],
+    matchingMachines: 0,
+    updatedUtc: "2026-09-16T10:00:00Z",
+    updatedBy: "admin",
+    ...overrides,
+  };
+}
+
+export function machineRole(overrides: Partial<MachineRoleView> = {}): MachineRoleView {
+  return {
+    id: "0193a4b2-0000-7000-8000-0000000000c1",
+    name: "Office PC",
     description: null,
+    values: [],
+    revision: 1,
+    ruleCount: 0,
     updatedUtc: "2026-09-16T10:00:00Z",
     updatedBy: "admin",
     ...overrides,

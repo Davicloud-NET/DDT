@@ -6,7 +6,7 @@ import { plural, t } from "@lingui/core/macro";
 
 import { machineLabel, type MachineSummary } from "@/machines/machines";
 
-import { isRuleChoice, type MachineSequenceResolution } from "@/rules/rules";
+import { isRuleChoice, ruleChoiceWords, type MachineSequenceResolution } from "@/rules/rules";
 import type { SequenceSummary } from "@/sequences/sequences";
 
 // What approving a waiting machine does when a rule chose its sequence.
@@ -35,10 +35,8 @@ export function approvalPlan(
 
   const label = machineLabel(machine);
   const name = resolution.sequenceName ?? t`a sequence`;
-  const byMac = resolution.source === "MacRule";
   // The rule as the subject of a sentence, and inside one.
-  const rule = byMac ? t`A rule for its MAC address` : t`A rule for its model`;
-  const ruleInside = byMac ? t`a rule for its MAC address` : t`a rule for its model`;
+  const { subject: rule, inside: ruleInside } = ruleChoiceWords(resolution);
   const sequence = sequences.find((candidate) => candidate.id === resolution.sequenceId);
 
   const withoutRun = (consequence: string): ApprovalPlan => ({

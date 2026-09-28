@@ -266,6 +266,14 @@ msgctxt "domain.servesOtherDomain"
 msgid "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults page, or name a domain controller of that domain for the check there."
 msgstr "{controller} serves the domain {namingContext}, not {domain} ({expected}). Correct the domain on the Deployment defaults page, or name a domain controller of that domain for the check there."
 
+#: src/sequences/sequenceList.ts
+msgid "{count, plural, one {{list} chooses {name}. Let that rule choose another sequence or none, then delete this one.} other {{list} choose {name}. Let those rules choose another sequence or none, then delete this one.}}"
+msgstr "{count, plural, one {{list} chooses {name}. Let that rule choose another sequence or none, then delete this one.} other {{list} choose {name}. Let those rules choose another sequence or none, then delete this one.}}"
+
+#: src/roles/RoleDrawer.tsx
+msgid "{count, plural, one {{list} gives this machine role. Take it out of that rule, then delete the role.} other {{list} give this machine role. Take it out of those rules, then delete the role.}}"
+msgstr "{count, plural, one {{list} gives this machine role. Take it out of that rule, then delete the role.} other {{list} give this machine role. Take it out of those rules, then delete the role.}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.unknownPlaceholders"
 msgid "{count, plural, one {{named} is not one of DDT's placeholders, so it stays as it is. DDT fills in {known}.} other {{named} are not DDT's placeholders, so they stay as they are. DDT fills in {known}.}}"
@@ -289,19 +297,19 @@ msgstr "{count, plural, one {# driver package is in the library, for the models 
 msgid "{count, plural, one {# group} other {# groups}}"
 msgstr "{count, plural, one {# group} other {# groups}}"
 
-#: src/rules/RulesPage.tsx
-msgid "{count, plural, one {# machine} other {# machines}}"
-msgstr "{count, plural, one {# machine} other {# machines}}"
-
 #: src/machines/approval.ts
 #: src/machines/AssignDialog.tsx
-#: src/rules/RuleDialog.tsx
+#: src/rules/RuleDrawer.tsx
 msgid "{count, plural, one {# problem} other {# problems}}"
 msgstr "{count, plural, one {# problem} other {# problems}}"
 
 #: src/sequences/SequencesPage.tsx
 msgid "{count, plural, one {# step} other {# steps}}"
 msgstr "{count, plural, one {# step} other {# steps}}"
+
+#: src/roles/MachineRolesPage.tsx
+msgid "{count, plural, one {# value} other {# values}}"
+msgstr "{count, plural, one {# value} other {# values}}"
 
 #: src/machines/AssignDialog.tsx
 msgid "{count, plural, one {# warning} other {# warnings}}"
@@ -321,6 +329,10 @@ msgstr "{count, plural, one {A rule gives this machine role. Take it out of the 
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 
+#: src/rules/RuleTest.tsx
+msgid "{count, plural, one {It has # problem, so it cannot run until it is fixed.} other {It has # problems, so it cannot run until they are fixed.}}"
+msgstr "{count, plural, one {It has # problem, so it cannot run until it is fixed.} other {It has # problems, so it cannot run until they are fixed.}}"
+
 #: src/packages/PackagesPage.tsx
 msgid "{count, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{count, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
@@ -332,10 +344,6 @@ msgstr "{count, plural, one {Pasted # step.} other {Pasted # steps.}}"
 #: src/images/ImagesPage.tsx
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
-
-#: src/sequences/sequenceList.ts
-msgid "{count, plural, one {The rule for {list} chooses {name}. Delete that rule or let it choose another sequence, then delete this one.} other {The rules for {list} choose {name}. Delete those rules or let them choose another sequence, then delete this one.}}"
-msgstr "{count, plural, one {The rule for {list} chooses {name}. Delete that rule or let it choose another sequence, then delete this one.} other {The rules for {list} choose {name}. Delete those rules or let them choose another sequence, then delete this one.}}"
 
 #: src/packages/packages.ts
 msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
@@ -413,6 +421,10 @@ msgstr "{files, plural, one {# file, {unpacked} unpacked} other {# files, {unpac
 msgctxt "common.sentences"
 msgid "{first} {rest}"
 msgstr "{first} {rest}"
+
+#: src/rules/RuleTest.tsx
+msgid "{hardware}, {mac}"
+msgstr "{hardware}, {mac}"
 
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
@@ -562,8 +574,15 @@ msgstr "{lostInput}, an input this sequence does not declare"
 msgid "{maker}, serial {serial}"
 msgstr "{maker}, serial {serial}"
 
+#: src/rules/RulesPage.tsx
+msgid "{matching, plural, one {# machine} other {# machines}}"
+msgstr "{matching, plural, one {# machine} other {# machines}}"
+
+#: src/rules/RuleDrawer.tsx
+msgid "{matching, plural, one {Matches # known machine now.} other {Matches # known machines now.}}"
+msgstr "{matching, plural, one {Matches # known machine now.} other {Matches # known machines now.}}"
+
 #: src/packages/PackageDialog.tsx
-#: src/rules/RuleDialog.tsx
 msgid "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 
@@ -772,6 +791,10 @@ msgstr "{name} was not added. {reason}"
 msgid "{name} was not uploaded. {reason}"
 msgstr "{name} was not uploaded. {reason}"
 
+#: src/rules/RuleTest.tsx
+msgid "{name}, {hardware}"
+msgstr "{name}, {hardware}"
+
 #: src/settings/AgentPanel.tsx
 msgid "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
 msgstr "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
@@ -848,12 +871,17 @@ msgstr "{problemCount, plural, one {# problem keeps it from running.} other {# p
 msgid "{problemCount, plural, one {# problem} other {# problems}}"
 msgstr "{problemCount, plural, one {# problem} other {# problems}}"
 
+#: src/rules/RuleDrawer.tsx
+msgid "{problemCount, plural, one {This rule has # problem, shown at its field. It matches no machine until it is fixed.} other {This rule has # problems, shown at their fields. It matches no machine until they are fixed.}}"
+msgstr "{problemCount, plural, one {This rule has # problem, shown at its field. It matches no machine until it is fixed.} other {This rule has # problems, shown at their fields. It matches no machine until they are fixed.}}"
+
+#: src/rules/RulesPage.tsx
 #: src/settings/ServerPage.tsx
 msgid "{problems, plural, one {# problem} other {# problems}}"
 msgstr "{problems, plural, one {# problem} other {# problems}}"
 
 #: src/machines/AssignDialog.tsx
-#: src/rules/RuleDialog.tsx
+#: src/rules/RuleDrawer.tsx
 msgid "{problems}, cannot run"
 msgstr "{problems}, cannot run"
 
@@ -920,6 +948,18 @@ msgstr "{sequence} erases a disk, and this machine has more than one. Approve it
 msgctxt "deployment.erasesOneOfManyDisks"
 msgid "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
 msgstr "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
+
+#: src/rules/RuleTest.tsx
+msgid "{sequence}, assigned on the web, which comes before every rule"
+msgstr "{sequence}, assigned on the web, which comes before every rule"
+
+#: src/rules/RuleTest.tsx
+msgid "{sequence}, chosen at the machine, which comes before every rule"
+msgstr "{sequence}, chosen at the machine, which comes before every rule"
+
+#: src/rules/RuleTest.tsx
+msgid "{sequence}, from rule {number}"
+msgstr "{sequence}, from rule {number}"
 
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
@@ -1052,6 +1092,10 @@ msgctxt "model.placeholder"
 msgid "{value} is what firmware reports when the field was never filled in. It says nothing about the machine."
 msgstr "{value} is what firmware reports when the field was never filled in. It says nothing about the machine."
 
+#: src/rules/RuleTest.tsx
+msgid "{value}, from {source}"
+msgstr "{value}, from {source}"
+
 #: src/runs/runs.ts
 msgid "{variable} {operator}"
 msgstr "{variable} {operator}"
@@ -1070,7 +1114,6 @@ msgstr "{warningCount, plural, one {# warning} other {# warnings}}"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
-#: src/rules/RulesPage.tsx
 #: src/tokens/TokenTable.tsx
 msgid "{when} by {by}"
 msgstr "{when} by {by}"
@@ -1078,6 +1121,14 @@ msgstr "{when} by {by}"
 #: src/tokens/TokenTable.tsx
 msgid "{when} from <0>{address}</0>"
 msgstr "{when} from <0>{address}</0>"
+
+#: src/roles/RoleDrawer.tsx
+msgid "{who} saved this machine role while you were editing it."
+msgstr "{who} saved this machine role while you were editing it."
+
+#: src/rules/RuleDrawer.tsx
+msgid "{who} saved this rule while you were editing it."
+msgstr "{who} saved this rule while you were editing it."
 
 #: src/sequences/SequenceConflict.tsx
 msgid "{who} saved this sequence at {when} while you were editing."
@@ -1180,6 +1231,10 @@ msgctxt "package.noInf"
 msgid "A driver package needs at least one .inf file. Zip the folder that holds the drivers' .inf files."
 msgstr "A driver package needs at least one .inf file. Zip the folder that holds the drivers' .inf files."
 
+#: src/rules/rules.ts
+msgid "a fact of the machine"
+msgstr "a fact of the machine"
+
 #: src/lib/serverMessages.ts
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
@@ -1192,10 +1247,6 @@ msgstr "A group added here gives Viewer until you choose its role."
 #: src/settings/SignInSettingsPage.tsx
 msgid "A group as the provider sends it in the claim above. It gives Viewer until you choose its role."
 msgstr "A group as the provider sends it in the claim above. It gives Viewer until you choose its role."
-
-#: src/rules/RuleDialog.tsx
-msgid "A hardware model"
-msgstr "A hardware model"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "A host may have a network adapter on a segment whose DHCP belongs to someone else, so DDT answers on no interface until it is listed. List the interfaces machines reach DDT on, and never a VPN tunnel."
@@ -1210,9 +1261,21 @@ msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
 msgstr "A machine changed while it was being removed. Look at it again before removing it."
 
+#: src/roles/RoleDrawer.tsx
+msgid "A machine gets them from each rule that gives it the role, after the values the rules set themselves."
+msgstr "A machine gets them from each rule that gives it the role, after the values the rules set themselves."
+
 #: src/settings/NetworkBootPage.tsx
 msgid "A machine over the limit waits until a transfer ends."
 msgstr "A machine over the limit waits until a transfer ends."
+
+#: src/roles/MachineRolesPage.tsx
+msgid "A machine role is a set of values that rules give machines together, such as the time zone and the computer name of a kiosk. It says nothing about what a person may do; that is a user's role, under Administration."
+msgstr "A machine role is a set of values that rules give machines together, such as the time zone and the computer name of a kiosk. It says nothing about what a person may do; that is a user's role, under Administration."
+
+#: src/rules/RuleDrawer.tsx
+msgid "A machine role that is gone"
+msgstr "A machine role that is gone"
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.roleGone"
@@ -1278,34 +1341,34 @@ msgstr "A restart step restarts anyway, so it cannot restart again after it."
 msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 
+#: src/rules/rules.ts
+msgid "a rule"
+msgstr "a rule"
+
+#: src/rules/rules.ts
+msgid "A rule"
+msgstr "A rule"
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.tooManyRoles"
 msgid "A rule can give at most {max} machine roles."
 msgstr "A rule can give at most {max} machine roles."
 
-#: src/rules/RulesPage.tsx
-msgid "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
-msgstr "A rule chooses the task sequence for a machine that has none. It never authorizes a machine: someone still signs in at it, or an operator approves it. A sequence assigned on the web or chosen at the machine comes first; then a rule for one of the machine's MAC addresses, then a rule for its model, the exact model before one ending in *, and a rule that names the manufacturer before one for any."
-
-#: src/machines/approval.ts
+#: src/rules/rules.ts
 msgid "a rule for its MAC address"
 msgstr "a rule for its MAC address"
 
-#: src/machines/approval.ts
+#: src/rules/rules.ts
 msgid "A rule for its MAC address"
 msgstr "A rule for its MAC address"
 
-#: src/machines/approval.ts
+#: src/rules/rules.ts
 msgid "a rule for its model"
 msgstr "a rule for its model"
 
-#: src/machines/approval.ts
+#: src/rules/rules.ts
 msgid "A rule for its model"
 msgstr "A rule for its model"
-
-#: src/rules/RulesPage.tsx
-msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
-msgstr "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.conditionTooLarge"
@@ -1338,6 +1401,10 @@ msgstr "A script sends it in the Authorization header: Bearer, a space, then the
 #: src/account/AccountPage.tsx
 msgid "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
 msgstr "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
+
+#: src/rules/RuleTest.tsx
+msgid "A secret, set by {source}"
+msgstr "A secret, set by {source}"
 
 #: src/machines/approval.ts
 msgid "a sequence"
@@ -1402,6 +1469,10 @@ msgstr "A sequence needs 1 to {max} steps."
 msgctxt "sequence.requestTooLarge"
 msgid "A sequence request can have at most {max} KiB."
 msgstr "A sequence request can have at most {max} KiB."
+
+#: src/rules/RuleDrawer.tsx
+msgid "A sequence that is gone"
+msgstr "A sequence that is gone"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageWithRawImage"
@@ -1479,6 +1550,10 @@ msgstr "A user name can have at most {max} characters."
 msgctxt "identity.loginAlreadyAssociated"
 msgid "A user with this login already exists."
 msgstr "A user with this login already exists."
+
+#: src/rules/RuleDrawer.tsx
+msgid "A value a rule above sets already stays as that rule sets it; a sequence uses it by its name."
+msgstr "A value a rule above sets already stays as that rule sets it; a sequence uses it by its name."
 
 #: src/lib/serverMessages.ts
 msgctxt "namedValue.tooLong"
@@ -1590,7 +1665,7 @@ msgstr "Accounts"
 #: src/images/ImagesPage.tsx
 #: src/machines/MachinesPage.tsx
 #: src/packages/PackagesPage.tsx
-#: src/rules/RulesPage.tsx
+#: src/roles/MachineRolesPage.tsx
 #: src/sequences/SequencesPage.tsx
 #: src/tokens/TokenTable.tsx
 #: src/users/UsersPage.tsx
@@ -1607,13 +1682,11 @@ msgstr "Actions for {menuName}"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/roles/MachineRolesPage.tsx
+#: src/rules/RulesPage.tsx
 #: src/users/UsersPage.tsx
 msgid "Actions for {name}"
 msgstr "Actions for {name}"
-
-#: src/rules/RulesPage.tsx
-msgid "Actions for the rule for {description}"
-msgstr "Actions for the rule for {description}"
 
 #: src/tokens/TokenTable.tsx
 #: src/tokens/tokenView.ts
@@ -1664,9 +1737,17 @@ msgstr "Add a group by its distinguished name"
 msgid "Add a local account"
 msgstr "Add a local account"
 
+#: src/roles/MachineRolesPage.tsx
+msgid "Add a machine role for values that belong together, then let a rule give it to the machines it matches."
+msgstr "Add a machine role for values that belong together, then let a rule give it to the machines it matches."
+
 #: src/packages/PackageDialog.tsx
 msgid "Add a model"
 msgstr "Add a model"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Add a role"
+msgstr "Add a role"
 
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Add a share"
@@ -1720,6 +1801,10 @@ msgstr "Add a step to the flow to see its settings here."
 msgid "Add a step to Then of ''{title}''"
 msgstr "Add a step to Then of ''{title}''"
 
+#: src/values/ValuesEditor.tsx
+msgid "Add a value"
+msgstr "Add a value"
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Add a variable"
 msgstr "Add a variable"
@@ -1728,10 +1813,6 @@ msgstr "Add a variable"
 #: src/users/UsersPage.tsx
 msgid "Add account"
 msgstr "Add account"
-
-#: src/rules/RuleDialog.tsx
-msgid "Add an assignment rule"
-msgstr "Add an assignment rule"
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Add an input"
@@ -1745,7 +1826,10 @@ msgstr "Add boot target"
 msgid "Add group"
 msgstr "Add group"
 
-#: src/rules/RuleDialog.tsx
+#: src/roles/MachineRolesPage.tsx
+msgid "Add machine role"
+msgstr "Add machine role"
+
 #: src/rules/RulesPage.tsx
 msgid "Add rule"
 msgstr "Add rule"
@@ -1882,6 +1966,10 @@ msgstr "Allowed to write its raw disk image although it may not start with Secur
 msgid "Also approve every machine on the web"
 msgstr "Also approve every machine on the web"
 
+#: src/rules/RuleTest.tsx
+msgid "Also set by {also}, but {source} comes first."
+msgstr "Also set by {also}, but {source} comes first."
+
 #: src/conditions/conditions.ts
 msgid "always"
 msgstr "always"
@@ -1916,6 +2004,10 @@ msgstr "an Administrator"
 msgid "An administrator adds images by uploading WIM files or disk images here."
 msgstr "An administrator adds images by uploading WIM files or disk images here."
 
+#: src/roles/MachineRolesPage.tsx
+msgid "An administrator adds machine roles here."
+msgstr "An administrator adds machine roles here."
+
 #: src/users/UsersPage.tsx
 msgid "An administrator changes everything, including the accounts here; an operator approves machines and starts deployments; a viewer only looks. Directory and single sign-on accounts appear after their first sign-in."
 msgstr "An administrator changes everything, including the accounts here; an operator approves machines and starts deployments; a viewer only looks. Directory and single sign-on accounts appear after their first sign-in."
@@ -1927,6 +2019,10 @@ msgstr "An administrator creates task sequences here. Until then, no machine can
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "An answer is required"
 msgstr "An answer is required"
+
+#: src/rules/rules.ts
+msgid "an answer to the sequence's question"
+msgstr "an answer to the sequence's question"
 
 #: src/lib/serverMessages.ts
 msgctxt "account.apiTokenCannotChange"
@@ -1985,6 +2081,10 @@ msgstr "an Operator"
 msgctxt "person.someOperator"
 msgid "An operator"
 msgstr "An operator"
+
+#: src/rules/RuleTest.tsx
+msgid "An operator still approves this machine, or someone signs in at it; the rules only choose what then runs."
+msgstr "An operator still approves this machine, or someone signs in at it; the rules only choose what then runs."
 
 #: src/lib/serverMessages.ts
 msgctxt "identity.defaultError"
@@ -2052,10 +2152,6 @@ msgstr "Answer TFTP from port 69"
 msgid "Answering machines that netboot"
 msgstr "Answering machines that netboot"
 
-#: src/rules/RuleDialog.tsx
-msgid "Any of the machine's network adapters, with or without separators."
-msgstr "Any of the machine's network adapters, with or without separators."
-
 #: src/audit/AuditPage.tsx
 msgid "Any part of a name"
 msgstr "Any part of a name"
@@ -2094,6 +2190,10 @@ msgstr "Applied"
 #: src/settings/ServerPage.tsx
 msgid "Applies at its next use"
 msgstr "Applies at its next use"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Applies when"
+msgstr "Applies when"
 
 #: src/sequences/steps.ts
 msgid "Apply image"
@@ -2206,12 +2306,6 @@ msgstr "Assigned by {by}"
 #: src/runs/runView.ts
 msgid "Assigned on the web"
 msgstr "Assigned on the web"
-
-#: src/app/navigation.ts
-#: src/audit/auditView.ts
-#: src/rules/RulesPage.tsx
-msgid "Assignment rules"
-msgstr "Assignment rules"
 
 #: src/runs/RunHistoryPage.tsx
 msgid "At {failedAt}"
@@ -2355,18 +2449,11 @@ msgstr "by {name}"
 msgid "By default, a person who signs in at a netbooting machine authorizes it for the sequence they choose, and an operator can approve a waiting machine on the web. Zero touch skips both on the networks listed here."
 msgstr "By default, a person who signs in at a netbooting machine authorizes it for the sequence they choose, and an operator can approve a waiting machine on the web. Zero touch skips both on the networks listed here."
 
-#: src/rules/RulesPage.tsx
-msgid "By hardware model"
-msgstr "By hardware model"
-
-#: src/rules/RulesPage.tsx
-msgid "By MAC address"
-msgstr "By MAC address"
-
 #: src/account/AccountPage.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
-#: src/rules/RuleDialog.tsx
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
 #: src/sequences/NewSequenceDialog.tsx
 #: src/settings/CertificatePanel.tsx
 #: src/settings/SettingsParts.tsx
@@ -2406,6 +2493,7 @@ msgid "Certificates"
 msgstr "Certificates"
 
 #: src/packages/PackagesPage.tsx
+#: src/roles/MachineRolesPage.tsx
 #: src/rules/RulesPage.tsx
 msgid "Change"
 msgstr "Change"
@@ -2430,16 +2518,11 @@ msgstr "Change password"
 msgid "Change the package"
 msgstr "Change the package"
 
-#: src/rules/RuleDialog.tsx
-msgid "Change the rule"
-msgstr "Change the rule"
-
 #: src/lib/serverMessages.ts
 msgctxt "user.ownPassword"
 msgid "Change your own password on the Account page."
 msgstr "Change your own password on the Account page."
 
-#: src/rules/RulesPage.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Changed"
 msgstr "Changed"
@@ -2460,9 +2543,17 @@ msgstr "Check"
 msgid "Check a user"
 msgstr "Check a user"
 
+#: src/rules/RuleDrawer.tsx
+msgid "Check machines against this rule"
+msgstr "Check machines against this rule"
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "Check the join account"
 msgstr "Check the join account"
+
+#: src/rules/RulesPage.tsx
+msgid "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it. A rule never approves a machine."
+msgstr "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it. A rule never approves a machine."
 
 #: src/uploads/UploadPanel.tsx
 msgid "Checking {file}"
@@ -2495,10 +2586,18 @@ msgstr "Choose a fact or a value to test."
 msgid "Choose a file"
 msgstr "Choose a file"
 
+#: src/rules/RuleTest.tsx
+msgid "Choose a machine"
+msgstr "Choose a machine"
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionName"
 msgid "Choose a machine fact or a value to test."
 msgstr "Choose a machine fact or a value to test."
+
+#: src/rules/RuleTest.tsx
+msgid "Choose a machine to see which rules match it, the sequence it would get and the values a run of it would start with."
+msgstr "Choose a machine to see which rules match it, the sequence it would get and the values a run of it would start with."
 
 #: src/sequences/builder/FlowBuilder.tsx
 msgid "Choose a node in the flow to see its settings here."
@@ -2512,10 +2611,6 @@ msgstr "Choose a PFX file"
 msgctxt "rule.chooseKind"
 msgid "Choose a rule by MAC address or by model."
 msgstr "Choose a rule by MAC address or by model."
-
-#: src/rules/RuleDialog.tsx
-msgid "Choose a sequence"
-msgstr "Choose a sequence"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.accountChoose"
@@ -2606,6 +2701,14 @@ msgctxt "sequence.scriptPhase"
 msgid "Choose Windows PE or Windows."
 msgstr "Choose Windows PE or Windows."
 
+#: src/rules/rules.ts
+msgid "Chooses {sequence}"
+msgstr "Chooses {sequence}"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Chooses a task sequence"
+msgstr "Chooses a task sequence"
+
 #: src/deployments/deployments.ts
 #: src/runs/runView.ts
 msgid "Chosen at the machine"
@@ -2647,6 +2750,8 @@ msgstr "Client ID"
 msgid "Client secret"
 msgstr "Client secret"
 
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
 #: src/ui/Dialog.tsx
 #: src/ui/Drawer.tsx
 #: src/ui/Toast.tsx
@@ -2920,6 +3025,7 @@ msgstr "Defaults for every run"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/roles/MachineRolesPage.tsx
 #: src/rules/RulesPage.tsx
 #: src/sequences/SequencesPage.tsx
 #: src/users/UsersPage.tsx
@@ -2932,6 +3038,8 @@ msgstr "Delete {name}"
 
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
 #: src/sequences/DeleteSequenceDialog.tsx
 #: src/users/UsersPage.tsx
 msgid "Delete {name}?"
@@ -2945,21 +3053,21 @@ msgstr "Delete account"
 msgid "Delete image"
 msgstr "Delete image"
 
+#: src/roles/RoleDrawer.tsx
+msgid "Delete machine role"
+msgstr "Delete machine role"
+
 #: src/packages/PackagesPage.tsx
 msgid "Delete package"
 msgstr "Delete package"
 
-#: src/rules/RulesPage.tsx
+#: src/rules/RuleDrawer.tsx
 msgid "Delete rule"
 msgstr "Delete rule"
 
 #: src/sequences/DeleteSequenceDialog.tsx
 msgid "Delete sequence"
 msgstr "Delete sequence"
-
-#: src/rules/RulesPage.tsx
-msgid "Delete the rule for {description}?"
-msgstr "Delete the rule for {description}?"
 
 #: src/machines/machineView.ts
 msgid "Deploying"
@@ -2981,7 +3089,8 @@ msgid "Deployment defaults"
 msgstr "Deployment defaults"
 
 #: src/packages/PackageDialog.tsx
-#: src/rules/RuleDialog.tsx
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
 #: src/sequences/builder/FlowBuilder.tsx
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Description"
@@ -3273,10 +3382,6 @@ msgstr "Encrypted from the first byte."
 #: src/settings/DirectorySettings.tsx
 msgid "Encryption"
 msgstr "Encryption"
-
-#: src/rules/RuleDialog.tsx
-msgid "End it with * to match every model that starts with it."
-msgstr "End it with * to match every model that starts with it."
 
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
@@ -3814,6 +3919,11 @@ msgstr "Generate certificate"
 msgid "Give {name} a new password?"
 msgstr "Give {name} a new password?"
 
+#: src/roles/MachineRolesPage.tsx
+#: src/roles/RoleDrawer.tsx
+msgid "Given by"
+msgstr "Given by"
+
 #: src/users/userView.ts
 msgid "Given when single sign-on created it"
 msgstr "Given when single sign-on created it"
@@ -3826,6 +3936,14 @@ msgstr "gives {label}"
 #: src/users/DirectoryPanel.tsx
 msgid "Gives {label}"
 msgstr "Gives {label}"
+
+#: src/rules/rules.ts
+msgid "Gives {role}"
+msgstr "Gives {role}"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Gives machine roles"
+msgstr "Gives machine roles"
 
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Go along Then when"
@@ -3860,8 +3978,8 @@ msgid "Go to a page, machine, sequence or image"
 msgstr "Go to a page, machine, sequence or image"
 
 #: src/sequences/DeleteSequenceDialog.tsx
-msgid "Go to the assignment rules"
-msgstr "Go to the assignment rules"
+msgid "Go to the rules"
+msgstr "Go to the rules"
 
 #: src/app/CommandPalette.tsx
 msgid "Go to…"
@@ -4230,6 +4348,7 @@ msgstr "Jump to the newest"
 msgid "Keep {name}"
 msgstr "Keep {name}"
 
+#: src/rules/drawerParts.tsx
 #: src/sequences/SequenceConflict.tsx
 msgid "Keep mine"
 msgstr "Keep mine"
@@ -4366,10 +4485,6 @@ msgstr "Leave without saving?"
 #: src/uploads/UploadPanel.tsx
 msgid "Leaving this page stops the upload of {file} at {percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there."
 msgstr "Leaving this page stops the upload of {file} at {percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there."
-
-#: src/rules/RuleDialog.tsx
-msgid "Left empty, any manufacturer."
-msgstr "Left empty, any manufacturer."
 
 #: src/users/UserDialogs.tsx
 msgid "Left empty, DDT shows the user name."
@@ -4513,16 +4628,9 @@ msgstr "Logo on the console"
 msgid "MAC"
 msgstr "MAC"
 
-#: src/rules/rules.ts
-#: src/sequences/sequenceList.ts
-msgid "MAC {mac}"
-msgstr "MAC {mac}"
-
 #: src/conditions/conditions.ts
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
-#: src/rules/RuleDialog.tsx
-#: src/rules/RulesPage.tsx
 #: src/sequences/steps.ts
 msgid "MAC address"
 msgstr "MAC address"
@@ -4559,6 +4667,37 @@ msgstr "Machine rejected"
 msgid "Machine removed"
 msgstr "Machine removed"
 
+#: src/roles/MachineRolesPage.tsx
+#: src/roles/RoleDrawer.tsx
+msgid "Machine role"
+msgstr "Machine role"
+
+#: src/audit/auditView.ts
+msgid "Machine role added"
+msgstr "Machine role added"
+
+#: src/audit/auditView.ts
+msgid "Machine role changed"
+msgstr "Machine role changed"
+
+#: src/audit/auditView.ts
+msgid "Machine role deleted"
+msgstr "Machine role deleted"
+
+#: src/app/navigation.ts
+#: src/audit/auditView.ts
+#: src/roles/MachineRolesPage.tsx
+msgid "Machine roles"
+msgstr "Machine roles"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Machine roles to add"
+msgstr "Machine roles to add"
+
+#: src/rules/RuleTest.tsx
+msgid "Machine to test"
+msgstr "Machine to test"
+
 #: src/runs/RunHistoryPage.tsx
 msgid "Machine, model, MAC or sequence"
 msgstr "Machine, model, MAC or sequence"
@@ -4590,10 +4729,6 @@ msgstr "Machines of {targets} no longer get these drivers from the Inject driver
 #: src/packages/packages.ts
 msgid "Machines of {targets} no longer get these drivers."
 msgstr "Machines of {targets} no longer get these drivers."
-
-#: src/rules/rules.ts
-msgid "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
-msgstr "Machines of model {target} no longer get {sequence} chosen for them; another rule or an operator chooses instead. Machines that already have a run keep it."
 
 #: src/settings/AgentPanel.tsx
 msgid "Machines run"
@@ -4649,7 +4784,6 @@ msgstr "Make token"
 
 #: src/conditions/conditions.ts
 #: src/packages/PackageDialog.tsx
-#: src/rules/RuleDialog.tsx
 #: src/sequences/steps.ts
 msgid "Manufacturer"
 msgstr "Manufacturer"
@@ -4663,7 +4797,7 @@ msgstr "Mapped groups"
 msgid "matches"
 msgstr "matches"
 
-#: src/rules/RulesPage.tsx
+#: src/rules/RuleTest.tsx
 msgid "Matches"
 msgstr "Matches"
 
@@ -4674,6 +4808,10 @@ msgstr "Matches every machine."
 #: src/conditions/conditions.ts
 msgid "Matches machines where {condition}."
 msgstr "Matches machines where {condition}."
+
+#: src/rules/RuleDrawer.tsx
+msgid "Matches no known machine now."
+msgstr "Matches no known machine now."
 
 #: src/conditions/conditions.ts
 msgid "memory"
@@ -4709,8 +4847,6 @@ msgstr "Microsoft's third-party UEFI CAs {first} and {second}"
 
 #: src/conditions/conditions.ts
 #: src/packages/PackageDialog.tsx
-#: src/rules/RuleDialog.tsx
-#: src/rules/RulesPage.tsx
 #: src/sequences/steps.ts
 msgid "Model"
 msgstr "Model"
@@ -4719,11 +4855,6 @@ msgstr "Model"
 msgctxt "rule.forModel"
 msgid "model {manufacturer} {model}"
 msgstr "model {manufacturer} {model}"
-
-#: src/rules/rules.ts
-#: src/sequences/sequenceList.ts
-msgid "model {model}"
-msgstr "model {model}"
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.forModelOfAnyMaker"
@@ -4764,6 +4895,10 @@ msgctxt "directory.manyMatchingEntries"
 msgid "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
 msgstr "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
 
+#: src/rules/RulesPage.tsx
+msgid "Move {name}"
+msgstr "Move {name}"
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Move {name} down"
 msgstr "Move {name} down"
@@ -4776,9 +4911,17 @@ msgstr "Move {name} up"
 msgid "Move {title}"
 msgstr "Move {title}"
 
+#: src/rules/RulesPage.tsx
+msgid "Move down"
+msgstr "Move down"
+
 #: src/sequences/builder/FlowCanvas.tsx
 msgid "Move here"
 msgstr "Move here"
+
+#: src/rules/RulesPage.tsx
+msgid "Move up"
+msgstr "Move up"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.methodForArchitecture"
@@ -4852,6 +4995,8 @@ msgstr "Must not be empty. Leave it out for the folder boot in DDT:StorePath."
 
 #: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
 #: src/sequences/builder/NodeInspector.tsx
 #: src/sequences/builder/VariablesPanel.tsx
 #: src/sequences/NewSequenceDialog.tsx
@@ -4865,6 +5010,10 @@ msgstr "Name"
 #: src/settings/DirectorySettings.tsx
 msgid "Name attribute"
 msgstr "Name attribute"
+
+#: src/values/ValuesEditor.tsx
+msgid "Name of value {number}"
+msgstr "Name of value {number}"
 
 #: src/sequences/SequencesPage.tsx
 msgid "Name or description"
@@ -4951,6 +5100,10 @@ msgstr "Never changed on this page."
 msgid "New accounts"
 msgstr "New accounts"
 
+#: src/roles/RoleDrawer.tsx
+msgid "New machine role"
+msgstr "New machine role"
+
 #: src/account/AccountPage.tsx
 msgid "New password"
 msgstr "New password"
@@ -4966,6 +5119,10 @@ msgstr "New password due"
 #: src/users/UserDialogs.tsx
 msgid "New password for {name}"
 msgstr "New password for {name}"
+
+#: src/rules/RuleDrawer.tsx
+msgid "New rule"
+msgstr "New rule"
 
 #: src/sequences/NewSequenceDialog.tsx
 msgid "New sequence"
@@ -5156,9 +5313,21 @@ msgctxt "settings.secretCannotBeKept"
 msgid "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
 msgstr "No longer decrypts with this server's key ring, so it cannot be kept. Enter it again or clear it."
 
+#: src/rules/RulesPage.tsx
+msgid "No machine"
+msgstr "No machine"
+
 #: src/machines/MachinesPage.tsx
 msgid "No machine matches"
 msgstr "No machine matches"
+
+#: src/roles/MachineRolesPage.tsx
+msgid "No machine roles yet"
+msgstr "No machine roles yet"
+
+#: src/rules/RuleDrawer.tsx
+msgid "No machine roles."
+msgstr "No machine roles."
 
 #: src/machines/MachinesPage.tsx
 msgid "No machines yet"
@@ -5182,13 +5351,8 @@ msgctxt "settings.apply.proxiesClosed"
 msgid "No proxy is trusted on this host while the section has problems: {problems}"
 msgstr "No proxy is trusted on this host while the section has problems: {problems}"
 
-#: src/rules/RulesPage.tsx
-msgid "No registered machine"
-msgstr "No registered machine"
-
 #: src/packages/PackageDialog.tsx
 #: src/packages/PackagesPage.tsx
-#: src/rules/RuleDialog.tsx
 msgid "No registered machine matches yet."
 msgstr "No registered machine matches yet."
 
@@ -5197,15 +5361,31 @@ msgstr "No registered machine matches yet."
 msgid "No role"
 msgstr "No role"
 
+#: src/roles/MachineRolesPage.tsx
+msgid "No rule"
+msgstr "No rule"
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.noRuleChooses"
 msgid "No rule chooses a sequence for this machine, so an operator chooses its sequence."
 msgstr "No rule chooses a sequence for this machine, so an operator chooses its sequence."
 
+#: src/roles/RoleDrawer.tsx
+msgid "No rule gives {name}, so deleting it changes the values of no machine."
+msgstr "No rule gives {name}, so deleting it changes the values of no machine."
+
+#: src/roles/RoleDrawer.tsx
+msgid "No rule gives this machine role yet."
+msgstr "No rule gives this machine role yet."
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.noRule"
 msgid "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence."
 msgstr "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence."
+
+#: src/rules/RuleTest.tsx
+msgid "No rule matches this machine."
+msgstr "No rule matches this machine."
 
 #: src/sequences/SequencesPage.tsx
 msgid "No rule, no machine"
@@ -5261,6 +5441,14 @@ msgstr "No token matches"
 msgid "No tokens yet"
 msgstr "No tokens yet"
 
+#: src/roles/MachineRolesPage.tsx
+msgid "No values"
+msgstr "No values"
+
+#: src/values/ValuesEditor.tsx
+msgid "No values."
+msgstr "No values."
+
 #: src/sequences/steps/FlowFields.tsx
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
 msgstr "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
@@ -5292,6 +5480,10 @@ msgstr "None"
 #: src/conditions/conditions.ts
 msgid "None of these hold"
 msgstr "None of these hold"
+
+#: src/rules/RuleDrawer.tsx
+msgid "None, a later rule may choose one"
+msgstr "None, a later rule may choose one"
 
 #: src/settings/DirectorySettings.tsx
 msgid "None, so the sign-in is refused"
@@ -5447,6 +5639,7 @@ msgstr "of the run"
 
 #: src/account/AccountPage.tsx
 #: src/machines/secureBoot.ts
+#: src/rules/RulesPage.tsx
 #: src/users/UsersPage.tsx
 msgid "Off"
 msgstr "Off"
@@ -5500,10 +5693,6 @@ msgstr "One IP address per line, such as 10.0.0.2 or fd00::2."
 #: src/settings/NetworkBootPage.tsx
 msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
 msgstr "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
-
-#: src/rules/RuleDialog.tsx
-msgid "One MAC address"
-msgstr "One MAC address"
 
 #: src/settings/ProxiesPanel.tsx
 msgid "One network per line, such as 10.0.1.0/24, for proxies that share an address pool."
@@ -5677,7 +5866,11 @@ msgstr "Optional. Left empty, the machine keeps the name {current}."
 msgid "Optional. What is in it and where it came from."
 msgstr "Optional. What is in it and where it came from."
 
-#: src/rules/RuleDialog.tsx
+#: src/roles/RoleDrawer.tsx
+msgid "Optional. What machines with this role are, such as kiosks in the lobby."
+msgstr "Optional. What machines with this role are, such as kiosks in the lobby."
+
+#: src/rules/RuleDrawer.tsx
 msgid "Optional. Why the rule exists, for whoever reads it later."
 msgstr "Optional. Why the rule exists, for whoever reads it later."
 
@@ -6103,6 +6296,7 @@ msgstr "Remove {key}"
 
 #: src/sequences/builder/NodeInspector.tsx
 #: src/sequences/builder/VariablesPanel.tsx
+#: src/values/ValuesEditor.tsx
 msgid "Remove {name}"
 msgstr "Remove {name}"
 
@@ -6351,6 +6545,23 @@ msgstr "Role that {key} gives"
 msgid "Root SHA-256"
 msgstr "Root SHA-256"
 
+#: src/rules/rules.ts
+msgid "rule {number}"
+msgstr "rule {number}"
+
+#: src/rules/RuleDrawer.tsx
+#: src/rules/rules.ts
+msgid "Rule {number}"
+msgstr "Rule {number}"
+
+#: src/rules/rules.ts
+msgid "rule {number}, {name}"
+msgstr "rule {number}, {name}"
+
+#: src/rules/rules.ts
+msgid "Rule {number}, {name}"
+msgstr "Rule {number}, {name}"
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.ruleNumbered"
 msgid "Rule {number}, {rule}, chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
@@ -6368,17 +6579,19 @@ msgstr "Rule changed"
 msgid "Rule deleted"
 msgstr "Rule deleted"
 
-#: src/sequences/SequencesPage.tsx
-msgid "Rule for {target}"
-msgstr "Rule for {target}"
+#: src/app/navigation.ts
+#: src/audit/auditView.ts
+#: src/rules/RulesPage.tsx
+msgid "Rules"
+msgstr "Rules"
 
 #: src/rules/RulesPage.tsx
-msgid "Rules by hardware model"
-msgstr "Rules by hardware model"
+msgid "Rules in order"
+msgstr "Rules in order"
 
-#: src/rules/RulesPage.tsx
-msgid "Rules by MAC address"
-msgstr "Rules by MAC address"
+#: src/audit/auditView.ts
+msgid "Rules reordered"
+msgstr "Rules reordered"
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Run as"
@@ -6514,6 +6727,10 @@ msgstr "Save anyway?"
 msgid "Save changes"
 msgstr "Save changes"
 
+#: src/roles/RoleDrawer.tsx
+msgid "Save machine role"
+msgstr "Save machine role"
+
 #: src/sequences/SequenceConflict.tsx
 msgid "Save my version"
 msgstr "Save my version"
@@ -6526,9 +6743,13 @@ msgstr "Save or discard your changes first."
 msgid "Save package"
 msgstr "Save package"
 
-#: src/rules/RuleDialog.tsx
+#: src/rules/RuleDrawer.tsx
 msgid "Save rule"
 msgstr "Save rule"
+
+#: src/rules/RuleDrawer.tsx
+msgid "Save the rule to count the machines it matches."
+msgstr "Save the rule to count the machines it matches."
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Save your version over theirs?"
@@ -6822,9 +7043,18 @@ msgstr "Set variable steps and scripts may give it a new value while the run goe
 msgid "Set, not shown"
 msgstr "Set, not shown"
 
+#: src/rules/rules.ts
+msgid "Sets {name}"
+msgstr "Sets {name}"
+
 #: src/sequences/steps/FlowFields.tsx
 msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
 msgstr "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
+
+#: src/roles/RoleDrawer.tsx
+#: src/rules/RuleDrawer.tsx
+msgid "Sets values"
+msgstr "Sets values"
 
 #: src/audit/auditView.ts
 msgid "Settings"
@@ -7032,13 +7262,33 @@ msgctxt "stepAccount.changedMeanwhile"
 msgid "Someone changed the account meanwhile. Look at it again."
 msgstr "Someone changed the account meanwhile. Look at it again."
 
+#: src/rules/RulesPage.tsx
+msgid "Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there."
+msgstr "Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there."
+
 #: src/sequences/builder/FlowBuilder.tsx
 msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 msgstr "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 
+#: src/roles/RoleDrawer.tsx
+msgid "Someone deleted this machine role while you were editing it."
+msgstr "Someone deleted this machine role while you were editing it."
+
+#: src/rules/RuleDrawer.tsx
+msgid "Someone deleted this rule while you were editing it."
+msgstr "Someone deleted this rule while you were editing it."
+
 #: src/settings/SettingsParts.tsx
 msgid "Someone else saved these settings while you were changing them."
 msgstr "Someone else saved these settings while you were changing them."
+
+#: src/roles/RoleDrawer.tsx
+msgid "Someone else saved this machine role while you were editing it."
+msgstr "Someone else saved this machine role while you were editing it."
+
+#: src/rules/RuleDrawer.tsx
+msgid "Someone else saved this rule while you were editing it."
+msgstr "Someone else saved this rule while you were editing it."
 
 #: src/sequences/builder/FlowBuilder.tsx
 msgid "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
@@ -7326,9 +7576,12 @@ msgstr "System version"
 msgid "Tablet"
 msgstr "Tablet"
 
+#: src/rules/RuleDrawer.tsx
+msgid "Take {roleName} out"
+msgstr "Take {roleName} out"
+
 #: src/machines/AssignDialog.tsx
-#: src/rules/RuleDialog.tsx
-#: src/rules/RulesPage.tsx
+#: src/rules/RuleTest.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Task sequence"
 msgstr "Task sequence"
@@ -7348,6 +7601,10 @@ msgstr "Templates use it as {placeholder}."
 #: src/settings/DirectorySettings.tsx
 msgid "Test"
 msgstr "Test"
+
+#: src/rules/RuleTest.tsx
+msgid "Test a machine"
+msgstr "Test a machine"
 
 #: src/settings/DirectorySettings.tsx
 msgid "Test the directory"
@@ -7703,6 +7960,10 @@ msgstr "The default has to be one of the choices."
 #: src/settings/LoggingPanel.tsx
 msgid "The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity Framework Core categories at Warning."
 msgstr "The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity Framework Core categories at Warning."
+
+#: src/rules/rules.ts
+msgid "the deployment defaults"
+msgstr "the deployment defaults"
 
 #: src/machines/AssignDialog.tsx
 msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
@@ -8161,6 +8422,14 @@ msgstr "The machine restarts and the sequence goes on with the next step."
 msgid "The machine restarts once the step is done."
 msgstr "The machine restarts once the step is done."
 
+#: src/rules/rules.ts
+msgid "the machine role {name}"
+msgstr "the machine role {name}"
+
+#: src/roles/MachineRolesPage.tsx
+msgid "The machine roles could not be loaded."
+msgstr "The machine roles could not be loaded."
+
 #: src/lib/serverMessages.ts
 msgctxt "deployment.machineRejected"
 msgid "The machine was rejected, so it cannot be given a sequence. Assign the sequence to another machine."
@@ -8176,8 +8445,12 @@ msgid "the machine with MAC {mac}"
 msgstr "the machine with MAC {mac}"
 
 #: src/rules/rules.ts
-msgid "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
-msgstr "The machine with MAC {target} no longer gets {sequence} chosen for it; another rule or an operator chooses instead. A machine that already has a run keeps it."
+msgid "the machine's own value"
+msgstr "the machine's own value"
+
+#: src/rules/RuleDrawer.tsx
+msgid "The machines it matches no longer get what it chooses, sets or gives; a rule below it may give them that instead."
+msgstr "The machines it matches no longer get what it chooses, sets or gives; a rule below it may give them that instead."
 
 #: src/settings/NetworkBootPage.tsx
 msgid "The most blocks DDT sends before the machine acknowledges them, whatever the boot image asks for; 1 to 64. 16 was reliable in tests; lower it to 8 or 4 where a link loses packets."
@@ -8342,10 +8615,22 @@ msgstr "The role of {name} comes from its single sign-on groups through the sing
 msgid "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups at the provider, or the map."
 msgstr "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups at the provider, or the map."
 
+#: src/rules/rules.ts
+msgid "the rule {name}"
+msgstr "the rule {name}"
+
+#: src/rules/RulesPage.tsx
+msgid "The rule could not be moved: {message}"
+msgstr "The rule could not be moved: {message}"
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.ruleChooses"
 msgid "The rule for {rule} chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
 msgstr "The rule for {rule} chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
+
+#: src/rules/RuleDrawer.tsx
+msgid "The rules below it move up a place. Runs that already started keep their values."
+msgstr "The rules below it move up a place. Runs that already started keep their values."
 
 #: src/rules/RulesPage.tsx
 msgid "The rules could not be loaded."
@@ -8486,6 +8771,10 @@ msgctxt "deployment.seedNamesMachine"
 msgid "The sequence's cloud-init seed gives the machine this name."
 msgstr "The sequence's cloud-init seed gives the machine this name."
 
+#: src/rules/rules.ts
+msgid "the sequence's default"
+msgstr "the sequence's default"
+
 #: src/boot/BootImagePage.tsx
 msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
 msgstr "The server address is this page's. Use the name machines reach the server by, if it is another."
@@ -8584,6 +8873,10 @@ msgstr "The software by others that DDT contains, and its licences"
 #: src/boot/BootImagePage.tsx
 msgid "The state of the boot image could not be read."
 msgstr "The state of the boot image could not be read."
+
+#: src/rules/rules.ts
+msgid "the step {name}"
+msgstr "the step {name}"
 
 #: src/runs/RunSteps.tsx
 msgid "The step failed without saying why."
@@ -8702,6 +8995,10 @@ msgstr "Their changes to {list} are lost."
 #: src/ui/FlowNode.tsx
 msgid "Then"
 msgstr "Then"
+
+#: src/rules/RuleDrawer.tsx
+msgid "There are no machine roles yet. Add them under <0>Deployment, Machine roles</0>."
+msgstr "There are no machine roles yet. Add them under <0>Deployment, Machine roles</0>."
 
 #: src/lib/serverMessages.ts
 msgctxt "machineRole.tooMany"
@@ -9101,6 +9398,10 @@ msgstr "Turn off your own second factor on the Account page."
 msgid "Turn on"
 msgstr "Turn on"
 
+#: src/rules/RuleDrawer.tsx
+msgid "Turned off, the rule is kept but matches no machine."
+msgstr "Turned off, the rule is kept but matches no machine."
+
 #: src/users/UsersPage.tsx
 msgid "Type"
 msgstr "Type"
@@ -9297,9 +9598,14 @@ msgstr "Use TFTP"
 msgid "Use the defaults"
 msgstr "Use the defaults"
 
+#: src/rules/drawerParts.tsx
 #: src/sequences/SequenceConflict.tsx
 msgid "Use theirs"
 msgstr "Use theirs"
+
+#: src/rules/drawerParts.tsx
+msgid "Use theirs throws your changes away. Keep mine saves your version over theirs."
+msgstr "Use theirs throws your changes away. Keep mine saves your version over theirs."
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Use theirs throws your unsaved changes away. Keep mine saves your version over theirs."
@@ -9375,6 +9681,14 @@ msgstr "Valid until"
 msgid "Value"
 msgstr "Value"
 
+#: src/values/ValuesEditor.tsx
+msgid "value {number}"
+msgstr "value {number}"
+
+#: src/values/ValuesEditor.tsx
+msgid "Value of {name}"
+msgstr "Value of {name}"
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Value of choice {number}"
 msgstr "Value of choice {number}"
@@ -9382,6 +9696,10 @@ msgstr "Value of choice {number}"
 #: src/conditions/ConditionBuilder.tsx
 msgid "Value of condition {number}"
 msgstr "Value of condition {number}"
+
+#: src/roles/MachineRolesPage.tsx
+msgid "Values"
+msgstr "Values"
 
 #: src/sequences/builder/TemplateField.tsx
 msgid "Values to use"
@@ -9503,6 +9821,10 @@ msgstr "What the check found"
 msgid "What the person who answers reads."
 msgstr "What the person who answers reads."
 
+#: src/rules/RuleTest.tsx
+msgid "What the rules give this machine could not be worked out."
+msgstr "What the rules give this machine could not be worked out."
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "What the variable holds unless an input, a rule or a machine role sets it."
 msgstr "What the variable holds unless an input, a rule or a machine role sets it."
@@ -9538,10 +9860,6 @@ msgstr "Where new computer accounts go. Left empty, the domain's default."
 #: src/log/LogPanel.tsx
 msgid "Which lines"
 msgstr "Which lines"
-
-#: src/rules/RuleDialog.tsx
-msgid "Which machines the rule is for"
-msgstr "Which machines the rule is for"
 
 #: src/packages/packages.ts
 msgid "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
@@ -9636,12 +9954,12 @@ msgid "Without one, the step cannot add the account and the run fails."
 msgstr "Without one, the step cannot add the account and the run fails."
 
 #: src/rules/RulesPage.tsx
-msgid "Without rules an operator assigns a sequence to each machine. Add a rule to choose one by hardware model or MAC address."
-msgstr "Without rules an operator assigns a sequence to each machine. Add a rule to choose one by hardware model or MAC address."
+msgid "Without rules an operator chooses the sequence of each machine. Add a rule to choose one, set values or give machine roles by what a machine is, such as its model or its network."
+msgstr "Without rules an operator chooses the sequence of each machine. Add a rule to choose one, set values or give machine roles by what a machine is, such as its model or its network."
 
 #: src/rules/RulesPage.tsx
-msgid "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
-msgstr "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
+msgid "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
+msgstr "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
 
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Wrap {name} in a group"

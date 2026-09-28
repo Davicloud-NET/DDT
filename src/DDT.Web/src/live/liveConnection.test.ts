@@ -167,6 +167,7 @@ const resynced = [
   ["packages"],
   ["image-uploads"],
   ["rules"],
+  ["machine-roles"],
   ["sequences"],
   ["sequence"],
   ["machine-sequence"],
@@ -314,6 +315,18 @@ describe("createLiveConnection", () => {
       [{ queryKey: ["machine-sequence"] }],
       [{ queryKey: ["sequence", "s1"] }],
     ]);
+  });
+
+  it("takes the machine roles from their event, and reads again only what they give", async () => {
+    const { live, hub, queryClient } = connection();
+    live.start();
+    await settle();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const roles = [{ id: "role1", name: "Kiosk", values: [], revision: 2 }];
+    hub().emit("rolesChanged", roles);
+
+    expect(queryClient.getQueryData(["machine-roles"])).toEqual(roles);
+    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
   });
 
   it("reads an open sequence again only when the change is newer than its copy", async () => {

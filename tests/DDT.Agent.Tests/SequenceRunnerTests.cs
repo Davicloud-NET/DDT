@@ -295,7 +295,6 @@ public sealed class SequenceRunnerTests : IDisposable
     {
         TestImage enterprise = new();
         AgentRun run = ImagePerModel(enterprise, 10_000);
-        TestTree.SkipUntilTheValidatorKnowsTrees(run.Sequence);
         ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer()).ServeFile(enterprise.Sha256, enterprise.Content);
 
         RunResult result = await RunAsync(server, run);
@@ -312,7 +311,6 @@ public sealed class SequenceRunnerTests : IDisposable
     {
         TestImage enterprise = new();
         AgentRun run = ImagePerModel(enterprise, 300L * 1024 * 1024 * 1024);
-        TestTree.SkipUntilTheValidatorKnowsTrees(run.Sequence);
         ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer()).ServeFile(enterprise.Sha256, enterprise.Content);
 
         RunResult result = await RunAsync(server, run);

@@ -272,7 +272,6 @@ public sealed class DryRunResumeTests : IDisposable
     [Fact]
     public async Task TheAgentStartedAgainGoesOnWithATreesRun()
     {
-        TestTree.SkipUntilTheValidatorKnowsTrees(s_tree);
         AgentRun assigned = s_treeRun with { State = DeploymentState.Assigned, DiskNumber = null };
         _server.AnswerRunReports = (report, token) => report.Activity == RunActivity.Paused
             ? new AgentRunReportResult(token, "resume", "run-token-1", ContinueStepId: s_pause.Id, ContinuePass: 1)

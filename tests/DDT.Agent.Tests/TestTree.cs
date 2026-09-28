@@ -70,14 +70,6 @@ internal static class TestTree
     public static SequenceDefinition Definition { get; } =
         new(SequenceDefinition.CurrentVersion, [PickTheImage, UntilTheToolWorks, TryTwice, OptionalTools, OnlyOnOptiPlex]);
 
-    // The validator this branch started from knows no groups, IFs, repeats, Set variable or Pause, and refuses them as
-    // steps of an unknown kind before a run starts; the validator of M7 checks trees by their paths. Until the two meet,
-    // a test that starts a tree's run through the checks before it is skipped for that reason alone, and for no other.
-    public static void SkipUntilTheValidatorKnowsTrees(SequenceDefinition definition) =>
-        Assert.SkipWhen(
-            SequenceValidator.Validate(definition).Any(problem => problem.Code == ServerMessages.SequenceUnknownStep.Code),
-            "This build's validator refuses the steps of a tree before a run starts.");
-
     private static RunScriptStep Script(int number, string name) => new()
     {
         Id = Guid.Parse($"0193a4b2-0000-7000-8000-00000000d{number + 100:D3}"),

@@ -12,6 +12,9 @@ public static class AgentLimits
     // Matches the server's cap on one registration.
     public const int MaxMacAddresses = 16;
 
+    // Matches the server's cap on a text in a registration, such as the model; longer facts are cut to it.
+    public const int MaxFactLength = 128;
+
     public static readonly TimeSpan MinRetryDelay = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
 

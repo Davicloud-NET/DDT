@@ -71,6 +71,10 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             ("run-token-1", AgentEnvironment.Windows, SequenceDefinition.CurrentVersion, null, null),
             (registration.RunToken, registration.Environment, registration.SequenceVersion, registration.ResumeToken, registration.Disks));
 
+        // The installed Windows reports the facts as Windows PE did, as conditions test them in both phases.
+        Assert.NotNull(registration.Facts);
+        Assert.Equal(new DryRunMachineIdentityReader(1).Read().Facts, registration.Facts);
+
         // The installed Windows' own tools run the scripts, which wait in the run's directory on its volume.
         string scripts = Path.Combine(Windows, "DDT", "scripts");
         Assert.Equal(

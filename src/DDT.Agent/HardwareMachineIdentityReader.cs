@@ -4,15 +4,24 @@
 
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using DDT.Agent.Deployment;
+using DDT.Agent.Facts;
 
 namespace DDT.Agent;
 
-public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
+public sealed class HardwareMachineIdentityReader(IFirmwareTables firmware, ISystemHardware hardware, IUefiVariables uefi) : IMachineIdentityReader
 {
+    private readonly MachineFactsReader _facts = new(firmware, hardware, uefi);
+
+    public HardwareMachineIdentityReader()
+        : this(new FirmwareTables(), new SystemHardware(), new UefiVariables())
+    {
+    }
+
     public MachineIdentity Read()
     {
         SmbiosSystemInformation? system = ReadSmbios();
-        (string primary, List<string> macs, List<string> addresses) = ReadMacAddresses();
+        (string primary, List<string> macs, List<string> addresses, NetworkFacts? network) = ReadMacAddresses();
 
         return new MachineIdentity(
             (system?.Uuid ?? Guid.Empty).ToString("D"),
@@ -24,30 +33,20 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
             SecureBootState.Read(),
             SecureBootTrust.Read(),
             system?.ChassisType,
-            addresses);
+            addresses,
+            _facts.Read(system, network));
     }
 
-    private static SmbiosSystemInformation? ReadSmbios()
-    {
-        uint size = NativeMethods.GetSystemFirmwareTable(NativeMethods.RawSmbiosProvider, 0, null, 0);
-
-        if (size == 0)
-        {
-            return null;
-        }
-
-        byte[] buffer = new byte[size];
-        uint written = NativeMethods.GetSystemFirmwareTable(NativeMethods.RawSmbiosProvider, 0, buffer, size);
-
-        return written == 0 ? null : SmbiosParser.TryReadSystemInformation(buffer.AsSpan(0, (int)Math.Min(written, size)));
-    }
+    private SmbiosSystemInformation? ReadSmbios() =>
+        firmware.Read(FirmwareTables.RawSmbiosProvider, 0) is { } raw ? SmbiosParser.TryReadSystemInformation(raw) : null;
 
     // The primary MAC is the adapter that carries the default route, which is the one the server sees
     // and the one PXE booted from. Adapters without link still count, because they are part of the
-    // machine a technician will recognise. The primary adapter's IPv4 addresses come along for the console.
-    private static (string Primary, List<string> All, List<string> PrimaryAddresses) ReadMacAddresses()
+    // machine a technician will recognise. The primary adapter's IPv4 addresses come along for the console, and its
+    // settings for the facts.
+    private static (string Primary, List<string> All, List<string> PrimaryAddresses, NetworkFacts? Network) ReadMacAddresses()
     {
-        List<(string Mac, bool Primary, List<string> Addresses)> adapters = [];
+        List<(string Mac, bool Primary, List<string> Addresses, IPInterfaceProperties Properties)> adapters = [];
 
         foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
         {
@@ -75,7 +74,7 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
                     .Select(unicast => unicast.Address.ToString()),
             ];
 
-            adapters.Add((Convert.ToHexString(address), hasGateway, addresses));
+            adapters.Add((Convert.ToHexString(address), hasGateway, addresses, properties));
         }
 
         List<string> sorted = [.. adapters.Select(adapter => adapter.Mac).Distinct().Order(StringComparer.Ordinal)];
@@ -90,7 +89,21 @@ public sealed class HardwareMachineIdentityReader : IMachineIdentityReader
         // The server accepts at most this many, and a host with many virtual adapters has more. The
         // primary is always kept.
         List<string> all = [primary, .. sorted.Where(mac => mac != primary).Take(AgentLimits.MaxMacAddresses - 1)];
+        (_, _, List<string> primaryAddresses, IPInterfaceProperties primaryProperties) = adapters.First(adapter => adapter.Mac == primary);
 
-        return (primary, all, adapters.First(adapter => adapter.Mac == primary).Addresses);
+        return (primary, all, primaryAddresses, ReadNetwork(primaryProperties));
+    }
+
+    // The facts go without the network's settings rather than the machine without an identity.
+    private static NetworkFacts? ReadNetwork(IPInterfaceProperties properties)
+    {
+        try
+        {
+            return NetworkFacts.Read(properties);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 }

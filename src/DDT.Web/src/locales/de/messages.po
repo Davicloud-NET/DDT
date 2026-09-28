@@ -445,6 +445,11 @@ msgstr "{installed} Datenträger"
 msgid "{installed} installed"
 msgstr "{installed} installiert"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.emptyContainerWarning"
+msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
+msgstr "{kind, select, if {Dieses IF hat weder unter Dann noch unter Sonst Schritte} repeat {Diese Wiederholung hat keine Schritte} other {Diese Gruppe hat keine Schritte}} und bewirkt daher nichts."
+
 #: src/runs/RunSteps.tsx
 msgid "{kind}, {phase}"
 msgstr "{kind}, {phase}"
@@ -477,6 +482,16 @@ msgstr "{level} um {at}, während {step}. Empfangen {received}."
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}. Received {received}."
 msgstr "{level} um {at}. Empfangen {received}."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionIPv4"
+msgid "{list, select, yes {Enter IPv4 addresses separated by semicolons, such as 10.0.0.1;10.0.0.2.} other {Enter an IPv4 address, such as 10.0.0.1.}}"
+msgstr "{list, select, yes {Geben Sie durch Semikolons getrennte IPv4-Adressen ein, etwa 10.0.0.1;10.0.0.2.} other {Geben Sie eine IPv4-Adresse ein, etwa 10.0.0.1.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionNumber"
+msgid "{list, select, yes {Enter numbers separated by semicolons, such as 8192;16384.} other {Enter a number, such as 8192.}}"
+msgstr "{list, select, yes {Geben Sie durch Semikolons getrennte Zahlen ein, etwa 8192;16384.} other {Geben Sie eine Zahl ein, etwa 8192.}}"
 
 #: src/log/LogPanel.tsx
 msgid "{loaded, plural, one {Search the # loaded line} other {Search the # loaded lines}}"
@@ -578,6 +593,16 @@ msgctxt "directory.singleSignOnAccount"
 msgid "{name} is a single sign-on account in DDT, so a sign-in with this name and a password is refused."
 msgstr "{name} ist ein Single-Sign-On-Konto in DDT, daher wird eine Anmeldung mit diesem Namen und einem Kennwort abgelehnt."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputAsValue"
+msgid "{name} is an Account input. Its answer holds a password, which DDT never uses as a value."
+msgstr "{name} ist eine Konto-Eingabe. Ihre Antwort enthält ein Kennwort, das DDT nie als Wert verwendet."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.valueNameRepeated"
+msgid "{name} is declared already. Names ignore case."
+msgstr "{name} ist bereits deklariert. Bei Namen zählt die Groß- und Kleinschreibung nicht."
+
 #: src/sequences/sequenceList.ts
 msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
 msgstr "{name} wird gelöscht und kann nicht mehr zugewiesen oder an einem Gerät gewählt werden."
@@ -628,6 +653,16 @@ msgstr "{name} ist kein Verzeichniskonto, daher wird sein Kennwort nicht an das 
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "{name} is not a PNG image. Upload the logo as a PNG file."
 msgstr "{name} ist kein PNG-Bild. Laden Sie das Logo als PNG-Datei hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.variableNotDeclared"
+msgid "{name} is not a variable of this sequence. Declare it first."
+msgstr "{name} ist keine Variable dieser Tasksequenz. Deklarieren Sie sie zuerst."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountInputUnknown"
+msgid "{name} is not an Account input of this sequence."
+msgstr "{name} ist keine Konto-Eingabe dieser Tasksequenz."
 
 #: src/users/UsersPage.tsx
 msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working, until an administrator enables it again. Nothing is deleted."
@@ -987,6 +1022,11 @@ msgid "A change applies to runs that start after it. A Write the answer file ste
 msgstr "Eine Änderung gilt für Ausführungen, die danach beginnen. Ein Schritt „Antwortdatei schreiben“ kann eigene Zeitzone, Sprache und Tastatur festlegen, ein Schritt „Der Domäne beitreten“ eine eigene Organisationseinheit."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.inputChoiceSemicolon"
+msgid "A choice of an input with several answers cannot hold a semicolon, which separates the answers."
+msgstr "Eine Auswahlmöglichkeit einer Eingabe mit mehreren Antworten kann kein Semikolon enthalten, weil es die Antworten trennt."
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.chunkSize"
 msgid "A chunk holds 1 to {max} bytes. Send the file in smaller chunks."
 msgstr "Ein Block enthält 1 bis {max} Bytes. Senden Sie die Datei in kleineren Blöcken."
@@ -1010,6 +1050,11 @@ msgstr "Ein Computername darf nicht nur aus Ziffern bestehen."
 msgctxt "computerName.startsWithHyphen"
 msgid "A computer name cannot start with a hyphen."
 msgstr "Ein Computername darf nicht mit einem Bindestrich beginnen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionTooDeep"
+msgid "A condition can nest groups at most {max} levels deep."
+msgstr "Eine Bedingung kann Gruppen höchstens {max} Ebenen tief verschachteln."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "A culture name. Left empty, the image's language."
@@ -1073,6 +1118,11 @@ msgctxt "model.nameLength"
 msgid "A name here has at most {max} characters and no control characters."
 msgstr "Ein Name hat hier höchstens {max} Zeichen und keine Steuerzeichen."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.valueName"
+msgid "A name starts with a letter and has at most {max} letters, digits and underscores."
+msgstr "Ein Name beginnt mit einem Buchstaben und hat höchstens {max} Buchstaben, Ziffern und Unterstriche."
+
 #: src/settings/CertificatePanel.tsx
 msgid "A new certificate is served at once, on trial: this page's next request gets it, and you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the certificate before."
 msgstr "Ein neues Zertifikat wird sofort ausgeliefert, auf Probe: Die nächste Anfrage dieser Seite erhält es, und Sie behalten es hier. Behält es niemand innerhalb von 5 Minuten, kehrt DDT zum vorherigen Zertifikat zurück."
@@ -1090,9 +1140,19 @@ msgstr "Ein Paket darf höchstens {max} Ziele haben."
 msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi, signed by the 2023 one."
 msgstr "Ein Pfad im Startverzeichnis. Geräte, die der Microsoft-CA 2011 nicht mehr vertrauen, brauchen x64/bootmgfw_ex.efi, signiert von der CA 2023."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.pauseMinutes"
+msgid "A pause can go on by itself after 1 to {max} minutes."
+msgstr "Eine Pause kann nach 1 bis {max} Minuten von selbst fortfahren."
+
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "A PNG of at most 512 KB and 2048 by 2048 pixels."
 msgstr "Ein PNG von höchstens 512 KB und 2048 mal 2048 Pixeln."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.repeatTimes"
+msgid "A repeat runs 1 to {max} times."
+msgstr "Eine Wiederholung läuft 1 bis {max} Mal."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartAfterRestart"
@@ -1127,6 +1187,11 @@ msgstr "Eine Regel für sein Modell"
 msgid "A rule needs a task sequence to choose. Create one under Deployment, Task sequences first."
 msgstr "Eine Regel braucht eine Tasksequenz, die sie wählen kann. Legen Sie zuerst unter Bereitstellung, Tasksequenzen eine an."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.phaseChangeInRepeat"
+msgid "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat."
+msgstr "Innerhalb einer Wiederholung kann eine Ausführung nicht zwischen Windows PE und Windows wechseln. Verschieben Sie diesen Schritt oder die Schritte davor aus der Wiederholung."
+
 #: src/runs/RunHistoryPage.tsx
 msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
 msgstr "Eine Ausführung beginnt, wenn einem Gerät eine Tasksequenz zugewiesen wird, es mit der von einer Regel gewählten freigegeben wird oder jemand am Gerät eine wählt."
@@ -1135,6 +1200,11 @@ msgstr "Eine Ausführung beginnt, wenn einem Gerät eine Tasksequenz zugewiesen 
 msgctxt "sequence.scriptTooLarge"
 msgid "A script can have at most {max} KiB."
 msgstr "Ein Skript darf höchstens {max} KiB haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.runAsWindowsOnly"
+msgid "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM."
+msgstr "Ein Skript läuft nur in Windows unter einem Konto. In Windows PE läuft es als SYSTEM."
 
 #: src/tokens/MakeTokenDialog.tsx
 msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
@@ -1152,6 +1222,21 @@ msgstr "eine Tasksequenz"
 msgctxt "sequence.oneImage"
 msgid "A sequence can apply only one image."
 msgstr "Eine Tasksequenz kann nur ein Image anwenden."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.tooManyInputs"
+msgid "A sequence can ask at most {max} inputs."
+msgstr "Eine Tasksequenz kann höchstens {max} Eingaben abfragen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.nodeCount"
+msgid "A sequence can have at most {max} steps, groups, IFs and repeats together."
+msgstr "Eine Tasksequenz kann zusammen höchstens {max} Schritte, Gruppen, IFs und Wiederholungen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.tooManyVariables"
+msgid "A sequence can have at most {max} variables."
+msgstr "Eine Tasksequenz kann höchstens {max} Variablen haben."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.oneDomainJoin"
@@ -1208,6 +1293,11 @@ msgid "A sequence that writes a raw disk image keeps its state in memory, so Win
 msgstr "Eine Tasksequenz, die ein Raw-Datenträgerimage schreibt, hält ihren Zustand im Arbeitsspeicher, daher kann Windows PE währenddessen nicht neu starten."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.tooManyShares"
+msgid "A step can connect at most {max} shares."
+msgstr "Ein Schritt kann höchstens {max} Netzwerkfreigaben verbinden."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.tooManyConditions"
 msgid "A step can have at most {max} conditions."
 msgstr "Ein Schritt darf höchstens {max} Bedingungen haben."
@@ -1216,6 +1306,11 @@ msgstr "Ein Schritt darf höchstens {max} Bedingungen haben."
 msgctxt "sequence.windowsNeedsImage"
 msgid "A step in Windows needs an earlier step that applies the image without conditions."
 msgstr "Ein Schritt in Windows braucht einen früheren Schritt, der das Image ohne Bedingungen anwendet."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsNeedsImageOnEveryPath"
+msgid "A step in Windows needs the image applied before it on every path through the sequence, and on some path no step applies it."
+msgstr "Ein Schritt in Windows braucht auf jedem Pfad durch die Tasksequenz ein zuvor angewendetes Image, und auf mindestens einem Pfad wendet kein Schritt es an."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepEmpty"
@@ -1611,6 +1706,11 @@ msgstr "Eine http-URL auf dem Boot-Port von DDT, unter /boot/, wo es das Startve
 msgid "An http URL on port {portText}, below /boot/, where DDT serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
 msgstr "Eine http-URL auf Port {portText}, unter /boot/, wo DDT das Startverzeichnis bereitstellt. Geräte, die der Microsoft-CA 2011 nicht mehr vertrauen, brauchen bootmgfw_ex.efi, signiert von der CA 2023."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.ifOnlyTest"
+msgid "An IF decides by its test alone. Move this condition into the test."
+msgstr "Ein IF entscheidet allein nach seiner Prüfung. Verschieben Sie diese Bedingung in die Prüfung."
+
 #: src/packages/PackageDialog.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr "Ein Schritt „Treiber einbinden“ fügt diese Treiber Geräten hinzu, deren Modell auf eines davon passt. Mit * am Ende passt ein Modell auf jedes, das so beginnt; ein leerer Hersteller passt auf jeden."
@@ -1649,6 +1749,11 @@ msgstr "Ein anderer Administrator hat sie um {time} gespeichert"
 #: src/sequences/SequenceConflict.tsx
 msgid "Another administrator saved this sequence while you were editing."
 msgstr "Ein anderer Administrator hat diese Tasksequenz gespeichert, während Sie sie bearbeitet haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputChoiceRepeated"
+msgid "Another choice already has the value {value}."
+msgstr "Eine andere Auswahlmöglichkeit hat bereits den Wert {value}."
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Another interface name or address"
@@ -2071,6 +2176,11 @@ msgstr "Wählen Sie {file} erneut, um bei {percent} % fortzusetzen."
 msgid "Choose a file"
 msgstr "Datei wählen"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionName"
+msgid "Choose a machine fact or a value to test."
+msgstr "Wählen Sie ein Gerätemerkmal oder einen Wert zum Prüfen."
+
 #: src/settings/CertificatePanel.tsx
 msgid "Choose a PFX file"
 msgstr "PFX-Datei wählen"
@@ -2083,6 +2193,11 @@ msgstr "Wählen Sie eine Regel nach MAC-Adresse oder nach Modell."
 #: src/rules/RuleDialog.tsx
 msgid "Choose a sequence"
 msgstr "Tasksequenz wählen"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.accountChoose"
+msgid "Choose a stored account or an Account input."
+msgstr "Wählen Sie ein gespeichertes Konto oder eine Konto-Eingabe."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.role"
@@ -2127,6 +2242,11 @@ msgctxt "sequence.chooseImage"
 msgid "Choose the image to apply."
 msgstr "Wählen Sie das anzuwendende Image."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputKind"
+msgid "Choose the kind of answer."
+msgstr "Wählen Sie die Art der Antwort."
+
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "Choose the logo first."
 msgstr "Wählen Sie zuerst das Logo."
@@ -2135,6 +2255,16 @@ msgstr "Wählen Sie zuerst das Logo."
 msgctxt "sequence.chooseRawImage"
 msgid "Choose the raw disk image to write."
 msgstr "Wählen Sie das zu schreibende Raw-Datenträgerimage."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.setVariableChoose"
+msgid "Choose the variable to set."
+msgstr "Wählen Sie die Variable, die gesetzt wird."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputAskAt"
+msgid "Choose where the input is asked: on the web, at the machine, or both."
+msgstr "Wählen Sie, wo die Eingabe abgefragt wird: im Web, am Gerät oder an beiden Stellen."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptPhase"
@@ -2735,6 +2865,11 @@ msgid "End it with * to match every model that starts with it."
 msgstr "Mit * am Ende passt sie auf jedes Modell, das so beginnt."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.inputChoices"
+msgid "Enter 1 to {max} choices."
+msgstr "Geben Sie 1 bis {max} Auswahlmöglichkeiten ein."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.successExitCodes"
 msgid "Enter 1 to {max} exit codes that mean success."
 msgstr "Geben Sie 1 bis {max} Exitcodes ein, die Erfolg bedeuten."
@@ -2763,6 +2898,11 @@ msgid "Enter a computer name. {use}"
 msgstr "Geben Sie einen Computernamen ein. {use}"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.inputLabel"
+msgid "Enter a label of 1 to {max} characters."
+msgstr "Geben Sie eine Beschriftung mit 1 bis {max} Zeichen ein."
+
+#: src/lib/serverMessages.ts
 msgctxt "mac.enterFull"
 msgid "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03."
 msgstr "Geben Sie eine MAC-Adresse aus 12 Hexadezimalziffern ein, etwa 00:15:5D:01:02:03."
@@ -2771,6 +2911,11 @@ msgstr "Geben Sie eine MAC-Adresse aus 12 Hexadezimalziffern ein, etwa 00:15:5D:
 msgctxt "sequence.stepNameEmpty"
 msgid "Enter a name for the step."
 msgstr "Geben Sie einen Namen für den Schritt ein."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionSubnet"
+msgid "Enter a network as an address and the length of its prefix, such as 10.0.0.0/24."
+msgstr "Geben Sie ein Netzwerk als Adresse mit Präfixlänge ein, etwa 10.0.0.0/24."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.nameEmpty"
@@ -2802,6 +2947,16 @@ msgid "Enter the code of your authenticator as well."
 msgstr "Geben Sie auch den Code Ihres Authentifikators ein."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.repeatNeedsUntil"
+msgid "Enter the condition that ends the repeat."
+msgstr "Geben Sie die Bedingung ein, die die Wiederholung beendet."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.ifNeedsTest"
+msgid "Enter the condition the IF tests."
+msgstr "Geben Sie die Bedingung ein, die das IF prüft."
+
+#: src/lib/serverMessages.ts
 msgctxt "model.enter"
 msgid "Enter the model as the machine reports it."
 msgstr "Geben Sie das Modell so ein, wie das Gerät es meldet."
@@ -2821,6 +2976,11 @@ msgctxt "sequence.scriptEmpty"
 msgid "Enter the script."
 msgstr "Geben Sie das Skript ein."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.sharePath"
+msgid "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers."
+msgstr "Geben Sie die Netzwerkfreigabe als \\\\Server\\Freigabe ein, etwa \\\\files.example.com\\drivers."
+
 #: src/auth/SignInPage.tsx
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr "Geben Sie die sechs Ziffern ein, die Ihre Authenticator-App für DDT anzeigt."
@@ -2831,9 +2991,19 @@ msgid "Enter the user name to check."
 msgstr "Geben Sie den zu prüfenden Benutzernamen ein."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.inputChoiceEmpty"
+msgid "Enter the value of the choice."
+msgstr "Geben Sie den Wert der Auswahlmöglichkeit ein."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.conditionValue"
 msgid "Enter the value to compare with."
 msgstr "Geben Sie den Vergleichswert ein."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.conditionYesNo"
+msgid "Enter true or false."
+msgstr "Geben Sie true oder false ein."
 
 #: src/sequences/fields.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
@@ -3158,6 +3328,11 @@ msgstr "Gruppen und Rollen"
 #: src/users/DirectoryPanel.tsx
 msgid "Groups and the roles they give"
 msgstr "Gruppen und die Rollen, die sie geben"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.tooDeep"
+msgid "Groups, IFs and repeats can be nested at most {max} levels deep."
+msgstr "Gruppen, IFs und Wiederholungen lassen sich höchstens {max} Ebenen tief verschachteln."
 
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
@@ -4002,6 +4177,11 @@ msgstr "Namen"
 #: src/settings/CertificatePanel.tsx
 msgid "Names and addresses"
 msgstr "Namen und Adressen"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.valueNameReserved"
+msgid "Names that start with DDT are kept for DDT's own values. Choose another name."
+msgstr "Namen, die mit DDT beginnen, sind den eigenen Werten von DDT vorbehalten. Wählen Sie einen anderen Namen."
 
 #: src/sequences/sequenceList.ts
 msgid "needs a computer name"
@@ -6005,6 +6185,11 @@ msgid "Steps"
 msgstr "Schritte"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.variableNotSetBySteps"
+msgid "Steps cannot set {name}. Let steps set it where the variable is declared."
+msgstr "Schritte können {name} nicht setzen. Erlauben Sie es in der Deklaration der Variable."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.windowsPEAfterWindows"
 msgid "Steps in Windows PE come first, and an earlier step already runs in Windows."
 msgstr "Schritte in Windows PE kommen zuerst, und ein früherer Schritt läuft bereits in Windows."
@@ -6309,6 +6494,11 @@ msgctxt "sequence.conditionsMissing"
 msgid "The conditions are missing."
 msgstr "Die Bedingungen fehlen."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.tooManyTests"
+msgid "The conditions of a step can have at most {max} tests together."
+msgstr "Die Bedingungen eines Schritts können zusammen höchstens {max} Prüfungen haben."
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "The console at the machine"
 msgstr "Die Konsole am Gerät"
@@ -6364,6 +6554,11 @@ msgctxt "directory.accountDisabled"
 msgid "The DDT account {name} is disabled, so a sign-in is refused."
 msgstr "Das DDT-Konto {name} ist deaktiviert, daher wird eine Anmeldung abgelehnt."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.declarationEmpty"
+msgid "The declaration is empty."
+msgstr "Die Deklaration ist leer."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "The default"
 msgstr "Der Standard"
@@ -6377,6 +6572,11 @@ msgstr "Der Standardcontainer Computers ist keine Organisationseinheit und kann 
 msgctxt "domain.noComputersContainer"
 msgid "The default Computers container of {domain} was not found, or {user} may not read it."
 msgstr "Der Standardcontainer Computers von {domain} wurde nicht gefunden, oder {user} darf ihn nicht lesen."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputDefaultNotChoice"
+msgid "The default has to be one of the choices."
+msgstr "Der Standardwert muss eine der Auswahlmöglichkeiten sein."
 
 #: src/settings/LoggingPanel.tsx
 msgid "The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity Framework Core categories at Warning."
@@ -6633,6 +6833,11 @@ msgctxt "settings.oidc.signInScheme"
 msgid "The handler would sign into ''{scheme}'', which bypasses local account linking entirely."
 msgstr "Der Handler würde sich bei ''{scheme}'' anmelden, was die Verknüpfung mit lokalen Konten ganz umgeht."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shareHostFixed"
+msgid "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs."
+msgstr "Der Host einer Netzwerkfreigabe kann nur aus Werten bestehen, die beim Start der Ausführung feststehen, und {name} kann sich während der Ausführung ändern."
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "The ID the provider shows for DDT's client."
 msgstr "Die ID, die der Anbieter für den DDT-Client anzeigt."
@@ -6752,6 +6957,11 @@ msgstr "Das Logo darf höchstens {max} KB groß sein."
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "The logo was not removed. {reason}"
 msgstr "Das Logo wurde nicht entfernt. {reason}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputMaxLength"
+msgid "The longest answer can have 1 to {max} characters."
+msgstr "Die längste Antwort kann 1 bis {max} Zeichen haben."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileAssigning"
@@ -7023,6 +7233,11 @@ msgstr "Die Ausführung wurde abgebrochen"
 msgid "The run went on, because \"Go on when this step fails\" is on for this step."
 msgstr "Die Ausführung ging weiter, weil für diesen Schritt \"Bei Fehler fortfahren\" eingeschaltet ist."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.pauseBeforePartitionWarning"
+msgid "The run's state is kept only in memory here, so the run ends if the machine restarts while it is paused."
+msgstr "Der Zustand der Ausführung liegt hier nur im Arbeitsspeicher, daher endet die Ausführung, wenn das Gerät während der Pause neu startet."
+
 #: src/machines/MachinePage.tsx
 msgid "The runs of this machine could not be loaded."
 msgstr "Die Ausführungen dieses Geräts konnten nicht geladen werden."
@@ -7082,6 +7297,11 @@ msgstr "Die Tasksequenz ist kein Dokument, das DDT lesen kann. Jeder Schritt bra
 msgctxt "deployment.joinsDomainUnderName"
 msgid "The sequence joins the machine to the domain under this name."
 msgstr "Die Tasksequenz nimmt das Gerät unter diesem Namen in die Domäne auf."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.namesMachineWithValue"
+msgid "The sequence names the machine by its ComputerName variable."
+msgstr "Die Tasksequenz benennt das Gerät über ihre Variable ComputerName."
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.sequenceGone"
@@ -7466,6 +7686,11 @@ msgstr "Dieses Gerät hat noch keine Protokollzeilen gesendet."
 msgid "This machine was removed"
 msgstr "Dieses Gerät wurde entfernt"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.operatorDoesNotFit"
+msgid "This operator does not fit {name}, which holds {type, select, Number {a number} YesNo {yes or no} IPv4 {an IPv4 address} Mac {a MAC address} other {plain text}}."
+msgstr "Dieser Operator passt nicht zu {name}, das {type, select, Number {eine Zahl} YesNo {Ja oder Nein} IPv4 {eine IPv4-Adresse} Mac {eine MAC-Adresse} other {einfachen Text}} enthält."
+
 #: src/settings/CertificatePanel.tsx
 msgid "This page"
 msgstr "Diese Seite"
@@ -7518,6 +7743,11 @@ msgstr "Dieser Server kann den Schlüsselbund nicht lesen, mit dem die gespeiche
 #: src/settings/ServerPage.tsx
 msgid "This server saves no settings"
 msgstr "Dieser Server speichert keine Einstellungen"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.onceInRepeat"
+msgid "This step can run only once in a run, so it cannot be inside a repeat."
+msgstr "Dieser Schritt kann in einer Ausführung nur einmal laufen und daher nicht in einer Wiederholung stehen."
 
 #: src/machines/MachineActions.tsx
 msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."

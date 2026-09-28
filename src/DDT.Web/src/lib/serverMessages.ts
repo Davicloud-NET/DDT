@@ -761,6 +761,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "rule.sequenceGone",
     message: "The sequence no longer exists. Choose another one.",
   }),
+  "sequence.accountChoose": msg({
+    context: "sequence.accountChoose",
+    message: "Choose a stored account or an Account input.",
+  }),
+  "sequence.accountInputAsValue": msg({
+    context: "sequence.accountInputAsValue",
+    message: "{name} is an Account input. Its answer holds a password, which DDT never uses as a value.",
+  }),
+  "sequence.accountInputUnknown": msg({
+    context: "sequence.accountInputUnknown",
+    message: "{name} is not an Account input of this sequence.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -789,9 +801,29 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.conditionEmpty",
     message: "The condition is empty.",
   }),
+  "sequence.conditionIPv4": msg({
+    context: "sequence.conditionIPv4",
+    message: "{list, select, yes {Enter IPv4 addresses separated by semicolons, such as 10.0.0.1;10.0.0.2.} other {Enter an IPv4 address, such as 10.0.0.1.}}",
+  }),
+  "sequence.conditionName": msg({
+    context: "sequence.conditionName",
+    message: "Choose a machine fact or a value to test.",
+  }),
+  "sequence.conditionNumber": msg({
+    context: "sequence.conditionNumber",
+    message: "{list, select, yes {Enter numbers separated by semicolons, such as 8192;16384.} other {Enter a number, such as 8192.}}",
+  }),
   "sequence.conditionOperator": msg({
     context: "sequence.conditionOperator",
     message: "Choose an operator.",
+  }),
+  "sequence.conditionSubnet": msg({
+    context: "sequence.conditionSubnet",
+    message: "Enter a network as an address and the length of its prefix, such as 10.0.0.0/24.",
+  }),
+  "sequence.conditionTooDeep": msg({
+    context: "sequence.conditionTooDeep",
+    message: "A condition can nest groups at most {max} levels deep.",
   }),
   "sequence.conditionValue": msg({
     context: "sequence.conditionValue",
@@ -801,17 +833,37 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.conditionVariable",
     message: "Choose one of the variables {variables}.",
   }),
+  "sequence.conditionYesNo": msg({
+    context: "sequence.conditionYesNo",
+    message: "Enter true or false.",
+  }),
   "sequence.conditionsMissing": msg({
     context: "sequence.conditionsMissing",
     message: "The conditions are missing.",
+  }),
+  "sequence.declarationEmpty": msg({
+    context: "sequence.declarationEmpty",
+    message: "The declaration is empty.",
   }),
   "sequence.driversBeforeImage": msg({
     context: "sequence.driversBeforeImage",
     message: "Drivers can be added only after the image is applied.",
   }),
+  "sequence.emptyContainerWarning": msg({
+    context: "sequence.emptyContainerWarning",
+    message: "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing.",
+  }),
   "sequence.exitCodeMeansBoth": msg({
     context: "sequence.exitCodeMeansBoth",
     message: "An exit code cannot mean both success and a restart: {codes}.",
+  }),
+  "sequence.ifNeedsTest": msg({
+    context: "sequence.ifNeedsTest",
+    message: "Enter the condition the IF tests.",
+  }),
+  "sequence.ifOnlyTest": msg({
+    context: "sequence.ifOnlyTest",
+    message: "An IF decides by its test alone. Move this condition into the test.",
   }),
   "sequence.imageBeforePartition": msg({
     context: "sequence.imageBeforePartition",
@@ -829,6 +881,42 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.imageIsWindows",
     message: "{image} is a Windows image, which an Apply image step applies. Choose a raw disk image.",
   }),
+  "sequence.inputAskAt": msg({
+    context: "sequence.inputAskAt",
+    message: "Choose where the input is asked: on the web, at the machine, or both.",
+  }),
+  "sequence.inputChoiceEmpty": msg({
+    context: "sequence.inputChoiceEmpty",
+    message: "Enter the value of the choice.",
+  }),
+  "sequence.inputChoiceRepeated": msg({
+    context: "sequence.inputChoiceRepeated",
+    message: "Another choice already has the value {value}.",
+  }),
+  "sequence.inputChoiceSemicolon": msg({
+    context: "sequence.inputChoiceSemicolon",
+    message: "A choice of an input with several answers cannot hold a semicolon, which separates the answers.",
+  }),
+  "sequence.inputChoices": msg({
+    context: "sequence.inputChoices",
+    message: "Enter 1 to {max} choices.",
+  }),
+  "sequence.inputDefaultNotChoice": msg({
+    context: "sequence.inputDefaultNotChoice",
+    message: "The default has to be one of the choices.",
+  }),
+  "sequence.inputKind": msg({
+    context: "sequence.inputKind",
+    message: "Choose the kind of answer.",
+  }),
+  "sequence.inputLabel": msg({
+    context: "sequence.inputLabel",
+    message: "Enter a label of 1 to {max} characters.",
+  }),
+  "sequence.inputMaxLength": msg({
+    context: "sequence.inputMaxLength",
+    message: "The longest answer can have 1 to {max} characters.",
+  }),
   "sequence.keyboard": msg({
     context: "sequence.keyboard",
     message: "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407.",
@@ -841,6 +929,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.nameTaken",
     message: "Another sequence is already called {name}. Choose another name.",
   }),
+  "sequence.namesMachineWithValue": msg({
+    context: "sequence.namesMachineWithValue",
+    message: "The sequence names the machine by its ComputerName variable.",
+  }),
   "sequence.noAdministratorWarning": msg({
     context: "sequence.noAdministratorWarning",
     message: "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then stops at the account page, and the sequence waits there until someone finishes it.",
@@ -852,6 +944,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.noLocalAdministratorSet": msg({
     context: "sequence.noLocalAdministratorSet",
     message: "No local administrator is set on the Deployment defaults page, so the answer file cannot add one.",
+  }),
+  "sequence.nodeCount": msg({
+    context: "sequence.nodeCount",
+    message: "A sequence can have at most {max} steps, groups, IFs and repeats together.",
+  }),
+  "sequence.onceInRepeat": msg({
+    context: "sequence.onceInRepeat",
+    message: "This step can run only once in a run, so it cannot be inside a repeat.",
   }),
   "sequence.oneDomainJoin": msg({
     context: "sequence.oneDomainJoin",
@@ -877,6 +977,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.oneUnattend",
     message: "A sequence can write the answer file only once.",
   }),
+  "sequence.operatorDoesNotFit": msg({
+    context: "sequence.operatorDoesNotFit",
+    message: "This operator does not fit {name}, which holds {type, select, Number {a number} YesNo {yes or no} IPv4 {an IPv4 address} Mac {a MAC address} other {plain text}}.",
+  }),
   "sequence.packageBeforePartition": msg({
     context: "sequence.packageBeforePartition",
     message: "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put.",
@@ -897,6 +1001,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.partitionAfterImage",
     message: "The disk has to be partitioned before the image is applied.",
   }),
+  "sequence.pauseBeforePartitionWarning": msg({
+    context: "sequence.pauseBeforePartitionWarning",
+    message: "The run's state is kept only in memory here, so the run ends if the machine restarts while it is paused.",
+  }),
+  "sequence.pauseMinutes": msg({
+    context: "sequence.pauseMinutes",
+    message: "A pause can go on by itself after 1 to {max} minutes.",
+  }),
+  "sequence.phaseChangeInRepeat": msg({
+    context: "sequence.phaseChangeInRepeat",
+    message: "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.",
+  }),
   "sequence.rawImageNotStarting": msg({
     context: "sequence.rawImageNotStarting",
     message: "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on. {detail} Turn Secure Boot off in the firmware of the machines it goes to, or enroll your own key. Assigning the sequence then asks to allow it.",
@@ -908,6 +1024,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.recoveryPartitionSize": msg({
     context: "sequence.recoveryPartitionSize",
     message: "The recovery partition needs {min} to {max} MB.",
+  }),
+  "sequence.repeatNeedsUntil": msg({
+    context: "sequence.repeatNeedsUntil",
+    message: "Enter the condition that ends the repeat.",
+  }),
+  "sequence.repeatTimes": msg({
+    context: "sequence.repeatTimes",
+    message: "A repeat runs 1 to {max} times.",
   }),
   "sequence.requestTooLarge": msg({
     context: "sequence.requestTooLarge",
@@ -924,6 +1048,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
     message: "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.",
+  }),
+  "sequence.runAsWindowsOnly": msg({
+    context: "sequence.runAsWindowsOnly",
+    message: "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.",
   }),
   "sequence.scriptEmpty": msg({
     context: "sequence.scriptEmpty",
@@ -961,6 +1089,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.sendJson",
     message: "Send the sequence as JSON.",
   }),
+  "sequence.setVariableChoose": msg({
+    context: "sequence.setVariableChoose",
+    message: "Choose the variable to set.",
+  }),
+  "sequence.shareHostFixed": msg({
+    context: "sequence.shareHostFixed",
+    message: "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs.",
+  }),
+  "sequence.sharePath": msg({
+    context: "sequence.sharePath",
+    message: "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.",
+  }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
     message: "A sequence needs 1 to {max} steps.",
@@ -997,9 +1137,29 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.timeZone",
     message: "''{timeZone}'' is not a Windows time zone id. Use a name that tzutil /l lists, such as W. Europe Standard Time.",
   }),
+  "sequence.tooDeep": msg({
+    context: "sequence.tooDeep",
+    message: "Groups, IFs and repeats can be nested at most {max} levels deep.",
+  }),
   "sequence.tooManyConditions": msg({
     context: "sequence.tooManyConditions",
     message: "A step can have at most {max} conditions.",
+  }),
+  "sequence.tooManyInputs": msg({
+    context: "sequence.tooManyInputs",
+    message: "A sequence can ask at most {max} inputs.",
+  }),
+  "sequence.tooManyShares": msg({
+    context: "sequence.tooManyShares",
+    message: "A step can connect at most {max} shares.",
+  }),
+  "sequence.tooManyTests": msg({
+    context: "sequence.tooManyTests",
+    message: "The conditions of a step can have at most {max} tests together.",
+  }),
+  "sequence.tooManyVariables": msg({
+    context: "sequence.tooManyVariables",
+    message: "A sequence can have at most {max} variables.",
   }),
   "sequence.unattendBeforeImage": msg({
     context: "sequence.unattendBeforeImage",
@@ -1017,6 +1177,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.unreadable",
     message: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
   }),
+  "sequence.valueName": msg({
+    context: "sequence.valueName",
+    message: "A name starts with a letter and has at most {max} letters, digits and underscores.",
+  }),
+  "sequence.valueNameRepeated": msg({
+    context: "sequence.valueNameRepeated",
+    message: "{name} is declared already. Names ignore case.",
+  }),
+  "sequence.valueNameReserved": msg({
+    context: "sequence.valueNameReserved",
+    message: "Names that start with DDT are kept for DDT's own values. Choose another name.",
+  }),
+  "sequence.variableNotDeclared": msg({
+    context: "sequence.variableNotDeclared",
+    message: "{name} is not a variable of this sequence. Declare it first.",
+  }),
+  "sequence.variableNotSetBySteps": msg({
+    context: "sequence.variableNotSetBySteps",
+    message: "Steps cannot set {name}. Let steps set it where the variable is declared.",
+  }),
   "sequence.versionTooLow": msg({
     context: "sequence.versionTooLow",
     message: "The sequence has steps of version {required}, but says it is of version {version}.",
@@ -1028,6 +1208,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.windowsNeedsImage": msg({
     context: "sequence.windowsNeedsImage",
     message: "A step in Windows needs an earlier step that applies the image without conditions.",
+  }),
+  "sequence.windowsNeedsImageOnEveryPath": msg({
+    context: "sequence.windowsNeedsImageOnEveryPath",
+    message: "A step in Windows needs the image applied before it on every path through the sequence, and on some path no step applies it.",
   }),
   "sequence.windowsPEAfterWindows": msg({
     context: "sequence.windowsPEAfterWindows",

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Collections.Concurrent;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -27,6 +28,13 @@ internal static class AdministratorCertificate
         return new PemPair(certificate.ExportCertificatePem(), key.ExportPkcs8PrivateKeyPem());
     }
 
+    // On Windows, serving a chain puts its CA certificates into the user's Intermediate Certification Authorities store,
+    // and every test run makes new CAs under the same names. With a few dozen CAs of one name in that store, Windows stops
+    // building chains for the name, so the CAs made here are taken out of it again when the tests end.
+    private static readonly ConcurrentBag<string> s_authorities = [];
+
+    static AdministratorCertificate() => AppDomain.CurrentDomain.ProcessExit += (_, _) => ForgetAuthorities();
+
     // The root of an administrator's CA, or with an issuer, an intermediate CA below it.
     public static PemPair CreateAuthority(string subject, PemPair? issuer, DateTimeOffset notBefore, DateTimeOffset notAfter)
     {
@@ -37,7 +45,39 @@ internal static class AdministratorCertificate
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
         request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(request.PublicKey, false));
 
-        return Sign(request, key, issuer, notBefore, notAfter);
+        PemPair authority = Sign(request, key, issuer, notBefore, notAfter);
+
+        using X509Certificate2 certificate = X509Certificate2.CreateFromPem(authority.CertificatePem);
+        s_authorities.Add(certificate.Thumbprint);
+
+        return authority;
+    }
+
+    private static void ForgetAuthorities()
+    {
+        if (!OperatingSystem.IsWindows() || s_authorities.IsEmpty)
+        {
+            return;
+        }
+
+        try
+        {
+            using X509Store store = new(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadWrite);
+
+            foreach (string thumbprint in s_authorities.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (X509Certificate2 certificate in store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, validOnly: false))
+                {
+                    store.Remove(certificate);
+                    certificate.Dispose();
+                }
+            }
+        }
+        catch (CryptographicException)
+        {
+            // A store that cannot be opened keeps what it has; the tests passed or failed on their own already.
+        }
     }
 
     // A server certificate from an administrator's CA, for DNS names and addresses.

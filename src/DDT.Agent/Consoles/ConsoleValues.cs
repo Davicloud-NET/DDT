@@ -65,6 +65,11 @@ public static class ConsoleValues
         RebootStep => "reboot",
         WriteRawImageStep => "writeRawImage",
         WriteCloudInitSeedStep => "writeCloudInitSeed",
+        GroupStep => "group",
+        IfStep => "if",
+        RepeatStep => "repeat",
+        SetVariableStep => "setVariable",
+        PauseStep => "pause",
         _ => "step",
     };
 }

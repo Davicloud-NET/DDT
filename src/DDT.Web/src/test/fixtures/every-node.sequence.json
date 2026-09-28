@@ -1,0 +1,434 @@
+{
+  "version": 3,
+  "steps": [
+    {
+      "kind": "partition",
+      "systemPartitionMegabytes": 300,
+      "recoveryPartitionMegabytes": 1024,
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Partition",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "applyImage",
+      "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Apply",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "injectDrivers",
+      "requireMatch": false,
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Drivers",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false,
+      "when": {
+        "kind": "any",
+        "parts": [
+          {
+            "kind": "test",
+            "variable": "FriendlyModel",
+            "operator": "Matches",
+            "value": "ThinkPad*"
+          },
+          {
+            "kind": "none",
+            "parts": [
+              {
+                "kind": "test",
+                "variable": "DeviceKind",
+                "operator": "Equals",
+                "value": "Virtual"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "writeUnattend",
+      "timeZone": null,
+      "locale": null,
+      "keyboard": null,
+      "localAdministrator": false,
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Answer file",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "group",
+      "steps": [
+        {
+          "kind": "repeat",
+          "steps": [
+            {
+              "kind": "if",
+              "test": {
+                "kind": "all",
+                "parts": [
+                  {
+                    "kind": "test",
+                    "variable": "Manufacturer",
+                    "operator": "Equals",
+                    "value": "LENOVO"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "MemoryMegabytes",
+                    "operator": "GreaterOrEqual",
+                    "value": "8192"
+                  }
+                ]
+              },
+              "then": [
+                {
+                  "kind": "runScript",
+                  "phase": "Windows",
+                  "interpreter": "PowerShell",
+                  "script": "exit 0",
+                  "packageId": null,
+                  "timeoutMinutes": 60,
+                  "successExitCodes": [
+                    0
+                  ],
+                  "rebootExitCodes": [
+                    3010
+                  ],
+                  "runAs": {
+                    "accountId": null,
+                    "input": "Installer"
+                  },
+                  "id": "00000000-0000-4000-8000-000000000008",
+                  "name": "Install the dock's firmware",
+                  "conditions": [],
+                  "continueOnError": false,
+                  "rebootAfter": false
+                }
+              ],
+              "else": [
+                {
+                  "kind": "setVariable",
+                  "variable": "Office",
+                  "value": "{{Office|upper}}",
+                  "id": "00000000-0000-4000-8000-000000000009",
+                  "name": "Office for the rest",
+                  "conditions": [],
+                  "continueOnError": false,
+                  "rebootAfter": false
+                }
+              ],
+              "id": "00000000-0000-4000-8000-000000000007",
+              "name": "If a ThinkPad",
+              "conditions": [],
+              "continueOnError": false,
+              "rebootAfter": false
+            },
+            {
+              "kind": "reboot",
+              "id": "00000000-0000-4000-8000-000000000010",
+              "name": "Restart",
+              "conditions": [],
+              "continueOnError": false,
+              "rebootAfter": false,
+              "when": {
+                "kind": "all",
+                "parts": [
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Equals",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "NotEquals",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "StartsWith",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Contains",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "NotContains",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "EndsWith",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Matches",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "In",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Exists",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "NotExists",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Greater",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "GreaterOrEqual",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "Less",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "LessOrEqual",
+                    "value": "Latitude 7440"
+                  },
+                  {
+                    "kind": "test",
+                    "variable": "Model",
+                    "operator": "InSubnet",
+                    "value": "Latitude 7440"
+                  }
+                ]
+              }
+            }
+          ],
+          "until": {
+            "kind": "test",
+            "variable": "LastExitCode",
+            "operator": "Equals",
+            "value": "0"
+          },
+          "maxTimes": 5,
+          "goOnAtLimit": true,
+          "id": "00000000-0000-4000-8000-000000000006",
+          "name": "Until the dock answers",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
+        },
+        {
+          "kind": "pause",
+          "message": "Check {{ComputerName}}.",
+          "continueAfterMinutes": 30,
+          "id": "00000000-0000-4000-8000-000000000011",
+          "name": "Check the BIOS",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
+        }
+      ],
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "Configure",
+      "conditions": [
+        {
+          "variable": "Phase",
+          "operator": "Equals",
+          "value": "Windows"
+        }
+      ],
+      "continueOnError": true,
+      "rebootAfter": false,
+      "shares": [
+        {
+          "path": "\\\\files.corp.example\\drivers",
+          "account": {
+            "accountId": "0193a4b2-0000-7000-8000-0000000000c1",
+            "input": null
+          }
+        }
+      ]
+    },
+    {
+      "kind": "joinDomain",
+      "organizationalUnit": "OU={{Office}},DC=corp,DC=example",
+      "account": {
+        "accountId": null,
+        "input": "JoinAccount"
+      },
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Join",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "writeRawImage",
+      "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
+      "id": "00000000-0000-4000-8000-000000000013",
+      "name": "Write raw",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "writeCloudInitSeed",
+      "metaData": "instance-id: a\n",
+      "userData": "#cloud-config\n",
+      "networkConfig": null,
+      "id": "00000000-0000-4000-8000-000000000014",
+      "name": "Seed",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    }
+  ],
+  "variables": [
+    {
+      "name": "Office",
+      "default": "Standard",
+      "description": "The Office edition.",
+      "setBySteps": true
+    },
+    {
+      "name": "ComputerName",
+      "default": "PC-{{SerialNumber|alnum|right:12}}",
+      "description": null,
+      "setBySteps": false
+    }
+  ],
+  "inputs": [
+    {
+      "name": "Owner",
+      "label": "Owner",
+      "help": "Who gets the PC.",
+      "kind": "Text",
+      "choices": [],
+      "default": null,
+      "required": true,
+      "maxLength": 64,
+      "askAt": "Web",
+      "account": null
+    },
+    {
+      "name": "Office",
+      "label": "Office",
+      "help": null,
+      "kind": "Choice",
+      "choices": [
+        {
+          "value": "Standard",
+          "label": null
+        },
+        {
+          "value": "ProPlus",
+          "label": "Professional Plus"
+        }
+      ],
+      "default": "Standard",
+      "required": false,
+      "maxLength": null,
+      "askAt": "Both",
+      "account": null
+    },
+    {
+      "name": "Languages",
+      "label": "Languages",
+      "help": null,
+      "kind": "MultiChoice",
+      "choices": [
+        {
+          "value": "de-DE",
+          "label": "German"
+        },
+        {
+          "value": "en-US",
+          "label": "English"
+        }
+      ],
+      "default": null,
+      "required": false,
+      "maxLength": null,
+      "askAt": "Machine",
+      "account": null
+    },
+    {
+      "name": "Encrypt",
+      "label": "Encrypt the disk",
+      "help": null,
+      "kind": "YesNo",
+      "choices": [],
+      "default": "true",
+      "required": false,
+      "maxLength": null,
+      "askAt": "Both",
+      "account": null
+    },
+    {
+      "name": "JoinAccount",
+      "label": "Join account",
+      "help": null,
+      "kind": "Account",
+      "choices": [],
+      "default": null,
+      "required": true,
+      "maxLength": null,
+      "askAt": "Both",
+      "account": {
+        "domain": "corp.example",
+        "hosts": [],
+        "runAs": false
+      }
+    },
+    {
+      "name": "Installer",
+      "label": "Installer",
+      "help": null,
+      "kind": "Account",
+      "choices": [],
+      "default": null,
+      "required": false,
+      "maxLength": null,
+      "askAt": "Both",
+      "account": {
+        "domain": null,
+        "hosts": [
+          "files.corp.example"
+        ],
+        "runAs": true
+      }
+    }
+  ]
+}

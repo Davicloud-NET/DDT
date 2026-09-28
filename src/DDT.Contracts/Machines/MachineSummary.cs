@@ -7,6 +7,7 @@ using DDT.Contracts.Images;
 
 namespace DDT.Contracts.Machines;
 
+// Facts are what the agent last registered with, null for an agent older than version 3 sequences.
 public sealed record MachineSummary(
     Guid Id,
     MachineState State,
@@ -29,4 +30,5 @@ public sealed record MachineSummary(
     DeploymentSummary? Deployment = null,
     bool? SecureBootEnabled = null,
     UefiCa? TrustedUefiCas = null,
-    DeviceKind DeviceKind = DeviceKind.Unknown);
+    DeviceKind DeviceKind = DeviceKind.Unknown,
+    MachineFacts? Facts = null);

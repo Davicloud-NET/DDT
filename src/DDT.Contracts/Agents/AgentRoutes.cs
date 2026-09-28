@@ -33,6 +33,9 @@ public static class AgentRoutes
 
     public static string RunReport(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/report";
 
+    // POST the AgentInputAnswers given at the machine while the run waits at its start.
+    public static string RunAnswers(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/answers";
+
     // Any image or package of the run, by its hash, with range requests.
     public static string RunFile(Guid machineId, Guid runId, string sha256) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/files/{sha256}";
@@ -43,6 +46,10 @@ public static class AgentRoutes
 
     public static string RunStepCredentials(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/credentials";
+
+    // GET the step's AgentStepAccounts: its run-as account and its share connections.
+    public static string RunStepAccounts(Guid machineId, Guid runId, Guid stepId) =>
+        $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/accounts";
 
     // Frozen: agents inside boot images built long ago ask these, so the paths never change.
     public const string Release = "api/agents/release";

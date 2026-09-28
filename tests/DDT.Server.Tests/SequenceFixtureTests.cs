@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -38,7 +39,8 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("install-windows.sequence.json", fixedIds, "the template");
     }
 
-    // Every kind of step, and every phase, interpreter and condition operator.
+    // Every kind of step of versions 1 and 2, and every phase, interpreter and condition operator they have: a flat
+    // document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
     [Fact]
     public async Task TheWebFixtureHoldsEveryKindOfStep()
     {
@@ -63,7 +65,12 @@ public sealed class SequenceFixtureTests
                 Name = "Restart",
                 ContinueOnError = true,
                 RebootAfter = true,
-                Conditions = [.. Enum.GetValues<ConditionOperator>().Select(op => new StepCondition(MachineVariableNames.Model, op, "Latitude 7440"))],
+                Conditions =
+                [
+                    .. Enum.GetValues<ConditionOperator>()
+                        .Where(op => op <= ConditionOperator.Contains)
+                        .Select(op => new StepCondition(MachineVariableNames.Model, op, "Latitude 7440")),
+                ],
             },
         ];
 
@@ -96,12 +103,194 @@ public sealed class SequenceFixtureTests
             NetworkConfig = "version: 2\n",
         });
 
-        // A kind added later must be added here too.
-        string[] kinds = [.. typeof(SequenceStep).GetCustomAttributes<JsonDerivedTypeAttribute>().Select(kind => kind.DerivedType.Name).Order(StringComparer.Ordinal)];
+        // A kind of these versions added later must be added here too.
         string[] built = [.. steps.Select(step => step.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
-        Assert.Equal(kinds, built);
+        Assert.Equal(Kinds(maximumVersion: 2), built);
 
-        await MatchFixtureAsync("every-step.sequence.json", new SequenceDefinition(1, steps).Normalised(), "the steps built here");
+        SequenceDefinition definition = new SequenceDefinition(1, steps).Normalised();
+        Assert.Equal(2, definition.Version);
+
+        await MatchFixtureAsync("every-step.sequence.json", definition, "the steps built here");
+    }
+
+    // Every kind of node, nested (an IF in a repeat in a group), every kind of condition and operator, the members of
+    // version 3 on the kinds before it, and the sequence's variables and inputs of every kind.
+    [Fact]
+    public async Task TheWebFixtureHoldsEveryNode()
+    {
+        Guid accountId = new("0193a4b2-0000-7000-8000-0000000000c1");
+        IfStep choose = new()
+        {
+            Id = StepId(6),
+            Name = "If a ThinkPad",
+            Test = new AllCondition
+            {
+                Parts =
+                [
+                    new TestCondition(MachineVariableNames.Manufacturer, ConditionOperator.Equals, "LENOVO"),
+                    new TestCondition(MachineVariableNames.MemoryMegabytes, ConditionOperator.GreaterOrEqual, "8192"),
+                ],
+            },
+            Then =
+            [
+                new RunScriptStep
+                {
+                    Id = StepId(7),
+                    Name = "Install the dock's firmware",
+                    Phase = SequencePhase.Windows,
+                    Interpreter = ScriptInterpreter.PowerShell,
+                    Script = "exit 0",
+                    RunAs = new AccountReference(null, "Installer"),
+                },
+            ],
+            Else = [new SetVariableStep { Id = StepId(8), Name = "Office for the rest", Variable = "Office", Value = "{{Office|upper}}" }],
+        };
+        RepeatStep repeat = new()
+        {
+            Id = StepId(5),
+            Name = "Until the dock answers",
+            Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
+            MaxTimes = 5,
+            GoOnAtLimit = true,
+            Steps =
+            [
+                choose,
+                new RebootStep
+                {
+                    Id = StepId(9),
+                    Name = "Restart",
+                    When = new AllCondition
+                    {
+                        Parts = [.. Enum.GetValues<ConditionOperator>().Select(op => new TestCondition(MachineVariableNames.Model, op, "Latitude 7440"))],
+                    },
+                },
+            ],
+        };
+        List<SequenceStep> steps =
+        [
+            new PartitionStep { Id = StepId(0), Name = "Partition" },
+            new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
+            new InjectDriversStep
+            {
+                Id = StepId(2),
+                Name = "Drivers",
+                When = new AnyCondition
+                {
+                    Parts =
+                    [
+                        new TestCondition(MachineVariableNames.FriendlyModel, ConditionOperator.Matches, "ThinkPad*"),
+                        new NoneCondition { Parts = [new TestCondition(MachineVariableNames.DeviceKind, ConditionOperator.Equals, "Virtual")] },
+                    ],
+                },
+            },
+            new WriteUnattendStep { Id = StepId(3), Name = "Answer file" },
+            new GroupStep
+            {
+                Id = StepId(4),
+                Name = "Configure",
+                Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
+                ContinueOnError = true,
+                Shares = [new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null))],
+                Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
+            },
+            new JoinDomainStep
+            {
+                Id = StepId(11),
+                Name = "Join",
+                OrganizationalUnit = "OU={{Office}},DC=corp,DC=example",
+                Account = new AccountReference(null, "JoinAccount"),
+            },
+            new WriteRawImageStep { Id = StepId(12), Name = "Write raw", ImageId = s_imageId },
+            new WriteCloudInitSeedStep { Id = StepId(13), Name = "Seed", MetaData = "instance-id: a\n", UserData = "#cloud-config\n" },
+        ];
+        SequenceDefinition definition = new SequenceDefinition(SequenceDefinition.CurrentVersion, steps)
+        {
+            Variables =
+            [
+                new VariableDeclaration { Name = "Office", Default = "Standard", Description = "The Office edition.", SetBySteps = true },
+                new VariableDeclaration { Name = MachineVariableNames.ComputerName, Default = "PC-{{SerialNumber|alnum|right:12}}" },
+            ],
+            Inputs =
+            [
+                new InputDeclaration { Name = "Owner", Label = "Owner", Help = "Who gets the PC.", Required = true, MaxLength = 64, AskAt = InputAsk.Web },
+                new InputDeclaration
+                {
+                    Name = "Office",
+                    Label = "Office",
+                    Kind = InputKind.Choice,
+                    Choices = [new InputChoice("Standard"), new InputChoice("ProPlus", "Professional Plus")],
+                    Default = "Standard",
+                },
+                new InputDeclaration
+                {
+                    Name = "Languages",
+                    Label = "Languages",
+                    Kind = InputKind.MultiChoice,
+                    Choices = [new InputChoice("de-DE", "German"), new InputChoice("en-US", "English")],
+                    AskAt = InputAsk.Machine,
+                },
+                new InputDeclaration { Name = "Encrypt", Label = "Encrypt the disk", Kind = InputKind.YesNo, Default = "true" },
+                new InputDeclaration
+                {
+                    Name = "JoinAccount",
+                    Label = "Join account",
+                    Kind = InputKind.Account,
+                    Required = true,
+                    Account = new AccountDestination { Domain = "corp.example" },
+                },
+                new InputDeclaration
+                {
+                    Name = "Installer",
+                    Label = "Installer",
+                    Kind = InputKind.Account,
+                    Account = new AccountDestination { Hosts = ["files.corp.example"], RunAs = true },
+                },
+            ],
+        }.Normalised();
+
+        // A kind, condition, operator or input kind added later must be added here too.
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
+        string[] built = [.. nodes.Select(node => node.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
+        string[] conditionKinds =
+        [
+            .. typeof(ConditionNode).GetCustomAttributes<JsonDerivedTypeAttribute>().Select(kind => kind.DerivedType.Name).Order(StringComparer.Ordinal),
+        ];
+        string[] conditionsBuilt = [.. nodes.SelectMany(Conditions).Select(condition => condition.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
+        InputKind[] inputKinds = [.. definition.Inputs!.Select(input => input.Kind).Distinct().Order()];
+        InputAsk[] asks = [.. definition.Inputs!.Select(input => input.AskAt).Distinct().Order()];
+
+        Assert.Equal(Kinds(maximumVersion: SequenceDefinition.CurrentVersion), built);
+        Assert.Equal(conditionKinds, conditionsBuilt);
+        Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
+        Assert.Equal(Enum.GetValues<InputAsk>(), asks);
+        Assert.Equal(SequenceDefinition.CurrentVersion, definition.Version);
+
+        await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
+    }
+
+    // The kinds agents of this version run, by their type's name.
+    private static string[] Kinds(int maximumVersion) =>
+    [
+        .. typeof(SequenceStep).GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .Where(kind => ((SequenceStep)RuntimeHelpers.GetUninitializedObject(kind.DerivedType)).MinimumVersion <= maximumVersion)
+            .Select(kind => kind.DerivedType.Name)
+            .Order(StringComparer.Ordinal),
+    ];
+
+    // A node's condition trees, every group and test in them.
+    private static IEnumerable<ConditionNode> Conditions(SequenceStep node)
+    {
+        IEnumerable<ConditionNode?> roots = node switch
+        {
+            IfStep choice => [node.When, choice.Test],
+            RepeatStep repeat => [node.When, repeat.Until],
+            _ => [node.When],
+        };
+
+        return roots.OfType<ConditionNode>().SelectMany(Flatten);
+
+        static IEnumerable<ConditionNode> Flatten(ConditionNode condition) =>
+            condition is ConditionGroup group ? [condition, .. group.Parts.SelectMany(Flatten)] : [condition];
     }
 
     private static async Task MatchFixtureAsync<T>(string name, T value, string source)

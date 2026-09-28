@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
+using DDT.Contracts.Accounts;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Authentication;
@@ -19,6 +20,7 @@ using DDT.Contracts.Server;
 using DDT.Contracts.Settings;
 using DDT.Contracts.Tokens;
 using DDT.Contracts.Users;
+using DDT.Contracts.Values;
 
 namespace DDT.Contracts;
 
@@ -132,4 +134,18 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(CertificateView))]
 [JsonSerializable(typeof(CertificateUpload))]
 [JsonSerializable(typeof(CertificateGenerate))]
+[JsonSerializable(typeof(IReadOnlyList<FactView>))]
+[JsonSerializable(typeof(AnswerInputsRequest))]
+[JsonSerializable(typeof(ContinueRunRequest))]
+[JsonSerializable(typeof(IReadOnlyList<ResolvedValue>))]
+[JsonSerializable(typeof(RuleView))]
+[JsonSerializable(typeof(IReadOnlyList<RuleView>))]
+[JsonSerializable(typeof(SaveRuleRequest))]
+[JsonSerializable(typeof(ReorderRulesRequest))]
+[JsonSerializable(typeof(MachineRoleView))]
+[JsonSerializable(typeof(IReadOnlyList<MachineRoleView>))]
+[JsonSerializable(typeof(SaveMachineRoleRequest))]
+[JsonSerializable(typeof(AccountView))]
+[JsonSerializable(typeof(IReadOnlyList<AccountView>))]
+[JsonSerializable(typeof(SaveAccountRequest))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

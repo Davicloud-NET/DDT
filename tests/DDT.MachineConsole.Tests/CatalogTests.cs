@@ -9,9 +9,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// Everything the console says is in both catalogs: every message the code passes to T or F is in the English catalog,
-// has a German translation there, and the translation keeps the message's named placeholders. A missing message
-// would show up as English on a German screen, and a dropped placeholder as a hole in a sentence.
+// Every message the code passes to T or F is in both catalogs with its placeholders: a missing one would show English
+// on a German screen, and a dropped placeholder a hole in a sentence.
 public sealed partial class CatalogTests
 {
     // Files that pass T or F a message they got, rather than a literal.

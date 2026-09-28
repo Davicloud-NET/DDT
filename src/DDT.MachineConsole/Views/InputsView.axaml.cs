@@ -14,9 +14,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The first field to answer has the focus, so the person just types: the first the agent refused, or else the first.
-// Enter sends the answers from any field, since a key of a choice would take Enter for itself; only the key that goes
-// back keeps its own Enter. The agent's words about refused answers fade in with each refusal.
+// Enter sends the answers from any field, since a choice's key would take Enter for itself; only the back key keeps its
+// own Enter. The focus starts on the first field the agent refused, or else the first.
 public sealed partial class InputsView : UserControl
 {
     private InputsViewModel? _model;

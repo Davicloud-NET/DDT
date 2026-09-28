@@ -5,48 +5,11 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Controls;
 
-// The band of ink and yellow stripes over what erases a disk, and nowhere else.
-public sealed class HazardBand : Control
-{
-    public static readonly StyledProperty<IBrush?> InkProperty = AvaloniaProperty.Register<HazardBand, IBrush?>(nameof(Ink));
-
-    public static readonly StyledProperty<IBrush?> AttentionProperty = AvaloniaProperty.Register<HazardBand, IBrush?>(nameof(Attention));
-
-    static HazardBand()
-    {
-        AffectsRender<HazardBand>(InkProperty, AttentionProperty);
-    }
-
-    public IBrush? Ink
-    {
-        get => GetValue(InkProperty);
-        set => SetValue(InkProperty, value);
-    }
-
-    public IBrush? Attention
-    {
-        get => GetValue(AttentionProperty);
-        set => SetValue(AttentionProperty, value);
-    }
-
-    public override void Render(DrawingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        Color ink = Ink is ISolidColorBrush inkBrush ? inkBrush.Color : Colors.Black;
-        Color attention = Attention is ISolidColorBrush attentionBrush ? attentionBrush.Color : Colors.Gold;
-
-        context.DrawRectangle(Stripes.Brush(ink, 9, attention, 9), null, new Rect(Bounds.Size));
-    }
-}
-
-// A square, stamped state tag in capitals: filled where something is under way or someone has to act, outlined where
-// it rests. The tone comes as a class, styled in Surfaces.axaml.
+// A state tag, whose tone comes as a class that Surfaces.axaml styles.
 public sealed class StateTag : Border
 {
     public static readonly StyledProperty<Tag?> ValueProperty = AvaloniaProperty.Register<StateTag, Tag?>(nameof(Value));

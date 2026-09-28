@@ -7,8 +7,8 @@ using Avalonia.Media;
 
 namespace DDT.MachineConsole.Controls;
 
-// Diagonal stripes rising to the right, as the web draws them with repeating-linear-gradient(-45deg, ...): first for
-// first pixels, then second for second pixels, measured across the stripes. offset moves them sideways.
+// Diagonal stripes as the web's repeating-linear-gradient(-45deg, ...) draws them. The widths are measured across the
+// stripes, and offset moves them sideways.
 public static class Stripes
 {
     public static IBrush Brush(Color first, double firstWidth, Color second, double secondWidth, double offset = 0)

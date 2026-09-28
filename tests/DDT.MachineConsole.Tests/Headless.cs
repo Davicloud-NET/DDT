@@ -9,8 +9,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's App with its styles, fonts and tokens, drawn by Skia into memory instead of a window, so a test can
-// press keys on a screen and save what it shows. One session serves every test, on its own UI thread.
+// The console's App drawn by Skia into memory, so a test can press keys on a real window and capture it. One session
+// serves every test, on its own UI thread.
 public static class Headless
 {
     private static readonly Lazy<HeadlessUnitTestSession> s_session = new(() =>

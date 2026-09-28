@@ -56,7 +56,7 @@ public sealed class LogoTests : IDisposable
             {
                 Image image = window.GetVisualDescendants().OfType<Image>().Single(control => control.Name == "CustomLogo");
 
-                return (console.Model.HasLogo, image.IsEffectivelyVisible, image.Bounds.Height, image.Bounds.Width);
+                return (console.Model.Header.HasLogo, image.IsEffectivelyVisible, image.Bounds.Height, image.Bounds.Width);
             }
             finally
             {
@@ -80,7 +80,7 @@ public sealed class LogoTests : IDisposable
         {
             TestConsole console = new TestConsole().Show(Scenarios.Running with { Logo = Write(path, 400, 1000) });
 
-            return console.Model.Logo!.PixelSize;
+            return console.Model.Header.Logo!.PixelSize;
         });
 
         Assert.Equal(new PixelSize(51, 128), size);
@@ -96,14 +96,14 @@ public sealed class LogoTests : IDisposable
         (bool broke, bool before, bool after) = await Headless.RunAsync(() =>
         {
             TestConsole console = new TestConsole().Show(Scenarios.Running with { Logo = broken });
-            bool broke = console.Model.HasLogo;
+            bool broke = console.Model.Header.HasLogo;
 
             console.Show(Scenarios.Running with { Logo = Write(good) });
-            bool before = console.Model.HasLogo;
+            bool before = console.Model.Header.HasLogo;
 
             console.Show(Scenarios.Running);
 
-            return (broke, before, console.Model.HasLogo);
+            return (broke, before, console.Model.Header.HasLogo);
         });
 
         Assert.False(broke);

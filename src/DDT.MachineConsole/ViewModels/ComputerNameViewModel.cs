@@ -7,8 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The computer name, with its rules. The agent checks the name itself, and asks again with what was wrong. The field
-// starts with the name the machine gets when none is typed, so Continue keeps it.
+// The agent checks the name and asks again with what was wrong. The field starts with the name the machine gets when
+// none is typed, so Continue keeps it.
 public sealed class ComputerNameViewModel : QuestionViewModel
 {
     private ComputerNameQuestion _question;

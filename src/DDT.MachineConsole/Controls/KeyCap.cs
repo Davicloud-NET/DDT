@@ -14,9 +14,8 @@ using Avalonia.VisualTree;
 
 namespace DDT.MachineConsole.Controls;
 
-// A key cap, such as F1 or Enter, as the footer and the keys on the screen show it. While its key is down on the
-// keyboard the cap goes down with it, as a key does: it sinks by a pixel and darkens over press, and it comes up only
-// once it has been all the way down, so a quick tap shows too. A cap on a key that cannot be pressed stays up.
+// A key cap, such as F1, that goes down while its key is held. It comes up only after reaching the bottom, so a quick
+// tap shows too.
 public sealed class KeyCap : Border
 {
     public static readonly StyledProperty<string?> KeyProperty = AvaloniaProperty.Register<KeyCap, string?>(nameof(Key));

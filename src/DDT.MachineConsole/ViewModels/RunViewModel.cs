@@ -8,10 +8,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A run and how it ended: running, restarting, finished, failed, or the agent stopped. The sequence rail shows every
-// step of the run's path, one module each; above it the step that runs, with its percent where the step says how far it
-// is, or why the run stopped and what to do about it. While the run waits for answers or a Pause step, the tag and the
-// note say so.
+// The Running, Restarting, Finished, Failed and Stopped stages: the step that runs, or why the run stopped and what to
+// do, above the sequence rail.
 public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private ConsoleState? _state;
@@ -138,15 +136,15 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string ProblemLabel => T("What went wrong");
 
-    // The agent's words.
+    // As the agent wrote it, never translated.
     public string Problem => _state?.Problem?.Reason ?? string.Empty;
 
     public string RemedyLabel => T("What to do");
 
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
-    // Why nothing runs while the run waits; otherwise to leave the machine on, and only while steps in Windows PE are still
-    // to come does the machine have the move into Windows ahead of it.
+    // Why nothing runs while the run waits, or else to leave the machine on. The restart into Windows is ahead only
+    // while steps in Windows PE are still to come.
     public string? Note => Stage switch
     {
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput =>
@@ -176,14 +174,3 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         RaiseAll();
     }
 }
-
-// A module of the sequence rail. Percent is set on the running step where it says how far it is. AwaitsSomeone is set on
-// the step the run waits at for someone to act, a Pause step or answers, which is not running although it is current.
-public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description, bool AwaitsSomeone = false)
-{
-    public bool IsRunning => State == ConsoleStepState.Running && !AwaitsSomeone;
-
-    public bool IsWaiting => State == ConsoleStepState.Pending;
-}
-
-public sealed record RailPhase(ConsolePhase Phase, string Label, int Steps);

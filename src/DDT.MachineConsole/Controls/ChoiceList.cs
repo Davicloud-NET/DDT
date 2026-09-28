@@ -8,10 +8,9 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using DDT.MachineConsole.ViewModels;
 
-namespace DDT.MachineConsole.Views;
+namespace DDT.MachineConsole.Controls;
 
-// A list to choose from with the arrow keys: it takes the focus on its selected row, or on the list where nothing is
-// selected, and Enter in it sends what is chosen, as the key under it says, since a list item would take Enter for
+// A question's list, chosen from with the arrow keys. Enter submits the question, since a ListBoxItem takes Enter for
 // itself.
 internal static class ChoiceList
 {

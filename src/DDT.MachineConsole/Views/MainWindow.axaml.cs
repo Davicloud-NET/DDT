@@ -53,6 +53,11 @@ public sealed partial class MainWindow : Window
         ShowOverlayContent();
         _frames = FrameMeter.For(this);
         _step = StepOf(model);
+
+        if (_frames is not null)
+        {
+            model.End.PropertyChanged += OnEndChanged;
+        }
     }
 
     // The one time the console takes the foreground: when it opens. Later it never takes it back, so a command prompt
@@ -96,7 +101,7 @@ public sealed partial class MainWindow : Window
 
         if (_frames is not null)
         {
-            MeasureFrames(e.PropertyName);
+            MeasureFrames(_frames, _model, e.PropertyName);
         }
 
         if (e.PropertyName is nameof(MainViewModel.IsDark) or "")
@@ -116,26 +121,39 @@ public sealed partial class MainWindow : Window
     }
 
     // What moves when that changes, and for how long, for the frame meter.
-    private void MeasureFrames(string? change)
+    private void MeasureFrames(FrameMeter frames, MainViewModel model, string? change)
     {
         switch (change)
         {
             case nameof(MainViewModel.Screen):
-                _frames!.Measure("screen", Motion.Fast + Motion.Normal);
-                _step = StepOf(_model!);
+                frames.Measure("screen", Motion.Fast + Motion.Normal);
+                _step = StepOf(model);
                 break;
             case nameof(MainViewModel.HasOverlay):
-                _frames!.Measure(_model!.HasOverlay ? "overlay in" : "overlay out", _model.HasOverlay ? Motion.Normal : Motion.Fast);
+                frames.Measure(model.HasOverlay ? "overlay in" : "overlay out", model.HasOverlay ? Motion.Normal : Motion.Fast);
                 break;
-            case nameof(MainViewModel.ShowsEndBand):
-                _frames!.Measure("ended band", Motion.Normal);
+            case nameof(MainViewModel.State) when StepOf(model) != _step:
+                _step = StepOf(model);
+                frames.Measure("step", Motion.Slow);
                 break;
-            case nameof(MainViewModel.ConfirmingRestart):
-                _frames!.Measure(_model!.ConfirmingRestart ? "confirm in" : "confirm out", _model.ConfirmingRestart ? Motion.Normal : Motion.Fast);
+        }
+    }
+
+    private void OnEndChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_frames is null || _model is null)
+        {
+            return;
+        }
+
+        switch (e.PropertyName)
+        {
+            case nameof(EndViewModel.ShowsEndBand):
+                _frames.Measure("ended band", Motion.Normal);
                 break;
-            case nameof(MainViewModel.State) when StepOf(_model!) != _step:
-                _step = StepOf(_model!);
-                _frames!.Measure("step", Motion.Slow);
+            case nameof(EndViewModel.ConfirmingRestart):
+                bool shown = _model.End.ConfirmingRestart;
+                _frames.Measure(shown ? "confirm in" : "confirm out", shown ? Motion.Normal : Motion.Fast);
                 break;
         }
     }

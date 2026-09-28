@@ -7,10 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The sign-in with a DDT account, one field at a time as the agent asks: the user name, the password for it, and for
-// an account with an authenticator the code. The password is masked and leaves the screen as soon as it is sent, and
-// nothing typed here is ever written to a log. Esc on the password goes back to the user name, and on the code back to
-// the password, which the agent takes as an empty answer.
+// The sign-in with a DDT account, one field at a time as the agent asks. The password leaves the screen once it is
+// sent, and nothing typed here is ever logged.
 public sealed class SignInViewModel : QuestionViewModel
 {
     private SignInQuestion _question;

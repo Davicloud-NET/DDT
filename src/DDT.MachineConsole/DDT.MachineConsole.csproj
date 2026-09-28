@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- ddt-console.exe, the graphical console the agent starts in Windows PE. It references only the console protocol,
-       never the agent, and draws with Avalonia in software alone: Windows PE has GDI and DirectWrite, but none of
-       Direct3D, DXGI, Direct2D or DirectComposition. -->
+  <!-- ddt-console.exe, which the agent starts. It references only the console protocol, never the agent, and renders
+       in software alone, since Windows PE has none of Direct3D, DXGI, Direct2D or DirectComposition. -->
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>

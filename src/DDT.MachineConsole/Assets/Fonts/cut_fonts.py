@@ -2,12 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Cuts the console's fonts from the variable Archivo and Martian Mono of Google Fonts: one static face for every
-# weight and width a type in src/DDT.Design/tokens.json uses, because the console cannot vary a font's axes. Each face
-# is named by its weight and width, such as "Archivo 750 62", which is the name the generated Tokens.axaml asks for.
-# The faces keep Latin and Latin Extended, and their digits are the tabular ones, as the web sets them everywhere.
-#
-# Needs Python 3 with fonttools (pip install fonttools). Run it from anywhere; it rewrites the .ttf files next to it.
+# Cuts a static face of Archivo and Martian Mono for each weight and width tokens.json uses, since the console cannot
+# vary a font's axes. Faces are named as Tokens.axaml asks for them, such as "Archivo 750 62", with tabular digits.
+# Needs fonttools (pip install fonttools), and rewrites the .ttf files next to it.
 
 import hashlib
 import io

@@ -13,8 +13,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console driven the way a technician drives it, with the keyboard alone, on the real views: the field asked for
-// has the focus, Enter sends, Esc goes back, the arrow keys choose, and the function keys open what is over the screen.
+// The console driven with the keyboard alone, on the real views, as a technician drives it.
 public sealed class KeyboardTests
 {
     [Fact]
@@ -289,13 +288,4 @@ public sealed class KeyboardTests
         window.KeyRelease(key, modifiers, PhysicalKey.None, null);
         Settle();
     }
-}
-
-internal static class VisualSearch
-{
-    // The control of that name on the screen, wherever it is in the views.
-    public static T Find<T>(this Window window, string name)
-        where T : Control =>
-        Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<T>().FirstOrDefault(control => control.Name == name)
-            ?? throw new InvalidOperationException($"No {name} on the screen.");
 }

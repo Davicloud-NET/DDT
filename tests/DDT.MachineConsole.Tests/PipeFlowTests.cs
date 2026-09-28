@@ -12,8 +12,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console over a real named pipe with a stand-in for the agent at the other end, which speaks the protocol as the
-// agent does: the console connects with ConsoleClient, reads with AgentLink into the Inbox, and the model answers.
+// The console over a real named pipe, with a stand-in for the agent that speaks the protocol as the agent does.
 public sealed class PipeFlowTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -71,11 +70,11 @@ public sealed class PipeFlowTests
 
         // The agent ends: the pipe closes, and the last state stays.
         pipe.Disconnect();
-        await ui.UntilAsync(() => model.IsEnded ? model : null);
+        await ui.UntilAsync(() => model.End.IsEnded ? model : null);
         await reading;
 
         Assert.Same(run, model.Screen);
-        Assert.Equal("The agent has ended", model.EndedTitle);
+        Assert.Equal("The agent has ended", model.End.EndedTitle);
     }
 
     [Fact]

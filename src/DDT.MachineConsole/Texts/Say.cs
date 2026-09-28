@@ -7,8 +7,7 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Texts;
 
-// The protocol's values in the console's words, and the numbers and identifiers it shows, formatted the way the web
-// formats them.
+// The protocol's values in the console's words, and numbers and identifiers formatted as the web formats them.
 public static class Say
 {
     private static readonly string[] s_units = ["KB", "MB", "GB", "TB"];
@@ -92,8 +91,7 @@ public static class Say
         _ => l.T("The machine was to restart before and did not, so it restarts before anything else."),
     };
 
-    // What a step of this kind does, as the heading of the run screen says it. A kind this list does not know is
-    // said as the step's name alone.
+    // The run screen's heading for a kind of step; null for an unknown kind, which shows the step's name instead.
     public static string? StepAction(Localizer l, string kind) => kind switch
     {
         "partition" => l.T("Partitioning the disk"),

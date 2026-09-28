@@ -14,10 +14,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Controls;
 
-// The sequence rail, the signature of the run screen: one module per step in equal columns, with the step's number
-// and name under it, and the phases the steps run in labelled above them. Where the columns get too narrow for names,
-// only the numbers show; the heading above the rail names the running step anyway. A step that finishes or fails
-// while the rail is on the screen flashes its column in its state's colour, faintly, fading over flash.
+// The run screen's sequence rail: a module per step in equal columns, with the phases above. Names drop out where the
+// columns get too narrow, since the heading above the rail names the running step anyway.
 public sealed class SequenceRail : Panel
 {
     public static readonly StyledProperty<IReadOnlyList<RailStep>?> StepsProperty =
@@ -168,49 +166,63 @@ public sealed class SequenceRail : Panel
 
         if (fresh)
         {
-            foreach (StepParts parts in _steps)
-            {
-                Children.Remove(parts.Flash);
-                Children.Remove(parts.Module);
-                Children.Remove(parts.Number);
-                Children.Remove(parts.Name);
-            }
-
-            _steps.Clear();
-
-            // The flashes go first, so they lie under every module and name.
-            foreach (RailStep _ in steps)
-            {
-                StepParts parts = new(new Border { Classes = { "flash" } }, new RailModule(), Text("numeral"), Text("step"));
-                _steps.Add(parts);
-                Children.Insert(0, parts.Flash);
-                Children.Add(parts.Module);
-                Children.Add(parts.Number);
-                Children.Add(parts.Name);
-            }
+            MakeStepParts(steps.Count);
         }
 
         for (int index = 0; index < steps.Count; index++)
         {
-            RailStep step = steps[index];
-            StepParts parts = _steps[index];
-
-            if (!fresh && step.State != parts.Module.State && step.State is ConsoleStepState.Done or ConsoleStepState.Failed)
-            {
-                StartFlash(parts.Flash, step.State);
-            }
-
-            // The state first, so a change fades from the module as it was, waiting or not.
-            parts.Module.State = step.State;
-            parts.Module.AwaitsSomeone = step.AwaitsSomeone;
-            parts.Module.Percent = step.Percent;
-            parts.Number.Text = step.Number;
-            parts.Name.Text = step.Name;
-            SetTone(parts.Number, step);
-            SetTone(parts.Name, step);
-            Avalonia.Automation.AutomationProperties.SetName(parts.Module, step.Description);
+            ShowStep(steps[index], _steps[index], canFlash: !fresh);
         }
 
+        MakePhaseParts(Phases ?? []);
+        InvalidateMeasure();
+    }
+
+    private void MakeStepParts(int count)
+    {
+        foreach (StepParts parts in _steps)
+        {
+            Children.Remove(parts.Flash);
+            Children.Remove(parts.Module);
+            Children.Remove(parts.Number);
+            Children.Remove(parts.Name);
+        }
+
+        _steps.Clear();
+
+        // The flashes go first, so they lie under every module and name.
+        for (int index = 0; index < count; index++)
+        {
+            StepParts parts = new(new Border { Classes = { "flash" } }, new RailModule(), Text("numeral"), Text("step"));
+            _steps.Add(parts);
+            Children.Insert(0, parts.Flash);
+            Children.Add(parts.Module);
+            Children.Add(parts.Number);
+            Children.Add(parts.Name);
+        }
+    }
+
+    // canFlash is false for a run shown for the first time.
+    private void ShowStep(RailStep step, StepParts parts, bool canFlash)
+    {
+        if (canFlash && step.State != parts.Module.State && step.State is ConsoleStepState.Done or ConsoleStepState.Failed)
+        {
+            StartFlash(parts.Flash, step.State);
+        }
+
+        // The state first, so a change fades from the module as it was, waiting or not.
+        parts.Module.State = step.State;
+        parts.Module.AwaitsSomeone = step.AwaitsSomeone;
+        parts.Module.Percent = step.Percent;
+        parts.Number.Text = step.Number;
+        parts.Name.Text = step.Name;
+        SetTone(parts.Number, step);
+        SetTone(parts.Name, step);
+        Avalonia.Automation.AutomationProperties.SetName(parts.Module, step.Description);
+    }
+
+    private void MakePhaseParts(IReadOnlyList<RailPhase> phases)
+    {
         foreach (PhaseParts parts in _phases)
         {
             Children.Remove(parts.Label);
@@ -219,7 +231,7 @@ public sealed class SequenceRail : Panel
 
         _phases.Clear();
 
-        foreach (RailPhase phase in Phases ?? [])
+        foreach (RailPhase phase in phases)
         {
             PhaseParts parts = new(Text("body", "ink2"), new Rectangle { Classes = { "phaseLine" } }, phase.Steps);
             parts.Label.Text = phase.Label;
@@ -229,8 +241,6 @@ public sealed class SequenceRail : Panel
             Children.Add(parts.Label);
             Children.Add(parts.Line);
         }
-
-        InvalidateMeasure();
     }
 
     private static TextBlock Text(params string[] classes)
@@ -241,8 +251,7 @@ public sealed class SequenceRail : Panel
         return text;
     }
 
-    // The running step's number is blue and its name bold; the step that waits for someone has its number in the
-    // attention colour and its name bold; the steps still to come are quieter.
+    // The classes Surfaces.axaml sets a step's number and name by.
     private static void SetTone(TextBlock text, RailStep step)
     {
         text.Classes.Set("running", step.IsRunning);
@@ -251,8 +260,7 @@ public sealed class SequenceRail : Panel
         text.Classes.Set("failed", step.State == ConsoleStepState.Failed);
     }
 
-    // The column in the state's colour, fading. Only a rail on the screen flashes, and Rebuild leaves out a run shown for
-    // the first time.
+    // Only a rail on the screen flashes.
     private void StartFlash(Border flash, ConsoleStepState state)
     {
         if (!Motion.IsEnabled || !this.IsAttachedToVisualTree())

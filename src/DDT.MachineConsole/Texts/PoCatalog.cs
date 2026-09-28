@@ -6,8 +6,7 @@ using System.Text;
 
 namespace DDT.MachineConsole.Texts;
 
-// A catalog in the PO format the web's Lingui catalogs use: msgid is the English message, msgstr its translation,
-// with named placeholders such as {name}. Comments, flags, msgctxt and the header are read past; plurals are not used.
+// A PO catalog as Lingui writes the web's. Comments, flags, msgctxt and the header are skipped; plurals are not used.
 public sealed class PoCatalog
 {
     private readonly Dictionary<string, string> _messages;
@@ -24,68 +23,16 @@ public sealed class PoCatalog
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        Dictionary<string, string> messages = new(StringComparer.Ordinal);
-        StringBuilder? id = null;
-        StringBuilder? text = null;
-        StringBuilder? current = null;
+        MessageReader messages = new();
 
-        void Flush()
+        while (reader.ReadLine() is { } line)
         {
-            if (id is not null && text is not null && id.Length > 0)
-            {
-                messages[id.ToString()] = text.ToString();
-            }
-
-            id = null;
-            text = null;
-            current = null;
+            messages.Take(line.Trim());
         }
 
-        while (reader.ReadLine() is { } raw)
-        {
-            string line = raw.Trim();
+        messages.Flush();
 
-            if (line.Length == 0)
-            {
-                Flush();
-            }
-            else if (line.StartsWith('#'))
-            {
-                continue;
-            }
-            else if (line.StartsWith("msgctxt ", StringComparison.Ordinal))
-            {
-                Flush();
-                current = null;
-            }
-            else if (line.StartsWith("msgid ", StringComparison.Ordinal))
-            {
-                if (id is not null)
-                {
-                    Flush();
-                }
-
-                id = new StringBuilder(Unquote(line["msgid ".Length..]));
-                current = id;
-            }
-            else if (line.StartsWith("msgstr ", StringComparison.Ordinal))
-            {
-                text = new StringBuilder(Unquote(line["msgstr ".Length..]));
-                current = text;
-            }
-            else if (line.StartsWith('"'))
-            {
-                current?.Append(Unquote(line));
-            }
-            else
-            {
-                throw new FormatException($"A PO catalog has no line like: {line}");
-            }
-        }
-
-        Flush();
-
-        return new PoCatalog(messages);
+        return new PoCatalog(messages.Messages);
     }
 
     // A quoted PO string, with the C escapes PO uses.
@@ -123,5 +70,63 @@ public sealed class PoCatalog
         }
 
         return result.ToString();
+    }
+
+    // The entry being read: a string on a line of its own continues the msgid or msgstr last started.
+    private sealed class MessageReader
+    {
+        private StringBuilder? _id;
+        private StringBuilder? _text;
+        private StringBuilder? _current;
+
+        public Dictionary<string, string> Messages { get; } = new(StringComparer.Ordinal);
+
+        public void Take(string line)
+        {
+            if (line.StartsWith('#'))
+            {
+                return;
+            }
+
+            if (line.Length == 0 || line.StartsWith("msgctxt ", StringComparison.Ordinal))
+            {
+                Flush();
+            }
+            else if (line.StartsWith("msgid ", StringComparison.Ordinal))
+            {
+                if (_id is not null)
+                {
+                    Flush();
+                }
+
+                _id = new StringBuilder(Unquote(line["msgid ".Length..]));
+                _current = _id;
+            }
+            else if (line.StartsWith("msgstr ", StringComparison.Ordinal))
+            {
+                _text = new StringBuilder(Unquote(line["msgstr ".Length..]));
+                _current = _text;
+            }
+            else if (line.StartsWith('"'))
+            {
+                _current?.Append(Unquote(line));
+            }
+            else
+            {
+                throw new FormatException($"A PO catalog has no line like: {line}");
+            }
+        }
+
+        public void Flush()
+        {
+            if (_id is not null && _text is not null && _id.Length > 0)
+            {
+                Messages[_id.ToString()] = _text.ToString();
+            }
+
+            _id = null;
+            _text = null;
+            _current = null;
+        }
     }
 }

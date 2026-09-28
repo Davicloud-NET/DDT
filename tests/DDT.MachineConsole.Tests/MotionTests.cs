@@ -21,11 +21,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's motion on the real views, on a clock of the tests' own, a frame every 16 ms: what enters starts clear
-// and a few pixels down and ends where it belongs with no transform left, what leaves goes before it is hidden, a key
-// cap goes down with its key, a finished step flashes, and a new theme changes every colour at once. With
-// DDT_CONSOLE_FILMSTRIPS set to a folder, the frames of each transition at fixed times are saved there for a person to
-// look at.
+// The console's motion on the real views, on a test clock with a frame every 16 ms. With DDT_CONSOLE_FILMSTRIPS naming
+// a folder, the frames of each transition are saved there for a person to look at.
 public sealed class MotionTests
 {
     private static readonly TimeSpan s_frame = TimeSpan.FromMilliseconds(16);

@@ -9,10 +9,8 @@ using DDT.MachineConsole.Agent;
 
 namespace DDT.MachineConsole;
 
-// ddt-console.exe --pipe <name>, as the agent starts it. It connects to the agent's pipe first, before it opens a
-// window, and ends at once when there is no agent or the agent refuses it, so the agent's text console stays in view.
-// With --session it is the shell of DDT's session in the installed Windows, which opens at once and waits for the
-// agent, whose service Windows starts alongside.
+// ddt-console.exe --pipe <name>, as the agent starts it. It connects before it opens a window and exits at once when no
+// agent takes it, so the agent's text console stays in view. With --session it is the shell of DDT's session.
 public static partial class Program
 {
     public const int Closed = 0;
@@ -73,9 +71,8 @@ public static partial class Program
             })
             .With(App.FontOptions);
 
-    // Avalonia waits for its next frame with the system's timer, whose steps of 15.6 ms turn the 16.7 ms of a frame at
-    // 60 per second into two steps, so everything that moves would move at 32 frames a second. Steps of 1 ms, for as
-    // long as the console runs, let it keep 60.
+    // Avalonia times its frames with the system timer, whose 15.6 ms ticks turn a 16.7 ms frame into two, so motion
+    // would run at 32 frames a second. A 1 ms timer resolution for the console's lifetime keeps it at 60.
     private static void FineTimer()
     {
         try
@@ -90,9 +87,4 @@ public static partial class Program
 
     [LibraryImport("winmm.dll", EntryPoint = "timeBeginPeriod")]
     private static partial uint TimeBeginPeriod(uint milliseconds);
-}
-
-internal static class ConsoleBuild
-{
-    public static string Version => typeof(ConsoleBuild).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 }

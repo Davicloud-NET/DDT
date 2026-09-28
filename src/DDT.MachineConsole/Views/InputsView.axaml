@@ -2,10 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- A sequence's inputs on one panel, a field for each: a line of text, a row of keys to choose one from, keys that turn
-     on and off, Yes and No, or an account's user name and masked password. The author's help is under a field, and the
-     agent's words about a refused answer under that. Tab goes from field to field, Enter sends them all, Esc goes back to
-     the sequences where it can. The panel scrolls where the fields are more than the screen holds. -->
+<!-- A sequence's inputs, a field for each, on a panel that scrolls where they are more than the screen holds. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

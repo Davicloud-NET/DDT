@@ -11,10 +11,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's look comes from src/DDT.Design/tokens.json, as the web's does: Theme/Tokens.axaml is written from it by
-// generate.mjs, and fails here as soon as either changes without the other. The web's own test compares the whole file;
-// this one reads both and compares the values, colours, radii, types and motion, from the .NET side, and checks that
-// every face a type names is one the console carries.
+// Theme/Tokens.axaml against the tokens.json generate.mjs writes it from: fails as soon as either changes without the
+// other, or a type names a face the console does not carry.
 public sealed class ThemeTests
 {
     private static readonly XNamespace s_x = "http://schemas.microsoft.com/winfx/2006/xaml";

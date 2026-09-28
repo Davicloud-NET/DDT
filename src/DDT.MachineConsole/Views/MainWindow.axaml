@@ -2,9 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The console's one window: the frame with the machine and the connection on top, the screen of the stage or the
-     question in the middle, and the machine's network and the keys that work everywhere at the bottom. The log, the
-     machine's details and the licences open over the screen. -->
+<!-- The console's one window: the frame, the screen of the stage or question, the footer, and what opens over them. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -31,28 +29,28 @@
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" ClipToBounds="True">
             <TextBlock Name="MachineLabel"
-                       Text="{Binding MachineLabel}"
+                       Text="{Binding Header.MachineLabel}"
                        FontFamily="{DynamicResource SgTypeHeadingFamily}"
                        FontSize="22"
                        TextWrapping="NoWrap"
                        TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource SgFrameText}"
                        VerticalAlignment="Center" />
-            <c:StateTag Value="{Binding DryRunTag}" IsVisible="{Binding IsDryRun}" />
+            <c:StateTag Value="{Binding Header.DryRunTag}" IsVisible="{Binding Header.IsDryRun}" />
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
             <TextBlock Name="Connection"
                        Margin="16,0,0,0"
-                       Text="{Binding Connection}"
+                       Text="{Binding Header.Connection}"
                        FontSize="15"
                        TextWrapping="NoWrap"
                        Foreground="{DynamicResource SgFrameMuted}"
                        VerticalAlignment="Center" />
             <!-- The organisation's logo, uploaded on the Deployment defaults page. -->
-            <StackPanel Orientation="Horizontal" IsVisible="{Binding HasLogo}">
+            <StackPanel Orientation="Horizontal" IsVisible="{Binding Header.HasLogo}">
               <Rectangle Width="1" Height="24" Margin="18,0" Fill="{DynamicResource SgFrameLine}" VerticalAlignment="Center" />
               <Image Name="CustomLogo"
-                     Source="{Binding Logo}"
+                     Source="{Binding Header.Logo}"
                      MaxHeight="32"
                      MaxWidth="200"
                      Stretch="Uniform"
@@ -63,14 +61,13 @@
         </Grid>
       </Border>
 
-      <!-- Once the pipe has ended, or in DDT's session once the run is over: the last state stays below, and the way on
-           is here. -->
-      <Border Grid.Row="1" Classes="raised" Name="EndedBand" c:Motion.Shown="{Binding ShowsEndBand}" Margin="36,20,36,0" Padding="22,16">
+      <!-- The end band, once the pipe has ended or, in DDT's session, the run is over. -->
+      <Border Grid.Row="1" Classes="raised" Name="EndedBand" c:Motion.Shown="{Binding End.ShowsEndBand}" Margin="36,20,36,0" Padding="22,16">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Spacing="4" VerticalAlignment="Center">
-            <TextBlock Classes="heading" Text="{Binding EndedTitle}" />
-            <TextBlock Classes="body ink2" Text="{Binding EndedText}" />
-            <TextBlock Classes="small muted" Text="{Binding RestartUnavailable}" IsVisible="{Binding ShowsRestartUnavailable}" />
+            <TextBlock Classes="heading" Text="{Binding End.EndedTitle}" />
+            <TextBlock Classes="body ink2" Text="{Binding End.EndedText}" />
+            <TextBlock Classes="small muted" Text="{Binding End.RestartUnavailable}" IsVisible="{Binding End.ShowsRestartUnavailable}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="20,0,0,0">
             <Button Name="EndedPrompt" Classes="quiet" Command="{Binding OpenPromptCommand}" IsVisible="{Binding CanOpenPrompt}">
@@ -82,16 +79,16 @@
                 <TextBlock Text="{Binding PromptLabel}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
-            <Button Name="CloseConsole" Command="{Binding CloseCommand}">
+            <Button Name="CloseConsole" Command="{Binding End.CloseCommand}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:KeyCap Key="F9" />
-                <TextBlock Text="{Binding CloseLabel}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding End.CloseLabel}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
-            <Button Name="Restart" Classes="primary" Command="{Binding RestartCommand}" IsVisible="{Binding CanRestart}">
+            <Button Name="Restart" Classes="primary" Command="{Binding End.RestartCommand}" IsVisible="{Binding End.CanRestart}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:KeyCap Key="F8" />
-                <TextBlock Text="{Binding RestartLabel}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding End.RestartLabel}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -140,18 +137,17 @@
         </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
 
-      <!-- A short note with the keys it names: hold Fn when a laptop's top row sends media keys, or why the console
-           stays open when someone tries to close it. -->
+      <!-- A short note with the keys it names. -->
       <Border Grid.Row="2"
               Name="Notice"
               Classes="raised"
-              c:Motion.Shown="{Binding HasNotice}"
+              c:Motion.Shown="{Binding Notice.IsShown}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
               Margin="36,0,36,20"
               Padding="18,12">
         <StackPanel Orientation="Horizontal" Spacing="12">
-          <ItemsControl ItemsSource="{Binding NoticeKeys}" VerticalAlignment="Center">
+          <ItemsControl ItemsSource="{Binding Notice.Keys}" VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="4" />
@@ -163,12 +159,11 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Classes="body" Text="{Binding NoticeText}" TextWrapping="Wrap" MaxWidth="760" VerticalAlignment="Center" />
+          <TextBlock Classes="body" Text="{Binding Notice.Text}" TextWrapping="Wrap" MaxWidth="760" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
 
-      <!-- The log, the machine's details or the licences, over the screen. The window sets what it shows, and keeps it
-           while the overlay leaves. -->
+      <!-- The overlay. The window sets what it shows, and keeps it while the overlay leaves. -->
       <c:Backdrop Grid.Row="1" Grid.RowSpan="2" Name="OverlayBackdrop" c:Motion.Shown="{Binding HasOverlay}" c:Motion.Rises="False" />
       <Panel Grid.Row="1" Grid.RowSpan="2" Name="Overlay" c:Motion.Shown="{Binding HasOverlay}" Margin="24,18,24,18">
         <Border Classes="overlayShadow">
@@ -236,11 +231,11 @@
       </Border>
 
       <!-- Asked before the console restarts the machine. -->
-      <c:Backdrop Grid.Row="0" Grid.RowSpan="4" Name="ConfirmBackdrop" c:Motion.Shown="{Binding ConfirmingRestart}" c:Motion.Rises="False" />
+      <c:Backdrop Grid.Row="0" Grid.RowSpan="4" Name="ConfirmBackdrop" c:Motion.Shown="{Binding End.ConfirmingRestart}" c:Motion.Rises="False" />
       <Panel Grid.Row="0"
              Grid.RowSpan="4"
              Name="Confirm"
-             c:Motion.Shown="{Binding ConfirmingRestart}"
+             c:Motion.Shown="{Binding End.ConfirmingRestart}"
              Width="520"
              HorizontalAlignment="Center"
              VerticalAlignment="Center">
@@ -251,19 +246,19 @@
         </Border>
         <Border Classes="overlay" Padding="24">
           <StackPanel Spacing="16">
-            <TextBlock Classes="heading" Text="{Binding ConfirmTitle}" />
-            <TextBlock Classes="body ink2" Text="{Binding ConfirmText}" />
+            <TextBlock Classes="heading" Text="{Binding End.ConfirmTitle}" />
+            <TextBlock Classes="body ink2" Text="{Binding End.ConfirmText}" />
             <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-              <Button Command="{Binding CancelRestartCommand}">
+              <Button Command="{Binding End.CancelRestartCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <c:KeyCap Key="Esc" />
-                  <TextBlock Text="{Binding CancelLabel}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding End.CancelLabel}" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-              <Button Classes="primary" Command="{Binding ConfirmRestartCommand}">
+              <Button Classes="primary" Command="{Binding End.ConfirmRestartCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <c:KeyCap Key="Enter" />
-                  <TextBlock Text="{Binding ConfirmLabel}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding End.ConfirmLabel}" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
             </StackPanel>

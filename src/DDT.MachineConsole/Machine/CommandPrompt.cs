@@ -7,15 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace DDT.MachineConsole.Machine;
 
-// The command prompt a technician opens with Shift+F10 while the console runs, as in Windows Setup.
-public interface ICommandPrompt
-{
-    void Open();
-}
-
-// cmd.exe in a console window of its own, in front of the console, in the folder the console and the agent are in. The
-// console fills the screen but is not topmost, so the prompt's window covers it, and when the prompt is closed the
-// console is in front again. A development computer opens cmd.exe just the same.
+// cmd.exe in a window of its own, in the console's folder. The console is full screen but not topmost, so the prompt
+// covers it, and the console is in front again once the prompt closes.
 public sealed partial class CommandPrompt : ICommandPrompt
 {
     private const int AnyProcess = -1;
@@ -101,6 +94,7 @@ public sealed partial class CommandPrompt : ICommandPrompt
         return 0;
     }
 
+    // More than five parameters on purpose: they are CreateProcessW's own.
     [LibraryImport("kernel32.dll", EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool CreateProcess(

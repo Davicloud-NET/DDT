@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The console's Appropriate Legal Notices: DDT's attribution notice, which NOTICE requires word for word, what the GPL
-// allows, the software by others the console contains, and every licence text it carries.
+// The Appropriate Legal Notices, which GPL section 5(d) asks an interactive user interface to display.
 public sealed class LicencesViewModel : OverlayViewModel
 {
     private LegalDocument _selected;
@@ -79,15 +78,4 @@ public sealed class LicencesViewModel : OverlayViewModel
 
         base.Refresh();
     }
-}
-
-public sealed class LegalDocument(Localizer localizer, LegalTexts.Document document) : ObservableObject
-{
-    public LegalTexts.Document Document => document;
-
-    public string Title => LegalTexts.Title(localizer, document);
-
-    public string File => document.File;
-
-    public void Refresh() => Raise(nameof(Title));
 }

@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.ConsoleProtocol;
-using DDT.MachineConsole.Machine;
 using DDT.MachineConsole.Texts;
 using DDT.MachineConsole.ViewModels;
 
@@ -49,22 +48,4 @@ internal sealed class TestConsole
     public TestConsole Show(ConsoleState state) => Receive(new StateMessage(state));
 
     public TestConsole Ask(int id, ConsoleQuestion question) => Receive(new QuestionMessage(id, question));
-}
-
-internal sealed class FakePower(bool canRestart) : IMachinePower
-{
-    public bool IsWindowsPE => canRestart;
-
-    public bool CanRestart => canRestart;
-
-    public int Restarts { get; private set; }
-
-    public void Restart() => Restarts++;
-}
-
-internal sealed class FakePrompt : ICommandPrompt
-{
-    public int Opened { get; private set; }
-
-    public void Open() => Opened++;
 }

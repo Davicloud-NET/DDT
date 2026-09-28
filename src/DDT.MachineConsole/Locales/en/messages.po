@@ -55,7 +55,7 @@ msgstr "Approve this machine on the Machines page. The agent goes on by itself a
 msgid "Archivo: SIL Open Font License"
 msgstr "Archivo: SIL Open Font License"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Asks for a name"
 msgstr "Asks for a name"
 
@@ -91,11 +91,11 @@ msgstr "Back to the password"
 msgid "Back to the task sequences"
 msgstr "Back to the task sequences"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "Back, erase nothing"
 msgstr "Back, erase nothing"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Back, write nothing"
 msgstr "Back, write nothing"
 
@@ -103,11 +103,11 @@ msgstr "Back, write nothing"
 msgid "BSD licence"
 msgstr "BSD licence"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Cancel"
 msgstr "Cancel"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/HeaderViewModel.cs
 msgid "Cannot reach {server}"
 msgstr "Cannot reach {server}"
 
@@ -123,7 +123,7 @@ msgstr "Choose"
 msgid "Choose a task sequence"
 msgstr "Choose a task sequence"
 
-#: ViewModels/InputFieldViewModel.cs
+#: ViewModels/MultiChoiceFieldViewModel.cs
 msgid "Choose any of these. Space turns one on or off."
 msgstr "Choose any of these. Space turns one on or off."
 
@@ -139,7 +139,7 @@ msgstr "Choosing"
 msgid "Choosing a task sequence"
 msgstr "Choosing a task sequence"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Close the console"
 msgstr "Close the console"
 
@@ -163,7 +163,7 @@ msgstr "Command prompt"
 msgid "Computer name"
 msgstr "Computer name"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/HeaderViewModel.cs
 msgid "Connected to {server}"
 msgstr "Connected to {server}"
 
@@ -175,7 +175,7 @@ msgstr "Connecting"
 msgid "Connecting to the server"
 msgstr "Connecting to the server"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/HeaderViewModel.cs
 msgid "Connecting to {server}"
 msgstr "Connecting to {server}"
 
@@ -203,11 +203,11 @@ msgstr "Dark"
 msgid "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
 msgstr "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "DDT is done with this machine"
 msgstr "DDT is done with this machine"
 
-#: ViewModels/InputFieldViewModel.cs
+#: ViewModels/AccountFieldViewModel.cs
 msgid "DDT keeps it for this run only and never shows it."
 msgstr "DDT keeps it for this run only and never shows it."
 
@@ -219,11 +219,11 @@ msgstr "DDT: GNU General Public License, version 3"
 msgid "DDT: notice and additional terms"
 msgstr "DDT: notice and additional terms"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Disk image"
 msgstr "Disk image"
 
-#: ViewModels/DiskChoiceViewModel.cs
+#: ViewModels/DiskItem.cs
 msgid "Disk {number}"
 msgstr "Disk {number}"
 
@@ -243,19 +243,19 @@ msgstr "Dry run"
 msgid "Empty"
 msgstr "Empty"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "Erase and continue"
 msgstr "Erase and continue"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "Erase disk {number}?"
 msgstr "Erase disk {number}?"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "Erases"
 msgstr "Erases"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Erases a disk"
 msgstr "Erases a disk"
 
@@ -291,7 +291,7 @@ msgstr "Firmware"
 msgid "Follow the end"
 msgstr "Follow the end"
 
-#: ViewModels/InputFieldViewModel.cs
+#: ViewModels/AccountFieldViewModel.cs
 msgid "For {domain}. DDT keeps it for this run only and never shows it."
 msgstr "For {domain}. DDT keeps it for this run only and never shows it."
 
@@ -323,7 +323,7 @@ msgstr "IP address"
 msgid "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."
 msgstr "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "It starts again as its firmware says, from the network or from its disk."
 msgstr "It starts again as its firmware says, from the network or from its disk."
 
@@ -423,7 +423,7 @@ msgstr "Name lookup"
 msgid "Name this machine"
 msgstr "Name this machine"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Needs {size}"
 msgstr "Needs {size}"
 
@@ -451,7 +451,7 @@ msgstr "No disk DDT can install on."
 msgid "none of Microsoft's third-party UEFI CAs"
 msgstr "none of Microsoft's third-party UEFI CAs"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Not for Secure Boot"
 msgstr "Not for Secure Boot"
 
@@ -475,7 +475,7 @@ msgstr "Not registered yet"
 msgid "Not reported"
 msgstr "Not reported"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Not trusted by this machine"
 msgstr "Not trusted by this machine"
 
@@ -535,15 +535,15 @@ msgstr "Paused"
 msgid "Removing the agent"
 msgstr "Removing the agent"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Restart"
 msgstr "Restart"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Restart the machine"
 msgstr "Restart the machine"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Restart this machine now?"
 msgstr "Restart this machine now?"
 
@@ -627,15 +627,15 @@ msgstr "Sign in here with your DDT account, or approve this machine on the Machi
 msgid "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
 msgstr "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Sign out"
 msgstr "Sign out"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "Sign out to leave DDT's session. Windows then shows its sign-in screen."
 msgstr "Sign out to leave DDT's session. Windows then shows its sign-in screen."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Signed under"
 msgstr "Signed under"
 
@@ -703,11 +703,11 @@ msgstr "Step {number}, {name}: {state}"
 msgid "Stopped"
 msgstr "Stopped"
 
-#: ViewModels/SequenceChoiceViewModel.cs
+#: ViewModels/SequenceItem.cs
 msgid "Suggested"
 msgstr "Suggested"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Task sequence"
 msgstr "Task sequence"
 
@@ -719,7 +719,7 @@ msgstr "The agent checks whether the server has a newer agent, then registers th
 msgid "The agent gets what this machine can run. The choices appear here in a moment."
 msgstr "The agent gets what this machine can run. The choices appear here in a moment."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "The agent has ended"
 msgstr "The agent has ended"
 
@@ -743,35 +743,35 @@ msgstr "The agent registers this machine with the server. It needs nothing from 
 msgid "The agent's log, newest line last. Times are in UTC, by this machine's clock."
 msgstr "The agent's log, newest line last. Times are in UTC, by this machine's clock."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "The command prompt is behind the console."
 msgstr "The command prompt is behind the console."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "The connection to the agent broke"
 msgstr "The connection to the agent broke"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "The console restarts a machine only in Windows PE."
 msgstr "The console restarts a machine only in Windows PE."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/NoticeViewModel.cs
 msgid "The console stays open while DDT works on this machine."
 msgstr "The console stays open while DDT works on this machine."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/NoticeViewModel.cs
 msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
 msgstr "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/NoticeViewModel.cs
 msgid "The console stays open. F9 signs out of DDT's session."
 msgstr "The console stays open. F9 signs out of DDT's session."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "The disk has no partitions."
 msgstr "The disk has no partitions."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "The disk has partitions, so it holds something now."
 msgstr "The disk has partitions, so it holds something now."
 
@@ -787,7 +787,7 @@ msgstr "the HarfBuzz authors"
 msgid "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
 msgstr "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
 
-#: ViewModels/InputFieldViewModel.cs
+#: ViewModels/AccountFieldViewModel.cs
 msgid "The keyboard layout is {layout}. A password typed with another layout would be wrong."
 msgstr "The keyboard layout is {layout}. A password typed with another layout would be wrong."
 
@@ -835,7 +835,7 @@ msgstr "The server's name did not resolve. Check the DNS server the network give
 msgid "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
 msgstr "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/NoticeViewModel.cs
 msgid "This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."
 msgstr "This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."
 
@@ -851,7 +851,7 @@ msgstr "This machine can run no task sequence yet. Assign one on the Machines pa
 msgid "This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself."
 msgstr "This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "This machine trusts"
 msgstr "This machine trusts"
 
@@ -859,7 +859,7 @@ msgstr "This machine trusts"
 msgid "This program comes with ABSOLUTELY NO WARRANTY."
 msgstr "This program comes with ABSOLUTELY NO WARRANTY."
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/EndViewModel.cs
 msgid "This screen keeps what the agent showed last. Nothing more comes from it."
 msgstr "This screen keeps what the agent showed last. Nothing more comes from it."
 
@@ -871,11 +871,11 @@ msgstr "Trusted CAs"
 msgid "Type {word} in capitals, exactly as shown."
 msgstr "Type {word} in capitals, exactly as shown."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "Type {word} to erase the disk"
 msgstr "Type {word} to erase the disk"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Type {word} to write it all the same"
 msgstr "Type {word} to write it all the same"
 
@@ -927,7 +927,7 @@ msgstr "Waiting for answers"
 msgid "Waiting for authorization"
 msgstr "Waiting for authorization"
 
-#: ViewModels/MainViewModel.cs
+#: ViewModels/HeaderViewModel.cs
 msgid "Waiting for the agent"
 msgstr "Waiting for the agent"
 
@@ -955,11 +955,11 @@ msgstr "What went wrong"
 msgid "When it is done, press Enter. An operator can also let the run go on from the web."
 msgstr "When it is done, press Enter. An operator can also let the run go on from the web."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Write it anyway"
 msgstr "Write it anyway"
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/SecureBootViewModel.cs
 msgid "Write it despite Secure Boot?"
 msgstr "Write it despite Secure Boot?"
 
@@ -975,7 +975,7 @@ msgstr "Writing the cloud-init seed"
 msgid "Writing the disk image"
 msgstr "Writing the disk image"
 
-#: ViewModels/InputFieldViewModel.cs
+#: ViewModels/ChoiceFieldViewModel.cs
 msgid "Yes"
 msgstr "Yes"
 
@@ -1015,7 +1015,7 @@ msgstr "{name} signed in here. An operator or administrator still has to approve
 msgid "{sequence} asks these before it starts."
 msgstr "{sequence} asks these before it starts."
 
-#: ViewModels/TypedWordViewModel.cs
+#: ViewModels/EraseViewModel.cs
 msgid "{sequence} erases everything on this disk, and it cannot be undone."
 msgstr "{sequence} erases everything on this disk, and it cannot be undone."
 

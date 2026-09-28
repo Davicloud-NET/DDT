@@ -9,13 +9,11 @@ using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 
-namespace DDT.MachineConsole.Views;
+namespace DDT.MachineConsole.Controls;
 
-// Counts the frames the console draws while something on it moves, for whoever wants to know whether its motion stays
-// smooth where it runs, such as in Windows PE. With DDT_CONSOLE_FRAMES naming a file, each change the console animates
-// adds a line to it: what moved, the size of the screen in pixels, the frames drawn while it moved, the frames per
-// second, the longest time between two of them and how long the first took to come, in ms. A frame counts once the
-// renderer has drawn it.
+// Counts the frames drawn while something moves, to tell whether the motion stays smooth in Windows PE. With
+// DDT_CONSOLE_FRAMES naming a file, each animation adds a line: what moved, the screen in pixels, the frames drawn, the
+// frames per second, and the longest gap and the first frame's delay in ms.
 internal sealed class FrameMeter
 {
     public const string Variable = "DDT_CONSOLE_FRAMES";
@@ -39,8 +37,7 @@ internal sealed class FrameMeter
     public static FrameMeter? For(TopLevel top) =>
         Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } path ? new FrameMeter(top, path) : null;
 
-    // What a key press is called in the file: the keys that work the console by name, and any other key only as a key,
-    // since it may be part of a password.
+    // Only the console's own keys by name, since any other key may be part of a password.
     public static string KeyName(Key key) =>
         key is >= Key.F1 and <= Key.F24 or Key.Escape or Key.Enter or Key.Tab or Key.Up or Key.Down or Key.Left or Key.Right
             ? $"key {key}"
@@ -67,7 +64,7 @@ internal sealed class FrameMeter
         _top.RequestAnimationFrame(Frame);
     }
 
-    // Every frame of the animation sends the renderer a batch, and the time it has drawn it is the frame's.
+    // A frame counts once the compositor has rendered its batch, not when the animation asks for it.
     private void Frame(TimeSpan time)
     {
         if (_what is null)
@@ -119,7 +116,11 @@ internal sealed class FrameMeter
 
     private void Write()
     {
-        string what = _what!;
+        if (_what is not { } what)
+        {
+            return;
+        }
+
         _what = null;
         long[] drawn;
 

@@ -2,11 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The controls the console uses, in the Switchgear look: flat keys that answer with tone, fields one shade off their
-     panel with a hairline edge, lists whose selected row turns the selected tone, thin scroll bars. Focus is a ring in
-     the focus colour, drawn outside the part so nothing moves, and it appears at once. Hover and selection change
-     colour over fast, by fading a layer of the new tone in, since a colour faded from transparent would pass through
-     white on the way; a pressed key sinks by a pixel and darkens over press, as a switch does. -->
+<!-- The console's control themes. The focus ring is drawn outside the part, so nothing moves. Hover and selection fade
+     a layer of the new tone in, since a colour faded from transparent would pass through white on the way. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -354,9 +351,8 @@
     </Style>
   </ControlTheme>
 
-  <!-- A choice as a key in a row of keys: a secondary key until it is chosen, then filled as the primary key is. The
-       fill fades in over fast, as the selected row of a list does. ChoiceKey is a list's item, one of which is chosen;
-       ChoiceToggle a key that turns on and off by itself. -->
+  <!-- A choice as a key, filled as the primary key once chosen. ChoiceKey is a ListBoxItem, one of which is chosen;
+       ChoiceToggle a ToggleButton that turns on and off by itself. -->
   <ControlTheme x:Key="ChoiceKey" TargetType="ListBoxItem">
     <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />

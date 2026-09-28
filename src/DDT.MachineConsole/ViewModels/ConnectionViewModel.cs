@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Starting and connecting: the agent checks for a newer agent and registers. When a request fails, the screen says
-// how far it got, in the stages of a connection, with the agent's own words and what to look at.
+// The Starting and Connecting stages. A failed request shows how far it got, stage by stage of a connection.
 public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private static readonly ConnectionStage[] s_stages =
@@ -73,24 +72,4 @@ public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(lo
         _state = state;
         RaiseAll();
     }
-}
-
-public enum ConnectionStageState
-{
-    Passed,
-    Failed,
-    NotReached,
-}
-
-public sealed record ConnectionStageItem(string Name, ConnectionStageState State, string StateText)
-{
-    public bool IsFailed => State == ConnectionStageState.Failed;
-
-    // The stages show as modules of the rail: passed as done, the failed one hatched, the rest empty.
-    public ConsoleStepState ModuleState => State switch
-    {
-        ConnectionStageState.Passed => ConsoleStepState.Done,
-        ConnectionStageState.Failed => ConsoleStepState.Failed,
-        _ => ConsoleStepState.Pending,
-    };
 }

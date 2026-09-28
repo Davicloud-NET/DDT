@@ -203,37 +203,7 @@ src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.ExportAsync: over 5 parameters
 src/DDT.Core/Wim/WimNativeMethods.cs: WimNativeMethods.ExportImage: over 5 parameters
 src/DDT.Host/Startup/DdtConfigurationCheck.cs: DdtConfigurationCheck.FindProblems: over 60 lines
 src/DDT.Host/Startup/SettingsConsole.cs: SettingsConsole.CreateAdministratorAsync: over 60 lines
-src/DDT.MachineConsole/Agent/AgentLink.cs: more than one type
-src/DDT.MachineConsole/Agent/IAgentConnection.cs: more than one type
-src/DDT.MachineConsole/Controls/Marks.cs: more than one type
-src/DDT.MachineConsole/Controls/Marks.cs: no type named after the file
-src/DDT.MachineConsole/Controls/Motion.cs: Motion.RunAsync: over 5 parameters
-src/DDT.MachineConsole/Controls/RailModule.cs: RailModule.DrawState: over 5 parameters
-src/DDT.MachineConsole/Controls/RailModule.cs: comment block over 4 lines
-src/DDT.MachineConsole/Controls/SequenceRail.cs: SequenceRail.Rebuild: over 60 lines
 src/DDT.MachineConsole/Machine/CommandPrompt.cs: CommandPrompt.CreateProcess: over 5 parameters
-src/DDT.MachineConsole/Machine/CommandPrompt.cs: more than one type
-src/DDT.MachineConsole/Machine/IMachinePower.cs: more than one type
-src/DDT.MachineConsole/Program.cs: more than one type
-src/DDT.MachineConsole/Texts/Localizer.cs: more than one type
-src/DDT.MachineConsole/Texts/PoCatalog.cs: PoCatalog.Read: over 60 lines
-src/DDT.MachineConsole/ViewModels/ConnectionViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/DiskChoiceViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/InputFieldViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/InputsViewModel.cs: comment block over 4 lines
-src/DDT.MachineConsole/ViewModels/LicencesViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/LogViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/MainViewModel.cs: MainViewModel.Press: over 60 lines
-src/DDT.MachineConsole/ViewModels/MainViewModel.cs: MainViewModel: over 400 lines
-src/DDT.MachineConsole/ViewModels/MainViewModel.cs: comment block over 4 lines
-src/DDT.MachineConsole/ViewModels/MainViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/ObservableObject.cs: more than one type
-src/DDT.MachineConsole/ViewModels/RunPath.cs: comment block over 4 lines
-src/DDT.MachineConsole/ViewModels/RunViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/ScreenViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/SequenceChoiceViewModel.cs: more than one type
-src/DDT.MachineConsole/ViewModels/TypedWordViewModel.cs: more than one type
-src/DDT.MachineConsole/Views/FrameMeter.cs: comment block over 4 lines
 src/DDT.Protocols/Dhcp/DhcpMessageParser.cs: DhcpMessageParser.TryParse: over 60 lines
 src/DDT.Protocols/Pxe/ProxyDhcpReplyWriter.cs: ProxyDhcpReplyWriter.TryWrite: over 60 lines
 src/DDT.Protocols/Pxe/ProxyDhcpReplyWriter.cs: comment block over 4 lines
@@ -543,10 +513,6 @@ tests/DDT.E2E/Eventually.cs: Eventually.GetAsync: over 5 parameters
 tests/DDT.E2E/Eventually.cs: Eventually.WaitAsync: over 5 parameters
 tests/DDT.E2E/HostProcess.cs: HostProcess.StartAsync: over 60 lines
 tests/DDT.E2E/TreeDryRunTests.cs: TreeDryRunTests.ATreeTakesItsBranchTriesAgainAfterARestartAndPausesInWindowsUntilTheWebContinuesIt: over 60 lines
-tests/DDT.MachineConsole.Tests/KeyboardTests.cs: more than one type
-tests/DDT.MachineConsole.Tests/MotionTests.cs: comment block over 4 lines
-tests/DDT.MachineConsole.Tests/ScreenshotTests.cs: ScreenshotTests.Render: over 5 parameters
-tests/DDT.MachineConsole.Tests/TestConsole.cs: more than one type
 tests/DDT.Pxe.Tests/TftpListenerTests.cs: TftpListenerTests.DownloadAsync: over 60 lines
 tests/DDT.Server.Tests/AccountEndpointTests.cs: AccountEndpointTests.KeepingThePasswordForANewDestinationIsRefusedAndAudited: over 60 lines
 tests/DDT.Server.Tests/AccountRequests.cs: AccountRequests.Request: over 5 parameters

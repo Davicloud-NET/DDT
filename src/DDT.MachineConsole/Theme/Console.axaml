@@ -2,9 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- What only the console has: the sizes it sets its large text in, read from across a room on a 1024 x 768 screen,
-     in the faces the tokens give display, title and label, and the row a fact about the machine is shown in. The
-     colours, radii and the web's type sizes come from Tokens.axaml, which is written from tokens.json. -->
+<!-- What only the console has beside the generated Tokens.axaml: the sizes of large text read from across a room,
+     and the rows facts are shown in. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:vm="using:DDT.MachineConsole.ViewModels">

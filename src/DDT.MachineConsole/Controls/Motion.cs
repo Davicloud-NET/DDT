@@ -14,10 +14,8 @@ using Avalonia.VisualTree;
 
 namespace DDT.MachineConsole.Controls;
 
-// The console's motion, as src/DDT.Design/README.md describes it and tokens.json times it. What enters fades in and
-// rises by the distance, decelerating; what leaves fades out faster, accelerating. Only opacity and position change,
-// which the console's software rendering draws cheaply, and only in answer to a key or to what the agent sent. Once
-// still, an element has no transform left, so it is drawn exactly as it would be without motion.
+// The console's motion, timed by the motion tokens. Only opacity and a TranslateTransform change, which software
+// rendering draws cheaply, and a settled element has no transform left, so it renders as without motion.
 public static class Motion
 {
     // Set on an element that should enter when it is shown and leave before it is hidden, in place of IsVisible.
@@ -71,7 +69,7 @@ public static class Motion
 
         double rise = GetRises(visual) ? Distance * (1 - from) : 0;
 
-        return RunAsync(visual, Normal, Entering, from, 1, rise, cancellation);
+        return RunAsync(visual, new Movement(Normal, Entering, from, 1, rise), cancellation);
     }
 
     // Fades the element out over fast. It stays clear, for whoever hides it next.
@@ -79,7 +77,7 @@ public static class Motion
     {
         ArgumentNullException.ThrowIfNull(visual);
 
-        return RunAsync(visual, Fast, Leaving, visual.GetValue(Fading(visual)), 0, 0, cancellation);
+        return RunAsync(visual, new Movement(Fast, Leaving, visual.GetValue(Fading(visual)), 0, 0), cancellation);
     }
 
     // A change the agent pushed to what is on screen, such as the next step: the element enters again from nothing.
@@ -166,24 +164,17 @@ public static class Motion
         return next.Token;
     }
 
-    private static async Task RunAsync(
-        Visual visual,
-        TimeSpan duration,
-        Easing easing,
-        double from,
-        double to,
-        double rise,
-        CancellationToken cancellation)
+    private static async Task RunAsync(Visual visual, Movement movement, CancellationToken cancellation)
     {
         StyledProperty<double> fading = Fading(visual);
 
         // Set at once, before the first frame of the animation, so the element never shows where it is going first.
-        visual.SetValue(fading, from);
-        TranslateTransform? shift = rise != 0 ? Shift(visual, rise) : null;
+        visual.SetValue(fading, movement.From);
+        TranslateTransform? shift = movement.Rise != 0 ? Shift(visual, movement.Rise) : null;
 
         if (!IsEnabled || !visual.IsAttachedToVisualTree())
         {
-            Settle(visual, fading, to, shift);
+            Settle(visual, fading, movement.To, shift);
 
             return;
         }
@@ -191,13 +182,13 @@ public static class Motion
         // Forward keeps the last value when the animation ends or is stopped, so nothing jumps back for a frame.
         Animation animation = new()
         {
-            Duration = duration,
-            Easing = easing,
+            Duration = movement.Duration,
+            Easing = movement.Easing,
             FillMode = FillMode.Forward,
             Children =
             {
-                Frame(0, fading, from, shift is null ? null : rise),
-                Frame(1, fading, to, shift is null ? null : 0),
+                Frame(0, fading, movement.From, shift is null ? null : movement.Rise),
+                Frame(1, fading, movement.To, shift is null ? null : 0),
             },
         };
 
@@ -205,7 +196,7 @@ public static class Motion
 
         if (!cancellation.IsCancellationRequested)
         {
-            Settle(visual, fading, to, shift);
+            Settle(visual, fading, movement.To, shift);
         }
     }
 
@@ -259,4 +250,7 @@ public static class Motion
         Application.Current is { } application && application.TryGetResource(key, null, out object? value) && value is T typed
             ? typed
             : fallback;
+
+    // From and To are strengths of the fading, Rise how far below its place the element starts.
+    private readonly record struct Movement(TimeSpan Duration, Easing Easing, double From, double To, double Rise);
 }

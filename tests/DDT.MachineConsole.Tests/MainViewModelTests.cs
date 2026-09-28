@@ -11,8 +11,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console as the agent drives it: a screen per stage, one question at a time, the log adding up, and the last state
-// kept once the pipe ends.
+// The console as the agent drives it, without the views.
 public sealed class MainViewModelTests
 {
     // The deployment setting, which the agent passes on once it has registered. What someone at the machine chose with F5
@@ -67,7 +66,7 @@ public sealed class MainViewModelTests
         TestConsole console = new();
 
         Assert.IsType<ConnectionViewModel>(console.Model.Screen);
-        Assert.Equal("Waiting for the agent", console.Model.Connection);
+        Assert.Equal("Waiting for the agent", console.Model.Header.Connection);
     }
 
     [Theory]
@@ -93,12 +92,12 @@ public sealed class MainViewModelTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.Unreachable);
 
-        Assert.Equal("Cannot reach ddt.lab.local:8443", console.Model.Connection);
+        Assert.Equal("Cannot reach ddt.lab.local:8443", console.Model.Header.Connection);
 
         console.Show(Scenarios.State(ConsoleStage.WaitingForSequence) with { Machine = Scenarios.Machine with { Model = "OptiPlex 7010" } });
 
-        Assert.Equal("Connected to ddt.lab.local:8443", console.Model.Connection);
-        Assert.Equal("Dell Inc. OptiPlex 7010", console.Model.MachineLabel);
+        Assert.Equal("Connected to ddt.lab.local:8443", console.Model.Header.Connection);
+        Assert.Equal("Dell Inc. OptiPlex 7010", console.Model.Header.MachineLabel);
         Assert.IsType<WaitingViewModel>(console.Model.Screen);
     }
 
@@ -303,8 +302,8 @@ public sealed class MainViewModelTests
         RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
         Assert.Equal("62", run.Percent);
         Assert.Null(console.Model.Question);
-        Assert.True(console.Model.IsEnded);
-        Assert.Equal("The agent has ended", console.Model.Connection);
+        Assert.True(console.Model.End.IsEnded);
+        Assert.Equal("The agent has ended", console.Model.Header.Connection);
 
         // Nothing that might still arrive changes it.
         console.Show(Scenarios.Finished).Ask(10, Scenarios.Sequences);
@@ -319,7 +318,7 @@ public sealed class MainViewModelTests
 
         console.Model.Ended(LinkEnd.Broken);
 
-        Assert.Equal("The connection to the agent broke", console.Model.EndedTitle);
+        Assert.Equal("The connection to the agent broke", console.Model.End.EndedTitle);
     }
 
     [Fact]
@@ -329,7 +328,7 @@ public sealed class MainViewModelTests
         desktop.Model.Ended(LinkEnd.Closed);
 
         Assert.False(desktop.Model.Press(Key.F8));
-        Assert.False(desktop.Model.RestartCommand.CanExecute(null));
+        Assert.False(desktop.Model.End.RestartCommand.CanExecute(null));
         Assert.Equal(0, desktop.Power.Restarts);
 
         TestConsole windowsPE = new TestConsole(canRestart: true).Show(Scenarios.Finished);
@@ -337,11 +336,11 @@ public sealed class MainViewModelTests
 
         windowsPE.Model.Ended(LinkEnd.Closed);
         Assert.True(windowsPE.Model.Press(Key.F8));
-        Assert.True(windowsPE.Model.ConfirmingRestart);
+        Assert.True(windowsPE.Model.End.ConfirmingRestart);
         Assert.Equal(0, windowsPE.Power.Restarts);
 
         Assert.True(windowsPE.Model.Press(Key.Escape));
-        Assert.False(windowsPE.Model.ConfirmingRestart);
+        Assert.False(windowsPE.Model.End.ConfirmingRestart);
         Assert.Equal(0, windowsPE.Power.Restarts);
 
         windowsPE.Model.Press(Key.F8);
@@ -355,7 +354,7 @@ public sealed class MainViewModelTests
         TestConsole console = new TestConsole().Show(Scenarios.Running);
 
         Assert.False(console.Model.Press(Key.F9));
-        Assert.False(console.Model.CloseCommand.CanExecute(null));
+        Assert.False(console.Model.End.CloseCommand.CanExecute(null));
 
         console.Model.Ended(LinkEnd.Closed);
 
@@ -382,7 +381,7 @@ public sealed class MainViewModelTests
         console.Model.Ended(LinkEnd.Closed);
         console.Model.Press(Key.F8);
         Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
-        Assert.True(console.Model.ConfirmingRestart);
+        Assert.True(console.Model.End.ConfirmingRestart);
 
         // And from the keys that show it.
         console.Model.OpenPromptCommand.Execute(null);
@@ -417,25 +416,25 @@ public sealed class MainViewModelTests
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);
 
-        Assert.False(console.Model.HasNotice);
+        Assert.False(console.Model.Notice.IsShown);
         Assert.True(console.Model.Press(Key.VolumeMute));
-        Assert.Equal(ConsoleNotice.MediaKeys, console.Model.Notice);
+        Assert.Equal(ConsoleNotice.MediaKeys, console.Model.Notice.Current);
         Assert.False(console.Model.HasOverlay);
-        Assert.Equal(["Fn"], console.Model.NoticeKeys);
-        Assert.Contains("Hold Fn", console.Model.NoticeText, StringComparison.Ordinal);
+        Assert.Equal(["Fn"], console.Model.Notice.Keys);
+        Assert.Contains("Hold Fn", console.Model.Notice.Text, StringComparison.Ordinal);
 
         Assert.True(console.Model.Press(Key.F2));
-        Assert.False(console.Model.HasNotice);
+        Assert.False(console.Model.Notice.IsShown);
         Assert.Equal(Overlay.Machine, console.Model.OverlayShown);
 
         console.Model.Press(Key.VolumeUp);
-        Assert.True(console.Model.HasNotice);
+        Assert.True(console.Model.Notice.IsShown);
         console.Model.Press(Key.Escape);
-        Assert.False(console.Model.HasNotice);
+        Assert.False(console.Model.Notice.IsShown);
 
         TestConsole german = new(UiLanguage.German);
         german.Model.Press(Key.VolumeDown);
-        Assert.StartsWith("Die obere Tastenreihe", german.Model.NoticeText, StringComparison.Ordinal);
+        Assert.StartsWith("Die obere Tastenreihe", german.Model.Notice.Text, StringComparison.Ordinal);
     }
 
     // Alt+F4 while the agent works would leave the machine to the text console, and passers-by press it. The console
@@ -446,16 +445,16 @@ public sealed class MainViewModelTests
         TestConsole console = new TestConsole().Show(Scenarios.Running);
 
         Assert.True(console.Model.RefuseClose());
-        Assert.Equal(ConsoleNotice.CloseRefused, console.Model.Notice);
-        Assert.Equal(["Shift", "F10"], console.Model.NoticeKeys);
+        Assert.Equal(ConsoleNotice.CloseRefused, console.Model.Notice.Current);
+        Assert.Equal(["Shift", "F10"], console.Model.Notice.Keys);
         Assert.Equal(
             "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt.",
-            console.Model.NoticeText);
+            console.Model.Notice.Text);
 
         // The next key has read it; the note leaves and keeps its words while it fades.
         console.Model.Press(Key.F1);
-        Assert.False(console.Model.HasNotice);
-        Assert.Equal(["Shift", "F10"], console.Model.NoticeKeys);
+        Assert.False(console.Model.Notice.IsShown);
+        Assert.Equal(["Shift", "F10"], console.Model.Notice.Keys);
         Assert.Equal(0, console.Closed);
 
         // Before the agent has said anything, too.
@@ -466,7 +465,7 @@ public sealed class MainViewModelTests
 
         TestConsole german = new(UiLanguage.German);
         Assert.True(german.Model.RefuseClose());
-        Assert.StartsWith("Die Konsole bleibt offen", german.Model.NoticeText, StringComparison.Ordinal);
+        Assert.StartsWith("Die Konsole bleibt offen", german.Model.Notice.Text, StringComparison.Ordinal);
     }
 
     [Fact]

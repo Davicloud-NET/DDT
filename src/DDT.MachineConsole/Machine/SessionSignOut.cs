@@ -6,8 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.MachineConsole.Machine;
 
-// Signs out of DDT's session in the installed Windows, which ends the console with it. The agent waits for that after a
-// run that did not finish, and deletes the session's account once it is signed out.
+// Signs out of DDT's session, which ends the console. The agent deletes the session's account once it is signed out.
 public static partial class SessionSignOut
 {
     private const uint LogOff = 0x00000000;

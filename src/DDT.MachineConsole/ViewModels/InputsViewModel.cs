@@ -7,11 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A sequence's inputs, all on one page: a field for each, in the order the sequence declares them. Enter sends them all
-// once every field that needs an answer has one. The agent checks them and, where it refuses one, asks again with what
-// was wrong under the field; what was typed stays for the person to put right, but a password never does, and no
-// password stays on the screen once it has been sent. Esc goes back to the list of sequences where the question comes
-// after the pick. Nothing typed here is ever written to a log.
+// A sequence's inputs on one page. The agent checks them and asks again with what was wrong: each field keeps what was
+// typed, except a password, and nothing typed here is ever logged.
 public sealed class InputsViewModel : QuestionViewModel
 {
     private readonly bool _canGoBack;

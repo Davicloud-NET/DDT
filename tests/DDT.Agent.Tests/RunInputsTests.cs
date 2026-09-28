@@ -76,6 +76,28 @@ public sealed class RunInputsTests : IDisposable
         Assert.Contains("The inputs were answered on the web, and the run starts.", _lines.ToString(), StringComparison.Ordinal);
     }
 
+    // A run assigned on the web that asks nothing at the machine reached the agent before it started, without values: the
+    // report that started it brings them, and the steps work with them from the first one.
+    [Fact]
+    public async Task StartsWithTheValuesTheReportThatStartedItBrings()
+    {
+        ScriptedAgentServer server = new()
+        {
+            AnswerRunReports = (_, token) => new AgentRunReportResult(token, "resume", null, Values: new Dictionary<string, string> { ["Office"] = "GRZ" }),
+        };
+        ImmediateTimeProvider time = new();
+        AgentLog log = new(time, _lines);
+        AgentRun run = TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]);
+        Assert.Null(run.Values);
+
+        RunResult result = await TestAgents.Runner(server, _tools, log, time, toolRunner: _toolRunner, status: TestAgents.Status(new ScriptedMachineConsole()))
+            .RunAsync(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read(), server.Stop.Token);
+
+        Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Equal((DeploymentState.Running, RunActivity.Preparing), (server.RunReports[0].State, server.RunReports[0].Activity));
+        Assert.Equal("GRZ", Assert.Single(_toolRunner.Options).Environment!["DDT_VAR_Office"]);
+    }
+
     // What the server did not take is asked again with its reason at the field, whether it answered with problems or
     // refused the answers outright.
     [Theory]

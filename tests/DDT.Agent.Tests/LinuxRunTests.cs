@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -55,9 +56,12 @@ public sealed class LinuxRunTests : IDisposable
             "LINUX-01",
             allowed);
 
-    private async Task<(RunResult Result, ScriptedAgentServer Server, string Console)> RunAsync(AgentRun run, bool? secureBootEnabled = true)
+    private async Task<(RunResult Result, ScriptedAgentServer Server, string Console)> RunAsync(
+        AgentRun run,
+        bool? secureBootEnabled = true,
+        ScriptedAgentServer? server = null)
     {
-        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        server ??= _image.Serve(new ScriptedAgentServer());
         ImmediateTimeProvider time = new();
         StringWriter console = new();
         SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, rawDisks: _disks);
@@ -139,6 +143,7 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal($"Disk 0 {WriteRawImageStepRunner.FourKilobyteSectorsMessage}", server.RunReports[^1].Error);
     }
 
+    // Checked once the run has its values, which may name the machine, and before the first step.
     [Fact]
     public async Task RefusesASeedWithAValueTheMachineLacksBeforeTheDiskIsTouched()
     {
@@ -148,9 +153,30 @@ public sealed class LinuxRunTests : IDisposable
         (RunResult result, ScriptedAgentServer server, _) = await RunAsync(run);
 
         Assert.Equal(RunOutcome.Failed, result.Outcome);
-        Assert.Empty(_tools.Calls);
-        Assert.Empty(_disks.Disks);
+        Assert.Equal(["list"], _tools.Calls);
+        Assert.All(_disks.Disks.Values, disk => Assert.Empty(disk.Writes));
+        Assert.Equal((DeploymentState.Failed, 0), (server.RunReports[^1].State, server.RunReports[^1].Steps.Count));
         Assert.StartsWith("The machine has no value for {{ComputerName}}. Assign the sequence with a computer name", server.RunReports[^1].Error, StringComparison.Ordinal);
+    }
+
+    // A run assigned without a name, which a rule's pattern gives it: the values the report that started the run brought
+    // name the machine in its seed.
+    [Fact]
+    public async Task NamesTheMachineInTheSeedAsTheRunsValuesDo()
+    {
+        AgentRun run = Run() with { ComputerName = null };
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
+        server.AnswerRunReports = (_, token) =>
+            new AgentRunReportResult(token, "resume", "run-token-1", Values: new Dictionary<string, string> { [MachineVariableNames.ComputerName] = "SEA-00042" });
+
+        (RunResult result, _, _) = await RunAsync(run, server: server);
+
+        Assert.Equal(new RunResult(RunOutcome.Finished), result);
+        MemoryRawDisk disk = _disks.Disks[0];
+        GptPartition seed = GptLayout.Read(disk.ReadAt(0, RawDiskWriter.HeadBytes)).Partitions.Single(partition => partition.Name == CloudInitSeed.Label);
+        byte[] volume = disk.ReadAt(seed.FirstLba * GptLayout.SectorSize, (int)(seed.Sectors * GptLayout.SectorSize));
+        FatVolume fat = FatVolume.Open(new MemoryStream(volume), 0, volume.Length);
+        Assert.Contains("local-hostname: \"SEA-00042\"", Encoding.UTF8.GetString(fat.ReadFile(fat.Find(CloudInitSeed.MetaData)!, 64 * 1024)), StringComparison.Ordinal);
     }
 
     // A seed step with conditions is left to its step, which fails after the image was written.

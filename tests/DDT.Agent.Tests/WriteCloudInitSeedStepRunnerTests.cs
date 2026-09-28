@@ -93,19 +93,27 @@ public sealed class WriteCloudInitSeedStepRunnerTests : IDisposable
     [Fact]
     public async Task NamesAPlaceholderTheRunHasNoValueFor()
     {
-        using StepRunnerFixture unnamed = new([s_write, s_seed], [_image.RunImage()]);
-        _image.Serve(unnamed.Server);
-        StepResult image = await unnamed.WriteRawImage.RunAsync(s_write, unnamed.Context(), TestContext.Current.CancellationToken);
-        IReadOnlyDictionary<string, string> written = image.Outputs!;
-        RunSession session = new(unnamed.Session.MachineId, unnamed.Session.Run with { ComputerName = null }, unnamed.Session.Tokens)
-        {
-            Disk = unnamed.Session.Disk,
-        };
-        WriteCloudInitSeedStepRunner seeds = new(unnamed.RawDisks, session, unnamed.Log, unnamed.Time);
+        IReadOnlyDictionary<string, string> written = await WrittenAsync();
+        StepContext unnamed = _run.Context(variables: written);
 
         DeploymentStepException refusal = await Assert.ThrowsAsync<DeploymentStepException>(
-            () => seeds.RunAsync(s_seed, unnamed.Context(variables: written), TestContext.Current.CancellationToken));
+            () => _run.WriteCloudInitSeed.RunAsync(s_seed, unnamed with { Machine = unnamed.Machine with { ComputerName = null } }, TestContext.Current.CancellationToken));
 
         Assert.StartsWith("The machine has no value for {{ComputerName}}.", refusal.Message, StringComparison.Ordinal);
+    }
+
+    // The run's computer name is the one its values give, such as a rule's pattern, or a step set, rather than only a name
+    // given when it was assigned.
+    [Fact]
+    public async Task NamesTheMachineAsTheRunsValuesDo()
+    {
+        IReadOnlyDictionary<string, string> written = await WrittenAsync();
+        StepContext named = _run.Context(variables: written, values: new Dictionary<string, string> { [MachineVariableNames.ComputerName] = "SEA-00042" });
+
+        await _run.WriteCloudInitSeed.RunAsync(s_seed, named with { Machine = named.Machine with { ComputerName = null } }, TestContext.Current.CancellationToken);
+
+        MemoryRawDisk disk = _run.RawDisks.Disks[0];
+        GptPartition seed = GptLayout.Read(disk.ReadAt(0, RawDiskWriter.HeadBytes)).Partitions.Single(partition => partition.Name == CloudInitSeed.Label);
+        Assert.Contains("local-hostname: \"SEA-00042\"", Text(Volume(disk, seed), "meta-data"), StringComparison.Ordinal);
     }
 }

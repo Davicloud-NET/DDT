@@ -21,6 +21,7 @@ internal sealed class LiveRecorder : IAsyncDisposable
     private readonly Lock _lock = new();
     private readonly List<RunStepChangedEvent> _steps = [];
     private readonly List<MachineLogAppendedEvent> _logPushes = [];
+    private readonly List<RunVariablesChangedEvent> _variables = [];
     private readonly HubConnection _connection;
 
     private LiveRecorder(AdminApi api, X509Certificate2 rootCertificate)
@@ -37,6 +38,7 @@ internal sealed class LiveRecorder : IAsyncDisposable
 
         _connection.On<RunStepChangedEvent>("runStepChanged", change => Add(_steps, change));
         _connection.On<MachineLogAppendedEvent>("machineLogAppended", push => Add(_logPushes, push));
+        _connection.On<RunVariablesChangedEvent>("runVariablesChanged", push => Add(_variables, push));
     }
 
     // Everything the hub sent so far, as it came over the wire.
@@ -66,6 +68,15 @@ internal sealed class LiveRecorder : IAsyncDisposable
         lock (_lock)
         {
             return [.. _steps.Where(change => change.MachineId == machineId).Select(change => change.Step)];
+        }
+    }
+
+    // The variables of the machine's run as each push had them, in the order they came.
+    public IReadOnlyList<IReadOnlyDictionary<string, string>> VariablePushes(Guid machineId)
+    {
+        lock (_lock)
+        {
+            return [.. _variables.Where(push => push.MachineId == machineId).Select(push => push.Variables)];
         }
     }
 

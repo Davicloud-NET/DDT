@@ -18,9 +18,9 @@ internal static class TestContent
     private const int Megabyte = 1024 * 1024;
 
     // As much of a WIM as the server and a dry run read: the header, data that stands in for the image, and the image
-    // list, uncompressed UTF-16 LE with a byte order mark, naming one x64 image. A dry run applies nothing, so no
-    // real image and no boot image build is needed.
-    public static void WriteWim(string path, int dataMegabytes)
+    // list, uncompressed UTF-16 LE with a byte order mark, naming one x64 image, which the library names after it. A dry
+    // run applies nothing, so no real image and no boot image build is needed.
+    public static void WriteWim(string path, int dataMegabytes, string imageName = "DDT E2E Windows")
     {
         byte[] list =
         [
@@ -29,7 +29,7 @@ internal static class TestContent
                 "<WIM><TOTALBYTES>1</TOTALBYTES><IMAGE INDEX=\"1\"><TOTALBYTES>10000000</TOTALBYTES><WINDOWS><ARCH>9</ARCH>" +
                 "<EDITIONID>Professional</EDITIONID><LANGUAGES><LANGUAGE>en-US</LANGUAGE><DEFAULT>en-US</DEFAULT></LANGUAGES>" +
                 "<VERSION><MAJOR>10</MAJOR><MINOR>0</MINOR><BUILD>26100</BUILD><SPBUILD>1</SPBUILD></VERSION></WINDOWS>" +
-                "<NAME>DDT E2E Windows</NAME></IMAGE></WIM>"),
+                $"<NAME>{imageName}</NAME></IMAGE></WIM>"),
         ];
         long dataLength = (long)dataMegabytes * Megabyte;
         byte[] header = new byte[WimHeaderLength];

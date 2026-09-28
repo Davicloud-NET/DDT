@@ -5,6 +5,13 @@
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { QueryClient } from "@tanstack/react-query";
 
+import {
+  accountsQuery,
+  putAccount,
+  removeAccounts,
+  type AccountsRemoved,
+  type AccountView,
+} from "@/accounts/accounts";
 import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
@@ -210,6 +217,7 @@ export function createLiveConnection(
       uploadsQuery.queryKey,
       rulesQuery.queryKey,
       machineRolesQuery.queryKey,
+      accountsQuery.queryKey,
       sequencesQuery.queryKey,
       sequenceDocumentsKey,
       sequenceResolutionsKey,
@@ -316,6 +324,16 @@ export function createLiveConnection(
     current.on("rolesChanged", (roles: MachineRoleView[]) => {
       queryClient.setQueryData(machineRolesQuery.queryKey, roles);
       refetchResolutions();
+    });
+
+    // An account carries no password, only whether one is set, and comes again when a sequence starts or stops
+    // naming it.
+    current.on("accountChanged", (account: AccountView) => {
+      putAccount(queryClient, account);
+    });
+
+    current.on("accountsRemoved", (event: AccountsRemoved) => {
+      removeAccounts(queryClient, event.accountIds);
     });
 
     current.on("bootImageChanged", (view: BootImageView) => {

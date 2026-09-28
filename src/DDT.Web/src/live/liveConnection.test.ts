@@ -168,6 +168,7 @@ const resynced = [
   ["image-uploads"],
   ["rules"],
   ["machine-roles"],
+  ["accounts"],
   ["sequences"],
   ["sequence"],
   ["machine-sequence"],
@@ -317,16 +318,40 @@ describe("createLiveConnection", () => {
     ]);
   });
 
-  it("takes the machine roles from their event, and reads again only what they give", async () => {
+  it("takes the machine roles and the accounts from their events without reading their lists again", async () => {
     const { live, hub, queryClient } = connection();
     live.start();
     await settle();
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
     const roles = [{ id: "role1", name: "Kiosk", values: [], revision: 2 }];
+    const account = (id: string, name: string, revision = 1) => ({
+      id,
+      name,
+      revision,
+      password: { isSet: true, unreadable: false, updatedUtc: null },
+      usedBy: [],
+    });
+
     hub().emit("rolesChanged", roles);
 
     expect(queryClient.getQueryData(["machine-roles"])).toEqual(roles);
     expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
+
+    invalidate.mockClear();
+    queryClient.setQueryData(["accounts"], [account("a1", "Join"), account("a3", "Share")]);
+    hub().emit("accountChanged", account("a2", "Lab"));
+    hub().emit("accountChanged", account("a1", "Join", 2));
+
+    expect(queryClient.getQueryData(["accounts"])).toEqual([
+      account("a1", "Join", 2),
+      account("a2", "Lab"),
+      account("a3", "Share"),
+    ]);
+
+    hub().emit("accountsRemoved", { accountIds: ["a2", "a3"] });
+
+    expect(queryClient.getQueryData(["accounts"])).toEqual([account("a1", "Join", 2)]);
+    expect(invalidate).not.toHaveBeenCalled();
   });
 
   it("reads an open sequence again only when the change is newer than its copy", async () => {

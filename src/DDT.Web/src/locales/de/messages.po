@@ -345,6 +345,10 @@ msgstr "{count, plural, one {# Schritt eingefügt.} other {# Schritte eingefügt
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "{count, plural, one {The sequence {list} uses this account. Choose another account there first.} other {The sequences {list} use this account. Choose another account there first.}}"
+msgstr "{count, plural, one {Die Tasksequenz {list} verwendet dieses Konto. Wählen Sie dort zuerst ein anderes Konto.} other {Die Tasksequenzen {list} verwenden dieses Konto. Wählen Sie dort zuerst ein anderes Konto.}}"
+
 #: src/packages/packages.ts
 msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
 msgstr "{count, plural, one {Die Tasksequenz {names} nennt es in einem Schritt „Skript ausführen“ und zeigt ein Problem, bis ein anderes Paket gewählt ist.} other {Die Tasksequenzen {names} nennen es in einem Schritt „Skript ausführen“ und zeigen ein Problem, bis ein anderes Paket gewählt ist.}}"
@@ -1122,6 +1126,10 @@ msgstr "{when} von {by}"
 msgid "{when} from <0>{address}</0>"
 msgstr "{when} von <0>{address}</0>"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "{who} saved this account while you were editing it."
+msgstr "{who} hat dieses Konto gespeichert, während Sie es bearbeitet haben."
+
 #: src/roles/RoleDrawer.tsx
 msgid "{who} saved this machine role while you were editing it."
 msgstr "{who} hat diese Geräterolle gespeichert, während Sie sie bearbeitet haben."
@@ -1308,6 +1316,10 @@ msgstr "Ein neues Zertifikat wird sofort ausgeliefert, auf Probe: Die nächste A
 #: src/machines/MachinePage.tsx
 msgid "A new run started on this machine."
 msgstr "Auf diesem Gerät hat eine neue Ausführung begonnen."
+
+#: src/accounts/AccountDrawer.tsx
+msgid "A new user name, domain or server needs the password again: the stored one goes only where it was entered for."
+msgstr "Ein neuer Benutzername, eine neue Domäne oder ein neuer Server braucht das Kennwort erneut: Das gespeicherte geht nur dorthin, wofür es eingegeben wurde."
 
 #: src/lib/serverMessages.ts
 msgctxt "package.tooManyTargets"
@@ -1616,6 +1628,7 @@ msgid "Accepted"
 msgstr "Angenommen"
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/settings/DirectorySettings.tsx
 #: src/users/UsersPage.tsx
 msgid "Account"
@@ -1650,6 +1663,26 @@ msgstr "Konto aktiviert"
 msgid "Account for share {number}"
 msgstr "Konto für Netzwerkfreigabe {number}"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Account for steps"
+msgstr "Konto für Schritte"
+
+#: src/audit/auditView.ts
+msgid "Account for steps added"
+msgstr "Konto für Schritte hinzugefügt"
+
+#: src/audit/auditView.ts
+msgid "Account for steps changed"
+msgstr "Konto für Schritte geändert"
+
+#: src/audit/auditView.ts
+msgid "Account for steps deleted"
+msgstr "Konto für Schritte gelöscht"
+
+#: src/audit/auditView.ts
+msgid "Account for steps not saved"
+msgstr "Konto für Schritte nicht gespeichert"
+
 #: src/app/Shell.tsx
 msgid "Account menu"
 msgstr "Kontomenü"
@@ -1658,10 +1691,17 @@ msgstr "Kontomenü"
 msgid "Account menu for {name}"
 msgstr "Kontomenü für {name}"
 
+#: src/accounts/AccountsPage.tsx
+#: src/app/navigation.ts
 #: src/users/UsersPage.tsx
 msgid "Accounts"
 msgstr "Konten"
 
+#: src/audit/auditView.ts
+msgid "Accounts for steps"
+msgstr "Konten für Schritte"
+
+#: src/accounts/AccountsPage.tsx
 #: src/images/ImagesPage.tsx
 #: src/machines/MachinesPage.tsx
 #: src/packages/PackagesPage.tsx
@@ -1680,6 +1720,7 @@ msgstr "Aktionen für {label}"
 msgid "Actions for {menuName}"
 msgstr "Aktionen für {menuName}"
 
+#: src/accounts/AccountsPage.tsx
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/roles/MachineRolesPage.tsx
@@ -1749,6 +1790,10 @@ msgstr "Modell hinzufügen"
 msgid "Add a role"
 msgstr "Geräterolle hinzufügen"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Add a server"
+msgstr "Server hinzufügen"
+
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Add a share"
 msgstr "Netzwerkfreigabe hinzufügen"
@@ -1809,10 +1854,15 @@ msgstr "Wert hinzufügen"
 msgid "Add a variable"
 msgstr "Variable hinzufügen"
 
+#: src/accounts/AccountsPage.tsx
 #: src/users/UserDialogs.tsx
 #: src/users/UsersPage.tsx
 msgid "Add account"
 msgstr "Konto hinzufügen"
+
+#: src/accounts/AccountsPage.tsx
+msgid "Add an account for a step that runs a script as someone, connects a share or joins a domain."
+msgstr "Fügen Sie ein Konto für einen Schritt hinzu, der ein Skript als jemand ausführt, eine Netzwerkfreigabe verbindet oder einer Domäne beitritt."
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Add an input"
@@ -1954,6 +2004,10 @@ msgstr "Alle Geräte"
 msgid "All of these hold"
 msgstr "Alle diese Bedingungen gelten"
 
+#: src/accounts/AccountsPage.tsx
+msgid "Allowed"
+msgstr "Erlaubt"
+
 #: src/runs/runs.ts
 msgid "Allowed to write {image} although it may not start with Secure Boot on."
 msgstr "Darf {image} schreiben, obwohl es mit aktiviertem Secure Boot möglicherweise nicht startet."
@@ -1987,6 +2041,10 @@ msgstr "Ein Konto kann höchstens {max} Server nennen."
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "Ein Konto im installierten Windows, nur für das Skript angemeldet."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "An account reaches machines with whatever it may do in the domain, so changing one needs your password again."
+msgstr "Ein Konto erreicht Geräte mit allem, was es in der Domäne darf, daher braucht eine Änderung Ihr Kennwort erneut."
+
 #: src/sequences/builder/AccountSetting.tsx
 msgid "An account this server does not have"
 msgstr "Ein Konto, das dieser Server nicht hat"
@@ -1999,6 +2057,10 @@ msgstr "Ein Konto, nur für die Ausführung"
 msgctxt "role.anAdministrator"
 msgid "an Administrator"
 msgstr "ein Administrator"
+
+#: src/accounts/AccountsPage.tsx
+msgid "An administrator adds accounts here."
+msgstr "Ein Administrator fügt hier Konten hinzu."
 
 #: src/images/ImagesPage.tsx
 msgid "An administrator adds images by uploading WIM files or disk images here."
@@ -2450,6 +2512,7 @@ msgid "By default, a person who signs in at a netbooting machine authorizes it f
 msgstr "Standardmäßig autorisiert eine Person, die sich an einem per Netzwerk startenden Gerät anmeldet, es für die gewählte Tasksequenz, und ein Operator kann ein wartendes Gerät im Web freigeben. Zero Touch überspringt beides in den hier aufgeführten Netzwerken."
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountDrawer.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/roles/RoleDrawer.tsx
@@ -2466,6 +2529,11 @@ msgstr "Abbrechen"
 #: src/machines/MachineActions.tsx
 msgid "Cancel the assignment"
 msgstr "Zuweisung aufheben"
+
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
+msgid "Cannot be read, enter it again"
+msgstr "Nicht lesbar, geben Sie es erneut ein"
 
 #: src/sequences/sequenceList.ts
 #: src/sequences/SequencesPage.tsx
@@ -2492,6 +2560,7 @@ msgstr "Zertifikat, gefolgt von seinen Zwischenzertifikaten"
 msgid "Certificates"
 msgstr "Zertifikate"
 
+#: src/accounts/AccountsPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/roles/MachineRolesPage.tsx
 #: src/rules/RulesPage.tsx
@@ -2527,6 +2596,7 @@ msgstr "Ändern Sie Ihr eigenes Kennwort auf der Seite „Konto“."
 msgid "Changed"
 msgstr "Geändert"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/settings/SettingsParts.tsx
 msgid "changed {changed}"
 msgstr "geändert {changed}"
@@ -2734,10 +2804,12 @@ msgstr "Claim-Werte und die Rollen, die sie geben"
 msgid "Claim with the groups"
 msgstr "Claim mit den Gruppen"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Clear"
 msgstr "Leeren"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Cleared on save"
 msgstr "Wird beim Speichern geleert"
@@ -2795,6 +2867,10 @@ msgstr "Computername"
 #: src/settings/ServerPage.tsx
 msgid "Configuration values"
 msgstr "Konfigurationswerte"
+
+#: src/accounts/AccountDrawer.tsx
+msgid "Confirm and delete"
+msgstr "Bestätigen und löschen"
 
 #: src/settings/CertificatePanel.tsx
 msgid "Confirm and generate"
@@ -3023,6 +3099,7 @@ msgstr "Standardgateway"
 msgid "Defaults for every run"
 msgstr "Standardwerte für jede Ausführung"
 
+#: src/accounts/AccountsPage.tsx
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/roles/MachineRolesPage.tsx
@@ -3036,6 +3113,7 @@ msgstr "Löschen"
 msgid "Delete {name}"
 msgstr "{name} löschen"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/roles/RoleDrawer.tsx
@@ -3045,6 +3123,7 @@ msgstr "{name} löschen"
 msgid "Delete {name}?"
 msgstr "{name} löschen?"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/users/UsersPage.tsx
 msgid "Delete account"
 msgstr "Konto löschen"
@@ -3206,6 +3285,8 @@ msgctxt "settings.certificate.pfxPassword"
 msgid "Does not open with this password: {error}"
 msgstr "Lässt sich mit diesem Kennwort nicht öffnen: {error}"
 
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Domain"
 msgstr "Domäne"
@@ -3656,6 +3737,10 @@ msgstr "Jedes Image aus {file} ist schon in der Bibliothek."
 msgid "Every machine goes along Then."
 msgstr "Jedes Gerät nimmt den Weg Dann."
 
+#: src/accounts/AccountsPage.tsx
+msgid "Every operator can obtain an account a sequence uses by running that sequence on a machine they control."
+msgstr "Jeder Operator kann ein Konto, das eine Tasksequenz verwendet, erlangen, indem er diese Tasksequenz auf einem Gerät ausführt, das er kontrolliert."
+
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Every other machine goes along Else."
 msgstr "Jedes andere Gerät nimmt den Weg Sonst."
@@ -3919,6 +4004,10 @@ msgstr "Zertifikat generieren"
 msgid "Give {name} a new password?"
 msgstr "{name} ein neues Kennwort geben?"
 
+#: src/accounts/AccountsPage.tsx
+msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
+msgstr "Geben Sie jedem Konto nur, was es braucht, und ziehen Sie ein Konto, das beim Start der Ausführung abgefragt und nicht gespeichert wird, einem hier gespeicherten vor."
+
 #: src/roles/MachineRolesPage.tsx
 #: src/roles/RoleDrawer.tsx
 msgid "Given by"
@@ -4066,6 +4155,10 @@ msgstr "Wie lange DDT auf jede Antwort des Verzeichnisses wartet."
 msgid "How much the server writes to its log, per category. A category covers the categories below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category not listed. A change applies at once."
 msgstr "Wie viel der Server in sein Protokoll schreibt, je Kategorie. Eine Kategorie umfasst die Kategorien unter ihr, DDT.Pxe also auch DDT.Pxe.Tftp, und Default gilt für jede nicht aufgeführte Kategorie. Eine Änderung gilt sofort."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "How steps and this page name it, such as Join account."
+msgstr "Wie Schritte und diese Seite es nennen, etwa Beitrittskonto."
+
 #: src/conditions/ConditionBuilder.tsx
 msgid "How the conditions combine"
 msgstr "Wie die Bedingungen verknüpft werden"
@@ -4134,6 +4227,10 @@ msgstr "In Windows PE"
 msgctxt "sequence.packageBeforePartition"
 msgid "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put."
 msgstr "In Windows PE läuft ein Skript mit Paket erst, nachdem der Datenträger partitioniert ist, wo das Paket abgelegt wird."
+
+#: src/accounts/AccountDrawer.tsx
+msgid "In Windows, after the image is applied. A script in Windows PE runs as the system."
+msgstr "In Windows, nachdem das Image angewendet ist. Ein Skript in Windows PE läuft als System."
 
 #: src/lib/serverMessages.ts
 msgctxt "identity.passwordMismatch"
@@ -4357,6 +4454,7 @@ msgstr "Meine behalten"
 msgid "Keep the new certificate"
 msgstr "Neues Zertifikat behalten"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Keep the stored one"
 msgstr "Das gespeicherte behalten"
@@ -4465,6 +4563,10 @@ msgstr "LDAPS"
 #: src/settings/DirectorySettings.tsx
 msgid "LDAPS uses 636, StartTLS and unencrypted 389."
 msgstr "LDAPS verwendet 636, StartTLS und unverschlüsselt 389."
+
+#: src/accounts/AccountDrawer.tsx
+msgid "Leave it unset"
+msgstr "Nicht setzen"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Leave page"
@@ -4994,6 +5096,7 @@ msgid "Must not be empty. Leave it out for the folder boot in DDT:StorePath."
 msgstr "Darf nicht leer sein. Lassen Sie es weg für den Ordner boot in DDT:StorePath."
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountDrawer.tsx
 #: src/packages/PackageDialog.tsx
 #: src/roles/RoleDrawer.tsx
 #: src/rules/RuleDrawer.tsx
@@ -5096,6 +5199,10 @@ msgstr "Noch nie auf einer Seite geändert"
 msgid "Never changed on this page."
 msgstr "Auf dieser Seite noch nie geändert."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "New account"
+msgstr "Neues Konto"
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "New accounts"
 msgstr "Neue Konten"
@@ -5105,6 +5212,7 @@ msgid "New machine role"
 msgstr "Neue Geräterolle"
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountDrawer.tsx
 msgid "New password"
 msgstr "Neues Kennwort"
 
@@ -5142,6 +5250,7 @@ msgstr "Neuer Wert"
 msgid "no"
 msgstr "nein"
 
+#: src/accounts/AccountsPage.tsx
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "No"
 msgstr "Nein"
@@ -5157,6 +5266,10 @@ msgstr "Auf dem Server ist noch kein Konto gespeichert."
 #: src/users/UsersPage.tsx
 msgid "No account matches"
 msgstr "Kein Konto passt"
+
+#: src/accounts/AccountsPage.tsx
+msgid "No accounts yet"
+msgstr "Noch keine Konten"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "No boot target yet, so ProxyDHCP answers no machine."
@@ -5404,6 +5517,10 @@ msgstr "Keine Ausführung passt"
 msgid "No runs yet"
 msgstr "Noch keine Ausführungen"
 
+#: src/accounts/AccountsPage.tsx
+msgid "No sequence"
+msgstr "Keine Tasksequenz"
+
 #: src/machines/MachinesPage.tsx
 msgid "No sequence assigned"
 msgstr "Keine Tasksequenz zugewiesen"
@@ -5471,6 +5588,7 @@ msgid "Node"
 msgstr "Knoten"
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/sequences/builder/AccountSetting.tsx
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
@@ -5560,6 +5678,8 @@ msgstr "Nicht gespeichert: {message} Neuer Versuch in {seconds} s."
 msgid "Not saved: another administrator saved this sequence"
 msgstr "Nicht gespeichert: Ein anderer Administrator hat diese Tasksequenz gespeichert"
 
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/settings/ServerPage.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Not set"
@@ -5862,6 +5982,10 @@ msgstr "Optional. Leer gelassen, behält das Gerät den Namen {current}, den sei
 msgid "Optional. Left empty, the machine keeps the name {current}."
 msgstr "Optional. Leer gelassen, behält das Gerät den Namen {current}."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Optional. The domain a Join the domain step may join with it, such as corp.example."
+msgstr "Optional. Die Domäne, der ein Schritt „Der Domäne beitreten“ damit beitreten darf, etwa corp.example."
+
 #: src/packages/PackageDialog.tsx
 msgid "Optional. What is in it and where it came from."
 msgstr "Optional. Was es enthält und woher es stammt."
@@ -5970,6 +6094,8 @@ msgid "Partitions the disk, applies an image, adds the drivers for the machine's
 msgstr "Partitioniert den Datenträger, wendet ein Image an, fügt die Treiber für das Modell des Geräts hinzu und schreibt die Antwortdatei."
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/auth/SignInPage.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
 #: src/settings/DirectorySettings.tsx
@@ -5988,6 +6114,10 @@ msgstr "Kennwort geändert. Der Rest von DDT steht Ihnen jetzt offen."
 #: src/users/UserDialogs.tsx
 msgid "Password for {name}"
 msgstr "Kennwort für {name}"
+
+#: src/accounts/AccountDrawer.tsx
+msgid "Password of the account"
+msgstr "Kennwort des Kontos"
 
 #: src/audit/auditView.ts
 msgid "Password read by a run"
@@ -6320,6 +6450,10 @@ msgstr "Logo entfernen"
 msgid "Remove model {position}"
 msgstr "Modell {position} entfernen"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Remove server {number}"
+msgstr "Server {number} entfernen"
+
 #: src/sequences/builder/NodeInspector.tsx
 msgid "Remove share {number}"
 msgstr "Netzwerkfreigabe {number} entfernen"
@@ -6381,6 +6515,7 @@ msgstr "Wiederholen bis"
 msgid "Repeat: {name}"
 msgstr "Wiederholen: {name}"
 
+#: src/accounts/AccountDrawer.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr "Ersetzen"
@@ -6593,6 +6728,7 @@ msgstr "Regeln in ihrer Reihenfolge"
 msgid "Rules reordered"
 msgstr "Regeln neu geordnet"
 
+#: src/accounts/AccountsPage.tsx
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Run as"
 msgstr "Ausführen als"
@@ -6715,6 +6851,10 @@ msgstr "Wie das System"
 msgid "Save"
 msgstr "Speichern"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Save account"
+msgstr "Konto speichern"
+
 #: src/settings/SettingsParts.tsx
 msgid "Save anyway"
 msgstr "Trotzdem speichern"
@@ -6806,6 +6946,10 @@ msgstr "Skript"
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Scripts may run as it"
 msgstr "Skripte dürfen als dieses Konto laufen"
+
+#: src/accounts/AccountDrawer.tsx
+msgid "Scripts may run as this account"
+msgstr "Skripts dürfen als dieses Konto laufen"
 
 #: src/app/CommandPalette.tsx
 msgid "Search"
@@ -6963,6 +7107,10 @@ msgstr "Ausgeliefertes Zertifikat"
 msgid "Server"
 msgstr "Server"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Server {number}"
+msgstr "Server {number}"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Server address"
 msgstr "Serveradresse"
@@ -6988,10 +7136,17 @@ msgstr "Servernamen"
 msgid "Server settings"
 msgstr "Servereinstellungen"
 
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
+msgid "Servers"
+msgstr "Server"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Serving"
 msgstr "Bedient"
 
+#: src/accounts/AccountDrawer.tsx
+#: src/accounts/AccountsPage.tsx
 #: src/settings/ServerPage.tsx
 #: src/settings/SettingsParts.tsx
 msgid "Set"
@@ -7270,6 +7425,10 @@ msgstr "Jemand hat die Regeln geändert, während Sie eine verschoben haben, dah
 msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 msgstr "Jemand hat sie gelöscht, während sie hier geöffnet war, daher wird nichts mehr gespeichert. <0>Zu den Tasksequenzen</0>."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Someone deleted this account while you were editing it."
+msgstr "Jemand hat dieses Konto gelöscht, während Sie es bearbeitet haben."
+
 #: src/roles/RoleDrawer.tsx
 msgid "Someone deleted this machine role while you were editing it."
 msgstr "Jemand hat diese Geräterolle gelöscht, während Sie sie bearbeitet haben."
@@ -7281,6 +7440,10 @@ msgstr "Jemand hat diese Regel gelöscht, während Sie sie bearbeitet haben."
 #: src/settings/SettingsParts.tsx
 msgid "Someone else saved these settings while you were changing them."
 msgstr "Jemand anderes hat diese Einstellungen gespeichert, während Sie sie geändert haben."
+
+#: src/accounts/AccountDrawer.tsx
+msgid "Someone else saved this account while you were editing it."
+msgstr "Jemand anderes hat dieses Konto gespeichert, während Sie es bearbeitet haben."
 
 #: src/roles/RoleDrawer.tsx
 msgid "Someone else saved this machine role while you were editing it."
@@ -7536,6 +7699,10 @@ msgstr "Wiederholt, bis {condition}."
 msgid "Stored accounts"
 msgstr "Gespeicherte Konten"
 
+#: src/accounts/AccountDrawer.tsx
+msgid "Stored encrypted and never shown again. It goes only to the step that uses the account, while the step runs."
+msgstr "Verschlüsselt gespeichert und nie wieder angezeigt. Es geht nur an den Schritt, der das Konto verwendet, während der Schritt läuft."
+
 #: src/settings/CertificatePanel.tsx
 msgid "Subject"
 msgstr "Antragsteller"
@@ -7705,6 +7872,10 @@ msgstr "Das Konto {account} nennt keine Domäne und kann daher keiner beitreten.
 msgid "The account also names the domain the machine joins."
 msgstr "Das Konto bestimmt auch die Domäne, der das Gerät beitritt."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "The account and its password are deleted. No sequence names it, so no run loses it."
+msgstr "Das Konto und sein Kennwort werden gelöscht. Keine Tasksequenz nennt es, daher verliert keine Ausführung es."
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "The account and its password are set on the Deployment defaults page, never in the sequence."
 msgstr "Das Konto und sein Kennwort werden auf der Seite „Standardwerte der Bereitstellung“ festgelegt, nie in der Tasksequenz."
@@ -7732,9 +7903,14 @@ msgstr "Das Konto ist nicht mehr auf der Seite „Konten“. Wählen Sie ein and
 msgid "The account is ready. Hand over this password in person or through a channel you trust."
 msgstr "Das Konto ist bereit. Übergeben Sie dieses Kennwort persönlich oder über einen Weg, dem Sie vertrauen."
 
+#: src/accounts/AccountsPage.tsx
 #: src/users/UsersPage.tsx
 msgid "The accounts could not be loaded."
 msgstr "Die Konten konnten nicht geladen werden."
+
+#: src/accounts/AccountsPage.tsx
+msgid "The accounts steps use: a script runs as one, a share is connected with one, a domain is joined with one. Each password is stored encrypted and goes only to the step that uses it, while the step runs; this page never shows it."
+msgstr "Die Konten, die Schritte verwenden: Ein Skript läuft als eines, eine Netzwerkfreigabe wird mit einem verbunden, einer Domäne wird mit einem beigetreten. Jedes Kennwort wird verschlüsselt gespeichert und geht nur an den Schritt, der es verwendet, während der Schritt läuft; diese Seite zeigt es nie."
 
 #: src/settings/AgentPanel.tsx
 msgid "The agent in their boot image, since none was uploaded"
@@ -8854,6 +9030,10 @@ msgstr "Der Server lehnt ab, solange einem Gerät eine Tasksequenz zugewiesen is
 msgid "The server's settings could not be read."
 msgstr "Die Einstellungen des Servers konnten nicht gelesen werden."
 
+#: src/accounts/AccountDrawer.tsx
+msgid "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
+msgstr "Die Server, auf denen ein Schritt mit diesem Konto Netzwerkfreigaben verbinden darf, etwa files.corp.example. Ohne Server verbindet es keine Netzwerkfreigabe."
+
 #: src/auth/SignInPage.tsx
 msgid "The sign-in at the identity provider did not finish. Try again."
 msgstr "Die Anmeldung beim Identitätsanbieter wurde nicht abgeschlossen. Versuchen Sie es erneut."
@@ -9611,6 +9791,7 @@ msgstr "„Andere übernehmen“ verwirft Ihre Änderungen. „Meine behalten“
 msgid "Use theirs throws your unsaved changes away. Keep mine saves your version over theirs."
 msgstr "„Andere übernehmen“ verwirft Ihre ungespeicherten Änderungen. „Meine behalten“ speichert Ihre Version über die andere."
 
+#: src/accounts/AccountsPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/sequences/builder/VariablesPanel.tsx
 #: src/sequences/SequencesPage.tsx
@@ -9642,6 +9823,7 @@ msgid "User is not in role ''{role}''."
 msgstr "Der Benutzer hat die Rolle ''{role}'' nicht."
 
 #: src/account/AccountPage.tsx
+#: src/accounts/AccountDrawer.tsx
 #: src/auth/SignInPage.tsx
 #: src/users/DirectoryPanel.tsx
 #: src/users/UserDialogs.tsx
@@ -9932,6 +10114,10 @@ msgstr "Mit {name}"
 #: src/sequences/builder/nodeDetail.ts
 msgid "With a stored account"
 msgstr "Mit einem gespeicherten Konto"
+
+#: src/accounts/AccountDrawer.tsx
+msgid "With its domain, as DOMAIN\\user or user@corp.example."
+msgstr "Mit seiner Domäne, als DOMÄNE\\Benutzer oder benutzer@corp.example."
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"

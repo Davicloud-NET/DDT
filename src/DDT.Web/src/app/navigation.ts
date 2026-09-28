@@ -35,6 +35,7 @@ export const categories: NavigationCategory[] = [
       { to: "/deployment/sequences", label: msg`Task sequences` },
       { to: "/deployment/rules", label: msg`Rules` },
       { to: "/deployment/machine-roles", label: msg`Machine roles` },
+      { to: "/deployment/accounts", label: msg`Accounts` },
       { to: "/deployment/defaults", label: msg`Deployment defaults` },
     ],
   },

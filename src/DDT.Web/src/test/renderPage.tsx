@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { onTestFinished, vi } from "vitest";
 
 import { AccountPage } from "@/account/AccountPage";
+import { AccountsPage } from "@/accounts/AccountsPage";
 import { CommandPalette } from "@/app/CommandPalette";
 import { RootLayout } from "@/app/RootLayout";
 import type { CurrentUser } from "@/auth/auth";
@@ -112,6 +113,7 @@ function testRouter(path: string, hub: TestHub | null, palette: boolean) {
           component: RulesPage,
         }),
         page("/deployment/machine-roles", MachineRolesPage),
+        page("/deployment/accounts", AccountsPage),
         page("/library/images", ImagesPage),
         page("/library/drivers", DriversPage),
         page("/library/files", FilesPage),

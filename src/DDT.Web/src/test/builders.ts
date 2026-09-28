@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import type { AccountView } from "@/accounts/accounts";
 import type { CurrentUser } from "@/auth/auth";
 import type {
   DeploymentOptionsView,
@@ -258,6 +259,24 @@ export function machineRole(overrides: Partial<MachineRoleView> = {}): MachineRo
     revision: 1,
     ruleCount: 0,
     updatedUtc: "2026-09-16T10:00:00Z",
+    updatedBy: "admin",
+    ...overrides,
+  };
+}
+
+// An account with its password set, which no sequence names.
+export function accountView(overrides: Partial<AccountView> = {}): AccountView {
+  return {
+    id: "0193a4b2-0000-7000-8000-0000000000a9",
+    name: "Join account",
+    userName: "CORP\\ddt-join",
+    domain: "corp.example",
+    hosts: [],
+    runAs: false,
+    password: { isSet: true, unreadable: false, updatedUtc: "2026-09-15T16:20:00Z" },
+    usedBy: [],
+    revision: 1,
+    updatedUtc: "2026-09-15T16:20:00Z",
     updatedBy: "admin",
     ...overrides,
   };

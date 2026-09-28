@@ -62,6 +62,7 @@ describe("CommandPalette", () => {
         "All machinesMachines",
         "RulesDeployment",
         "Machine rolesDeployment",
+        "AccountsDeployment",
         "Install Windows",
         "Windows 11 Proinstall.wim",
       ]),

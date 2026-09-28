@@ -23,7 +23,7 @@ import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test
 import { Toasts } from "@/ui/Toast";
 import { toasts } from "@/ui/toasts";
 
-import type { AccountView } from "./builder/builderData";
+import type { AccountView } from "@/accounts/accounts";
 import { SequenceEditorPage } from "./SequenceEditorPage";
 import {
   SEQUENCE_VERSION,

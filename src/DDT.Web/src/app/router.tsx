@@ -13,6 +13,7 @@ import {
 
 import { AboutPage } from "@/about/AboutPage";
 import { AccountPage } from "@/account/AccountPage";
+import { AccountsPage } from "@/accounts/AccountsPage";
 import { AuditPage } from "@/audit/AuditPage";
 import { currentUserQuery } from "@/auth/auth";
 import { BootImagePage } from "@/boot/BootImagePage";
@@ -154,7 +155,11 @@ const machineRolesRoute = createRoute({
   path: "/deployment/machine-roles",
   component: MachineRolesPage,
 });
-
+const accountsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/deployment/accounts",
+  component: AccountsPage,
+});
 const deploymentDefaultsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/defaults",
@@ -237,6 +242,7 @@ const routeTree = rootRoute.addChildren([
     sequenceRoute,
     rulesRoute,
     machineRolesRoute,
+    accountsRoute,
     deploymentDefaultsRoute,
     imagesRoute,
     driversRoute,

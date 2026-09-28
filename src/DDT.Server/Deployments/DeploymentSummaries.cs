@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json;
+using DDT.Contracts;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
@@ -46,7 +49,34 @@ public static class DeploymentSummaries
             step.Percent,
             step.StartedUtc,
             step.FinishedUtc,
-            step.Error);
+            step.Error,
+            step.ParentId,
+            step.Depth,
+            step.Pass,
+            step.Iteration,
+            step.Branch,
+            ReadEvaluation(step.Evaluation));
+    }
+
+    public static string? WriteEvaluation(IReadOnlyList<TestEvaluation>? evaluation) =>
+        evaluation is null ? null : JsonSerializer.Serialize(evaluation, DdtJsonContext.Default.IReadOnlyListTestEvaluation);
+
+    // Null for none, and for one another build wrote that no longer reads: it only explains a decision.
+    public static IReadOnlyList<TestEvaluation>? ReadEvaluation(string? evaluation)
+    {
+        if (evaluation is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(evaluation, DdtJsonContext.Default.IReadOnlyListTestEvaluation);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public static DeploymentArtifactView Artifact(DeploymentArtifact artifact)

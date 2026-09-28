@@ -21,6 +21,9 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
 {
     private const string AskAgain = "Ask the server for the current run.";
 
+    // A test's field within its step, such as test.parts[3].parts[1]: four levels of groups at most.
+    private const int MaxEvaluationPathLength = 256;
+
     public async Task<DeploymentDecision> ApplyAsync(
         Machine machine,
         Guid runId,
@@ -106,19 +109,9 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
                     return refused;
                 }
 
-                if (steps.FirstOrDefault(s => s.State is StepState.Pending or StepState.Running) is { } open)
+                if (NotDone(await DefinitionAsync(run, cancellationToken).ConfigureAwait(false), steps) is { } notDone)
                 {
-                    return DeploymentDecision.Conflict(
-                        $"Step {open.Index + 1}, {open.Name}, is {Word(open.State)}, so the run is not done. Report every step that ran, then Done.");
-                }
-
-                // A failed step ends the run, unless it may fail.
-                HashSet<Guid> mayFail = [.. (await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)).Steps.Where(s => s.ContinueOnError).Select(s => s.Id)];
-
-                if (steps.FirstOrDefault(s => s.State == StepState.Failed && !mayFail.Contains(s.StepId)) is { } failed)
-                {
-                    return DeploymentDecision.Conflict(
-                        $"Step {failed.Index + 1}, {failed.Name}, failed and must not fail, so the run is not done. Report the run as failed.");
+                    return notDone;
                 }
 
                 End(machine, run, DeploymentState.Done, null, now);
@@ -191,6 +184,11 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
             return "The report's steps are missing, too many, or in a state this server does not know.";
         }
 
+        if (report.Steps.Any(s => s.Pass < 0 || s.Iteration < 0 || (s.Branch is { } branch && !Enum.IsDefined(branch))))
+        {
+            return "The report names a visit, a time through a repeat or a branch that cannot be.";
+        }
+
         return report.Steps.Select(s => s.StepId).Distinct().Count() == report.Steps.Count
             ? null
             : "The report names a step twice.";
@@ -208,13 +206,15 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
 
         DeploymentOptions deployment = snapshot.Deployment;
 
-        if (definition.Steps.OfType<WriteUnattendStep>().Any(s => s.LocalAdministrator) && string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
+
+        if (nodes.OfType<WriteUnattendStep>().Any(s => s.LocalAdministrator) && string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
         {
             return "The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more. Configure one and assign the sequence again.";
         }
 
         // A join that names an account joins that account's domain, and needs none of the configured one.
-        return definition.Steps.OfType<JoinDomainStep>().Any(join => join.Account is null)
+        return nodes.OfType<JoinDomainStep>().Any(join => join.Account is null)
             && (string.IsNullOrWhiteSpace(deployment.Domain.Name)
                 || string.IsNullOrWhiteSpace(deployment.Domain.UserName)
                 || string.IsNullOrEmpty(deployment.Domain.Password))
@@ -233,6 +233,10 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
     }
 
     // Null when the report fits the run. Lenient leaves a step that cannot move as reported where it is.
+    //
+    // A node of a tree is visited again inside a repeat, and each visit has a higher pass. A higher pass starts the new
+    // visit from whatever state it reports, with its own times; within one pass a node only moves forward. Only the latest
+    // visit is kept: the earlier ones are in the log. A flat run, or an agent that sends no passes, has pass 0 throughout.
     private static DeploymentDecision? Progress(
         Deployment run,
         List<DeploymentStep> steps,
@@ -254,8 +258,28 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
                 return DeploymentDecision.Invalid("steps", $"The report names step {reported.StepId:D}, which the run does not have. {AskAgain}");
             }
 
+            if (reported.Pass > step.Pass)
+            {
+                Visit(step, reported, report.Phase, now);
+
+                continue;
+            }
+
+            if (reported.Pass < step.Pass)
+            {
+                if (lenient)
+                {
+                    continue;
+                }
+
+                return DeploymentDecision.Conflict(
+                    $"Step {step.Index + 1}, {step.Name}, is in its visit {step.Pass} and cannot go back to visit {reported.Pass}. {AskAgain}");
+            }
+
             if (reported.State == step.State)
             {
+                Decided(step, reported);
+
                 continue;
             }
 
@@ -275,10 +299,17 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
                 step.StartedUtc = now;
             }
 
+            // Where a node runs can depend on the path, so it runs in the phase the agent is in when it starts it.
+            if (reported.State == StepState.Running)
+            {
+                step.Phase = report.Phase;
+            }
+
             step.State = reported.State;
             step.FinishedUtc = reported.State == StepState.Running ? null : now;
             step.Percent = reported.State == StepState.Done ? 100 : step.Percent;
             step.Error = StoredText.Bound(reported.Error, DeploymentLimits.MaxErrorLength);
+            Decided(step, reported);
         }
 
         DeploymentStep? current = report.CurrentStepId is { } currentId ? byId.GetValueOrDefault(currentId) : null;
@@ -298,7 +329,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
         // A failure names no current step, and the run keeps showing the step it failed at.
         if (current is not null || !lenient)
         {
-            run.CurrentStepIndex = current?.Index;
+            run.CurrentStepIndex = current is null ? null : StepNumber(steps, current);
             run.CurrentStepName = current?.Name;
         }
 
@@ -309,6 +340,101 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, Time
 
         return null;
     }
+
+    // A new visit of the node, as the report has it, with the server's times.
+    private static void Visit(DeploymentStep step, StepRunState reported, SequencePhase phase, DateTimeOffset now)
+    {
+        step.Pass = reported.Pass;
+        step.State = reported.State;
+        step.StartedUtc = reported.State is StepState.Pending or StepState.Skipped ? null : now;
+        step.FinishedUtc = reported.State is StepState.Pending or StepState.Running ? null : now;
+        step.Percent = reported.State == StepState.Done ? 100 : 0;
+        step.Error = StoredText.Bound(reported.Error, DeploymentLimits.MaxErrorLength);
+
+        if (reported.State == StepState.Running)
+        {
+            step.Phase = phase;
+        }
+
+        step.Iteration = 0;
+        step.Branch = null;
+        step.Evaluation = null;
+        Decided(step, reported);
+    }
+
+    // What the visit decided so far: a repeat's time through its body, an IF's branch and the tests behind either. They
+    // come from outside, so the tests are held to the bounds the engine keeps.
+    private static void Decided(DeploymentStep step, StepRunState reported)
+    {
+        step.Iteration = Math.Max(step.Iteration, reported.Iteration);
+        step.Branch = reported.Branch ?? step.Branch;
+
+        if (reported.Evaluation is { } evaluation)
+        {
+            step.Evaluation = DeploymentSummaries.WriteEvaluation(
+            [
+                .. evaluation
+                    .OfType<TestEvaluation>()
+                    .Take(TestEvaluation.MaxPerNode)
+                    .Select(test => new TestEvaluation(
+                        StoredText.Bound(test.Path, MaxEvaluationPathLength) ?? "",
+                        test.Held,
+                        test.Actual is null ? null : Cut(test.Actual, TestEvaluation.MaxActualLength))),
+            ]);
+        }
+    }
+
+    // A run is done when no node is running, every node the run reached ran or was skipped, and every failure was one a
+    // node allowed: the failed node itself or a container it is in continues on error. A node was not reached when a
+    // container it is in was skipped or failed, or an IF above it took the other branch. A flat run has no such node, so
+    // every step of it must have left Pending, as before.
+    private static DeploymentDecision? NotDone(SequenceDefinition definition, List<DeploymentStep> steps)
+    {
+        IReadOnlyDictionary<Guid, NodePosition> positions = SequenceTree.Index(definition);
+        Dictionary<Guid, DeploymentStep> byId = steps.ToDictionary(s => s.StepId);
+
+        IEnumerable<NodePosition> Up(DeploymentStep step)
+        {
+            for (NodePosition? at = positions.GetValueOrDefault(step.StepId); at is not null; at = at.ParentId is { } parentId ? positions.GetValueOrDefault(parentId) : null)
+            {
+                yield return at;
+            }
+        }
+
+        bool Reached(DeploymentStep step) => !Up(step).Any(at =>
+            at.ParentId is { } parentId
+            && byId.GetValueOrDefault(parentId) is { } parent
+            && (parent.State is StepState.Skipped or StepState.Failed
+                || (positions[parentId].Step is IfStep && parent.Branch is { } branch && at.Body != BodyOf(branch))));
+
+        bool MayFail(DeploymentStep step) => Up(step).Any(at => at.Step.ContinueOnError);
+
+        if (steps.FirstOrDefault(s => s.State == StepState.Running || (s.State == StepState.Pending && Reached(s))) is { } open)
+        {
+            return DeploymentDecision.Conflict(
+                $"Step {open.Index + 1}, {open.Name}, is {Word(open.State)}, so the run is not done. Report every step that ran, then Done.");
+        }
+
+        return steps.FirstOrDefault(s => s.State == StepState.Failed && !MayFail(s)) is { } failed
+            ? DeploymentDecision.Conflict(
+                $"Step {failed.Index + 1}, {failed.Name}, failed and must not fail, so the run is not done. Report the run as failed.")
+            : null;
+    }
+
+    private static string BodyOf(IfBranch branch) => branch == IfBranch.Then ? StepBody.ThenName : StepBody.ElseName;
+
+    // Without a NUL, which PostgreSQL text cannot hold, and cut rather than refused, like an error.
+    private static string Cut(string text, int maxLength)
+    {
+        string kept = text.Replace("\0", string.Empty, StringComparison.Ordinal);
+
+        return kept.Length <= maxLength ? kept : kept[..maxLength];
+    }
+
+    // The steps before the node, as StepCount counts them: a group, an IF or a repeat is not a step. For a flat run it is
+    // the row's Index.
+    private static int StepNumber(List<DeploymentStep> steps, DeploymentStep node) =>
+        steps.Count(step => step.Index < node.Index && !RunSnapshots.IsContainer(step));
 
     private static void End(Machine machine, Deployment run, DeploymentState state, string? error, DateTimeOffset now)
     {

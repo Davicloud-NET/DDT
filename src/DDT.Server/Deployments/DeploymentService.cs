@@ -318,7 +318,7 @@ public sealed class DeploymentService(
 
         if (SequenceChecks.ComputerNameUse(definition) is not null && string.IsNullOrWhiteSpace(machine.AssignedName))
         {
-            string use = definition.Steps.Any(step => step is JoinDomainStep) ? "domain" : "seed";
+            string use = SequenceTree.Nodes(definition).Any(step => step is JoinDomainStep) ? "domain" : "seed";
 
             return DeploymentDecision.Conflict(ServerMessages.DeploymentApproveThenName.With("sequence", sequence.Name, "use", use));
         }
@@ -690,7 +690,8 @@ public sealed class DeploymentService(
         (_, string architecture) => ServerMessages.ImageOtherArchitecture.With("image", image.Name, "architecture", architecture),
     };
 
-    private static bool Erases(SequenceDefinition definition) => definition.Steps.Any(step => step.ErasesDisk);
+    // A step on any branch may run, so a sequence that erases a disk on one branch erases one.
+    private static bool Erases(SequenceDefinition definition) => SequenceTree.Nodes(definition).Any(step => step.ErasesDisk);
 
     // A sequence runs only without problems, which depend on the library and the settings of the moment.
     // While the stored deployment settings have problems, no run starts: every run would carry values nobody checked.
@@ -849,7 +850,7 @@ public sealed class DeploymentService(
             Source = source,
             RequestedByUserId = requestedByUserId,
             RequestedByName = requestedByName,
-            StepCount = definition.Steps.Count,
+            StepCount = SequenceTree.Leaves(definition).Count,
             AllowSecureBootMismatch = allowSecureBootMismatch,
             CreatedUtc = now,
             UpdatedUtc = now,

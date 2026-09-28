@@ -37,9 +37,12 @@ public sealed class Deployment
 
     public string? RequestedByName { get; set; }
 
+    // The steps that do something, the leaves of the run's tree, as a list of runs counts them: a group, an IF or a
+    // repeat is not a step of its own.
     public int StepCount { get; set; }
 
-    // The step the agent reported last, and its percent.
+    // The step the agent reported last, and its percent. The index counts the steps before it as StepCount does, so for
+    // a tree it is not the row's Index, which counts every node.
     public int? CurrentStepIndex { get; set; }
 
     public string? CurrentStepName { get; set; }

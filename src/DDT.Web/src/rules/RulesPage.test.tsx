@@ -6,7 +6,7 @@ import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest";
 
 import type { MachineSequenceResolution, RuleView, SaveRuleRequest } from "@/rules/rules";
-import { chooseMenuItem, chooseOption, fill, press } from "@/test/aria";
+import { chooseMenuItem, chooseOption, fill, press, selectOptions } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
 import {
   administrator,
@@ -354,6 +354,42 @@ describe("RulesPage", () => {
         "A machine role this rule gives no longer exists. Take it out of the rule.",
       ),
     ).toBeInTheDocument();
+  });
+
+  // The MAC contains of the assignment rules before the ordered list among them, and part of a choice typed.
+  it("offers every comparison the server takes for what a condition tests", async () => {
+    await open([
+      {
+        ...kiosk,
+        when: {
+          kind: "all",
+          parts: [
+            { kind: "test", variable: "MacAddress", operator: "Contains", value: "82:6A" },
+            { kind: "test", variable: "DeviceKind", operator: "StartsWith", value: "Lap" },
+          ],
+        },
+      },
+    ]);
+
+    press(await screen.findByRole("row", { name: /Kiosk in the lobby/ }));
+    const drawer = await screen.findByRole("dialog", { name: "Rule 1 Kiosk in the lobby" });
+
+    expect(
+      (await selectOptions(drawer, "Comparison of condition 1")).map((option) => option.text),
+    ).toEqual([
+      "equals",
+      "does not equal",
+      "starts with",
+      "ends with",
+      "contains",
+      "does not contain",
+      "is one of",
+      "has a value",
+      "has no value",
+    ]);
+    expect(within(drawer).getByRole("textbox", { name: "Value of condition 2" })).toHaveValue(
+      "Lap",
+    );
   });
 
   it("shows the server's refusal of a save at its field", async () => {

@@ -467,7 +467,8 @@ function ValueEditor({
     );
   }
 
-  if (subject.kind === "oneOf") {
+  // Part of a value or a pattern is typed, as for text.
+  if (subject.kind === "oneOf" && (test.operator === "Equals" || test.operator === "NotEquals")) {
     const known = subject.choices.some((choice) => choice.value === test.value);
 
     return (
@@ -505,7 +506,7 @@ function ValueEditor({
       label={hidden}
       field={field}
       findings={findings}
-      mono={subject.kind !== "text"}
+      mono={subject.kind !== "text" && subject.kind !== "oneOf"}
       value={test.value}
       {...(placeholder === undefined ? {} : { placeholder })}
       onChange={onChange}

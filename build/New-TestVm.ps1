@@ -243,7 +243,7 @@ function Initialize-Vm {
     }
 }
 
-function Remove-Vm {
+function Remove-TestVm {
     $vm = Get-VM -Name $Name -ErrorAction SilentlyContinue
 
     if (-not $vm) {
@@ -280,7 +280,7 @@ function Remove-Vm {
 }
 
 if ($Remove) {
-    Remove-Vm
+    Remove-TestVm
     return
 }
 

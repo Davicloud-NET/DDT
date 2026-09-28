@@ -56,6 +56,11 @@ The rest of this file is what every change has to pass. The
 [README](README.md#building-it-yourself) says how to build and run DDT, and
 [docs/web-ui.md](docs/web-ui.md) how the web UI is built.
 
+**Code follows [docs/code-style.md](docs/code-style.md).** It's the part no tool checks yet:
+short comments that say why, one type per file, small classes and methods, and names that say
+what things are. A pull request that doesn't follow it gets sent back for a tidy-up, however it
+was written.
+
 ### The checks
 
 The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push to
@@ -113,8 +118,9 @@ what it asks for:
 - **Formatting.** `.editorconfig` sets the style, and warnings are errors. Files use LF line
   endings and UTF-8. Prettier formats the web client, `npm run format:write` applies it.
 
-Two rules are not tested, but hold as firmly:
+These rules are not tested, but hold just as firmly:
 
+- **The code style.** [docs/code-style.md](docs/code-style.md), see above.
 - **Settings belong in the web UI.** Configuration keeps only what the server needs before it can
   serve the web UI. Every other setting:
   1. is a field of a settings section, on the page of what it configures. Task sequences, drivers

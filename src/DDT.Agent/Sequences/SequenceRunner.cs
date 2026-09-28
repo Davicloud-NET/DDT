@@ -280,11 +280,19 @@ public sealed class SequenceRunner(
         }
 
         // Nothing is changed on any disk before the server has the run as running. A run that goes on is running
-        // already, and the heartbeat's first beat tells the server where it is.
+        // already, and the heartbeat's first beat tells the server where it is. A run that waits for answers to its
+        // inputs says so from its first report.
+        bool waitsForInputs = resumed is null && run.PendingInputs is { Count: > 0 };
+
         try
         {
             if (resumed is null)
             {
+                if (waitsForInputs)
+                {
+                    heartbeat.Activity = RunActivity.WaitingForInput;
+                }
+
                 await ServerCallRules.CallAsync(
                     call => heartbeat.ReportAsync(heartbeat.Snapshot(DeploymentState.Running), call),
                     "the start of the run",
@@ -312,7 +320,7 @@ public sealed class SequenceRunner(
             return new RunResult(RunOutcome.Failed);
         }
 
-        return await RunStepsAsync(session, store, heartbeat, state, machine, cancellationToken).ConfigureAwait(false);
+        return await RunStepsAsync(session, store, heartbeat, state, machine, waitsForInputs, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<RunResult> RunStepsAsync(
@@ -321,6 +329,7 @@ public sealed class SequenceRunner(
         RunHeartbeat heartbeat,
         SequenceState state,
         MachineVariables machine,
+        bool waitsForInputs,
         CancellationToken cancellationToken)
     {
         SequenceEngine engine = new(Steps(session, store, heartbeat), store, heartbeat);
@@ -332,11 +341,18 @@ public sealed class SequenceRunner(
         bool restartDue = false;
 
         using CancellationTokenSource steps = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        heartbeat.Activity = RunActivity.Step;
+        heartbeat.Activity = waitsForInputs ? RunActivity.WaitingForInput : RunActivity.Step;
         heartbeat.Start(steps, cancellationToken);
 
         try
         {
+            // The values the run starts with come once its inputs are answered, and conditions and scripts read them.
+            if (waitsForInputs)
+            {
+                machine = machine with { Variables = await WaitForInputsAsync(session, heartbeat, steps.Token).ConfigureAwait(false) };
+                heartbeat.Activity = RunActivity.Step;
+            }
+
             SequenceRunResult result = state.Phase == SequencePhase.Windows && _phase == SequencePhase.WindowsPE
                 ? await HandOverAgainAsync(store, state).ConfigureAwait(false)
                 : await engine.RunAsync(state, machine, steps.Token).ConfigureAwait(false);
@@ -455,6 +471,106 @@ public sealed class SequenceRunner(
         await store.SaveAsync(state, CancellationToken.None).ConfigureAwait(false);
 
         return new SequenceRunResult(SequenceOutcome.PhaseChangeRequired, state, null);
+    }
+
+    // The run waits at its start for the answers to its inputs, which the person at the machine gives here and someone on
+    // the web on the machine's page. Either way the run's values come from the server once nothing is pending: in the
+    // answer to the answers sent from here, or in a report's answer, which also takes the question here away. A question
+    // the server did not take is asked again with what was wrong. No answer is ever logged, and an Account input's goes to
+    // the server alone.
+    private async Task<IReadOnlyDictionary<string, string>> WaitForInputsAsync(RunSession session, RunHeartbeat heartbeat, CancellationToken cancellationToken)
+    {
+        AgentRun run = session.Run;
+        IReadOnlyList<AgentInput> pending = [.. run.PendingInputs ?? []];
+        IReadOnlyDictionary<string, string> errors = new Dictionary<string, string>();
+        string? error = null;
+        Task<IReadOnlyDictionary<string, string>> fromWeb = heartbeat.WaitForValuesAsync(cancellationToken);
+        IMachineConsole? console = status?.Console;
+
+        log.Information($"The run waits for answers to {string.Join(", ", pending.Select(input => input.Label))}, at this machine or on the machine's page.");
+
+        while (!fromWeb.IsCompleted && pending.Count > 0 && console is not null && (console.CanAsk || console is SessionMachineConsole))
+        {
+            using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            InputsQuestion question = new(
+                run.SequenceName,
+                [.. pending.Select(input => InputQuestions.ToConsole(input, errors.GetValueOrDefault(input.Name), run.Sequence))],
+                error);
+            Task<ConsoleAnswer?> asked = console.AskAsync(question, asking.Token);
+
+            if (await Task.WhenAny(asked, fromWeb).ConfigureAwait(false) == fromWeb)
+            {
+                await asking.CancelAsync().ConfigureAwait(false);
+                await ((Task)asked).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+                break;
+            }
+
+            // Nobody can answer here after all: the web decides.
+            if (await asked.ConfigureAwait(false) is not { } answer)
+            {
+                break;
+            }
+
+            if (answer.Values is not { } given)
+            {
+                continue;
+            }
+
+            errors = InputQuestions.Check(pending, given);
+            error = null;
+
+            if (errors.Count > 0)
+            {
+                log.Warning($"Answer these again: {string.Join(", ", pending.Where(input => errors.ContainsKey(input.Name)).Select(input => input.Label))}.");
+
+                continue;
+            }
+
+            try
+            {
+                AgentAnswersResult result = await ServerCallRules.CallAsync(
+                    call => server.AnswerRunInputsAsync(session.MachineId, session.Tokens.Token, run.Id, new AgentInputAnswers(InputQuestions.Answers(pending, given)), call),
+                    "the answers",
+                    log,
+                    timeProvider,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (result.Values is { } started)
+                {
+                    log.Information("The server took the answers, and the run starts.");
+
+                    return started;
+                }
+
+                pending = [.. result.InputsPending ?? []];
+                errors = (result.Problems ?? []).Where(problem => problem is not null).GroupBy(problem => problem.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(problems => problems.Key, problems => problems.First().Message, StringComparer.OrdinalIgnoreCase);
+
+                if (errors.Count > 0)
+                {
+                    log.Warning($"The server did not take the answers to {string.Join(", ", errors.Keys)}.");
+                }
+            }
+            catch (AgentTokenRejectedException exception)
+            {
+                heartbeat.TokenRejected(exception);
+
+                throw;
+            }
+            catch (DeploymentStepException exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                // A refusal names the answers it did not take where it can; either way the question comes again.
+                error = exception.Message;
+                errors = InputQuestions.FieldErrors(pending, (exception.InnerException as AgentRequestException)?.FieldErrors) ?? new Dictionary<string, string>();
+                log.Warning($"The answers were not taken: {exception.Message}");
+            }
+        }
+
+        IReadOnlyDictionary<string, string> values = await fromWeb.ConfigureAwait(false);
+        log.Information("The inputs were answered on the web, and the run starts.");
+
+        return values;
     }
 
     // A restart the run asks for leads back to where it runs now.

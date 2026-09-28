@@ -5,8 +5,10 @@
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
+using DDT.Contracts.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -21,6 +23,17 @@ public sealed class SequencePickerTests
         NeedsComputerName: false,
         RequiredBytes: 30L * 1024 * 1024 * 1024,
         Suggested: false);
+
+    private static readonly AgentSequenceChoice s_withInputs = s_install with
+    {
+        Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e003"),
+        NeedsComputerName = true,
+        Inputs =
+        [
+            new AgentInput("Office", "Office", null, InputKind.Choice, [new InputChoice("VIE", "Vienna"), new InputChoice("GRZ", "Graz")], "VIE", true, null),
+            new AgentInput("JoinAccount", "Join account", null, InputKind.Account, [], null, true, null, Domain: "corp.example"),
+        ],
+    };
 
     private static readonly AgentSequenceChoice s_inventory = new(
         Guid.Parse("0193a4b2-0000-7000-8000-00000000e002"),
@@ -242,6 +255,67 @@ public sealed class SequencePickerTests
         picker.Refused("This machine cannot pick a sequence now.");
 
         Assert.False(picker.IsOffered);
+    }
+
+    // The inputs asked at the machine come after the computer name, all on one page, and before ERASE; their answers go
+    // with the choice.
+    [Fact]
+    public async Task AsksTheSequencesInputsAfterTheComputerNameAndSendsTheAnswers()
+    {
+        ScriptedMachineConsole console = new(
+            ScriptedMachineConsole.Sequence("Install Windows 11"),
+            ScriptedMachineConsole.Typed("PC-042"),
+            _ => new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "GRZ"), new ConsoleInputValue("JoinAccount", null, @"CORP\join", "Pa55-word")]),
+            ScriptedMachineConsole.Typed("ERASE"));
+        SequencePicker picker = new(console, new AgentLog(new ImmediateTimeProvider(), TextWriter.Null));
+        picker.Offer([s_withInputs], [FakeDeploymentTools.Disk(0)]);
+
+        AgentRunRequest? request = await AnswerAllAsync(picker);
+
+        Assert.Equal(
+            [typeof(SequenceQuestion), typeof(ComputerNameQuestion), typeof(InputsQuestion), typeof(EraseQuestion)],
+            console.Questions.Select(question => question.GetType()));
+        InputsQuestion inputs = (InputsQuestion)console.Questions[2];
+        Assert.Equal(("Install Windows 11", null), (inputs.SequenceName, inputs.Error));
+        Assert.Equal(["Office", "JoinAccount"], inputs.Inputs.Select(input => input.Name));
+        Assert.Equal("corp.example", inputs.Inputs[1].Domain);
+        Assert.Equal((s_withInputs.Id, 0, "PC-042"), (request?.SequenceId, request?.DiskNumber, request?.ComputerName));
+        Assert.Equal([new InputAnswer("Office", "GRZ"), new InputAnswer("JoinAccount", null, @"CORP\join", "Pa55-word")], request?.Answers);
+    }
+
+    // What the console got wrong is asked again at once, and what the server did not take after the choice was sent;
+    // the rest of the choice stands, and ERASE is asked again. What was typed never reaches the log.
+    [Fact]
+    public async Task AsksTheInputsAgainWithWhatWasWrong()
+    {
+        StringWriter lines = new();
+        ScriptedMachineConsole console = new(
+            ScriptedMachineConsole.Sequence("Install Windows 11"),
+            ScriptedMachineConsole.Typed("PC-042"),
+            _ => new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "LNZ")]),
+            _ => new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "GRZ"), new ConsoleInputValue("JoinAccount", null, "join", "Pa55-word")]),
+            ScriptedMachineConsole.Typed("ERASE"),
+            _ => new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "VIE"), new ConsoleInputValue("JoinAccount", null, "join", "Pa55-word")]),
+            ScriptedMachineConsole.Typed("ERASE"));
+        SequencePicker picker = new(console, new AgentLog(new ImmediateTimeProvider(), lines));
+        picker.Offer([s_withInputs], [FakeDeploymentTools.Disk(0)]);
+
+        Assert.NotNull(await AnswerAllAsync(picker));
+
+        picker.Refused("Graz is closed.", new Dictionary<string, string> { ["answers.Office"] = "Graz is closed this week." });
+
+        Assert.True(picker.IsOffered);
+        Assert.Equal("VIE", (await AnswerAllAsync(picker))?.Answers?[0].Value);
+
+        InputsQuestion[] asked = [.. console.Questions.OfType<InputsQuestion>()];
+        Assert.Equal(3, asked.Length);
+        Assert.Equal(
+            ["Choose one of the choices shown for Office.", "Join account needs a user name and a password."],
+            asked[1].Inputs.Select(input => input.Error));
+        Assert.Equal(("Graz is closed.", "Graz is closed this week.", null), (asked[2].Error, asked[2].Inputs[0].Error, asked[2].Inputs[1].Error));
+        Assert.Equal(2, console.Questions.Count(question => question is EraseQuestion));
+        Assert.DoesNotContain("Pa55-word", lines.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("LNZ", lines.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

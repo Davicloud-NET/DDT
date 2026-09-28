@@ -441,7 +441,7 @@ public sealed class AgentLoop(
         }
         catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
         {
-            picker.Refused(ServerCallRules.Reason(exception, "the choice"));
+            picker.Refused(ServerCallRules.Reason(exception, "the choice"), (exception as AgentRequestException)?.FieldErrors);
         }
         catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
         {

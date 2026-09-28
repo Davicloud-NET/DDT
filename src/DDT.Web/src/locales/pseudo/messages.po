@@ -886,6 +886,10 @@ msgid "{value} is what firmware reports when the field was never filled in. It s
 msgstr ""
 
 #: src/runs/runs.ts
+msgid "{variable} {operator}"
+msgstr ""
+
+#: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
 msgstr ""
 
@@ -2539,6 +2543,11 @@ msgstr ""
 msgid "Disks"
 msgstr ""
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "does not contain"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr ""
@@ -2702,6 +2711,11 @@ msgstr ""
 
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "ends with"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3105,6 +3119,10 @@ msgstr ""
 msgid "goes on in the installed Windows"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Group"
+msgstr ""
+
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Group name"
@@ -3137,6 +3155,16 @@ msgstr ""
 msgid "Handing over to Windows"
 msgstr ""
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has a value"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has no value"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
@@ -3156,6 +3184,10 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "If"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
@@ -3261,6 +3293,31 @@ msgid "is"
 msgstr ""
 
 #: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at least"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at most"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is greater than"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is in the network"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is less than"
+msgstr ""
+
+#: src/runs/runs.ts
 msgid "is not"
 msgstr ""
 
@@ -3272,6 +3329,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notBase64"
 msgid "Is not base64."
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is one of"
 msgstr ""
 
 #: src/settings/CertificatePanel.tsx
@@ -3314,6 +3376,10 @@ msgstr ""
 
 #: src/machines/AssignDialog.tsx
 msgid "It stays waiting until someone signs in at it."
+msgstr ""
+
+#: src/sequences/SequenceEditor.tsx
+msgid "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
 msgstr ""
 
 #: src/machines/approval.ts
@@ -3748,6 +3814,11 @@ msgstr ""
 
 #: src/users/DirectoryPanel.tsx
 msgid "Mapped groups"
+msgstr ""
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "matches"
 msgstr ""
 
 #: src/rules/RulesPage.tsx
@@ -4764,6 +4835,10 @@ msgctxt "identity.passwordRequiresUniqueChars"
 msgid "Passwords must use at least {count} different characters."
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Pause"
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "Paused"
 msgstr ""
@@ -5037,6 +5112,10 @@ msgstr ""
 
 #: src/settings/CertificatePanel.tsx
 msgid "Renewal"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Repeat"
 msgstr ""
 
 #: src/settings/SettingsParts.tsx
@@ -5606,6 +5685,10 @@ msgstr ""
 
 #: src/account/AccountPage.tsx
 msgid "Set up an authenticator"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Set variable"
 msgstr ""
 
 #: src/settings/ServerPage.tsx
@@ -6641,6 +6724,10 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr ""
 
+#: src/sequences/sequenceDraft.ts
+msgid "the inputs"
+msgstr ""
+
 #: src/settings/NetworkBootPage.tsx
 msgid "The interfaces the hosts found could not be read."
 msgstr ""
@@ -7219,6 +7306,10 @@ msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
 msgstr ""
 
+#: src/sequences/sequenceDraft.ts
+msgid "the variables"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr ""
@@ -7422,6 +7513,10 @@ msgstr ""
 
 #: src/settings/CertificatePanel.tsx
 msgid "This page cannot change the certificate"
+msgstr ""
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This page cannot show this sequence"
 msgstr ""
 
 #: src/app/RouteError.tsx

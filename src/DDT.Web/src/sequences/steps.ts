@@ -6,7 +6,10 @@ import { i18n, type MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 
 import type {
+  ConditionNode,
   ConditionOperator,
+  ContainerKind,
+  ContainerStep,
   ScriptInterpreter,
   SequencePhase,
   SequenceStep,
@@ -24,10 +27,22 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   reboot: msg`Restart`,
   writeRawImage: msg`Write raw disk image`,
   writeCloudInitSeed: msg`Write the cloud-init seed`,
+  setVariable: msg`Set variable`,
+  pause: msg`Pause`,
+  group: msg`Group`,
+  if: msg`If`,
+  repeat: msg`Repeat`,
 };
 
-// In the order a sequence usually has them.
+// In the order a sequence usually has them, the containers last.
 export const stepKinds = Object.keys(kindLabels) as StepKind[];
+
+export const containerKinds: readonly ContainerKind[] = ["group", "if", "repeat"];
+
+// Group, IF and Repeat: nodes that hold other nodes rather than doing something themselves.
+export function isContainer(step: SequenceStep): step is ContainerStep {
+  return step.kind === "group" || step.kind === "if" || step.kind === "repeat";
+}
 
 // A run names its steps' kinds as text, so a kind this page does not know yet is shown as it is.
 export function stepKindLabel(kind: string): string {
@@ -91,9 +106,35 @@ const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
   NotEquals: msg`does not equal`,
   StartsWith: msg`starts with`,
   Contains: msg`contains`,
+  NotContains: msg`does not contain`,
+  EndsWith: msg`ends with`,
+  Matches: msg`matches`,
+  In: msg`is one of`,
+  Exists: msg`has a value`,
+  NotExists: msg`has no value`,
+  Greater: msg`is greater than`,
+  GreaterOrEqual: msg`is at least`,
+  Less: msg`is less than`,
+  LessOrEqual: msg`is at most`,
+  InSubnet: msg`is in the network`,
 };
 
-export const conditionOperators = Object.keys(operatorLabels) as ConditionOperator[];
+// Every operator, in the server's order.
+export const allConditionOperators = Object.keys(operatorLabels) as ConditionOperator[];
+
+// The operators of versions 1 and 2, which the conditions beside when offer, so a flat sequence stays runnable on
+// older agents.
+export const conditionOperators: readonly ConditionOperator[] = [
+  "Equals",
+  "NotEquals",
+  "StartsWith",
+  "Contains",
+];
+
+// Exists and NotExists test only whether there is a value.
+export function operatorTakesValue(operator: ConditionOperator): boolean {
+  return operator !== "Exists" && operator !== "NotExists";
+}
 
 export function operatorLabel(operator: ConditionOperator): string {
   return i18n._(operatorLabels[operator]);
@@ -121,6 +162,15 @@ export function parseCodes(text: string): number[] | null {
 
 export function newCondition(): StepCondition {
   return { variable: "Model", operator: "Equals", value: "" };
+}
+
+// The test a new IF starts with, and the condition a new repeat stops at: once the last step went through.
+export function newTest(): ConditionNode {
+  return { kind: "test", variable: "Model", operator: "Contains", value: "" };
+}
+
+export function newUntil(): ConditionNode {
+  return { kind: "test", variable: "LastStepFailed", operator: "Equals", value: "false" };
 }
 
 // A new step with the server's defaults, named after its kind.
@@ -180,5 +230,15 @@ export function newStep(kind: StepKind, id: string): SequenceStep {
         userData: "#cloud-config\n",
         networkConfig: null,
       };
+    case "setVariable":
+      return { ...common, kind, variable: "", value: "" };
+    case "pause":
+      return { ...common, kind, message: "", continueAfterMinutes: null };
+    case "group":
+      return { ...common, kind, steps: [] };
+    case "if":
+      return { ...common, kind, test: newTest(), then: [], else: [] };
+    case "repeat":
+      return { ...common, kind, steps: [], until: newUntil(), maxTimes: 3, goOnAtLimit: false };
   }
 }

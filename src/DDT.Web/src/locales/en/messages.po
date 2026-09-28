@@ -886,6 +886,10 @@ msgid "{value} is what firmware reports when the field was never filled in. It s
 msgstr "{value} is what firmware reports when the field was never filled in. It says nothing about the machine."
 
 #: src/runs/runs.ts
+msgid "{variable} {operator}"
+msgstr "{variable} {operator}"
+
+#: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
@@ -2539,6 +2543,11 @@ msgstr "Disk SHA-256"
 msgid "Disks"
 msgstr "Disks"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "does not contain"
+msgstr "does not contain"
+
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr "does not equal"
@@ -2703,6 +2712,11 @@ msgstr "Encryption"
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
 msgstr "End it with * to match every model that starts with it."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "ends with"
+msgstr "ends with"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.successExitCodes"
@@ -3105,6 +3119,10 @@ msgstr "Go to…"
 msgid "goes on in the installed Windows"
 msgstr "goes on in the installed Windows"
 
+#: src/sequences/steps.ts
+msgid "Group"
+msgstr "Group"
+
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Group name"
@@ -3137,6 +3155,16 @@ msgstr "Handed over to Windows; after Windows setup the agent continued there {t
 msgid "Handing over to Windows"
 msgstr "Handing over to Windows"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has a value"
+msgstr "has a value"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has no value"
+msgstr "has no value"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
@@ -3157,6 +3185,10 @@ msgstr "HTTP boot port"
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
 msgstr "I have saved them"
+
+#: src/sequences/steps.ts
+msgid "If"
+msgstr "If"
 
 #: src/images/ImagesPage.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -3261,6 +3293,31 @@ msgid "is"
 msgstr "is"
 
 #: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at least"
+msgstr "is at least"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at most"
+msgstr "is at most"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is greater than"
+msgstr "is greater than"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is in the network"
+msgstr "is in the network"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is less than"
+msgstr "is less than"
+
+#: src/runs/runs.ts
 msgid "is not"
 msgstr "is not"
 
@@ -3273,6 +3330,11 @@ msgstr "Is not a valid template: a brace that is not part of {placeholder} has t
 msgctxt "settings.certificate.notBase64"
 msgid "Is not base64."
 msgstr "Is not base64."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is one of"
+msgstr "is one of"
 
 #: src/settings/CertificatePanel.tsx
 msgid "Issued by"
@@ -3315,6 +3377,10 @@ msgstr "It stays waiting until someone signs in at it or it netboots from a zero
 #: src/machines/AssignDialog.tsx
 msgid "It stays waiting until someone signs in at it."
 msgstr "It stays waiting until someone signs in at it."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
+msgstr "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
 
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
@@ -3749,6 +3815,11 @@ msgstr "Manufacturer"
 #: src/users/DirectoryPanel.tsx
 msgid "Mapped groups"
 msgstr "Mapped groups"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "matches"
+msgstr "matches"
 
 #: src/rules/RulesPage.tsx
 msgid "Matches"
@@ -4764,6 +4835,10 @@ msgctxt "identity.passwordRequiresUniqueChars"
 msgid "Passwords must use at least {count} different characters."
 msgstr "Passwords must use at least {count} different characters."
 
+#: src/sequences/steps.ts
+msgid "Pause"
+msgstr "Pause"
+
 #: src/log/LogPanel.tsx
 msgid "Paused"
 msgstr "Paused"
@@ -5038,6 +5113,10 @@ msgstr "Removing the logo"
 #: src/settings/CertificatePanel.tsx
 msgid "Renewal"
 msgstr "Renewal"
+
+#: src/sequences/steps.ts
+msgid "Repeat"
+msgstr "Repeat"
 
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
@@ -5607,6 +5686,10 @@ msgstr "Set in configuration as {key} ({variable}). Remove it there to change it
 #: src/account/AccountPage.tsx
 msgid "Set up an authenticator"
 msgstr "Set up an authenticator"
+
+#: src/sequences/steps.ts
+msgid "Set variable"
+msgstr "Set variable"
 
 #: src/settings/ServerPage.tsx
 msgid "Set, not shown"
@@ -6641,6 +6724,10 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 
+#: src/sequences/sequenceDraft.ts
+msgid "the inputs"
+msgstr "the inputs"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "The interfaces the hosts found could not be read."
 msgstr "The interfaces the hosts found could not be read."
@@ -7219,6 +7306,10 @@ msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
 msgstr "The values cannot be checked: {error}"
 
+#: src/sequences/sequenceDraft.ts
+msgid "the variables"
+msgstr "the variables"
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
@@ -7423,6 +7514,10 @@ msgstr "This page"
 #: src/settings/CertificatePanel.tsx
 msgid "This page cannot change the certificate"
 msgstr "This page cannot change the certificate"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This page cannot show this sequence"
+msgstr "This page cannot show this sequence"
 
 #: src/app/RouteError.tsx
 msgid "This page could not load"

@@ -17,12 +17,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { ImageSummary } from "@/images/images";
+import everyNodeJson from "@/test/fixtures/every-node.sequence.json";
 
 import { SequenceEditorPage } from "./SequenceEditorPage";
 import {
   SEQUENCE_VERSION,
   type RunScriptStep,
   type SaveSequenceRequest,
+  type SequenceDefinition,
   type SequenceProblem,
   type SequenceStep,
   type SequenceView,
@@ -43,6 +45,9 @@ const administrator: CurrentUser = {
 const viewer: CurrentUser = { ...administrator, userName: "viewer", roles: ["Viewer"] };
 
 const sequenceId = "0193a4b2-0000-7000-8000-0000000000e1";
+
+// The server's document with every node of version 3.
+const everyNode = everyNodeJson as unknown as SequenceDefinition;
 
 const image: ImageSummary = {
   id: "0193a4b2-0000-7000-8000-0000000000a1",
@@ -848,6 +853,36 @@ describe("SequenceEditorPage", () => {
     });
     fireEvent.keyDown(first, { key: "ArrowLeft", altKey: true });
     expect(order()).toEqual(["p", "i", "s"]);
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(0);
+  });
+
+  it("does not open a sequence that needs the flow builder, and never saves it", async () => {
+    const { saves } = serve(administrator, view({ definition: everyNode }));
+
+    await opened();
+    expect(screen.getByText("This page cannot show this sequence")).toBeInTheDocument();
+    expect(screen.queryByRole("listbox", { name: /^Steps of / })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Sequence name" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Add/ })).not.toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(0);
+  });
+
+  it("stops editing once someone else's save makes the sequence one for the flow builder", async () => {
+    const { saves, queryClient } = serve(administrator, view());
+
+    await opened();
+
+    act(() => {
+      queryClient.setQueryData(
+        ["sequence", sequenceId],
+        view({ revision: 4, definition: everyNode, updatedBy: "bob" }),
+      );
+    });
+
+    expect(await screen.findByText("This page cannot show this sequence")).toBeInTheDocument();
+    expect(screen.queryByRole("listbox", { name: /^Steps of / })).not.toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 1_000));
     expect(saves).toHaveLength(0);
   });

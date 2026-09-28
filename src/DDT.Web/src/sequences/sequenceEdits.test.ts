@@ -19,6 +19,8 @@ function draft(...ids: string[]): SequenceDraft {
     name: "Lab",
     description: "",
     steps: ids.map((id) => ({ ...newStep("runScript", id), name: `Script ${id}` })),
+    variables: [],
+    inputs: [],
   };
 }
 

@@ -8,7 +8,13 @@ import { queryOptions } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { serverText, type ServerArguments } from "@/lib/serverText";
 import type { MachineSummary } from "@/machines/machines";
-import type { SequenceDefinition, SequencePhase, StepState } from "@/sequences/sequences";
+import type {
+  IfBranch,
+  SequenceDefinition,
+  SequencePhase,
+  StepState,
+  TestEvaluation,
+} from "@/sequences/sequences";
 
 export type DeploymentState = "Assigned" | "Running" | "Done" | "Failed" | "Cancelled";
 
@@ -50,6 +56,11 @@ export interface DeploymentSummary {
 
 // One step of a run as the agent last reported it. kind is the step's kind as the sequence document names it.
 // The times are the server's, taken when a report showed the step start and end.
+//
+// A run of a tree has a step per node, containers included, and index is the node's place in pre-order. parentId is
+// the container it sits in, null at the top, and depth counts containers from 0. pass, iteration, branch and
+// evaluation are the node's latest visit: pass counts the times it was entered, iteration is a repeat's time
+// through its body, branch the path an IF took, and evaluation its tests as they were decided.
 export interface DeploymentStepView {
   stepId: string;
   index: number;
@@ -61,6 +72,12 @@ export interface DeploymentStepView {
   startedUtc: string | null;
   finishedUtc: string | null;
   error: string | null;
+  parentId?: string | null;
+  depth?: number;
+  pass?: number;
+  iteration?: number;
+  branch?: IfBranch | null;
+  evaluation?: TestEvaluation[] | null;
 }
 
 // What a run downloads: the image it applies, or a package of drivers or files.

@@ -216,30 +216,22 @@ export function SequenceEditor({
         />
       ) : null}
 
-      <Panel
-        title={<Trans>Steps</Trans>}
-        actions={
-          locked || steps.length === 0 ? null : (
-            <AddStepMenu
-              label={<Trans>Add step</Trans>}
-              fullLabel={translate`Add step at the end`}
-              onAdd={(kind) => {
-                add(addStep(kind));
-              }}
-            />
-          )
-        }
-      >
-        {steps.length === 0 ? (
-          <EmptyState
-            className="px-0 py-4"
-            title={<Trans>No steps yet</Trans>}
-            action={
-              locked ? null : (
+      {editor.flowOnly ? (
+        <Notice title={<Trans>This page cannot show this sequence</Trans>}>
+          <Trans>
+            It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow
+            builder shows. Nothing in it is changed here.
+          </Trans>
+        </Notice>
+      ) : (
+        <>
+          <Panel
+            title={<Trans>Steps</Trans>}
+            actions={
+              locked || steps.length === 0 ? null : (
                 <AddStepMenu
-                  label={<Trans>Add the first step</Trans>}
-                  fullLabel={translate`Add the first step`}
-                  variant="primary"
+                  label={<Trans>Add step</Trans>}
+                  fullLabel={translate`Add step at the end`}
                   onAdd={(kind) => {
                     add(addStep(kind));
                   }}
@@ -247,99 +239,118 @@ export function SequenceEditor({
               )
             }
           >
-            {locked ? (
-              <Trans>This sequence does nothing yet.</Trans>
+            {steps.length === 0 ? (
+              <EmptyState
+                className="px-0 py-4"
+                title={<Trans>No steps yet</Trans>}
+                action={
+                  locked ? null : (
+                    <AddStepMenu
+                      label={<Trans>Add the first step</Trans>}
+                      fullLabel={translate`Add the first step`}
+                      variant="primary"
+                      onAdd={(kind) => {
+                        add(addStep(kind));
+                      }}
+                    />
+                  )
+                }
+              >
+                {locked ? (
+                  <Trans>This sequence does nothing yet.</Trans>
+                ) : (
+                  <Trans>
+                    A sequence that installs Windows starts by partitioning the disk and then
+                    applies an image. One for Linux writes a raw disk image and its cloud-init seed.
+                  </Trans>
+                )}
+              </EmptyState>
             ) : (
-              <Trans>
-                A sequence that installs Windows starts by partitioning the disk and then applies an
-                image. One for Linux writes a raw disk image and its cloud-init seed.
-              </Trans>
+              <SequenceRailPicker
+                label={translate`Steps of ${name}`}
+                steps={railSteps(steps, editor.findings)}
+                phases={phases}
+                selectedId={selected?.id ?? null}
+                onSelect={select}
+                {...(locked
+                  ? {}
+                  : {
+                      onMove: (stepId: string, to: number) => {
+                        const step = steps.find((candidate) => candidate.id === stepId);
+
+                        if (step !== undefined) {
+                          move(step, to);
+                        }
+                      },
+                    })}
+              />
             )}
-          </EmptyState>
-        ) : (
-          <SequenceRailPicker
-            label={translate`Steps of ${name}`}
-            steps={railSteps(steps, editor.findings)}
-            phases={phases}
-            selectedId={selected?.id ?? null}
-            onSelect={select}
-            {...(locked
-              ? {}
-              : {
-                  onMove: (stepId: string, to: number) => {
-                    const step = steps.find((candidate) => candidate.id === stepId);
+          </Panel>
 
-                    if (step !== undefined) {
-                      move(step, to);
-                    }
-                  },
-                })}
-          />
-        )}
-      </Panel>
-
-      {editor.removed !== null ? (
-        <RemovedStepNotice
-          key={editor.removed.step.id}
-          step={editor.removed.step}
-          onUndo={() => {
-            select(editor.undoRemove()?.id);
-          }}
-          onDismiss={editor.dismissRemoved}
-        />
-      ) : null}
-
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div ref={inspector} className="min-w-0">
-          {selected !== undefined ? (
-            <StepInspector
-              step={selected}
-              index={index}
-              count={steps.length}
-              phase={editor.phases[index] ?? "WindowsPE"}
-              findings={stepFindings(editor.findings, selected.id)}
-              catalog={editor.catalog}
-              onEdit={editor.edit}
-              onMove={(to) => {
-                move(selected, to);
+          {editor.removed !== null ? (
+            <RemovedStepNotice
+              key={editor.removed.step.id}
+              step={editor.removed.step}
+              onUndo={() => {
+                select(editor.undoRemove()?.id);
               }}
-              onInsert={(kind) => {
-                add(insertStepAfter(selected.id, kind));
-              }}
-              onRemove={() => {
-                remove(selected);
-              }}
+              onDismiss={editor.dismissRemoved}
             />
           ) : null}
-        </div>
 
-        <div className="flex min-w-0 flex-col gap-4">
-          <Panel title={<Trans>Sequence</Trans>}>
-            <TextSetting
-              label={<Trans>Sequence name</Trans>}
-              field="name"
-              findings={refused(state, "name")}
-              value={draft.name}
-              onChange={(text) => {
-                editor.edit({ type: "rename", name: text });
-              }}
-            />
-            <TextSetting
-              label={<Trans>Description</Trans>}
-              field="description"
-              findings={refused(state, "description")}
-              hint={<Trans>Shown in the list of task sequences.</Trans>}
-              multiline
-              rows={3}
-              value={draft.description}
-              onChange={(text) => {
-                editor.edit({ type: "describe", description: text });
-              }}
-            />
-          </Panel>
-          <FindingsSummary steps={steps} findings={editor.findings} onGoTo={goTo} />
-        </div>
-      </div>
+          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+            <div ref={inspector} className="min-w-0">
+              {selected !== undefined ? (
+                <StepInspector
+                  step={selected}
+                  index={index}
+                  count={steps.length}
+                  phase={editor.phases[index] ?? "WindowsPE"}
+                  findings={stepFindings(editor.findings, selected.id)}
+                  catalog={editor.catalog}
+                  onEdit={editor.edit}
+                  onMove={(to) => {
+                    move(selected, to);
+                  }}
+                  onInsert={(kind) => {
+                    add(insertStepAfter(selected.id, kind));
+                  }}
+                  onRemove={() => {
+                    remove(selected);
+                  }}
+                />
+              ) : null}
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <Panel title={<Trans>Sequence</Trans>}>
+                <TextSetting
+                  label={<Trans>Sequence name</Trans>}
+                  field="name"
+                  findings={refused(state, "name")}
+                  value={draft.name}
+                  onChange={(text) => {
+                    editor.edit({ type: "rename", name: text });
+                  }}
+                />
+                <TextSetting
+                  label={<Trans>Description</Trans>}
+                  field="description"
+                  findings={refused(state, "description")}
+                  hint={<Trans>Shown in the list of task sequences.</Trans>}
+                  multiline
+                  rows={3}
+                  value={draft.description}
+                  onChange={(text) => {
+                    editor.edit({ type: "describe", description: text });
+                  }}
+                />
+              </Panel>
+              <FindingsSummary steps={steps} findings={editor.findings} onGoTo={goTo} />
+            </div>
+          </div>
+        </>
+      )}
 
       <p role="status" className="sr-only">
         {announcement}

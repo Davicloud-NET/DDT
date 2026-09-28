@@ -19,6 +19,7 @@ import { phasesOf, type Findings } from "./problems";
 import {
   changedParts,
   draftOf,
+  needsFlowBuilder,
   sameDraft,
   saveRequestOf,
   type SequenceDraft,
@@ -103,7 +104,10 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
   // The newest copy the server gave, with its problems, which the draft is compared against.
   const latest = stored.data ?? initial;
   const deleted = stored.error instanceof ApiError && stored.error.status === 404;
-  const locked = readOnly || deleted;
+  const draft = autosave.value;
+  // A sequence with groups, variables and the like is left as it is, also when someone else's save makes it one.
+  const flowOnly = needsFlowBuilder(draft);
+  const locked = readOnly || deleted || flowOnly;
   const { receive, stop, update } = autosave;
 
   useEffect(() => {
@@ -122,7 +126,6 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     }
   };
 
-  const draft = autosave.value;
   const theirs = autosave.theirs;
   // The newer copy someone else saved, which this page shows since it had nothing unsaved.
   const savedElsewhere =
@@ -138,6 +141,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     dirty: autosave.dirty,
     deleted,
     locked,
+    flowOnly,
     savedElsewhere,
     findings: { problems: latest.problems, warnings: latest.warnings } satisfies Findings,
     phases: phasesOf(draft.steps, latest.definition.steps, latest.stepPhases),

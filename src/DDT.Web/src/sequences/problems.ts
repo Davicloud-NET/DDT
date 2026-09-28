@@ -32,6 +32,11 @@ const kindFields: Record<StepKind, readonly string[]> = {
   reboot: [],
   writeRawImage: ["imageId"],
   writeCloudInitSeed: ["metaData", "userData", "networkConfig"],
+  setVariable: ["variable", "value"],
+  pause: ["message", "continueAfterMinutes"],
+  group: [],
+  if: ["test"],
+  repeat: ["until", "maxTimes", "goOnAtLimit"],
 };
 
 const commonFields = ["name", "conditions", "continueOnError", "rebootAfter"];

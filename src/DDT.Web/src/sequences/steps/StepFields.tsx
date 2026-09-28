@@ -35,5 +35,12 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <WriteRawImageFields step={step} {...rest} />;
     case "writeCloudInitSeed":
       return <WriteCloudInitSeedFields step={step} {...rest} />;
+    // Only the flow builder shows these, and the step editor does not open a sequence that has them.
+    case "setVariable":
+    case "pause":
+    case "group":
+    case "if":
+    case "repeat":
+      return null;
   }
 }

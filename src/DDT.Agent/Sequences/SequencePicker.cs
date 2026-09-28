@@ -14,12 +14,13 @@ using DDT.Core.Unattend;
 namespace DDT.Agent.Sequences;
 
 // What the technician signed in at the machine has chosen so far: a sequence, then only what that sequence needs: a
-// disk when it erases one and there are several, a computer name when the server needs one, the sequence's inputs asked
-// at the machine, ERASE before a disk is erased, and ANYWAY before a disk image is written that will not start with the
-// Secure Boot the machine has on. Anything but the word at those questions goes back to the list, so nothing is erased
-// by a stray key, and so does Back at any question after the list. The sequences an assignment rule suggests for this
-// machine come first. The answers to the inputs, passwords among them, stay here until they go with the choice, and are
-// forgotten when it is sent or the picker starts over.
+// disk when it erases one and there are several, a computer name when the server needs one, starting with the one the
+// machine's own name or a rule gives, the sequence's inputs asked at the machine, ERASE before a disk is erased, and
+// ANYWAY before a disk image is written that will not start with the Secure Boot the machine has on. Anything but the
+// word at those questions goes back to the list, so nothing is erased by a stray key, and so does Back at any question
+// after the list. The sequences an assignment rule suggests for this machine come first. The answers to the inputs,
+// passwords among them, stay here until they go with the choice, and are forgotten when it is sent or the picker starts
+// over.
 public sealed class SequencePicker(IMachineConsole console, AgentLog log)
 {
     public const string ConfirmationWord = "ERASE";
@@ -101,7 +102,7 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
             new DiskQuestion(_sequence!.Name, [.. _disks.Select(disk => disk.ToConsoleDisk())]),
             cancellationToken),
         PickerQuestion.ComputerName => console.AskAsync(
-            new ComputerNameQuestion(_sequence!.Name, ComputerNames.MaxLength, _computerNameError),
+            new ComputerNameQuestion(_sequence!.Name, ComputerNames.MaxLength, _computerNameError, _sequence.ComputerName),
             cancellationToken),
         PickerQuestion.Inputs => console.AskAsync(
             new InputsQuestion(
@@ -169,7 +170,11 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
                     return null;
                 }
 
-                if (!ComputerNames.IsValid(typed, out string error))
+                // Enter on the name the values give keeps it, and the run takes it from them, so the machine gets no name
+                // of its own; a name typed here beats it and becomes the machine's.
+                string name = typed.Length == 0 && _sequence!.ComputerName is { } given ? given : typed;
+
+                if (!ComputerNames.IsValid(name, out string error))
                 {
                     log.Warning(error);
                     _computerNameError = error;
@@ -177,7 +182,7 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
                     return null;
                 }
 
-                _computerName = typed;
+                _computerName = string.Equals(name, _sequence!.ComputerName, StringComparison.OrdinalIgnoreCase) ? null : name;
                 _computerNameError = null;
 
                 return Ask(AfterComputerName());

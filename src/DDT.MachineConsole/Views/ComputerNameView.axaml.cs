@@ -11,7 +11,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The field has the focus, so the person just types. What was wrong with a refused name fades in with each refusal.
+// The field has the focus, so the person just types, and a name it starts with is selected, so typing replaces it. What
+// was wrong with a refused name fades in with each refusal.
 public sealed partial class ComputerNameView : UserControl
 {
     private ComputerNameViewModel? _model;
@@ -43,7 +44,13 @@ public sealed partial class ComputerNameView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        Dispatcher.UIThread.Post(() => NameBox.Focus(), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                NameBox.Focus();
+                NameBox.SelectAll();
+            },
+            DispatcherPriority.Loaded);
     }
 
     private void OnModelChanged(object? sender, PropertyChangedEventArgs e)

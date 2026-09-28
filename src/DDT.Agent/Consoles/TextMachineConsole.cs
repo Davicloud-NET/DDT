@@ -115,11 +115,19 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
         }
     }
 
+    // Enter alone keeps the name the machine gets without one typed, which the prompt shows.
     private async Task<ConsoleAnswer?> ComputerNameAsync(ComputerNameQuestion question, CancellationToken cancellationToken)
     {
         log.Information($"{question.SequenceName} needs a computer name for this machine.");
 
-        return Typed(await prompt.ReadLineAsync("Computer name", secret: false, cancellationToken).ConfigureAwait(false));
+        string label = string.IsNullOrEmpty(question.Name) ? "Computer name" : $"Computer name [{question.Name}]";
+
+        if (await prompt.ReadLineAsync(label, secret: false, cancellationToken).ConfigureAwait(false) is not { } typed)
+        {
+            return null;
+        }
+
+        return new ConsoleAnswer(Text: typed.Trim().Length == 0 && !string.IsNullOrEmpty(question.Name) ? question.Name : typed);
     }
 
     private async Task<ConsoleAnswer?> EraseAsync(EraseQuestion question, CancellationToken cancellationToken)

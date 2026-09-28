@@ -435,6 +435,11 @@ msgstr "{first} {rest}"
 msgid "{hardware}, {mac}"
 msgstr "{hardware}, {mac}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shareHostAddressWarning"
+msgid "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another machine on the network can relay. Name the server instead, best by its full DNS name."
+msgstr "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another machine on the network can relay. Name the server instead, best by its full DNS name."
+
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
 msgstr "{hours} h {minutes} min"
@@ -808,6 +813,11 @@ msgstr "{name} is the last enabled administrator. Make another account an admini
 msgctxt "sequence.valueUndefined"
 msgid "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
 msgstr "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.secretValueWarning"
+msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
+msgstr "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
@@ -3127,8 +3137,8 @@ msgid "DDT could not reach its server. Check that the server is running and that
 msgstr "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
 
 #: src/sequences/steps/RawImageFields.tsx
-msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
-msgstr "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgstr "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"
@@ -4236,8 +4246,8 @@ msgid "Give {name} a new password?"
 msgstr "Give {name} a new password?"
 
 #: src/accounts/AccountsPage.tsx
-msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
-msgstr "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
+msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
+msgstr "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
 
 #: src/machines/RunWaiting.tsx
 msgid "Give the answers"
@@ -4632,6 +4642,10 @@ msgstr "It does not name {names}, which the server is reached by, so browsers an
 #: src/machines/RunWaiting.tsx
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
+
+#: src/machines/approval.ts
+msgid "It is named {named}."
+msgstr "It is named {named}."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
@@ -6278,6 +6292,14 @@ msgstr "Optimistic concurrency failure, object has been modified."
 #: src/users/UserDialogs.tsx
 msgid "Optional."
 msgstr "Optional."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+msgstr "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
+msgstr "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
@@ -10683,8 +10705,12 @@ msgid "without Microsoft's third-party UEFI CA"
 msgstr "without Microsoft's third-party UEFI CA"
 
 #: src/sequences/builder/VariablesPanel.tsx
-msgid "Without one, and without a default, the run waits at its start."
-msgstr "Without one, and without a default, the run waits at its start."
+msgid "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
+msgstr "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
+msgstr "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Without one, the step cannot add the account and the run fails."

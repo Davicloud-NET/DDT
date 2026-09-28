@@ -1241,6 +1241,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.scriptTooLarge",
     message: "A script can have at most {max} KiB.",
   }),
+  "sequence.secretValueWarning": msg({
+    context: "sequence.secretValueWarning",
+    message: "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets.",
+  }),
   "sequence.seedBeforeRawImage": msg({
     context: "sequence.seedBeforeRawImage",
     message: "The cloud-init seed can be written only after a step that writes a raw disk image.",
@@ -1260,6 +1264,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.setVariableChoose": msg({
     context: "sequence.setVariableChoose",
     message: "Choose the variable to set.",
+  }),
+  "sequence.shareHostAddressWarning": msg({
+    context: "sequence.shareHostAddressWarning",
+    message: "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another machine on the network can relay. Name the server instead, best by its full DNS name.",
   }),
   "sequence.shareHostFixed": msg({
     context: "sequence.shareHostFixed",

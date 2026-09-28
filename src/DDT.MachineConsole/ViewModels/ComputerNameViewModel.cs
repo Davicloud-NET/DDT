@@ -7,11 +7,12 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The computer name, with its rules. The agent checks the name itself, and asks again with what was wrong.
+// The computer name, with its rules. The agent checks the name itself, and asks again with what was wrong. The field
+// starts with the name the machine gets when none is typed, so Continue keeps it.
 public sealed class ComputerNameViewModel : QuestionViewModel
 {
     private ComputerNameQuestion _question;
-    private string _name = string.Empty;
+    private string _name;
 
     public ComputerNameViewModel(Localizer localizer, int id, ComputerNameQuestion question, Action<int, ConsoleAnswer> answer)
         : base(localizer, id, answer)
@@ -19,6 +20,7 @@ public sealed class ComputerNameViewModel : QuestionViewModel
         ArgumentNullException.ThrowIfNull(question);
 
         _question = question;
+        _name = question.Name ?? string.Empty;
     }
 
     public ComputerNameQuestion Question => _question;

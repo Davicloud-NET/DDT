@@ -435,6 +435,11 @@ msgstr "{first} {rest}"
 msgid "{hardware}, {mac}"
 msgstr "{hardware}, {mac}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shareHostAddressWarning"
+msgid "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another machine on the network can relay. Name the server instead, best by its full DNS name."
+msgstr "{host} ist eine IP-Adresse, mit der Windows kein Kerberos verwenden kann. Das Konto meldet sich daher mit NTLM an, was ein anderes Gerät im Netzwerk weiterleiten kann. Geben Sie stattdessen den Namen des Servers an, am besten seinen vollständigen DNS-Namen."
+
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
 msgstr "{hours} Std. {minutes} Min."
@@ -808,6 +813,11 @@ msgstr "{name} ist der letzte aktivierte Administrator. Machen Sie zuerst ein an
 msgctxt "sequence.valueUndefined"
 msgid "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
 msgstr "{name} wird verwendet, aber weder die Tasksequenz noch eine Regel oder eine Geräterolle gibt dafür einen Wert. Eine Ausführung schlägt dort fehl, wo sie ihn braucht."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.secretValueWarning"
+msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
+msgstr "{name} sieht nach einem Kennwort oder einem anderen Geheimnis aus, und alle, die sich bei DDT anmelden können, können die Werte von Tasksequenzen und Ausführungen lesen. Bewahren Sie es in einem Konto auf, gespeichert oder für die Ausführung abgefragt, das nur der Schritt erhält, der es verwendet."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
@@ -3127,8 +3137,8 @@ msgid "DDT could not reach its server. Check that the server is running and that
 msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und dieser Computer ihn erreicht, und versuchen Sie es dann erneut."
 
 #: src/sequences/steps/RawImageFields.tsx
-msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
-msgstr "DDT setzt für <0>{placeholders}</0> die Werte des Geräts ein. Setzen Sie sie in doppelte Anführungszeichen, etwa <1>{example}</1>. Alles andere in doppelten geschweiften Klammern bleibt, wie es ist, für die eigenen Vorlagen von cloud-init."
+msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgstr "DDT setzt für <0>{placeholders}</0> die Werte des Geräts ein und für den Namen eines Werts der Ausführung, etwa einer Variable der Tasksequenz oder eines Werts, den eine Regel setzt, diesen Wert. Setzen Sie sie in doppelte Anführungszeichen, etwa <1>{example}</1>. Alles andere in doppelten geschweiften Klammern bleibt, wie es ist, für die eigenen Vorlagen von cloud-init."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"
@@ -4236,8 +4246,8 @@ msgid "Give {name} a new password?"
 msgstr "{name} ein neues Kennwort geben?"
 
 #: src/accounts/AccountsPage.tsx
-msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is not stored, to one kept here."
-msgstr "Geben Sie jedem Konto nur, was es braucht, und ziehen Sie ein Konto, das beim Start der Ausführung abgefragt und nicht gespeichert wird, einem hier gespeicherten vor."
+msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
+msgstr "Geben Sie jedem Konto nur, was es braucht, und ziehen Sie ein Konto, das beim Start der Ausführung abgefragt und nur bis zu ihrem Ende verschlüsselt aufbewahrt wird, einem hier gespeicherten vor."
 
 #: src/machines/RunWaiting.tsx
 msgid "Give the answers"
@@ -4632,6 +4642,10 @@ msgstr "Es nennt {names} nicht, obwohl der Server darüber erreicht wird, daher 
 #: src/machines/RunWaiting.tsx
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "Sie wird um {time} von selbst fortgesetzt, oder früher, wenn jemand sie hier oder am Gerät fortsetzt."
+
+#: src/machines/approval.ts
+msgid "It is named {named}."
+msgstr "Es erhält den Namen {named}."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
@@ -6278,6 +6292,14 @@ msgstr "Das Objekt wurde zwischenzeitlich geändert."
 #: src/users/UserDialogs.tsx
 msgid "Optional."
 msgstr "Optional."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
+msgstr "Optional. Leer gelassen, erhält das Gerät den Namen {valuesName} aus seinen Werten und tritt unter ihm der Domäne bei."
+
+#: src/machines/AssignDialog.tsx
+msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
+msgstr "Optional. Leer gelassen, erhält das Gerät den Namen {valuesName} aus seinen Werten, den sein cloud-init-Seed erhält."
 
 #: src/machines/AssignDialog.tsx
 msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
@@ -10683,8 +10705,12 @@ msgid "without Microsoft's third-party UEFI CA"
 msgstr "ohne Microsofts UEFI-CA für Drittanbieter"
 
 #: src/sequences/builder/VariablesPanel.tsx
-msgid "Without one, and without a default, the run waits at its start."
-msgstr "Ohne Antwort und ohne Standardwert wartet die Ausführung an ihrem Start."
+msgid "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
+msgstr "Ohne Antwort und ohne Standardwert muss die Eingabe beantwortet werden, wenn die Tasksequenz im Web zugewiesen oder freigegeben wird, und eine Ausführung, die am Gerät gewählt oder von einer Regel gestartet wird, schlägt an ihrem Start fehl."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
+msgstr "Ohne Antwort und ohne Standardwert wartet die Ausführung an ihrem Start, bis die Eingabe am Gerät oder auf der Seite des Geräts beantwortet wird."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Without one, the step cannot add the account and the run fails."

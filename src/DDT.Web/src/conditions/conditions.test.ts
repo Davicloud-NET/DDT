@@ -108,6 +108,71 @@ describe("the subjects of a condition", () => {
     expect(operatorsFor("text")).toContain("Matches");
   });
 
+  // As src/DDT.Core/Sequences/ConditionChecks.cs takes them for each type of fact, so every condition the server
+  // takes, such as the MAC Contains of versions 1 and 2, can be edited here.
+  it("offers every operator the server takes for the type of each fact", () => {
+    const text = [
+      "Equals",
+      "NotEquals",
+      "StartsWith",
+      "EndsWith",
+      "Contains",
+      "NotContains",
+      "Matches",
+      "In",
+      "Exists",
+      "NotExists",
+    ];
+    const server: Record<string, string[]> = {
+      Text: text,
+      Number: [
+        "Equals",
+        "NotEquals",
+        "In",
+        "Exists",
+        "NotExists",
+        "Greater",
+        "GreaterOrEqual",
+        "Less",
+        "LessOrEqual",
+      ],
+      YesNo: ["Equals", "NotEquals", "Exists", "NotExists"],
+      IPv4: [
+        "Equals",
+        "NotEquals",
+        "StartsWith",
+        "Matches",
+        "In",
+        "Exists",
+        "NotExists",
+        "InSubnet",
+      ],
+      Mac: [
+        "Equals",
+        "NotEquals",
+        "StartsWith",
+        "EndsWith",
+        "Contains",
+        "NotContains",
+        "In",
+        "Exists",
+        "NotExists",
+      ],
+    };
+
+    for (const fact of factCatalogue) {
+      const offered = [...operatorsFor(subjectFor(subjects, fact.name).kind)].sort();
+
+      expect({ fact: fact.name, offered }).toEqual({
+        fact: fact.name,
+        offered: [...(server[fact.type] ?? [])].sort(),
+      });
+    }
+
+    // A choice of an input is offered as its type's text is.
+    expect([...operatorsFor(subjectFor(subjects, "Office").kind)].sort()).toEqual([...text].sort());
+  });
+
   it("keeps the operator and the value where they fit a new subject", () => {
     const model = subjectFor(subjects, "Model");
     const friendly = subjectFor(subjects, "FriendlyModel");
@@ -137,6 +202,8 @@ describe("values", () => {
     expect(gigabytesOf("16384")).toBe("16");
     expect(gigabytesOf("8000")).toBe("7.81");
     expect(megabytesOf("lots")).toBe("lots");
+    expect(megabytesOf("8; 16")).toBe("8192; 16384");
+    expect(gigabytesOf("8192;16384")).toBe("8; 16");
   });
 
   it("says what is wrong with a value before the server does", () => {
@@ -151,6 +218,17 @@ describe("values", () => {
     expect(valueProblem("mac", "StartsWith", "00:15:5D")).toBeNull();
     expect(valueProblem("mac", "Equals", "00:15:5D")).toBe(
       "Enter a MAC address such as 00:15:5D:01:02:03.",
+    );
+    // A part of an address, or a pattern, is no whole one.
+    expect(valueProblem("mac", "Contains", "5D:01")).toBeNull();
+    expect(valueProblem("mac", "EndsWith", "02:03")).toBeNull();
+    expect(valueProblem("mac", "NotContains", "5D:0")).toBe(
+      "Enter a MAC address such as 00:15:5D:01:02:03.",
+    );
+    expect(valueProblem("ipv4", "Matches", "10.0.*.51")).toBeNull();
+    expect(valueProblem("network", "EndsWith", "/24")).toBeNull();
+    expect(valueProblem("network", "In", "10.20.4.0/24; 10.20.5.0")).toBe(
+      "Enter a network such as 10.20.4.0/24.",
     );
     expect(valueProblem("number", "In", "4; 8;x")).toBe("Enter a number.");
     expect(valueProblem("number", "Exists", "x")).toBeNull();

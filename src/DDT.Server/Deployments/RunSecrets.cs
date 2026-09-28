@@ -180,8 +180,8 @@ public sealed class RunSecrets(
 
     // The accounts a step uses, while it runs: the account a script in Windows runs as, only for the service there and
     // only when the account lets scripts run as it, and the step's own shares to connect, each with its path worked out
-    // here from the values the run started with, never from what the agent reported since, and only to a server its
-    // account names. Only a leaf step connects shares; a group, an IF or a Repeat gets nothing, whatever its document
+    // here from the values and the machine's facts the run started with, never from what the agent reported since, and
+    // only to a server its account names. Only a leaf step connects shares; a group, an IF or a Repeat gets nothing, whatever its document
     // holds. Every account is read from the run's own copy of the sequence. All or nothing: one refusal refuses the step.
     public async Task<(AgentStepAccounts? Accounts, string? Refusal)> StepAccountsAsync(
         Machine machine,
@@ -192,7 +192,7 @@ public sealed class RunSecrets(
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        (Deployment? run, SequenceStep? step, _, SequenceDefinition? definition, string? refusal) = await RunningStepAsync(
+        (Deployment? run, SequenceStep? step, RunInputs? inputs, SequenceDefinition? definition, string? refusal) = await RunningStepAsync(
                 machine,
                 runId,
                 stepId,
@@ -268,7 +268,7 @@ public sealed class RunSecrets(
             reads.Add($"The {account.Describe} of step {step.Name} ({stepId:D}) of {run!.Title}, to run the script as {account.UserName}.");
         }
 
-        Func<string, string?> values = ValueTemplate.Lookup(StartValues(run!));
+        Func<string, string?> values = ShareValues(machine, run!, inputs!);
         List<AgentShareConnection> connections = [];
 
         for (int index = 0; index < shares.Count; index++)
@@ -454,6 +454,17 @@ public sealed class RunSecrets(
         }
 
         return (MachineVariableReader.Read(machine) with { ComputerName = null, Variables = values }).Value;
+    }
+
+    // What a share's path is made of, as the validator lets it be: the values the run started with and the machine's facts
+    // as they were then, which a registration since, such as the service's in Windows, does not change. A run that
+    // started before its facts were kept takes them as they are now.
+    private static Func<string, string?> ShareValues(Machine machine, Deployment run, RunInputs inputs)
+    {
+        Func<string, string?> values = ValueTemplate.Lookup(StartValues(run));
+        Func<string, string?> facts = ValueTemplate.Lookup(inputs.Facts ?? RunInputs.FactsOf(machine));
+
+        return name => values(name) ?? facts(name);
     }
 
     // The values the run started with, by name ignoring case: those used, not those they overrode. Variables the agent

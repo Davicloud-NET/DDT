@@ -81,7 +81,7 @@ export function AccountsPage() {
         </Trans>{" "}
         <Trans>
           Give each account the least it needs, and prefer an account asked for when the run starts,
-          which is not stored, to one kept here.
+          which is kept encrypted only until the run ends, to one kept here.
         </Trans>
       </Notice>
 

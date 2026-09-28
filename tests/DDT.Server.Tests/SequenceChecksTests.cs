@@ -113,6 +113,61 @@ public sealed class SequenceChecksTests
         Assert.Equal((empty.Id, "sequence.emptyContainerWarning"), (warning.StepId!.Value, warning.Code!));
     }
 
+    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is warned of wherever it
+    // is: a variable's default, an input's, or what a step sets. A value made of other values holds none itself.
+    [Fact]
+    public void WarnsOfValuesThatLookLikePasswords()
+    {
+        SetVariableStep set = new() { Id = Guid.NewGuid(), Name = "Set the token", Variable = "ApiToken", Value = "abc123" };
+        SetVariableStep made = new() { Id = Guid.NewGuid(), Name = "Make the token", Variable = "ApiToken", Value = "{{Office}}-1" };
+        SequenceDefinition definition = Definition(Partition(), set, made) with
+        {
+            Variables =
+            [
+                new VariableDeclaration { Name = "Office", Default = "Vienna" },
+                new VariableDeclaration { Name = "ApiToken", SetBySteps = true },
+                new VariableDeclaration { Name = "AdminPassword", Default = "Pa55word!" },
+                new VariableDeclaration { Name = "ServicePwd", Default = "{{Office}}" },
+            ],
+            Inputs = [new InputDeclaration { Name = "WifiSecret", Label = "Wi-Fi", Default = "guest-1234", AskAt = InputAsk.Web }],
+        };
+
+        IEnumerable<SequenceProblem> warnings = SequenceChecks.Check(definition, References()).Warnings
+            .Where(warning => warning.Code == ServerMessages.SequenceSecretValueWarning.Code);
+
+        Assert.Equal(
+            [(set.Id, "value", "ApiToken"), (null, "variables[2].default", "AdminPassword"), (null, "inputs[0].default", "WifiSecret")],
+            warnings.Select(warning => (warning.StepId, warning.Field!, warning.Args!["name"].ToString())));
+        Assert.StartsWith(
+            "AdminPassword looks like a password or another secret, and everyone who can sign in to DDT can read",
+            warnings.ElementAt(1).Message,
+            StringComparison.Ordinal);
+    }
+
+    // Kerberos needs the server's name; with an address the account's password goes by NTLM, which can be relayed. A host
+    // made of values is known only when the step runs.
+    [Fact]
+    public void WarnsOfAShareNamedByItsAddress()
+    {
+        AccountReference account = new(Guid.NewGuid(), null);
+        RunScriptStep script = Script(SequencePhase.WindowsPE) with
+        {
+            Shares =
+            [
+                new ShareConnection(@"\\files.corp.example\drivers", account),
+                new ShareConnection(@"\\10.0.4.20\drivers\x64", account),
+                new ShareConnection(@"\\{{FileServer}}\drivers", account),
+            ],
+        };
+
+        SequenceProblem warning = Assert.Single(
+            SequenceChecks.Check(Definition(Partition(), script), References()).Warnings,
+            warning => warning.Code == ServerMessages.SequenceShareHostAddressWarning.Code);
+
+        Assert.Equal((script.Id, "shares[1].path"), (warning.StepId!.Value, warning.Field!));
+        Assert.StartsWith("10.0.4.20 is an IP address, with which Windows cannot use Kerberos", warning.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void NeedsAComputerNameForAJoinOnAnyBranchOrADeclaredComputerName()
     {
@@ -129,6 +184,38 @@ public sealed class SequenceChecksTests
             {
                 Variables = [new VariableDeclaration { Name = "computername", Default = "PC-{{SerialNumber|alnum|right:12}}" }],
             })?.Code);
+    }
+
+    // A seed may use the run's values, as the agent fills them in: the sequence's variables and value inputs, and what
+    // rules and machine roles set. An Account input's answer is no value, and a name without one stays as it is.
+    [Fact]
+    public void TakesTheRunsValuesAsTheSeedsPlaceholders()
+    {
+        WriteCloudInitSeedStep seed = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Seed",
+            MetaData = "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n",
+            UserData = "#cloud-config\nfqdn: \"{{office}}.{{Site}}.example\"\nowner: \"{{Owner}}\"\nuser: \"{{Admin}}\"\nhost: {{ v1.local_hostname }} {{Hostname}}\n",
+        };
+        SequenceDefinition definition = Definition(new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write", ImageId = s_raw.Id }, seed) with
+        {
+            Variables = [new VariableDeclaration { Name = "Office", Default = "VIE" }],
+            Inputs =
+            [
+                new InputDeclaration { Name = "Owner", Label = "Owner", AskAt = InputAsk.Web },
+                new InputDeclaration { Name = "Admin", Label = "Admin", Kind = InputKind.Account, AskAt = InputAsk.Web, Account = new AccountDestination { RunAs = true } },
+            ],
+        };
+        SequenceReferences references = References() with { ValueNames = new HashSet<string>(["Site"], StringComparer.OrdinalIgnoreCase) };
+
+        SequenceProblem warning = Assert.Single(SequenceChecks.Check(definition, references).Warnings);
+
+        Assert.Equal((seed.Id, "userData", "sequence.unknownPlaceholders"), (warning.StepId!.Value, warning.Field!, warning.Code!));
+        Assert.Equal(
+            "{{Admin}}, {{Hostname}} are not DDT's placeholders, so they stay as they are. DDT fills in {{ComputerName}}, {{Manufacturer}}, " +
+            "{{Model}}, {{SerialNumber}}, {{SmbiosUuid}}, {{MacAddress}}, {{Office}}, {{Owner}}, {{Site}}.",
+            warning.Message);
     }
 
     [Fact]

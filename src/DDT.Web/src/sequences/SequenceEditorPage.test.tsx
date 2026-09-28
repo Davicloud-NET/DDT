@@ -17,7 +17,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 import type { ImageSummary } from "@/images/images";
-import { press } from "@/test/aria";
+import { chooseOption, press } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
 import { Toasts } from "@/ui/Toast";
@@ -744,6 +744,28 @@ describe("SequenceEditorPage", () => {
         runAs: { accountId: account.id, input: null },
       });
     }, saveWait);
+  });
+
+  // Only an input asked at the machine can hold a run at its start: one only the web asks has to be answered there.
+  it("says what a required input without an answer does, by where it is asked", async () => {
+    serve(administrator, treeView(), { step: "p" });
+
+    await opened();
+    tab("Variables");
+    press(screen.getByRole("button", { name: /^DeployShare/ }));
+
+    const required = screen.getByRole("checkbox", { name: "An answer is required" });
+    expect(required).toHaveAccessibleDescription(
+      "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page.",
+    );
+
+    await chooseOption(document.body, "Asked", "On the web, when the run is assigned or approved");
+
+    expect(
+      screen.getByRole("checkbox", { name: "An answer is required" }),
+    ).toHaveAccessibleDescription(
+      "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start.",
+    );
   });
 
   it("renames a variable everywhere it is used", async () => {

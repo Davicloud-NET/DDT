@@ -146,6 +146,23 @@ public sealed class SequencePickerTests
         Assert.Contains(Lines(console), line => line.EndsWith("A computer name can hold only the letters A to Z, digits and hyphens.", StringComparison.Ordinal));
     }
 
+    // The question starts with the name the machine's values give, such as a rule's pattern: Enter keeps it, and the run
+    // takes it from the values, so no name goes with the choice; a name typed instead beats it.
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("pc-00042", null)]
+    [InlineData("LAB-7", "LAB-7")]
+    public async Task StartsTheComputerNameWithTheOneTheValuesGive(string typed, string? sent)
+    {
+        AgentSequenceChoice named = s_inventory with { NeedsComputerName = true, ComputerName = "PC-00042" };
+        (SequencePicker picker, ScriptedSignInPrompt prompt, _) = Create([named], [], "1", typed);
+
+        AgentRunRequest? request = await AnswerAllAsync(picker);
+
+        Assert.Equal(new AgentRunRequest(named.Id, null, sent), request);
+        Assert.Equal(["Sequence number", "Computer name [PC-00042]"], prompt.Labels);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("erase")]

@@ -175,9 +175,10 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
 
     // Starts an assigned run once it has its values, as its agent's first report or the answers given at the machine ask.
     // One settings snapshot for the checks and for what the run captures, so a save between them cannot start a run with
-    // values nobody checked. The values are worked out from the run's answers and the rules as they are now. What keeps
-    // the run from starting ends it, before any disk is touched, except a required input the machine asks: then the run
-    // waits at its start, still assigned, until the machine or the machine's page answers it. Nothing here saves.
+    // values nobody checked. The values are worked out from the run's answers and the rules as they are now, and the
+    // machine's facts are kept as they are now. What keeps the run from starting ends it, before any disk is touched,
+    // except a required input the machine asks: then the run waits at its start, still assigned, until the machine or the
+    // machine's page answers it. Nothing here saves.
     public async Task<RunStart> StartAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -199,7 +200,7 @@ public sealed class RunReports(DdtDbContext database, DdtSettings settings, RunV
                 return new RunStart(null, check.AskedAtMachine);
             }
 
-            RunInputs inputs = RunInputs.From(check.Resolution.Effective, snapshot.Deployment, now);
+            RunInputs inputs = RunInputs.From(check.Resolution.Effective, snapshot.Deployment, now) with { Facts = RunInputs.FactsOf(machine) };
             problem = webOnly.Length > 0
                 ? $"The run did not start, because only the web asks what it lacks: {Sentences(webOnly.Select(input => ServerMessages.ValuesInputRequired.With("label", input.Label).Text))} Assign the sequence again and answer it."
                 : check.Problems.Count > 0

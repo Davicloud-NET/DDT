@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
@@ -9,6 +10,7 @@ using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using DDT.Core.Templates;
+using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
@@ -20,6 +22,9 @@ namespace DDT.Server.Sequences;
 // branch of every IF, since any of them may run.
 public static class SequenceChecks
 {
+    // Parts of a name that say its value is a password or another secret, ignoring case.
+    private static readonly string[] s_secretNames = ["password", "passwd", "passwort", "kennwort", "pwd", "secret", "token"];
+
     public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -60,7 +65,7 @@ public static class SequenceChecks
 
                     break;
                 case WriteCloudInitSeedStep seed:
-                    CheckPlaceholders(seed, Warn);
+                    CheckPlaceholders(seed, SeedValueNames(definition, references), Warn);
                     break;
                 case WriteUnattendStep unattend:
                     CheckUnattend(unattend, references, Add);
@@ -72,8 +77,15 @@ public static class SequenceChecks
                 case RunScriptStep { PackageId: { } packageId }:
                     CheckPackage(packageId, references, Add);
                     break;
+                case SetVariableStep set when SecretValue(set.Variable, set.Value):
+                    Warn("value", ServerMessages.SequenceSecretValueWarning.With("name", set.Variable));
+                    break;
             }
+
+            CheckShareHosts(step, Warn);
         }
+
+        CheckDeclaredSecrets(definition, warnings);
 
         // Some path reaches Windows, and no answer file on any path adds the administrator.
         if (InWindows(analysis.NodePhases) && !addsAdministrator)
@@ -168,13 +180,38 @@ public static class SequenceChecks
         }
     }
 
-    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, Action<string?, ServerMessage> warn)
+    // Besides the machine's names, a seed may use the run's values, as the agent fills them in: the sequence's variables
+    // and the answers to its inputs, what rules and machine roles set, and the deployment defaults. An Account input's
+    // answer is never a value.
+    private static List<string> SeedValueNames(SequenceDefinition definition, SequenceReferences references)
     {
-        string known = string.Join(", ", CloudInitTemplate.Names.Select(name => $"{{{{{name}}}}}"));
+        IEnumerable<string?> names =
+        [
+            .. (definition.Variables ?? []).Select(variable => variable?.Name),
+            .. (definition.Inputs ?? []).Where(input => input is { Kind: not InputKind.Account }).Select(input => input!.Name),
+            .. references.ValueNames.Order(StringComparer.OrdinalIgnoreCase),
+        ];
+
+        return
+        [
+            .. names
+                .OfType<string>()
+                .Where(name => name.Length > 0 && CloudInitTemplate.Known(name) is null)
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
+    }
+
+    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, IReadOnlyList<string> valueNames, Action<string?, ServerMessage> warn)
+    {
+        string known = string.Join(", ", CloudInitTemplate.Names.Concat(valueNames).Select(name => $"{{{{{name}}}}}"));
 
         foreach ((string field, string? text) in SeedTexts(seed))
         {
-            string[] unknown = [.. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder => CloudInitTemplate.Known(placeholder) is null)];
+            string[] unknown =
+            [
+                .. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder =>
+                    CloudInitTemplate.Known(placeholder) is null && !valueNames.Contains(placeholder, StringComparer.OrdinalIgnoreCase)),
+            ];
 
             if (unknown.Length > 0)
             {
@@ -183,6 +220,65 @@ public static class SequenceChecks
             }
         }
     }
+
+    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is no secret. Only a
+    // value written out counts: one made of other values, such as {{Token}}, holds none itself.
+    private static bool SecretValue(string? name, string? value) =>
+        name is not null
+        && s_secretNames.Any(part => name.Contains(part, StringComparison.OrdinalIgnoreCase))
+        && !string.IsNullOrWhiteSpace(value)
+        && ValueTemplate.Parse(value).Placeholders.Count == 0;
+
+    // The defaults of the sequence's variables and inputs. An Account input keeps its answer apart, and has no default.
+    private static void CheckDeclaredSecrets(SequenceDefinition definition, List<SequenceProblem> warnings)
+    {
+        void Check(string field, string? name, string? value)
+        {
+            if (SecretValue(name, value))
+            {
+                warnings.Add(SequenceProblem.From(null, field, ServerMessages.SequenceSecretValueWarning.With("name", name!)));
+            }
+        }
+
+        IReadOnlyList<VariableDeclaration?> variables = definition.Variables ?? [];
+
+        for (int index = 0; index < variables.Count; index++)
+        {
+            Check(string.Create(CultureInfo.InvariantCulture, $"variables[{index}].default"), variables[index]?.Name, variables[index]?.Default);
+        }
+
+        IReadOnlyList<InputDeclaration?> inputs = definition.Inputs ?? [];
+
+        for (int index = 0; index < inputs.Count; index++)
+        {
+            if (inputs[index] is { Kind: not InputKind.Account } input)
+            {
+                Check(string.Create(CultureInfo.InvariantCulture, $"inputs[{index}].default"), input.Name, input.Default);
+            }
+        }
+    }
+
+    // A server named by its address gets no Kerberos ticket, so the account's password goes to it by NTLM, which a
+    // machine in the middle can relay to another server. Only a host written out can be told; one made of values is
+    // known when the step runs.
+    private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
+    {
+        IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
+
+        for (int index = 0; index < shares.Count; index++)
+        {
+            if (AccountRules.WrittenHost(shares[index]?.Path) is { } host && ValueTemplate.Parse(host).Placeholders.Count == 0 && IsAddress(host))
+            {
+                warn(
+                    string.Create(CultureInfo.InvariantCulture, $"shares[{index}].path"),
+                    ServerMessages.SequenceShareHostAddressWarning.With("host", host));
+            }
+        }
+    }
+
+    // An IPv4 address, or an IPv6 address written as a name Windows takes in a share path.
+    private static bool IsAddress(string host) =>
+        Uri.CheckHostName(host) == UriHostNameType.IPv4 || host.EndsWith(".ipv6-literal.net", StringComparison.OrdinalIgnoreCase);
 
     private static IEnumerable<(string Field, string? Text)> SeedTexts(WriteCloudInitSeedStep seed) =>
         [("metaData", seed.MetaData), ("userData", seed.UserData), ("networkConfig", seed.NetworkConfig)];

@@ -320,6 +320,9 @@ export function subjectFor(subjects: readonly Subject[], name: string): Subject 
   );
 }
 
+// Every operator the server's ConditionChecks takes for the type of fact behind each kind: memory is a Number, a
+// network (Subnet) is Text, and so are the facts with a list of choices. A value a rule, a machine role or the sequence
+// gives has no type the server knows, and is offered as text, or as one of its choices.
 const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
   text: [
     "Equals",
@@ -333,7 +336,18 @@ const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
     "Exists",
     "NotExists",
   ],
-  oneOf: ["Equals", "NotEquals", "In", "Exists", "NotExists"],
+  oneOf: [
+    "Equals",
+    "NotEquals",
+    "In",
+    "Contains",
+    "NotContains",
+    "StartsWith",
+    "EndsWith",
+    "Matches",
+    "Exists",
+    "NotExists",
+  ],
   number: [
     "Equals",
     "NotEquals",
@@ -345,11 +359,43 @@ const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
     "Exists",
     "NotExists",
   ],
-  memory: ["GreaterOrEqual", "Greater", "LessOrEqual", "Less", "Equals", "NotEquals"],
+  memory: [
+    "GreaterOrEqual",
+    "Greater",
+    "LessOrEqual",
+    "Less",
+    "Equals",
+    "NotEquals",
+    "In",
+    "Exists",
+    "NotExists",
+  ],
   yesNo: ["Equals", "NotEquals", "Exists", "NotExists"],
-  ipv4: ["InSubnet", "Equals", "NotEquals", "StartsWith", "In", "Exists", "NotExists"],
-  network: ["Equals", "NotEquals", "StartsWith", "In", "Exists", "NotExists"],
-  mac: ["Equals", "NotEquals", "StartsWith", "In", "Exists", "NotExists"],
+  ipv4: ["InSubnet", "Equals", "NotEquals", "StartsWith", "Matches", "In", "Exists", "NotExists"],
+  network: [
+    "Equals",
+    "NotEquals",
+    "Contains",
+    "NotContains",
+    "StartsWith",
+    "EndsWith",
+    "Matches",
+    "In",
+    "Exists",
+    "NotExists",
+  ],
+  // Contains is the match on whole bytes the MAC conditions of versions 1 and 2 have.
+  mac: [
+    "Equals",
+    "NotEquals",
+    "StartsWith",
+    "EndsWith",
+    "Contains",
+    "NotContains",
+    "In",
+    "Exists",
+    "NotExists",
+  ],
 };
 
 // The operators that fit a kind of value, the one a new condition takes first.
@@ -388,8 +434,12 @@ export function listOf(value: string): string[] {
     .filter((item) => item !== "");
 }
 
-// Memory is stored in MB and entered in GB, to two places.
+// Memory is stored in MB and entered in GB, to two places, a list as In takes it item by item.
 export function gigabytesOf(megabytes: string): string {
+  if (megabytes.includes(";")) {
+    return listOf(megabytes).map(gigabytesOf).join("; ");
+  }
+
   const number = Number(megabytes);
 
   if (megabytes.trim() === "" || !Number.isFinite(number)) {
@@ -400,6 +450,13 @@ export function gigabytesOf(megabytes: string): string {
 }
 
 export function megabytesOf(gigabytes: string): string {
+  if (gigabytes.includes(";")) {
+    return gigabytes
+      .split(";")
+      .map((item) => megabytesOf(item.trim()))
+      .join("; ");
+  }
+
   const typed = gigabytes.trim().replace(",", ".");
   const number = Number(typed);
 
@@ -451,6 +508,8 @@ export function valueProblem(
 
   const items = operator === "In" ? listOf(value) : [value.trim()];
   const every = (check: (item: string) => boolean) => items.every(check);
+  // An address or a network is compared whole; the other operators take a part of one, or a pattern.
+  const whole = operator === "Equals" || operator === "NotEquals" || operator === "In";
 
   if (operator === "InSubnet") {
     return every(isNetwork) ? null : t`Enter a network such as 10.20.0.0/16.`;
@@ -463,15 +522,11 @@ export function valueProblem(
         ? null
         : t`Enter a number.`;
     case "ipv4":
-      return operator === "StartsWith" || every(isIpv4)
-        ? null
-        : t`Enter an IPv4 address such as 10.0.4.51.`;
+      return !whole || every(isIpv4) ? null : t`Enter an IPv4 address such as 10.0.4.51.`;
     case "network":
-      return operator === "StartsWith" || every(isNetwork)
-        ? null
-        : t`Enter a network such as 10.20.4.0/24.`;
+      return !whole || every(isNetwork) ? null : t`Enter a network such as 10.20.4.0/24.`;
     case "mac":
-      return every((item) => isMac(item, operator === "StartsWith"))
+      return every((item) => isMac(item, !whole))
         ? null
         : t`Enter a MAC address such as 00:15:5D:01:02:03.`;
     default:

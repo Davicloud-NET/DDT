@@ -20,7 +20,7 @@ import type {
   SequenceStep,
   StepCondition,
 } from "@/sequences/sequences";
-import { phaseLabel, variableLabel } from "@/sequences/steps";
+import { operatorTakesValue, phaseLabel, variableLabel } from "@/sequences/steps";
 
 // One moment of a run, on the server's clock.
 export interface TimelineEntry {
@@ -34,6 +34,17 @@ const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
   NotEquals: msg`is not`,
   StartsWith: msg`starts with`,
   Contains: msg`contains`,
+  NotContains: msg`does not contain`,
+  EndsWith: msg`ends with`,
+  Matches: msg`matches`,
+  In: msg`is one of`,
+  Exists: msg`has a value`,
+  NotExists: msg`has no value`,
+  Greater: msg`is greater than`,
+  GreaterOrEqual: msg`is at least`,
+  Less: msg`is less than`,
+  LessOrEqual: msg`is at most`,
+  InSubnet: msg`is in the network`,
 };
 
 export function describeCondition(condition: StepCondition): string {
@@ -41,7 +52,9 @@ export function describeCondition(condition: StepCondition): string {
   const operator = i18n._(operatorLabels[condition.operator]);
   const value = condition.value;
 
-  return t`${variable} ${operator} "${value}"`;
+  return operatorTakesValue(condition.operator)
+    ? t`${variable} ${operator} "${value}"`
+    : t`${variable} ${operator}`;
 }
 
 // What the machine reports for a condition's variable now; the run checked what it reported then.

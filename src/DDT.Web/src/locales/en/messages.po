@@ -916,6 +916,10 @@ msgid "{value} is what firmware reports when the field was never filled in. It s
 msgstr "{value} is what firmware reports when the field was never filled in. It says nothing about the machine."
 
 #: src/runs/runs.ts
+msgid "{variable} {operator}"
+msgstr "{variable} {operator}"
+
+#: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
@@ -2569,6 +2573,11 @@ msgstr "Disk SHA-256"
 msgid "Disks"
 msgstr "Disks"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "does not contain"
+msgstr "does not contain"
+
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr "does not equal"
@@ -2696,6 +2705,10 @@ msgstr "Earlier"
 msgid "Edition"
 msgstr "Edition"
 
+#: src/ui/FlowNode.tsx
+msgid "Else"
+msgstr "Else"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.duplicateEmail"
 msgid "Email ''{email}'' is already taken."
@@ -2733,6 +2746,11 @@ msgstr "Encryption"
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
 msgstr "End it with * to match every model that starts with it."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "ends with"
+msgstr "ends with"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.successExitCodes"
@@ -2930,6 +2948,7 @@ msgstr "Fail when no driver package matches the model"
 #: src/runs/runView.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
+#: src/ui/FlowNode.tsx
 msgid "Failed"
 msgstr "Failed"
 
@@ -3013,6 +3032,10 @@ msgstr "Finds the user who signs in. It must contain {USER_TOKEN}, which DDT rep
 #: src/deployments/deployments.ts
 msgid "Finishing"
 msgstr "Finishing"
+
+#: src/ui/FlowViewport.tsx
+msgid "Fit"
+msgstr "Fit"
 
 #: src/packages/PackagesPage.tsx
 msgid "For"
@@ -3135,10 +3158,18 @@ msgstr "Go to…"
 msgid "goes on in the installed Windows"
 msgstr "goes on in the installed Windows"
 
+#: src/sequences/steps.ts
+msgid "Group"
+msgstr "Group"
+
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Group name"
 msgstr "Group name"
+
+#: src/ui/FlowNode.tsx
+msgid "Group: {name}"
+msgstr "Group: {name}"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidc.groupsClaimRequired"
@@ -3167,6 +3198,16 @@ msgstr "Handed over to Windows; after Windows setup the agent continued there {t
 msgid "Handing over to Windows"
 msgstr "Handing over to Windows"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has a value"
+msgstr "has a value"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has no value"
+msgstr "has no value"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
@@ -3187,6 +3228,14 @@ msgstr "HTTP boot port"
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
 msgstr "I have saved them"
+
+#: src/sequences/steps.ts
+msgid "If"
+msgstr "If"
+
+#: src/ui/FlowNode.tsx
+msgid "If: {name}"
+msgstr "If: {name}"
 
 #: src/images/ImagesPage.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -3301,6 +3350,31 @@ msgid "is"
 msgstr "is"
 
 #: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at least"
+msgstr "is at least"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at most"
+msgstr "is at most"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is greater than"
+msgstr "is greater than"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is in the network"
+msgstr "is in the network"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is less than"
+msgstr "is less than"
+
+#: src/runs/runs.ts
 msgid "is not"
 msgstr "is not"
 
@@ -3313,6 +3387,11 @@ msgstr "Is not a valid template: a brace that is not part of {placeholder} has t
 msgctxt "settings.certificate.notBase64"
 msgid "Is not base64."
 msgstr "Is not base64."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is one of"
+msgstr "is one of"
 
 #: src/settings/CertificatePanel.tsx
 msgid "Issued by"
@@ -3355,6 +3434,10 @@ msgstr "It stays waiting until someone signs in at it or it netboots from a zero
 #: src/machines/AssignDialog.tsx
 msgid "It stays waiting until someone signs in at it."
 msgstr "It stays waiting until someone signs in at it."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
+msgstr "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
 
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
@@ -3789,6 +3872,11 @@ msgstr "Manufacturer"
 #: src/users/DirectoryPanel.tsx
 msgid "Mapped groups"
 msgstr "Mapped groups"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "matches"
+msgstr "matches"
 
 #: src/rules/RulesPage.tsx
 msgid "Matches"
@@ -4804,7 +4892,12 @@ msgctxt "identity.passwordRequiresUniqueChars"
 msgid "Passwords must use at least {count} different characters."
 msgstr "Passwords must use at least {count} different characters."
 
+#: src/sequences/steps.ts
+msgid "Pause"
+msgstr "Pause"
+
 #: src/log/LogPanel.tsx
+#: src/ui/FlowNode.tsx
 msgid "Paused"
 msgstr "Paused"
 
@@ -5079,6 +5172,14 @@ msgstr "Removing the logo"
 msgid "Renewal"
 msgstr "Renewal"
 
+#: src/sequences/steps.ts
+msgid "Repeat"
+msgstr "Repeat"
+
+#: src/ui/FlowNode.tsx
+msgid "Repeat: {name}"
+msgstr "Repeat: {name}"
+
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr "Replace"
@@ -5303,6 +5404,7 @@ msgstr "Run went on"
 #: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
+#: src/ui/FlowNode.tsx
 msgid "Running"
 msgstr "Running"
 
@@ -5648,6 +5750,10 @@ msgstr "Set in configuration as {key} ({variable}). Remove it there to change it
 msgid "Set up an authenticator"
 msgstr "Set up an authenticator"
 
+#: src/sequences/steps.ts
+msgid "Set variable"
+msgstr "Set variable"
+
 #: src/settings/ServerPage.tsx
 msgid "Set, not shown"
 msgstr "Set, not shown"
@@ -5968,6 +6074,10 @@ msgid "Step {number}, {name}, not started"
 msgstr "Step {number}, {name}, not started"
 
 #: src/machines/machineView.ts
+msgid "Step {number}, {name}, paused"
+msgstr "Step {number}, {name}, paused"
+
+#: src/machines/machineView.ts
 msgid "Step {number}, {name}, running, {percent} percent"
 msgstr "Step {number}, {name}, running, {percent} percent"
 
@@ -5986,6 +6096,10 @@ msgstr "Step {number}, failed"
 #: src/machines/machineView.ts
 msgid "Step {number}, not started"
 msgstr "Step {number}, not started"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, paused"
+msgstr "Step {number}, paused"
 
 #: src/machines/machineView.ts
 msgid "Step {number}, running, {percent} percent"
@@ -6010,6 +6124,7 @@ msgid "Steps in Windows PE come first, and an earlier step already runs in Windo
 msgstr "Steps in Windows PE come first, and an earlier step already runs in Windows."
 
 #: src/sequences/SequenceEditor.tsx
+#: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr "Steps of {name}"
 
@@ -6686,6 +6801,10 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 
+#: src/sequences/sequenceDraft.ts
+msgid "the inputs"
+msgstr "the inputs"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "The interfaces the hosts found could not be read."
 msgstr "The interfaces the hosts found could not be read."
@@ -7269,6 +7388,10 @@ msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
 msgstr "The values cannot be checked: {error}"
 
+#: src/sequences/sequenceDraft.ts
+msgid "the variables"
+msgstr "the variables"
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
@@ -7300,6 +7423,10 @@ msgstr "The zip holds {count} entries. A package can hold at most {max}."
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr "Their changes to {list} are lost."
+
+#: src/ui/FlowNode.tsx
+msgid "Then"
+msgstr "Then"
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.exists"
@@ -7473,6 +7600,10 @@ msgstr "This page"
 #: src/settings/CertificatePanel.tsx
 msgid "This page cannot change the certificate"
 msgstr "This page cannot change the certificate"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This page cannot show this sequence"
+msgstr "This page cannot show this sequence"
 
 #: src/app/RouteError.tsx
 msgid "This page could not load"
@@ -8273,3 +8404,11 @@ msgstr "Your version replaces the one saved by another administrator."
 #: src/settings/ApprovalPage.tsx
 msgid "Zero touch networks"
 msgstr "Zero touch networks"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom in"
+msgstr "Zoom in"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom out"
+msgstr "Zoom out"

@@ -2,16 +2,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { IconPlus } from "@tabler/icons-react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { useLiveMarks } from "@/live/useLiveMarks";
+import { layoutFlow, type WireRoute } from "@/sequences/flow/flowLayout";
+import { indexTree } from "@/sequences/flow/flowTree";
+import type { SequenceStep } from "@/sequences/sequences";
+import { newStep } from "@/sequences/steps";
 import { Button } from "@/ui/Button";
 import { Checkbox, Switch } from "@/ui/Checkbox";
 import { FilterSelector, NumberField, ProgressBar, SearchField } from "@/ui/Controls";
 import { DeviceGlyph, type DeviceKind } from "@/ui/DeviceGlyph";
 import { ConfirmDialog } from "@/ui/Dialog";
 import { Drawer } from "@/ui/Drawer";
+import { FlowFrame, FlowNode, type FlowNodeState } from "@/ui/FlowNode";
+import { FlowViewport } from "@/ui/FlowViewport";
+import { FlowDots, FlowWires, type WireTone } from "@/ui/FlowWires";
 import { EmptyState, Facts, Page, PageHeader, Panel, Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 import { SecretValue } from "@/ui/SecretValue";
@@ -224,6 +232,346 @@ function LiveDemo() {
   );
 }
 
+// The design canvas's flow: every kind of node, an IF, a group and a repeat, laid out by the flow builder's layout.
+interface DemoNode {
+  kind: SequenceStep["kind"];
+  name: string;
+  detail: string;
+  run: FlowNodeState;
+  runDetail?: string;
+  code?: boolean;
+  problem?: boolean;
+  inside?: DemoNode[];
+  otherwise?: DemoNode[];
+}
+
+const demoFlow: DemoNode[] = [
+  {
+    kind: "partition",
+    name: "Partition the disk",
+    detail: "Erases the disk and makes the partitions",
+    run: "done",
+    runDetail: "Took 48 s",
+  },
+  {
+    kind: "if",
+    name: "Is it a Latitude?",
+    detail: 'Model contains "Latitude"',
+    run: "done",
+    runDetail: 'Took Then: Latitude 7450 contains "Latitude"',
+    inside: [
+      {
+        kind: "applyImage",
+        name: "Apply Windows 11 for Latitudes",
+        detail: "Windows 11 25H2 Enterprise, with Office",
+        run: "done",
+        runDetail: "Took 3 min 10 s",
+      },
+      {
+        kind: "injectDrivers",
+        name: "Add the Latitude drivers",
+        detail: "Driver packages matched to the model",
+        run: "done",
+        runDetail: "Took 41 s",
+      },
+    ],
+    otherwise: [
+      {
+        kind: "applyImage",
+        name: "Apply Windows 11",
+        detail: "Windows 11 25H2 Enterprise",
+        run: "notTaken",
+        runDetail: "Not taken",
+      },
+    ],
+  },
+  {
+    kind: "setVariable",
+    name: "Name the computer",
+    detail: "ComputerName = PC-{{SerialNumber|alnum|right:8}}",
+    code: true,
+    run: "done",
+    runDetail: "ComputerName = PC-G2341KXQ",
+  },
+  {
+    kind: "joinDomain",
+    name: "Join the domain",
+    detail: "With an account asked at the machine",
+    run: "done",
+    runDetail: "Took 14 s",
+  },
+  {
+    kind: "group",
+    name: "Berlin office",
+    detail: "Only when Subnet is in 10.20.0.0/16",
+    run: "done",
+    inside: [
+      {
+        kind: "runScript",
+        name: "Map the site share",
+        detail: "Deploy share may not connect to fs01.berlin",
+        problem: true,
+        run: "done",
+        runDetail: "Took 6 s",
+      },
+      {
+        kind: "runScript",
+        name: "Install the site printer",
+        detail: "Only when Device kind is Desktop",
+        run: "skipped",
+        runDetail: "Skipped: this machine is a laptop",
+      },
+    ],
+  },
+  {
+    kind: "repeat",
+    name: "Wait for the share",
+    detail: "Until LastStepFailed is No, at most 5 times",
+    run: "running",
+    runDetail: "Time 2 of at most 5",
+    inside: [
+      {
+        kind: "runScript",
+        name: "Test the share",
+        detail: "Run script, cmd",
+        run: "running",
+        runDetail: "Running for 12 s",
+      },
+    ],
+  },
+  {
+    kind: "pause",
+    name: "Check the asset tag",
+    detail: "Waits until someone lets the run go on",
+    run: "paused",
+    runDetail: "Paused for 4 min",
+  },
+  {
+    kind: "reboot",
+    name: "Restart",
+    detail: "Restarts into the finished Windows",
+    run: "waiting",
+    runDetail: "Not started",
+  },
+];
+
+// The demo as a sequence's steps, with ids from their places, and each node's demo by id.
+function demoSequence(
+  nodes: DemoNode[],
+  prefix: string,
+  byId: Map<string, DemoNode>,
+): SequenceStep[] {
+  return nodes.map((node, index) => {
+    const id = `${prefix}${String(index)}`;
+    const base = { ...newStep(node.kind, id), name: node.name };
+    const inside = demoSequence(node.inside ?? [], `${id}.`, byId);
+    const otherwise = demoSequence(node.otherwise ?? [], `${id}!`, byId);
+
+    byId.set(id, node);
+
+    switch (base.kind) {
+      case "group":
+      case "repeat":
+        return { ...base, steps: inside };
+      case "if":
+        return { ...base, then: inside, else: otherwise };
+      default:
+        return base;
+    }
+  });
+}
+
+// The node states a card can show, one card each.
+const nodeStates: { detail: string; state?: FlowNodeState; mark?: "problem" | "warning" }[] = [
+  { detail: "Edit" },
+  { detail: "Choose the image to apply.", mark: "problem" },
+  { detail: "A warning", mark: "warning" },
+  { detail: "62 %", state: "running" },
+  { detail: "Took 3 min", state: "done" },
+  { detail: "Not signed for this firmware", state: "failed" },
+  { detail: "Skipped", state: "skipped" },
+  { detail: "Paused for 4 min", state: "paused" },
+  { detail: "Not taken", state: "notTaken" },
+];
+
+function FlowDemo() {
+  const [run, setRun] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [selected, setSelected] = useState<string | null>("1");
+  const { steps, byId } = useMemo(() => {
+    const nodes = new Map<string, DemoNode>();
+
+    return { steps: demoSequence(demoFlow, "", nodes), byId: nodes };
+  }, []);
+  const tree = indexTree(steps);
+  const layout = layoutFlow(steps, { collapsed: new Set(collapsed ? ["4"] : []) });
+  const stateOf = (id: string | null): FlowNodeState =>
+    id === null ? "done" : (byId.get(id)?.run ?? "waiting");
+  const tone = (route: WireRoute): WireTone => {
+    if (!run) {
+      return "edit";
+    }
+
+    if (route.branch?.name === "else") {
+      return "not";
+    }
+
+    const state = stateOf(route.to ?? route.from);
+
+    return state === "notTaken" ? "not" : state === "waiting" ? "ahead" : "taken";
+  };
+
+  return (
+    <Panel
+      title="Flow"
+      actions={
+        <div className="flex flex-wrap gap-4">
+          <Switch isSelected={run} onChange={setRun}>
+            A run
+          </Switch>
+          <Switch isSelected={collapsed} onChange={setCollapsed}>
+            Collapse the group
+          </Switch>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <FlowViewport
+          label="Flow of the demo sequence"
+          contentWidth={layout.width}
+          contentHeight={layout.height}
+          className="h-[36rem]"
+          minimap={[
+            ...layout.frames.map((frame) => ({ ...frame, tone: "frame" as const })),
+            ...layout.boxes.map((box) => ({
+              ...box,
+              tone: run && stateOf(box.id) === "notTaken" ? ("muted" as const) : ("node" as const),
+            })),
+          ]}
+        >
+          {layout.frames.map((frame) => (
+            <FlowFrame
+              key={frame.id}
+              className="absolute"
+              style={{ left: frame.x, top: frame.y, width: frame.w, height: frame.h }}
+            />
+          ))}
+          <FlowWires
+            width={layout.width}
+            height={layout.height}
+            wires={layout.wires}
+            arrows={layout.arrows}
+            tone={tone}
+          />
+          {layout.boxes.map((box) => {
+            const node = byId.get(box.id);
+            const leaves = tree.entries.filter(
+              (entry) => entry.number !== null && entry.node.id.startsWith(`${box.id}.`),
+            );
+
+            return node === undefined ? null : (
+              <FlowNode
+                key={box.id}
+                kind={node.kind}
+                name={node.name}
+                number={tree.byId.get(box.id)?.number ?? null}
+                detail={run ? (node.runDetail ?? node.detail) : node.detail}
+                code={node.code === true && !run}
+                state={run ? node.run : "edit"}
+                percent={40}
+                selected={!run && selected === box.id}
+                {...(node.problem === true ? { mark: "problem" as const } : {})}
+                branch={run && node.kind === "if" ? "then" : null}
+                collapsed={box.kind === "collapsed"}
+                strip={leaves.map((entry) => ({
+                  state: !run
+                    ? "waiting"
+                    : stateOf(entry.node.id) === "skipped"
+                      ? "skipped"
+                      : "done",
+                }))}
+                className="absolute"
+                style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
+              />
+            );
+          })}
+          <FlowDots
+            width={layout.width}
+            height={layout.height}
+            ports={layout.ports}
+            joins={layout.joins}
+            selectedId={run ? null : selected}
+            tone={tone}
+          />
+          {run
+            ? null
+            : layout.slots.map((slot, index) => (
+                <span
+                  key={index}
+                  aria-hidden="true"
+                  className="absolute flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-raised text-muted shadow-[inset_0_0_0_1px_var(--color-line)]"
+                  style={{ left: slot.x, top: slot.y }}
+                >
+                  <IconPlus size={12} stroke={2} />
+                </span>
+              ))}
+        </FlowViewport>
+        <div className="flex flex-wrap gap-2">
+          {["0", "1", "4"].map((id) => (
+            <Button
+              key={id}
+              size="sm"
+              variant="quiet"
+              onPress={() => {
+                setSelected(id);
+              }}
+            >
+              Select {byId.get(id)?.name}
+            </Button>
+          ))}
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,236px)] gap-4">
+          {nodeStates.map((card, index) => (
+            <FlowNode
+              key={index}
+              kind="applyImage"
+              name="Apply image"
+              number={2}
+              detail={card.detail}
+              percent={62}
+              {...(card.state === undefined ? {} : { state: card.state })}
+              {...(card.mark === undefined ? {} : { mark: card.mark })}
+              className="h-16"
+            />
+          ))}
+          <FlowNode
+            kind="applyImage"
+            name="Apply image"
+            number={2}
+            detail="Selected"
+            selected
+            className="h-16"
+          />
+          <FlowNode
+            kind="if"
+            name="Is it a Latitude?"
+            detail='Model contains "Latitude"'
+            className="h-25"
+          />
+          <FlowNode
+            kind="group"
+            name="Berlin office"
+            collapsed
+            state="running"
+            strip={[{ state: "done" }, { state: "running", percent: 50 }, { state: "waiting" }]}
+            className="h-21"
+          />
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Panel title={title}>
@@ -321,6 +669,8 @@ export function DesignPage() {
           </div>
         </Section>
       </div>
+
+      <FlowDemo />
 
       <Section title="Sequence rail">
         <SequenceRailStrip

@@ -5,11 +5,14 @@
 import { describe, expect, it } from "vitest";
 
 import { changedParts, type SequenceDraft } from "./sequenceDraft";
+import { draftOfSteps, group, leaf } from "@/test/trees";
+
 import {
   addStep,
   insertStepAfter,
   isTyping,
   sequenceEdits,
+  typingKey,
   type SequenceEdit,
 } from "./sequenceEdits";
 import { newStep } from "./steps";
@@ -19,6 +22,8 @@ function draft(...ids: string[]): SequenceDraft {
     name: "Lab",
     description: "",
     steps: ids.map((id) => ({ ...newStep("runScript", id), name: `Script ${id}` })),
+    variables: [],
+    inputs: [],
   };
 }
 
@@ -173,5 +178,95 @@ describe("isTyping", () => {
 
     expect(typed.filter((edit) => !isTyping(edit))).toEqual([]);
     expect(chosen.filter(isTyping)).toEqual([]);
+  });
+
+  it("knows the typing of the flow builder's fields from its choices and structure", () => {
+    const typed: SequenceEdit[] = [
+      { type: "updateNode", id: "a", patch: { message: "Check the BIOS" } },
+      { type: "updateNode", id: "a", patch: { value: "PC-{{SerialNumber}}" } },
+      { type: "updateNode", id: "a", patch: { maxTimes: 5 } },
+      { type: "updateNode", id: "a", patch: { continueAfterMinutes: 30 } },
+      {
+        type: "updateNode",
+        id: "a",
+        patch: {
+          shares: [{ path: "\\\\files\\drivers", account: { accountId: null, input: "A" } }],
+        },
+      },
+      {
+        type: "editCondition",
+        id: "a",
+        field: "when",
+        path: [0],
+        change: { op: "update", patch: { value: "Latitude" } },
+      },
+      { type: "updateVariable", name: "Office", patch: { default: "Standard" } },
+      { type: "updateInput", name: "Owner", patch: { label: "Owner" } },
+    ];
+    const chosen: SequenceEdit[] = [
+      { type: "updateNode", id: "a", patch: { goOnAtLimit: true } },
+      { type: "updateNode", id: "a", patch: { variable: "Office" } },
+      { type: "updateNode", id: "a", patch: { runAs: null } },
+      { type: "updateNode", id: "a", patch: { message: "x" }, chosen: true },
+      {
+        type: "editCondition",
+        id: "a",
+        field: "when",
+        path: [0],
+        change: { op: "update", patch: { operator: "In" } },
+      },
+      { type: "editCondition", id: "a", field: "when", path: [], change: { op: "remove" } },
+      { type: "updateVariable", name: "Office", patch: { setBySteps: true } },
+      { type: "updateInput", name: "Owner", patch: { askAt: "Web", required: true } },
+      { type: "renameVariable", from: "Office", to: "Edition" },
+      { type: "moveNodes", ids: ["a"], slot: { parent: null, body: "steps", index: 0 } },
+    ];
+
+    expect(typed.filter((edit) => !isTyping(edit))).toEqual([]);
+    expect(chosen.filter(isTyping)).toEqual([]);
+  });
+
+  it("names what one typing edit types into, so undo takes a field's typing back at once", () => {
+    const script = (id: string, text: string): SequenceEdit => ({
+      type: "updateStep",
+      id,
+      patch: { script: text },
+    });
+
+    expect(typingKey(script("a", "e"))).toBe(typingKey(script("a", "exit 0")));
+    expect(typingKey({ type: "updateNode", id: "a", patch: { script: "x" } })).toBe(
+      typingKey(script("a", "e")),
+    );
+    expect(typingKey(script("a", "e"))).not.toBe(typingKey(script("b", "e")));
+    expect(typingKey(script("a", "e"))).not.toBe(
+      typingKey({ type: "updateStep", id: "a", patch: { name: "e" } }),
+    );
+    expect(typingKey({ type: "rename", name: "L" })).toBe("name");
+    expect(typingKey(addStep("reboot"))).toBeNull();
+  });
+});
+
+describe("changedParts of a tree", () => {
+  it("names the nodes changed anywhere, and a move between bodies as a change of order", () => {
+    const base = draftOfSteps(leaf("a"), group("g", leaf("b"), leaf("c")));
+    const theirs = apply(
+      base,
+      { type: "updateNode", id: "b", patch: { script: "exit 1" } },
+      { type: "moveNodes", ids: ["c"], slot: { parent: null, body: "steps", index: 0 } },
+      {
+        type: "addVariable",
+        variable: { name: "Office", default: null, description: null, setBySteps: false },
+      },
+    );
+
+    expect(changedParts(base, theirs)).toEqual([
+      "Step b",
+      "the order of the steps",
+      "the variables",
+    ]);
+    // A container is not changed by what changed inside it.
+    expect(
+      changedParts(base, apply(base, { type: "updateNode", id: "b", patch: { name: "B" } })),
+    ).toEqual(["B"]);
   });
 });

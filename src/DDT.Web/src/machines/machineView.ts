@@ -251,5 +251,7 @@ export function railStepText(step: RailStep, index: number): string {
       return name === null
         ? t`Step ${number}, not started`
         : t`Step ${number}, ${name}, not started`;
+    case "paused":
+      return name === null ? t`Step ${number}, paused` : t`Step ${number}, ${name}, paused`;
   }
 }

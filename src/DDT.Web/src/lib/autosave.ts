@@ -47,6 +47,9 @@ export interface AutosaveOptions<T, R> {
   onSaved?: (result: R) => void;
   // Called when a save finds a newer revision, so the page reads it.
   onConflict?: () => void;
+  // Called when the page shows a copy someone else saved in place of its own: one read while nothing was unsaved, or
+  // theirs taken after a conflict.
+  onTakenIn?: (copy: Revised<T>) => void;
   debounceMs?: number;
   maxWaitMs?: number;
 }
@@ -193,6 +196,7 @@ export function createAutosaver<T, R>(options: AutosaveOptions<T, R>): Autosaver
     firstEditAt = null;
     failures = 0;
     state = { kind: "saved", at: savedAt };
+    options.onTakenIn?.(copy);
   };
 
   const accept = (copy: Revised<T>) => {

@@ -10,20 +10,31 @@ import { currentUserQuery } from "@/auth/auth";
 import { deploymentOptionsQuery } from "@/deployments/deployments";
 import { imagesQuery, type ImageSummary } from "@/images/images";
 import { ApiError } from "@/lib/api";
+import { isTextField } from "@/lib/textField";
 import { useAutosave } from "@/lib/useAutosave";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { packagesQuery, type PackageSummary } from "@/packages/packages";
 
+import {
+  emptyHistory,
+  historyCommand,
+  recorded,
+  redone,
+  undone,
+  type History,
+  type HistoryCommand,
+} from "./flow/history";
 import { phasesOf, type Findings } from "./problems";
 import {
   changedParts,
   draftOf,
+  needsFlowBuilder,
   sameDraft,
   saveRequestOf,
   type SequenceDraft,
 } from "./sequenceDraft";
-import { isTyping, sequenceEdits, type SequenceEdit } from "./sequenceEdits";
+import { sequenceEdits, typingKey, type SequenceEdit } from "./sequenceEdits";
 import { upsertSummary } from "./sequenceList";
 import { saveSequence, sequenceQuery, type SequenceStep, type SequenceView } from "./sequences";
 
@@ -69,6 +80,8 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
 
   // The revisions this page's own saves made, so a copy the hub brings in is told apart from someone else's.
   const [ownRevisions, setOwnRevisions] = useState<readonly number[]>([]);
+  // Undo and redo, dropped once the page shows someone else's copy.
+  const [history, setHistory] = useState<History<SequenceDraft>>(emptyHistory);
 
   const autosave = useAutosave<SequenceDraft, SequenceView>({
     initial: { value: draftOf(initial), revision: initial.revision },
@@ -96,6 +109,9 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
       queryClient.setQueryData(sequenceQuery(id).queryKey, view);
       upsertSummary(queryClient, view);
     },
+    onTakenIn: () => {
+      setHistory(emptyHistory());
+    },
   });
 
   const [removed, setRemoved] = useState<RemovedStep | null>(null);
@@ -103,7 +119,10 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
   // The newest copy the server gave, with its problems, which the draft is compared against.
   const latest = stored.data ?? initial;
   const deleted = stored.error instanceof ApiError && stored.error.status === 404;
-  const locked = readOnly || deleted;
+  const draft = autosave.value;
+  // A sequence with groups, variables and the like is left as it is, also when someone else's save makes it one.
+  const flowOnly = needsFlowBuilder(draft);
+  const locked = readOnly || deleted || flowOnly;
   const { receive, stop, update } = autosave;
 
   useEffect(() => {
@@ -117,12 +136,62 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
   }, [stop, deleted]);
 
   const edit = (change: SequenceEdit) => {
-    if (!locked) {
-      update((draft) => sequenceEdits(draft, change), !isTyping(change));
+    if (locked) {
+      return;
     }
+
+    const typing = typingKey(change);
+
+    update((current) => {
+      const next = sequenceEdits(current, change);
+
+      if (next !== current) {
+        setHistory((before) => recorded(before, current, typing, Date.now()));
+      }
+
+      return next;
+    }, typing === null);
   };
 
-  const draft = autosave.value;
+  // Goes a step back or forward, saved at once like any edit that is not typing.
+  const step = (direction: HistoryCommand) => {
+    if (locked) {
+      return;
+    }
+
+    update((current) => {
+      const stepped = direction === "undo" ? undone(history, current) : redone(history, current);
+
+      if (stepped === null) {
+        return current;
+      }
+
+      setHistory(stepped.history);
+
+      return stepped.value;
+    }, true);
+  };
+
+  // Ctrl+Z and Ctrl+Y anywhere on the page but in a text field, whose own undo takes back its typing.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const command = historyCommand(event);
+
+      if (command === null || event.defaultPrevented || isTextField(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      step(command);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  });
+
   const theirs = autosave.theirs;
   // The newer copy someone else saved, which this page shows since it had nothing unsaved.
   const savedElsewhere =
@@ -138,6 +207,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     dirty: autosave.dirty,
     deleted,
     locked,
+    flowOnly,
     savedElsewhere,
     findings: { problems: latest.problems, warnings: latest.warnings } satisfies Findings,
     phases: phasesOf(draft.steps, latest.definition.steps, latest.stepPhases),
@@ -156,6 +226,14 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
         : null,
     removed,
     edit,
+    undo: () => {
+      step("undo");
+    },
+    redo: () => {
+      step("redo");
+    },
+    canUndo: !locked && history.past.length > 0,
+    canRedo: !locked && history.future.length > 0,
     // Answers the place the step had, so the page can show the step that takes it.
     remove: (stepId: string): number | null => {
       const index = draft.steps.findIndex((step) => step.id === stepId);

@@ -916,6 +916,10 @@ msgid "{value} is what firmware reports when the field was never filled in. It s
 msgstr "{value} meldet die Firmware, wenn das Feld nie ausgefüllt wurde. Es sagt nichts über das Gerät."
 
 #: src/runs/runs.ts
+msgid "{variable} {operator}"
+msgstr "{variable} {operator}"
+
+#: src/runs/runs.ts
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
@@ -2569,6 +2573,11 @@ msgstr "SHA-256 des Datenträgers"
 msgid "Disks"
 msgstr "Datenträger"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "does not contain"
+msgstr "enthält nicht"
+
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr "ist nicht gleich"
@@ -2696,6 +2705,10 @@ msgstr "Nach vorn"
 msgid "Edition"
 msgstr "Edition"
 
+#: src/ui/FlowNode.tsx
+msgid "Else"
+msgstr "Sonst"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.duplicateEmail"
 msgid "Email ''{email}'' is already taken."
@@ -2733,6 +2746,11 @@ msgstr "Verschlüsselung"
 #: src/rules/RuleDialog.tsx
 msgid "End it with * to match every model that starts with it."
 msgstr "Mit * am Ende passt sie auf jedes Modell, das so beginnt."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "ends with"
+msgstr "endet auf"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.successExitCodes"
@@ -2930,6 +2948,7 @@ msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 #: src/runs/runView.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
+#: src/ui/FlowNode.tsx
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -3013,6 +3032,10 @@ msgstr "Findet den Benutzer, der sich anmeldet. Er muss {USER_TOKEN} enthalten, 
 #: src/deployments/deployments.ts
 msgid "Finishing"
 msgstr "Wird abgeschlossen"
+
+#: src/ui/FlowViewport.tsx
+msgid "Fit"
+msgstr "Einpassen"
 
 #: src/packages/PackagesPage.tsx
 msgid "For"
@@ -3135,10 +3158,18 @@ msgstr "Gehe zu…"
 msgid "goes on in the installed Windows"
 msgstr "läuft im installierten Windows weiter"
 
+#: src/sequences/steps.ts
+msgid "Group"
+msgstr "Gruppe"
+
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "Group name"
 msgstr "Gruppenname"
+
+#: src/ui/FlowNode.tsx
+msgid "Group: {name}"
+msgstr "Gruppe: {name}"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidc.groupsClaimRequired"
@@ -3167,6 +3198,16 @@ msgstr "An Windows übergeben; nach dem Windows-Setup hat der Agent {took} spät
 msgid "Handing over to Windows"
 msgstr "Übergabe an Windows"
 
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has a value"
+msgstr "hat einen Wert"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "has no value"
+msgstr "hat keinen Wert"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
@@ -3187,6 +3228,14 @@ msgstr "HTTP-Boot-Port"
 #: src/account/AccountPage.tsx
 msgid "I have saved them"
 msgstr "Ich habe sie gespeichert"
+
+#: src/sequences/steps.ts
+msgid "If"
+msgstr "Wenn"
+
+#: src/ui/FlowNode.tsx
+msgid "If: {name}"
+msgstr "Wenn: {name}"
 
 #: src/images/ImagesPage.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -3301,6 +3350,31 @@ msgid "is"
 msgstr "ist"
 
 #: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at least"
+msgstr "ist mindestens"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is at most"
+msgstr "ist höchstens"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is greater than"
+msgstr "ist größer als"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is in the network"
+msgstr "liegt im Netzwerk"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is less than"
+msgstr "ist kleiner als"
+
+#: src/runs/runs.ts
 msgid "is not"
 msgstr "ist nicht"
 
@@ -3313,6 +3387,11 @@ msgstr "Ist keine gültige Vorlage: Eine geschweifte Klammer, die nicht zu {plac
 msgctxt "settings.certificate.notBase64"
 msgid "Is not base64."
 msgstr "Ist kein Base64."
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "is one of"
+msgstr "ist eines von"
 
 #: src/settings/CertificatePanel.tsx
 msgid "Issued by"
@@ -3355,6 +3434,10 @@ msgstr "Es wartet, bis sich jemand daran anmeldet oder es aus einem Zero-Touch-N
 #: src/machines/AssignDialog.tsx
 msgid "It stays waiting until someone signs in at it."
 msgstr "Es wartet, bis sich jemand daran anmeldet."
+
+#: src/sequences/SequenceEditor.tsx
+msgid "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
+msgstr "Die Tasksequenz verwendet Gruppen, Wenn- oder Wiederholen-Knoten, Variablen, Eingaben oder Konten, die nur der Ablaufeditor anzeigt. Hier wird nichts daran geändert."
 
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
@@ -3789,6 +3872,11 @@ msgstr "Hersteller"
 #: src/users/DirectoryPanel.tsx
 msgid "Mapped groups"
 msgstr "Zugeordnete Gruppen"
+
+#: src/runs/runs.ts
+#: src/sequences/steps.ts
+msgid "matches"
+msgstr "passt auf"
 
 #: src/rules/RulesPage.tsx
 msgid "Matches"
@@ -4804,7 +4892,12 @@ msgctxt "identity.passwordRequiresUniqueChars"
 msgid "Passwords must use at least {count} different characters."
 msgstr "Kennwörter müssen mindestens {count} verschiedene Zeichen enthalten."
 
+#: src/sequences/steps.ts
+msgid "Pause"
+msgstr "Pause"
+
 #: src/log/LogPanel.tsx
+#: src/ui/FlowNode.tsx
 msgid "Paused"
 msgstr "Angehalten"
 
@@ -5079,6 +5172,14 @@ msgstr "Logo wird entfernt"
 msgid "Renewal"
 msgstr "Erneuerung"
 
+#: src/sequences/steps.ts
+msgid "Repeat"
+msgstr "Wiederholen"
+
+#: src/ui/FlowNode.tsx
+msgid "Repeat: {name}"
+msgstr "Wiederholen: {name}"
+
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr "Ersetzen"
@@ -5303,6 +5404,7 @@ msgstr "Ausführung fortgesetzt"
 #: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
+#: src/ui/FlowNode.tsx
 msgid "Running"
 msgstr "Läuft"
 
@@ -5648,6 +5750,10 @@ msgstr "In der Konfiguration als {key} ({variable}) gesetzt. Entfernen Sie es do
 msgid "Set up an authenticator"
 msgstr "Authenticator einrichten"
 
+#: src/sequences/steps.ts
+msgid "Set variable"
+msgstr "Variable festlegen"
+
 #: src/settings/ServerPage.tsx
 msgid "Set, not shown"
 msgstr "Gesetzt, nicht angezeigt"
@@ -5968,6 +6074,10 @@ msgid "Step {number}, {name}, not started"
 msgstr "Schritt {number}, {name}, nicht gestartet"
 
 #: src/machines/machineView.ts
+msgid "Step {number}, {name}, paused"
+msgstr "Schritt {number}, {name}, angehalten"
+
+#: src/machines/machineView.ts
 msgid "Step {number}, {name}, running, {percent} percent"
 msgstr "Schritt {number}, {name}, läuft, {percent} Prozent"
 
@@ -5986,6 +6096,10 @@ msgstr "Schritt {number}, fehlgeschlagen"
 #: src/machines/machineView.ts
 msgid "Step {number}, not started"
 msgstr "Schritt {number}, nicht gestartet"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, paused"
+msgstr "Schritt {number}, angehalten"
 
 #: src/machines/machineView.ts
 msgid "Step {number}, running, {percent} percent"
@@ -6010,6 +6124,7 @@ msgid "Steps in Windows PE come first, and an earlier step already runs in Windo
 msgstr "Schritte in Windows PE kommen zuerst, und ein früherer Schritt läuft bereits in Windows."
 
 #: src/sequences/SequenceEditor.tsx
+#: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr "Schritte von {name}"
 
@@ -6686,6 +6801,10 @@ msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "Der Imagespeicher braucht {required} freien Platz für diesen Upload, hat aber {available}. Schaffen Sie Platz auf dem Speichervolume des Servers oder verwerfen Sie unfertige Uploads, und versuchen Sie es dann erneut."
 
+#: src/sequences/sequenceDraft.ts
+msgid "the inputs"
+msgstr "die Eingaben"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "The interfaces the hosts found could not be read."
 msgstr "Die Schnittstellen, die die Hosts gefunden haben, konnten nicht gelesen werden."
@@ -7269,6 +7388,10 @@ msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
 msgstr "Die Werte können nicht geprüft werden: {error}"
 
+#: src/sequences/sequenceDraft.ts
+msgid "the variables"
+msgstr "die Variablen"
+
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
@@ -7300,6 +7423,10 @@ msgstr "Die ZIP-Datei enthält {count} Einträge. Ein Paket darf höchstens {max
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr "Die dortigen Änderungen gehen verloren: {list}."
+
+#: src/ui/FlowNode.tsx
+msgid "Then"
+msgstr "Dann"
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.exists"
@@ -7473,6 +7600,10 @@ msgstr "Diese Seite"
 #: src/settings/CertificatePanel.tsx
 msgid "This page cannot change the certificate"
 msgstr "Diese Seite kann das Zertifikat nicht ändern"
+
+#: src/sequences/SequenceEditor.tsx
+msgid "This page cannot show this sequence"
+msgstr "Diese Seite kann diese Tasksequenz nicht anzeigen"
 
 #: src/app/RouteError.tsx
 msgid "This page could not load"
@@ -8273,3 +8404,11 @@ msgstr "Ihre Version ersetzt die, die ein anderer Administrator gespeichert hat.
 #: src/settings/ApprovalPage.tsx
 msgid "Zero touch networks"
 msgstr "Zero-Touch-Netzwerke"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom in"
+msgstr "Vergrößern"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom out"
+msgstr "Verkleinern"

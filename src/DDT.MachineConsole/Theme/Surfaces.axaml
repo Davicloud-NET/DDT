@@ -162,6 +162,7 @@
     <Setter Property="Stripe" Value="{DynamicResource SgRailStripe}" />
     <Setter Property="Fail" Value="{DynamicResource SgFail}" />
     <Setter Property="FailText" Value="{DynamicResource SgFailText}" />
+    <Setter Property="Attention" Value="{DynamicResource SgAttention}" />
   </Style>
   <!-- A step's number and name change their tone with its module, over slow. -->
   <Style Selector="c|SequenceRail TextBlock">
@@ -178,6 +179,9 @@
   <Style Selector="c|SequenceRail TextBlock.numeral.running">
     <Setter Property="Foreground" Value="{DynamicResource SgRunText}" />
   </Style>
+  <Style Selector="c|SequenceRail TextBlock.numeral.attention">
+    <Setter Property="Foreground" Value="{DynamicResource SgAttentionText}" />
+  </Style>
   <Style Selector="c|SequenceRail TextBlock.numeral.waiting">
     <Setter Property="Foreground" Value="{DynamicResource SgMuted}" />
   </Style>
@@ -191,6 +195,9 @@
     <Setter Property="Foreground" Value="{DynamicResource SgInk2}" />
   </Style>
   <Style Selector="c|SequenceRail TextBlock.step.running">
+    <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
+  </Style>
+  <Style Selector="c|SequenceRail TextBlock.step.attention">
     <Setter Property="FontFamily" Value="{DynamicResource SgTypeHeadingFamily}" />
   </Style>
 

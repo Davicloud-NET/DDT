@@ -177,10 +177,11 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     }
 }
 
-// A module of the sequence rail. Percent is set on the running step where it says how far it is.
-public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description)
+// A module of the sequence rail. Percent is set on the running step where it says how far it is. AwaitsSomeone is set on
+// the step the run waits at for someone to act, a Pause step or answers, which is not running although it is current.
+public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description, bool AwaitsSomeone = false)
 {
-    public bool IsRunning => State == ConsoleStepState.Running;
+    public bool IsRunning => State == ConsoleStepState.Running && !AwaitsSomeone;
 
     public bool IsWaiting => State == ConsoleStepState.Pending;
 }

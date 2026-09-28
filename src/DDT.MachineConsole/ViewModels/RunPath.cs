@@ -48,19 +48,31 @@ public static class RunPath
         return null;
     }
 
-    // One module per step, numbered along the path.
+    // One module per step, numbered along the path. The step the run waits at for someone, while it is paused or waits for
+    // answers, is marked as such rather than as running.
     public static IReadOnlyList<RailStep> Rail(Localizer l, ConsoleRun run, IReadOnlyList<ConsoleStep> steps)
     {
         ArgumentNullException.ThrowIfNull(l);
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(steps);
 
-        return [.. steps.Select((step, index) => new RailStep(
-            (index + 1).ToString("00", CultureInfo.InvariantCulture),
-            step.Name,
-            step.State,
-            step.Id == run.CurrentStepId ? run.Percent : null,
-            l.F("Step {number}, {name}: {state}", ("number", l.Number(index + 1)), ("name", step.Name), ("state", Say.StepState(l, step.State)))))];
+        return [.. steps.Select((step, index) =>
+        {
+            bool awaits = step.Id == run.CurrentStepId
+                && step.State == ConsoleStepState.Running
+                && run.Activity is ConsoleActivity.Paused or ConsoleActivity.WaitingForInput;
+            string state = awaits
+                ? run.Activity == ConsoleActivity.Paused ? l.T("Paused") : l.T("Waiting")
+                : Say.StepState(l, step.State);
+
+            return new RailStep(
+                (index + 1).ToString("00", CultureInfo.InvariantCulture),
+                step.Name,
+                step.State,
+                step.Id == run.CurrentStepId && !awaits ? run.Percent : null,
+                l.F("Step {number}, {name}: {state}", ("number", l.Number(index + 1)), ("name", step.Name), ("state", state)),
+                awaits);
+        })];
     }
 
     // The phases the steps run in, above the rail, where they run in more than one.

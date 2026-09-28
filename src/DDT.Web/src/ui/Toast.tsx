@@ -14,6 +14,7 @@ import {
   type QueuedToast,
 } from "react-aria-components";
 
+import { buttonClass } from "./buttonClass";
 import { cx } from "./cx";
 import { toasts, type ToastMessage } from "./toasts";
 
@@ -88,6 +89,19 @@ function Toast({ toast }: { toast: QueuedToast<ToastMessage> }) {
           <Text slot="description" className="type-small text-ink-2">
             {toast.content.description}
           </Text>
+        ) : null}
+        {toast.content.action ? (
+          <span className="pt-1.5">
+            <AriaButton
+              className={buttonClass("secondary", "sm")}
+              onPress={() => {
+                toast.content.action?.onAction();
+                toasts.close(key);
+              }}
+            >
+              {toast.content.action.label}
+            </AriaButton>
+          </span>
         ) : null}
       </ToastContent>
       <AriaButton

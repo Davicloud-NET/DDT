@@ -6,11 +6,13 @@ import { useLingui } from "@lingui/react/macro";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import {
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
+  type Ref,
 } from "react";
 import { Button } from "react-aria-components";
 
@@ -22,10 +24,12 @@ import { Minimap, type MinimapItem } from "./Minimap";
 import {
   centerOn,
   clampPan,
+  ensureVisible,
   fitTransform,
   IDENTITY,
   panBy,
   pinchChange,
+  topTransform,
   visibleContent,
   wheelChange,
   zoomAt,
@@ -33,9 +37,16 @@ import {
   zoomKey,
   ZOOM_STEP,
   type ViewPoint,
+  type ViewRect,
   type ViewSize,
   type ViewTransform,
 } from "./viewTransform";
+
+// What a page asks of the canvas: to show a part of the content, such as the node the keyboard went to, moving as
+// little as it takes, or in the middle, such as a node a finding points at.
+export interface FlowViewportHandle {
+  reveal: (rect: ViewRect, center?: boolean) => void;
+}
 
 // Where a drag or a pinch started, so each move is worked out from there rather than from the last render.
 interface Gesture {
@@ -56,7 +67,8 @@ const controlClass =
 // A canvas for a flow: its content is moved by dragging the background or with the wheel, and zoomed with Ctrl and
 // the wheel, a pinch, the keys + - 0 1 and the controls in its corner, which also fit the content in. The content is
 // laid out in its own pixels, contentWidth by contentHeight, under the transform. The transform is the page's to
-// keep when it passes one, and the canvas's own, starting fitted, otherwise.
+// keep when it passes one, and the canvas's own, starting fitted, otherwise. The canvas is a stop of the Tab key of its
+// own unless tabbable is false, where its content holds that stop, such as the flow builder's nodes.
 export function FlowViewport({
   label,
   contentWidth,
@@ -67,6 +79,9 @@ export function FlowViewport({
   children,
   controls,
   className,
+  tabbable = true,
+  handle,
+  start = "fit",
 }: {
   label: string;
   contentWidth: number;
@@ -79,13 +94,24 @@ export function FlowViewport({
   // More keys beside the zoom controls, such as one that follows a run.
   controls?: ReactNode;
   className?: string;
+  tabbable?: boolean;
+  handle?: Ref<FlowViewportHandle>;
+  // How the canvas first shows its content: all of it, or its top at a size that reads.
+  start?: "fit" | "top";
 }) {
   const { t } = useLingui();
   const root = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<ViewSize | null>(null);
   const [own, setOwn] = useState<ViewTransform | null>(null);
   const content = { width: contentWidth, height: contentHeight };
-  const view = transform ?? own ?? (size === null ? IDENTITY : fitTransform(content, size));
+  const view =
+    transform ??
+    own ??
+    (size === null
+      ? IDENTITY
+      : start === "top"
+        ? clampPan(topTransform(content, size), content, size)
+        : fitTransform(content, size));
   // The newest transform, for events that come faster than the page renders, such as the wheel's.
   const latest = useRef(view);
   const gesture = useRef<Gesture | null>(null);
@@ -139,6 +165,38 @@ export function FlowViewport({
       change(fitTransform(content, size));
     }
   };
+
+  // A part asked for before the canvas knows its size is shown once it does.
+  const pending = useRef<{ rect: ViewRect; center: boolean } | null>(null);
+
+  const show = (rect: ViewRect, center: boolean, canvas: ViewSize) => {
+    change(
+      center
+        ? centerOn(latest.current, { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 }, canvas)
+        : ensureVisible(latest.current, rect, canvas),
+    );
+  };
+
+  useImperativeHandle(handle, () => ({
+    reveal: (rect, center = false) => {
+      if (size === null) {
+        pending.current = { rect, center };
+      } else {
+        show(rect, center, size);
+      }
+    },
+  }));
+
+  useEffect(() => {
+    const asked = pending.current;
+
+    if (asked !== null && size !== null) {
+      pending.current = null;
+      show(asked.rect, asked.center, size);
+    }
+    // Only a size, once known, shows what was asked for before it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size]);
 
   const zoom = (command: "in" | "out" | "actual" | "fit") => {
     switch (command) {
@@ -285,7 +343,7 @@ export function FlowViewport({
       role="group"
       aria-label={label}
       aria-keyshortcuts="+ - 0 1"
-      tabIndex={0}
+      {...(tabbable ? { tabIndex: 0 } : {})}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}

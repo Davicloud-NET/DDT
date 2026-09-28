@@ -11,6 +11,8 @@ export interface ToastMessage {
   title: ReactNode;
   description?: ReactNode;
   tone?: "ok" | "fail" | "info";
+  // A key that answers the news, such as Undo after a removal; pressing it closes the toast.
+  action?: { label: ReactNode; onAction: () => void };
 }
 
 // React Aria removes a closed toast at once. This queue keeps a shown one on screen while it leaves: closing it, by
@@ -69,6 +71,7 @@ export class LeavingToastQueue<T> extends ToastQueue<T> {
 
 export const toasts = new LeavingToastQueue<ToastMessage>({ maxVisibleToasts: 4 });
 
-export function showToast(message: ToastMessage): void {
-  toasts.add(message, message.tone === "fail" ? {} : { timeout: 6000 });
+// Returns the toast's key, to close it early.
+export function showToast(message: ToastMessage, timeout = 6000): string {
+  return toasts.add(message, message.tone === "fail" ? {} : { timeout });
 }

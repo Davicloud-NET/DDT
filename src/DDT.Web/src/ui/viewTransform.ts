@@ -87,6 +87,20 @@ export function fitTransform(
   };
 }
 
+// The top of the content at a size that reads, for a flow taller than the canvas: as wide as the canvas allows up to
+// 100 %, but not below least, centred across and with the margin above it.
+export function topTransform(
+  content: ViewSize,
+  canvas: ViewSize,
+  least = 0.75,
+  margin = FIT_MARGIN,
+): ViewTransform {
+  const across = content.width <= 0 ? 1 : (canvas.width - margin * 2) / content.width;
+  const scale = clampScale(Math.max(Math.min(1, least), Math.min(1, across)));
+
+  return { scale, x: (canvas.width - content.width * scale) / 2, y: margin };
+}
+
 // Moves the view back so at least KEEP_IN_VIEW pixels of the content, or all of it where it is smaller, stay on the
 // canvas.
 export function clampPan(view: ViewTransform, content: ViewSize, canvas: ViewSize): ViewTransform {

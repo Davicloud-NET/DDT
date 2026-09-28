@@ -7,6 +7,7 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   redirect,
 } from "@tanstack/react-router";
 
@@ -30,7 +31,6 @@ import { serverSearch } from "@/settings/serverSearch";
 import { SignInSettingsPage } from "@/settings/SignInSettingsPage";
 import { runHistorySearch } from "@/runs/runHistory";
 import { RunHistoryPage } from "@/runs/RunHistoryPage";
-import { SequenceEditorPage } from "@/sequences/SequenceEditorPage";
 import { sequenceSearch, sequencesSearch } from "@/sequences/sequenceSearch";
 import { SequencesPage } from "@/sequences/SequencesPage";
 import { TokensPage } from "@/tokens/TokensPage";
@@ -131,11 +131,15 @@ const sequencesRoute = createRoute({
   validateSearch: sequencesSearch,
   component: SequencesPage,
 });
+// The flow builder is the one page loaded when it is opened, as it is large and most visits never need it.
 const sequenceRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences/$sequenceId",
   validateSearch: sequenceSearch,
-  component: SequenceEditorPage,
+  component: lazyRouteComponent(
+    () => import("@/sequences/SequenceEditorPage"),
+    "SequenceEditorPage",
+  ),
 });
 const rulesRoute = createRoute({
   getParentRoute: () => shellRoute,

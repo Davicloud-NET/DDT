@@ -14,10 +14,11 @@ import { useLiveStatus } from "@/live/useLiveStatus";
 import { EmptyState, Page, Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
 
-import { SequenceEditor } from "./SequenceEditor";
+import { FlowBuilder } from "./builder/FlowBuilder";
 import { sequenceQuery } from "./sequences";
 
-// One task sequence, edited in place by administrators and read by everyone else.
+// One task sequence, edited in place as a flow by administrators and read by everyone else. The route loads it on its
+// own, with the flow builder.
 export function SequenceEditorPage() {
   const { sequenceId } = useParams({ from: "/shell/deployment/sequences/$sequenceId" });
   const sequence = useQuery({ ...sequenceQuery(sequenceId), ...liveListOptions(useLiveStatus()) });
@@ -31,7 +32,7 @@ export function SequenceEditorPage() {
     sequence.error.status === 404;
 
   return (
-    <Page>
+    <Page className="h-full">
       <Link
         to="/deployment/sequences"
         className="-mb-1 flex w-fit items-center gap-1 type-small text-ink-2 hover:text-ink hover:underline"
@@ -55,7 +56,7 @@ export function SequenceEditorPage() {
       {sequence.isPending ? <EditorSkeleton /> : null}
 
       {sequence.data !== undefined && user !== null ? (
-        <SequenceEditor key={sequenceId} initial={sequence.data} readOnly={!isAdministrator} />
+        <FlowBuilder key={sequenceId} initial={sequence.data} readOnly={!isAdministrator} />
       ) : null}
     </Page>
   );
@@ -65,10 +66,10 @@ function EditorSkeleton() {
   return (
     <div aria-hidden="true" className="flex flex-col gap-4">
       <Skeleton className="h-10 w-80" />
-      <Skeleton className="h-28 w-full" />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <Skeleton className="h-96" />
-        <Skeleton className="h-60" />
+      <div className="flex gap-4">
+        <Skeleton className="hidden h-[36rem] w-54 xl:block" />
+        <Skeleton className="h-[36rem] flex-1" />
+        <Skeleton className="hidden h-[36rem] w-92 md:block" />
       </div>
     </div>
   );

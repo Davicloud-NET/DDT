@@ -173,6 +173,10 @@ msgstr "{administrator} would make every identity the provider signs in that DDT
 msgid "{assigned}. The machine has not started it yet."
 msgstr "{assigned}. The machine has not started it yet."
 
+#: src/sequences/builder/NodeInspector.tsx
+msgid "{bodyCount, plural, one {Holds # step.} other {Holds # steps.}}"
+msgstr "{bodyCount, plural, one {Holds # step.} other {Holds # steps.}}"
+
 #: src/runs/runs.ts
 msgid "{by} approved the machine on the web to run {title}, which a rule chose"
 msgstr "{by} approved the machine on the web to run {title}, which a rule chose"
@@ -272,6 +276,10 @@ msgctxt "deployment.sequenceHasProblems"
 msgid "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}"
 msgstr "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}"
 
+#: src/conditions/conditions.ts
+msgid "{count, plural, one {# condition} other {# conditions}}"
+msgstr "{count, plural, one {# condition} other {# conditions}}"
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
 msgstr "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
@@ -317,6 +325,10 @@ msgstr "{count, plural, one {Added # image from {file}.} other {Added # images f
 msgid "{count, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{count, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "{count, plural, one {Pasted # step.} other {Pasted # steps.}}"
+msgstr "{count, plural, one {Pasted # step.} other {Pasted # steps.}}"
+
 #: src/images/ImagesPage.tsx
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
@@ -337,6 +349,10 @@ msgstr "{count, plural, one {The sequence {sequences} uses this account. Choose 
 #: src/lib/format.ts
 msgid "{count} bytes"
 msgstr "{count} bytes"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "{current}, which steps may not set"
+msgstr "{current}, which steps may not set"
 
 #: src/runs/runs.ts
 msgid "{described}, and the machine reports \"{value}\""
@@ -470,6 +486,10 @@ msgstr "{installed} disk"
 msgid "{installed} installed"
 msgstr "{installed} installed"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{interpreter}, in {phase}"
+msgstr "{interpreter}, in {phase}"
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.emptyContainerWarning"
 msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
@@ -487,13 +507,21 @@ msgstr "{kind}, {phase}, {started} to {ended}, took {took}"
 msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr "{kind}, {phase}, started {started}, running for {took}"
 
-#: src/sequences/StepInspector.tsx
-msgid "{kind}, in {phaseName}"
-msgstr "{kind}, in {phaseName}"
+#: src/sequences/builder/NodeInspector.tsx
+msgid "{kind}, in {phaseName}."
+msgstr "{kind}, in {phaseName}."
 
 #: src/runs/RunPanel.tsx
 msgid "{kind}: {file}, {size}"
 msgstr "{kind}: {file}, {size}"
+
+#: src/conditions/conditions.ts
+msgid "{label} {operator}"
+msgstr "{label} {operator}"
+
+#: src/conditions/conditions.ts
+msgid "{label} {operator} {value}"
+msgstr "{label} {operator} {value}"
 
 #: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
@@ -526,6 +554,10 @@ msgstr "{loaded, plural, one {Search the # loaded line} other {Search the # load
 msgid "{locked, plural, one {# set in configuration} other {# set in configuration}}"
 msgstr "{locked, plural, one {# set in configuration} other {# set in configuration}}"
 
+#: src/sequences/builder/AccountSetting.tsx
+msgid "{lostInput}, an input this sequence does not declare"
+msgstr "{lostInput}, an input this sequence does not declare"
+
 #: src/machines/machineView.ts
 msgid "{maker}, serial {serial}"
 msgstr "{maker}, serial {serial}"
@@ -535,11 +567,15 @@ msgstr "{maker}, serial {serial}"
 msgid "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 msgstr "{matching, plural, one {Matches # registered machine.} other {Matches # registered machines.}}"
 
-#: src/sequences/FindingsSummary.tsx
-msgid "{message} Go to step {number}, {name}."
-msgstr "{message} Go to step {number}, {name}."
+#: src/sequences/builder/ProblemsPanel.tsx
+msgid "{message} Go to {title}."
+msgstr "{message} Go to {title}."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/ProblemsPanel.tsx
+msgid "{message} Go to its field."
+msgstr "{message} Go to its field."
+
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "{message} Your latest changes are not saved, and leaving throws them away."
 msgstr "{message} Your latest changes are not saved, and leaving throws them away."
 
@@ -567,6 +603,10 @@ msgstr "{name} ({size}) is removed from the library and can no longer be used by
 #: src/images/ImagesPage.tsx
 msgid "{name} ({size}) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it."
 msgstr "{name} ({size}) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it."
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "{name} ({user})"
+msgstr "{name} ({user})"
 
 #: src/users/userView.ts
 msgid "{name} and its API tokens are deleted from DDT. The audit log keeps its entries. If its directory groups still give it a role, it comes back at its next sign-in as a new account; to keep it out, disable it instead."
@@ -740,6 +780,10 @@ msgstr "{name}, {size}, replaces the agent every machine that netboots from now 
 msgid "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
 msgstr "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
 
+#: src/sequences/builder/AccountSetting.tsx
+msgid "{name}, asked for the run"
+msgstr "{name}, asked for the run"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.proxies.networkWide"
 msgid "{network} is wider than a /{prefix}. Every address in it counts as a trusted proxy address."
@@ -795,10 +839,11 @@ msgctxt "settings.ldap.portInvalid"
 msgid "{port} is not a port number. LDAPS uses 636, and StartTLS 389."
 msgstr "{port} is not a port number. LDAPS uses 636, and StartTLS 389."
 
-#: src/sequences/FindingsSummary.tsx
+#: src/sequences/builder/ProblemsPanel.tsx
 msgid "{problemCount, plural, one {# problem keeps it from running.} other {# problems keep it from running.}}"
 msgstr "{problemCount, plural, one {# problem keeps it from running.} other {# problems keep it from running.}}"
 
+#: src/sequences/builder/FlowBuilder.tsx
 #: src/sequences/sequenceList.ts
 msgid "{problemCount, plural, one {# problem} other {# problems}}"
 msgstr "{problemCount, plural, one {# problem} other {# problems}}"
@@ -897,13 +942,21 @@ msgctxt "deployment.signerChooses"
 msgid "{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence."
 msgstr "{signer} signed in at the machine and chooses its sequence there. Approve it without a sequence."
 
+#: src/conditions/conditions.ts
+msgid "{size} GB"
+msgstr "{size} GB"
+
 #: src/machines/MachinesPage.tsx
 msgid "{step} {percent}%"
 msgstr "{step} {percent}%"
 
-#: src/sequences/SequenceEditor.tsx
-msgid "{stepName} moved to position {position} of {count}."
-msgstr "{stepName} moved to position {position} of {count}."
+#: src/sequences/builder/NodeInspector.tsx
+msgid "{thenCount, plural, one {Then holds # step, Else {elseCount}.} other {Then holds # steps, Else {elseCount}.}}"
+msgstr "{thenCount, plural, one {Then holds # step, Else {elseCount}.} other {Then holds # steps, Else {elseCount}.}}"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "{title} moved to position {position} of {count}."
+msgstr "{title} moved to position {position} of {count}."
 
 #: src/settings/AgentPanel.tsx
 #: src/settings/ConsoleLogoPanel.tsx
@@ -985,6 +1038,10 @@ msgctxt "domain.logonWorkstations"
 msgid "{user} may not sign in from the DDT server (Log On To workstations)."
 msgstr "{user} may not sign in from the DDT server (Log On To workstations)."
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "{uses, plural, one {Used by # node} other {Used by # nodes}}"
+msgstr "{uses, plural, one {Used by # node} other {Used by # nodes}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.hostRepeated"
 msgid "{value} is listed twice."
@@ -1003,7 +1060,7 @@ msgstr "{variable} {operator}"
 msgid "{variable} {operator} \"{value}\""
 msgstr "{variable} {operator} \"{value}\""
 
-#: src/sequences/FindingsSummary.tsx
+#: src/sequences/builder/ProblemsPanel.tsx
 msgid "{warningCount, plural, one {# warning, which does not.} other {# warnings, which do not.}}"
 msgstr "{warningCount, plural, one {# warning, which does not.} other {# warnings, which do not.}}"
 
@@ -1177,6 +1234,10 @@ msgctxt "sequence.valueName"
 msgid "A name starts with a letter and has at most {max} letters, digits and underscores."
 msgstr "A name starts with a letter and has at most {max} letters, digits and underscores."
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "A name starts with a letter and holds only letters, digits and _, at most 64 in all."
+msgstr "A name starts with a letter and holds only letters, digits and _, at most 64 in all."
+
 #: src/settings/CertificatePanel.tsx
 msgid "A new certificate is served at once, on trial: this page's next request gets it, and you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the certificate before."
 msgstr "A new certificate is served at once, on trial: this page's next request gets it, and you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the certificate before."
@@ -1342,10 +1403,6 @@ msgctxt "sequence.requestTooLarge"
 msgid "A sequence request can have at most {max} KiB."
 msgstr "A sequence request can have at most {max} KiB."
 
-#: src/sequences/SequenceEditor.tsx
-msgid "A sequence that installs Windows starts by partitioning the disk and then applies an image. One for Linux writes a raw disk image and its cloud-init seed."
-msgstr "A sequence that installs Windows starts by partitioning the disk and then applies an image. One for Linux writes a raw disk image and its cloud-init seed."
-
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageWithRawImage"
 msgid "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one."
@@ -1427,6 +1484,10 @@ msgstr "A user with this login already exists."
 msgctxt "namedValue.tooLong"
 msgid "A value's name can have at most {name} characters, and its text at most {text}."
 msgstr "A value's name can have at most {name} characters, and its text at most {text}."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "A variable is a value with a default, which rules, machine roles and steps may change. An input is asked on the web or at the machine before the run starts, and its answer sets the variable of its name."
+msgstr "A variable is a value with a default, which rules, machine roles and steps may change. An input is asked on the web or at the machine before the run starts, and its answer sets the variable of its name."
 
 #: src/lib/serverMessages.ts
 msgctxt "role.aViewer"
@@ -1510,6 +1571,10 @@ msgstr "Account disabled"
 msgid "Account enabled"
 msgstr "Account enabled"
 
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Account for share {number}"
+msgstr "Account for share {number}"
+
 #: src/app/Shell.tsx
 msgid "Account menu"
 msgstr "Account menu"
@@ -1536,6 +1601,10 @@ msgstr "Actions"
 msgid "Actions for {label}"
 msgstr "Actions for {label}"
 
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Actions for {menuName}"
+msgstr "Actions for {menuName}"
+
 #: src/images/ImagesPage.tsx
 #: src/packages/PackagesPage.tsx
 #: src/users/UsersPage.tsx
@@ -1552,6 +1621,7 @@ msgstr "Actions for the rule for {description}"
 msgid "Active"
 msgstr "Active"
 
+#: src/sequences/builder/Palette.tsx
 #: src/settings/DirectorySettings.tsx
 #: src/settings/NetworkBootPage.tsx
 msgid "Add"
@@ -1570,13 +1640,21 @@ msgstr "Add {shown} to the map"
 msgid "Add a category"
 msgstr "Add a category"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Add a choice"
+msgstr "Add a choice"
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "Add a claim value"
 msgstr "Add a claim value"
 
-#: src/sequences/StepConditions.tsx
+#: src/conditions/ConditionBuilder.tsx
 msgid "Add a condition"
 msgstr "Add a condition"
+
+#: src/conditions/ConditionBuilder.tsx
+msgid "Add a group"
+msgstr "Add a group"
 
 #: src/settings/DirectorySettings.tsx
 msgid "Add a group by its distinguished name"
@@ -1590,6 +1668,62 @@ msgstr "Add a local account"
 msgid "Add a model"
 msgstr "Add a model"
 
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Add a share"
+msgstr "Add a share"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Add a step"
+msgstr "Add a step"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step after {name}"
+msgstr "Add a step after {name}"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Add a step after {selectedTitle}"
+msgstr "Add a step after {selectedTitle}"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Add a step after it"
+msgstr "Add a step after it"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Add a step at the end"
+msgstr "Add a step at the end"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step before {name}"
+msgstr "Add a step before {name}"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step between {before} and {following}"
+msgstr "Add a step between {before} and {following}"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Add a step here"
+msgstr "Add a step here"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step to ''{title}''"
+msgstr "Add a step to ''{title}''"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step to Else of ''{title}''"
+msgstr "Add a step to Else of ''{title}''"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Add a step to the flow to see its settings here."
+msgstr "Add a step to the flow to see its settings here."
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Add a step to Then of ''{title}''"
+msgstr "Add a step to Then of ''{title}''"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Add a variable"
+msgstr "Add a variable"
+
 #: src/users/UserDialogs.tsx
 #: src/users/UsersPage.tsx
 msgid "Add account"
@@ -1598,6 +1732,10 @@ msgstr "Add account"
 #: src/rules/RuleDialog.tsx
 msgid "Add an assignment rule"
 msgstr "Add an assignment rule"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Add an input"
+msgstr "Add an input"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Add boot target"
@@ -1612,21 +1750,17 @@ msgstr "Add group"
 msgid "Add rule"
 msgstr "Add rule"
 
-#: src/sequences/SequenceEditor.tsx
-msgid "Add step"
-msgstr "Add step"
-
-#: src/sequences/SequenceEditor.tsx
-msgid "Add step at the end"
-msgstr "Add step at the end"
-
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/flow/flowKeyboard.ts
 msgid "Add the first step"
 msgstr "Add the first step"
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Add the local administrator"
 msgstr "Add the local administrator"
+
+#: src/sequences/builder/Palette.tsx
+msgid "Add to the flow"
+msgstr "Add to the flow"
 
 #: src/packages/PackageDialog.tsx
 msgid "Add to the Windows PE boot image"
@@ -1636,9 +1770,17 @@ msgstr "Add to the Windows PE boot image"
 msgid "Add value"
 msgstr "Add value"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Added {label}."
+msgstr "Added {label}."
+
 #: src/packages/PackagesPage.tsx
 msgid "Added {name} from {file}."
 msgstr "Added {name} from {file}."
+
+#: src/conditions/conditions.ts
+msgid "address"
+msgstr "address"
 
 #: src/machines/MachinePanel.tsx
 msgid "Address"
@@ -1724,6 +1866,10 @@ msgstr "All groups"
 msgid "All machines"
 msgstr "All machines"
 
+#: src/conditions/conditions.ts
+msgid "All of these hold"
+msgstr "All of these hold"
+
 #: src/runs/runs.ts
 msgid "Allowed to write {image} although it may not start with Secure Boot on."
 msgstr "Allowed to write {image} although it may not start with Secure Boot on."
@@ -1736,10 +1882,30 @@ msgstr "Allowed to write its raw disk image although it may not start with Secur
 msgid "Also approve every machine on the web"
 msgstr "Also approve every machine on the web"
 
+#: src/conditions/conditions.ts
+msgid "always"
+msgstr "always"
+
+#: src/conditions/conditions.ts
+msgid "Always"
+msgstr "Always"
+
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.tooManyHosts"
 msgid "An account can name at most {max} servers."
 msgstr "An account can name at most {max} servers."
+
+#: src/sequences/steps/ScriptFields.tsx
+msgid "An account in the installed Windows, signed in for the script alone."
+msgstr "An account in the installed Windows, signed in for the script alone."
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "An account this server does not have"
+msgstr "An account this server does not have"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "An account, for the run alone"
+msgstr "An account, for the run alone"
 
 #: src/lib/serverMessages.ts
 msgctxt "role.anAdministrator"
@@ -1757,6 +1923,10 @@ msgstr "An administrator changes everything, including the accounts here; an ope
 #: src/sequences/SequencesPage.tsx
 msgid "An administrator creates task sequences here. Until then, no machine can be given one."
 msgstr "An administrator creates task sequences here. Until then, no machine can be given one."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "An answer is required"
+msgstr "An answer is required"
 
 #: src/lib/serverMessages.ts
 msgctxt "account.apiTokenCannotChange"
@@ -1866,6 +2036,10 @@ msgctxt "sequence.nameTaken"
 msgid "Another sequence is already called {name}. Choose another name."
 msgstr "Another sequence is already called {name}. Choose another name."
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Answer"
+msgstr "Answer"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Answer as ProxyDHCP"
 msgstr "Answer as ProxyDHCP"
@@ -1885,10 +2059,6 @@ msgstr "Any of the machine's network adapters, with or without separators."
 #: src/audit/AuditPage.tsx
 msgid "Any part of a name"
 msgstr "Any part of a name"
-
-#: src/sequences/AddStepMenu.tsx
-msgid "Any sequence"
-msgstr "Any sequence"
 
 #: src/settings/ApprovalPage.tsx
 msgid "Anyone who reaches the server can register a machine, so the number waiting for approval is capped, for each address and in all. A machine over the cap is refused until others are approved or removed."
@@ -1977,9 +2147,29 @@ msgstr "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgid "Architecture"
 msgstr "Architecture"
 
-#: src/sequences/StepInspector.tsx
-msgid "Arrow keys move the step; Home and End, to the ends."
-msgstr "Arrow keys move the step; Home and End, to the ends."
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Asked"
+msgstr "Asked"
+
+#: src/conditions/conditions.ts
+msgid "asked at the machine"
+msgstr "asked at the machine"
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "Asked for the run"
+msgstr "Asked for the run"
+
+#: src/conditions/conditions.ts
+msgid "asked on the web"
+msgstr "asked on the web"
+
+#: src/conditions/conditions.ts
+msgid "asked on the web or at the machine"
+msgstr "asked on the web or at the machine"
+
+#: src/conditions/conditions.ts
+msgid "Asset tag"
+msgstr "Asset tag"
 
 #: src/machines/MachineActions.tsx
 msgid "Assign"
@@ -2043,9 +2233,25 @@ msgstr "At each sign-in, a directory account gets the highest role that its grou
 msgid "At least 12 characters."
 msgstr "At least 12 characters."
 
+#: src/conditions/conditions.ts
+msgid "At least one of these holds"
+msgstr "At least one of these holds"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "At most this many characters"
+msgstr "At most this many characters"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "At most this many times"
+msgstr "At most this many times"
+
 #: src/tokens/MakeTokenDialog.tsx
 msgid "At most your own. Give it no more than the script needs."
 msgstr "At most your own. Give it no more than the script needs."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "At the machine"
+msgstr "At the machine"
 
 #: src/settings/DirectorySettings.tsx
 msgid "Attribute that identifies an account"
@@ -2080,13 +2286,25 @@ msgstr "Authorizing machines"
 msgid "Back to DDT"
 msgstr "Back to DDT"
 
+#: src/conditions/conditions.ts
+msgid "Baseboard"
+msgstr "Baseboard"
+
 #: src/settings/DirectorySettings.tsx
 msgid "Bind account"
 msgstr "Bind account"
 
+#: src/conditions/conditions.ts
+msgid "BIOS date"
+msgstr "BIOS date"
+
 #: src/settings/networkBoot.ts
 msgid "BIOS PCs, over TFTP"
 msgstr "BIOS PCs, over TFTP"
+
+#: src/conditions/conditions.ts
+msgid "BIOS version"
+msgstr "BIOS version"
 
 #: src/app/navigation.ts
 msgid "Boot"
@@ -2162,7 +2380,6 @@ msgstr "Cancel"
 msgid "Cancel the assignment"
 msgstr "Cancel the assignment"
 
-#: src/sequences/SequenceEditor.tsx
 #: src/sequences/sequenceList.ts
 #: src/sequences/SequencesPage.tsx
 msgid "Cannot run"
@@ -2255,6 +2472,14 @@ msgstr "Checking {file}"
 msgid "Checking the join account"
 msgstr "Checking the join account"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Choices"
+msgstr "Choices"
+
+#: src/conditions/ConditionBuilder.tsx
+msgid "Choose"
+msgstr "Choose"
+
 #: src/uploads/UploadPanel.tsx
 msgid "Choose {file} again to resume at {percent}%."
 msgstr "Choose {file} again to resume at {percent}%."
@@ -2275,6 +2500,10 @@ msgctxt "sequence.conditionName"
 msgid "Choose a machine fact or a value to test."
 msgstr "Choose a machine fact or a value to test."
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Choose a node in the flow to see its settings here."
+msgstr "Choose a node in the flow to see its settings here."
+
 #: src/settings/CertificatePanel.tsx
 msgid "Choose a PFX file"
 msgstr "Choose a PFX file"
@@ -2293,10 +2522,18 @@ msgctxt "sequence.accountChoose"
 msgid "Choose a stored account or an Account input."
 msgstr "Choose a stored account or an Account input."
 
+#: src/sequences/steps/FlowFields.tsx
+msgid "Choose a variable"
+msgstr "Choose a variable"
+
 #: src/lib/serverMessages.ts
 msgctxt "user.role"
 msgid "Choose Administrator, Operator or Viewer."
 msgstr "Choose Administrator, Operator or Viewer."
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "Choose an account"
+msgstr "Choose an account"
 
 #: src/sequences/steps/RawImageFields.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -2354,6 +2591,10 @@ msgstr "Choose the raw disk image to write."
 msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr "Choose the variable to set."
+
+#: src/conditions/conditions.ts
+msgid "Choose what to test"
+msgstr "Choose what to test"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputAskAt"
@@ -2420,30 +2661,31 @@ msgstr "Close the details"
 msgid "Close the line"
 msgstr "Close the line"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "cloud-init's seed files"
+msgstr "cloud-init's seed files"
+
 #: src/account/AccountPage.tsx
 msgid "Code from the authenticator app"
 msgstr "Code from the authenticator app"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Collapse"
+msgstr "Collapse"
 
 #: src/settings/AgentPanel.tsx
 msgid "Compare the SHA-256 with the one published for the release you meant to install."
 msgstr "Compare the SHA-256 with the one published for the release you meant to install."
 
-#: src/sequences/StepConditions.tsx
-msgid "Comparison"
-msgstr "Comparison"
-
-#: src/sequences/StepConditions.tsx
+#: src/conditions/ConditionBuilder.tsx
 msgid "Comparison of condition {number}"
 msgstr "Comparison of condition {number}"
 
+#: src/conditions/conditions.ts
 #: src/machines/AssignDialog.tsx
 #: src/sequences/steps.ts
 msgid "Computer name"
 msgstr "Computer name"
-
-#: src/sequences/StepConditions.tsx
-msgid "Conditions"
-msgstr "Conditions"
 
 #: src/settings/ServerPage.tsx
 msgid "Configuration values"
@@ -2487,7 +2729,12 @@ msgstr "contains"
 msgid "Copied"
 msgstr "Copied"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Copied {title}."
+msgstr "Copied {title}."
+
 #: src/account/AccountPage.tsx
+#: src/sequences/builder/FlowCanvas.tsx
 #: src/ui/SecretValue.tsx
 msgid "Copy"
 msgstr "Copy"
@@ -2525,6 +2772,14 @@ msgstr "Current password"
 msgid "Current run"
 msgstr "Current run"
 
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Cut"
+msgstr "Cut"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Cut {title}."
+msgstr "Cut {title}."
+
 #: src/app/Shell.tsx
 msgid "Dark"
 msgstr "Dark"
@@ -2545,6 +2800,10 @@ msgstr "DDT cannot read this rule's condition. Build it again."
 #: src/about/AboutPage.tsx
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "DDT connects these shares with their accounts before the step runs and disconnects them after it. A share's host comes only from values fixed when the run starts."
+msgstr "DDT connects these shares with their accounts before the step runs and disconnects them after it. A share's host comes only from values fixed when the run starts."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.pxeBindFailed"
@@ -2647,6 +2906,14 @@ msgstr "DDT's root, {root}"
 msgid "default"
 msgstr "default"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Default"
+msgstr "Default"
+
+#: src/conditions/conditions.ts
+msgid "Default gateway"
+msgstr "Default gateway"
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Defaults for every run"
 msgstr "Defaults for every run"
@@ -2715,21 +2982,35 @@ msgstr "Deployment defaults"
 
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
+#: src/sequences/builder/VariablesPanel.tsx
 msgid "Description"
 msgstr "Description"
+
+#: src/conditions/conditions.ts
+msgid "Desktop"
+msgstr "Desktop"
 
 #: src/audit/AuditPage.tsx
 msgid "Detail"
 msgstr "Detail"
 
 #: src/images/ImagesPage.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Details"
 msgstr "Details"
 
 #: src/settings/LoggingPanel.tsx
 msgid "Details for finding a fault"
 msgstr "Details for finding a fault"
+
+#: src/conditions/conditions.ts
+msgid "Device kind"
+msgstr "Device kind"
+
+#: src/conditions/conditions.ts
+msgid "DHCP server"
+msgstr "DHCP server"
 
 #: src/settings/DirectorySettings.tsx
 msgid "Directory"
@@ -2798,6 +3079,10 @@ msgstr "Disk SHA-256"
 msgid "Disks"
 msgstr "Disks"
 
+#: src/conditions/conditions.ts
+msgid "DNS suffix"
+msgstr "DNS suffix"
+
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
 msgid "does not contain"
@@ -2819,6 +3104,10 @@ msgstr "Domain"
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Domain controller for the check"
 msgstr "Domain controller for the check"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Domain it joins"
+msgstr "Domain it joins"
 
 #: src/audit/auditView.ts
 msgid "Domain join"
@@ -2843,6 +3132,10 @@ msgctxt "machineState.done"
 msgid "Done"
 msgstr "Done"
 
+#: src/sequences/builder/Palette.tsx
+msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
+msgstr "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
+
 #: src/packages/PackagesPage.tsx
 msgid "Driver packages"
 msgstr "Driver packages"
@@ -2850,6 +3143,10 @@ msgstr "Driver packages"
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Driver packages and their targets are under Drivers."
 msgstr "Driver packages and their targets are under Drivers."
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Driver packages matched to the model"
+msgstr "Driver packages matched to the model"
 
 #: src/app/navigation.ts
 #: src/boot/BootImagePage.tsx
@@ -2906,6 +3203,14 @@ msgstr "Drop the logo to upload it"
 msgid "Drop the zip with ddt-console.exe here, or choose it."
 msgstr "Drop the zip with ddt-console.exe here, or choose it."
 
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Duplicate"
+msgstr "Duplicate"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Duplicated {title}."
+msgstr "Duplicated {title}."
+
 #: src/account/AccountPage.tsx
 msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
 msgstr "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
@@ -2922,14 +3227,11 @@ msgstr "Each section is saved on the page of what it configures, and applies wit
 msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 msgstr "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 
-#: src/sequences/StepInspector.tsx
-msgid "Earlier"
-msgstr "Earlier"
-
 #: src/images/ImagesPage.tsx
 msgid "Edition"
 msgstr "Edition"
 
+#: src/sequences/builder/FlowOutline.tsx
 #: src/ui/FlowNode.tsx
 msgid "Else"
 msgstr "Else"
@@ -2951,6 +3253,10 @@ msgstr "Email address"
 #: src/settings/DirectorySettings.tsx
 msgid "Email attribute"
 msgstr "Email attribute"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Empty for no limit."
+msgstr "Empty for no limit."
 
 #: src/sequences/NewSequenceDialog.tsx
 msgid "Empty sequence"
@@ -3020,6 +3326,10 @@ msgctxt "mac.enterFull"
 msgid "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03."
 msgstr "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03."
 
+#: src/conditions/conditions.ts
+msgid "Enter a MAC address such as 00:15:5D:01:02:03."
+msgstr "Enter a MAC address such as 00:15:5D:01:02:03."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepNameEmpty"
 msgid "Enter a name for the step."
@@ -3030,10 +3340,22 @@ msgctxt "sequence.conditionSubnet"
 msgid "Enter a network as an address and the length of its prefix, such as 10.0.0.0/24."
 msgstr "Enter a network as an address and the length of its prefix, such as 10.0.0.0/24."
 
+#: src/conditions/conditions.ts
+msgid "Enter a network such as 10.20.0.0/16."
+msgstr "Enter a network such as 10.20.0.0/16."
+
+#: src/conditions/conditions.ts
+msgid "Enter a network such as 10.20.4.0/24."
+msgstr "Enter a network such as 10.20.4.0/24."
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.conditionNumber"
 msgid "Enter a number, such as 8192."
 msgstr "Enter a number, such as 8192."
+
+#: src/conditions/conditions.ts
+msgid "Enter a number."
+msgstr "Enter a number."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.nameEmpty"
@@ -3044,6 +3366,10 @@ msgstr "Enter a user name."
 msgctxt "user.email"
 msgid "Enter an email address such as jane@corp.example, or leave it empty."
 msgstr "Enter an email address such as jane@corp.example, or leave it empty."
+
+#: src/conditions/conditions.ts
+msgid "Enter an IPv4 address such as 10.0.4.51."
+msgstr "Enter an IPv4 address such as 10.0.4.51."
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.conditionAddress"
@@ -3179,6 +3505,10 @@ msgstr "equals"
 msgid "Erases the disk"
 msgstr "Erases the disk"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Erases the disk and makes the partitions"
+msgstr "Erases the disk and makes the partitions"
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Erases the whole disk and creates the EFI system, MSR, Windows and recovery partitions."
 msgstr "Erases the whole disk and creates the EFI system, MSR, Windows and recovery partitions."
@@ -3217,6 +3547,14 @@ msgstr "Every identity the provider signs in that DDT has not seen becomes an op
 msgid "Every image in {file} is already in the library."
 msgstr "Every image in {file} is already in the library."
 
+#: src/conditions/conditions.ts
+msgid "Every machine goes along Then."
+msgstr "Every machine goes along Then."
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Every other machine goes along Else."
+msgstr "Every other machine goes along Else."
+
 #: src/machines/AssignDialog.tsx
 msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
 msgstr "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
@@ -3232,6 +3570,10 @@ msgstr "Exit codes that ask for a restart"
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Exit codes that mean success"
 msgstr "Exit codes that mean success"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Expand"
+msgstr "Expand"
 
 #: src/tokens/TokenTable.tsx
 #: src/tokens/tokenView.ts
@@ -3297,6 +3639,10 @@ msgstr "Find a directory group"
 msgid "Find a driver package"
 msgstr "Find a driver package"
 
+#: src/conditions/ConditionBuilder.tsx
+msgid "Find a fact or a variable"
+msgstr "Find a fact or a variable"
+
 #: src/packages/PackagesPage.tsx
 msgid "Find a file package"
 msgstr "Find a file package"
@@ -3313,6 +3659,10 @@ msgstr "Find a machine"
 #: src/runs/RunHistoryPage.tsx
 msgid "Find a run"
 msgstr "Find a run"
+
+#: src/sequences/builder/Palette.tsx
+msgid "Find a step"
+msgstr "Find a step"
 
 #: src/sequences/SequencesPage.tsx
 msgid "Find a task sequence"
@@ -3342,6 +3692,16 @@ msgstr "Finishing"
 msgid "Fit"
 msgstr "Fit"
 
+#: src/sequences/builder/AddNodeMenu.tsx
+#: src/sequences/builder/FlowBuilder.tsx
+#: src/sequences/builder/Palette.tsx
+msgid "Flow"
+msgstr "Flow"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Flow of {name}"
+msgstr "Flow of {name}"
+
 #: src/packages/PackagesPage.tsx
 msgid "For"
 msgstr "For"
@@ -3349,6 +3709,10 @@ msgstr "For"
 #: src/sequences/steps/RawImageFields.tsx
 msgid "For {architecture} only, cannot be written"
 msgstr "For {architecture} only, cannot be written"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "For a Join the domain step. Empty where it joins none."
+msgstr "For a Join the domain step. Empty where it joins none."
 
 #: src/settings/NetworkBootPage.tsx
 msgid "For a network adapter that was added, or an address that changed."
@@ -3374,6 +3738,10 @@ msgstr "For places that need two people: a sign-in at the machine then only reco
 msgid "For these hardware models"
 msgstr "For these hardware models"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "For Windows setup at its first start"
+msgstr "For Windows setup at its first start"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Format"
 msgstr "Format"
@@ -3382,6 +3750,10 @@ msgstr "Format"
 msgid "Found"
 msgstr "Found"
 
+#: src/conditions/conditions.ts
+msgid "Friendly model"
+msgstr "Friendly model"
+
 #: src/audit/AuditPage.tsx
 msgid "From"
 msgstr "From"
@@ -3389,6 +3761,14 @@ msgstr "From"
 #: src/settings/ConfigurationOrigin.tsx
 msgid "from {source}"
 msgstr "from {source}"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "From 1 to 100."
+msgstr "From 1 to 100."
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "From 1 to 1440 minutes, a day."
+msgstr "From 1 to 1440 minutes, a day."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "From 260 to 4096 MB."
@@ -3413,6 +3793,10 @@ msgstr "From its directory groups"
 #: src/users/userView.ts
 msgid "From its single sign-on groups"
 msgstr "From its single sign-on groups"
+
+#: src/conditions/ConditionBuilder.tsx
+msgid "From rules and machine roles"
+msgstr "From rules and machine roles"
 
 #: src/settings/ConfigurationOrigin.tsx
 msgid "from the command line"
@@ -3443,9 +3827,33 @@ msgstr "gives {label}"
 msgid "Gives {label}"
 msgstr "Gives {label}"
 
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Go along Then when"
+msgstr "Go along Then when"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Go on after this many minutes"
+msgstr "Go on after this many minutes"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Go on by itself after a while"
+msgstr "Go on by itself after a while"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Go on when a step in here fails"
+msgstr "Go on when a step in here fails"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Go on when the limit is reached"
+msgstr "Go on when the limit is reached"
+
+#: src/sequences/builder/NodeInspector.tsx
 msgid "Go on when this step fails"
 msgstr "Go on when this step fails"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Go to {title}"
+msgstr "Go to {title}"
 
 #: src/app/CommandPalette.tsx
 msgid "Go to a page, machine, sequence or image"
@@ -3472,6 +3880,7 @@ msgstr "Group"
 msgid "Group name"
 msgstr "Group name"
 
+#: src/sequences/flow/flowKeyboard.ts
 #: src/ui/FlowNode.tsx
 msgid "Group: {name}"
 msgstr "Group: {name}"
@@ -3518,10 +3927,18 @@ msgstr "has a value"
 msgid "has no value"
 msgstr "has no value"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Help"
+msgstr "Help"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
 msgstr "Holds no certificate with its private key."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Host names separated by commas, such as fs01.corp.example."
+msgstr "Host names separated by commas, such as fs01.corp.example."
 
 #: src/settings/DirectorySettings.tsx
 msgid "How long DDT waits for each answer of the directory."
@@ -3530,6 +3947,10 @@ msgstr "How long DDT waits for each answer of the directory."
 #: src/settings/LoggingPanel.tsx
 msgid "How much the server writes to its log, per category. A category covers the categories below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category not listed. A change applies at once."
 msgstr "How much the server writes to its log, per category. A category covers the categories below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category not listed. A change applies at once."
+
+#: src/conditions/ConditionBuilder.tsx
+msgid "How the conditions combine"
+msgstr "How the conditions combine"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "HTTP boot port"
@@ -3543,6 +3964,7 @@ msgstr "I have saved them"
 msgid "If"
 msgstr "If"
 
+#: src/sequences/flow/flowKeyboard.ts
 #: src/ui/FlowNode.tsx
 msgid "If: {name}"
 msgstr "If: {name}"
@@ -3553,6 +3975,7 @@ msgid "Image"
 msgstr "Image"
 
 #: src/audit/auditView.ts
+#: src/sequences/builder/nodeDetail.ts
 #: src/sequences/steps/RawImageFields.tsx
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Image deleted"
@@ -3577,12 +4000,15 @@ msgid "In the image"
 msgstr "In the image"
 
 #: src/runs/RunPanel.tsx
-#: src/sequences/SequenceEditor.tsx
 msgid "In the installed Windows"
 msgstr "In the installed Windows"
 
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "In the installed Windows, after the hand-over"
+msgstr "In the installed Windows, after the hand-over"
+
 #: src/runs/RunPanel.tsx
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowCanvas.tsx
 msgid "In Windows PE"
 msgstr "In Windows PE"
 
@@ -3604,13 +4030,21 @@ msgstr "Information"
 msgid "Inject drivers"
 msgstr "Inject drivers"
 
-#: src/sequences/StepInspector.tsx
-msgid "Insert after"
-msgstr "Insert after"
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Input, asked at the machine"
+msgstr "Input, asked at the machine"
 
-#: src/sequences/StepInspector.tsx
-msgid "Insert after {name}"
-msgstr "Insert after {name}"
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Input, asked on the web"
+msgstr "Input, asked on the web"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Input, asked on the web or at the machine"
+msgstr "Input, asked on the web or at the machine"
+
+#: src/sequences/builder/Inspector.tsx
+msgid "Inspector"
+msgstr "Inspector"
 
 #: src/settings/CertificatePanel.tsx
 msgid "Install a certificate from another root?"
@@ -3624,10 +4058,6 @@ msgstr "Install it anyway"
 msgctxt "template.installLinux"
 msgid "Install Linux"
 msgstr "Install Linux"
-
-#: src/sequences/AddStepMenu.tsx
-msgid "Install Windows"
-msgstr "Install Windows"
 
 #: src/lib/serverMessages.ts
 msgctxt "template.installWindows"
@@ -3655,6 +4085,11 @@ msgctxt "identity.invalidToken"
 msgid "Invalid token."
 msgstr "Invalid token."
 
+#: src/conditions/conditions.ts
+msgid "IPv4 address"
+msgstr "IPv4 address"
+
+#: src/conditions/conditions.ts
 #: src/runs/runs.ts
 msgid "is"
 msgstr "is"
@@ -3684,6 +4119,7 @@ msgstr "is in the network"
 msgid "is less than"
 msgstr "is less than"
 
+#: src/conditions/conditions.ts
 #: src/runs/runs.ts
 msgid "is not"
 msgstr "is not"
@@ -3745,10 +4181,6 @@ msgstr "It stays waiting until someone signs in at it or it netboots from a zero
 msgid "It stays waiting until someone signs in at it."
 msgstr "It stays waiting until someone signs in at it."
 
-#: src/sequences/SequenceEditor.tsx
-msgid "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
-msgstr "It uses groups, IF or Repeat nodes, variables, inputs or accounts, which only the flow builder shows. Nothing in it is changed here."
-
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
 msgstr "Its disk is not erased."
@@ -3779,12 +4211,24 @@ msgid "Join the domain"
 msgstr "Join the domain"
 
 #: src/sequences/steps/WindowsFields.tsx
+msgid "Join with"
+msgstr "Join with"
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "Joins the domain of the account chosen below, in Windows after the hand-over. The machine needs a computer name."
+msgstr "Joins the domain of the account chosen below, in Windows after the hand-over. The machine needs a computer name."
+
+#: src/sequences/steps/WindowsFields.tsx
 msgid "Joins the domain set on the Deployment defaults page, in Windows after the hand-over. The machine needs a computer name."
 msgstr "Joins the domain set on the Deployment defaults page, in Windows after the hand-over. The machine needs a computer name."
 
 #: src/log/LogPanel.tsx
 msgid "Jump to the newest"
 msgstr "Jump to the newest"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Keep {name}"
+msgstr "Keep {name}"
 
 #: src/sequences/SequenceConflict.tsx
 msgid "Keep mine"
@@ -3827,6 +4271,14 @@ msgstr "Keycloak and Authentik send group names or paths, Entra ID the object ID
 msgid "Kind"
 msgstr "Kind"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Label"
+msgstr "Label"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Label of choice {number}"
+msgstr "Label of choice {number}"
+
 #: src/app/Shell.tsx
 #: src/images/ImagesPage.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
@@ -3838,6 +4290,10 @@ msgstr "Language"
 msgid "Language and region"
 msgstr "Language and region"
 
+#: src/conditions/conditions.ts
+msgid "Laptop"
+msgstr "Laptop"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Largest TFTP window"
 msgstr "Largest TFTP window"
@@ -3845,6 +4301,10 @@ msgstr "Largest TFTP window"
 #: src/boot/BootImagePage.tsx
 msgid "Last build"
 msgstr "Last build"
+
+#: src/conditions/conditions.ts
+msgid "Last exit code"
+msgstr "Last exit code"
 
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
@@ -3871,13 +4331,13 @@ msgstr "Last seen from {from} {when}; signed in by {by}."
 msgid "Last sign-in"
 msgstr "Last sign-in"
 
+#: src/conditions/conditions.ts
+msgid "Last step failed"
+msgstr "Last step failed"
+
 #: src/tokens/TokenTable.tsx
 msgid "Last used"
 msgstr "Last used"
-
-#: src/sequences/StepInspector.tsx
-msgid "Later"
-msgstr "Later"
 
 #: src/settings/DirectorySettings.tsx
 msgid "LDAPS"
@@ -3895,11 +4355,11 @@ msgstr "Leave page"
 msgid "Leave while {file} is checked?"
 msgstr "Leave while {file} is checked?"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Leave without saving"
 msgstr "Leave without saving"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Leave without saving?"
 msgstr "Leave without saving?"
 
@@ -4041,15 +4501,24 @@ msgstr "Log lines"
 msgid "Logging"
 msgstr "Logging"
 
+#: src/conditions/conditions.ts
+msgid "Logical processors"
+msgstr "Logical processors"
+
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "Logo on the console"
 msgstr "Logo on the console"
+
+#: src/conditions/conditions.ts
+msgid "MAC"
+msgstr "MAC"
 
 #: src/rules/rules.ts
 #: src/sequences/sequenceList.ts
 msgid "MAC {mac}"
 msgstr "MAC {mac}"
 
+#: src/conditions/conditions.ts
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 #: src/rules/RuleDialog.tsx
@@ -4064,6 +4533,7 @@ msgid "MAC address {mac}"
 msgstr "MAC address {mac}"
 
 #: src/audit/auditView.ts
+#: src/conditions/ConditionBuilder.tsx
 #: src/machines/MachinesPage.tsx
 #: src/runs/RunHistoryPage.tsx
 msgid "Machine"
@@ -4145,6 +4615,10 @@ msgstr "Machines take it at their next netboot: the agent downloads it and shows
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 
+#: src/conditions/conditions.ts
+msgid "Machines where {condition} go along Then."
+msgstr "Machines where {condition} go along Then."
+
 #: src/users/UsersPage.tsx
 msgid "Make a new password"
 msgstr "Make a new password"
@@ -4173,6 +4647,7 @@ msgstr "Make new recovery codes"
 msgid "Make token"
 msgstr "Make token"
 
+#: src/conditions/conditions.ts
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/sequences/steps.ts
@@ -4191,6 +4666,26 @@ msgstr "matches"
 #: src/rules/RulesPage.tsx
 msgid "Matches"
 msgstr "Matches"
+
+#: src/conditions/conditions.ts
+msgid "Matches every machine."
+msgstr "Matches every machine."
+
+#: src/conditions/conditions.ts
+msgid "Matches machines where {condition}."
+msgstr "Matches machines where {condition}."
+
+#: src/conditions/conditions.ts
+msgid "memory"
+msgstr "memory"
+
+#: src/conditions/conditions.ts
+msgid "Memory"
+msgstr "Memory"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Message"
+msgstr "Message"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Microsoft 2011 CA. The default, which most machines trust."
@@ -4212,6 +4707,7 @@ msgstr "Microsoft's third-party UEFI CA {first}"
 msgid "Microsoft's third-party UEFI CAs {first} and {second}"
 msgstr "Microsoft's third-party UEFI CAs {first} and {second}"
 
+#: src/conditions/conditions.ts
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
@@ -4268,21 +4764,21 @@ msgctxt "directory.manyMatchingEntries"
 msgid "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
 msgstr "More than one entry under {baseDn} matches {name} with the user filter, so a sign-in with it is refused."
 
-#: src/sequences/StepInspector.tsx
-msgid "Move"
-msgstr "Move"
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Move {name} down"
+msgstr "Move {name} down"
 
-#: src/sequences/StepInspector.tsx
-msgid "Move {name}"
-msgstr "Move {name}"
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Move {name} up"
+msgstr "Move {name} up"
 
-#: src/sequences/StepInspector.tsx
-msgid "Move {name} earlier"
-msgstr "Move {name} earlier"
+#: src/sequences/builder/FlowOutline.tsx
+msgid "Move {title}"
+msgstr "Move {title}"
 
-#: src/sequences/StepInspector.tsx
-msgid "Move {name} later"
-msgstr "Move {name} later"
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Move here"
+msgstr "Move here"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.methodForArchitecture"
@@ -4356,8 +4852,9 @@ msgstr "Must not be empty. Leave it out for the folder boot in DDT:StorePath."
 
 #: src/account/AccountPage.tsx
 #: src/packages/PackageDialog.tsx
+#: src/sequences/builder/NodeInspector.tsx
+#: src/sequences/builder/VariablesPanel.tsx
 #: src/sequences/NewSequenceDialog.tsx
-#: src/sequences/StepInspector.tsx
 #: src/settings/DeploymentDefaultsPage.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/DirectoryPanel.tsx
@@ -4419,11 +4916,23 @@ msgstr "needs a computer name"
 msgid "Needs your approval"
 msgstr "Needs your approval"
 
+#: src/conditions/conditions.ts
+msgid "network"
+msgstr "network"
+
 #: src/app/navigation.ts
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/ServerPage.tsx
 msgid "Network boot"
 msgstr "Network boot"
+
+#: src/conditions/conditions.ts
+msgid "Network prefix length"
+msgstr "Network prefix length"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Network shares"
+msgstr "Network shares"
 
 #: src/tokens/TokenTable.tsx
 #: src/users/UsersPage.tsx
@@ -4471,9 +4980,22 @@ msgstr "New task sequence"
 msgid "New value"
 msgstr "New value"
 
+#: src/conditions/ConditionBuilder.tsx
+#: src/conditions/conditions.ts
+msgid "no"
+msgstr "no"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "No"
+msgstr "No"
+
 #: src/auth/SignInPage.tsx
 msgid "No account could be created for that identity. Ask an administrator."
 msgstr "No account could be created for that identity. Ask an administrator."
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "No account is stored on the server yet."
+msgstr "No account is stored on the server yet."
 
 #: src/users/UsersPage.tsx
 msgid "No account matches"
@@ -4492,6 +5014,10 @@ msgstr "No certificate waits for a confirmation."
 msgid "No claim value is listed, so the groups decide no role: a new account gets the role above, and administrators change it on the Users and roles page."
 msgstr "No claim value is listed, so the groups decide no role: a new account gets the role above, and administrators change it on the Users and roles page."
 
+#: src/conditions/ConditionBuilder.tsx
+msgid "No conditions."
+msgstr "No conditions."
+
 #: src/runs/RunPanel.tsx
 msgid "No contact for {silentFor}, as the machine restarts."
 msgstr "No contact for {silentFor}, as the machine restarts."
@@ -4503,6 +5029,10 @@ msgstr "No contact for {silentFor}. Windows setup runs before the agent starts a
 #: src/auth/SignInPage.tsx
 msgid "No DDT account is linked to that identity. Ask an administrator."
 msgstr "No DDT account is linked to that identity. Ask an administrator."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "No default"
+msgstr "No default"
 
 #: src/machines/MachinePage.tsx
 msgid "No disk DDT can install on"
@@ -4582,6 +5112,10 @@ msgstr "No group matches."
 #: src/settings/NetworkBootPage.tsx
 msgid "No host that runs network boot has reported its interfaces yet. A host reports them when it applies these settings without problems."
 msgstr "No host that runs network boot has reported its interfaces yet. A host reports them when it applies these settings without problems."
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "No image chosen yet"
+msgstr "No image chosen yet"
 
 #: src/images/ImagesPage.tsx
 msgid "No image matches"
@@ -4702,9 +5236,9 @@ msgstr "No sequence names it"
 msgid "No sequence names it."
 msgstr "No sequence names it."
 
-#: src/sequences/SequenceEditor.tsx
-msgid "No steps yet"
-msgstr "No steps yet"
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "No steps yet. Drag one here from the palette, or choose + to add one."
+msgstr "No steps yet. Drag one here from the palette, or choose + to add one."
 
 #: src/machines/AssignDialog.tsx
 msgid "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
@@ -4727,6 +5261,10 @@ msgstr "No token matches"
 msgid "No tokens yet"
 msgstr "No tokens yet"
 
+#: src/sequences/steps/FlowFields.tsx
+msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
+msgstr "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
+
 #: src/tokens/TokensPage.tsx
 msgid "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
 msgstr "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
@@ -4740,19 +5278,36 @@ msgstr "Nobody has signed in at this machine yet."
 msgid "Nobody has signed in yet"
 msgstr "Nobody has signed in yet"
 
+#: src/sequences/builder/Inspector.tsx
+msgid "Node"
+msgstr "Node"
+
 #: src/account/AccountPage.tsx
+#: src/sequences/builder/AccountSetting.tsx
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
 msgid "None"
 msgstr "None"
 
+#: src/conditions/conditions.ts
+msgid "None of these hold"
+msgstr "None of these hold"
+
 #: src/settings/DirectorySettings.tsx
 msgid "None, so the sign-in is refused"
 msgstr "None, so the sign-in is refused"
 
-#: src/sequences/FindingsSummary.tsx
+#: src/sequences/builder/NodeInspector.tsx
+msgid "None. DDT connects the shares listed here before the step runs."
+msgstr "None. DDT connects the shares listed here before the step runs."
+
+#: src/sequences/builder/ProblemsPanel.tsx
 msgid "None. Nothing keeps this sequence from running."
 msgstr "None. Nothing keeps this sequence from running."
+
+#: src/conditions/conditions.ts
+msgid "not ({either})"
+msgstr "not ({either})"
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.incomplete"
@@ -4845,9 +5400,22 @@ msgstr "Not stated"
 msgid "Not used while the claim map below has entries: the map decides the role."
 msgstr "Not used while the claim map below has entries: the map decides the role."
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Not used yet"
+msgstr "Not used yet"
+
+#: src/conditions/conditions.ts
+msgid "nothing"
+msgstr "nothing"
+
 #: src/settings/LoggingPanel.tsx
 msgid "Nothing"
 msgstr "Nothing"
+
+#: src/conditions/ConditionBuilder.tsx
+#: src/sequences/builder/Palette.tsx
+msgid "Nothing has that name."
+msgstr "Nothing has that name."
 
 #: src/app/CommandPalette.tsx
 msgid "Nothing matches."
@@ -4857,6 +5425,10 @@ msgstr "Nothing matches."
 msgid "Nothing recorded yet"
 msgstr "Nothing recorded yet"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Nothing to paste. Copy a step first."
+msgstr "Nothing to paste. Copy a step first."
+
 #: src/settings/SettingsParts.tsx
 msgid "Nothing was saved."
 msgstr "Nothing was saved."
@@ -4864,6 +5436,10 @@ msgstr "Nothing was saved."
 #: src/settings/SettingsParts.tsx
 msgid "Nothing was saved. The fields marked above say why."
 msgstr "Nothing was saved. The fields marked above say why."
+
+#: src/conditions/conditions.ts
+msgid "number"
+msgstr "number"
 
 #: src/runs/RunPanel.tsx
 msgid "of the run"
@@ -4897,6 +5473,18 @@ msgstr "On"
 msgid "On {name}"
 msgstr "On {name}"
 
+#: src/sequences/builder/TemplateField.tsx
+msgid "On a sample machine:"
+msgstr "On a sample machine:"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "On the web or at the machine"
+msgstr "On the web or at the machine"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "On the web, when the run is assigned or approved"
+msgstr "On the web, when the run is assigned or approved"
+
 #: src/machines/secureBoot.ts
 msgid "On, {note}"
 msgstr "On, {note}"
@@ -4925,6 +5513,14 @@ msgstr "One network per line, such as 10.0.1.0/24, for proxies that share an add
 msgid "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
 msgstr "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
 
+#: src/conditions/conditions.ts
+msgid "one of"
+msgstr "one of"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "One of a list"
+msgstr "One of a list"
+
 #: src/settings/CertificatePanel.tsx
 msgid "One per line, such as ddt.corp.example or 10.0.0.5. Generate adds localhost and this computer's name and addresses by itself."
 msgstr "One per line, such as ddt.corp.example or 10.0.0.5. Generate adds localhost and this computer's name and addresses by itself."
@@ -4947,6 +5543,10 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
+msgstr "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.sharesOnlyOnSteps"
 msgid "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
@@ -4956,7 +5556,7 @@ msgstr "Only a step connects shares, for as long as it runs. Give them to the st
 msgid "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
 msgstr "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Only administrators change task sequences. You can look at this one."
 msgstr "Only administrators change task sequences. You can look at this one."
 
@@ -5018,9 +5618,17 @@ msgctxt "token.onlyOwnerRevokes"
 msgid "Only the token's owner or an administrator can revoke it."
 msgstr "Only the token's owner or an administrator can revoke it."
 
+#: src/sequences/steps/FlowFields.tsx
+msgid "Only the variables that steps may set are offered."
+msgstr "Only the variables that steps may set are offered."
+
 #: src/settings/LoggingPanel.tsx
 msgid "Only what went unexpectedly"
 msgstr "Only what went unexpectedly"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Only when {summary}"
+msgstr "Only when {summary}"
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Only x64 images can be installed."
@@ -5101,13 +5709,29 @@ msgstr "OS images"
 msgid "Other entries"
 msgstr "Other entries"
 
-#: src/sequences/StepInspector.tsx
-msgid "Otherwise the run stops at this step."
-msgstr "Otherwise the run stops at this step."
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Otherwise the repeat fails when its condition still does not hold."
+msgstr "Otherwise the repeat fails when its condition still does not hold."
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Otherwise the run stops here."
+msgstr "Otherwise the run stops here."
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Otherwise the run waits for as long as it takes."
+msgstr "Otherwise the run waits for as long as it takes."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Otherwise the step is done without adding drivers."
 msgstr "Otherwise the step is done without adding drivers."
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Outline"
+msgstr "Outline"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Outline of {name}"
+msgstr "Outline of {name}"
 
 #: src/settings/ServerPage.tsx
 msgid "Overview"
@@ -5260,6 +5884,7 @@ msgstr "PFX file"
 msgid "PFX password"
 msgstr "PFX password"
 
+#: src/conditions/conditions.ts
 #: src/sequences/steps.ts
 msgid "Phase"
 msgstr "Phase"
@@ -5285,6 +5910,10 @@ msgstr "Port"
 msgid "Preparing"
 msgstr "Preparing"
 
+#: src/conditions/conditions.ts
+msgid "Primary MAC address"
+msgstr "Primary MAC address"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Private key"
 msgstr "Private key"
@@ -5293,13 +5922,25 @@ msgstr "Private key"
 msgid "Problem"
 msgstr "Problem"
 
-#: src/sequences/FindingsSummary.tsx
+#: src/sequences/builder/Inspector.tsx
+msgid "Problems"
+msgstr "Problems"
+
+#: src/sequences/builder/ProblemsPanel.tsx
 msgid "Problems and warnings"
 msgstr "Problems and warnings"
 
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/NodeInspector.tsx
 msgid "Problems and warnings of this step"
 msgstr "Problems and warnings of this step"
+
+#: src/conditions/conditions.ts
+msgid "Processor"
+msgstr "Processor"
+
+#: src/conditions/conditions.ts
+msgid "Processor cores"
+msgstr "Processor cores"
 
 #: src/settings/SignInSettingsPage.tsx
 msgid "Provider"
@@ -5342,6 +5983,10 @@ msgstr "Put at least {min} characters before {wildcard}, so it matches only one 
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Question"
+msgstr "Question"
+
 #: src/images/images.ts
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Raw disk image"
@@ -5371,7 +6016,7 @@ msgstr "Reading their version."
 msgid "Ready"
 msgstr "Ready"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 #: src/sequences/sequenceList.ts
 #: src/sequences/SequencesPage.tsx
 msgid "Ready to run"
@@ -5402,6 +6047,14 @@ msgstr "Recovery partition in MB"
 msgid "Redirect URI"
 msgstr "Redirect URI"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Redo"
+msgstr "Redo"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Redo, Ctrl+Y"
+msgstr "Redo, Ctrl+Y"
+
 #: src/settings/DirectorySettings.tsx
 msgid "Refused"
 msgstr "Refused"
@@ -5428,7 +6081,9 @@ msgid "Rejected"
 msgstr "Rejected"
 
 #: src/machines/MachineActions.tsx
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/FlowCanvas.tsx
+#: src/sequences/builder/NodeInspector.tsx
+#: src/sequences/builder/VariablesPanel.tsx
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/RoleMapEditor.tsx
 msgid "Remove"
@@ -5446,7 +6101,8 @@ msgstr "Remove {entry}"
 msgid "Remove {key}"
 msgstr "Remove {key}"
 
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/NodeInspector.tsx
+#: src/sequences/builder/VariablesPanel.tsx
 msgid "Remove {name}"
 msgstr "Remove {name}"
 
@@ -5454,7 +6110,11 @@ msgstr "Remove {name}"
 msgid "Remove all {count} waiting from {address}"
 msgstr "Remove all {count} waiting from {address}"
 
-#: src/sequences/StepConditions.tsx
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Remove choice {number}"
+msgstr "Remove choice {number}"
+
+#: src/conditions/ConditionBuilder.tsx
 msgid "Remove condition {number}"
 msgstr "Remove condition {number}"
 
@@ -5465,6 +6125,10 @@ msgstr "Remove logo"
 #: src/packages/PackageDialog.tsx
 msgid "Remove model {position}"
 msgstr "Remove model {position}"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Remove share {number}"
+msgstr "Remove share {number}"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "Remove the boot target for {key}"
@@ -5478,13 +6142,17 @@ msgstr "Remove the logo"
 msgid "Remove the logo?"
 msgstr "Remove the logo?"
 
+#: src/conditions/ConditionBuilder.tsx
+msgid "Remove this group"
+msgstr "Remove this group"
+
 #: src/settings/LoggingPanel.tsx
 msgid "Remove this row"
 msgstr "Remove this row"
 
-#: src/sequences/RemovedStepNotice.tsx
-msgid "Removed {name} ({kind}). You can bring it back for 10 seconds."
-msgstr "Removed {name} ({kind}). You can bring it back for 10 seconds."
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Removed {title}."
+msgstr "Removed {title}."
 
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "Removed. Machines show no logo when they next register."
@@ -5498,6 +6166,10 @@ msgstr "Removing the agent from Windows"
 msgid "Removing the logo"
 msgstr "Removing the logo"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Rename everywhere"
+msgstr "Rename everywhere"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Renewal"
 msgstr "Renewal"
@@ -5506,6 +6178,11 @@ msgstr "Renewal"
 msgid "Repeat"
 msgstr "Repeat"
 
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Repeat until"
+msgstr "Repeat until"
+
+#: src/sequences/flow/flowKeyboard.ts
 #: src/ui/FlowNode.tsx
 msgid "Repeat: {name}"
 msgstr "Repeat: {name}"
@@ -5569,7 +6246,7 @@ msgstr "Reset second factor"
 msgid "Restart"
 msgstr "Restart"
 
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/NodeInspector.tsx
 msgid "Restart after this step"
 msgstr "Restart after this step"
 
@@ -5584,6 +6261,10 @@ msgstr "Restarted after step {number}, {name}; back after {took}"
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr "Restarting"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Restarts the machine"
+msgstr "Restarts the machine"
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
@@ -5699,6 +6380,10 @@ msgstr "Rules by hardware model"
 msgid "Rules by MAC address"
 msgstr "Rules by MAC address"
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "Run as"
+msgstr "Run as"
+
 #: src/audit/auditView.ts
 msgid "Run done"
 msgstr "Run done"
@@ -5711,6 +6396,14 @@ msgstr "Run failed"
 #: src/runs/RunHistoryPage.tsx
 msgid "Run history"
 msgstr "Run history"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Run it only when"
+msgstr "Run it only when"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Run only when"
+msgstr "Run only when"
 
 #: src/sequences/steps.ts
 msgid "Run script"
@@ -5769,16 +6462,28 @@ msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read t
 msgstr "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 
 #: src/sequences/steps/ScriptFields.tsx
+msgid "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+
+#: src/sequences/steps/ScriptFields.tsx
 msgid "Runs in"
 msgstr "Runs in"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Runs its steps in order"
+msgstr "Runs its steps in order"
 
 #: src/runs/MachineRuns.tsx
 msgid "Runs of this machine"
 msgstr "Runs of this machine"
 
-#: src/sequences/StepConditions.tsx
-msgid "Runs on every machine. Add a condition to run it only where every condition holds."
-msgstr "Runs on every machine. Add a condition to run it only where every condition holds."
+#: src/conditions/conditions.ts
+msgid "Runs on every machine."
+msgstr "Runs on every machine."
+
+#: src/conditions/conditions.ts
+msgid "Runs only where {condition}."
+msgstr "Runs only where {condition}."
 
 #: src/sequences/sequenceList.ts
 msgid "Runs that already ended keep their history."
@@ -5877,6 +6582,10 @@ msgstr "Scopes"
 msgid "Script"
 msgstr "Script"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Scripts may run as it"
+msgstr "Scripts may run as it"
+
 #: src/app/CommandPalette.tsx
 msgid "Search"
 msgstr "Search"
@@ -5908,10 +6617,15 @@ msgstr "Sections"
 msgid "Secure Boot"
 msgstr "Secure Boot"
 
+#: src/conditions/conditions.ts
+msgid "Secure Boot capable"
+msgstr "Secure Boot capable"
+
 #: src/machines/secureBoot.ts
 msgid "Secure Boot off"
 msgstr "Secure Boot off"
 
+#: src/conditions/conditions.ts
 #: src/machines/secureBoot.ts
 msgid "Secure Boot on"
 msgstr "Secure Boot on"
@@ -5970,7 +6684,7 @@ msgstr "Send the values to test."
 
 #: src/machines/MachinesPage.tsx
 #: src/runs/RunHistoryPage.tsx
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/Inspector.tsx
 msgid "Sequence"
 msgstr "Sequence"
 
@@ -5990,7 +6704,7 @@ msgstr "Sequence created"
 msgid "Sequence deleted"
 msgstr "Sequence deleted"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Sequence name"
 msgstr "Sequence name"
 
@@ -6007,6 +6721,7 @@ msgstr "Serial"
 msgid "Serial {serial}"
 msgstr "Serial {serial}"
 
+#: src/conditions/conditions.ts
 #: src/sequences/steps.ts
 msgid "Serial number"
 msgstr "Serial number"
@@ -6020,6 +6735,7 @@ msgid "Served certificate"
 msgstr "Served certificate"
 
 #: src/app/navigation.ts
+#: src/conditions/conditions.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/ServerPage.tsx
 #: src/users/DirectoryPanel.tsx
@@ -6064,6 +6780,10 @@ msgstr "Set"
 msgid "Set a password of your own first"
 msgstr "Set a password of your own first"
 
+#: src/sequences/builder/nodeKinds.ts
+msgid "Set a variable"
+msgstr "Set a variable"
+
 #: src/lib/serverMessages.ts
 msgctxt "namedValue.tooMany"
 msgid "Set at most {max} values here."
@@ -6094,9 +6814,17 @@ msgstr "Set up an authenticator"
 msgid "Set variable"
 msgstr "Set variable"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Set variable steps and scripts may give it a new value while the run goes on."
+msgstr "Set variable steps and scripts may give it a new value while the run goes on."
+
 #: src/settings/ServerPage.tsx
 msgid "Set, not shown"
 msgstr "Set, not shown"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
+msgstr "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
 
 #: src/audit/auditView.ts
 msgid "Settings"
@@ -6105,6 +6833,10 @@ msgstr "Settings"
 #: src/settings/ServerPage.tsx
 msgid "Settings sections"
 msgstr "Settings sections"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Several of a list"
+msgstr "Several of a list"
 
 #: src/images/ImagesPage.tsx
 #: src/settings/AgentPanel.tsx
@@ -6115,6 +6847,14 @@ msgstr "SHA-256"
 #: src/settings/AgentPanel.tsx
 msgid "SHA-256 of ddt-console.exe"
 msgstr "SHA-256 of ddt-console.exe"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Share {number}"
+msgstr "Share {number}"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Share hosts it may connect to"
+msgstr "Share hosts it may connect to"
 
 #: src/machines/MachinesPage.tsx
 msgid "Show all machines"
@@ -6160,13 +6900,17 @@ msgstr "Show theirs"
 msgid "Show tokens by state"
 msgstr "Show tokens by state"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/steps/FlowFields.tsx
+msgid "Shown at the machine and on its page while the run waits."
+msgstr "Shown at the machine and on its page while the run waits."
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Shown in the flow, in the run and in the log."
+msgstr "Shown in the flow, in the run and in the log."
+
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Shown in the list of task sequences."
 msgstr "Shown in the list of task sequences."
-
-#: src/sequences/StepInspector.tsx
-msgid "Shown on the rail, in the run and in the log."
-msgstr "Shown on the rail, in the run and in the log."
 
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
@@ -6277,6 +7021,7 @@ msgstr "Skipped, because not every condition held: {conditions}."
 msgid "Skipped."
 msgstr "Skipped."
 
+#: src/conditions/conditions.ts
 #: src/machines/MachinePage.tsx
 #: src/sequences/steps.ts
 msgid "SMBIOS UUID"
@@ -6287,7 +7032,7 @@ msgctxt "stepAccount.changedMeanwhile"
 msgid "Someone changed the account meanwhile. Look at it again."
 msgstr "Someone changed the account meanwhile. Look at it again."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 msgstr "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
 
@@ -6295,7 +7040,7 @@ msgstr "Someone deleted it while it was open here, so nothing more is saved. <0>
 msgid "Someone else saved these settings while you were changing them."
 msgstr "Someone else saved these settings while you were changing them."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
 msgstr "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
 
@@ -6367,10 +7112,6 @@ msgstr "StartTLS"
 #: src/users/UsersPage.tsx
 msgid "State"
 msgstr "State"
-
-#: src/sequences/sequenceView.ts
-msgid "Step {number}"
-msgstr "Step {number}"
 
 #: src/machines/MachinesPage.tsx
 msgid "Step {number} failed"
@@ -6454,12 +7195,29 @@ msgstr "Step {number}, running, {percent} percent"
 msgid "Step {number}, skipped"
 msgstr "Step {number}, skipped"
 
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Step {position}"
+msgstr "Step {position}"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Step {position} of ''{title}''"
+msgstr "Step {position} of ''{title}''"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Step {position} of Else of ''{title}''"
+msgstr "Step {position} of Else of ''{title}''"
+
+#: src/sequences/flow/flowKeyboard.ts
+msgid "Step {position} of Then of ''{title}''"
+msgstr "Step {position} of Then of ''{title}''"
+
 #: src/log/LogPanel.tsx
 msgid "step {position}, {name}"
 msgstr "step {position}, {name}"
 
 #: src/runs/RunSteps.tsx
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/AddNodeMenu.tsx
+#: src/sequences/builder/Palette.tsx
 msgid "Steps"
 msgstr "Steps"
 
@@ -6473,7 +7231,10 @@ msgctxt "sequence.windowsPEAfterWindows"
 msgid "Steps in Windows PE come first, and an earlier step already runs in Windows."
 msgstr "Steps in Windows PE come first, and an earlier step already runs in Windows."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Steps may change it"
+msgstr "Steps may change it"
+
 #: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr "Steps of {name}"
@@ -6513,9 +7274,25 @@ msgstr "Stopped {when}"
 msgid "Stopped at step {number} of {count}"
 msgstr "Stopped at step {number} of {count}"
 
+#: src/conditions/conditions.ts
+msgid "Stops after the first time."
+msgstr "Stops after the first time."
+
+#: src/conditions/conditions.ts
+msgid "Stops repeating once {condition}."
+msgstr "Stops repeating once {condition}."
+
+#: src/sequences/builder/AccountSetting.tsx
+msgid "Stored accounts"
+msgstr "Stored accounts"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Subject"
 msgstr "Subject"
+
+#: src/conditions/conditions.ts
+msgid "Subnet"
+msgstr "Subnet"
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Such as de-DE."
@@ -6525,9 +7302,29 @@ msgstr "Such as de-DE."
 msgid "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
 msgstr "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
 
+#: src/sequences/steps/ScriptFields.tsx
+msgid "SYSTEM"
+msgstr "SYSTEM"
+
+#: src/conditions/conditions.ts
+msgid "System family"
+msgstr "System family"
+
 #: src/sequences/steps/WindowsFields.tsx
 msgid "System partition in MB"
 msgstr "System partition in MB"
+
+#: src/conditions/conditions.ts
+msgid "System SKU"
+msgstr "System SKU"
+
+#: src/conditions/conditions.ts
+msgid "System version"
+msgstr "System version"
+
+#: src/conditions/conditions.ts
+msgid "Tablet"
+msgstr "Tablet"
 
 #: src/machines/AssignDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -6544,6 +7341,10 @@ msgstr "Task sequence"
 msgid "Task sequences"
 msgstr "Task sequences"
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Templates use it as {placeholder}."
+msgstr "Templates use it as {placeholder}."
+
 #: src/settings/DirectorySettings.tsx
 msgid "Test"
 msgstr "Test"
@@ -6555,6 +7356,18 @@ msgstr "Test the directory"
 #: src/settings/SignInSettingsPage.tsx
 msgid "Test the provider"
 msgstr "Test the provider"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Tested after each time the steps inside ran."
+msgstr "Tested after each time the steps inside ran."
+
+#: src/conditions/conditions.ts
+msgid "text"
+msgstr "text"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Text"
+msgstr "Text"
 
 #: src/settings/NetworkBootPage.tsx
 msgid "TFTP transfers at once"
@@ -6630,6 +7443,10 @@ msgstr "The account {account} may not connect to {host}. Add the server to it on
 msgctxt "sequence.accountNoDomain"
 msgid "The account {account} names no domain, so it cannot join one. Enter its domain on the Accounts page, or choose another account."
 msgstr "The account {account} names no domain, so it cannot join one. Enter its domain on the Accounts page, or choose another account."
+
+#: src/sequences/steps/WindowsFields.tsx
+msgid "The account also names the domain the machine joins."
+msgstr "The account also names the domain the machine joins."
 
 #: src/sequences/steps/WindowsFields.tsx
 msgid "The account and its password are set on the Deployment defaults page, never in the sequence."
@@ -7232,6 +8049,10 @@ msgctxt "domain.noJoinAccountSet"
 msgid "The join account is not set. Set it and its password on the Deployment defaults page."
 msgstr "The join account is not set. Set it and its password on the Deployment defaults page."
 
+#: src/sequences/steps/WindowsFields.tsx
+msgid "The join account on the Deployment defaults page"
+msgstr "The join account on the Deployment defaults page"
+
 #: src/settings/AgentPanel.tsx
 msgid "The key is set <0/>."
 msgstr "The key is set <0/>."
@@ -7336,7 +8157,7 @@ msgstr "The machine reported no disk DDT can install on, so the run will fail."
 msgid "The machine restarts and the sequence goes on with the next step."
 msgstr "The machine restarts and the sequence goes on with the next step."
 
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/NodeInspector.tsx
 msgid "The machine restarts once the step is done."
 msgstr "The machine restarts once the step is done."
 
@@ -7594,9 +8415,13 @@ msgctxt "settings.ldapTest.searchFailed"
 msgid "The search for {name} under {baseDn} failed: {error}"
 msgstr "The search for {name} under {baseDn} failed: {error}"
 
-#: src/sequences/FindingsSummary.tsx
+#: src/sequences/builder/ProblemsPanel.tsx
 msgid "The sequence"
 msgstr "The sequence"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "The sequence already has a variable or an input of that name."
+msgstr "The sequence already has a variable or an input of that name."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.cannotGoOn"
@@ -7693,7 +8518,7 @@ msgstr "The server could not be reached with the new certificate, so this browse
 msgid "The server did not answer."
 msgstr "The server did not answer."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "The server did not save your latest changes: {message} Leaving throws them away."
 msgstr "The server did not save your latest changes: {message} Leaving throws them away."
 
@@ -7828,6 +8653,10 @@ msgstr "The upload failed."
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
 
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "The value of a choice; several separated by semicolons."
+msgstr "The value of a choice; several separated by semicolons."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
@@ -7869,6 +8698,7 @@ msgstr "The zip holds {count} entries. A package can hold at most {max}."
 msgid "Their changes to {list} are lost."
 msgstr "Their changes to {list} are lost."
 
+#: src/sequences/builder/FlowOutline.tsx
 #: src/ui/FlowNode.tsx
 msgid "Then"
 msgstr "Then"
@@ -8066,10 +8896,6 @@ msgstr "This page"
 msgid "This page cannot change the certificate"
 msgstr "This page cannot change the certificate"
 
-#: src/sequences/SequenceEditor.tsx
-msgid "This page cannot show this sequence"
-msgstr "This page cannot show this sequence"
-
 #: src/app/RouteError.tsx
 msgid "This page could not load"
 msgstr "This page could not load"
@@ -8086,19 +8912,25 @@ msgstr "This page's next request gets the new certificate. Once the page works w
 msgid "This process cannot read the key ring the stored secrets were encrypted with, so it refuses every save. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr "This process cannot read the key ring the stored secrets were encrypted with, so it refuses every save. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 
+#: src/conditions/ConditionBuilder.tsx
 #: src/log/LogPanel.tsx
 msgid "This run"
 msgstr "This run"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "This sequence declares no variables or inputs yet."
+msgstr "This sequence declares no variables or inputs yet."
 
 #: src/sequences/SequenceEditorPage.tsx
 msgid "This sequence does not exist. It may have been deleted."
 msgstr "This sequence does not exist. It may have been deleted."
 
-#: src/sequences/SequenceEditor.tsx
-msgid "This sequence does nothing yet."
-msgstr "This sequence does nothing yet."
+#: src/sequences/builder/FlowCanvas.tsx
+#: src/sequences/builder/FlowOutline.tsx
+msgid "This sequence has no steps yet."
+msgstr "This sequence has no steps yet."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "This sequence was deleted"
 msgstr "This sequence was deleted"
 
@@ -8220,6 +9052,14 @@ msgstr "Took {took}"
 msgid "Took {took}, finished {finished}"
 msgstr "Took {took}, finished {finished}"
 
+#: src/conditions/conditions.ts
+msgid "TPM present"
+msgstr "TPM present"
+
+#: src/conditions/conditions.ts
+msgid "TPM version"
+msgstr "TPM version"
+
 #: src/settings/DirectorySettings.tsx
 msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 msgstr "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
@@ -8265,6 +9105,10 @@ msgstr "Turn on"
 msgid "Type"
 msgstr "Type"
 
+#: src/sequences/builder/TemplateField.tsx
+msgid "Type {braces} to use a value, such as {example}."
+msgstr "Type {braces} to use a value, such as {example}."
+
 #: src/ui/Dialog.tsx
 msgid "Type {typedWord} to go on"
 msgstr "Type {typedWord} to go on"
@@ -8273,9 +9117,13 @@ msgstr "Type {typedWord} to go on"
 msgid "Type part of a group's name to see its distinguished name for the map."
 msgstr "Type part of a group's name to see its distinguished name for the map."
 
-#: src/sequences/RemovedStepNotice.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Undo"
 msgstr "Undo"
+
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "Undo, Ctrl+Z"
+msgstr "Undo, Ctrl+Z"
 
 #: src/settings/DirectorySettings.tsx
 msgid "Unencrypted (dangerous)"
@@ -8285,6 +9133,7 @@ msgstr "Unencrypted (dangerous)"
 msgid "Unfinished uploads"
 msgstr "Unfinished uploads"
 
+#: src/conditions/conditions.ts
 #: src/images/images.ts
 msgid "Unknown"
 msgstr "Unknown"
@@ -8301,12 +9150,12 @@ msgstr "Unknown file"
 msgid "Unknown model"
 msgstr "Unknown model"
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Unnamed sequence"
 msgstr "Unnamed sequence"
 
-#: src/sequences/sequenceView.ts
-#: src/sequences/StepInspector.tsx
+#: src/sequences/builder/FlowCanvas.tsx
+#: src/sequences/flow/flowKeyboard.ts
 msgid "Unnamed step"
 msgstr "Unnamed step"
 
@@ -8330,6 +9179,19 @@ msgstr "Unsaved changes"
 #: src/audit/AuditPage.tsx
 msgid "Until"
 msgstr "Until"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Until {until}, at most {times} times"
+msgstr "Until {until}, at most {times} times"
+
+#: src/sequences/builder/FlowCanvas.tsx
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Unwrap"
+msgstr "Unwrap"
+
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Unwrap {name}"
+msgstr "Unwrap {name}"
 
 #: src/machines/AssignDialog.tsx
 msgid "Up to 15 letters A to Z, digits and hyphens."
@@ -8431,10 +9293,6 @@ msgstr "Use HTTP"
 msgid "Use TFTP"
 msgstr "Use TFTP"
 
-#: src/sequences/StepInspector.tsx
-msgid "Use the arrow keys to move the step, and Home or End to move it to the start or the end."
-msgstr "Use the arrow keys to move the step, and Home or End to move it to the start or the end."
-
 #: src/settings/LoggingPanel.tsx
 msgid "Use the defaults"
 msgstr "Use the defaults"
@@ -8448,6 +9306,7 @@ msgid "Use theirs throws your unsaved changes away. Keep mine saves your version
 msgstr "Use theirs throws your unsaved changes away. Keep mine saves your version over theirs."
 
 #: src/packages/PackagesPage.tsx
+#: src/sequences/builder/VariablesPanel.tsx
 #: src/sequences/SequencesPage.tsx
 msgid "Used by"
 msgstr "Used by"
@@ -8511,21 +9370,35 @@ msgstr "Users and roles"
 msgid "Valid until"
 msgstr "Valid until"
 
-#: src/sequences/StepConditions.tsx
+#: src/sequences/builder/VariablesPanel.tsx
+#: src/sequences/steps/FlowFields.tsx
 msgid "Value"
 msgstr "Value"
 
-#: src/sequences/StepConditions.tsx
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Value of choice {number}"
+msgstr "Value of choice {number}"
+
+#: src/conditions/ConditionBuilder.tsx
 msgid "Value of condition {number}"
 msgstr "Value of condition {number}"
 
-#: src/sequences/StepConditions.tsx
+#: src/sequences/builder/TemplateField.tsx
+msgid "Values to use"
+msgstr "Values to use"
+
+#: src/sequences/builder/VariablesPanel.tsx
+#: src/sequences/steps/FlowFields.tsx
 msgid "Variable"
 msgstr "Variable"
 
-#: src/sequences/StepConditions.tsx
-msgid "Variable of condition {number}"
-msgstr "Variable of condition {number}"
+#: src/sequences/builder/Inspector.tsx
+msgid "Variables"
+msgstr "Variables"
+
+#: src/conditions/ConditionBuilder.tsx
+msgid "Variables and inputs of this sequence"
+msgstr "Variables and inputs of this sequence"
 
 #: src/images/ImagesPage.tsx
 msgid "Version"
@@ -8536,6 +9409,10 @@ msgstr "Version"
 msgid "Version {version}"
 msgstr "Version {version}"
 
+#: src/sequences/builder/FlowBuilder.tsx
+msgid "View"
+msgstr "View"
+
 #: src/settings/SignInSettingsPage.tsx
 #: src/users/userView.ts
 msgid "Viewer"
@@ -8545,6 +9422,10 @@ msgstr "Viewer"
 msgctxt "role.viewer"
 msgid "Viewer"
 msgstr "Viewer"
+
+#: src/conditions/conditions.ts
+msgid "Virtual machine"
+msgstr "Virtual machine"
 
 #: src/machines/machineView.ts
 msgid "Waiting"
@@ -8570,6 +9451,14 @@ msgstr "Waiting machines"
 msgid "Waiting to start"
 msgstr "Waiting to start"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Waits until someone lets the run go on"
+msgstr "Waits until someone lets the run go on"
+
+#: src/sequences/steps/FlowFields.tsx
+msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
+msgstr "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "Warning"
 msgstr "Warning"
@@ -8590,6 +9479,10 @@ msgstr "Was served this certificate."
 msgid "What"
 msgstr "What"
 
+#: src/conditions/ConditionBuilder.tsx
+msgid "What condition {number} tests"
+msgstr "What condition {number} tests"
+
 #: src/sequences/SequencesPage.tsx
 msgid "What it does"
 msgstr "What it does"
@@ -8605,6 +9498,14 @@ msgstr "What the button on the sign-in page says."
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "What the check found"
 msgstr "What the check found"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "What the person who answers reads."
+msgstr "What the person who answers reads."
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "What the variable holds unless an input, a rule or a machine role sets it."
+msgstr "What the variable holds unless an input, a rule or a machine role sets it."
 
 #: src/tokens/MakeTokenDialog.tsx
 msgid "What uses it, such as the inventory script."
@@ -8662,6 +9563,7 @@ msgstr "Whole machine"
 msgid "Whole numbers, separated by commas."
 msgstr "Whole numbers, separated by commas."
 
+#: src/conditions/conditions.ts
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
@@ -8670,6 +9572,7 @@ msgstr "Windows"
 msgid "Windows image"
 msgstr "Windows image"
 
+#: src/conditions/conditions.ts
 #: src/packages/PackagesPage.tsx
 #: src/sequences/steps.ts
 msgid "Windows PE"
@@ -8696,13 +9599,25 @@ msgstr "Windows UEFI CA 2023."
 msgid "Windows, after the hand-over"
 msgstr "Windows, after the hand-over"
 
-#: src/sequences/StepConditions.tsx
-msgid "WindowsPE or Windows"
-msgstr "WindowsPE or Windows"
-
 #: src/machines/secureBoot.ts
 msgid "with {cas} only"
 msgstr "with {cas} only"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "With {input}, asked for the run"
+msgstr "With {input}, asked for the run"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "With {name}"
+msgstr "With {name}"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "With a stored account"
+msgstr "With a stored account"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "With the join account of the deployment defaults"
+msgstr "With the join account of the deployment defaults"
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Without it, the image configures its network itself, usually by DHCP."
@@ -8711,6 +9626,10 @@ msgstr "Without it, the image configures its network itself, usually by DHCP."
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"
 msgstr "without Microsoft's third-party UEFI CA"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Without one, and without a default, the run waits at its start."
+msgstr "Without one, and without a default, the run waits at its start."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Without one, the step cannot add the account and the run fails."
@@ -8724,13 +9643,26 @@ msgstr "Without rules an operator assigns a sequence to each machine. Add a rule
 msgid "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
 msgstr "Without rules an operator assigns a sequence to each machine. An administrator adds rules here."
 
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Wrap {name} in a group"
+msgstr "Wrap {name} in a group"
+
+#: src/sequences/builder/FlowCanvas.tsx
+#: src/sequences/builder/NodeInspector.tsx
+msgid "Wrap in a group"
+msgstr "Wrap in a group"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Wrap in a Repeat"
+msgstr "Wrap in a Repeat"
+
+#: src/sequences/builder/FlowCanvas.tsx
+msgid "Wrap in an If"
+msgstr "Wrap in an If"
+
 #: src/machines/secureBoot.ts
 msgid "Write {image} anyway"
 msgstr "Write {image} anyway"
-
-#: src/sequences/AddStepMenu.tsx
-msgid "Write a disk image"
-msgstr "Write a disk image"
 
 #: src/sequences/steps/RawImageFields.tsx
 msgid "Write network-config"
@@ -8765,6 +9697,23 @@ msgstr "Writes a raw disk image, such as a distribution's cloud image, and a clo
 #: src/sequences/steps/WindowsFields.tsx
 msgid "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."
 msgstr "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."
+
+#: src/conditions/ConditionBuilder.tsx
+#: src/conditions/conditions.ts
+msgid "yes"
+msgstr "yes"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Yes"
+msgstr "Yes"
+
+#: src/conditions/conditions.ts
+msgid "yes or no"
+msgstr "yes or no"
+
+#: src/sequences/builder/VariablesPanel.tsx
+msgid "Yes or no"
+msgstr "Yes or no"
 
 #: src/users/UsersPage.tsx
 msgid "you"
@@ -8848,7 +9797,7 @@ msgstr "Your API tokens"
 msgid "Your changes since your last save are not saved."
 msgstr "Your changes since your last save are not saved."
 
-#: src/sequences/SequenceEditor.tsx
+#: src/sequences/builder/FlowBuilder.tsx
 msgid "Your latest changes are not saved yet. Leaving throws them away."
 msgstr "Your latest changes are not saved yet. Leaving throws them away."
 

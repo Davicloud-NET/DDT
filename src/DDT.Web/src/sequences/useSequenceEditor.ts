@@ -4,7 +4,7 @@
 
 import { t } from "@lingui/core/macro";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { currentUserQuery } from "@/auth/auth";
 import { deploymentOptionsQuery } from "@/deployments/deployments";
@@ -25,11 +25,11 @@ import {
   type History,
   type HistoryCommand,
 } from "./flow/history";
-import { phasesOf, type Findings } from "./problems";
+import { indexTree, slotOf, type Slot } from "./flow/flowTree";
+import { nodePhasesOf, type Findings } from "./problems";
 import {
   changedParts,
   draftOf,
-  needsFlowBuilder,
   sameDraft,
   saveRequestOf,
   type SequenceDraft,
@@ -46,9 +46,10 @@ export interface StepCatalog {
   domainConfigured: boolean | null;
 }
 
-export interface RemovedStep {
-  step: SequenceStep;
-  index: number;
+// A node taken out of the flow, and the gap it left, so it can be put back there.
+export interface RemovedNode {
+  node: SequenceStep;
+  slot: Slot;
 }
 
 // A 409 answers with the copy the server holds, so the page need not read it again.
@@ -114,15 +115,17 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     },
   });
 
-  const [removed, setRemoved] = useState<RemovedStep | null>(null);
-
   // The newest copy the server gave, with its problems, which the draft is compared against.
   const latest = stored.data ?? initial;
   const deleted = stored.error instanceof ApiError && stored.error.status === 404;
   const draft = autosave.value;
-  // A sequence with groups, variables and the like is left as it is, also when someone else's save makes it one.
-  const flowOnly = needsFlowBuilder(draft);
-  const locked = readOnly || deleted || flowOnly;
+  const locked = readOnly || deleted;
+  // The newest draft, for a key pressed long after the render that made it, such as a toast's Undo.
+  const newest = useRef(draft);
+
+  useEffect(() => {
+    newest.current = draft;
+  });
   const { receive, stop, update } = autosave;
 
   useEffect(() => {
@@ -207,10 +210,13 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     dirty: autosave.dirty,
     deleted,
     locked,
-    flowOnly,
     savedElsewhere,
     findings: { problems: latest.problems, warnings: latest.warnings } satisfies Findings,
-    phases: phasesOf(draft.steps, latest.definition.steps, latest.stepPhases),
+    phases: nodePhasesOf(draft.steps, {
+      steps: latest.definition.steps,
+      stepPhases: latest.stepPhases,
+      nodePhases: latest.nodePhases,
+    }),
     catalog: {
       images: images.data ?? [],
       packages: packages.data ?? [],
@@ -224,7 +230,6 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
             changes: theirs === null ? [] : changedParts(autosave.base, theirs.value),
           }
         : null,
-    removed,
     edit,
     undo: () => {
       step("undo");
@@ -234,33 +239,36 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     },
     canUndo: !locked && history.past.length > 0,
     canRedo: !locked && history.future.length > 0,
-    // Answers the place the step had, so the page can show the step that takes it.
-    remove: (stepId: string): number | null => {
-      const index = draft.steps.findIndex((step) => step.id === stepId);
-      const step = draft.steps[index];
+    // Takes a node out of the flow, wherever it is, and answers it with the gap it left.
+    remove: (nodeId: string): RemovedNode | null => {
+      const index = indexTree(draft.steps);
+      const node = index.byId.get(nodeId)?.node;
+      const slot = slotOf(index, nodeId);
 
-      if (step === undefined || locked) {
+      if (node === undefined || slot === undefined || locked) {
         return null;
       }
 
-      edit({ type: "removeStep", id: stepId });
-      setRemoved({ step, index });
+      edit({ type: "removeNodes", ids: [nodeId] });
 
-      return index;
+      return { node, slot };
     },
-    // Answers the step it brought back.
-    undoRemove: (): SequenceStep | null => {
-      if (removed === null) {
-        return null;
-      }
+    // Puts a removed node back in its gap, or at the end where its container is gone too.
+    restore: ({ node, slot }: RemovedNode) => {
+      const index = indexTree(newest.current.steps);
+      const there = slot.parent === null || index.byId.has(slot.parent);
 
-      edit({ type: "restoreStep", step: removed.step, index: removed.index });
-      setRemoved(null);
-
-      return removed.step;
-    },
-    dismissRemoved: () => {
-      setRemoved(null);
+      edit({
+        type: "insertNodes",
+        slot: there
+          ? slot
+          : {
+              parent: null,
+              body: "steps",
+              index: index.entries.filter((entry) => entry.parent === null).length,
+            },
+        nodes: [node],
+      });
     },
     takeTheirs: autosave.takeTheirs,
     keepMine: autosave.keepMine,

@@ -19,6 +19,7 @@ import {
   pinchChange,
   toContent,
   toScreen,
+  topTransform,
   visibleContent,
   wheelChange,
   zoomAt,
@@ -35,6 +36,14 @@ function close(actual: ViewTransform, expected: ViewTransform) {
 }
 
 describe("the view transform", () => {
+  it("starts a tall flow at its top, as wide as fits but no smaller than it reads", () => {
+    // Narrow content keeps 100 %, centred across.
+    close(topTransform({ width: 400, height: 3000 }, canvas), { scale: 1, x: 200, y: 32 });
+    // Wide content shrinks to the canvas's width, down to 75 %.
+    close(topTransform({ width: 920, height: 3000 }, canvas), { scale: 0.8, x: 32, y: 32 });
+    close(topTransform({ width: 2000, height: 3000 }, canvas), { scale: 0.75, x: -350, y: 32 });
+  });
+
   it("turns content points into screen points and back", () => {
     const view = { x: 40, y: -20, scale: 0.5 };
     const point = { x: 100, y: 300 };

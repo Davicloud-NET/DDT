@@ -83,6 +83,9 @@ public sealed class HardwareModelsTests
         Assert.Null(HardwareModels.Clean("   "));
         Assert.Equal("DELL INC.", HardwareModels.Normalize(" dell  inc."));
         Assert.True(HardwareModels.IsPlaceholder(" to be filled by o.e.m. "));
+        Assert.True(HardwareModels.IsPlaceholder("Default string"));
+        Assert.True(HardwareModels.IsPlaceholder("System Version"));
+        Assert.True(HardwareModels.IsPlaceholder("Chassis Asset Tag"));
         Assert.False(HardwareModels.IsPlaceholder("Dell Inc."));
         Assert.True(HardwareModels.IsPrefix("Latitude 7*"));
         Assert.True(HardwareModels.Matches(null, null));

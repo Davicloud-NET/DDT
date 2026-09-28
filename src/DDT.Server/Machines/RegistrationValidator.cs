@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
+using DDT.Core.Machines;
 
 namespace DDT.Server.Machines;
 
@@ -121,7 +122,7 @@ public static partial class RegistrationValidator
     private static MachineFacts Normalise(MachineFacts facts) => new()
     {
         MemoryMegabytes = facts.MemoryMegabytes is > 0 and <= MaxMemoryMegabytes ? facts.MemoryMegabytes : null,
-        ProcessorName = FactText(facts.ProcessorName, MaxTextLength),
+        ProcessorName = FirmwareText(facts.ProcessorName),
         ProcessorCores = facts.ProcessorCores is > 0 and <= MaxProcessors ? facts.ProcessorCores : null,
         LogicalProcessors = facts.LogicalProcessors is > 0 and <= MaxProcessors ? facts.LogicalProcessors : null,
         TpmPresent = facts.TpmPresent,
@@ -132,12 +133,12 @@ public static partial class RegistrationValidator
         DefaultGateway = IPv4(facts.DefaultGateway),
         DnsSuffix = FactText(facts.DnsSuffix, MaxDnsNameLength),
         DhcpServer = IPv4(facts.DhcpServer),
-        SystemVersion = FactText(facts.SystemVersion, MaxTextLength),
-        SystemFamily = FactText(facts.SystemFamily, MaxTextLength),
-        SystemSku = FactText(facts.SystemSku, MaxTextLength),
-        AssetTag = FactText(facts.AssetTag, MaxTextLength),
-        BaseboardProduct = FactText(facts.BaseboardProduct, MaxTextLength),
-        BiosVersion = FactText(facts.BiosVersion, MaxTextLength),
+        SystemVersion = FirmwareText(facts.SystemVersion),
+        SystemFamily = FirmwareText(facts.SystemFamily),
+        SystemSku = FirmwareText(facts.SystemSku),
+        AssetTag = FirmwareText(facts.AssetTag),
+        BaseboardProduct = FirmwareText(facts.BaseboardProduct),
+        BiosVersion = FirmwareText(facts.BiosVersion),
         BiosDate = FactText(facts.BiosDate, MaxVersionLength) is { } date
             && DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly day)
                 ? day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
@@ -153,6 +154,12 @@ public static partial class RegistrationValidator
         && address.ToString() == text
             ? text
             : null;
+
+    // Board makers leave placeholders such as "Default string" or "To be filled by O.E.M." in the fields they did not fill
+    // in, which say nothing about the machine. They are dropped here, where every agent's facts arrive, so a condition
+    // never matches one and the machine's page shows the field as unknown.
+    private static string? FirmwareText(string? value) =>
+        FactText(value, MaxTextLength) is { } text && !HardwareModels.IsPlaceholder(text) ? text : null;
 
     // PostgreSQL text holds neither a NUL nor half of a surrogate pair, and a line break has no place in one value.
     private static string? FactText(string? value, int maxLength) =>

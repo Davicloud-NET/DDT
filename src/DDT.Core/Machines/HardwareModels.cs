@@ -20,6 +20,8 @@ public static class HardwareModels
     // Shorter prefixes, such as "20*" on a Lenovo, would match unrelated models.
     public const int MinPrefixLength = 3;
 
+    // The server also drops these from the facts an agent registers with, where the other defaults of AMI and ASUS
+    // firmware turn up: the system's version, serial number and SKU, and the enclosure's asset tag.
     private static readonly HashSet<string> s_placeholders = new(StringComparer.Ordinal)
     {
         "TO BE FILLED BY O.E.M.",
@@ -29,6 +31,14 @@ public static class HardwareModels
         "NOT APPLICABLE",
         "NOT SPECIFIED",
         "NONE",
+        "SYSTEM VERSION",
+        "SYSTEM SERIAL NUMBER",
+        "SYSTEM SKU",
+        "SKU",
+        "TYPE1PRODUCTCONFIGID",
+        "CHASSIS ASSET TAG",
+        "NO ASSET TAG",
+        "ASSET-1234567890",
     };
 
     // Trimmed, with every run of white space as one space; null for nothing.

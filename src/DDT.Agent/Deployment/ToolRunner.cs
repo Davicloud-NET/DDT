@@ -10,8 +10,10 @@ using System.Text;
 namespace DDT.Agent.Deployment;
 
 // Runs a Windows tool and puts everything it prints into the machine log, because on a real PC that log is the
-// only record of why diskpart, bcdboot or reagentc refused.
-public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolRunner
+// only record of why diskpart, bcdboot or reagentc refused. A step's script that runs as an account goes through
+// accountProcessStarter instead of .NET's Process, which cannot start another account as LocalSystem; without a starter
+// a run-as script fails, which the validator and the step runner refuse before it gets here.
+public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccountProcessStarter? accountProcessStarter = null) : IToolRunner
 {
     // A process that a script starts in the background inherits its output and can keep it open long after the
     // script ended, so the rest of the output is not waited for beyond this.
@@ -78,26 +80,14 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         string tool = Path.GetFileName(fileName);
         log.Information($"Running {CommandLine(fileName, arguments)}");
 
-        ProcessStartInfo start = StartInfo(fileName, arguments);
-
-        if (options.WorkingDirectory is { } directory)
-        {
-            start.WorkingDirectory = directory;
-        }
-
-        foreach ((string name, string value) in options.Environment ?? new Dictionary<string, string>())
-        {
-            start.Environment[name] = value;
-        }
-
         using CancellationTokenSource timeout = new(options.Timeout ?? Timeout.InfiniteTimeSpan, timeProvider);
         using CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
 
         long started = timeProvider.GetTimestamp();
-        using Process process = Start(start, tool);
+        using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, log.Information);
-        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, log.Warning);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, log.Information);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, log.Warning);
 
         try
         {
@@ -105,7 +95,7 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
         }
         catch (OperationCanceledException)
         {
-            Kill(process, tool);
+            process.Kill();
 
             // The last lines often say why it hung.
             await DrainAsync(output, errors, tool).ConfigureAwait(false);
@@ -129,6 +119,35 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider) : IToolR
             $"{tool} ended with exit code {exitCode} after {elapsed.TotalSeconds:0.0} s."));
 
         return exitCode;
+    }
+
+    // As the account when the step runs as one, otherwise as the agent. A run-as step reached this far only past the
+    // validator and the step runner, so a missing starter is a wiring mistake, not an operator's.
+    private IToolProcess StartFor(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, string tool)
+    {
+        if (options.Account is { } account)
+        {
+            if (accountProcessStarter is null)
+            {
+                throw new DeploymentStepException($"{tool} was to run as {account.UserName}, but this agent cannot start a process as an account.");
+            }
+
+            return accountProcessStarter.Start(account, fileName, arguments, options.WorkingDirectory, options.Environment);
+        }
+
+        ProcessStartInfo start = StartInfo(fileName, arguments);
+
+        if (options.WorkingDirectory is { } directory)
+        {
+            start.WorkingDirectory = directory;
+        }
+
+        foreach ((string name, string value) in options.Environment ?? new Dictionary<string, string>())
+        {
+            start.Environment[name] = value;
+        }
+
+        return new ProcessToolProcess(Start(start, tool), log);
     }
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)

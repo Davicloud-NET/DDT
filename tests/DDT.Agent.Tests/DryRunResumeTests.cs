@@ -210,6 +210,7 @@ public sealed class DryRunResumeTests : IDisposable
             new RunScriptStepRunner(tools, downloads, session, log, _root),
             new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
             new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
+            new StepAccounts(_server, session, _ => Task.CompletedTask, AccountTools.DryRun(log), log, _time),
             _ => { },
             log,
             _time);

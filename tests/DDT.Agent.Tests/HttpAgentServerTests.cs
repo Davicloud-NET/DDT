@@ -401,6 +401,33 @@ public sealed class HttpAgentServerTests
         Assert.Equal(TestRuns.JoinAccount, credentials);
     }
 
+    [Fact]
+    public async Task FetchesTheAccountsOfARunningStep()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = Encoding.UTF8.GetBytes(
+            """{"runAs":{"userName":"CORP\\installer","password":"Run4s-never-logged"},"shares":[{"path":"\\\\files.corp.example\\drivers","userName":"CORP\\svc","password":"Sh4re-never-logged"}]}""");
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+
+        AgentStepAccounts accounts = await server.GetRunStepAccountsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
+
+        string request = await serving;
+        Assert.StartsWith(
+            $"GET /api/agents/{s_machineId:D}/runs/{s_runId:D}/steps/{s_stepId:D}/accounts HTTP/1.1",
+            request,
+            StringComparison.Ordinal);
+        Assert.Contains("Authorization: Bearer session", request, StringComparison.Ordinal);
+        Assert.Equal(@"CORP\installer", accounts.RunAs?.UserName);
+        Assert.Equal("Run4s-never-logged", accounts.RunAs?.Password);
+        AgentShareConnection share = Assert.Single(accounts.Shares);
+        Assert.Equal(@"\\files.corp.example\drivers", share.Path);
+        Assert.Equal("Sh4re-never-logged", share.Password);
+    }
+
     private static string Json(byte[] body) =>
         $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\n";
 

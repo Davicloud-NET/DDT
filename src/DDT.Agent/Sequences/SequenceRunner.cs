@@ -30,7 +30,8 @@ namespace DDT.Agent.Sequences;
 // The service in the installed Windows goes on with the run through GoOnInWindowsAsync, with the same steps, reports
 // and failure handling. The engine never runs a Windows PE step there, as the phases come in order, so the disk, image
 // and boot tools and the restart marker are only there for Windows PE. status, in Windows PE, is what the console at the
-// machine shows, which the run keeps up to date; nobody watches the service's.
+// machine shows, which the run keeps up to date; nobody watches the service's. accountTools connects the shares of a
+// step and signs in the account a script runs as; without it, a dry run only logs them and any other run uses Windows.
 public sealed class SequenceRunner(
     IAgentServer server,
     IDiskPartitioner partitioner,
@@ -48,7 +49,8 @@ public sealed class SequenceRunner(
     string workDirectory,
     string systemDirectory,
     bool dryRun,
-    ConsoleStatus? status = null)
+    ConsoleStatus? status = null,
+    AccountTools? accountTools = null)
 {
     public const string NoDiskMessage =
         "No internal disk was found. If this PC's storage is set to RAID or Intel VMD/RST, switch it to AHCI in the " +
@@ -694,6 +696,13 @@ public sealed class SequenceRunner(
             new RunScriptStepRunner(tools, downloads, session, log, workDirectory),
             new WriteRawImageStepRunner(partitioner, rawDisks, downloads, session, log),
             new WriteCloudInitSeedStepRunner(rawDisks, session, log, timeProvider),
+            new StepAccounts(
+                server,
+                session,
+                heartbeat.ReportNowAsync,
+                accountTools ?? (dryRun ? AccountTools.DryRun(log) : AccountTools.Native(log)),
+                log,
+                timeProvider),
             heartbeat.TokenRejected,
             log,
             timeProvider);

@@ -83,17 +83,26 @@ export interface MachineLogAppended {
   lastLineId: number;
 }
 
-// The server's RunStepChangedEvent: a step of the machine's run changed.
+// The server's RunStepChangedEvent: a step of the machine's run changed. A node of a tree carries its place in it
+// and its latest visit: pass, iteration, branch and evaluation.
 export interface RunStepChanged {
   machineId: string;
   deploymentId: string;
   step: DeploymentStepView;
 }
 
+// The server's runVariablesChanged: the agent reported the sequence's variables anew, all of them.
+export interface RunVariablesChanged {
+  machineId: string;
+  deploymentId: string;
+  variables: Record<string, string>;
+}
+
 // The server sends these events only to the connections that watch the machine.
 export interface MachineWatchHandlers {
   onLogAppended?: (event: MachineLogAppended) => void;
   onRunStepChanged?: (event: RunStepChanged) => void;
+  onRunVariablesChanged?: (event: RunVariablesChanged) => void;
   // Called once the machine is watched again after the connection was lost, or first came up after the
   // watch began. Events sent meanwhile are lost, so this is when a watcher reads what it missed.
   onReconnect?: () => void;
@@ -384,6 +393,12 @@ export function createLiveConnection(
     current.on("runStepChanged", (event: RunStepChanged) => {
       for (const watch of watchesOf(event.machineId)) {
         watch.handlers.onRunStepChanged?.(event);
+      }
+    });
+
+    current.on("runVariablesChanged", (event: RunVariablesChanged) => {
+      for (const watch of watchesOf(event.machineId)) {
+        watch.handlers.onRunVariablesChanged?.(event);
       }
     });
 

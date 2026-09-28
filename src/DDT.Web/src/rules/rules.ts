@@ -9,14 +9,24 @@ import { apiDelete, apiGet, apiPost, apiPut, type ApiProblem } from "@/lib/api";
 import { serverText, type ServerArguments } from "@/lib/serverText";
 import { formatMac, type HardwareModelCount, type MachineSummary } from "@/machines/machines";
 import { matchingMachines } from "@/packages/packages";
+import type { InputDeclaration, SequenceProblem } from "@/sequences/sequences";
+import type { ResolvedValue } from "@/values/values";
 
 // Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine,
-// a rule for one of its MAC addresses, a rule for its model.
-export type SequenceResolutionSource = "None" | "Assigned" | "Console" | "MacRule" | "ModelRule";
+// the first rule of the ordered list that matches the machine and chooses a sequence. MacRule and ModelRule are what
+// the assignment rules before the ordered list were, which older servers say.
+export type SequenceResolutionSource =
+  "None" | "Assigned" | "Console" | "MacRule" | "ModelRule" | "Rule";
 
 // The sequence a machine would get and why. A rule only chooses: the machine still needs an approval or a
 // sign-in. problemCount above zero means the chosen sequence cannot run until it is fixed. explanation is the
 // server's English; resolutionText says it in the person's language.
+//
+// The rest previews what a run of that sequence would start with, from servers that send it. matchedRuleIds are the
+// rules that match the machine, top first. values are the values the run would have, each with its source; a run
+// that is running shows the values it started with. inputs are the chosen sequence's inputs, and inputDefaults what
+// their questions start with. valueProblems would keep the run from starting as things are now; a problem's field
+// is the value's or the input's name.
 export interface MachineSequenceResolution {
   source: SequenceResolutionSource;
   sequenceId: string | null;
@@ -26,6 +36,11 @@ export interface MachineSequenceResolution {
   explanation: string;
   explanationCode?: string | null;
   explanationArgs?: ServerArguments | null;
+  matchedRuleIds?: string[] | null;
+  values?: ResolvedValue[] | null;
+  inputs?: InputDeclaration[] | null;
+  inputDefaults?: ResolvedValue[] | null;
+  valueProblems?: SequenceProblem[] | null;
 }
 
 export function resolutionText(resolution: MachineSequenceResolution): string {
@@ -88,7 +103,9 @@ export function ruleTarget(rule: AssignmentRuleView): string {
 
 export function isRuleChoice(resolution: MachineSequenceResolution): boolean {
   return (
-    (resolution.source === "MacRule" || resolution.source === "ModelRule") &&
+    (resolution.source === "MacRule" ||
+      resolution.source === "ModelRule" ||
+      resolution.source === "Rule") &&
     resolution.sequenceId !== null
   );
 }

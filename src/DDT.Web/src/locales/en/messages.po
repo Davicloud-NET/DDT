@@ -504,6 +504,10 @@ msgid "{kind}, {phase}, {started} to {ended}, took {took}"
 msgstr "{kind}, {phase}, {started} to {ended}, took {took}"
 
 #: src/runs/RunSteps.tsx
+msgid "{kind}, {phase}, started {started}, paused for {took}"
+msgstr "{kind}, {phase}, started {started}, paused for {took}"
+
+#: src/runs/RunSteps.tsx
 msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr "{kind}, {phase}, started {started}, running for {took}"
 
@@ -522,6 +526,10 @@ msgstr "{label} {operator}"
 #: src/conditions/conditions.ts
 msgid "{label} {operator} {value}"
 msgstr "{label} {operator} {value}"
+
+#: src/inputs/InputsForm.tsx
+msgid "{label} <0>(required)</0>"
+msgstr "{label} <0>(required)</0>"
 
 #: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
@@ -811,6 +819,14 @@ msgctxt "sequence.packageIsDrivers"
 msgid "{package} is a driver package. A script runs with a files package."
 msgstr "{package} is a driver package. A script runs with a files package."
 
+#: src/runs/RunPanel.tsx
+msgid "{passes} passes"
+msgstr "{passes} passes"
+
+#: src/runs/RunFlow.tsx
+msgid "{passes} passes, the last took {took}"
+msgstr "{passes} passes, the last took {took}"
+
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
 msgstr "{percent}% of {total} at {speed}/s, {took} so far"
@@ -950,6 +966,22 @@ msgstr "{size} GB"
 msgid "{step} {percent}%"
 msgstr "{step} {percent}%"
 
+#: src/runs/decisions.ts
+msgid "{test} does not hold for \"{actual}\""
+msgstr "{test} does not hold for \"{actual}\""
+
+#: src/runs/decisions.ts
+msgid "{test} does not hold, with no value"
+msgstr "{test} does not hold, with no value"
+
+#: src/runs/decisions.ts
+msgid "{test} holds for \"{actual}\""
+msgstr "{test} holds for \"{actual}\""
+
+#: src/runs/decisions.ts
+msgid "{test} holds, with no value"
+msgstr "{test} holds, with no value"
+
 #: src/sequences/builder/NodeInspector.tsx
 msgid "{thenCount, plural, one {Then holds # step, Else {elseCount}.} other {Then holds # steps, Else {elseCount}.}}"
 msgstr "{thenCount, plural, one {Then holds # step, Else {elseCount}.} other {Then holds # steps, Else {elseCount}.}}"
@@ -957,6 +989,14 @@ msgstr "{thenCount, plural, one {Then holds # step, Else {elseCount}.} other {Th
 #: src/sequences/builder/FlowBuilder.tsx
 msgid "{title} moved to position {position} of {count}."
 msgstr "{title} moved to position {position} of {count}."
+
+#: src/runs/runView.ts
+msgid "{title}, Else"
+msgstr "{title}, Else"
+
+#: src/runs/runView.ts
+msgid "{title}, Then"
+msgstr "{title}, Then"
 
 #: src/settings/AgentPanel.tsx
 #: src/settings/ConsoleLogoPanel.tsx
@@ -1082,6 +1122,18 @@ msgstr "{when} from <0>{address}</0>"
 #: src/sequences/SequenceConflict.tsx
 msgid "{who} saved this sequence at {when} while you were editing."
 msgstr "{who} saved this sequence at {when} while you were editing."
+
+#: src/runs/RunPanel.tsx
+msgid "<0>{reached} of {count}</0> steps on this path"
+msgstr "<0>{reached} of {count}</0> steps on this path"
+
+#: src/runs/RunFlow.tsx
+msgid "<0>{subject}</0> <1>{operator}</1>"
+msgstr "<0>{subject}</0> <1>{operator}</1>"
+
+#: src/runs/RunFlow.tsx
+msgid "<0>{subject}</0> <1>{operator}</1> {value}"
+msgstr "<0>{subject}</0> <1>{operator}</1> {value}"
 
 #: src/boot/BootImagePage.tsx
 msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
@@ -1277,6 +1329,14 @@ msgstr "A restart step restarts anyway, so it cannot restart again after it."
 #: src/settings/ProxiesPanel.tsx
 msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
+
+#: src/machines/approval.ts
+msgid "a rule"
+msgstr "a rule"
+
+#: src/machines/approval.ts
+msgid "A rule"
+msgstr "A rule"
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.tooManyRoles"
@@ -1895,6 +1955,10 @@ msgctxt "stepAccount.tooManyHosts"
 msgid "An account can name at most {max} servers."
 msgstr "An account can name at most {max} servers."
 
+#: src/inputs/InputsForm.tsx
+msgid "An account for this run only, which DDT uses and never shows or hands to a script."
+msgstr "An account for this run only, which DDT uses and never shows or hands to a script."
+
 #: src/sequences/steps/ScriptFields.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "An account in the installed Windows, signed in for the script alone."
@@ -2048,9 +2112,22 @@ msgstr "Answer as ProxyDHCP"
 msgid "Answer TFTP from port 69"
 msgstr "Answer TFTP from port 69"
 
+#: src/values/values.ts
+msgid "Answered by {by} for this run"
+msgstr "Answered by {by} for this run"
+
+#: src/values/values.ts
+msgid "Answered for this run"
+msgstr "Answered for this run"
+
 #: src/settings/NetworkBootPage.tsx
 msgid "Answering machines that netboot"
 msgstr "Answering machines that netboot"
+
+#: src/machines/AssignDialog.tsx
+#: src/machines/RunWaiting.tsx
+msgid "Answers for {sequenceName}"
+msgstr "Answers for {sequenceName}"
 
 #: src/rules/RuleDialog.tsx
 msgid "Any of the machine's network adapters, with or without separators."
@@ -2168,6 +2245,7 @@ msgid "asked on the web or at the machine"
 msgstr "asked on the web or at the machine"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Asset tag"
 msgstr "Asset tag"
 
@@ -2287,6 +2365,7 @@ msgid "Back to DDT"
 msgstr "Back to DDT"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Baseboard"
 msgstr "Baseboard"
 
@@ -2295,6 +2374,7 @@ msgid "Bind account"
 msgstr "Bind account"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "BIOS date"
 msgstr "BIOS date"
 
@@ -2303,6 +2383,7 @@ msgid "BIOS PCs, over TFTP"
 msgstr "BIOS PCs, over TFTP"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "BIOS version"
 msgstr "BIOS version"
 
@@ -2364,6 +2445,7 @@ msgid "By MAC address"
 msgstr "By MAC address"
 
 #: src/account/AccountPage.tsx
+#: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
@@ -2517,6 +2599,10 @@ msgstr "Choose a rule by MAC address or by model."
 msgid "Choose a sequence"
 msgstr "Choose a sequence"
 
+#: src/runs/RunFlow.tsx
+msgid "Choose a step in the flow to see what it did."
+msgstr "Choose a step in the flow to see what it did."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.accountChoose"
 msgid "Choose a stored account or an Account input."
@@ -2534,6 +2620,14 @@ msgstr "Choose Administrator, Operator or Viewer."
 #: src/sequences/builder/AccountSetting.tsx
 msgid "Choose an account"
 msgstr "Choose an account"
+
+#: src/inputs/InputsForm.tsx
+msgid "Choose an answer"
+msgstr "Choose an answer"
+
+#: src/inputs/inputs.ts
+msgid "Choose an answer."
+msgstr "Choose an answer."
 
 #: src/sequences/steps/RawImageFields.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -2683,6 +2777,7 @@ msgstr "Comparison of condition {number}"
 
 #: src/conditions/conditions.ts
 #: src/machines/AssignDialog.tsx
+#: src/machines/facts.ts
 #: src/sequences/steps.ts
 msgid "Computer name"
 msgstr "Computer name"
@@ -2721,6 +2816,10 @@ msgstr "Console for netbooting machines"
 #: src/sequences/steps.ts
 msgid "contains"
 msgstr "contains"
+
+#: src/machines/RunWaiting.tsx
+msgid "Continue the run"
+msgstr "Continue the run"
 
 #: src/account/AccountPage.tsx
 #: src/boot/BootImagePage.tsx
@@ -2902,6 +3001,14 @@ msgstr "DDT:Https:GenerateSelfSignedCertificate is false, so DDT issues no certi
 msgid "DDT's root, {root}"
 msgstr "DDT's root, {root}"
 
+#: src/runs/RunFlow.tsx
+msgid "Decided at {start} in {phase}, {into} into the run."
+msgstr "Decided at {start} in {phase}, {into} into the run."
+
+#: src/runs/RunFlow.tsx
+msgid "Decided at {start} in {phase}."
+msgstr "Decided at {start} in {phase}."
+
 #: src/settings/ConfigurationOrigin.tsx
 msgid "default"
 msgstr "default"
@@ -2911,6 +3018,7 @@ msgid "Default"
 msgstr "Default"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Default gateway"
 msgstr "Default gateway"
 
@@ -2988,6 +3096,7 @@ msgid "Description"
 msgstr "Description"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Desktop"
 msgstr "Desktop"
 
@@ -3005,10 +3114,12 @@ msgid "Details for finding a fault"
 msgstr "Details for finding a fault"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Device kind"
 msgstr "Device kind"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "DHCP server"
 msgstr "DHCP server"
 
@@ -3080,6 +3191,7 @@ msgid "Disks"
 msgstr "Disks"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "DNS suffix"
 msgstr "DNS suffix"
 
@@ -3091,6 +3203,10 @@ msgstr "does not contain"
 #: src/sequences/steps.ts
 msgid "does not equal"
 msgstr "does not equal"
+
+#: src/runs/RunFlow.tsx
+msgid "Does not hold"
+msgstr "Does not hold"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxPassword"
@@ -3120,6 +3236,7 @@ msgstr "Domain join checked"
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
+#: src/runs/RunFlow.tsx
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
 #: src/tokens/MakeTokenDialog.tsx
@@ -3131,6 +3248,10 @@ msgstr "Done"
 msgctxt "machineState.done"
 msgid "Done"
 msgstr "Done"
+
+#: src/runs/decisions.ts
+msgid "Done after {times} of at most {most} times"
+msgstr "Done after {times} of at most {most} times"
 
 #: src/sequences/builder/Palette.tsx
 msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
@@ -3362,6 +3483,10 @@ msgctxt "user.nameEmpty"
 msgid "Enter a user name."
 msgstr "Enter a user name."
 
+#: src/inputs/inputs.ts
+msgid "Enter an answer."
+msgstr "Enter an answer."
+
 #: src/lib/serverMessages.ts
 msgctxt "user.email"
 msgid "Enter an email address such as jane@corp.example, or leave it empty."
@@ -3443,6 +3568,10 @@ msgstr "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drive
 #: src/auth/SignInPage.tsx
 msgid "Enter the six digits your authenticator app shows for DDT."
 msgstr "Enter the six digits your authenticator app shows for DDT."
+
+#: src/inputs/inputs.ts
+msgid "Enter the user name and the password."
+msgstr "Enter the user name and the password."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.enterUserName"
@@ -3591,6 +3720,7 @@ msgstr "Fail when no driver package matches the model"
 #: src/machines/MachinePanel.tsx
 #: src/machines/MachinesPage.tsx
 #: src/machines/machineView.ts
+#: src/runs/RunFlow.tsx
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
 #: src/settings/DirectorySettings.tsx
@@ -3629,6 +3759,46 @@ msgstr "Files"
 #: src/sequences/steps/ScriptFields.tsx
 msgid "Files package"
 msgstr "Files package"
+
+#: src/values/values.ts
+msgid "Filled in by a machine role."
+msgstr "Filled in by a machine role."
+
+#: src/values/values.ts
+msgid "Filled in by a rule."
+msgstr "Filled in by a rule."
+
+#: src/values/values.ts
+msgid "Filled in from the deployment defaults."
+msgstr "Filled in from the deployment defaults."
+
+#: src/values/values.ts
+msgid "Filled in from the machine role {name}."
+msgstr "Filled in from the machine role {name}."
+
+#: src/values/values.ts
+msgid "Filled in from the rule {name}."
+msgstr "Filled in from the rule {name}."
+
+#: src/values/values.ts
+msgid "Filled in with a value a step set."
+msgstr "Filled in with a value a step set."
+
+#: src/values/values.ts
+msgid "Filled in with the answer given before."
+msgstr "Filled in with the answer given before."
+
+#: src/values/values.ts
+msgid "Filled in with the sequence's default."
+msgstr "Filled in with the sequence's default."
+
+#: src/values/values.ts
+msgid "Filled in with this machine's own value."
+msgstr "Filled in with this machine's own value."
+
+#: src/values/values.ts
+msgid "Filled in with what the machine reported."
+msgstr "Filled in with what the machine reported."
 
 #: src/settings/DirectorySettings.tsx
 #: src/users/DirectoryPanel.tsx
@@ -3702,6 +3872,14 @@ msgstr "Flow"
 msgid "Flow of {name}"
 msgstr "Flow of {name}"
 
+#: src/runs/RunFlow.tsx
+msgid "Flow of this run"
+msgstr "Flow of this run"
+
+#: src/runs/RunFlow.tsx
+msgid "Follow the run"
+msgstr "Follow the run"
+
 #: src/packages/PackagesPage.tsx
 msgid "For"
 msgstr "For"
@@ -3751,6 +3929,7 @@ msgid "Found"
 msgstr "Found"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Friendly model"
 msgstr "Friendly model"
 
@@ -3778,6 +3957,14 @@ msgstr "From 260 to 4096 MB."
 msgid "From 300 to 65536 MB."
 msgstr "From 300 to 65536 MB."
 
+#: src/values/values.ts
+msgid "From a machine role"
+msgstr "From a machine role"
+
+#: src/values/values.ts
+msgid "From a rule"
+msgstr "From a rule"
+
 #: src/settings/ConfigurationOrigin.tsx
 msgid "from an environment variable"
 msgstr "from an environment variable"
@@ -3802,6 +3989,18 @@ msgstr "From rules and machine roles"
 msgid "from the command line"
 msgstr "from the command line"
 
+#: src/values/values.ts
+msgid "From the deployment defaults"
+msgstr "From the deployment defaults"
+
+#: src/values/values.ts
+msgid "From the machine role {name}"
+msgstr "From the machine role {name}"
+
+#: src/values/values.ts
+msgid "From the rule {name}"
+msgstr "From the rule {name}"
+
 #: src/settings/CertificatePanel.tsx
 msgid "Generate a new certificate?"
 msgstr "Generate a new certificate?"
@@ -3814,9 +4013,17 @@ msgstr "Generate certificate"
 msgid "Give {name} a new password?"
 msgstr "Give {name} a new password?"
 
+#: src/machines/RunWaiting.tsx
+msgid "Give the answers"
+msgstr "Give the answers"
+
 #: src/users/userView.ts
 msgid "Given when single sign-on created it"
 msgstr "Given when single sign-on created it"
+
+#: src/machines/MachineValues.tsx
+msgid "Given, never shown"
+msgstr "Given, never shown"
 
 #: src/settings/DirectorySettings.tsx
 msgid "gives {label}"
@@ -3931,6 +4138,10 @@ msgstr "has no value"
 msgid "Help"
 msgstr "Help"
 
+#: src/runs/RunFlow.tsx
+msgid "Holds"
+msgstr "Holds"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.pfxWithoutKey"
 msgid "Holds no certificate with its private key."
@@ -4003,10 +4214,12 @@ msgstr "In the image"
 msgid "In the installed Windows"
 msgstr "In the installed Windows"
 
+#: src/runs/RunFlow.tsx
 #: src/sequences/builder/FlowCanvas.tsx
 msgid "In the installed Windows, after the hand-over"
 msgstr "In the installed Windows, after the hand-over"
 
+#: src/runs/RunFlow.tsx
 #: src/runs/RunPanel.tsx
 #: src/sequences/builder/FlowCanvas.tsx
 msgid "In Windows PE"
@@ -4086,6 +4299,7 @@ msgid "Invalid token."
 msgstr "Invalid token."
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "IPv4 address"
 msgstr "IPv4 address"
 
@@ -4147,6 +4361,10 @@ msgstr "Issued by"
 msgid "Issuer"
 msgstr "Issuer"
 
+#: src/machines/RunWaiting.tsx
+msgid "It asks for {list}."
+msgstr "It asks for {list}."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It can join machines here."
 msgstr "It can join machines here."
@@ -4155,15 +4373,27 @@ msgstr "It can join machines here."
 msgid "It cannot join machines here."
 msgstr "It cannot join machines here."
 
+#: src/inputs/inputs.ts
+msgid "It connects to shares on {hosts}."
+msgstr "It connects to shares on {hosts}."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.missingNames"
 msgid "It does not name {names}, which the server is reached by, so browsers and agents would refuse it."
 msgstr "It does not name {names}, which the server is reached by, so browsers and agents would refuse it."
 
+#: src/machines/RunWaiting.tsx
+msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
+msgstr "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.notValidNow"
 msgid "It is valid from {from} to {until}, not now."
 msgstr "It is valid from {from} to {until}, not now."
+
+#: src/inputs/inputs.ts
+msgid "It joins the domain {domain}."
+msgstr "It joins the domain {domain}."
 
 #: src/lib/autosave.ts
 msgid "It no longer exists on the server, so nothing more is saved."
@@ -4180,6 +4410,10 @@ msgstr "It stays waiting until someone signs in at it or it netboots from a zero
 #: src/machines/AssignDialog.tsx
 msgid "It stays waiting until someone signs in at it."
 msgstr "It stays waiting until someone signs in at it."
+
+#: src/runs/decisions.ts
+msgid "Iteration {times} of at most {most}"
+msgstr "Iteration {times} of at most {most}"
 
 #: src/machines/approval.ts
 msgid "Its disk is not erased."
@@ -4291,6 +4525,7 @@ msgid "Language and region"
 msgstr "Language and region"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Laptop"
 msgstr "Laptop"
 
@@ -4303,6 +4538,7 @@ msgid "Last build"
 msgstr "Last build"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Last exit code"
 msgstr "Last exit code"
 
@@ -4332,6 +4568,7 @@ msgid "Last sign-in"
 msgstr "Last sign-in"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Last step failed"
 msgstr "Last step failed"
 
@@ -4502,6 +4739,7 @@ msgid "Logging"
 msgstr "Logging"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Logical processors"
 msgstr "Logical processors"
 
@@ -4519,6 +4757,7 @@ msgid "MAC {mac}"
 msgstr "MAC {mac}"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/machines/MachinePage.tsx
 #: src/machines/MachinePanel.tsx
 #: src/rules/RuleDialog.tsx
@@ -4542,6 +4781,10 @@ msgstr "Machine"
 #: src/audit/auditView.ts
 msgid "Machine approved"
 msgstr "Machine approved"
+
+#: src/machines/MachineFacts.tsx
+msgid "Machine facts"
+msgstr "Machine facts"
 
 #: src/audit/auditView.ts
 msgid "Machine registered"
@@ -4648,6 +4891,7 @@ msgid "Make token"
 msgstr "Make token"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/sequences/steps.ts
@@ -4680,6 +4924,7 @@ msgid "memory"
 msgstr "memory"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Memory"
 msgstr "Memory"
 
@@ -4708,6 +4953,7 @@ msgid "Microsoft's third-party UEFI CAs {first} and {second}"
 msgstr "Microsoft's third-party UEFI CAs {first} and {second}"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/packages/PackageDialog.tsx
 #: src/rules/RuleDialog.tsx
 #: src/rules/RulesPage.tsx
@@ -4912,6 +5158,16 @@ msgstr "Names that start with DDT are kept for DDT's own values. Choose another 
 msgid "needs a computer name"
 msgstr "needs a computer name"
 
+#: src/machines/machineView.ts
+#: src/runs/runView.ts
+msgid "Needs answers"
+msgstr "Needs answers"
+
+#: src/machines/machineView.ts
+#: src/runs/runView.ts
+msgid "Needs someone"
+msgstr "Needs someone"
+
 #: src/machines/MachinesPage.tsx
 msgid "Needs your approval"
 msgstr "Needs your approval"
@@ -4927,6 +5183,7 @@ msgid "Network boot"
 msgstr "Network boot"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Network prefix length"
 msgstr "Network prefix length"
 
@@ -4985,6 +5242,8 @@ msgstr "New value"
 msgid "no"
 msgstr "no"
 
+#: src/inputs/InputsForm.tsx
+#: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "No"
 msgstr "No"
@@ -5207,6 +5466,14 @@ msgctxt "resolution.noRule"
 msgid "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence."
 msgstr "No rule matches the MAC addresses or the model of this machine, so an operator chooses its sequence."
 
+#: src/machines/MachinePage.tsx
+msgid "No rule, machine role or input gave this run a value."
+msgstr "No rule, machine role or input gave this run a value."
+
+#: src/machines/MachinePage.tsx
+msgid "No rule, machine role or sequence sets a value for this machine."
+msgstr "No rule, machine role or sequence sets a value for this machine."
+
 #: src/sequences/SequencesPage.tsx
 msgid "No rule, no machine"
 msgstr "No rule, no machine"
@@ -5382,11 +5649,16 @@ msgid "Not signed for Secure Boot"
 msgstr "Not signed for Secure Boot"
 
 #: src/runs/MachineRuns.tsx
+#: src/runs/RunFlow.tsx
 #: src/runs/runHistory.ts
 #: src/runs/RunHistoryPage.tsx
 #: src/runs/runView.ts
 msgid "Not started"
 msgstr "Not started"
+
+#: src/runs/RunFlow.tsx
+msgid "Not started yet."
+msgstr "Not started yet."
 
 #: src/machines/machineView.ts
 msgid "Not started, {count} steps"
@@ -5395,6 +5667,11 @@ msgstr "Not started, {count} steps"
 #: src/images/ImagesPage.tsx
 msgid "Not stated"
 msgstr "Not stated"
+
+#: src/runs/RunFlow.tsx
+#: src/runs/runView.ts
+msgid "Not taken"
+msgstr "Not taken"
 
 #: src/settings/SignInSettingsPage.tsx
 msgid "Not used while the claim map below has entries: the map decides the role."
@@ -5792,6 +6069,10 @@ msgstr "Password changed."
 msgid "Password changed. The rest of DDT is open to you now."
 msgstr "Password changed. The rest of DDT is open to you now."
 
+#: src/inputs/InputsForm.tsx
+msgid "Password for {label}"
+msgstr "Password for {label}"
+
 #: src/users/UserDialogs.tsx
 msgid "Password for {name}"
 msgstr "Password for {name}"
@@ -5850,10 +6131,34 @@ msgstr "Passwords must use at least {count} different characters."
 msgid "Pause"
 msgstr "Pause"
 
+#: src/deployments/deployments.ts
 #: src/log/LogPanel.tsx
+#: src/machines/machineView.ts
+#: src/runs/RunFlow.tsx
+#: src/runs/runView.ts
 #: src/ui/FlowNode.tsx
 msgid "Paused"
 msgstr "Paused"
+
+#: src/machines/RunWaiting.tsx
+msgid "Paused at {name}."
+msgstr "Paused at {name}."
+
+#: src/machines/RunWaiting.tsx
+msgid "Paused at {number}, {name}."
+msgstr "Paused at {number}, {name}."
+
+#: src/runs/RunPanel.tsx
+msgid "paused for {paused}"
+msgstr "paused for {paused}"
+
+#: src/runs/RunFlow.tsx
+msgid "Paused for {took}"
+msgstr "Paused for {took}"
+
+#: src/runs/RunFlow.tsx
+msgid "Paused since {start} in {phase}, for {took}."
+msgstr "Paused since {start} in {phase}, for {took}."
 
 #: src/settings/CertificatePanel.tsx
 msgid "PEM files"
@@ -5885,6 +6190,7 @@ msgid "PFX password"
 msgstr "PFX password"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/sequences/steps.ts
 msgid "Phase"
 msgstr "Phase"
@@ -5911,6 +6217,7 @@ msgid "Preparing"
 msgstr "Preparing"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Primary MAC address"
 msgstr "Primary MAC address"
 
@@ -5935,10 +6242,12 @@ msgid "Problems and warnings of this step"
 msgstr "Problems and warnings of this step"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Processor"
 msgstr "Processor"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Processor cores"
 msgstr "Processor cores"
 
@@ -5986,6 +6295,15 @@ msgstr "QR code for your authenticator app"
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Question"
 msgstr "Question"
+
+#: src/runs/RunFlow.tsx
+#: src/runs/RunSteps.tsx
+msgid "Ran {passes} times, the last is shown."
+msgstr "Ran {passes} times, the last is shown."
+
+#: src/runs/RunFlow.tsx
+msgid "Ran from {start} to {end} in {phase}, took {took}."
+msgstr "Ran from {start} to {end} in {phase}, took {took}."
 
 #: src/images/images.ts
 #: src/sequences/steps/RawImageFields.tsx
@@ -6190,6 +6508,10 @@ msgstr "Repeat: {name}"
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr "Replace"
+
+#: src/values/values.ts
+msgid "Reported by the machine"
+msgstr "Reported by the machine"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.deployment.requiredWithDomain"
@@ -6429,6 +6751,7 @@ msgstr "Run token refused"
 msgid "Run went on"
 msgstr "Run went on"
 
+#: src/runs/RunFlow.tsx
 #: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
@@ -6448,9 +6771,14 @@ msgstr "running for {running}"
 msgid "Running for {runningFor}"
 msgstr "Running for {runningFor}"
 
+#: src/runs/RunFlow.tsx
 #: src/runs/RunHistoryPage.tsx
 msgid "Running for {took}"
 msgstr "Running for {took}"
+
+#: src/runs/RunFlow.tsx
+msgid "Running since {start} in {phase}, for {took}."
+msgstr "Running since {start} in {phase}, for {took}."
 
 #: src/audit/auditView.ts
 #: src/runs/RunHistoryPage.tsx
@@ -6586,6 +6914,10 @@ msgstr "Script"
 msgid "Scripts may run as it"
 msgstr "Scripts may run as it"
 
+#: src/inputs/inputs.ts
+msgid "Scripts may run as it."
+msgstr "Scripts may run as it."
+
 #: src/app/CommandPalette.tsx
 msgid "Search"
 msgstr "Search"
@@ -6618,6 +6950,7 @@ msgid "Secure Boot"
 msgstr "Secure Boot"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Secure Boot capable"
 msgstr "Secure Boot capable"
 
@@ -6626,6 +6959,7 @@ msgid "Secure Boot off"
 msgstr "Secure Boot off"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/machines/secureBoot.ts
 msgid "Secure Boot on"
 msgstr "Secure Boot on"
@@ -6722,6 +7056,7 @@ msgid "Serial {serial}"
 msgstr "Serial {serial}"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/sequences/steps.ts
 msgid "Serial number"
 msgstr "Serial number"
@@ -6736,6 +7071,7 @@ msgstr "Served certificate"
 
 #: src/app/navigation.ts
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/ServerPage.tsx
 #: src/users/DirectoryPanel.tsx
@@ -6789,9 +7125,25 @@ msgctxt "namedValue.tooMany"
 msgid "Set at most {max} values here."
 msgstr "Set at most {max} values here."
 
+#: src/values/values.ts
+msgid "Set by a step while the run went on"
+msgstr "Set by a step while the run went on"
+
 #: src/users/userView.ts
 msgid "Set by an administrator"
 msgstr "Set by an administrator"
+
+#: src/values/values.ts
+msgid "Set by step {number}, {stepName}"
+msgstr "Set by step {number}, {stepName}"
+
+#: src/values/values.ts
+msgid "Set by the step {name}"
+msgstr "Set by the step {name}"
+
+#: src/values/values.ts
+msgid "Set by the step {stepName}"
+msgstr "Set by the step {stepName}"
 
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/ServerPage.tsx
@@ -6805,6 +7157,10 @@ msgstr "Set in configuration as {key} ({variable}), which wins over the value st
 #: src/settings/SettingsParts.tsx
 msgid "Set in configuration as {key} ({variable}). Remove it there to change it on this page."
 msgstr "Set in configuration as {key} ({variable}). Remove it there to change it on this page."
+
+#: src/values/values.ts
+msgid "Set on this machine"
+msgstr "Set on this machine"
 
 #: src/account/AccountPage.tsx
 msgid "Set up an authenticator"
@@ -6891,6 +7247,10 @@ msgstr "Show runs by state"
 #: src/sequences/SequencesPage.tsx
 msgid "Show task sequences by state"
 msgstr "Show task sequences by state"
+
+#: src/runs/RunFlow.tsx
+msgid "Show the log of this step"
+msgstr "Show the log of this step"
 
 #: src/settings/SettingsParts.tsx
 msgid "Show theirs"
@@ -7009,23 +7369,46 @@ msgstr "Size"
 msgid "Size of its files"
 msgstr "Size of its files"
 
+#: src/runs/RunPanel.tsx
+msgid "skipped"
+msgstr "skipped"
+
+#: src/runs/RunFlow.tsx
 #: src/runs/runView.ts
 msgid "Skipped"
 msgstr "Skipped"
 
+#: src/runs/RunFlow.tsx
+msgid "Skipped at {at} in {phase}."
+msgstr "Skipped at {at} in {phase}."
+
+#: src/runs/decisions.ts
+msgid "Skipped, because its condition did not hold"
+msgstr "Skipped, because its condition did not hold"
+
 #: src/runs/runs.ts
 msgid "Skipped, because not every condition held: {conditions}."
 msgstr "Skipped, because not every condition held: {conditions}."
+
+#: src/runs/decisions.ts
+#: src/runs/RunFlow.tsx
+msgid "Skipped: {reasons}"
+msgstr "Skipped: {reasons}"
 
 #: src/runs/runs.ts
 msgid "Skipped."
 msgstr "Skipped."
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 #: src/machines/MachinePage.tsx
 #: src/sequences/steps.ts
 msgid "SMBIOS UUID"
 msgstr "SMBIOS UUID"
+
+#: src/machines/RunWaiting.tsx
+msgid "Someone at the machine or on another page let it go on first."
+msgstr "Someone at the machine or on another page let it go on first."
 
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.changedMeanwhile"
@@ -7171,6 +7554,10 @@ msgstr "Step {number}, {name}, running, {percent} percent"
 msgid "Step {number}, {name}, skipped"
 msgstr "Step {number}, {name}, skipped"
 
+#: src/runs/RunPanel.tsx
+msgid "Step {number}, {phase}"
+msgstr "Step {number}, {phase}"
+
 #: src/machines/machineView.ts
 msgid "Step {number}, done"
 msgstr "Step {number}, done"
@@ -7270,9 +7657,17 @@ msgstr "Stopped"
 msgid "Stopped {when}"
 msgstr "Stopped {when}"
 
+#: src/runs/decisions.ts
+msgid "Stopped after {times} of at most {most} times: {reasons}"
+msgstr "Stopped after {times} of at most {most} times: {reasons}"
+
 #: src/machines/machineView.ts
 msgid "Stopped at step {number} of {count}"
 msgstr "Stopped at step {number} of {count}"
+
+#: src/runs/decisions.ts
+msgid "Stopped at the limit of {most} times: {reasons}"
+msgstr "Stopped at the limit of {most} times: {reasons}"
 
 #: src/conditions/conditions.ts
 msgid "Stops after the first time."
@@ -7291,6 +7686,7 @@ msgid "Subject"
 msgstr "Subject"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Subnet"
 msgstr "Subnet"
 
@@ -7307,6 +7703,7 @@ msgid "SYSTEM"
 msgstr "SYSTEM"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "System family"
 msgstr "System family"
 
@@ -7315,14 +7712,17 @@ msgid "System partition in MB"
 msgstr "System partition in MB"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "System SKU"
 msgstr "System SKU"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "System version"
 msgstr "System version"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Tablet"
 msgstr "Tablet"
 
@@ -7492,6 +7892,10 @@ msgctxt "settings.agent.tooLarge"
 msgid "The agent may be at most {max} MB."
 msgstr "The agent may be at most {max} MB."
 
+#: src/machines/MachineFacts.tsx
+msgid "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
+msgstr "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 msgstr "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
@@ -7580,6 +7984,10 @@ msgstr "The certificate has to be valid now and name {host}, the name this page 
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "The check did not run: {failure}"
 msgstr "The check did not run: {failure}"
+
+#: src/runs/RunFlow.tsx
+msgid "The chosen step"
+msgstr "The chosen step"
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.cutOff"
@@ -8149,9 +8557,17 @@ msgstr "The machine registered for the first time"
 msgid "The machine registered for the first time, from {from}"
 msgstr "The machine registered for the first time, from {from}"
 
+#: src/runs/decisions.ts
+msgid "The machine reported {actual}."
+msgstr "The machine reported {actual}."
+
 #: src/machines/AssignDialog.tsx
 msgid "The machine reported no disk DDT can install on, so the run will fail."
 msgstr "The machine reported no disk DDT can install on, so the run will fail."
+
+#: src/runs/decisions.ts
+msgid "The machine reported no value."
+msgstr "The machine reported no value."
 
 #: src/sequences/steps/ScriptFields.tsx
 msgid "The machine restarts and the sequence goes on with the next step."
@@ -8280,6 +8696,14 @@ msgstr "The password or the code is not right."
 msgid "The password you were given and signed in with."
 msgstr "The password you were given and signed in with."
 
+#: src/machines/RunWaiting.tsx
+msgid "The person at the machine can answer there, too."
+msgstr "The person at the machine can answer there, too."
+
+#: src/machines/RunWaiting.tsx
+msgid "The person at the machine can let the run go on there, too."
+msgstr "The person at the machine can let the run go on there, too."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.reached"
 msgid "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
@@ -8365,6 +8789,10 @@ msgstr "The run changed while it was being stopped. Look at the machine again."
 msgid "The run could not be loaded."
 msgstr "The run could not be loaded."
 
+#: src/runs/RunFlow.tsx
+msgid "The run did not go this way."
+msgstr "The run did not go this way."
+
 #: src/runs/runs.ts
 msgid "The run failed"
 msgstr "The run failed"
@@ -8377,6 +8805,10 @@ msgstr "The run failed without saying why."
 msgid "The run failed: {error}"
 msgstr "The run failed: {error}"
 
+#: src/machines/RunWaiting.tsx
+msgid "The run has its answers already"
+msgstr "The run has its answers already"
+
 #: src/runs/RunHistoryPage.tsx
 msgid "The run history could not be loaded."
 msgstr "The run history could not be loaded."
@@ -8385,9 +8817,29 @@ msgstr "The run history could not be loaded."
 msgid "The run is done"
 msgstr "The run is done"
 
+#: src/machines/RunWaiting.tsx
+msgid "The run is paused."
+msgstr "The run is paused."
+
+#: src/machines/RunWaiting.tsx
+msgid "The run starts once every required answer is given."
+msgstr "The run starts once every required answer is given."
+
+#: src/machines/RunWaiting.tsx
+msgid "The run waits"
+msgstr "The run waits"
+
+#: src/machines/RunWaiting.tsx
+msgid "The run waits for answers before it starts."
+msgstr "The run waits for answers before it starts."
+
 #: src/runs/runs.ts
 msgid "The run was cancelled"
 msgstr "The run was cancelled"
+
+#: src/machines/RunWaiting.tsx
+msgid "The run went on already"
+msgstr "The run went on already"
 
 #: src/runs/RunSteps.tsx
 msgid "The run went on, because \"Go on when this step fails\" is on for this step."
@@ -8485,6 +8937,10 @@ msgstr "The sequence was not created. {error}"
 msgctxt "deployment.seedNamesMachine"
 msgid "The sequence's cloud-init seed gives the machine this name."
 msgstr "The sequence's cloud-init seed gives the machine this name."
+
+#: src/values/values.ts
+msgid "The sequence's default"
+msgstr "The sequence's default"
 
 #: src/boot/BootImagePage.tsx
 msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
@@ -8585,6 +9041,7 @@ msgstr "The software by others that DDT contains, and its licences"
 msgid "The state of the boot image could not be read."
 msgstr "The state of the boot image could not be read."
 
+#: src/runs/RunFlow.tsx
 #: src/runs/RunSteps.tsx
 msgid "The step failed without saying why."
 msgstr "The step failed without saying why."
@@ -8657,6 +9114,10 @@ msgstr "The upload of {name} stopped. Choose the file again to resume."
 msgid "The value of a choice; several separated by semicolons."
 msgstr "The value of a choice; several separated by semicolons."
 
+#: src/runs/decisions.ts
+msgid "The value was {actual}."
+msgstr "The value was {actual}."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.valuesCannotBeChecked"
 msgid "The values cannot be checked: {error}"
@@ -8723,6 +9184,10 @@ msgctxt "user.nameTaken"
 msgid "There is an account named {name} already."
 msgstr "There is an account named {name} already."
 
+#: src/runs/decisions.ts
+msgid "There was no value."
+msgstr "There was no value."
+
 #: src/settings/CertificatePanel.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/ProxiesPanel.tsx
@@ -8745,6 +9210,10 @@ msgstr "These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDir
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
 msgstr "They changed {list}."
+
+#: src/machines/RunWaiting.tsx
+msgid "They were given at the machine or on another page first."
+msgstr "They were given at the machine or on another page first."
 
 #: src/account/AccountPage.tsx
 msgid "This account comes from the directory. Change its password there."
@@ -9044,6 +9513,7 @@ msgstr "Token or user name"
 msgid "took {took}"
 msgstr "took {took}"
 
+#: src/runs/RunFlow.tsx
 #: src/runs/RunHistoryPage.tsx
 msgid "Took {took}"
 msgstr "Took {took}"
@@ -9052,11 +9522,29 @@ msgstr "Took {took}"
 msgid "Took {took}, finished {finished}"
 msgstr "Took {took}, finished {finished}"
 
+#: src/runs/decisions.ts
+msgid "Took Else"
+msgstr "Took Else"
+
+#: src/runs/decisions.ts
+msgid "Took Else: {reasons}"
+msgstr "Took Else: {reasons}"
+
+#: src/runs/decisions.ts
+msgid "Took Then"
+msgstr "Took Then"
+
+#: src/runs/decisions.ts
+msgid "Took Then: {reasons}"
+msgstr "Took Then: {reasons}"
+
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "TPM present"
 msgstr "TPM present"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "TPM version"
 msgstr "TPM version"
 
@@ -9135,6 +9623,7 @@ msgstr "Unfinished uploads"
 
 #: src/conditions/conditions.ts
 #: src/images/images.ts
+#: src/machines/facts.ts
 msgid "Unknown"
 msgstr "Unknown"
 
@@ -9342,6 +9831,10 @@ msgstr "User is not in role ''{role}''."
 msgid "User name"
 msgstr "User name"
 
+#: src/inputs/InputsForm.tsx
+msgid "User name for {label}"
+msgstr "User name for {label}"
+
 #: src/settings/DirectorySettings.tsx
 msgid "User name, optional"
 msgstr "User name, optional"
@@ -9382,6 +9875,14 @@ msgstr "Value of choice {number}"
 #: src/conditions/ConditionBuilder.tsx
 msgid "Value of condition {number}"
 msgstr "Value of condition {number}"
+
+#: src/machines/MachinePage.tsx
+msgid "Values a run would start with"
+msgstr "Values a run would start with"
+
+#: src/machines/MachinePage.tsx
+msgid "Values of this run"
+msgstr "Values of this run"
 
 #: src/sequences/builder/TemplateField.tsx
 msgid "Values to use"
@@ -9424,12 +9925,17 @@ msgid "Viewer"
 msgstr "Viewer"
 
 #: src/conditions/conditions.ts
+#: src/machines/facts.ts
 msgid "Virtual machine"
 msgstr "Virtual machine"
 
 #: src/machines/machineView.ts
 msgid "Waiting"
 msgstr "Waiting"
+
+#: src/deployments/deployments.ts
+msgid "Waiting for answers"
+msgstr "Waiting for answers"
 
 #: src/deployments/deployments.ts
 msgid "Waiting for Windows setup"
@@ -9478,6 +9984,14 @@ msgstr "Was served this certificate."
 #: src/audit/AuditPage.tsx
 msgid "What"
 msgstr "What"
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs"
+msgstr "What {sequenceName} asks before it runs"
+
+#: src/machines/AssignDialog.tsx
+msgid "What {sequenceName} asks before it runs could not be loaded, so it is assigned without answers."
+msgstr "What {sequenceName} asks before it runs could not be loaded, so it is assigned without answers."
 
 #: src/conditions/ConditionBuilder.tsx
 msgid "What condition {number} tests"
@@ -9703,6 +10217,8 @@ msgstr "Writes the answer file Windows setup reads at its first start. An empty 
 msgid "yes"
 msgstr "yes"
 
+#: src/inputs/InputsForm.tsx
+#: src/machines/facts.ts
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "Yes"
 msgstr "Yes"

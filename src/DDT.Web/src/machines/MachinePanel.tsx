@@ -7,7 +7,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { IconX } from "@tabler/icons-react";
 import { Button as AriaButton } from "react-aria-components";
 
-import { activityLabel, isActive } from "@/deployments/deployments";
+import { activityLabel, isActive, isWaiting } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { formatMac, type MachineSummary } from "@/machines/machines";
@@ -25,11 +25,10 @@ import {
   deviceKind,
   displayName,
   hardwareLine,
-  railFromSteps,
+  machineTag,
   railFromSummary,
+  railFromView,
   railStepText,
-  stateLabel,
-  stateTone,
 } from "./machineView";
 
 // The machine picked in the list, beside it: its run as it happens and what it is, without leaving the list. It
@@ -52,11 +51,13 @@ export function MachinePanel({
   const detail = useRunDetail(machine.id, null);
   const run = machine.deployment;
   const steps =
-    detail.view?.summary.id === run?.id && detail.view ? railFromSteps(detail.view.steps) : null;
+    detail.view?.summary.id === run?.id && detail.view ? railFromView(detail.view) : null;
   const rail = steps ?? (run === null ? [] : railFromSummary(run));
   const activity = run === null ? null : activityLabel(run.activity);
   const running = run?.state === "Running";
   const signedInBy = machine.signedInBy;
+  const tag = machineTag(machine);
+  const pauseMessage = isWaiting(run) ? (run?.pauseMessage ?? null) : null;
 
   return (
     <aside
@@ -69,7 +70,7 @@ export function MachinePanel({
           <span className="truncate type-subtitle">{displayName(machine)}</span>
           <span className="truncate text-muted">{hardwareLine(machine)}</span>
           <span className="flex flex-wrap items-center gap-2 pt-0.5">
-            <StateTag tone={stateTone[machine.state]}>{i18n._(stateLabel[machine.state])}</StateTag>
+            <StateTag tone={tag.tone}>{i18n._(tag.label)}</StateTag>
             {signedInBy !== null ? (
               <span className="type-small text-muted">
                 <Trans>{signedInBy} signed in here</Trans>
@@ -105,6 +106,9 @@ export function MachinePanel({
           ) : (
             <span className="type-heading">{activity ?? runStateText(run.state)}</span>
           )}
+          {pauseMessage !== null && pauseMessage !== "" ? (
+            <p className="type-small text-ink-2">{pauseMessage}</p>
+          ) : null}
           {rail.length > 0 ? (
             <SequenceRail steps={rail} showNames={false} describe={railStepText} />
           ) : null}

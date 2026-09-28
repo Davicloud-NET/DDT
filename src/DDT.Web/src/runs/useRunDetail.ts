@@ -28,6 +28,11 @@ export function useRunDetail(machineId: string, pinnedRunId: string | null) {
         view === undefined ? view : withStep(view, event.step),
       );
     },
+    onRunVariablesChanged: (event) => {
+      queryClient.setQueryData(deploymentQuery(event.deploymentId).queryKey, (view) =>
+        view === undefined ? view : { ...view, variables: event.variables },
+      );
+    },
     // Changes made while the connection was down were not pushed.
     onReconnect: () => {
       void queryClient.invalidateQueries({

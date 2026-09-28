@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { endDeployment } from "@/deployments/deployments";
+import { hasAnswerErrors, type InputAnswer } from "@/inputs/inputs";
+import { ApiError } from "@/lib/api";
 import { approvalPlan, type ApprovalPlan } from "@/machines/approval";
 import {
   approveMachine,
@@ -61,16 +63,23 @@ export function useMachineActions() {
       id,
       plan,
       allowSecureBootMismatch = false,
+      answers = [],
     }: {
       id: string;
       plan: ApprovalPlan;
       allowSecureBootMismatch?: boolean;
-    }) => approveMachine(id, plan.expectedSequenceId, allowSecureBootMismatch),
+      answers?: InputAnswer[];
+    }) => approveMachine(id, plan.expectedSequenceId, allowSecureBootMismatch, answers),
     onSuccess: (machine) => {
       upsertMachine(queryClient, machine);
       setApproveOn(null);
     },
-    onError: refresh,
+    // A refused answer is the operator's to correct; anything else may be someone else deciding first.
+    onError: (error) => {
+      if (!hasAnswerErrors(error instanceof ApiError ? error : null)) {
+        refresh();
+      }
+    },
   });
 
   // Reads fresh what the rules choose before an approval, because the approval runs that sequence.

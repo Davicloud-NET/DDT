@@ -42,7 +42,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly Queue<ConsoleLogLine> _lines = new();
     private readonly Queue<ConsoleMessage> _control = new();
-    private readonly Dictionary<int, PendingQuestion> _pending = [];
+    private readonly QuestionSlot _questions;
     private TaskCompletionSource _wake = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private ConsoleState? _state;
     private bool _stateUnsent;
@@ -51,7 +51,6 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     private bool _closing;
     private bool _endConsole;
     private bool _greeted;
-    private int _lastQuestionId;
     private Task _running = Task.CompletedTask;
 
     // fallback is the text console. connectTimeout is only shortened by tests.
@@ -71,6 +70,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         _log = log;
         _agentVersion = agentVersion;
         _connectTimeout = connectTimeout ?? DefaultConnectTimeout;
+        _questions = new QuestionSlot(Send);
     }
 
     // The console may still be starting: a question waits for it, or for the text console should it not come.
@@ -185,39 +185,19 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         _fallback.Write(line);
     }
 
+    // The question waits for the console while it starts. Should the console go away before it answers, the text console
+    // asks it again.
     public async Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
 
-        PendingQuestion? pending = null;
-
-        lock (_lock)
+        if (!FellBack)
         {
-            if (!_fellBack)
+            QuestionOutcome outcome = await _questions.AskAsync(question, cancellationToken).ConfigureAwait(false);
+
+            if (!outcome.Gone || cancellationToken.IsCancellationRequested)
             {
-                pending = new PendingQuestion(++_lastQuestionId, question);
-                _pending.Add(pending.Id, pending);
-
-                if (_connected)
-                {
-                    _control.Enqueue(new QuestionMessage(pending.Id, question));
-                    _wake.TrySetResult();
-                }
-            }
-        }
-
-        if (pending is not null)
-        {
-            PendingAnswer answer;
-
-            using (cancellationToken.Register(() => Withdraw(pending)))
-            {
-                answer = await pending.Answer.Task.ConfigureAwait(false);
-            }
-
-            if (!answer.FellBack || cancellationToken.IsCancellationRequested)
-            {
-                return answer.Answer;
+                return outcome.Answer;
             }
         }
 
@@ -475,7 +455,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
                     case null:
                         return "closed its pipe";
                     case AnswerMessage answer:
-                        Answered(answer);
+                        _questions.Answer(answer.Id, answer.Answer);
                         break;
                     default:
                         return "sent a message only the agent sends";
@@ -579,62 +559,35 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // What waits for the console goes out now: the state, the lines kept, and the open question.
+    // What waits for the console goes out now: the state and the lines kept, and after them the open question.
     private void Connected()
     {
         lock (_lock)
         {
             _connected = true;
             _stateUnsent = _state is not null;
-
-            foreach (PendingQuestion pending in _pending.Values.OrderBy(pending => pending.Id))
-            {
-                _control.Enqueue(new QuestionMessage(pending.Id, pending.Question));
-            }
-
             _wake.TrySetResult();
         }
+
+        _questions.Connected();
     }
 
-    private void Answered(AnswerMessage message)
-    {
-        PendingQuestion? pending;
-
-        lock (_lock)
-        {
-            // Withdrawn meanwhile, or never asked.
-            if (!_pending.Remove(message.Id, out pending))
-            {
-                return;
-            }
-        }
-
-        pending.Answer.TrySetResult(new PendingAnswer(false, message.Answer));
-    }
-
-    private void Withdraw(PendingQuestion pending)
+    // A question or a withdrawal from the slot, for the console once it is connected.
+    private void Send(ConsoleMessage message)
     {
         lock (_lock)
         {
-            if (!_pending.Remove(pending.Id))
+            if (_connected && !_fellBack)
             {
-                return;
-            }
-
-            if (_connected)
-            {
-                _control.Enqueue(new WithdrawMessage(pending.Id));
+                _control.Enqueue(message);
                 _wake.TrySetResult();
             }
         }
-
-        pending.Answer.TrySetResult(new PendingAnswer(false, null));
     }
 
     // For the rest of the run. reason is null when the agent closed the console itself.
     private void FallBack(string? reason)
     {
-        List<PendingQuestion> pending;
         ConsoleState? state;
 
         lock (_lock)
@@ -646,8 +599,6 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
 
             _fellBack = true;
             _connected = false;
-            pending = [.. _pending.Values];
-            _pending.Clear();
             _control.Clear();
             _lines.Clear();
             state = _state;
@@ -663,10 +614,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
             _fallback.Show(state);
         }
 
-        foreach (PendingQuestion question in pending)
-        {
-            question.Answer.TrySetResult(new PendingAnswer(true, null));
-        }
+        // The open question is asked again there.
+        _questions.Close();
     }
 
     private static string ExitCode(IConsoleProcess process) =>
@@ -675,16 +624,4 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
             : "no exit code";
 
     private static string Seconds(TimeSpan timeout) => string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalSeconds:0.#} s");
-
-    private sealed class PendingQuestion(int id, ConsoleQuestion question)
-    {
-        public int Id => id;
-
-        public ConsoleQuestion Question => question;
-
-        public TaskCompletionSource<PendingAnswer> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    }
-
-    // FellBack says that the text console is to ask instead.
-    private readonly record struct PendingAnswer(bool FellBack, ConsoleAnswer? Answer);
 }

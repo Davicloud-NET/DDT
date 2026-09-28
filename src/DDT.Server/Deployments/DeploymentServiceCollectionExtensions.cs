@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Server.Accounts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -19,6 +20,10 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<DeploymentService>();
         services.AddScoped<RunReports>();
         services.AddScoped<RunSecrets>();
+
+        // The passwords of stored accounts and of accounts given for one run, which reach only the steps of runs.
+        services.AddSingleton<AccountProtector>();
+        services.AddSingleton<RunCredentialProtector>();
         services.TryAddSingleton<IDomainDirectory, LdapDomainDirectory>();
         services.AddScoped<DomainJoinCheck>();
         services.AddSingleton<AbandonedRunSweeper>();

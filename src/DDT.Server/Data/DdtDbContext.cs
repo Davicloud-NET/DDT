@@ -4,6 +4,7 @@
 
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
+using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
@@ -45,6 +46,14 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
     public DbSet<AssignmentRule> AssignmentRules => Set<AssignmentRule>();
+
+    public DbSet<Rule> Rules => Set<Rule>();
+
+    public DbSet<MachineRole> MachineRoles => Set<MachineRole>();
+
+    public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<RunCredential> RunCredentials => Set<RunCredential>();
 
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
@@ -148,6 +157,8 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             deployment.Property(d => d.CurrentPhase).HasConversion<string>().HasMaxLength(16);
             deployment.Property(d => d.Activity).HasConversion<string>().HasMaxLength(32);
             deployment.Property(d => d.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);
+            deployment.Property(d => d.PauseMessage).HasMaxLength(DeploymentLimits.MaxPauseMessageLength);
+            deployment.Property(d => d.ContinuedByName).HasMaxLength(256);
             deployment.HasIndex(d => d.MachineId);
             deployment.HasOne<Machine>().WithMany().HasForeignKey(d => d.MachineId).OnDelete(DeleteBehavior.Cascade);
             deployment.HasOne<TaskSequence>().WithMany().HasForeignKey(d => d.TaskSequenceId).OnDelete(DeleteBehavior.SetNull);
@@ -171,7 +182,21 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             // A report that saves after a newer one could otherwise move a finished step back to Running.
             step.Property(s => s.State).IsConcurrencyToken();
             step.Property(s => s.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);
+            step.Property(s => s.Branch).HasConversion<string>().HasMaxLength(8);
             step.HasOne<Deployment>().WithMany().HasForeignKey(s => s.DeploymentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<RunCredential>(credential =>
+        {
+            credential.HasKey(c => new { c.DeploymentId, c.InputName });
+            credential.Property(c => c.InputName).HasMaxLength(RunCredential.MaxInputNameLength);
+            credential.Property(c => c.UserName).HasMaxLength(AccountLimits.MaxUserNameLength);
+            credential.Property(c => c.Domain).HasMaxLength(AccountLimits.MaxDomainLength);
+            credential.Property(c => c.ProvidedByName).HasMaxLength(256);
+
+            // A run's credentials go with it.
+            credential.HasOne<Deployment>().WithMany().HasForeignKey(c => c.DeploymentId).OnDelete(DeleteBehavior.Cascade);
+            credential.HasOne<DdtUser>().WithMany().HasForeignKey(c => c.ProvidedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<DeploymentArtifact>(artifact =>
@@ -224,6 +249,45 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             // A sequence that rules choose cannot be deleted, so no rule is left pointing nowhere.
             rule.HasOne<TaskSequence>().WithMany().HasForeignKey(r => r.TaskSequenceId).OnDelete(DeleteBehavior.Restrict);
             rule.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<Rule>(rule =>
+        {
+            rule.Property(r => r.Name).HasMaxLength(RuleLimits.MaxNameLength);
+            rule.Property(r => r.Description).HasMaxLength(RuleLimits.MaxDescriptionLength);
+            rule.Property(r => r.Revision).IsConcurrencyToken();
+            rule.Property(r => r.UpdatedByName).HasMaxLength(256);
+
+            // Two rules never share a place. The index is checked for each row as it changes, so a reorder that swaps
+            // places first moves the rules it changes out of the way, in a save of its own.
+            rule.HasIndex(r => r.Position).IsUnique();
+
+            // A sequence that rules choose cannot be deleted, so no rule is left pointing nowhere.
+            rule.HasOne<TaskSequence>().WithMany().HasForeignKey(r => r.TaskSequenceId).OnDelete(DeleteBehavior.Restrict);
+            rule.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<MachineRole>(role =>
+        {
+            role.Property(r => r.Name).HasMaxLength(RuleLimits.MaxRoleNameLength);
+            role.Property(r => r.NormalizedName).HasMaxLength(RuleLimits.MaxRoleNameLength);
+            role.Property(r => r.Description).HasMaxLength(RuleLimits.MaxDescriptionLength);
+            role.Property(r => r.Revision).IsConcurrencyToken();
+            role.Property(r => r.UpdatedByName).HasMaxLength(256);
+            role.HasIndex(r => r.NormalizedName).IsUnique();
+            role.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<Account>(account =>
+        {
+            account.Property(a => a.Name).HasMaxLength(AccountLimits.MaxNameLength);
+            account.Property(a => a.NormalizedName).HasMaxLength(AccountLimits.MaxNameLength);
+            account.Property(a => a.UserName).HasMaxLength(AccountLimits.MaxUserNameLength);
+            account.Property(a => a.Domain).HasMaxLength(AccountLimits.MaxDomainLength);
+            account.Property(a => a.Revision).IsConcurrencyToken();
+            account.Property(a => a.UpdatedByName).HasMaxLength(256);
+            account.HasIndex(a => a.NormalizedName).IsUnique();
+            account.HasOne<DdtUser>().WithMany().HasForeignKey(a => a.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<ApiToken>(token =>

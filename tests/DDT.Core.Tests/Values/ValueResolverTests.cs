@@ -43,6 +43,16 @@ public sealed class ValueResolverTests
         ],
     };
 
+    // A required input without a default of its own.
+    private static readonly SequenceDefinition s_owner = new(SequenceDefinition.CurrentVersion, [])
+    {
+        Inputs =
+        [
+            new InputDeclaration { Name = "Owner", Label = "Owner", Required = true },
+            new InputDeclaration { Name = "JoinAccount", Label = "Join account", Kind = InputKind.Account, Required = true },
+        ],
+    };
+
     // Every source sets Office: the answer wins, and the rest are shown overridden in the order they would win.
     [Fact]
     public void TakesEachNameFromTheFirstSourceThatSetsIt()
@@ -325,6 +335,129 @@ public sealed class ValueResolverTests
         Assert.Empty(resolution.Values);
         Assert.Empty(resolution.Effective);
         Assert.Empty(resolution.Problems);
+        Assert.Empty(resolution.InputDefaults);
+    }
+
+    // A rule's value is the input's default, so the question starts with it and a required input is answered by it.
+    [Fact]
+    public void AnswersARequiredInputWithARulesValue()
+    {
+        ValueResolution resolution = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = s_owner,
+            Rules = [new ValueSet(s_firstRule, "Finance laptops", [new NamedValue("owner", "Finance {{Model|upper}}")])],
+            Facts = s_facts,
+        });
+
+        Assert.Empty(resolution.Problems);
+        Assert.Equal("Finance LATITUDE 5440", resolution.Effective["Owner"]);
+        Assert.Equal(
+            new ResolvedValue("Owner", "Finance LATITUDE 5440", ValueSource.Rule, s_firstRule, "Finance laptops", false),
+            Assert.Single(resolution.Values));
+        Assert.Equal(
+            [new ResolvedValue("Owner", "Finance LATITUDE 5440", ValueSource.Rule, s_firstRule, "Finance laptops", false)],
+            resolution.InputDefaults);
+    }
+
+    [Fact]
+    public void AnswersARequiredInputWithAMachineRolesValue()
+    {
+        ValueResolution resolution = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = s_owner,
+            Rules = [new ValueSet(s_firstRule, "Kiosks", [new NamedValue("Site", "Wien")])],
+            Roles = [new ValueSet(s_kiosk, "Kiosk", [new NamedValue("Owner", "Front desk")])],
+            Facts = s_facts,
+        });
+
+        Assert.Empty(resolution.Problems);
+        Assert.Equal("Front desk", resolution.Effective["Owner"]);
+        Assert.Equal([new ResolvedValue("Owner", "Front desk", ValueSource.Role, s_kiosk, "Kiosk", false)], resolution.InputDefaults);
+    }
+
+    // An answer still wins; the default it overrode stays the rule's, for the question.
+    [Fact]
+    public void LetsAnAnswerOverrideARulesValue()
+    {
+        ValueResolution resolution = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = s_owner,
+            Answers = new Dictionary<string, string> { ["Owner"] = "Ann" },
+            Rules = [new ValueSet(s_firstRule, "Finance laptops", [new NamedValue("Owner", "Finance")])],
+            Facts = s_facts,
+        });
+
+        Assert.Empty(resolution.Problems);
+        Assert.Equal("Ann", resolution.Effective["Owner"]);
+        Assert.Equal(
+            [
+                new ResolvedValue("Owner", "Ann", ValueSource.Input, null, null, false),
+                new ResolvedValue("Owner", "Finance", ValueSource.Rule, s_firstRule, "Finance laptops", true),
+            ],
+            resolution.Values);
+        Assert.Equal([new ResolvedValue("Owner", "Finance", ValueSource.Rule, s_firstRule, "Finance laptops", true)], resolution.InputDefaults);
+
+        ValueResolution blank = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = s_owner,
+            Answers = new Dictionary<string, string> { ["Owner"] = "" },
+            Rules = [new ValueSet(s_firstRule, "Finance laptops", [new NamedValue("Owner", "Finance")])],
+            Facts = s_facts,
+        });
+
+        Assert.Equal("Finance", blank.Effective["Owner"]);
+        Assert.Equal([new ResolvedValue("Owner", "Finance", ValueSource.Rule, s_firstRule, "Finance laptops", false)], blank.InputDefaults);
+    }
+
+    [Fact]
+    public void UsesTheInputsOwnDefaultOnlyWhenNoRuleOrRoleSetsItsName()
+    {
+        SequenceDefinition withDefault = s_owner with
+        {
+            Inputs = [new InputDeclaration { Name = "Owner", Label = "Owner", Required = true, Default = "IT" }],
+        };
+
+        ValueResolution byRule = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = withDefault,
+            Rules = [new ValueSet(s_firstRule, "Finance laptops", [new NamedValue("Owner", "Finance")])],
+            Facts = s_facts,
+        });
+        ValueResolution byDefault = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = withDefault,
+            Rules = [new ValueSet(s_firstRule, "Kiosks", [new NamedValue("Site", "Wien")])],
+            Facts = s_facts,
+        });
+
+        Assert.Equal("Finance", byRule.Effective["Owner"]);
+        Assert.Equal([new ResolvedValue("Owner", "Finance", ValueSource.Rule, s_firstRule, "Finance laptops", false)], byRule.InputDefaults);
+        Assert.Empty(byDefault.Problems);
+        Assert.Equal("IT", byDefault.Effective["Owner"]);
+        Assert.Equal([new ResolvedValue("Owner", "IT", ValueSource.SequenceDefault, null, null, false)], byDefault.InputDefaults);
+    }
+
+    // The machine's own value comes before the rules', so it is the default the question starts with.
+    [Fact]
+    public void TakesTheMachinesOwnValueAsTheDefaultBeforeARules()
+    {
+        SequenceDefinition named = new(SequenceDefinition.CurrentVersion, [])
+        {
+            Inputs = [new InputDeclaration { Name = MachineVariableNames.ComputerName, Label = "Computer name", Required = true }],
+        };
+
+        ValueResolution resolution = ValueResolver.Resolve(new ValueSources
+        {
+            Sequence = named,
+            Machine = [new NamedValue(MachineVariableNames.ComputerName, "PC-ASSIGNED")],
+            Rules = [new ValueSet(s_firstRule, "Names", [new NamedValue(MachineVariableNames.ComputerName, "PC-{{SerialNumber|alnum|right:8}}")])],
+            Facts = s_facts,
+        });
+
+        Assert.Empty(resolution.Problems);
+        Assert.Equal(
+            [new ResolvedValue(MachineVariableNames.ComputerName, "PC-ASSIGNED", ValueSource.Machine, null, null, false)],
+            resolution.InputDefaults);
     }
 
     private static string[] Pairs(IReadOnlyDictionary<string, string> values) =>

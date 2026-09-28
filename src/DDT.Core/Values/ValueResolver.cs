@@ -14,7 +14,8 @@ namespace DDT.Core.Values;
 // Works out a run's values when it starts, and the preview of them on the web. For each name the first source in the
 // order of ValueSources sets it, and the sources after it are shown as overridden. A template may use other values and
 // the machine's facts; a value made from itself, a name nothing gives a value, a computer name Windows refuses and a
-// required input without an answer or a default are problems. Names ignore case, as templates do.
+// required input without an answer or a default are problems. A value the machine, a rule or a machine role gives an
+// input's name is that input's default, ahead of the input's own. Names ignore case, as templates do.
 public static class ValueResolver
 {
     // Between the names of a loop of values, for a person to follow it.
@@ -82,15 +83,49 @@ public static class ValueResolver
                 ServerMessages.ValuesComputerName.With("problem", refused, "value", computerName)));
         }
 
-        foreach (InputDeclaration input in Inputs(sources.Sequence).Where(input => input.Required))
+        List<ResolvedValue> inputDefaults = [];
+
+        foreach (InputDeclaration input in Inputs(sources.Sequence))
         {
-            if (Answer(sources.Answers, input.Name) is null && string.IsNullOrEmpty(input.Default))
+            bool answered = Answer(sources.Answers, input.Name) is not null;
+            ResolvedValue? prefill = Prefill(input, byName.GetValueOrDefault(input.Name) ?? [], effective, resolution, answered);
+
+            if (prefill is not null)
+            {
+                inputDefaults.Add(prefill);
+            }
+            else if (input.Required && !answered)
             {
                 problems.Add(new ValueProblem(input.Name, ServerMessages.ValuesInputRequired.With("label", input.Label ?? input.Name)));
             }
         }
 
-        return new ValueResolution(values, effective, [.. problems.Distinct()]);
+        return new ValueResolution(values, effective, [.. problems.Distinct()], inputDefaults);
+    }
+
+    // What an input's question starts with: the value the machine, a rule or a machine role gives its name, as the run
+    // would use it without an answer, or else the input's own Default. Either answers a required input. Overridden when
+    // an answer was given.
+    private static ResolvedValue? Prefill(
+        InputDeclaration input,
+        List<Candidate> named,
+        Dictionary<string, string> effective,
+        Resolution resolution,
+        bool answered)
+    {
+        int index = named.FindIndex(candidate => candidate.Source is ValueSource.Machine or ValueSource.Rule or ValueSource.Role);
+
+        if (index >= 0)
+        {
+            Candidate given = named[index];
+            string value = index == 0 && effective.TryGetValue(input.Name, out string? used) ? used : resolution.Rendered(given);
+
+            return new ResolvedValue(input.Name, value, given.Source, given.SourceId, given.SourceName, answered);
+        }
+
+        return string.IsNullOrEmpty(input.Default)
+            ? null
+            : new ResolvedValue(input.Name, input.Default, ValueSource.SequenceDefault, null, null, answered);
     }
 
     // Every value a source sets, in the order they win. A name the catalogue holds is the machine's or the run's alone, so

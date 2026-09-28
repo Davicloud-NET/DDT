@@ -184,15 +184,7 @@ public sealed class SequenceRunner(
             TrustedUefiCas = identity.TrustedUefiCas,
         };
         SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
-
-        MachineVariables machine = new(
-            identity.Manufacturer,
-            identity.Model,
-            identity.SerialNumber,
-            identity.SmbiosUuid,
-            identity.MacAddresses,
-            run.ComputerName,
-            SequencePhase.WindowsPE);
+        MachineVariables machine = RunMachine.Of(identity, run);
 
         FileRunStateStore? store = null;
         RunHeartbeat heartbeat = new(
@@ -244,7 +236,9 @@ public sealed class SequenceRunner(
         CancellationToken cancellationToken)
     {
         AgentRun run = session.Run;
-        int count = run.Sequence.Steps.Count;
+
+        // A tree counts the steps on all its branches, as they are before the run takes any of them.
+        int count = SequenceTree.Leaves(run.Sequence).Count;
 
         try
         {
@@ -255,7 +249,7 @@ public sealed class SequenceRunner(
             }
             else
             {
-                log.Information($"The run of {run.SequenceName} goes on at step {Math.Min(state.NextIndex + 1, count)} of {count}.");
+                log.Information($"The run of {run.SequenceName} goes on {WhereItGoesOn(state, count)}.");
                 await ResumeAsync(session, resumed, store, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -286,11 +280,19 @@ public sealed class SequenceRunner(
         }
 
         // Nothing is changed on any disk before the server has the run as running. A run that goes on is running
-        // already, and the heartbeat's first beat tells the server where it is.
+        // already, and the heartbeat's first beat tells the server where it is. A run that waits for answers to its
+        // inputs says so from its first report.
+        bool waitsForInputs = resumed is null && run.PendingInputs is { Count: > 0 };
+
         try
         {
             if (resumed is null)
             {
+                if (waitsForInputs)
+                {
+                    heartbeat.Activity = RunActivity.WaitingForInput;
+                }
+
                 await ServerCallRules.CallAsync(
                     call => heartbeat.ReportAsync(heartbeat.Snapshot(DeploymentState.Running), call),
                     "the start of the run",
@@ -318,7 +320,7 @@ public sealed class SequenceRunner(
             return new RunResult(RunOutcome.Failed);
         }
 
-        return await RunStepsAsync(session, store, heartbeat, state, machine, cancellationToken).ConfigureAwait(false);
+        return await RunStepsAsync(session, store, heartbeat, state, machine, waitsForInputs, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<RunResult> RunStepsAsync(
@@ -327,6 +329,7 @@ public sealed class SequenceRunner(
         RunHeartbeat heartbeat,
         SequenceState state,
         MachineVariables machine,
+        bool waitsForInputs,
         CancellationToken cancellationToken)
     {
         SequenceEngine engine = new(Steps(session, store, heartbeat), store, heartbeat);
@@ -338,11 +341,18 @@ public sealed class SequenceRunner(
         bool restartDue = false;
 
         using CancellationTokenSource steps = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        heartbeat.Activity = RunActivity.Step;
+        heartbeat.Activity = waitsForInputs ? RunActivity.WaitingForInput : RunActivity.Step;
         heartbeat.Start(steps, cancellationToken);
 
         try
         {
+            // The values the run starts with come once its inputs are answered, and conditions and scripts read them.
+            if (waitsForInputs)
+            {
+                machine = machine with { Variables = await WaitForInputsAsync(session, heartbeat, steps.Token).ConfigureAwait(false) };
+                heartbeat.Activity = RunActivity.Step;
+            }
+
             SequenceRunResult result = state.Phase == SequencePhase.Windows && _phase == SequencePhase.WindowsPE
                 ? await HandOverAgainAsync(store, state).ConfigureAwait(false)
                 : await engine.RunAsync(state, machine, steps.Token).ConfigureAwait(false);
@@ -463,6 +473,106 @@ public sealed class SequenceRunner(
         return new SequenceRunResult(SequenceOutcome.PhaseChangeRequired, state, null);
     }
 
+    // The run waits at its start for the answers to its inputs, which the person at the machine gives here and someone on
+    // the web on the machine's page. Either way the run's values come from the server once nothing is pending: in the
+    // answer to the answers sent from here, or in a report's answer, which also takes the question here away. A question
+    // the server did not take is asked again with what was wrong. No answer is ever logged, and an Account input's goes to
+    // the server alone.
+    private async Task<IReadOnlyDictionary<string, string>> WaitForInputsAsync(RunSession session, RunHeartbeat heartbeat, CancellationToken cancellationToken)
+    {
+        AgentRun run = session.Run;
+        IReadOnlyList<AgentInput> pending = [.. run.PendingInputs ?? []];
+        IReadOnlyDictionary<string, string> errors = new Dictionary<string, string>();
+        string? error = null;
+        Task<IReadOnlyDictionary<string, string>> fromWeb = heartbeat.WaitForValuesAsync(cancellationToken);
+        IMachineConsole? console = status?.Console;
+
+        log.Information($"The run waits for answers to {string.Join(", ", pending.Select(input => input.Label))}, at this machine or on the machine's page.");
+
+        while (!fromWeb.IsCompleted && pending.Count > 0 && console is not null && (console.CanAsk || console is SessionMachineConsole))
+        {
+            using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            InputsQuestion question = new(
+                run.SequenceName,
+                [.. pending.Select(input => InputQuestions.ToConsole(input, errors.GetValueOrDefault(input.Name), run.Sequence))],
+                error);
+            Task<ConsoleAnswer?> asked = console.AskAsync(question, asking.Token);
+
+            if (await Task.WhenAny(asked, fromWeb).ConfigureAwait(false) == fromWeb)
+            {
+                await asking.CancelAsync().ConfigureAwait(false);
+                await ((Task)asked).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+                break;
+            }
+
+            // Nobody can answer here after all: the web decides.
+            if (await asked.ConfigureAwait(false) is not { } answer)
+            {
+                break;
+            }
+
+            if (answer.Values is not { } given)
+            {
+                continue;
+            }
+
+            errors = InputQuestions.Check(pending, given);
+            error = null;
+
+            if (errors.Count > 0)
+            {
+                log.Warning($"Answer these again: {string.Join(", ", pending.Where(input => errors.ContainsKey(input.Name)).Select(input => input.Label))}.");
+
+                continue;
+            }
+
+            try
+            {
+                AgentAnswersResult result = await ServerCallRules.CallAsync(
+                    call => server.AnswerRunInputsAsync(session.MachineId, session.Tokens.Token, run.Id, new AgentInputAnswers(InputQuestions.Answers(pending, given)), call),
+                    "the answers",
+                    log,
+                    timeProvider,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (result.Values is { } started)
+                {
+                    log.Information("The server took the answers, and the run starts.");
+
+                    return started;
+                }
+
+                pending = [.. result.InputsPending ?? []];
+                errors = (result.Problems ?? []).Where(problem => problem is not null).GroupBy(problem => problem.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(problems => problems.Key, problems => problems.First().Message, StringComparer.OrdinalIgnoreCase);
+
+                if (errors.Count > 0)
+                {
+                    log.Warning($"The server did not take the answers to {string.Join(", ", errors.Keys)}.");
+                }
+            }
+            catch (AgentTokenRejectedException exception)
+            {
+                heartbeat.TokenRejected(exception);
+
+                throw;
+            }
+            catch (DeploymentStepException exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                // A refusal names the answers it did not take where it can; either way the question comes again.
+                error = exception.Message;
+                errors = InputQuestions.FieldErrors(pending, (exception.InnerException as AgentRequestException)?.FieldErrors) ?? new Dictionary<string, string>();
+                log.Warning($"The answers were not taken: {exception.Message}");
+            }
+        }
+
+        IReadOnlyDictionary<string, string> values = await fromWeb.ConfigureAwait(false);
+        log.Information("The inputs were answered on the web, and the run starts.");
+
+        return values;
+    }
+
     // A restart the run asks for leads back to where it runs now.
     private RestartInto SamePhase => _phase == SequencePhase.Windows ? RestartInto.Windows : RestartInto.WindowsPE;
 
@@ -482,7 +592,9 @@ public sealed class SequenceRunner(
             throw new DeploymentStepException($"{run.SequenceName} cannot run: {problem.Message} Correct the sequence and assign it again.");
         }
 
-        IReadOnlyList<SequenceStep> steps = run.Sequence.Steps;
+        // Every step on every branch: which branches the run takes, it finds out as it goes, and nothing may be erased for
+        // a run that could not finish on one of them.
+        IReadOnlyList<SequenceStep> steps = SequenceTree.Nodes(run.Sequence);
         List<AgentRunImage> images = [];
 
         foreach (ApplyImageStep step in steps.OfType<ApplyImageStep>())
@@ -491,9 +603,9 @@ public sealed class SequenceRunner(
                 ?? throw new DeploymentStepException($"The server sent no image for step {step.Name}. Assign the sequence again."));
         }
 
-        AgentRunImage? rawImage = steps.OfType<WriteRawImageStep>().Select(step => WriteRawImageStepRunner.ImageOf(run, step)).FirstOrDefault();
+        List<AgentRunImage> rawImages = [.. steps.OfType<WriteRawImageStep>().Select(step => WriteRawImageStepRunner.ImageOf(run, step))];
 
-        if (rawImage is not null)
+        foreach (AgentRunImage rawImage in rawImages.DistinctBy(image => image.Sha256))
         {
             if (SecureBootGate.Refusal(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled, session.TrustedUefiCas) is { } refusal)
             {
@@ -509,10 +621,14 @@ public sealed class SequenceRunner(
             {
                 log.Warning(unknown);
             }
+        }
 
+        if (rawImages.Count > 0)
+        {
             // A seed step that runs whatever happens has to have every value it uses, which is known now. One with
-            // conditions, or that lets the run go on when it fails, is left to its step.
-            foreach (WriteCloudInitSeedStep seed in steps.OfType<WriteCloudInitSeedStep>().Where(seed => seed.Conditions.Count == 0 && !seed.ContinueOnError))
+            // conditions, inside a group, IF or repeat, or that lets the run go on when it fails, is left to its step.
+            foreach (WriteCloudInitSeedStep seed in run.Sequence.Steps.OfType<WriteCloudInitSeedStep>()
+                .Where(seed => seed.Conditions.Count == 0 && seed.When is null && !seed.ContinueOnError))
             {
                 WriteCloudInitSeedStepRunner.Render(seed, run.ComputerName, machine);
             }
@@ -534,14 +650,21 @@ public sealed class SequenceRunner(
             IReadOnlyList<LocalDisk> disks = await partitioner.ListDisksAsync(cancellationToken).ConfigureAwait(false);
             LocalDisk disk = SelectDisk(run.DiskNumber, confirmedDisk, disks);
 
-            if (rawImage is null)
+            if (steps.Any(step => step.IsContainer))
+            {
+                CheckTreeSize(run, disk, rawImages.Count > 0);
+            }
+            else if (rawImages.Count == 0)
             {
                 CheckSize(run, disk, images, steps.OfType<PartitionStep>().FirstOrDefault());
             }
             else
             {
-                CheckRawSize(run, disk, rawImage, steps.Any(step => step is WriteCloudInitSeedStep));
+                CheckRawSize(run, disk, rawImages[0], steps.Any(step => step is WriteCloudInitSeedStep));
+            }
 
+            if (rawImages.Count > 0)
+            {
                 using IRawDisk raw = rawDisks.Open(disk);
 
                 if (raw.SectorSize != GptLayout.SectorSize)
@@ -558,7 +681,7 @@ public sealed class SequenceRunner(
             applier.Prepare();
         }
 
-        foreach (AgentRunImage image in rawImage is null ? images : [.. images, rawImage])
+        foreach (AgentRunImage image in images.Concat(rawImages).DistinctBy(image => image.Sha256))
         {
             long? length = await ServerCallRules.CallAsync(
                 call => server.HeadRunFileAsync(session.MachineId, session.Tokens.Token, run.Id, image.Sha256, call),
@@ -614,6 +737,50 @@ public sealed class SequenceRunner(
         throw new DeploymentStepException(
             $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)}: " +
             $"{string.Join(", ", parts)} and {ByteSize.Format(SpareBytes)} to spare. Run it on a larger disk.");
+    }
+
+    // A tree needs what the path through it that needs the most does, as SequenceSizes works it out: an IF takes the
+    // branch that needs more. The rules for each step are those of a list: an image's download and installed files, a
+    // package with room to unpack it, some to spare, and a raw disk image's disk with nothing to spare, since it is
+    // written as it downloads. A package the server sent for no step of the tree counts on every path, as in a list.
+    private static void CheckTreeSize(AgentRun run, LocalDisk disk, bool raw)
+    {
+        HashSet<Guid> nodes = [.. SequenceTree.Nodes(run.Sequence).Select(node => node.Id)];
+
+        long Packages(Func<AgentRunPackage, bool> which) => raw ? 0 : 2 * run.Packages.Where(which).Sum(package => package.SizeBytes);
+
+        long FileBytes(SequenceStep step) => step switch
+        {
+            ApplyImageStep apply when !raw => run.Images.FirstOrDefault(image => image.ImageId == apply.ImageId) is { } image
+                ? image.SizeBytes + image.InstalledBytes
+                : 0,
+            WriteRawImageStep write => WriteRawImageStepRunner.ImageOf(run, write).InstalledBytes,
+            _ => Packages(package => package.StepId == step.Id),
+        };
+
+        long required = SequenceSizes.RequiredBytes(run.Sequence, FileBytes) + Packages(package => !nodes.Contains(package.StepId)) + (raw ? 0 : SpareBytes);
+
+        if (disk.SizeBytes >= required)
+        {
+            return;
+        }
+
+        throw new DeploymentStepException(
+            $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)} on the " +
+            $"path through it that needs the most{(raw ? "" : $", {ByteSize.Format(SpareBytes)} to spare included")}. Run it on a larger disk.");
+    }
+
+    // Where a run goes on after a restart: at the step its state names, by number in a list and by name in a tree.
+    private static string WhereItGoesOn(SequenceState state, int count)
+    {
+        if (state.Format < SequenceState.TreeFormat)
+        {
+            return $"at step {Math.Min(state.NextIndex + 1, count)} of {count}";
+        }
+
+        return state.Cursor is { } cursor && SequenceTree.Index(state.Definition).TryGetValue(cursor.NodeId, out NodePosition? position)
+            ? cursor.Leaving ? $"after the steps of {position.Step.Name}" : $"at step {position.Step.Name}"
+            : "at its end";
     }
 
     // A raw disk image is written as it downloads, so the disk needs room for the disk it holds and the seed, and no more.
@@ -705,7 +872,8 @@ public sealed class SequenceRunner(
                 timeProvider),
             heartbeat.TokenRejected,
             log,
-            timeProvider);
+            timeProvider,
+            new PauseStepRunner(heartbeat, status?.Console, log, timeProvider));
     }
 
     // What Windows needs to go on with the run, if anything, then, as in Microsoft's sequence after applying, the applied
@@ -738,7 +906,11 @@ public sealed class SequenceRunner(
             return;
         }
 
-        string? name = session.Run.Sequence.Steps.OfType<WriteRawImageStep>()
+        // In a tree, the image of the branch the run took: the one whose step is done.
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
+        HashSet<Guid> done = [.. state.Steps.Where(step => step.State == StepState.Done).Select(step => step.StepId)];
+        string? name = nodes.OfType<WriteRawImageStep>()
+            .OrderByDescending(step => done.Contains(step.Id))
             .Select(step => session.Run.Images.FirstOrDefault(image => image.ImageId == step.ImageId)?.Name)
             .FirstOrDefault(found => !string.IsNullOrWhiteSpace(found));
         string description = name is null ? "Linux" : name.Length > MaxBootEntryName ? name[..MaxBootEntryName] : name;

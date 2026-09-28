@@ -217,21 +217,70 @@ public sealed class ConsoleStatus
         Change(state => state with { Stage = ConsoleStage.Stopped, Problem = new ConsoleProblem(reason, ConsoleRemedy.Restart) });
 
     // Every step of the run's sequence, with its state where the run has one.
-    private static ConsoleStep[] Steps(SequenceState state) =>
-    [
-        .. state.Definition.Steps.Select((step, index) =>
+    private static ConsoleStep[] Steps(SequenceState state)
+    {
+        if (state.Format >= SequenceState.TreeFormat)
         {
-            StepRunState? run = state.Steps.ElementAtOrDefault(index);
+            return Nodes(state);
+        }
 
-            return new ConsoleStep(
-                step.Id,
-                step.Name,
-                ConsoleValues.KindOf(step),
-                ConsoleValues.ToConsole(SequencePhases.Of(state.Definition, index)),
+        return
+        [
+            .. state.Definition.Steps.Select((step, index) =>
+            {
+                StepRunState? run = state.Steps.ElementAtOrDefault(index);
+
+                return new ConsoleStep(
+                    step.Id,
+                    step.Name,
+                    ConsoleValues.KindOf(step),
+                    ConsoleValues.ToConsole(SequencePhases.Of(state.Definition, index)),
+                    run is null ? ConsoleStepState.Pending : ConsoleValues.ToConsole(run.State),
+                    run?.Error);
+            }),
+        ];
+    }
+
+    // A tree's run lists every node in pre-order, with where it sits, so the console's rail can follow the path. A node
+    // the engine skipped without entering it, on the branch an IF did not take or inside a node that was skipped or
+    // failed, has no tests of its own; the console takes it as off the path by its pass of 0. A node without a phase of
+    // its own shows the phase of the step before it, as a flat list does.
+    private static ConsoleStep[] Nodes(SequenceState state)
+    {
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
+        IReadOnlyDictionary<Guid, NodePosition> index = SequenceTree.Index(state.Definition);
+        ConsoleStep[] steps = new ConsoleStep[nodes.Count];
+        SequencePhase phase = SequencePhase.WindowsPE;
+
+        for (int order = 0; order < nodes.Count; order++)
+        {
+            SequenceStep node = nodes[order];
+            NodePosition position = index[node.Id];
+            StepRunState? run = state.Steps.ElementAtOrDefault(order);
+            phase = node.RequiredPhase ?? phase;
+            bool entered = run is not null && (run.State != StepState.Skipped || run.Evaluation is { Count: > 0 });
+
+            steps[order] = new ConsoleStep(
+                node.Id,
+                node.Name,
+                ConsoleValues.KindOf(node),
+                ConsoleValues.ToConsole(phase),
                 run is null ? ConsoleStepState.Pending : ConsoleValues.ToConsole(run.State),
-                run?.Error);
-        }),
-    ];
+                run?.Error,
+                position.ParentId,
+                position.Depth,
+                entered ? run!.Pass : 0,
+                run?.Iteration ?? 0,
+                run?.Branch switch
+                {
+                    IfBranch.Then => ConsoleBranch.Then,
+                    IfBranch.Else => ConsoleBranch.Else,
+                    _ => null,
+                });
+        }
+
+        return steps;
+    }
 
     private void Change(Func<ConsoleState, ConsoleState> change)
     {

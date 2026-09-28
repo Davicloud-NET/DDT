@@ -460,6 +460,11 @@ msgstr ""
 msgid "{installed} installed"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.containerShares"
+msgid "{kind, select, if {An IF} repeat {A repeat} other {A group}} connects no shares: only the steps that do something do. Move the shares to the steps in it that need them."
+msgstr ""
+
 #: src/runs/RunSteps.tsx
 msgid "{kind}, {phase}"
 msgstr ""

@@ -11,7 +11,8 @@ namespace DDT.Server.Sequences;
 // The accounts a sequence's steps name, anywhere in its tree: a stored account exists and has a password this server
 // can read, and every account may go where the step sends it, which is what the server checks again when the step
 // fetches it. A share whose server comes from a template is checked when the run fetches it, with the values the run
-// started with.
+// started with. Only a leaf step connects shares, so shares on a group, an IF or a Repeat are a problem of their own,
+// and their accounts are not checked further.
 public static class SequenceAccountChecks
 {
     public static IReadOnlyList<SequenceProblem> Check(SequenceDefinition definition, SequenceReferences references)
@@ -21,18 +22,30 @@ public static class SequenceAccountChecks
 
         List<SequenceProblem> problems = [];
 
-        foreach (AccountSite site in AccountSites.Of(definition))
+        foreach (SequenceStep container in SequenceTree.Nodes(definition).Where(node => node.IsContainer && node.Shares is { Count: > 0 }))
         {
-            Guid? stepId = site.Step.Id == Guid.Empty ? null : site.Step.Id;
+            problems.Add(SequenceProblem.From(StepId(container), "shares", ServerMessages.SequenceContainerShares.With("kind", Kind(container))));
+        }
 
+        foreach (AccountSite site in AccountSites.Of(definition).Where(site => !site.Step.IsContainer))
+        {
             if (Problem(site, definition, references) is { } message)
             {
-                problems.Add(SequenceProblem.From(stepId, site.Field, message));
+                problems.Add(SequenceProblem.From(StepId(site.Step), site.Field, message));
             }
         }
 
         return problems;
     }
+
+    private static Guid? StepId(SequenceStep step) => step.Id == Guid.Empty ? null : step.Id;
+
+    private static string Kind(SequenceStep container) => container switch
+    {
+        IfStep => "if",
+        RepeatStep => "repeat",
+        _ => "group",
+    };
 
     private static ServerMessage? Problem(AccountSite site, SequenceDefinition definition, SequenceReferences references)
     {

@@ -1466,10 +1466,10 @@ goes to, see [Security model](#security-model).
 
 Deployment > Accounts holds the accounts steps use: a name, a user name with its domain, such as
 `CORP\svc-drivers` or `svc-drivers@corp.example`, and a password the page never shows again. Any step
-can connect shares with an account while it runs, such as `\\files.corp.example\drivers`, and the
-shares of a group apply to every step in it. A Run script step in Windows can run as an account, and
-a Join the domain step can join with one instead of the configured join account. Scripts never see
-the password: DDT connects the shares and starts the script itself.
+that does something, rather than a group, an IF or a Repeat, can connect shares with an account while
+it runs, such as `\\files.corp.example\drivers`. A Run script step in Windows can run as an account,
+and a Join the domain step can join with one instead of the configured join account. Scripts never
+see the password: DDT connects the shares and starts the script itself.
 
 An account is bound to where its password may go: the domain a join with it joins, the servers whose
 shares it connects, and whether scripts may run as it. The server hands the password only to the step

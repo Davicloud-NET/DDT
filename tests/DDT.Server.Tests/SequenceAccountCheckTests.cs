@@ -163,23 +163,40 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
         Assert.Empty(AccountProblems(validation, joins));
     }
 
-    // Anywhere in the tree, a group's own shares included.
+    // Anywhere in the tree. Only a leaf step connects shares, so a container's are a problem whatever account they name.
     [Fact]
-    public async Task StepsInsideContainersAreChecked()
+    public async Task StepsInsideContainersAreCheckedAndContainersConnectNoShares()
     {
         AccountView account = await AccountAsync(Request(hosts: ["files.corp.example"]));
+        ShareConnection allowed = new(@"\\files.corp.example\tools", new AccountReference(account.Id, null));
         RunScriptStep inner = Script(null, new ShareConnection(@"\\evil.example\loot", new AccountReference(account.Id, null)));
-        GroupStep group = new()
+        GroupStep group = new() { Id = Guid.NewGuid(), Name = "Tools", Shares = [allowed], Steps = [inner] };
+        IfStep test = new()
         {
             Id = Guid.NewGuid(),
-            Name = "Tools",
-            Shares = [new ShareConnection(@"\\other.example\loot", new AccountReference(account.Id, null))],
-            Steps = [inner],
+            Name = "Laptops",
+            Test = new TestCondition("Model", ConditionOperator.Contains, "Latitude"),
+            Shares = [new ShareConnection(@"\\evil.example\loot", new AccountReference(Guid.NewGuid(), null))],
+        };
+        RepeatStep repeat = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Retry",
+            Until = new TestCondition("LastStepFailed", ConditionOperator.Equals, "false"),
+            Shares = [allowed],
         };
 
-        SequenceValidation validation = await ValidateAsync(SequenceRequests.Definition(group));
+        SequenceValidation validation = await ValidateAsync(SequenceRequests.Definition(group, test, repeat));
 
         Assert.Equal([("shares[0].account", "sequence.accountHostNotAllowed")], AccountProblems(validation, inner));
-        Assert.Equal([("shares[0].account", "sequence.accountHostNotAllowed")], AccountProblems(validation, group));
+
+        foreach ((SequenceStep container, string kind) in new (SequenceStep, string)[] { (group, "A group"), (test, "An IF"), (repeat, "A repeat") })
+        {
+            SequenceProblem problem = Assert.Single(validation.Problems, problem => problem.StepId == container.Id && problem.Code == "sequence.containerShares");
+
+            Assert.Equal("shares", problem.Field);
+            Assert.StartsWith($"{kind} connects no shares", problem.Message, StringComparison.Ordinal);
+            Assert.Empty(AccountProblems(validation, container));
+        }
     }
 }

@@ -6,8 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Runs its steps in order. Its conditions, ContinueOnError and shares apply to all of them: when they do not hold,
-// the whole group is skipped.
+// Runs its steps in order. Its conditions and ContinueOnError apply to all of them: when they do not hold, the whole
+// group is skipped. It has no shares: only a leaf step connects shares, and the validator refuses them on a group.
 public sealed record GroupStep : SequenceStep
 {
     public IReadOnlyList<SequenceStep> Steps { get; init; } = [];

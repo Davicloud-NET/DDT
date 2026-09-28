@@ -339,9 +339,10 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             StringComparison.Ordinal);
     }
 
-    // The shares of a group apply to every step in it; the group itself fetches nothing.
+    // Only a leaf step connects shares: a step in a group gets its own and never the group's, and the group gets nothing,
+    // whatever a document from outside gave it.
     [Fact]
-    public async Task AStepInAGroupConnectsTheGroupsSharesToo()
+    public async Task AStepInAGroupConnectsOnlyItsOwnShares()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         AccountView account = await administrator.CreatedAccountAsync(Request(hosts: ["files.corp.example", "tools.corp.example"]));
@@ -359,10 +360,10 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         (AgentStepAccounts? accounts, string? refusal) = await StepAccountsFromSnapshotAsync(definition, script.Id);
 
         Assert.Null(refusal);
-        Assert.Equal([@"\\files.corp.example\drivers", @"\\tools.corp.example\bin"], accounts!.Shares.Select(s => s.Path));
+        Assert.Equal([@"\\tools.corp.example\bin"], accounts!.Shares.Select(s => s.Path));
 
         (_, string? container) = await StepAccountsFromSnapshotAsync(definition, group.Id);
-        Assert.StartsWith("The shares of a group, an IF or a Repeat are connected for each step in it.", container, StringComparison.Ordinal);
+        Assert.Equal("A group, an IF or a Repeat uses no account itself. Only the steps in it do.", container);
     }
 
     [Fact]

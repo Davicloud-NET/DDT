@@ -853,6 +853,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.conditionsMissing",
     message: "The conditions are missing.",
   }),
+  "sequence.containerShares": msg({
+    context: "sequence.containerShares",
+    message: "{kind, select, if {An IF} repeat {A repeat} other {A group}} connects no shares: only the steps that do something do. Move the shares to the steps in it that need them.",
+  }),
   "sequence.driversBeforeImage": msg({
     context: "sequence.driversBeforeImage",
     message: "Drivers can be added only after the image is applied.",

@@ -460,6 +460,11 @@ msgstr "{installed} Datenträger"
 msgid "{installed} installed"
 msgstr "{installed} installiert"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.containerShares"
+msgid "{kind, select, if {An IF} repeat {A repeat} other {A group}} connects no shares: only the steps that do something do. Move the shares to the steps in it that need them."
+msgstr "{kind, select, if {Ein IF} repeat {Eine Wiederholung} other {Eine Gruppe}} verbindet keine Netzwerkfreigaben: Das tun nur die Schritte, die etwas ausführen. Verschieben Sie die Netzwerkfreigaben in die Schritte darin, die sie brauchen."
+
 #: src/runs/RunSteps.tsx
 msgid "{kind}, {phase}"
 msgstr "{kind}, {phase}"

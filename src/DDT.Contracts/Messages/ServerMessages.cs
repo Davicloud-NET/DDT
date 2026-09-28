@@ -1961,6 +1961,11 @@ public static class ServerMessages
         "sequence.accountInputHostNotAllowed",
         "The input {input} does not let the account given for it connect to {host}. Add the server to the input.");
 
+    public static readonly MessageTemplate SequenceContainerShares = Define(
+        "sequence.containerShares",
+        "{kind, select, if {An IF} repeat {A repeat} other {A group}} connects no shares: only the steps that do something do. " +
+        "Move the shares to the steps in it that need them.");
+
     // The sentences one after another, as one message, which the web says in the person's language as a whole: the
     // first, then the rest as a message of its own.
     public static ServerMessage Sentences(IReadOnlyList<ServerMessage> sentences)

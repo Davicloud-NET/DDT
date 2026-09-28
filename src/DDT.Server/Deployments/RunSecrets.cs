@@ -166,11 +166,10 @@ public sealed class RunSecrets(
     }
 
     // The accounts a step uses, while it runs: the account a script in Windows runs as, only for the service there and
-    // only when the account lets scripts run as it, and the shares to connect, each with its path worked out here from
-    // the values the run started with, never from what the agent reported since, and only to a server its account names.
-    // The shares of the groups, IFs and Repeats the step is in apply to it too, outermost first, so only a step that does
-    // something fetches them. Every account is read from the run's own copy of the sequence. All or nothing: one refusal
-    // refuses the step.
+    // only when the account lets scripts run as it, and the step's own shares to connect, each with its path worked out
+    // here from the values the run started with, never from what the agent reported since, and only to a server its
+    // account names. Only a leaf step connects shares; a group, an IF or a Repeat gets nothing, whatever its document
+    // holds. Every account is read from the run's own copy of the sequence. All or nothing: one refusal refuses the step.
     public async Task<(AgentStepAccounts? Accounts, string? Refusal)> StepAccountsAsync(
         Machine machine,
         Guid runId,
@@ -194,11 +193,11 @@ public sealed class RunSecrets(
 
         if (step is { IsContainer: true })
         {
-            return (null, "The shares of a group, an IF or a Repeat are connected for each step in it. Ask for the accounts of that step.");
+            return (null, "A group, an IF or a Repeat uses no account itself. Only the steps in it do.");
         }
 
         AccountReference? runAs = (step as RunScriptStep)?.RunAs;
-        List<(SequenceStep Owner, int Index, ShareConnection? Share)> shares = step is null ? [] : Shares(definition!, step);
+        IReadOnlyList<ShareConnection?> shares = step?.Shares ?? [];
 
         if (step is null || (runAs is null && shares.Count == 0))
         {
@@ -259,9 +258,10 @@ public sealed class RunSecrets(
         Func<string, string?> values = ValueTemplate.Lookup(StartValues(run!));
         List<AgentShareConnection> connections = [];
 
-        foreach ((SequenceStep owner, int index, ShareConnection? share) in shares)
+        for (int index = 0; index < shares.Count; index++)
         {
-            string which = $"share {index + 1} of {owner.Name}";
+            ShareConnection? share = shares[index];
+            string which = $"share {index + 1} of {step.Name}";
 
             if (share is not { Account: { } reference, Path: { } written })
             {
@@ -398,27 +398,6 @@ public sealed class RunSecrets(
         }
 
         return (new StepAccount($"account given for the input {input.Name}", given.UserName, given.Password, given.Domain, given.Hosts, given.RunAs), null);
-    }
-
-    // The shares a step connects: those of the containers it is in, outermost first, then its own, each with the node
-    // that names it and its place there.
-    private static List<(SequenceStep Owner, int Index, ShareConnection? Share)> Shares(SequenceDefinition definition, SequenceStep step)
-    {
-        IReadOnlyDictionary<Guid, NodePosition> index = SequenceTree.Index(definition);
-        List<SequenceStep> owners = [step];
-
-        Guid? parent = index.GetValueOrDefault(step.Id)?.ParentId;
-
-        while (parent is { } id && index.TryGetValue(id, out NodePosition? position))
-        {
-            owners.Insert(0, position.Step);
-            parent = position.ParentId;
-        }
-
-        return
-        [
-            .. owners.SelectMany(owner => ((IReadOnlyList<ShareConnection?>?)owner.Shares ?? []).Select((share, place) => (owner, place, share))),
-        ];
     }
 
     // The values the run started with, by name ignoring case: those used, not those they overrode. Variables the agent

@@ -42,7 +42,8 @@ public abstract record SequenceStep
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ConditionNode? When { get; init; }
 
-    // The shares DDT connects with an account before the step runs and disconnects after it. Null is none.
+    // The shares DDT connects with an account before the step runs and disconnects after it. Null is none. Only a leaf
+    // step has shares: a group, an IF or a Repeat has none, which the validator and the server's checks both refuse.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<ShareConnection>? Shares { get; init; }
 

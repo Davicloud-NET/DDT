@@ -210,6 +210,7 @@
   "sequence.conditionValue": "Enter the value to compare with.",
   "sequence.conditionVariable": "Choose one of the variables {variables}.",
   "sequence.conditionsMissing": "The conditions are missing.",
+  "sequence.containerShares": "{kind, select, if {An IF} repeat {A repeat} other {A group}} connects no shares: only the steps that do something do. Move the shares to the steps in it that need them.",
   "sequence.driversBeforeImage": "Drivers can be added only after the image is applied.",
   "sequence.exitCodeMeansBoth": "An exit code cannot mean both success and a restart: {codes}.",
   "sequence.imageBeforePartition": "The image can be applied only after a step that partitions the disk.",

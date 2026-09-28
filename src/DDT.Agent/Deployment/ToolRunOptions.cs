@@ -4,8 +4,10 @@
 
 namespace DDT.Agent.Deployment;
 
-// Environment adds to the agent's own variables. Null runs in the agent's working directory, without a time limit.
+// Environment adds to the agent's own variables, or to the account's with Account. Null runs in the agent's working
+// directory, without a time limit, as the agent.
 public sealed record ToolRunOptions(
     string? WorkingDirectory = null,
     IReadOnlyDictionary<string, string>? Environment = null,
-    TimeSpan? Timeout = null);
+    TimeSpan? Timeout = null,
+    IAccountSession? Account = null);

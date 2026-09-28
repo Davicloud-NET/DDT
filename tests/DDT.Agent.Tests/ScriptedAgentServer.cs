@@ -8,7 +8,7 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.Tests;
 
 // Answers from a script. When the register, next or sign-in script runs out it stops the loop, so every test
-// ends deterministically without timing; so do the sequence list, pick, answer file and join account calls. Log requests succeed
+// ends deterministically without timing; so do the sequence list, pick, answer file, join account and step accounts calls. Log requests succeed
 // unless a scripted action throws, and a run report without a script echoes the token it was sent with. A run file
 // without a script is answered from the files given to ServeFile.
 // A run's heartbeat calls from another thread, so everything is guarded by one lock, and scripted answers run outside
@@ -32,6 +32,7 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Dictionary<string, byte[]> _files = new(StringComparer.OrdinalIgnoreCase);
     private readonly Queue<Func<Guid, string>> _runUnattends = new();
     private readonly Queue<Func<Guid, AgentJoinDomainCredentials>> _runCredentials = new();
+    private readonly Queue<Func<Guid, AgentStepAccounts>> _runStepAccounts = new();
     private readonly List<string> _calls = [];
     private readonly List<AgentRunReport> _sentRunReports = [];
 
@@ -117,6 +118,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     // Receives the step id.
     public ScriptedAgentServer OnRunCredentials(Func<Guid, AgentJoinDomainCredentials> response) => Enqueue(_runCredentials, response);
+
+    // Receives the step id.
+    public ScriptedAgentServer OnRunStepAccounts(Func<Guid, AgentStepAccounts> response) => Enqueue(_runStepAccounts, response);
 
     // Serves content as the run file sha256 whenever no scripted answer is left.
     public ScriptedAgentServer ServeFile(string sha256, byte[] content)
@@ -335,6 +339,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         Answer($"run-credentials {stepId} {token}", _runCredentials, response => response(stepId));
+
+    public Task<AgentStepAccounts> GetRunStepAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
+        Answer($"run-accounts {stepId} {token}", _runStepAccounts, response => response(stepId));
 
     private ScriptedAgentServer Enqueue<T>(Queue<T> queue, T item)
     {

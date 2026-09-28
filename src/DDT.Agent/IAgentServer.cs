@@ -57,4 +57,8 @@ public interface IAgentServer
     // The domain and the account that joins the machine to it, for a JoinDomain step, which the server hands out only
     // while the step is running, and only to the agent in the installed Windows. It holds the account's password.
     Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
+
+    // The account a step runs as and the shares it connects, which the server hands out only while the step is running,
+    // and the account only to the agent in the installed Windows. It holds passwords, which stay in memory.
+    Task<AgentStepAccounts> GetRunStepAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 }

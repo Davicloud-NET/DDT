@@ -97,8 +97,13 @@ internal sealed class StepRunnerFixture : IDisposable
     // Every 401 a step saw, which the heartbeat would take as the end of the run.
     public List<AgentTokenRejectedException> TokenRejections { get; } = [];
 
+    // Stands in for signing accounts in and connecting shares.
+    public FakeAccountTools Accounts { get; } = new();
+
+    public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
+
     public AgentStepRunner Steps =>
-        new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed, TokenRejections.Add, Log, Time);
+        new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed, StepAccounts, TokenRejections.Add, Log, Time);
 
     public StepContext Context(SequencePhase phase = SequencePhase.WindowsPE, IReadOnlyDictionary<string, string>? variables = null) =>
         new(

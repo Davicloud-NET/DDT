@@ -13,7 +13,9 @@ namespace DDT.Agent.Sequences;
 // Runs a sequence author's script with cmd or Windows PowerShell, in either phase. The script file goes where the run
 // keeps its files: under workDirectory, the agent's own directory, before the disk is partitioned, and in the run's
 // directory on the Windows volume after. A package is unpacked there and becomes the working directory. The exit code
-// decides: a restart code restarts the machine before the next step, a success code is done, any other fails.
+// decides: a restart code restarts the machine before the next step, a success code is done, any other fails. A script
+// that runs as an account, in Windows only, gets a directory of its own under scripts, which the account's logon session
+// is let into together with the package, as the run's directory is open to SYSTEM alone.
 public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads downloads, RunSession session, AgentLog log, string workDirectory)
 {
     public const string NoPowerShellMessage =
@@ -52,7 +54,11 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
 
     private static string Escape(string path) => path.Replace("%", "%%", StringComparison.Ordinal);
 
-    public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, CancellationToken cancellationToken)
+    public Task<StepResult> RunAsync(RunScriptStep step, StepContext context, CancellationToken cancellationToken) =>
+        RunAsync(step, context, null, cancellationToken);
+
+    // account is the account the step runs as, signed in already, or null to run as the agent.
+    public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(context);
@@ -66,8 +72,17 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
 
         string directory = session.RunDirectory ?? workDirectory;
         string scripts = Path.Combine(directory, "scripts");
+
+        if (account is not null)
+        {
+            scripts = Path.Combine(scripts, step.Id.ToString("D"));
+        }
+
         string file = Path.Combine(scripts, step.Id.ToString("D") + (powerShell ? ".ps1" : ".cmd"));
         Directory.CreateDirectory(scripts);
+
+        // Before the files are written, so they inherit the entry.
+        account?.Admit(scripts);
         await File.WriteAllBytesAsync(file, ScriptFile(step), cancellationToken).ConfigureAwait(false);
         string launcher = file;
 
@@ -93,6 +108,7 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
             await downloads
                 .UnpackAsync(content, Path.Combine(directory, "cache"), package, new ScaledProgress(context.Progress, 0, 10), cancellationToken)
                 .ConfigureAwait(false);
+            account?.Admit(package);
         }
 
         Dictionary<string, string> environment = new(StringComparer.OrdinalIgnoreCase)
@@ -113,7 +129,7 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
             environment["DDT_WINDOWS"] = volumes.Windows;
         }
 
-        ToolRunOptions options = new(package ?? scripts, environment, TimeSpan.FromMinutes(step.TimeoutMinutes));
+        ToolRunOptions options = new(package ?? scripts, environment, TimeSpan.FromMinutes(step.TimeoutMinutes), account);
         int exitCode;
 
         try

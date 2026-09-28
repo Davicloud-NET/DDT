@@ -24,7 +24,8 @@ public sealed class DryRunToolRunner(AgentLog log) : IToolRunner
         ArgumentNullException.ThrowIfNull(options);
 
         string where = options.WorkingDirectory is { } directory ? $" in {directory}" : string.Empty;
-        log.Information($"Dry run: not run{where}, and taken as exit code 0: {ToolRunner.CommandLine(fileName, arguments)}");
+        string who = options.Account is { } account ? $" as {account.UserName}" : string.Empty;
+        log.Information($"Dry run: not run{who}{where}, and taken as exit code 0: {ToolRunner.CommandLine(fileName, arguments)}");
 
         return Task.FromResult(0);
     }

@@ -1,11 +1,10 @@
 # Contributing to DDT
 
-Thank you for your interest in DDT. It is built by Davicloud, and this file says how to report a
-bug, ask for a feature, and what a change has to pass. The [README](README.md) describes how DDT
-works and how to build it, and [docs/roadmap.md](docs/roadmap.md) what comes next and what is not
-planned. Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
-
-AI-assisted contributions are welcome. Say so in the pull request, understand every line you submit, and expect the same review and tests as any other change.
+Thank you for your interest in DDT! It is built by Davicloud, and this file says how to report a
+bug, ask for a feature, and what a change has to pass. The [README](README.md) gives the tour and
+says how DDT is built, [docs/roadmap.md](docs/roadmap.md) says what comes next and what is not
+planned, and proper documentation arrives with M12. Everyone who takes part follows the
+[code of conduct](CODE_OF_CONDUCT.md).
 
 ## Reporting a bug
 
@@ -14,8 +13,10 @@ Open an issue with the bug report form. A report that DDT can act on says:
 - the commit you built DDT from, and where the server runs: the container image, or from source;
 - the machine, if one is involved: its make and model, and whether Secure Boot is on;
 - what happened and what you expected, and the steps that lead there;
-- the machine's log from the web UI, and the host's log around the time. The README's
-  [When a deployment goes wrong](README.md#when-a-deployment-goes-wrong) says where else to look.
+- the machine's log from the web UI, and the host's log around the time. Until the documentation
+  exists,
+  [When a deployment goes wrong](https://github.com/Davicloud-NET/DDT/blob/b8f9f1a2a686a03ec450a5d0ff82b211d57a3ab3/README.md#when-a-deployment-goes-wrong)
+  in the old README says where else to look.
 
 DDT keeps passwords out of its logs, but a log still names servers, networks, machines and people.
 Read it before you paste it, and replace what you do not want to publish.
@@ -37,10 +38,21 @@ place, which Davicloud is preparing. Until then a pull request from outside cann
 please open an issue instead, describing the bug or the change you have in mind. This section will
 say how to sign the agreement once it exists.
 
+### AI assistance
+
+Once the agreement is in place, pull requests written with the help of AI are welcome too, on the
+same terms as any other:
+
+- say in the pull request which tool helped and with which parts; the template asks;
+- understand every line you submit, and be ready to explain it in the review;
+- expect the same review and the same tests as any other change.
+
+DDT itself is built this way, as the [README](README.md#how-ddt-is-built) says.
+
 ## Working on DDT
 
 The rest of this file is what every change has to pass. The
-[README](README.md#building-and-running) says how to build and run DDT, and
+[README](README.md#building-it-yourself) says how to build and run DDT, and
 [docs/web-ui.md](docs/web-ui.md) how the web UI is built.
 
 ### The checks
@@ -102,9 +114,23 @@ what it asks for:
 
 Two rules are not tested, but hold as firmly:
 
-- **Settings belong in the web UI.** A new setting follows the README's
-  [Rules for new settings](README.md#rules-for-new-settings); configuration keeps only what the
-  server needs before it can serve the web UI.
+- **Settings belong in the web UI.** Configuration keeps only what the server needs before it can
+  serve the web UI. Every other setting:
+  1. is a field of a settings section, on the page of what it configures. Task sequences, drivers
+     per model and assignment by MAC address or model are database entities with an API and a
+     page, never settings;
+  2. is a property of its section's option class with its default, a field of the section's
+     definition in `DDT.Server/Settings`, a member of the section's record in
+     `DDT.Contracts/Settings`, and covered by the section's validator. It is read from
+     `DdtSettings.Current` where it is used, once per request or decision, never while the services
+     are registered and never through an `IOptions<T>`. A secret is `[JsonIgnore]` in the option
+     class and a secret field of the definition;
+  3. reaches the agent as a new member of a server response, never through `agent.json`, which the
+     server cannot rewrite;
+  4. says why, when it is built into the boot image, it cannot come from the server;
+  5. is bound to its destination, when it is a secret whose destination is configurable. A setting
+     that grants roles or trust needs the administrator to prove who they are again before it
+     changes.
 - **Pages stay live.** An action patches the cached data with the API's answer, and changes made
   elsewhere arrive through the hub, without reloading the page or fetching everything again. See
   [docs/web-ui.md](docs/web-ui.md#live-data).

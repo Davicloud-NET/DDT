@@ -389,6 +389,68 @@ describe("SequenceEditorPage", () => {
     expect(saves[1]).toMatchObject({ revision: 4, name: "Lab PCs, room 4" });
   });
 
+  it("undoes and redoes with Ctrl+Z and Ctrl+Y outside text fields, and saves each at once", async () => {
+    const { saves } = serve(administrator, view(), { step: "i" });
+
+    await opened();
+
+    const description = screen.getByRole("textbox", { name: "Description" });
+    fireEvent.change(description, { target: { value: "For" } });
+    fireEvent.change(description, { target: { value: "For room 4" } });
+    await choose("imageId", "Windows 11 Pro");
+    await waitFor(() => {
+      expect(saves).toHaveLength(1);
+    }, saveWait);
+
+    // In a text field, the keys are the field's own.
+    fireEvent.keyDown(description, { key: "z", ctrlKey: true });
+    expect(description).toHaveValue("For room 4");
+
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.steps[1]).toMatchObject({ imageId: EMPTY_ID });
+    }, saveWait);
+    expect(saves.at(-1)?.description).toBe("For room 4");
+
+    // The typing into the description is one step.
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(description).toHaveValue("");
+
+    fireEvent.keyDown(document.body, { key: "y", ctrlKey: true });
+    expect(description).toHaveValue("For room 4");
+    await waitFor(() => {
+      expect(saves.at(-1)?.description).toBe("For room 4");
+    }, saveWait);
+  });
+
+  it("forgets what to undo once it shows another administrator's save", async () => {
+    const { saves, queryClient } = serve(administrator, view());
+
+    await opened();
+    fireEvent.change(screen.getByRole("textbox", { name: "Description" }), {
+      target: { value: "For room 4" },
+    });
+    await waitFor(() => {
+      expect(saves).toHaveLength(1);
+    }, saveWait);
+    await screen.findByText(/^All changes saved at /);
+
+    act(() => {
+      queryClient.setQueryData(
+        ["sequence", sequenceId],
+        view({ revision: 9, name: "Lab PCs, room 4", description: "Theirs", updatedBy: "bob" }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
+    });
+
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Theirs");
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(saves).toHaveLength(1);
+  });
+
   it("shows the server's refusal of a name at the field", async () => {
     serve(administrator, view(), {
       answer: () =>

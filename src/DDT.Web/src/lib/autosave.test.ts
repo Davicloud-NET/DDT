@@ -232,6 +232,33 @@ describe("createAutosaver", () => {
     });
   });
 
+  it("says when it shows someone else's copy in place of its own, and only then", async () => {
+    const onTakenIn = vi.fn();
+    const { autosaver, accept, refuse, type } = saver({ onTakenIn });
+
+    type("b");
+    await vi.advanceTimersByTimeAsync(700);
+    autosaver.receive({ text: "b" }, 2);
+    await accept(0);
+    expect(onTakenIn).not.toHaveBeenCalled();
+
+    autosaver.receive({ text: "from another page" }, 3);
+    expect(onTakenIn).toHaveBeenLastCalledWith({
+      value: { text: "from another page" },
+      revision: 3,
+    });
+
+    type("mine");
+    await vi.advanceTimersByTimeAsync(700);
+    await refuse(1, new ApiError(409, "Conflict"));
+    autosaver.receive({ text: "theirs" }, 5);
+    expect(onTakenIn).toHaveBeenCalledTimes(1);
+
+    autosaver.takeTheirs();
+    expect(onTakenIn).toHaveBeenCalledTimes(2);
+    expect(onTakenIn).toHaveBeenLastCalledWith({ value: { text: "theirs" }, revision: 5 });
+  });
+
   it("waits for the next edit after the server refused a value", async () => {
     const { autosaver, calls, refuse, type } = saver();
     const problem = { title: "Invalid", errors: { name: ["Enter a name."] } };

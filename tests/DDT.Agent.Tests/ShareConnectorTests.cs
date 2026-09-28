@@ -126,6 +126,22 @@ public sealed class ShareConnectorTests
         Assert.DoesNotContain(Password, _console.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ConnectsInsideTheAccountsLogonSessionWhenGivenOne()
+    {
+        FakeAccountTools accounts = new();
+        IAccountSession account = await accounts.Logons.LogOnAsync(new AgentAccount(@"CORP\svc", Password), TestContext.Current.CancellationToken);
+        AgentShareConnection share = new(@"\\files.example\drivers", @"CORP\svc", Password);
+
+        IAsyncDisposable connected = await Connector.ConnectAsync([share], account, TestContext.Current.CancellationToken);
+        await connected.DisposeAsync();
+
+        // The connect and the disconnect both run while acting as the account, so the share belongs to its session.
+        Assert.Equal(
+            [@"sign in CORP\svc", @"impersonate CORP\svc", @"impersonate CORP\svc"],
+            accounts.Events);
+    }
+
     [Theory]
     [InlineData(@"\\files.example\drivers\Dell", @"\\files.example\drivers")]
     [InlineData(@"\\files.example\drivers", @"\\files.example\drivers")]

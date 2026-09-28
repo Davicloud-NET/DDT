@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using DDT.Contracts;
 using DDT.Contracts.Accounts;
@@ -12,6 +13,8 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
+using DDT.Core.CloudInit;
+using DDT.Core.Disks;
 using DDT.Core.Sequences;
 using DDT.Server.Data;
 using Xunit;
@@ -19,8 +22,8 @@ using Xunit;
 namespace DDT.E2E;
 
 // The real host and the published agent in dry runs of what a sequence of version 3 does: a tree of IFs, repeats and
-// pauses, the variables its steps set, the values rules give a run, the inputs a run asks, and a step's shares with a
-// stored account, which a dry run only names.
+// pauses, the variables its steps set, the inputs a run asks, and a step's shares with a stored account, which a dry run
+// only names; and the values rules give a run, flat or not.
 [Trait("Category", "E2E")]
 [Collection(DryRunCollection.Name)]
 public sealed class TreeDryRunTests(DryRunLab lab)
@@ -243,27 +246,12 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             cancellationToken);
         Assert.True(sequence.Definition.Version < SequenceDefinition.CurrentVersion, $"The list is stored as version {sequence.Definition.Version}.");
 
-        RuleView rule = await lab.Api.SendAsync(
-            HttpMethod.Post,
-            "api/rules",
-            new SaveRuleRequest(
-                0,
-                $"The dry run's network {Guid.NewGuid():N}",
-                "Made by the end-to-end tests.",
-                true,
-                new TestCondition(MachineVariableNames.IPv4Address, ConditionOperator.InSubnet, "192.0.2.0/24"),
-                null,
-                [new NamedValue("TimeZone", "Pacific Standard Time"), new NamedValue("Site", "SEA"), new NamedValue(MachineVariableNames.ComputerName, "{{Site}}-{{SerialNumber|right:5}}")],
-                []),
-            DdtJsonContext.Default.SaveRuleRequest,
-            DdtJsonContext.Default.RuleView,
-            HttpStatusCode.Created,
+        RuleView rule = await CreateNetworkRuleAsync(
+            [new NamedValue("TimeZone", "Pacific Standard Time"), new NamedValue("Site", "SEA"), new NamedValue(MachineVariableNames.ComputerName, "{{Site}}-{{SerialNumber|right:5}}")],
             cancellationToken);
 
         try
         {
-            Assert.Empty(rule.Problems);
-
             await using AgentProcess agent = lab.StartAgent();
             (_, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
 
@@ -290,6 +278,61 @@ public sealed class TreeDryRunTests(DryRunLab lab)
                 "The answer file of step Write the answer file",
                 Assert.Single(audit, entry => entry.Action == "deployment.secret-read").Detail,
                 StringComparison.Ordinal);
+
+            lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
+        }
+        finally
+        {
+            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None, HttpStatusCode.OK);
+        }
+    }
+
+    // A raw disk image's cloud-init seed names the machine as a rule's computer name pattern does, for a run assigned
+    // without a name.
+    [Fact(Timeout = 600_000)]
+    public async Task ARawDiskImagesSeedNamesTheMachineAsARulesPatternDoes()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Named by a rule",
+            [
+                new WriteRawImageStep { Id = Guid.CreateVersion7(), Name = "Write the disk image", ImageId = lab.RawImage.Id },
+                new WriteCloudInitSeedStep
+                {
+                    Id = Guid.CreateVersion7(),
+                    Name = "Write the cloud-init seed",
+                    MetaData = "local-hostname: \"{{ComputerName}}\"\n",
+                    UserData = "#cloud-config\n",
+                },
+            ],
+            cancellationToken);
+        RuleView rule = await CreateNetworkRuleAsync([new NamedValue(MachineVariableNames.ComputerName, "LNX-{{SerialNumber|right:5}}")], cancellationToken);
+
+        try
+        {
+            await using AgentProcess agent = lab.StartAgent();
+            (_, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
+
+            Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+            DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+            Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+
+            string computerName = $"LNX-{agent.SerialNumber[^5..]}";
+            Assert.Equal(
+                (computerName, ValueSource.Rule, rule.Id),
+                run.Values!.Where(value => value.Name == MachineVariableNames.ComputerName).Select(value => (value.Value, value.Source, value.SourceId)).Single());
+
+            using FileStream disk = new(agent.DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            byte[] head = new byte[GptLayout.MaxHeadBytes];
+            disk.ReadExactly(head);
+            GptPartition seed = GptLayout.Read(head).Partitions[^1];
+            FatVolume volume = FatVolume.Open(disk, seed.FirstLba * GptLayout.SectorSize, seed.Sectors * GptLayout.SectorSize);
+            Assert.Equal(CloudInitSeed.Label, volume.Label);
+            Assert.Equal(
+                $"local-hostname: \"{computerName}\"\n",
+                Encoding.UTF8.GetString(volume.ReadFile(volume.Find(CloudInitSeed.MetaData)!, 64 * 1024)));
 
             lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
         }
@@ -404,6 +447,31 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             },
             () => agent.Output.Tail(),
             cancellationToken);
+
+    // A rule for the dry runs' network, which every dry run's machine is on, that gives these values and chooses no
+    // sequence. The test deletes it.
+    private async Task<RuleView> CreateNetworkRuleAsync(IReadOnlyList<NamedValue> values, CancellationToken cancellationToken)
+    {
+        RuleView rule = await lab.Api.SendAsync(
+            HttpMethod.Post,
+            "api/rules",
+            new SaveRuleRequest(
+                0,
+                $"The dry runs' network {Guid.NewGuid():N}",
+                "Made by the end-to-end tests.",
+                true,
+                new TestCondition(MachineVariableNames.IPv4Address, ConditionOperator.InSubnet, "192.0.2.0/24"),
+                null,
+                values,
+                []),
+            DdtJsonContext.Default.SaveRuleRequest,
+            DdtJsonContext.Default.RuleView,
+            HttpStatusCode.Created,
+            cancellationToken);
+        Assert.Empty(rule.Problems);
+
+        return rule;
+    }
 
     private static DeploymentStepView Row(DeploymentView run, Guid stepId) => run.Steps.Single(step => step.StepId == stepId);
 }

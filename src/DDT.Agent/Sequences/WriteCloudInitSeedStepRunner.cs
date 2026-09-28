@@ -31,7 +31,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }
 
         LocalDisk disk = session.Disk ?? throw new DeploymentStepException(NoImageMessage);
-        (string metaData, string userData, string? networkConfig) = Render(step, session.Run.ComputerName, context.Machine);
+        (string metaData, string userData, string? networkConfig) = Render(step, context.Machine.Value(MachineVariableNames.ComputerName), context.Machine);
 
         using IRawDisk raw = disks.Open(disk);
         byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
@@ -88,8 +88,8 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }));
     }
 
-    // The seed's files with the machine's values filled in. The preflight renders them too, so a value the machine lacks
-    // stops the run before the disk is erased.
+    // The seed's files with the machine's values filled in. The run renders them too before its first step, so a value the
+    // machine lacks stops the run before the disk is erased.
     public static (string MetaData, string UserData, string? NetworkConfig) Render(
         WriteCloudInitSeedStep step,
         string? computerName,

@@ -245,7 +245,7 @@ public sealed class SequenceRunner(
             if (resumed is null)
             {
                 log.Information($"The run of {run.SequenceName} begins: {(count == 1 ? "1 step" : $"{count} steps")}.");
-                await PreflightAsync(session, confirmedDisk, machine, cancellationToken).ConfigureAwait(false);
+                await PreflightAsync(session, confirmedDisk, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -320,7 +320,7 @@ public sealed class SequenceRunner(
             return new RunResult(RunOutcome.Failed);
         }
 
-        return await RunStepsAsync(session, store, heartbeat, state, machine, waitsForInputs, cancellationToken).ConfigureAwait(false);
+        return await RunStepsAsync(session, store, heartbeat, state, machine, resumed is null, waitsForInputs, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<RunResult> RunStepsAsync(
@@ -329,6 +329,7 @@ public sealed class SequenceRunner(
         RunHeartbeat heartbeat,
         SequenceState state,
         MachineVariables machine,
+        bool fresh,
         bool waitsForInputs,
         CancellationToken cancellationToken)
     {
@@ -356,6 +357,11 @@ public sealed class SequenceRunner(
             else if (machine.Variables is null && heartbeat.Values is { } started)
             {
                 machine = machine with { Variables = started };
+            }
+
+            if (fresh)
+            {
+                CheckSeeds(session.Run, machine);
             }
 
             SequenceRunResult result = state.Phase == SequencePhase.Windows && _phase == SequencePhase.WindowsPE
@@ -587,7 +593,7 @@ public sealed class SequenceRunner(
     private static bool RawImageWritten(SequenceState state) =>
         state.Variables.TryGetValue(RunVariables.RawImageWritten, out string? written) && written == RunVariables.Set;
 
-    private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, MachineVariables machine, CancellationToken cancellationToken)
+    private async Task PreflightAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
     {
         AgentRun run = session.Run;
 
@@ -625,17 +631,6 @@ public sealed class SequenceRunner(
             if (SecureBootGate.Unknown(rawImage, session.SecureBootEnabled, session.TrustedUefiCas) is { } unknown)
             {
                 log.Warning(unknown);
-            }
-        }
-
-        if (rawImages.Count > 0)
-        {
-            // A seed step that runs whatever happens has to have every value it uses, which is known now. One with
-            // conditions, inside a group, IF or repeat, or that lets the run go on when it fails, is left to its step.
-            foreach (WriteCloudInitSeedStep seed in run.Sequence.Steps.OfType<WriteCloudInitSeedStep>()
-                .Where(seed => seed.Conditions.Count == 0 && seed.When is null && !seed.ContinueOnError))
-            {
-                WriteCloudInitSeedStepRunner.Render(seed, run.ComputerName, machine);
             }
         }
 
@@ -707,6 +702,23 @@ public sealed class SequenceRunner(
         }
 
         log.Information(session.Disk is { } chosen ? $"Running {run.SequenceName} on {chosen.Describe()}." : $"Running {run.SequenceName}.");
+    }
+
+    // A seed step that runs whatever happens has to have every value it uses, which is known once the run has its values,
+    // before any step touches the disk: the computer name may be one a rule or the sequence gives. One with conditions,
+    // inside a group, IF or repeat, or that lets the run go on when it fails, is left to its step.
+    private static void CheckSeeds(AgentRun run, MachineVariables machine)
+    {
+        if (!SequenceTree.Nodes(run.Sequence).OfType<WriteRawImageStep>().Any())
+        {
+            return;
+        }
+
+        foreach (WriteCloudInitSeedStep seed in run.Sequence.Steps.OfType<WriteCloudInitSeedStep>()
+            .Where(seed => seed.Conditions.Count == 0 && seed.When is null && !seed.ContinueOnError))
+        {
+            WriteCloudInitSeedStepRunner.Render(seed, machine.Value(MachineVariableNames.ComputerName), machine);
+        }
     }
 
     // The size rule: the partitions, each image's download and installed files, each package with room to unpack it,

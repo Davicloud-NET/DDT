@@ -60,7 +60,7 @@ public static class SequenceChecks
 
                     break;
                 case WriteCloudInitSeedStep seed:
-                    CheckPlaceholders(seed, Warn);
+                    CheckPlaceholders(seed, SeedValueNames(definition, references), Warn);
                     break;
                 case WriteUnattendStep unattend:
                     CheckUnattend(unattend, references, Add);
@@ -168,13 +168,38 @@ public static class SequenceChecks
         }
     }
 
-    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, Action<string?, ServerMessage> warn)
+    // Besides the machine's names, a seed may use the run's values, as the agent fills them in: the sequence's variables
+    // and the answers to its inputs, what rules and machine roles set, and the deployment defaults. An Account input's
+    // answer is never a value.
+    private static List<string> SeedValueNames(SequenceDefinition definition, SequenceReferences references)
     {
-        string known = string.Join(", ", CloudInitTemplate.Names.Select(name => $"{{{{{name}}}}}"));
+        IEnumerable<string?> names =
+        [
+            .. (definition.Variables ?? []).Select(variable => variable?.Name),
+            .. (definition.Inputs ?? []).Where(input => input is { Kind: not InputKind.Account }).Select(input => input!.Name),
+            .. references.ValueNames.Order(StringComparer.OrdinalIgnoreCase),
+        ];
+
+        return
+        [
+            .. names
+                .OfType<string>()
+                .Where(name => name.Length > 0 && CloudInitTemplate.Known(name) is null)
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
+    }
+
+    private static void CheckPlaceholders(WriteCloudInitSeedStep seed, IReadOnlyList<string> valueNames, Action<string?, ServerMessage> warn)
+    {
+        string known = string.Join(", ", CloudInitTemplate.Names.Concat(valueNames).Select(name => $"{{{{{name}}}}}"));
 
         foreach ((string field, string? text) in SeedTexts(seed))
         {
-            string[] unknown = [.. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder => CloudInitTemplate.Known(placeholder) is null)];
+            string[] unknown =
+            [
+                .. CloudInitTemplate.Placeholders(text ?? "").Where(placeholder =>
+                    CloudInitTemplate.Known(placeholder) is null && !valueNames.Contains(placeholder, StringComparer.OrdinalIgnoreCase)),
+            ];
 
             if (unknown.Length > 0)
             {

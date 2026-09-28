@@ -63,6 +63,18 @@ public sealed class CloudInitTests
         Assert.Equal(MachineVariableNames.ComputerName, CloudInitTemplate.Known("COMPUTERNAME"));
     }
 
+    // The run's values come with the machine's, and a seed may use them by name, ignoring case, filters included. A name
+    // with no value stays as it is, as cloud-init's own do.
+    [Fact]
+    public void FillsInTheRunsValuesAndLeavesNamesWithoutOne()
+    {
+        Dictionary<string, string?> values = new(s_values) { ["Office"] = "Wien \"1\"" };
+
+        Assert.Equal(
+            "office: \"WIEN \\\"1\\\"\"\nfqdn: {{Hostname}}.example\nhostname: {{ v1.local_hostname }}\n",
+            CloudInitTemplate.Render("office: \"{{ office | upper }}\"\nfqdn: {{Hostname}}.example\nhostname: {{ v1.local_hostname }}\n", values));
+    }
+
     [Fact]
     public void NamesAPlaceholderTheMachineHasNoValueFor()
     {

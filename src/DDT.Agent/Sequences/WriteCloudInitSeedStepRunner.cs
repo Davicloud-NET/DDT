@@ -98,15 +98,24 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(machine);
 
-        Dictionary<string, string?> values = new(StringComparer.Ordinal)
+        // The run's values too, the variables its steps set among them, but only by a name the run has a value for, so
+        // cloud-init's own templates stay as they are. The machine's own names come after them and win.
+        Dictionary<string, string?> values = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string name, string value) in machine.Variables ?? new Dictionary<string, string>())
         {
-            [MachineVariableNames.ComputerName] = computerName,
-            [MachineVariableNames.Manufacturer] = machine.Manufacturer,
-            [MachineVariableNames.Model] = machine.Model,
-            [MachineVariableNames.SerialNumber] = machine.SerialNumber,
-            [MachineVariableNames.SmbiosUuid] = machine.SmbiosUuid,
-            [MachineVariableNames.MacAddress] = machine.MacAddresses.Count > 0 ? ColonSeparated(machine.MacAddresses[0]) : null,
-        };
+            if (!RunVariables.IsOwn(name))
+            {
+                values[name] = value;
+            }
+        }
+
+        values[MachineVariableNames.ComputerName] = computerName;
+        values[MachineVariableNames.Manufacturer] = machine.Manufacturer;
+        values[MachineVariableNames.Model] = machine.Model;
+        values[MachineVariableNames.SerialNumber] = machine.SerialNumber;
+        values[MachineVariableNames.SmbiosUuid] = machine.SmbiosUuid;
+        values[MachineVariableNames.MacAddress] = machine.MacAddresses.Count > 0 ? ColonSeparated(machine.MacAddresses[0]) : null;
 
         try
         {

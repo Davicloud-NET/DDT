@@ -90,6 +90,29 @@ public sealed class WriteCloudInitSeedStepRunnerTests : IDisposable
         Assert.Equal(WriteCloudInitSeedStepRunner.NoImageMessage, refusal.Message);
     }
 
+    // A seed may use the run's values, such as an input's answer or a value a rule sets, by name. A name the run has no
+    // value for stays as it is, as cloud-init's own templates do.
+    [Fact]
+    public async Task FillsInTheRunsValuesAndLeavesOtherNames()
+    {
+        IReadOnlyDictionary<string, string> written = await WrittenAsync();
+        WriteCloudInitSeedStep seed = s_seed with
+        {
+            UserData = "## template: jinja\n#cloud-config\nfqdn: \"{{ office | lower }}.example\"\nsite: \"{{Site}}\"\nhost: {{ v1.local_hostname }}\n",
+        };
+
+        await _run.WriteCloudInitSeed.RunAsync(
+            seed,
+            _run.Context(variables: written, values: new Dictionary<string, string> { ["Office"] = "VIE" }),
+            TestContext.Current.CancellationToken);
+
+        MemoryRawDisk disk = _run.RawDisks.Disks[0];
+        GptPartition partition = GptLayout.Read(disk.ReadAt(0, RawDiskWriter.HeadBytes)).Partitions.Single(candidate => candidate.Name == CloudInitSeed.Label);
+        Assert.Equal(
+            "## template: jinja\n#cloud-config\nfqdn: \"vie.example\"\nsite: \"{{Site}}\"\nhost: {{ v1.local_hostname }}\n",
+            Text(Volume(disk, partition), "user-data"));
+    }
+
     [Fact]
     public async Task NamesAPlaceholderTheRunHasNoValueFor()
     {

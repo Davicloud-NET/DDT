@@ -3127,8 +3127,8 @@ msgid "DDT could not reach its server. Check that the server is running and that
 msgstr "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
 
 #: src/sequences/steps/RawImageFields.tsx
-msgid "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
-msgstr "DDT fills in <0>{placeholders}</0> with the machine's values. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgstr "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"

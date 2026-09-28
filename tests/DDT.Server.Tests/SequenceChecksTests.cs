@@ -131,6 +131,38 @@ public sealed class SequenceChecksTests
             })?.Code);
     }
 
+    // A seed may use the run's values, as the agent fills them in: the sequence's variables and value inputs, and what
+    // rules and machine roles set. An Account input's answer is no value, and a name without one stays as it is.
+    [Fact]
+    public void TakesTheRunsValuesAsTheSeedsPlaceholders()
+    {
+        WriteCloudInitSeedStep seed = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Seed",
+            MetaData = "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n",
+            UserData = "#cloud-config\nfqdn: \"{{office}}.{{Site}}.example\"\nowner: \"{{Owner}}\"\nuser: \"{{Admin}}\"\nhost: {{ v1.local_hostname }} {{Hostname}}\n",
+        };
+        SequenceDefinition definition = Definition(new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write", ImageId = s_raw.Id }, seed) with
+        {
+            Variables = [new VariableDeclaration { Name = "Office", Default = "VIE" }],
+            Inputs =
+            [
+                new InputDeclaration { Name = "Owner", Label = "Owner", AskAt = InputAsk.Web },
+                new InputDeclaration { Name = "Admin", Label = "Admin", Kind = InputKind.Account, AskAt = InputAsk.Web, Account = new AccountDestination { RunAs = true } },
+            ],
+        };
+        SequenceReferences references = References() with { ValueNames = new HashSet<string>(["Site"], StringComparer.OrdinalIgnoreCase) };
+
+        SequenceProblem warning = Assert.Single(SequenceChecks.Check(definition, references).Warnings);
+
+        Assert.Equal((seed.Id, "userData", "sequence.unknownPlaceholders"), (warning.StepId!.Value, warning.Field!, warning.Code!));
+        Assert.Equal(
+            "{{Admin}}, {{Hostname}} are not DDT's placeholders, so they stay as they are. DDT fills in {{ComputerName}}, {{Manufacturer}}, " +
+            "{{Model}}, {{SerialNumber}}, {{SmbiosUuid}}, {{MacAddress}}, {{Office}}, {{Owner}}, {{Site}}.",
+            warning.Message);
+    }
+
     [Fact]
     public void FindsARawImageInsideAGroup()
     {

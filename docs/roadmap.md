@@ -1,7 +1,7 @@
 # Roadmap
 
-This is the order of DDT's milestones after M6 and what each one holds. The README's Status says
-what is built. Most features below come from a comparison with the Microsoft Deployment Toolkit,
+This is the order of DDT's milestones after M6 and what each one holds. The README's
+[Where it's at](../README.md#where-its-at) says what is built. Most features below come from a comparison with the Microsoft Deployment Toolkit,
 which Microsoft retired on 2026-01-06: they are what someone moving from MDT would miss, and the MDT
 feature each one answers is named in brackets.
 
@@ -132,8 +132,9 @@ ends when the disk is written, and DDT does not watch what cloud-init does at th
 
 ## M12 Documentation
 
-The whole project documented, for the people who run DDT and for those who work on it. The README
-stands in until then.
+The whole project documented, for the people who run DDT and for those who work on it. Until then,
+the [old README](https://github.com/Davicloud-NET/DDT/blob/b8f9f1a2a686a03ec450a5d0ff82b211d57a3ab3/README.md)
+is the most complete description.
 
 ## Ideas for later
 

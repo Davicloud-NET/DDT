@@ -13,8 +13,8 @@ import { press } from "@/test/aria";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { useReplay } from "./motion";
-import { SequenceRailStrip } from "./SequenceRail";
-import { Toasts } from "./Toast";
+import { SequenceRailStrip } from "./SequenceRailStrip";
+import { ToastRegion } from "./ToastRegion";
 import { showToast, toasts } from "./toasts";
 
 function renderWithI18n(node: ReactNode) {
@@ -121,7 +121,7 @@ describe("an overlay that closes", () => {
 
   it("keeps a closed toast until it has left", async () => {
     const exits = runningExits();
-    renderWithI18n(<Toasts />);
+    renderWithI18n(<ToastRegion />);
 
     act(() => {
       showToast({ title: "Lab-PC-07 is done", tone: "ok" });
@@ -137,7 +137,7 @@ describe("an overlay that closes", () => {
   });
 
   it("removes a closed toast at once where nothing runs", async () => {
-    renderWithI18n(<Toasts />);
+    renderWithI18n(<ToastRegion />);
 
     act(() => {
       showToast({ title: "Lab-PC-08 failed", tone: "fail" });

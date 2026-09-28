@@ -4,24 +4,19 @@
 
 import { t } from "@lingui/core/macro";
 
-import {
-  factCatalogue,
-  operatorTakesValue,
-  operatorText,
-  subjectFor,
-  subjectsOf,
-  testText,
-  valueText,
-  type Subject,
-} from "@/conditions/conditions";
+import { operatorText } from "@/conditions/conditionOperators";
+import { testText, valueText } from "@/conditions/conditions";
+import { subjectFor, subjectsOf, type Subject } from "@/conditions/conditionSubjects";
+import { factCatalogue } from "@/conditions/factCatalogue";
 import type { DeploymentStepView } from "@/deployments/deployments";
 import { conditionOf, conditionPath, testsOf } from "@/sequences/flow/conditionTree";
-import type { SequenceDefinition, SequenceStep, TestCondition } from "@/sequences/sequences";
+import type { TestCondition } from "@/sequences/sequenceConditions";
+import type { SequenceDefinition, SequenceStep } from "@/sequences/sequences";
+import { operatorTakesValue } from "@/sequences/steps";
 import type { ResolvedValue } from "@/values/values";
 
-// Why a run took the path it took, from what the agent recorded when it decided: the tests of an IF, of a node's
-// condition and of a repeat's end, each with whether it held and the value it was tested against. What the machine
-// reports now does not enter into it. The tests read as the flow builder writes them.
+// Why a run took its path, from the tests the agent recorded when it decided, never from what the machine reports
+// now. The tests read as the flow builder writes them.
 
 // What a run's conditions can name: the machine's facts, the run's own values, the values of rules and machine roles,
 // and the sequence's variables and inputs.
@@ -146,9 +141,8 @@ function clauses(outcomes: readonly TestOutcome[], subjects: readonly Subject[])
   return outcomes.map((outcome) => outcomeText(outcome, subjects)).join("; ");
 }
 
-// The decision a node's step shows in the list of the run's steps: the branch an IF took, why a node was skipped,
-// or when a repeat stopped, with the tests that decided it. Null where the node decided nothing, or where the agent
-// recorded no tests, as older agents do not.
+// A step's decision in the list of steps: the branch an IF took, why a node was skipped or when a repeat stopped, with
+// its tests. Null where the node decided nothing, or the agent recorded no tests, as older agents do not.
 export function decisionLine(
   node: SequenceStep,
   step: DeploymentStepView | null,

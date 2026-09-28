@@ -7,8 +7,7 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { apiErrorFrom, apiFetch, apiGet, apiPost, ApiError } from "@/lib/api";
 import { serverText, type ServerMessage } from "@/lib/serverText";
 
-// The settings the pages edit, as the settings API has them (docs/settings.md, sections 6 and "Built in M6.5"). Each
-// section is one form and one unit of validation; the stored document is the desired state, applied live or by
+// The settings API (docs/settings.md). Each section is one form and one unit of validation, applied live or by
 // rebuilding a subsystem inside the running server.
 
 export type SettingsSectionName =
@@ -30,9 +29,9 @@ export interface SettingsLock {
   storedDiffers: boolean;
 }
 
-// A problem keeps the section closed until it is fixed; a warning's code has to be confirmed by the save that raises
-// it. field is the field's name on the page, such as domain.name, and empty for the whole section. message is the
-// server's English, and text the same sentence as a code, which settingsText says in the person's language.
+// A stored problem keeps the section closed (not applied) until it is fixed; a warning's code has to be confirmed by
+// the save that raises it. field is a path such as domain.name, empty for the whole section, and text is message as a
+// code for settingsText.
 export interface SettingsFinding {
   field: string;
   message: string;
@@ -42,8 +41,7 @@ export interface SettingsFinding {
 
 export type ApplyStateName = "Applied" | "Failed" | "Pending";
 
-// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners. text is the
-// message as a code where the host said a sentence the server knows.
+// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners.
 export interface SettingsApplyState {
   host: string;
   version: number;
@@ -53,8 +51,8 @@ export interface SettingsApplyState {
   text?: ServerMessage | null;
 }
 
-// A finding's, a host's or a test's message in the person's language, or the server's English for one without a code
-// or with a code this build does not know.
+// A finding's, a host's or a test's message in the person's language, or the server's English without a code this
+// build knows.
 export function settingsText(said: {
   message: string;
   text?: ServerMessage | null | undefined;
@@ -228,6 +226,10 @@ export interface SettingsOverview {
   }[];
   keyRingReadable: boolean;
 }
+
+export type SectionSummary = SettingsOverview["sections"][number];
+
+export type ServerSetting = SettingsOverview["server"][number];
 
 export const settingsOverviewQuery = queryOptions({
   queryKey: ["settings-overview"],

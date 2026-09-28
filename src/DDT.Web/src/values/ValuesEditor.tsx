@@ -9,7 +9,7 @@ import { Button as AriaButton } from "react-aria-components";
 
 import { TemplateField } from "@/sequences/builder/TemplateField";
 import { EditorLock } from "@/sequences/editorLock";
-import { TextSetting } from "@/sequences/fields";
+import { TextSetting } from "@/sequences/fields/TextSetting";
 import { fieldFindings, type Findings } from "@/sequences/problems";
 import { cx } from "@/ui/cx";
 

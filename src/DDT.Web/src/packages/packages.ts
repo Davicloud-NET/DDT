@@ -7,11 +7,11 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPut } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
+import { removeByIds, upsertById } from "@/lib/listCache";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import type { SequenceView } from "@/sequences/sequences";
 
-// Drivers go to the machines whose model a target names. Files are unpacked for a Run script step that names
-// them.
+// Drivers go to the machines whose model a target names; files are unpacked for a Run script step that names them.
 export type PackageKind = "Drivers" | "Files";
 
 // expandedBytes is what the files take once unpacked.
@@ -50,19 +50,11 @@ function byName(a: PackageSummary, b: PackageSummary): number {
 }
 
 export function upsertPackage(queryClient: QueryClient, item: PackageSummary): void {
-  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
-    list === undefined
-      ? list
-      : [item, ...list.filter((existing) => existing.id !== item.id)].sort(byName),
-  );
+  queryClient.setQueryData(packagesQuery.queryKey, (list) => upsertById(list, item, byName));
 }
 
 export function removePackages(queryClient: QueryClient, packageIds: readonly string[]): void {
-  const removed = new Set(packageIds);
-
-  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
-    list?.filter((item) => !removed.has(item.id)),
-  );
+  queryClient.setQueryData(packagesQuery.queryKey, (list) => removeByIds(list, packageIds));
 }
 
 export const packagesQuery = queryOptions({

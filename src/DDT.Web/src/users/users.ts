@@ -5,6 +5,7 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatchJson, apiPost } from "@/lib/api";
+import { removeByIds, upsertById } from "@/lib/listCache";
 import { serverText, type ServerArguments } from "@/lib/serverText";
 
 export type UserRole = "Administrator" | "Operator" | "Viewer";
@@ -90,11 +91,7 @@ function byName(a: UserView, b: UserView): number {
 }
 
 export function upsertUser(queryClient: QueryClient, user: UserView): void {
-  queryClient.setQueryData(usersQuery.queryKey, (list) =>
-    list === undefined
-      ? list
-      : [user, ...list.filter((existing) => existing.id !== user.id)].sort(byName),
-  );
+  queryClient.setQueryData(usersQuery.queryKey, (list) => upsertById(list, user, byName));
 }
 
 // Changes some fields of a listed account, for an answer that carries only what changed, such as a new password.
@@ -105,11 +102,7 @@ export function patchUser(queryClient: QueryClient, id: string, patch: Partial<U
 }
 
 export function removeUsers(queryClient: QueryClient, userIds: readonly string[]): void {
-  const removed = new Set(userIds);
-
-  queryClient.setQueryData(usersQuery.queryKey, (list) =>
-    list?.filter((user) => !removed.has(user.id)),
-  );
+  queryClient.setQueryData(usersQuery.queryKey, (list) => removeByIds(list, userIds));
 }
 
 // The directory as configuration sets it up, with each mapped group's name as the directory has it.

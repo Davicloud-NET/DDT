@@ -9,10 +9,10 @@ import everyStep from "@/test/fixtures/every-step.sequence.json";
 import fixture from "@/test/fixtures/install-windows.sequence.json";
 
 import { requiredVersion, walk } from "./flow/flowTree";
+import type { ConditionNode } from "./sequenceConditions";
 import {
   SEQUENCE_VERSION,
   type AccountReference,
-  type ConditionNode,
   type InputAsk,
   type InputDeclaration,
   type InputKind,
@@ -32,12 +32,10 @@ import {
   stepKinds,
 } from "./steps";
 
-// The server writes the fixtures (SequenceFixtureTests): its Install Windows template, a document of version 2 with
-// every kind of step, phase, interpreter and condition operator of that version, and one of version 3 with every
-// node, condition, operator, variable and input. The one of version 3 runs, and a sequence either installs Windows or
-// writes a raw disk image, so it leaves the steps of the latter to the one of version 2. So a field, kind or value
-// renamed on one side only fails here. The mirror's own defaults, from newStep and newCondition, stand for its types;
-// null stands for a text or a number that may be missing.
+// The server writes the fixtures (SequenceFixtureTests), so a field, kind or value renamed on one side only fails
+// here. The version 3 one runs, and a run installs Windows or writes a raw disk image, so version 2's has the raw
+// image's steps. The mirror's defaults, from newStep and newCondition, stand for its types; null stands for a text or
+// a number that may be missing.
 function sameShape(value: unknown, mirror: unknown): boolean {
   if (mirror === null) {
     return value === null || typeof value === "string" || typeof value === "number";

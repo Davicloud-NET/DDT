@@ -30,11 +30,9 @@ export interface ApprovalPlan {
   defaults: ResolvedValue[];
 }
 
-// Null when the approval runs nothing and needs no confirmation: no rule chooses a sequence, or someone signed
-// in at the machine, who chooses the sequence there. A rule never authorizes, so with a rule's choice the
-// approval is the first human decision to run it, and the operator is told what it does. Where the server
-// would refuse the run, the approval only authorizes the machine. A sequence that needs a computer name runs on a
-// machine without one when its values give one, such as a rule's name pattern, and the operator is told that name.
+// A rule never authorizes, so approving is the first human decision to run its choice, and the operator is told what
+// that does. Null where nothing needs confirming: no rule chooses, or someone signed in at the machine and chooses
+// there. Where the server would refuse the run, the approval only authorizes the machine.
 export function approvalPlan(
   machine: MachineSummary,
   resolution: MachineSequenceResolution,

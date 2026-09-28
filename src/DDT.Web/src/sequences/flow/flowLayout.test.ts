@@ -12,19 +12,18 @@ import { branch, group, leaf, repeat } from "@/test/trees";
 import type { SequenceDefinition, SequenceStep } from "../sequences";
 import {
   ARROW_LENGTH,
-  arrowPath,
   HEADER_HEIGHT,
   IF_HEIGHT,
-  layoutFlow,
   LEAF_HEIGHT,
   NODE_WIDTH,
   PORT_INSET,
-  wirePath,
   type FlowLayout,
   type Point,
   type Rect,
-} from "./flowLayout";
+} from "./flowGeometry";
+import { layoutFlow } from "./flowLayout";
 import { indexTree, isWithin, sameSlot, slotsOf } from "./flowTree";
+import { arrowPath, wirePath } from "./wirePaths";
 
 const everyNode = (everyNodeJson as unknown as SequenceDefinition).steps;
 

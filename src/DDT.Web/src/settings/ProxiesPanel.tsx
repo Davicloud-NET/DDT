@@ -4,10 +4,11 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import { Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
+import { Skeleton } from "@/ui/Skeleton";
 
-import { SettingLines, SettingsSection } from "./SettingsParts";
+import { SettingLines } from "./parts/SettingLines";
+import { SettingsSection } from "./parts/SettingsSection";
 import { useSettingsForm } from "./useSettingsForm";
 
 export interface ProxySettings {

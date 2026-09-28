@@ -2,13 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import type {
-  ConditionOperator,
-  InputDeclaration,
-  SequenceStep,
-  StepCondition,
-  VariableDeclaration,
-} from "../sequences";
+import type { ConditionOperator, StepCondition } from "../sequenceConditions";
+import type { InputDeclaration, SequenceStep, VariableDeclaration } from "../sequences";
 import { conditionOperators, isContainer, machineVariables } from "../steps";
 
 // A sequence's steps as the tree they are, as the server's SequenceTree walks them: in pre-order, a node and then
@@ -198,10 +193,9 @@ export function sameSlot(a: Slot, b: Slot): boolean {
   return a.parent === b.parent && a.body === b.body && a.index === b.index;
 }
 
-// The server's SequenceTree.RequiredVersion: the lowest version whose agents run the whole definition as it is
-// written. 2 for a raw disk image or a cloud-init seed; 3 for anything of the tree (a container, Set variable, Pause,
-// when, shares, a script's runAs, a join's account, variables, inputs, an operator after Contains), and for a
-// condition on a name versions 1 and 2 do not know, which an older agent would treat as false.
+// The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. 2 for a raw
+// image or cloud-init seed; 3 for tree parts (containers, Set variable, Pause, when, shares, runAs, a join's account,
+// variables, inputs, operators after Contains) and for condition names an older agent would take as false.
 export function requiredVersion(definition: {
   steps: readonly SequenceStep[];
   variables?: readonly VariableDeclaration[] | null;

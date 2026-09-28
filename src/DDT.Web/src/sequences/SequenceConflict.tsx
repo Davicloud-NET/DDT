@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 
 import { Button } from "@/ui/Button";
-import { ConfirmDialog } from "@/ui/Dialog";
+import { ConfirmDialog } from "@/ui/ConfirmDialog";
 import { Notice } from "@/ui/Notice";
 
 import type { SequenceView } from "./sequences";

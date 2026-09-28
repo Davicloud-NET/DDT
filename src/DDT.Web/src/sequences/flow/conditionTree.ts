@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import type { ConditionGroupKind, ConditionNode, SequenceStep, TestCondition } from "../sequences";
+import type { ConditionGroupKind, ConditionNode, TestCondition } from "../sequenceConditions";
+import type { SequenceStep } from "../sequences";
 
 // A node's condition trees: its when, an IF's test and a repeat's until.
 export type ConditionField = "when" | "test" | "until";
@@ -11,20 +12,17 @@ export type ConditionField = "when" | "test" | "until";
 export type ConditionPath = readonly number[];
 
 // A change of a condition tree at a path.
-// - set: puts node there; null takes the node away, which for the root leaves no when, and an empty all (which
-//   holds) for an IF's test and a repeat's until.
-// - add: adds part to the group there, at index or at the end. Added to a test, or to no when at all, it makes an all
-//   of what was there and part.
-// - update: changes the test there.
-// - remove: as set with null.
-// - group: makes the group there an all, an any or a none.
-// - wrap: puts the node there into a new group of the kind.
 export type ConditionChange =
+  // null takes the node away: for the root, that leaves no when, and an IF's test or a repeat's until an empty all.
   | { op: "set"; node: ConditionNode | null }
+  // At index or at the end. Added to a test, or where there is no when, it makes an all of what was there and part.
   | { op: "add"; part: ConditionNode; index?: number }
   | { op: "update"; patch: Partial<Omit<TestCondition, "kind">> }
+  // As set with null.
   | { op: "remove" }
+  // Makes the group there an all, an any or a none.
   | { op: "group"; kind: ConditionGroupKind }
+  // Puts the node there into a new group of the kind.
   | { op: "wrap"; kind: ConditionGroupKind };
 
 // The tree of a node's field, null where the node has none, undefined where the field is not the node's.

@@ -8,73 +8,13 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { ServerArguments } from "@/lib/serverText";
 import type { ImageBootCapability } from "@/images/images";
 
-export type SequencePhase = "WindowsPE" | "Windows";
+import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
-// The server's ConditionOperator. Versions 1 and 2 know the first four; any other makes a document version 3, as an
-// older agent's evaluator treats an operator it does not know as false.
-export type ConditionOperator =
-  | "Equals"
-  | "NotEquals"
-  | "StartsWith"
-  | "Contains"
-  | "NotContains"
-  | "EndsWith"
-  // * stands for any text and ? for one character.
-  | "Matches"
-  // value is a list separated by semicolons.
-  | "In"
-  // Whether the machine has a value at all; value is not read.
-  | "Exists"
-  | "NotExists"
-  // Compared as numbers.
-  | "Greater"
-  | "GreaterOrEqual"
-  | "Less"
-  | "LessOrEqual"
-  // An IPv4 address within a network written as 10.0.0.0/24.
-  | "InSubnet";
+export type SequencePhase = "WindowsPE" | "Windows";
 
 export type ScriptInterpreter = "Cmd" | "PowerShell";
 
 export type StepState = "Pending" | "Running" | "Done" | "Skipped" | "Failed";
-
-// What kind of value a fact holds, which decides the operators that fit it. A YesNo value is "true" or "false".
-export type FactType = "Text" | "Number" | "YesNo" | "IPv4" | "Mac";
-
-// One name of the server's MachineVariableNames.Catalogue, as GET /api/sequences/facts lists them.
-// changesDuringRun: the value can change while the run goes on, so a share's host cannot be made of it.
-export interface FactView {
-  name: string;
-  type: FactType;
-  changesDuringRun: boolean;
-}
-
-// The conditions of versions 1 and 2, kept beside when. variable is one of the server's MachineVariableNames, such
-// as "Model", "MacAddress" or "Phase".
-export interface StepCondition {
-  variable: string;
-  operator: ConditionOperator;
-  value: string;
-}
-
-// A condition as a tree: groups whose parts must all, any or none hold, and tests at the leaves. A step's when, an
-// IF's test and a repeat's until are one. An empty all or none holds, an empty any does not. variable names a fact,
-// a run variable, or a value the sequence declares or rules and machine roles set.
-export interface TestCondition {
-  kind: "test";
-  variable: string;
-  operator: ConditionOperator;
-  value: string;
-}
-
-export type ConditionGroupKind = "all" | "any" | "none";
-
-export interface ConditionGroup {
-  kind: ConditionGroupKind;
-  parts: ConditionNode[];
-}
-
-export type ConditionNode = ConditionGroup | TestCondition;
 
 // The account a step uses: exactly one of a stored account and an Account input the sequence declares, whose answer
 // is kept for the one run. Never a password.
@@ -274,9 +214,8 @@ export interface InputDeclaration {
   account: AccountDestination | null;
 }
 
-// version is the document schema, raised when a step kind or a member older agents would ignore is added. The
-// server stores each sequence with the lowest version it needs, and leaves variables and inputs out while there are
-// none.
+// version is the schema, raised with each step kind or member older agents would ignore; the server stores the lowest
+// version a sequence needs, and leaves out variables and inputs while there are none.
 export interface SequenceDefinition {
   version: number;
   steps: SequenceStep[];
@@ -301,9 +240,8 @@ export interface NodePhase {
   phases: SequencePhase[];
 }
 
-// A sequence with problemCount above zero is kept as a draft and cannot run. The facts let a dialog say what
-// running it does without loading the whole document. needsComputerName: the sequence joins the domain under the
-// machine's name, or puts it in a cloud-init seed.
+// A sequence with problems is kept as a draft and cannot run. The facts let a dialog say what running it does without
+// loading the whole document.
 export interface SequenceSummary {
   id: string;
   name: string;
@@ -313,6 +251,7 @@ export interface SequenceSummary {
   problemCount: number;
   warningCount: number;
   erasesDisk: boolean;
+  // The sequence joins the domain under the machine's name, or puts it in a cloud-init seed.
   needsComputerName: boolean;
   continuesInWindows: boolean;
   updatedUtc: string;
@@ -328,36 +267,36 @@ export interface SequenceSummary {
 // sequence with the lowest version it needs.
 export const SEQUENCE_VERSION = 3;
 
-// stepId is null for a problem of the whole sequence. field is the camelCase name within the step, such as
-// "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not. message is
-// the server's English, code and args the same sentence to say in the person's language (findingText).
+// Every problem keeps the sequence from running; warnings do not.
 export interface SequenceProblem {
+  // Null for a problem of the whole sequence.
   stepId: string | null;
+  // The camelCase name within the step, such as "script" or "conditions[1].value".
   field: string | null;
+  // The server's English; findingText says code and args in the person's language.
   message: string;
   code?: string | null;
   args?: ServerArguments | null;
 }
 
-// stepPhases holds the phase each step runs in, in step order, as the engine decides it. Problems and warnings
-// are worked out on every read, because a deleted image or a changed setting changes them. nodePhases holds the
-// phases of every node of the tree, in pre-order.
+// Problems and warnings are worked out on every read, as a deleted image or a changed setting changes them.
 export interface SequenceView {
   id: string;
   name: string;
   description: string | null;
   revision: number;
   definition: SequenceDefinition;
+  // The phase each step runs in, in step order, as the engine decides it.
   stepPhases: SequencePhase[];
   problems: SequenceProblem[];
   warnings: SequenceProblem[];
   updatedUtc: string;
   updatedBy: string | null;
+  // The phases of every node of the tree, in pre-order.
   nodePhases?: NodePhase[] | null;
 }
 
-// A starting point for a new sequence.
-// name and description are the server's English; their codes and values say them in the person's language.
+// A starting point for a new sequence. name and description are the server's English, beside their codes.
 export interface SequenceTemplate {
   key: string;
   name: string;

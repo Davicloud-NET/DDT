@@ -4,9 +4,8 @@
 
 import { extendTailwindMerge } from "tailwind-merge";
 
-// Joins class names and lets a later class win over an earlier one of the same kind, so a component's caller can
-// override its defaults. tailwind-merge has to know the token names to tell `text-label` (a size) from `text-ink`
-// (a colour); they come from src/DDT.Design/tokens.json.
+// Joins class names so a later class wins over an earlier one of its group, and a caller can override defaults.
+// tailwind-merge needs the token names of src/DDT.Design/tokens.json to tell a size such as `text-label` from a colour.
 const typeScale = [
   "wordmark",
   "display",

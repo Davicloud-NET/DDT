@@ -4,9 +4,8 @@
 
 import { cx } from "./cx";
 
-// Keys are flat fills that answer hover with tone, and a press by sinking a pixel and darkening, as a switch does.
-// Primary is the one next step on a page; danger is an outline, because a filled red key would read as the safe
-// choice. Destructive work asks first, see TypedConfirm.
+// Primary is the one next step on a page. Danger is an outline, because a filled red key would read as the safe
+// choice; destructive work asks first, in a ConfirmDialog.
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 export type ButtonSize = "md" | "sm";
 

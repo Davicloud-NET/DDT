@@ -4,9 +4,8 @@
 
 import { useId } from "react";
 
-// DDT's mark: a D whose inner edge points forward, drawn from src/DDT.Design/brand/ddt-logo.svg and cropped to the
-// mark. It carries its own reds, so it reads the same on the dark frame and on light pages. size is its height; the
-// mark is a little wider than tall. The gradients get ids of their own, so two marks on a page do not share them.
+// DDT's mark from src/DDT.Design/brand/ddt-logo.svg; size is its height. It carries its own reds, so it reads the
+// same on the dark frame and on light pages, and useId keeps the gradients of two marks on a page apart.
 export function Logo({ size = 24, className }: { size?: number; className?: string }) {
   const id = useId();
   const ref = (name: string) => `${id}-${name}`;

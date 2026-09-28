@@ -58,7 +58,7 @@ function describe(
 }
 
 // Where saving stands, beside the sequence's name. Every change is saved as it is made, so this is the only place
-// that says whether it was. A save that failed for a moment can be tried again at once.
+// that says whether it was.
 export function SaveState({
   state,
   savedElsewhere,

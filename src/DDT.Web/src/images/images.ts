@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet } from "@/lib/api";
+import { removeByIds, upsertById } from "@/lib/listCache";
 
 // A Windows image from a WIM, or a whole disk such as a Linux cloud image.
 export type ImageKind = "Wim" | "RawDisk";
@@ -42,7 +43,7 @@ export type UploadKind = "Image" | "Drivers" | "Files";
 export interface CreateImageUploadRequest {
   fileName: string;
   length: number;
-  // File.lastModified. With the name, length and kind it recognises the same file selected again.
+  // File.lastModified. With the name, length and kind, the server recognises the same file selected again.
   lastModified: number;
   // Image when left out.
   kind?: UploadKind;
@@ -70,9 +71,8 @@ export const uploadsQuery = queryOptions({
   queryFn: () => apiGet<ImageUploadSession[]>("/api/images/uploads"),
 });
 
-// The agent runs in x64 Windows PE and applies a Windows image's own boot files, so only x64 Windows images
-// deploy. A raw disk image deploys unless its boot file is for another processor: one whose boot file could not be
-// read may still start.
+// The agent runs in x64 Windows PE and applies a Windows image's own boot files, so only x64 Windows images deploy.
+// A raw disk image deploys unless its boot file is for another processor; one that could not be read may still start.
 export function isDeployable(image: ImageSummary): boolean {
   return image.architecture === "x64" || (image.kind === "RawDisk" && image.architecture === null);
 }
@@ -115,19 +115,11 @@ function byName(a: ImageSummary, b: ImageSummary): number {
 }
 
 export function upsertImage(queryClient: QueryClient, image: ImageSummary): void {
-  queryClient.setQueryData(imagesQuery.queryKey, (list) =>
-    list === undefined
-      ? list
-      : [image, ...list.filter((existing) => existing.id !== image.id)].sort(byName),
-  );
+  queryClient.setQueryData(imagesQuery.queryKey, (list) => upsertById(list, image, byName));
 }
 
 export function removeImages(queryClient: QueryClient, imageIds: readonly string[]): void {
-  const removed = new Set(imageIds);
-
-  queryClient.setQueryData(imagesQuery.queryKey, (list) =>
-    list?.filter((image) => !removed.has(image.id)),
-  );
+  queryClient.setQueryData(imagesQuery.queryKey, (list) => removeByIds(list, imageIds));
 }
 
 export function deleteImage(id: string): Promise<void> {

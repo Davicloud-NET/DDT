@@ -7,8 +7,9 @@ import { equalJson } from "@/lib/equalJson";
 import type { ServerMessage } from "@/lib/serverText";
 
 import type { SecretAction } from "./settings";
+import type { SettingsForm } from "./useSettingsForm";
 
-// The sections ldap and oidc as the settings API has them, and their tests (docs/settings.md, section 6).
+// The sections ldap and oidc as the settings API has them, and their tests (docs/settings.md).
 
 export type DirectoryTransport = "Ldaps" | "StartTls" | "UnencryptedDangerous";
 
@@ -30,6 +31,8 @@ export interface LdapSettings {
   timeout: string;
 }
 
+export type LdapForm = SettingsForm<LdapSettings>;
+
 // groupRoleMap maps a value of the groupsClaim claim to a role; while it has entries, autoProvisionRole is not used.
 export interface OidcSettings {
   enabled: boolean;
@@ -42,6 +45,8 @@ export interface OidcSettings {
   groupsClaim: string | null;
   groupRoleMap: Record<string, string>;
 }
+
+export type OidcForm = SettingsForm<OidcSettings>;
 
 // userFound and passwordAccepted are null when no user was named. role is the one the groups would give, null for
 // none. proof is set when the one testing signed in with their own directory password and stayed an administrator.

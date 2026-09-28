@@ -16,10 +16,8 @@ import {
 
 import { cx } from "./cx";
 
-// A panel that slides in from the right over the page, for details and forms that belong to the page underneath,
-// such as a machine picked in a list on a narrow screen. It is an overlay, so it casts the overlay shadow. Being
-// fixed to that edge, it is the one thing that travels further than the motion distance: in from the edge in slow,
-// and back out in fast, as the dimming around it fades.
+// A panel from the right edge for details and forms of the page underneath, such as a machine picked on a phone.
+// Fixed to that edge, it is the one overlay that travels further than the motion distance.
 export function Drawer({
   isOpen,
   onOpenChange,

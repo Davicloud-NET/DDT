@@ -3,60 +3,20 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { useLingui } from "@lingui/react/macro";
-import {
-  IconArrowsSplit2,
-  IconBraces,
-  IconBuilding,
-  IconCloudCode,
-  IconCpu,
-  IconDisc,
-  IconDownload,
-  IconFileText,
-  IconLayoutColumns,
-  IconLayoutGrid,
-  IconPlayerPause,
-  IconRepeat,
-  IconRotateClockwise,
-  IconTerminal2,
-  type Icon,
-} from "@tabler/icons-react";
 import type { CSSProperties, ReactNode } from "react";
 
 import type { StepKind } from "@/sequences/sequences";
 
 import { cx } from "./cx";
-import { RailModule, SequenceRailStrip, type RailStep, type RailStepState } from "./SequenceRail";
+import { NodeGlyph } from "./NodeGlyph";
+import { RailModule } from "./RailModule";
+import type { RailStep, RailStepState } from "./SequenceRail";
+import { SequenceRailStrip } from "./SequenceRailStrip";
 import { StateTag } from "./StateTag";
 
-// A node of a flow as the flow builder and a run's page draw it: a card with the rail's module along its top edge,
-// the kind's glyph, the leaf's number, its name and one line of detail. An IF's card carries its Then and Else
-// ports on its bottom edge. While a sequence is edited, the module marks a problem; on a run's page it shows the
-// node's state, and a node the run did not take is drawn in outline with the muted text colour.
+// "edit" while a sequence is edited, where the module marks a problem; a run's state on a run's page.
 export type FlowNodeState =
   "edit" | "waiting" | "running" | "done" | "failed" | "skipped" | "paused" | "notTaken";
-
-const glyphs: Record<StepKind, Icon> = {
-  partition: IconLayoutColumns,
-  applyImage: IconDownload,
-  injectDrivers: IconCpu,
-  writeUnattend: IconFileText,
-  joinDomain: IconBuilding,
-  runScript: IconTerminal2,
-  reboot: IconRotateClockwise,
-  writeRawImage: IconDisc,
-  writeCloudInitSeed: IconCloudCode,
-  setVariable: IconBraces,
-  pause: IconPlayerPause,
-  group: IconLayoutGrid,
-  if: IconArrowsSplit2,
-  repeat: IconRepeat,
-};
-
-export function NodeGlyph({ kind, className }: { kind: StepKind; className?: string }) {
-  const Glyph = glyphs[kind];
-
-  return <Glyph aria-hidden="true" size={18} stroke={1.75} className={cx("shrink-0", className)} />;
-}
 
 const railStates: Record<FlowNodeState, RailStepState> = {
   edit: "waiting",
@@ -69,22 +29,7 @@ const railStates: Record<FlowNodeState, RailStepState> = {
   notTaken: "waiting",
 };
 
-export function FlowNode({
-  kind,
-  name,
-  number = null,
-  detail,
-  code = false,
-  state = "edit",
-  percent,
-  selected = false,
-  mark,
-  branch = null,
-  strip,
-  collapsed = false,
-  className,
-  style,
-}: {
+interface FlowNodeProps {
   kind: StepKind;
   name: string;
   // A leaf's number in the sequence, from 1; containers have none.
@@ -106,7 +51,26 @@ export function FlowNode({
   collapsed?: boolean;
   className?: string;
   style?: CSSProperties;
-}) {
+}
+
+// A node's card, with the rail's module along its top edge and, on an IF, the Then and Else ports on its bottom.
+// A node the run did not take is drawn in outline with muted text rather than faded, so it keeps its contrast.
+export function FlowNode({
+  kind,
+  name,
+  number = null,
+  detail,
+  code = false,
+  state = "edit",
+  percent,
+  selected = false,
+  mark,
+  branch = null,
+  strip,
+  collapsed = false,
+  className,
+  style,
+}: FlowNodeProps) {
   const { t } = useLingui();
   const notTaken = state === "notTaken";
   const module: RailStep = {
@@ -122,20 +86,6 @@ export function FlowNode({
         : kind === "repeat"
           ? t`Repeat: ${name}`
           : name;
-  const tag =
-    state === "running" ? (
-      <StateTag tone="run" className="h-5">
-        {t`Running`}
-      </StateTag>
-    ) : state === "paused" ? (
-      <StateTag tone="attention" className="h-5">
-        {t`Paused`}
-      </StateTag>
-    ) : state === "failed" ? (
-      <StateTag tone="fail" className="h-5">
-        {t`Failed`}
-      </StateTag>
-    ) : null;
   const ports = kind === "if" && !collapsed;
   const run = state !== "edit";
 
@@ -170,7 +120,7 @@ export function FlowNode({
           >
             {title}
           </span>
-          {tag}
+          <NodeStateTag state={state} />
         </div>
         {strip !== undefined && collapsed ? (
           <SequenceRailStrip steps={strip} label={t`Steps of ${name}`} />
@@ -185,28 +135,41 @@ export function FlowNode({
             {detail}
           </div>
         )}
-        {ports ? (
-          <div className="flex justify-between type-label">
-            <span className={branch === "then" ? "text-ink" : run ? "text-muted" : "text-ink-2"}>
-              {t`Then`}
-            </span>
-            <span className={branch === "else" ? "text-ink" : run ? "text-muted" : "text-ink-2"}>
-              {t`Else`}
-            </span>
-          </div>
-        ) : null}
+        {ports ? <IfPorts branch={branch} run={run} /> : null}
       </div>
     </div>
   );
 }
 
-// The frame of a group or a repeat, around its header card and its body.
-export function FlowFrame({ className, style }: { className?: string; style?: CSSProperties }) {
+function NodeStateTag({ state }: { state: FlowNodeState }) {
+  const { t } = useLingui();
+
+  return state === "running" ? (
+    <StateTag tone="run" className="h-5">
+      {t`Running`}
+    </StateTag>
+  ) : state === "paused" ? (
+    <StateTag tone="attention" className="h-5">
+      {t`Paused`}
+    </StateTag>
+  ) : state === "failed" ? (
+    <StateTag tone="fail" className="h-5">
+      {t`Failed`}
+    </StateTag>
+  ) : null;
+}
+
+function IfPorts({ branch, run }: { branch: "then" | "else" | null; run: boolean }) {
+  const { t } = useLingui();
+
   return (
-    <div
-      aria-hidden="true"
-      className={cx("rounded-panel bg-panel shadow-[inset_0_0_0_1px_var(--color-line)]", className)}
-      style={style}
-    />
+    <div className="flex justify-between type-label">
+      <span className={branch === "then" ? "text-ink" : run ? "text-muted" : "text-ink-2"}>
+        {t`Then`}
+      </span>
+      <span className={branch === "else" ? "text-ink" : run ? "text-muted" : "text-ink-2"}>
+        {t`Else`}
+      </span>
+    </div>
   );
 }

@@ -5,14 +5,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import {
-  deploymentQuery,
-  isActive,
-  machineDeploymentsQuery,
-  newerRun,
-  withCurrentRun,
-  withStep,
-} from "@/deployments/deployments";
+import { deploymentQuery, isActive, machineDeploymentsQuery } from "@/deployments/deployments";
+import { newerRun, withCurrentRun, withStep } from "@/deployments/runCopies";
 import { liveListOptions, POLL_MS } from "@/live/freshness";
 import { useMachineWatch } from "@/live/useMachineWatch";
 import { machinesQuery } from "@/machines/machines";

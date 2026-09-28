@@ -5,7 +5,7 @@
 import type { Findings } from "../problems";
 import type { StepPatch } from "../sequenceEdits";
 import type { SequenceStep } from "../sequences";
-import type { StepCatalog } from "../useSequenceEditor";
+import type { StepCatalog } from "../useStepCatalog";
 
 // What every kind's fields get: the step, the server's findings for it, the lists to choose from, and the
 // change to make. chosen says a switch made the change, which is saved at once even when it sets a text field.

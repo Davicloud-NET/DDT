@@ -8,11 +8,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
+import { useIsAdministrator } from "@/auth/useIsAdministrator";
 import { ApiError } from "@/lib/api";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
-import { EmptyState, Page, Skeleton } from "@/ui/Layout";
+import { EmptyState } from "@/ui/EmptyState";
 import { Notice } from "@/ui/Notice";
+import { Page } from "@/ui/Page";
+import { Skeleton } from "@/ui/Skeleton";
 
 import { FlowBuilder } from "./builder/FlowBuilder";
 import { sequenceQuery } from "./sequences";
@@ -24,7 +27,7 @@ export function SequenceEditorPage() {
   const sequence = useQuery({ ...sequenceQuery(sequenceId), ...liveListOptions(useLiveStatus()) });
   const user = useQuery(currentUserQuery).data ?? null;
 
-  const isAdministrator = user?.roles.includes("Administrator") === true;
+  const isAdministrator = useIsAdministrator();
   // The editor keeps its copy once open, and says itself when the sequence goes away.
   const missing =
     sequence.data === undefined &&

@@ -3,20 +3,13 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { QueryClient } from "@tanstack/react-query";
-import { act, renderHook } from "@testing-library/react";
-import { createElement, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MachineSummary } from "@/machines/machines";
+import { machineSummary } from "@/test/builders";
+import { settle } from "@/test/settle";
 
-import { LiveContext } from "./LiveContext";
-import {
-  createLiveConnection,
-  type LiveHub,
-  type MachineLogAppended,
-  type RunStepChanged,
-} from "./liveConnection";
-import { useMachineWatch } from "./useMachineWatch";
+import { createLiveConnection, type LiveHub } from "./liveConnection";
 
 interface FakeHub extends LiveHub {
   starts: number;
@@ -126,40 +119,6 @@ function connection(failingStarts = 0) {
   return { live, log, hub, hubs, queryClient };
 }
 
-// Lets every pending promise settle.
-function settle(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
-
-function machine(id: string): MachineSummary {
-  return {
-    id,
-    state: "Pending",
-    smbiosUuid: "44454c4c-5700-1038-8036-b7c04f5a344a",
-    primaryMac: "00155D010203",
-    macAddresses: ["00155D010203"],
-    manufacturer: null,
-    model: null,
-    serialNumber: null,
-    assignedName: null,
-    agentVersion: null,
-    firstSeenUtc: "2026-09-16T10:00:00Z",
-    lastSeenUtc: "2026-09-16T10:00:00Z",
-    lastSeenAddress: null,
-    signedInBy: null,
-    firstSeenAddress: null,
-    everApproved: false,
-    disks: null,
-    eligibleDiskCount: null,
-    deployment: null,
-    secureBootEnabled: null,
-    trustedUefiCas: null,
-    deviceKind: "Unknown",
-  };
-}
-
 // Everything that may have changed while the connection was down, which every connect reads again.
 const resynced = [
   ["machines"],
@@ -192,7 +151,7 @@ describe("createLiveConnection", () => {
 
   it("refetches the lists on every connect and patches a changed machine into the list", async () => {
     const { live, hub, queryClient } = connection();
-    queryClient.setQueryData(["machines"], [machine("m1")]);
+    queryClient.setQueryData(["machines"], [machineSummary({ id: "m1", state: "Pending" })]);
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
 
     live.start();
@@ -203,7 +162,7 @@ describe("createLiveConnection", () => {
       expect(invalidate).toHaveBeenCalledWith({ queryKey });
     }
 
-    hub().emit("machineChanged", { ...machine("m1"), state: "Approved" });
+    hub().emit("machineChanged", machineSummary({ id: "m1", state: "Approved" }));
 
     expect(queryClient.getQueryData<MachineSummary[]>(["machines"])?.[0]?.state).toBe("Approved");
 
@@ -215,198 +174,6 @@ describe("createLiveConnection", () => {
     for (const queryKey of resynced) {
       expect(invalidate).toHaveBeenCalledWith({ queryKey });
     }
-  });
-
-  it("drops removed machines from the list without reading it again", async () => {
-    const { live, hub, queryClient } = connection();
-    queryClient.setQueryData(["machines"], [machine("m1"), machine("m2"), machine("m3")]);
-
-    live.start();
-    await settle();
-
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    hub().emit("machinesRemoved", { machineIds: ["m1", "m3"] });
-
-    expect(
-      queryClient.getQueryData<MachineSummary[]>(["machines"])?.map((listed) => listed.id),
-    ).toEqual(["m2"]);
-    expect(invalidate).not.toHaveBeenCalled();
-  });
-
-  it("takes a settings section and the interfaces of the pxe hosts from their events", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const machines = { section: "machines", version: 4, values: { maxWaiting: 50 } };
-
-    hub().emit("settingsChanged", machines);
-
-    expect(queryClient.getQueryData(["settings", "machines"])).toEqual(machines);
-    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["settings-overview"] }]]);
-
-    invalidate.mockClear();
-    hub().emit("settingsChanged", { section: "ldap", version: 2, values: {} });
-
-    expect(invalidate.mock.calls).toEqual([
-      [{ queryKey: ["settings-overview"] }],
-      [{ queryKey: ["directory"] }],
-    ]);
-
-    invalidate.mockClear();
-    const hosts = [
-      {
-        host: "ddt-01",
-        updatedUtc: "2026-09-27T10:00:00Z",
-        interfaces: [{ name: "lab", addresses: ["10.40.0.1"], served: true }],
-        unmatched: [],
-      },
-    ];
-    hub().emit("pxeInterfacesChanged", hosts);
-
-    expect(queryClient.getQueryData(["settings", "pxe", "interfaces"])).toEqual(hosts);
-    expect(invalidate).not.toHaveBeenCalled();
-  });
-
-  it("takes an uploaded agent from its event, and reads the served certificate again when it changed", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const agent = {
-      sha256: "ab12",
-      size: 4096,
-      uploadedUtc: "2026-09-27T10:00:00Z",
-      uploadedBy: "admin",
-      source: "Uploaded",
-    };
-
-    hub().emit("agentChanged", agent);
-
-    expect(queryClient.getQueryData(["settings-agent"])).toEqual(agent);
-    expect(invalidate).not.toHaveBeenCalled();
-
-    queryClient.setQueryData(["settings-certificate"], { subject: "CN=old", servedHere: true });
-    hub().emit("certificateChanged", { subject: "CN=new" });
-
-    expect(queryClient.getQueryData(["settings-certificate"])).toEqual({
-      subject: "CN=new",
-      servedHere: true,
-    });
-    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["server-certificate"] }]]);
-  });
-
-  it("takes the rules from their event, and reads again only what the rules choose", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const rules = [{ id: "r1", kind: "Model", model: "Latitude*", sequenceName: "Install" }];
-
-    hub().emit("rulesChanged", rules);
-
-    expect(queryClient.getQueryData(["rules"])).toEqual(rules);
-    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
-
-    invalidate.mockClear();
-    hub().emit("sequenceChanged", { id: "s1", revision: 2, changedBy: "admin" });
-
-    expect(invalidate.mock.calls).toEqual([
-      [{ queryKey: ["sequences"] }],
-      [{ queryKey: ["machine-sequence"] }],
-      [{ queryKey: ["sequence", "s1"] }],
-    ]);
-  });
-
-  it("takes the machine roles and the accounts from their events without reading their lists again", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const roles = [{ id: "role1", name: "Kiosk", values: [], revision: 2 }];
-    const account = (id: string, name: string, revision = 1) => ({
-      id,
-      name,
-      revision,
-      password: { isSet: true, unreadable: false, updatedUtc: null },
-      usedBy: [],
-    });
-
-    hub().emit("rolesChanged", roles);
-
-    expect(queryClient.getQueryData(["machine-roles"])).toEqual(roles);
-    expect(invalidate.mock.calls).toEqual([[{ queryKey: ["machine-sequence"] }]]);
-
-    invalidate.mockClear();
-    queryClient.setQueryData(["accounts"], [account("a1", "Join"), account("a3", "Share")]);
-    hub().emit("accountChanged", account("a2", "Lab"));
-    hub().emit("accountChanged", account("a1", "Join", 2));
-
-    expect(queryClient.getQueryData(["accounts"])).toEqual([
-      account("a1", "Join", 2),
-      account("a2", "Lab"),
-      account("a3", "Share"),
-    ]);
-
-    hub().emit("accountsRemoved", { accountIds: ["a2", "a3"] });
-
-    expect(queryClient.getQueryData(["accounts"])).toEqual([account("a1", "Join", 2)]);
-    expect(invalidate).not.toHaveBeenCalled();
-  });
-
-  it("reads an open sequence again only when the change is newer than its copy", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    queryClient.setQueryData(["sequence", "s1"], { id: "s1", revision: 3 });
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const readsOf = () =>
-      invalidate.mock.calls.filter(([filters]) => filters?.queryKey?.[0] === "sequence").length;
-
-    hub().emit("sequenceChanged", { id: "s1", revision: 3, changedBy: "admin" });
-    expect(readsOf()).toBe(0);
-
-    hub().emit("sequenceChanged", { id: "s1", revision: 4, changedBy: "other" });
-    expect(readsOf()).toBe(1);
-
-    hub().emit("sequenceChanged", { id: "s1", revision: null, changedBy: "other" });
-    expect(readsOf()).toBe(2);
-  });
-
-  it("patches the library from its events, and reads the sequences again only when something is gone", async () => {
-    const { live, hub, queryClient } = connection();
-    live.start();
-    await settle();
-    queryClient.setQueryData(["images"], [{ id: "i1", name: "Alpha" }]);
-    queryClient.setQueryData(["packages"], [{ id: "p1", name: "Drivers" }]);
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const reads = () => invalidate.mock.calls.map(([filters]) => filters?.queryKey);
-
-    hub().emit("imageChanged", { id: "i2", name: "Beta" });
-
-    expect(queryClient.getQueryData(["images"])).toEqual([
-      { id: "i1", name: "Alpha" },
-      { id: "i2", name: "Beta" },
-    ]);
-    expect(reads()).toEqual([["image-uploads"]]);
-
-    invalidate.mockClear();
-    hub().emit("imagesRemoved", { imageIds: ["i1"] });
-
-    expect(queryClient.getQueryData(["images"])).toEqual([{ id: "i2", name: "Beta" }]);
-    expect(reads()).toEqual([["sequences"], ["sequence"], ["machine-sequence"]]);
-
-    invalidate.mockClear();
-    hub().emit("packageChanged", { id: "p1", name: "Drivers, new" });
-
-    expect(queryClient.getQueryData(["packages"])).toEqual([{ id: "p1", name: "Drivers, new" }]);
-    expect(reads()).toEqual([["image-uploads"]]);
-
-    invalidate.mockClear();
-    hub().emit("packagesRemoved", { packageIds: ["p1"] });
-
-    expect(queryClient.getQueryData(["packages"])).toEqual([]);
-    expect(reads()).toEqual([["sequences"], ["sequence"], ["machine-sequence"]]);
   });
 
   it("watches a machine once however many watch it, and unwatches it when the last one stops", async () => {
@@ -431,69 +198,6 @@ describe("createLiveConnection", () => {
     live.watchMachine("m1", {});
 
     expect(log).toEqual(["WatchMachine m1", "UnwatchMachine m1", "WatchMachine m1"]);
-  });
-
-  it("ignores a repeated unsubscribe once the machine is watched again", async () => {
-    const { live, log, hub } = connection();
-    live.start();
-    await settle();
-
-    const received: unknown[] = [];
-    const leave = live.watchMachine("m1", {});
-    leave();
-    live.watchMachine("m1", { onLogAppended: (event) => received.push(event) });
-    leave();
-
-    const lines: MachineLogAppended = { machineId: "m1", lastLineId: 7 };
-    hub().emit("machineLogAppended", lines);
-
-    expect(received).toEqual([lines]);
-    expect(log).toEqual(["WatchMachine m1", "UnwatchMachine m1", "WatchMachine m1"]);
-  });
-
-  it("hands the events of a machine only to its watchers", async () => {
-    const { live, hub } = connection();
-    live.start();
-    await settle();
-
-    const first: unknown[] = [];
-    const second: unknown[] = [];
-    const stopFirst = live.watchMachine("m1", {
-      onLogAppended: (event) => first.push(event),
-      onRunStepChanged: (event) => first.push(event),
-    });
-    live.watchMachine("m2", {
-      onLogAppended: (event) => second.push(event),
-      onRunStepChanged: (event) => second.push(event),
-    });
-
-    const lines: MachineLogAppended = { machineId: "m1", lastLineId: 7 };
-    const step: RunStepChanged = {
-      machineId: "m2",
-      deploymentId: "d1",
-      step: {
-        stepId: "s1",
-        index: 0,
-        name: "Partition",
-        kind: "partition",
-        phase: "WindowsPE",
-        state: "Running",
-        percent: 0,
-        startedUtc: "2026-09-16T10:00:00Z",
-        finishedUtc: null,
-        error: null,
-      },
-    };
-    hub().emit("machineLogAppended", lines);
-    hub().emit("runStepChanged", step);
-
-    expect(first).toEqual([lines]);
-    expect(second).toEqual([step]);
-
-    stopFirst();
-    hub().emit("machineLogAppended", { machineId: "m1", lastLineId: 8 });
-
-    expect(first).toEqual([lines]);
   });
 
   it("watches every machine again after a reconnect before telling its watchers", async () => {
@@ -665,48 +369,5 @@ describe("createLiveConnection", () => {
     expect(hubs[0]?.stopped).toBe(true);
     expect(log).toEqual(["WatchMachine m1"]);
     expect(live.status()).toBe("live");
-  });
-});
-
-describe("useMachineWatch", () => {
-  it("is offline without a connection", () => {
-    const { result } = renderHook(() => useMachineWatch("m1", {}));
-
-    expect(result.current).toBe("offline");
-  });
-
-  it("watches the machine while mounted, hands over its events and follows the status", async () => {
-    const { live, log, hub } = connection();
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(LiveContext, { value: live }, children);
-    const received: unknown[] = [];
-
-    const { result, unmount } = renderHook(
-      () =>
-        useMachineWatch("m1", {
-          onLogAppended: (event) => received.push(event),
-        }),
-      { wrapper },
-    );
-
-    expect(result.current).toBe("offline");
-
-    await act(async () => {
-      live.start();
-      await settle();
-    });
-
-    expect(result.current).toBe("live");
-    expect(log).toEqual(["WatchMachine m1"]);
-
-    act(() => {
-      hub().emit("machineLogAppended", { machineId: "m1", lastLineId: 3 });
-    });
-
-    expect(received).toEqual([{ machineId: "m1", lastLineId: 3 }]);
-
-    unmount();
-
-    expect(log).toEqual(["WatchMachine m1", "UnwatchMachine m1"]);
   });
 });

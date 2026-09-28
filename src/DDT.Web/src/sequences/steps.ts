@@ -5,15 +5,13 @@
 import { i18n, type MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 
+import type { ConditionNode, ConditionOperator, StepCondition } from "./sequenceConditions";
 import type {
-  ConditionNode,
-  ConditionOperator,
   ContainerKind,
   ContainerStep,
   ScriptInterpreter,
   SequencePhase,
   SequenceStep,
-  StepCondition,
   StepKind,
 } from "./sequences";
 

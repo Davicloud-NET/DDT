@@ -10,7 +10,6 @@ import {
   Text,
   UNSTABLE_Toast as AriaToast,
   UNSTABLE_ToastContent as ToastContent,
-  UNSTABLE_ToastRegion as ToastRegion,
   type QueuedToast,
 } from "react-aria-components";
 
@@ -24,19 +23,8 @@ const marks: Record<"ok" | "fail" | "info", string> = {
   info: "bg-run",
 };
 
-export function Toasts() {
-  return (
-    <ToastRegion
-      queue={toasts}
-      className="fixed right-4 bottom-4 z-50 flex w-90 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none"
-    >
-      {({ toast }) => <Toast toast={toast} />}
-    </ToastRegion>
-  );
-}
-
 // A toast rises into place when it comes, and sinks back as it leaves, faster.
-function Toast({ toast }: { toast: QueuedToast<ToastMessage> }) {
+export function Toast({ toast }: { toast: QueuedToast<ToastMessage> }) {
   const { t } = useLingui();
   const ref = useRef<HTMLDivElement>(null);
   const key = toast.key;

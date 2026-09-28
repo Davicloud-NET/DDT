@@ -135,10 +135,9 @@ export function apiPatch(
   return apiFetch(path, { method: "PATCH", headers, body, signal: init.signal ?? null });
 }
 
-// The problem details the server answers a refusal with. A validation failure keys its messages by the
-// field, for example "mac", so a form can show each one next to its field. code and args are the title as a
-// message, and errorCodes the field's messages, in the order of errors; apiErrorFrom says both in the person's
-// language, so a page reads title and errors as they are.
+// The server's problem details. errors keys a validation failure's messages by field, such as "mac"; code, args and
+// errorCodes are the title and those messages as codes, which apiErrorFrom says in the person's language, so a page
+// shows title and errors as they are.
 export interface ApiProblem {
   title?: string;
   errors?: Record<string, string[]>;

@@ -9,6 +9,8 @@ import { sequenceQuery, sequencesQuery, type SequenceView } from "@/sequences/se
 
 import { matchingMachines, packagesQuery, sequencesUsing, type PackageSummary } from "./packages";
 
+export type PackageLibrary = ReturnType<typeof usePackageLibrary>;
+
 // The packages with what uses them: the models machines reported, and every sequence's steps, which the list
 // of sequences does not carry. A library holds a few sequences, so each is read.
 export function usePackageLibrary() {

@@ -3,8 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 // Takes the focus to a field of the step shown, by the name the server's findings give it, such as "imageId" or
-// "conditions[0].value". A finding of a whole condition shows at its value. Answers false when no such field shows,
-// so the caller can focus something else.
+// "conditions[0].value"; a whole condition's finding shows at its value. False when no such field shows.
 export function focusField(container: HTMLElement | null, field: string | null): boolean {
   if (field === null || container === null) {
     return false;

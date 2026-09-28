@@ -9,14 +9,15 @@ import { useMemo } from "react";
 import { apiGet } from "@/lib/api";
 import { machineRolesQuery } from "@/roles/roles";
 import { rulesQuery } from "@/rules/rules";
-import type { FactView, InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
+import type { FactView } from "@/sequences/sequenceConditions";
+import type { InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
 import type { NamedValue } from "@/values/values";
 
-import { factCatalogue, subjectsOf, type Subject } from "./conditions";
+import { subjectsOf, type Subject } from "./conditionSubjects";
+import { factCatalogue } from "./factCatalogue";
 
-// What conditions and templates can name, read from the server where it lists it: its catalogue of facts, and the
-// values its rules and machine roles set. A server that lists none of them yet leaves the builder with the catalogue
-// this build knows and no values.
+// What conditions and templates can name, read from the server: its catalogue of facts, and the values its rules and
+// machine roles set.
 
 export const factsQuery = queryOptions({
   queryKey: ["sequence-facts"],
@@ -46,7 +47,7 @@ export function useConditionData(declared: {
   const rules = useQuery({ ...rulesQuery, staleTime: 5 * 60_000 });
   const roles = useQuery({ ...machineRolesQuery, staleTime: 5 * 60_000 });
   const { variables, inputs } = declared;
-  // The labels are in the person's language.
+  // A dependency of the memo, so the labels follow a change of language.
   const locale = useLingui().i18n.locale;
 
   return useMemo(() => {

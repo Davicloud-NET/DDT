@@ -14,13 +14,8 @@ import type {
 import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import { walk } from "@/sequences/flow/flowTree";
-import type {
-  ConditionOperator,
-  SequenceDefinition,
-  SequencePhase,
-  SequenceStep,
-  StepCondition,
-} from "@/sequences/sequences";
+import type { ConditionOperator, StepCondition } from "@/sequences/sequenceConditions";
+import type { SequenceDefinition, SequencePhase, SequenceStep } from "@/sequences/sequences";
 import { operatorTakesValue, phaseLabel, variableLabel } from "@/sequences/steps";
 
 import { leafNumbers } from "./runPath";
@@ -82,9 +77,9 @@ function reported(variable: string, machine: MachineSummary, phase: SequencePhas
   }
 }
 
-// Why a step was skipped, for a run whose agent did not record the tests it decided with, as agents before version 3
-// sequences do not: the engine skips a step only when one of its conditions does not hold, so the page shows each
-// condition next to what the machine reports now. A run that recorded its tests says them instead (decisionLine).
+// Why a step was skipped, for an agent that recorded no tests, as agents before version 3 sequences do not; the others
+// get decisionLine. The engine skips only when a condition does not hold, so each shows beside what the machine
+// reports now.
 export function skipReason(
   step: DeploymentStepView,
   planned: SequenceStep | undefined,

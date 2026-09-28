@@ -4,16 +4,17 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import { Page, PageHeader, Skeleton } from "@/ui/Layout";
+import { useIsAdministrator } from "@/auth/useIsAdministrator";
+import { Page } from "@/ui/Page";
+import { PageHeader } from "@/ui/PageHeader";
+import { Skeleton } from "@/ui/Skeleton";
 
-import {
-  SettingLines,
-  SettingNumber,
-  SettingSwitch,
-  SettingsGroup,
-  SettingsSection,
-} from "./SettingsParts";
-import { useCanChangeSettings, useSettingsForm } from "./useSettingsForm";
+import { SettingLines } from "./parts/SettingLines";
+import { SettingNumber } from "./parts/SettingNumber";
+import { SettingsGroup } from "./parts/SettingsGroup";
+import { SettingsSection } from "./parts/SettingsSection";
+import { SettingSwitch } from "./parts/SettingSwitch";
+import { useSettingsForm } from "./useSettingsForm";
 
 export interface MachineSettings {
   requireWebApproval: boolean;
@@ -26,7 +27,7 @@ export interface MachineSettings {
 // for zero touch, nobody. Machines already approved are not judged again. Operators read these settings.
 export function ApprovalPage() {
   const form = useSettingsForm<MachineSettings>("machines");
-  const canChange = useCanChangeSettings();
+  const canChange = useIsAdministrator();
 
   return (
     <Page className="max-w-[72rem]">

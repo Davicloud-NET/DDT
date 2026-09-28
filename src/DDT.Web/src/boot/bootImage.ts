@@ -35,3 +35,15 @@ export const bootImageQuery = queryOptions({
   queryKey: ["boot-image"],
   queryFn: () => apiGet<BootImageView>("/api/boot-image"),
 });
+
+// Build-BootImage.ps1 with this server's address. An API token lets the script download the flagged drivers; the root
+// certificate is the one the agent pins.
+export function buildCommand(serverUrl: string, withDrivers: boolean): string {
+  return [
+    ".\\build\\Build-BootImage.ps1",
+    "-AgentPath .\\artifacts\\agent\\ddt-agent.exe",
+    `-ServerUrl ${serverUrl}`,
+    "-RootCertificatePath .\\ddt-root.pem",
+    ...(withDrivers ? ["-ApiToken $env:DDT_API_TOKEN"] : []),
+  ].join(" ");
+}

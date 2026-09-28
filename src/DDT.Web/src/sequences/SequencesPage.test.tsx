@@ -20,6 +20,7 @@ import type { CurrentUser } from "@/auth/auth";
 import type { MachineSummary } from "@/machines/machines";
 import type { RuleView } from "@/rules/rules";
 import { deploymentSummary, machineSummary, ruleView } from "@/test/builders";
+import { rowOf } from "@/test/rowOf";
 
 import {
   SEQUENCE_VERSION,
@@ -233,13 +234,7 @@ async function openNewSequence() {
 }
 
 function row(name: string): HTMLElement {
-  const found = screen.getByRole("link", { name }).closest<HTMLElement>("[role=row]");
-
-  if (found === null) {
-    throw new Error(`${name} is not in a table row.`);
-  }
-
-  return found;
+  return rowOf(screen.getByRole("link", { name }));
 }
 
 describe("SequencesPage", () => {

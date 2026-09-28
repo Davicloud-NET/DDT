@@ -42,6 +42,13 @@ export function conflictOf(error: unknown): { revision: number } | null {
     : null;
 }
 
+// A failed save's message where no field, no notice of someone else's save and no notice of a deletion says it.
+export function otherRefusal(error: Error, gone: boolean): string | null {
+  return refusalFindings(error) === null && conflictOf(error) === null && !gone
+    ? error.message
+    : null;
+}
+
 // The findings of fields a drawer does not show, for a notice at its top.
 export function unplaced(findings: Findings, shown: (field: string) => boolean): string[] {
   return findings.problems

@@ -2,17 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import {
-  arrowPath,
-  wirePath,
-  type FlowArrow,
-  type FlowJoin,
-  type FlowPort,
-  type FlowWire,
-  type WireRoute,
-} from "@/sequences/flow/flowLayout";
+import type { FlowArrow, FlowWire, WireRoute } from "@/sequences/flow/flowGeometry";
+import { arrowPath, wirePath } from "@/sequences/flow/wirePaths";
 
 import { cx } from "./cx";
+import { wireFills } from "./wireFills";
 
 // How a wire is drawn. While a sequence is edited every wire is "edit". On a run's page the path the run took is
 // "taken", in ink; what is still ahead of it is "ahead"; a branch it did not take is "not", dashed and faint.
@@ -23,13 +17,6 @@ const strokes: Record<WireTone, string> = {
   ahead: "stroke-control",
   taken: "stroke-ink stroke-[2.25]",
   not: "stroke-line [stroke-dasharray:5_5]",
-};
-
-const fills: Record<WireTone, string> = {
-  edit: "fill-control",
-  ahead: "fill-control",
-  taken: "fill-ink",
-  not: "fill-line",
 };
 
 // A repeat's wire back is dashed until a run went round it.
@@ -99,63 +86,10 @@ export function FlowWires({
                 strokeLinejoin="round"
               />
             )}
-            {heads === "" ? null : <path d={heads} className={fills[of]} />}
+            {heads === "" ? null : <path d={heads} className={wireFills[of]} />}
           </g>
         );
       })}
-    </svg>
-  );
-}
-
-// The dots of a flow: an IF's Then and Else ports on the bottom edge of its card, and where its branches meet. They
-// sit over the cards, so a port shows on its card's edge, ringed in the card's colour.
-export function FlowDots({
-  width,
-  height,
-  ports,
-  joins,
-  selectedId = null,
-  tone = () => "edit",
-  className,
-}: {
-  width: number;
-  height: number;
-  ports: readonly FlowPort[];
-  joins: readonly FlowJoin[];
-  selectedId?: string | null;
-  tone?: (route: WireRoute) => WireTone;
-  className?: string;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      width={width}
-      height={height}
-      className={cx("pointer-events-none absolute top-0 left-0 overflow-visible", className)}
-    >
-      {ports.map((port) => (
-        <circle
-          key={`${port.id}-${port.branch}`}
-          cx={port.x}
-          cy={port.y}
-          r={4.5}
-          strokeWidth={2}
-          className={cx(
-            fills[tone({ from: port.id, to: null, branch: { id: port.id, name: port.branch } })],
-            port.id === selectedId ? "stroke-selected" : "stroke-raised",
-          )}
-        />
-      ))}
-      {joins.map((join) => (
-        <circle
-          key={join.id}
-          cx={join.x}
-          cy={join.y}
-          r={5}
-          strokeWidth={2}
-          className={cx(fills[tone({ from: join.id, to: null, branch: null })], "stroke-well")}
-        />
-      ))}
     </svg>
   );
 }

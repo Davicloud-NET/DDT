@@ -3,17 +3,18 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { SequenceStep } from "../sequences";
-import { PauseFields, SetVariableFields } from "./FlowFields";
+import { ApplyImageFields } from "./ApplyImageFields";
+import { InjectDriversFields } from "./InjectDriversFields";
+import { JoinDomainFields } from "./JoinDomainFields";
 import type { KindFieldsProps } from "./kindFields";
-import { WriteCloudInitSeedFields, WriteRawImageFields } from "./RawImageFields";
-import { RebootFields, RunScriptFields } from "./ScriptFields";
-import {
-  ApplyImageFields,
-  InjectDriversFields,
-  JoinDomainFields,
-  PartitionFields,
-  WriteUnattendFields,
-} from "./WindowsFields";
+import { PartitionFields } from "./PartitionFields";
+import { PauseFields } from "./PauseFields";
+import { RebootFields } from "./RebootFields";
+import { RunScriptFields } from "./RunScriptFields";
+import { SetVariableFields } from "./SetVariableFields";
+import { WriteCloudInitSeedFields } from "./WriteCloudInitSeedFields";
+import { WriteRawImageFields } from "./WriteRawImageFields";
+import { WriteUnattendFields } from "./WriteUnattendFields";
 
 // The fields of the step's own kind.
 export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {

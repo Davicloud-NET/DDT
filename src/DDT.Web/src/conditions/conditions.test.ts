@@ -4,24 +4,20 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { ConditionNode, InputDeclaration } from "@/sequences/sequences";
+import type { ConditionNode } from "@/sequences/sequenceConditions";
+import type { InputDeclaration } from "@/sequences/sequences";
 
+import { operatorsFor } from "./conditionOperators";
 import {
   conditionSentence,
   conditionSummary,
   conditionText,
-  factCatalogue,
-  gigabytesOf,
   legacyPath,
   legacyTree,
-  megabytesOf,
-  newTestOf,
-  operatorsFor,
-  subjectFor,
-  subjectsOf,
-  valueProblem,
-  withSubject,
 } from "./conditions";
+import { subjectFor, subjectsOf } from "./conditionSubjects";
+import { gigabytesOf, megabytesOf, newTestOf, valueProblem, withSubject } from "./conditionValues";
+import { factCatalogue } from "./factCatalogue";
 
 const office: InputDeclaration = {
   name: "Office",
@@ -108,8 +104,8 @@ describe("the subjects of a condition", () => {
     expect(operatorsFor("text")).toContain("Matches");
   });
 
-  // As src/DDT.Core/Sequences/ConditionChecks.cs takes them for each type of fact, so every condition the server
-  // takes, such as the MAC Contains of versions 1 and 2, can be edited here.
+  // As the server's ConditionChecks takes them for each type of fact, so every condition it takes, such as the MAC
+  // Contains of versions 1 and 2, can be edited here.
   it("offers every operator the server takes for the type of each fact", () => {
     const text = [
       "Equals",

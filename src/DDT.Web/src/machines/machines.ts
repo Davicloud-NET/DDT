@@ -8,6 +8,7 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { isActive, type DeploymentSummary } from "@/deployments/deployments";
 import type { InputAnswer } from "@/inputs/inputs";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { removeByIds, upsertById } from "@/lib/listCache";
 
 export type MachineState =
   "Pending" | "Approved" | "Deploying" | "Done" | "Failed" | "Rejected" | "Retired";
@@ -15,16 +16,15 @@ export type MachineState =
 // What kind of computer the server takes the machine for, from its firmware's chassis type and its maker's name.
 export type DeviceKindName = "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
 
-// The server's MachineFacts: what the agent found out about the machine besides its identity, for conditions and rules
-// to test. Every member is null where the agent could not tell. The network members are the primary adapter's.
-// systemVersion, systemFamily and systemSku are the SMBIOS system's, assetTag its enclosure's, baseboardProduct the
-// baseboard's, biosVersion and biosDate the BIOS's, the date as yyyy-MM-dd. tpmVersion is 2.0 or 1.2.
+// The server's MachineFacts: what the agent found out besides the machine's identity, for conditions and rules to
+// test. A member is null where the agent could not tell; the network members are the primary adapter's.
 export interface MachineFacts {
   memoryMegabytes?: number | null;
   processorName?: string | null;
   processorCores?: number | null;
   logicalProcessors?: number | null;
   tpmPresent?: boolean | null;
+  // 2.0 or 1.2.
   tpmVersion?: string | null;
   secureBootCapable?: boolean | null;
   iPv4Address?: string | null;
@@ -32,12 +32,14 @@ export interface MachineFacts {
   defaultGateway?: string | null;
   dnsSuffix?: string | null;
   dhcpServer?: string | null;
+  // systemVersion, systemFamily and systemSku are the SMBIOS system's, assetTag its enclosure's.
   systemVersion?: string | null;
   systemFamily?: string | null;
   systemSku?: string | null;
   assetTag?: string | null;
   baseboardProduct?: string | null;
   biosVersion?: string | null;
+  // yyyy-MM-dd.
   biosDate?: string | null;
 }
 
@@ -113,15 +115,9 @@ export function compareMachines(a: MachineSummary, b: MachineSummary): number {
 }
 
 export function upsertMachine(queryClient: QueryClient, machine: MachineSummary): void {
-  queryClient.setQueryData<MachineSummary[]>(machinesQuery.queryKey, (machines) => {
-    if (machines === undefined) {
-      return undefined;
-    }
-
-    const others = machines.filter((existing) => existing.id !== machine.id);
-
-    return [machine, ...others].sort(compareMachines);
-  });
+  queryClient.setQueryData<MachineSummary[]>(machinesQuery.queryKey, (machines) =>
+    upsertById(machines, machine, compareMachines),
+  );
 }
 
 // The hub's machinesRemoved names the machines, so the list drops them without being read again.
@@ -130,16 +126,13 @@ export interface MachinesRemoved {
 }
 
 export function removeMachines(queryClient: QueryClient, machineIds: readonly string[]): void {
-  const removed = new Set(machineIds);
-
   queryClient.setQueryData<MachineSummary[]>(machinesQuery.queryKey, (machines) =>
-    machines?.filter((machine) => !removed.has(machine.id)),
+    removeByIds(machines, machineIds),
   );
 }
 
-// With the sequence the page showed a rule choosing, the approval also runs it, and the server refuses when the
-// rules choose otherwise by now. Without one the approval runs nothing. allowSecureBootMismatch lets that run write a
-// raw disk image that is not signed for Secure Boot, and answers are the answers to its inputs asked on the web.
+// With expectedSequenceId, the sequence the page showed a rule choosing, the approval also runs it, and the server
+// refuses when the rules choose otherwise by now. Without it the approval runs nothing.
 export function approveMachine(
   id: string,
   expectedSequenceId: string | null = null,

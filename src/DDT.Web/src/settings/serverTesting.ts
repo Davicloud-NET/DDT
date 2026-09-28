@@ -5,9 +5,8 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { expect, onTestFinished } from "vitest";
 
-import { expectNoAxeViolations } from "@/test/axe";
-
 import type { CurrentUser } from "@/auth/auth";
+import { expectNoAxeViolations } from "@/test/axe";
 import { administrator, json, servePage, type Handler, type Sent } from "@/test/serve";
 
 import type { AgentBinaryView } from "./agentBinary";

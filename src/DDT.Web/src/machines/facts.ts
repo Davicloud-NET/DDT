@@ -10,9 +10,8 @@ import { formatBytes } from "@/lib/format";
 
 import type { MachineFacts, MachineSummary } from "./machines";
 
-// The names of what a machine reports, as conditions, rules and the machine's page say them: the server's
-// MachineVariableNames.Catalogue, whose names a condition tests, in the order a page lists them. The flow builder's
-// condition builder and a run's decisions take their labels from here.
+// The labels of what a machine reports: the server's MachineVariableNames.Catalogue, whose names a condition tests, in
+// the order a page lists them.
 
 const factLabels: Record<string, MessageDescriptor> = {
   Manufacturer: msg`Manufacturer`,

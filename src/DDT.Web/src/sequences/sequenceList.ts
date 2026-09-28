@@ -7,8 +7,10 @@ import { msg, plural, t } from "@lingui/core/macro";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { isActive } from "@/deployments/deployments";
+import { removeByIds } from "@/lib/listCache";
 import type { MachineSummary } from "@/machines/machines";
-import { ruleName, ruleNames, type RuleView } from "@/rules/rules";
+import type { RuleView } from "@/rules/rules";
+import { ruleName, ruleNames } from "@/rules/ruleText";
 
 import {
   sequencesQuery,
@@ -223,6 +225,6 @@ export function upsertSummary(queryClient: QueryClient, view: SequenceView): voi
 
 export function removeSummary(queryClient: QueryClient, id: string): void {
   queryClient.setQueryData<SequenceSummary[]>(sequencesQuery.queryKey, (list) =>
-    list?.filter((sequence) => sequence.id !== id),
+    removeByIds(list, [id]),
   );
 }

@@ -6,9 +6,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { createAutosaver, type AutosaveOptions } from "./autosave";
 
-// Saves a document in place while it is edited. The options are read once, so the component that uses this is
-// keyed by the document it edits. Leaving the page sends what is not saved yet; closing or reloading it asks
-// first while something is unsaved, and sends it as the page goes.
+// Autosave for a component keyed by the document it edits, as the options are read once. Leaving the page sends what
+// is unsaved; closing or reloading it asks first, and sends it with keepalive as the page goes.
 export function useAutosave<T, R>(options: AutosaveOptions<T, R>) {
   const [saver] = useState(() => createAutosaver(options));
   const snapshot = useSyncExternalStore(saver.subscribe, saver.snapshot);

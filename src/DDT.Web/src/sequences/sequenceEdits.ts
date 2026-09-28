@@ -4,15 +4,15 @@
 
 import { flowEdits, type FlowEdit, type NodePatch } from "./flow/flowEdits";
 import type { SequenceDraft } from "./sequenceDraft";
-import type { SequenceStep, StepCondition, StepKind } from "./sequences";
+import type { StepCondition } from "./sequenceConditions";
+import type { SequenceStep, StepKind } from "./sequences";
 import { newCondition, newStep } from "./steps";
 
 // The fields of one kind of step, apart from what identifies it and the nodes inside it.
 export type StepPatch = NodePatch;
 
-// Every change the editors make, as data, so they can be kept for undo: the step editor's, which work on the steps at
-// the top, and the flow builder's, which work on the whole tree. New step ids are made by the functions below rather
-// than by the reducer, which stays pure.
+// Every change the editors make, as data, so undo can keep them: these on the steps at the top, and FlowEdit on the
+// whole tree. New step ids come from addStep and insertStepAfter, so the reducer stays pure.
 export type SequenceEdit =
   | { type: "rename"; name: string }
   | { type: "describe"; description: string }

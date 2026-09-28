@@ -13,8 +13,6 @@ import { renderPage, type RenderedPage } from "@/test/renderPage";
 import type { Routes } from "@/test/server";
 import { toasts } from "@/ui/toasts";
 import {
-  node,
-  pauseMessage,
   treeMachine,
   treeMachineId,
   treeRunId,
@@ -22,10 +20,10 @@ import {
   treeRunView,
   treeSteps,
 } from "@/test/treeRun";
+import { node, pauseMessage } from "@/test/treeSequence";
 
-// A machine whose run goes through a tree and waits at a pause, on its page: the flow with the path it took, what each
-// node decided, the notice that lets the run go on, the answers a run can wait for, its values and the machine's
-// facts, all kept live.
+// A machine's page while its run goes through a tree and waits: the path it took, what each node decided, the notice
+// that lets it go on or gives its answers, its values and the machine's facts, all kept live.
 
 const now = new Date("2026-09-16T10:06:00Z");
 
@@ -149,7 +147,10 @@ describe("a machine's page with a tree run", () => {
     expect(screen.queryByText(/^Step 4, /)).not.toBeInTheDocument();
 
     // The flow draws every node, the one not taken as such, and shows the paused one first.
-    expect(await screen.findByRole("group", { name: "Flow of this run" })).toBeInTheDocument();
+    // The flow's code loads when it is first shown, which takes longer than a second while every test file runs.
+    expect(
+      await screen.findByRole("group", { name: "Flow of this run" }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(flowNode(/Apply Windows 11, Not taken$/)).toBeInTheDocument();
     expect(flowNode(/Check the asset tag, Paused$/)).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "Follow the run" })).toHaveAttribute(

@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useEffectEvent, useState, useSyncExternalStore } from "react";
 
+import { createListeners } from "@/lib/listeners";
 import { FLASH_MS } from "@/ui/motion";
 import type { StateTone } from "@/ui/StateTag";
 
@@ -43,11 +44,9 @@ interface Seen {
   tone: StateTone | null;
 }
 
-// Marks the items of a list that a change put on the screen: an item whose signature changed flashes in its tone,
-// and an item that was not there before enters as well. Only data that arrives by setQueryData counts, which is how
-// the hub's events and the answers of actions reach the cache; data the page read, on its first load, after a
-// reconnect, while polling or for older pages, is taken as it is. Returns the classes for an item's row, none for an
-// unmarked one. It changes with the marks, so a React Aria collection lists it in its dependencies.
+// Marks the items a change put on the screen: a changed signature flashes in its tone, and a new item enters. Only
+// data from setQueryData counts, as pushes and action answers arrive that way; a read, such as a first load, never
+// flashes. The returned function changes with the marks, so it goes into a React Aria collection's dependencies.
 export function useLiveMarks<TKey extends QueryKey, TItem>(
   options: LiveMarkOptions<TKey, TItem>,
 ): (id: string) => string {
@@ -99,14 +98,11 @@ function markClass(mark: LiveMark | undefined): string {
 
 function createMarkStore() {
   let marks: ReadonlyMap<string, LiveMark> = new Map();
-  const listeners = new Set<() => void>();
+  const listeners = createListeners();
 
   const publish = (next: ReadonlyMap<string, LiveMark>) => {
     marks = next;
-
-    for (const listener of [...listeners]) {
-      listener();
-    }
+    listeners.notify();
   };
 
   // Follows one query's data from what it holds now. Returns the unwatch.
@@ -201,13 +197,7 @@ function createMarkStore() {
   };
 
   return {
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: listeners.subscribe,
     marks: () => marks,
     watch,
   };

@@ -8,7 +8,8 @@ import type { DeploymentStepView } from "@/deployments/deployments";
 import { layoutFlow } from "@/sequences/flow/flowLayout";
 import { stepView } from "@/test/builders";
 import { branch, leaf, repeat } from "@/test/trees";
-import { node, treeDefinition, treeSteps } from "@/test/treeRun";
+import { treeSteps } from "@/test/treeRun";
+import { node, treeDefinition } from "@/test/treeSequence";
 
 import { leafNumbers, pathPercent, reachedCount, runPath } from "./runPath";
 

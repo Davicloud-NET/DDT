@@ -9,6 +9,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { apiGet, apiPost } from "@/lib/api";
 
 import { settingsKey, type SettingsOverview, type SettingsSectionView } from "./settings";
+import type { SettingsForm } from "./useSettingsForm";
 
 // The settings section pxe, as GET /api/settings/pxe has it: which interfaces DDT answers netboot on, how ProxyDHCP and
 // TFTP behave, and the boot file each client architecture is sent.
@@ -23,6 +24,8 @@ export interface PxeSettings {
   // Keyed by client architecture, such as X64Uefi.
   bootTargets: Record<string, BootTargetSettings>;
 }
+
+export type PxeForm = SettingsForm<PxeSettings>;
 
 export interface BootTargetSettings {
   method: string | null;
@@ -54,9 +57,8 @@ export const pxeInterfacesQuery = queryOptions({
   queryFn: () => apiGet<PxeHostInterfaces[]>("/api/settings/pxe/interfaces"),
 });
 
-// HttpBootPort and BootDirectory stay in configuration, so the page shows them from the overview's server values.
-// They change only with a restart, which a reconnect notices, so they are read once; this key is not the overview's,
-// which every settings push reads again.
+// HttpBootPort and BootDirectory stay in configuration, so they come from the overview's server values. They change
+// only with a restart, which a reconnect notices, so they are read once and not with the overview on every push.
 export interface PxeConfiguration {
   httpBootPort: number | null;
   bootDirectory: string | null;

@@ -110,6 +110,16 @@ export function filterLines(
   );
 }
 
+export function countByLevel(lines: readonly MachineLogEntry[]): Map<AgentLogLevel, number> {
+  const byLevel = new Map<AgentLogLevel, number>();
+
+  for (const line of lines) {
+    byLevel.set(line.level, (byLevel.get(line.level) ?? 0) + 1);
+  }
+
+  return byLevel;
+}
+
 // A row shows the first line of a message and how many follow.
 export function firstLine(message: string): { text: string; more: number } {
   const lines = message.split(/\r?\n/);

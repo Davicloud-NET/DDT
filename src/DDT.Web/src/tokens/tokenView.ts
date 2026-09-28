@@ -7,9 +7,9 @@ import { msg } from "@lingui/core/macro";
 
 import type { ApiTokenView } from "./tokens";
 
-// A revoked token stays revoked after it would have expired, so revoked comes first.
 export type TokenState = "active" | "expired" | "revoked";
 
+// A revoked token stays revoked after it would have expired, so revoked comes first.
 export function tokenState(token: ApiTokenView, now: number): TokenState {
   if (token.revokedUtc !== null) {
     return "revoked";

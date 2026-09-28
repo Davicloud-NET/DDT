@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fill, nth, press, selectKey } from "@/test/aria";
 import { json, operator, reads } from "@/test/serve";
 
-import type { LoggingSettings } from "./LoggingPanel";
+import type { LoggingSettings } from "./logging/logLevels";
 import type { ProxySettings } from "./ProxiesPanel";
 import {
   expectAccessible,

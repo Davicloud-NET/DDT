@@ -14,6 +14,8 @@ export default mergeConfig(
       globals: false,
       setupFiles: ["./src/test/setup.ts"],
       include: ["src/**/*.{test,spec}.{ts,tsx}"],
+      // A flow builder or run flow test takes 2 s alone in jsdom, and over 5 s while every worker renders one.
+      testTimeout: 15_000,
     },
   }),
 );

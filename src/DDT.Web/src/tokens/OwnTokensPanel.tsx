@@ -11,14 +11,16 @@ import { useNow } from "@/lib/useNow";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { Button } from "@/ui/Button";
-import { EmptyState, Panel, Skeleton } from "@/ui/Layout";
+import { EmptyState } from "@/ui/EmptyState";
+import { ListSkeleton } from "@/ui/ListSkeleton";
 import { Notice } from "@/ui/Notice";
+import { Panel } from "@/ui/Panel";
 import { highestRole } from "@/users/userView";
 
 import { MakeTokenDialog } from "./MakeTokenDialog";
 import { RevokeTokenDialog } from "./RevokeTokenDialog";
-import { TokenTable } from "./TokenTable";
 import { ownTokensQuery, type ApiTokenView } from "./tokens";
+import { TokenTable } from "./TokenTable";
 import { byState } from "./tokenView";
 
 // The signed-in person's API tokens on the Account page. The list is live: a token made, used or revoked, here or by
@@ -51,9 +53,7 @@ export function OwnTokensPanel({ user }: { user: CurrentUser }) {
       }
     >
       {tokens.isPending ? (
-        <div className="flex flex-col gap-3 p-4">
-          <Skeleton className="h-6 w-1/2" />
-        </div>
+        <ListSkeleton widths={["w-1/2"]} />
       ) : tokens.isError ? (
         <div className="p-4">
           <Notice tone="fail">

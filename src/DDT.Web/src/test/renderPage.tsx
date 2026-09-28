@@ -28,13 +28,15 @@ import { LiveContext } from "@/live/LiveContext";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
-import { DriversPage, FilesPage } from "@/packages/PackagesPage";
+import { DriversPage } from "@/packages/DriversPage";
+import { FilesPage } from "@/packages/FilesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 
 import { testHub, type TestHub } from "./fakeHub";
 import { serve, type Routes, type TestServer } from "./server";
+import { settle } from "./settle";
 
 export interface PageOptions {
   // Where the page opens, such as "/machines?selected=m1".
@@ -55,13 +57,6 @@ export interface RenderedPage {
   router: ReturnType<typeof testRouter>;
   // Null without a live connection.
   hub: TestHub | null;
-}
-
-// Lets the promises that are ready settle, such as a hub's start.
-export function settle(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
 }
 
 // A page as the application shows it: in the router, under a frame with a link away and the live connection. The

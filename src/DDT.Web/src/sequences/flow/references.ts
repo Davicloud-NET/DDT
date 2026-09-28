@@ -3,7 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { SequenceDraft } from "../sequenceDraft";
-import type { AccountReference, SequenceStep, StepCondition, StepKind } from "../sequences";
+import type { StepCondition } from "../sequenceConditions";
+import type { AccountReference, SequenceStep, StepKind } from "../sequences";
 import {
   conditionOf,
   conditionPath,
@@ -13,9 +14,8 @@ import {
 } from "./conditionTree";
 import { bodiesOf, walk } from "./flowTree";
 
-// Where a sequence names its variables and inputs: {{Name}} in the text fields that are templates, the variable of
-// a condition's test or of a Set variable step, and an Account input in an account reference. Names ignore case, as
-// the server's templates and conditions do.
+// Where a sequence names its variables and inputs: {{Name}} in templates, the variable of a test or a Set variable
+// step, and an Account input in an account reference. Names ignore case, as the server's do.
 
 // The text fields of each kind that are templates. A script's text is not one: scripts get the values in their
 // environment.
@@ -75,57 +75,64 @@ function names(reference: AccountReference | null | undefined, name: string): bo
   );
 }
 
+// The fields of one node that name name, in the order referencesTo lists them.
+function fieldsNaming(node: SequenceStep, name: string): string[] {
+  const fields: string[] = [];
+
+  node.conditions.forEach((condition, index) => {
+    if (sameName(condition.variable, name)) {
+      fields.push(`conditions[${String(index)}]`);
+    }
+  });
+
+  for (const field of ["when", "test", "until"] as const satisfies ConditionField[]) {
+    for (const { path, test } of testsOf(conditionOf(node, field))) {
+      if (sameName(test.variable, name)) {
+        fields.push(conditionPath(field, path));
+      }
+    }
+  }
+
+  if (node.kind === "setVariable" && sameName(node.variable, name)) {
+    fields.push("variable");
+  }
+
+  for (const field of templateFields[node.kind] ?? []) {
+    const text = textOf(node, field);
+
+    if (text !== null && templateNames(text).some((used) => sameName(used, name))) {
+      fields.push(field);
+    }
+  }
+
+  (node.shares ?? []).forEach((share, index) => {
+    if (templateNames(share.path).some((used) => sameName(used, name))) {
+      fields.push(`shares[${String(index)}].path`);
+    }
+
+    if (names(share.account, name)) {
+      fields.push(`shares[${String(index)}].account`);
+    }
+  });
+
+  if (node.kind === "runScript" && names(node.runAs, name)) {
+    fields.push("runAs");
+  }
+
+  if (node.kind === "joinDomain" && names(node.account, name)) {
+    fields.push("account");
+  }
+
+  return fields;
+}
+
 // Where the sequence names name, in document order: its nodes first, then the defaults of its variables.
 export function referencesTo(draft: SequenceDraft, name: string): Reference[] {
   const found: Reference[] = [];
 
   for (const { node } of walk(draft.steps)) {
-    const at = (field: string) => {
+    for (const field of fieldsNaming(node, name)) {
       found.push({ nodeId: node.id, field });
-    };
-
-    node.conditions.forEach((condition, index) => {
-      if (sameName(condition.variable, name)) {
-        at(`conditions[${String(index)}]`);
-      }
-    });
-
-    for (const field of ["when", "test", "until"] as const satisfies ConditionField[]) {
-      for (const { path, test } of testsOf(conditionOf(node, field))) {
-        if (sameName(test.variable, name)) {
-          at(conditionPath(field, path));
-        }
-      }
-    }
-
-    if (node.kind === "setVariable" && sameName(node.variable, name)) {
-      at("variable");
-    }
-
-    for (const field of templateFields[node.kind] ?? []) {
-      const text = textOf(node, field);
-
-      if (text !== null && templateNames(text).some((used) => sameName(used, name))) {
-        at(field);
-      }
-    }
-
-    (node.shares ?? []).forEach((share, index) => {
-      if (templateNames(share.path).some((used) => sameName(used, name))) {
-        at(`shares[${String(index)}].path`);
-      }
-
-      if (names(share.account, name)) {
-        at(`shares[${String(index)}].account`);
-      }
-    });
-
-    if (node.kind === "runScript" && names(node.runAs, name)) {
-      at("runAs");
-    }
-
-    if (node.kind === "joinDomain" && names(node.account, name)) {
-      at("account");
     }
   }
 

@@ -22,7 +22,8 @@ import { SignInPage } from "@/auth/SignInPage";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
-import { DriversPage, FilesPage } from "@/packages/PackagesPage";
+import { DriversPage } from "@/packages/DriversPage";
+import { FilesPage } from "@/packages/FilesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
@@ -72,10 +73,9 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
-// Everything inside the shell requires a session. The check runs before the route renders, so there is no flash of
-// the application for a signed out visitor. An account that still has to replace a password an administrator was
-// shown is kept on the Account page, the only one the server answers for it, until the change updates the cached
-// account.
+// The session is checked before the route renders, so a signed out visitor never sees the application flash. An
+// account that must replace a password an administrator was shown stays on the Account page, the only one the server
+// answers for it, until the change updates the cached account.
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "shell",

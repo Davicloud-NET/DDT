@@ -356,7 +356,7 @@ describe("RulesPage", () => {
     ).toBeInTheDocument();
   });
 
-  // The MAC contains of the assignment rules before the ordered list among them, and part of a choice typed.
+  // Contains on a MAC address among them, and a choice subject's value typed in part.
   it("offers every comparison the server takes for what a condition tests", async () => {
     await open([
       {

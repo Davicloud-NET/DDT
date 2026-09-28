@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/api";
 
 import type { UserRole, UserView } from "./users";
 
-// How the Users page names accounts, their roles and where those come from.
+// How DDT names accounts, their roles and where those come from.
 
 // Highest first, as a role includes the ones below it.
 export const ROLES: readonly UserRole[] = ["Administrator", "Operator", "Viewer"];
@@ -70,6 +70,25 @@ export function shownName(user: { userName: string; displayName: string | null }
 // True when the account's groups decide its role at each sign-in, so the Users page cannot change it.
 export function groupsDecideRole(user: UserView): boolean {
   return user.roleFrom === "DirectoryGroups" || user.roleFrom === "SingleSignOnGroups";
+}
+
+// What the change dialog says under an account's role: why it is locked, or what choosing one means.
+export type RoleNote = "groups" | "self" | "provisioned" | "none";
+
+export function roleNote(user: UserView, isSelf: boolean): RoleNote | null {
+  if (groupsDecideRole(user)) {
+    return "groups";
+  }
+
+  if (isSelf) {
+    return "self";
+  }
+
+  if (user.roleFrom === "Provisioned") {
+    return "provisioned";
+  }
+
+  return user.role === null ? "none" : null;
 }
 
 // Where the role in the list comes from, in a few words under it.

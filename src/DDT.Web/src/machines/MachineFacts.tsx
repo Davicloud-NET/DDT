@@ -4,7 +4,8 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import { Facts, Panel } from "@/ui/Layout";
+import { Facts } from "@/ui/Facts";
+import { Panel } from "@/ui/Panel";
 
 import { factRows } from "./facts";
 import type { MachineSummary } from "./machines";

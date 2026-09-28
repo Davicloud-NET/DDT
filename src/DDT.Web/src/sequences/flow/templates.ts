@@ -4,10 +4,8 @@
 
 import { serverText, type ServerArguments } from "@/lib/serverText";
 
-// The server's ValueTemplate, mirrored for the template field's completion and preview, and held to it by the cases
-// in src/test/fixtures/template-cases.json: text with placeholders such as PC-{{SerialNumber|alnum|right:12}}, a name
-// that ignores case and filters after bars, done from left to right. Text between double braces that is not a name
-// followed by filters, such as Jinja's {{ v1.local_hostname }}, is not a placeholder and stays as it is.
+// The server's ValueTemplate, mirrored for completion and the preview and held to it by template-cases.json. Text in
+// double braces that is not a name and filters, such as Jinja's {{ v1.local_hostname }}, stays as it is.
 
 export const TEMPLATE_FILTERS = ["upper", "lower", "trim", "alnum", "left", "right"] as const;
 

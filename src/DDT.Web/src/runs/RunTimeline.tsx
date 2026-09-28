@@ -5,7 +5,7 @@
 import { Trans } from "@lingui/react/macro";
 
 import { formattingLocale } from "@/i18n/i18n";
-import { Panel } from "@/ui/Layout";
+import { Panel } from "@/ui/Panel";
 
 import type { TimelineEntry } from "./runs";
 

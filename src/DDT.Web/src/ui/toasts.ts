@@ -53,7 +53,6 @@ export class LeavingToastQueue<T> extends ToastQueue<T> {
 
   isLeaving = (key: string): boolean => this.#leaving.has(key);
 
-  // Returns the unsubscribe.
   subscribeLeaving = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);
 

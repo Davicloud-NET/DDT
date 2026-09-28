@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { CurrentUser } from "@/auth/auth";
-import { ConfirmDialog } from "@/ui/Dialog";
+import { ConfirmDialog } from "@/ui/ConfirmDialog";
 
 import { revokeToken, upsertToken, type ApiTokenView } from "./tokens";
 import { revokedCopy } from "./tokenView";

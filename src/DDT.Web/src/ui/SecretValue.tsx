@@ -5,23 +5,13 @@
 import { Trans } from "@lingui/react/macro";
 import { useId, useState, type ReactNode } from "react";
 
-import { Button } from "./Button";
+import { CopyButton } from "./CopyButton";
 
 // A secret the server shows once, such as a one-time password or an API token: in the mono face on a well, whole and
 // selectable, with a key that copies it. Whoever shows it forgets it when its dialog closes.
 export function SecretValue({ label, value }: { label: ReactNode; value: string }) {
   const id = useId();
-  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
-
-  async function copyValue() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopy("copied");
-    } catch {
-      // The clipboard is only there on HTTPS and localhost, and a browser may refuse it.
-      setCopy("failed");
-    }
-  }
+  const [failed, setFailed] = useState(false);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -35,11 +25,16 @@ export function SecretValue({ label, value }: { label: ReactNode; value: string 
         >
           {value}
         </output>
-        <Button onPress={() => void copyValue()}>
-          {copy === "copied" ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-        </Button>
+        <CopyButton
+          text={value}
+          onCopy={(copied) => {
+            setFailed(!copied);
+          }}
+        >
+          <Trans>Copy</Trans>
+        </CopyButton>
       </div>
-      {copy === "failed" ? (
+      {failed ? (
         <span className="type-small text-fail-text">
           <Trans>The browser did not let DDT copy it. Select it and copy it yourself.</Trans>
         </span>

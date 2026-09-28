@@ -12,7 +12,7 @@ import {
   type DeploymentStepView,
   type DeploymentSummary,
 } from "@/deployments/deployments";
-import { nodeTitle } from "@/sequences/flow/flowKeyboard";
+import { nodeTitle } from "@/sequences/flow/flowLabels";
 import type { StepState } from "@/sequences/sequences";
 import type { StateTone } from "@/ui/StateTag";
 

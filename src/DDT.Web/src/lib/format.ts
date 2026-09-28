@@ -54,8 +54,7 @@ export function formatDuration(milliseconds: number): string {
   return t`${seconds} s`;
 }
 
-// "1 problem", "2 problems": for nouns that add an s. English only; messages that are translated use Lingui's
-// plural instead, and the modules still calling this move to it as their pages are rebuilt.
+// "1 problem", "2 problems": for nouns that add an s. English only; a translated message uses Lingui's plural.
 export function plural(count: number, noun: string): string {
   return `${number(count)} ${noun}${count === 1 ? "" : "s"}`;
 }

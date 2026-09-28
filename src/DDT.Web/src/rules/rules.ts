@@ -5,46 +5,37 @@
 import { t } from "@lingui/core/macro";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import { formattingLocale } from "@/i18n/i18n";
 import { apiDelete, apiErrorFrom, apiFetch, apiGet, apiPost, apiPut } from "@/lib/api";
 import { serverText, type ServerArguments } from "@/lib/serverText";
-import type { ConditionNode, InputDeclaration, SequenceProblem } from "@/sequences/sequences";
-import {
-  editedValues,
-  namedValues,
-  type EditedValue,
-  type NamedValue,
-  type ResolvedValue,
-} from "@/values/values";
+import type { ConditionNode } from "@/sequences/sequenceConditions";
+import type { InputDeclaration, SequenceProblem } from "@/sequences/sequences";
+import type { NamedValue, ResolvedValue } from "@/values/values";
 
 // Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine, the
-// first rule of the ordered list that matches the machine and chooses a sequence. MacRule and ModelRule are what the
-// assignment rules before the ordered list said; a server of this version no longer says them.
+// first matching rule that chooses one. Only older servers say MacRule and ModelRule.
 export type SequenceResolutionSource =
   "None" | "Assigned" | "Console" | "MacRule" | "ModelRule" | "Rule";
 
-// The sequence a machine would get and why. A rule only chooses: the machine still needs an approval or a
-// sign-in. problemCount above zero means the chosen sequence cannot run until it is fixed. explanation is the
-// server's English; resolutionText says it in the person's language.
-//
-// The rest previews what a run of that sequence would start with, from servers that send it. matchedRuleIds are the
-// rules that match the machine, top first. values are the values the run would have, each with its source; a run
-// that is running shows the values it started with. inputs are the chosen sequence's inputs, and inputDefaults what
-// their questions start with. valueProblems would keep the run from starting as things are now; a problem's field
-// is the value's or the input's name.
+// The sequence a machine would get and why. A rule only chooses: the machine still needs an approval or a sign-in.
 export interface MachineSequenceResolution {
   source: SequenceResolutionSource;
   sequenceId: string | null;
   sequenceName: string | null;
   ruleId: string | null;
+  // Above zero, the chosen sequence cannot run until it is fixed.
   problemCount: number;
+  // The server's English; resolutionText says it in the person's language.
   explanation: string;
   explanationCode?: string | null;
   explanationArgs?: ServerArguments | null;
+  // The rest previews what a run would start with, from servers that send it. The matching rules, top first.
   matchedRuleIds?: string[] | null;
+  // Each with its source; a running run shows the values it started with.
   values?: ResolvedValue[] | null;
   inputs?: InputDeclaration[] | null;
+  // What the inputs' questions start with.
   inputDefaults?: ResolvedValue[] | null;
+  // What would keep the run from starting now, each field the value's or the input's name.
   valueProblems?: SequenceProblem[] | null;
 }
 
@@ -72,10 +63,8 @@ export function isRuleChoice(resolution: MachineSequenceResolution): boolean {
   );
 }
 
-// The computer name a run gets from the machine's values when none is given, such as a rule's
-// PC-{{SerialNumber|alnum|right:8}}, as the server takes it: the ComputerName value that is used, when it is one Windows
-// takes. Null when nothing gives one. The preview is of the sequence the resolution names, so for another sequence
-// (sameSequence false) only what the machine, the rules and the machine roles give counts, not that sequence's default.
+// The ComputerName a run gets from its values when none is given, or null where there is none or it has a problem.
+// For a sequence other than the previewed one (sameSequence false), only machine, rule and role values count.
 export function valuesComputerName(
   resolution: MachineSequenceResolution,
   sameSequence = true,
@@ -122,13 +111,11 @@ export function ruleChoiceWords(resolution: MachineSequenceResolution): {
   }
 }
 
-// One rule of the ordered list, position counting from 0 at the top. A rule whose when holds for a machine, or that
-// has none, chooses sequenceId, sets values and gives the machine roles roleIds; the first rule to choose a sequence
-// or set a value wins it. Rules never authorize a machine. problems keep the rule from matching until they are fixed;
-// each names its field within the rule, such as when.parts[0].value, values[1].name or roleIds[0].
-// matchingMachines is how many known machines the rule matches.
+// One rule of the ordered list. Where its when holds, or it has none, it chooses sequenceId, sets values and gives
+// roleIds; the first rule to choose a sequence or set a value wins it. Rules never authorize a machine.
 export interface RuleView {
   id: string;
+  // From 0 at the top.
   position: number;
   name: string;
   description: string | null;
@@ -139,7 +126,9 @@ export interface RuleView {
   values: NamedValue[];
   roleIds: string[];
   revision: number;
+  // Keep the rule from matching until fixed; each names its field, such as when.parts[0].value or roleIds[0].
   problems: SequenceProblem[];
+  // How many known machines the rule matches.
   matchingMachines: number;
   updatedUtc: string;
   updatedBy: string | null;
@@ -219,200 +208,6 @@ export function putRule(queryClient: QueryClient, rule: RuleView): void {
       ? list
       : [...list.filter((existing) => existing.id !== rule.id), rule].sort(byPosition),
   );
-}
-
-// The list in the order of ids, each numbered by its place again. Ids the list does not have are left out, and rules
-// the ids do not name keep their order after the rest.
-export function inOrder(list: readonly RuleView[], ids: readonly string[]): RuleView[] {
-  const named = ids.flatMap((id) => list.filter((rule) => rule.id === id));
-  const rest = list.filter((rule) => !ids.includes(rule.id));
-
-  return [...named, ...rest].map((rule, position) =>
-    rule.position === position ? rule : { ...rule, position },
-  );
-}
-
-// The order after the rule moves by offset places, such as -1 for up; null where it cannot go further.
-export function movedBy(list: readonly RuleView[], id: string, offset: number): string[] | null {
-  const ids = list.map((rule) => rule.id);
-  const from = ids.indexOf(id);
-  const to = from + offset;
-
-  if (from < 0 || to < 0 || to >= ids.length) {
-    return null;
-  }
-
-  ids.splice(from, 1);
-  ids.splice(to, 0, id);
-
-  return ids;
-}
-
-// The order after the rules were dropped before or after another; null where nothing moves.
-export function droppedAt(
-  list: readonly RuleView[],
-  moving: readonly string[],
-  target: string,
-  position: "before" | "after",
-): string[] | null {
-  const ids = list.map((rule) => rule.id);
-  const staying = ids.filter((id) => !moving.includes(id));
-  const at = staying.indexOf(target);
-
-  if (at < 0) {
-    return null;
-  }
-
-  const cut = position === "before" ? at : at + 1;
-  const order = [
-    ...staying.slice(0, cut),
-    ...moving.filter((id) => ids.includes(id)),
-    ...staying.slice(cut),
-  ];
-
-  return order.every((id, index) => id === ids[index]) ? null : order;
-}
-
-// "Rule 2, Berlin office", to begin a sentence or stand alone, and "rule 2, Berlin office" inside one.
-export function ruleName(rule: Pick<RuleView, "position" | "name">): string {
-  const number = rule.position + 1;
-  const name = rule.name;
-
-  return t`Rule ${number}, ${name}`;
-}
-
-export function ruleNameInside(rule: Pick<RuleView, "position" | "name">): string {
-  const number = rule.position + 1;
-  const name = rule.name;
-
-  return t`rule ${number}, ${name}`;
-}
-
-// Rules named in a sentence, the first as it begins one: "Rule 2, Berlin office, and rule 4, Latitude laptops".
-export function ruleNames(rules: readonly Pick<RuleView, "position" | "name">[]): string {
-  const [first, ...rest] = rules;
-
-  if (first === undefined) {
-    return "";
-  }
-
-  return new Intl.ListFormat(formattingLocale(), { type: "conjunction" }).format([
-    ruleName(first),
-    ...rest.map(ruleNameInside),
-  ]);
-}
-
-// What a rule does to the machines it matches, a few words each: "Chooses Kiosk", "Sets TimeZone", "Gives Office
-// PC". A role that is gone is left out; the rule's problems say so.
-export function ruleEffects(
-  rule: Pick<RuleView, "sequenceName" | "values" | "roleIds">,
-  roles: readonly { id: string; name: string }[],
-): string[] {
-  const effects: string[] = [];
-  const sequence = rule.sequenceName;
-
-  if (sequence !== null) {
-    effects.push(t`Chooses ${sequence}`);
-  }
-
-  for (const value of rule.values) {
-    const name = value.name;
-
-    effects.push(t`Sets ${name}`);
-  }
-
-  for (const id of rule.roleIds) {
-    const role = roles.find((candidate) => candidate.id === id)?.name;
-
-    if (role !== undefined) {
-      effects.push(t`Gives ${role}`);
-    }
-  }
-
-  return effects;
-}
-
-// What a rule's drawer edits, as typed.
-export interface RuleEdit {
-  name: string;
-  description: string;
-  enabled: boolean;
-  when: ConditionNode | null;
-  sequenceId: string | null;
-  values: EditedValue[];
-  roleIds: string[];
-}
-
-export function editOf(rule: RuleView): RuleEdit {
-  return {
-    name: rule.name,
-    description: rule.description ?? "",
-    enabled: rule.enabled,
-    when: rule.when,
-    sequenceId: rule.sequenceId,
-    values: editedValues(rule.values),
-    roleIds: rule.roleIds,
-  };
-}
-
-export function emptyEdit(): RuleEdit {
-  return {
-    name: "",
-    description: "",
-    enabled: true,
-    when: null,
-    sequenceId: null,
-    values: [],
-    roleIds: [],
-  };
-}
-
-export function requestOf(revision: number, edit: RuleEdit): SaveRuleRequest {
-  const description = edit.description.trim();
-
-  return {
-    revision,
-    name: edit.name.trim(),
-    description: description === "" ? null : description,
-    enabled: edit.enabled,
-    when: edit.when,
-    sequenceId: edit.sequenceId,
-    values: namedValues(edit.values),
-    roleIds: edit.roleIds,
-  };
-}
-
-// A value's source inside a sentence, such as "rule 2" or "the machine role Office PC".
-export function ruleValueSource(value: ResolvedValue, rules: readonly RuleView[]): string {
-  const name = value.sourceName ?? "";
-
-  switch (value.source) {
-    case "Rule": {
-      const rule = rules.find((candidate) => candidate.id === value.sourceId);
-
-      if (rule === undefined) {
-        return t`the rule ${name}`;
-      }
-
-      const number = rule.position + 1;
-
-      return t`rule ${number}`;
-    }
-    case "Role":
-      return t`the machine role ${name}`;
-    case "Input":
-      return t`an answer to the sequence's question`;
-    case "Machine":
-      return t`the machine's own value`;
-    case "SequenceDefault":
-      return t`the sequence's default`;
-    case "DeploymentDefault":
-      return t`the deployment defaults`;
-    case "Fact":
-      return t`a fact of the machine`;
-    case "Step":
-      return t`the step ${name}`;
-  }
 }
 
 // A value's name with the value it takes and where from, and the sources further down that set it too.

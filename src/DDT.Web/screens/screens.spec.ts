@@ -16,7 +16,8 @@ import {
 } from "@/test/builders";
 
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
-import { node, treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
+import { treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
+import { node } from "@/test/treeSequence";
 
 import {
   accounts,

@@ -5,6 +5,7 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { upsertById } from "@/lib/listCache";
 
 export type TokenRole = "Administrator" | "Operator" | "Viewer";
 
@@ -71,10 +72,7 @@ export function upsertToken(
   token: ApiTokenView,
   ownUserId: string | null,
 ): void {
-  const upsert = (list: ApiTokenView[] | undefined) =>
-    list === undefined
-      ? list
-      : [token, ...list.filter((existing) => existing.id !== token.id)].sort(newestFirst);
+  const upsert = (list: ApiTokenView[] | undefined) => upsertById(list, token, newestFirst);
 
   queryClient.setQueryData(allTokensQuery.queryKey, upsert);
 

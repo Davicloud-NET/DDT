@@ -12,11 +12,9 @@ import {
   type SettingsFinding,
 } from "./settings";
 
-// An action outside a section's save that the server takes only with a fresh proof of identity, and sometimes only
-// once a warning is confirmed, such as installing a certificate with a new root. It asks for the password when the
-// server wants it, and asks to confirm each warning the server raises, then sends the action again with what was
-// given. With askFirst, it asks for the password before sending anything when no recent proof is held, which spares
-// sending a large body the server refuses unread.
+// An action outside a section's save that needs a fresh proof of identity, and sometimes confirmed warnings, such as
+// a certificate from a new root: it asks for what the server wants and sends the action again. askFirst asks for the
+// password before sending when no proof is held, which spares a large body the server would refuse unread.
 export function useGuardedAction<T>({
   send,
   onDone,

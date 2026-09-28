@@ -7,10 +7,8 @@ import { walk, type TreeEntry } from "@/sequences/flow/flowTree";
 import type { IfBranch, SequenceDefinition, SequenceStep } from "@/sequences/sequences";
 import { isContainer } from "@/sequences/steps";
 
-// The path a run took through its sequence's tree, worked out from the tree it was given and the steps the server
-// keeps of it, the latest visit of each node. A node in a branch an IF did not take, or inside a container that was
-// skipped, is not taken; everything else is on the path, done or still ahead. An IF that has not decided yet keeps
-// both its branches ahead.
+// The path a run took through its tree, from the tree it was given and the latest visit of each node the server keeps.
+// A node in a branch an IF did not take, or in a skipped container, is not taken; an undecided IF keeps both ahead.
 
 export type PathState =
   "done" | "running" | "failed" | "skipped" | "paused" | "waiting" | "notTaken";

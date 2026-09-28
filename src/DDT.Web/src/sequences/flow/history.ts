@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Undo and redo of a document edited in place, as copies of the whole document: each edit keeps the copy before it.
-// Typing into one field in a row is one step, as long as no second passes between keys. An undo is saved like any
-// edit. When the page takes in a copy someone else saved, the steps no longer lead anywhere and are dropped.
+// Undo and redo as copies of the whole document. Typing into one field with less than a second between keys is one
+// step; the page drops the history when it takes in someone else's copy, as the steps would lead elsewhere.
 
 export const HISTORY_DEPTH = 100;
 

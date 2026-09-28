@@ -4,13 +4,8 @@
 
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import { apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
+import { ApiError, apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
 import { reauthenticationToken, type SecretAction, type SecretState } from "@/settings/settings";
-
-// The accounts steps use, Deployment > Accounts: a script runs as one, a share is connected with one, a join uses
-// one. The password is stored encrypted and never sent to a page, which learns only whether it is set; it goes only to
-// the step that uses it, while it runs. An account is bound to its destinations: domain, the domain a join with it may
-// join, hosts, the share servers it may connect to, and runAs, whether a script may run as it.
 
 // Where a step names the account, as a sequence's problem names the field: runAs, account or shares[0].account.
 export interface AccountStepUse {
@@ -26,6 +21,8 @@ export interface AccountUse {
   steps?: AccountStepUse[] | null;
 }
 
+// An account steps use, bound to its destinations: domain, the domain a join with it may join; hosts, the share
+// servers it may connect to; runAs, whether a script may run as it.
 export interface AccountView {
   id: string;
   name: string;
@@ -33,6 +30,7 @@ export interface AccountView {
   domain: string | null;
   hosts: string[];
   runAs: boolean;
+  // Only whether one is set: the password goes only to the step that uses it, never to a page.
   password: SecretState;
   usedBy: AccountUse[];
   revision: number;
@@ -75,6 +73,16 @@ async function send<T>(method: string, path: string, body?: unknown): Promise<T>
   }
 
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+}
+
+// Whether the server refused because it wants the password of the person again. An API token's 403 is final, since
+// only someone signed in on the web may change accounts.
+export function wantsReauthentication(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 403 &&
+    error.problem?.code !== "stepAccount.apiToken"
+  );
 }
 
 export function createAccount(request: SaveAccountRequest): Promise<AccountView> {

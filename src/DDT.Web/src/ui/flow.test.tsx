@@ -14,7 +14,8 @@ import { branch, leaf } from "@/test/trees";
 
 import { FlowNode } from "./FlowNode";
 import { FlowViewport } from "./FlowViewport";
-import { FlowDots, FlowWires, type WireTone } from "./FlowWires";
+import { FlowDots } from "./FlowDots";
+import { FlowWires, type WireTone } from "./FlowWires";
 import { Minimap } from "./Minimap";
 
 // In a landmark, as a page puts them.

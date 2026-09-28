@@ -13,7 +13,7 @@ import { LiveContext } from "@/live/LiveContext";
 import { fill, press } from "@/test/aria";
 import { logLine, stepView } from "@/test/builders";
 import { testHub, type TestHub } from "@/test/fakeHub";
-import { settle } from "@/test/renderPage";
+import { settle } from "@/test/settle";
 
 import type { MachineLogEntry } from "./log";
 import { LogPanel } from "./LogPanel";

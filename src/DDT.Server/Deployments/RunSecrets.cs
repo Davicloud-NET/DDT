@@ -8,6 +8,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
+using DDT.Core.Sequences;
 using DDT.Core.Templates;
 using DDT.Server.Accounts;
 using DDT.Server.Data;
@@ -64,9 +65,16 @@ public sealed class RunSecrets(
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        (string? answerFile, string? problem) = renderer.Render(inputs!, unattend, language, password, TemplateValues(machine, run!));
+
+        if (problem is not null)
+        {
+            return (null, problem);
+        }
+
         Audit(run!, machine, address, $"The answer file of step {step.Name} ({stepId:D}) of {run!.Title}.");
 
-        return (renderer.Render(inputs!, unattend, language, password), null);
+        return (answerFile, null);
     }
 
     // The domain is the one configured when the run started: a domain named anywhere else could send the join
@@ -120,9 +128,14 @@ public sealed class RunSecrets(
             return (null, "The configured domain changed after the run started, so its account is not for this run. Assign the sequence again.");
         }
 
-        Audit(run!, machine, address, $"The domain join credentials of step {step.Name} ({stepId:D}) of {run!.Title}, for {name}.");
+        (string? organizationalUnit, string? unitProblem) = OrganizationalUnit(join, inputs.DomainOrganizationalUnit, TemplateValues(machine, run!));
 
-        string? organizationalUnit = string.IsNullOrWhiteSpace(join.OrganizationalUnit) ? inputs.DomainOrganizationalUnit : join.OrganizationalUnit.Trim();
+        if (unitProblem is not null)
+        {
+            return (null, unitProblem);
+        }
+
+        Audit(run!, machine, address, $"The domain join credentials of step {step.Name} ({stepId:D}) of {run!.Title}, for {name}.");
 
         return (new AgentJoinDomainCredentials(name, organizationalUnit, domain.UserName.Trim(), domain.Password), null);
     }
@@ -326,9 +339,15 @@ public sealed class RunSecrets(
             return (null, $"The {account.Describe} names no domain, so it joins none.");
         }
 
-        string? organizationalUnit = !string.IsNullOrWhiteSpace(join.OrganizationalUnit)
-            ? join.OrganizationalUnit.Trim()
-            : AccountRules.Same(domain, inputs.DomainName) ? inputs.DomainOrganizationalUnit : null;
+        (string? organizationalUnit, string? unitProblem) = OrganizationalUnit(
+            join,
+            AccountRules.Same(domain, inputs.DomainName) ? inputs.DomainOrganizationalUnit : null,
+            TemplateValues(machine, run));
+
+        if (unitProblem is not null)
+        {
+            return (null, unitProblem);
+        }
 
         Audit(run, machine, address, $"The domain join credentials of step {join.Name} ({join.Id:D}) of {run.Title}, from the {account.Describe}, for {domain}.");
 
@@ -398,6 +417,43 @@ public sealed class RunSecrets(
         }
 
         return (new StepAccount($"account given for the input {input.Name}", given.UserName, given.Password, given.Domain, given.Hosts, given.RunAs), null);
+    }
+
+    // The step's organizational unit worked out from the run's values, or else the default; one a value makes that the
+    // domain would refuse is refused here, before the account leaves the server.
+    private static (string? OrganizationalUnit, string? Problem) OrganizationalUnit(JoinDomainStep join, string? fallback, Func<string, string?> values)
+    {
+        if (string.IsNullOrWhiteSpace(join.OrganizationalUnit))
+        {
+            return (fallback, null);
+        }
+
+        string written = join.OrganizationalUnit.Trim();
+
+        if (!ValueTemplate.TryRender(written, values, out string rendered, out TemplateProblem? problem))
+        {
+            return (null, $"The organizational unit {written} of step {join.Name} cannot be worked out from the run's values. {problem!.Message().Text}");
+        }
+
+        string unit = rendered.Trim();
+
+        return DeploymentOptionsValidation.OrganizationalUnitMessage(unit) is { } refused
+            ? (null, $"The organizational unit {unit} of step {join.Name} cannot be used. {refused.Text}")
+            : (unit, null);
+    }
+
+    // What the answer file's and the join's templates read: the values the run started with and the variables its steps
+    // set since, by name, and the machine's facts, which no value overrides but the computer name.
+    private static Func<string, string?> TemplateValues(Machine machine, Deployment run)
+    {
+        Dictionary<string, string> values = new(StartValues(run), StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string name, string value) in RunVariables.Read(run.Variables) ?? new Dictionary<string, string>())
+        {
+            values[name] = value;
+        }
+
+        return (MachineVariableReader.Read(machine) with { ComputerName = null, Variables = values }).Value;
     }
 
     // The values the run started with, by name ignoring case: those used, not those they overrode. Variables the agent

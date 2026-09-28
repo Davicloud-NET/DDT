@@ -88,6 +88,52 @@ public sealed class UnattendRendererTests
         Assert.Null(settings.LocalAdministrator);
     }
 
+    // The agent fetches the answer file after steps may have changed the run's variables, so its templates and the
+    // settings the run started with are worked out from them then, and checked as a sequence's settings are.
+    [Fact]
+    public void TheStepsTemplatesAndTheRunsSettingsComeFromTheValuesWhenTheFileIsMade()
+    {
+        RunInputs inputs = RunInputs.Capture(
+            new Machine { SmbiosUuid = "uuid", PrimaryMac = "020000000001", AssignedName = "PC-0001" },
+            new DeploymentOptions { TimeZone = "UTC", Locale = "de-AT" },
+            DateTimeOffset.UtcNow);
+        WriteUnattendStep step = new() { Id = Guid.NewGuid(), Name = "Answer file", TimeZone = "{{Zone}}", Keyboard = "{{Layout|lower}}" };
+        Dictionary<string, string> values = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Zone"] = "W. Europe Standard Time",
+            ["Layout"] = "0407:00000407",
+            ["ComputerName"] = "PC-0002",
+            ["Locale"] = "fr-FR",
+        };
+
+        (UnattendSettings? settings, string? problem) = new UnattendRenderer().Settings(inputs, step, "en-US", null, name => values.GetValueOrDefault(name));
+
+        Assert.Null(problem);
+        Assert.Equal(
+            ("PC-0002", "W. Europe Standard Time", "fr-FR", "0407:00000407"),
+            (settings!.ComputerName, settings.TimeZone, settings.Locale, settings.Keyboard));
+
+        // Without values the run's own settings stand, as for a run that started before it had values.
+        (UnattendSettings? plain, _) = new UnattendRenderer().Settings(inputs, step with { TimeZone = null, Keyboard = null }, "en-US", null, _ => null);
+        Assert.Equal(("PC-0001", "UTC", "de-AT"), (plain!.ComputerName, plain.TimeZone, plain.Locale));
+    }
+
+    [Theory]
+    [InlineData("{{Missing}}", null, "The answer file's time zone, {{Missing}}, cannot be worked out from the run's values.")]
+    [InlineData("{{Zone}}", null, "The answer file's time zone, Mars Standard Time, is not a Windows time zone.")]
+    [InlineData(null, "PC 0002", "The computer name PC 0002 cannot be used in the answer file.")]
+    public void RefusesWhatTheValuesMakeThatWindowsWouldNotTake(string? timeZone, string? computerName, string expected)
+    {
+        RunInputs inputs = RunInputs.Capture(new Machine { SmbiosUuid = "uuid", PrimaryMac = "020000000001" }, new DeploymentOptions(), DateTimeOffset.UtcNow);
+        WriteUnattendStep step = new() { Id = Guid.NewGuid(), Name = "Answer file", TimeZone = timeZone };
+        Dictionary<string, string?> values = new(StringComparer.OrdinalIgnoreCase) { ["Zone"] = "Mars Standard Time", ["ComputerName"] = computerName };
+
+        (string? answerFile, string? problem) = new UnattendRenderer().Render(inputs, step, "en-US", null, name => values.GetValueOrDefault(name));
+
+        Assert.Null(answerFile);
+        Assert.StartsWith(expected, problem, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AKeyboardDefaultsToTheConfiguredLocale()
     {

@@ -47,9 +47,9 @@ describe("templates", () => {
 describe("referencesTo", () => {
   it("names every place that uses a variable or an input, as a problem names its field", () => {
     expect(referencesTo(draft, "Office")).toEqual([
+      { nodeId: id(12), field: "organizationalUnit" },
       { nodeId: id(9), field: "variable" },
       { nodeId: id(9), field: "value" },
-      { nodeId: id(12), field: "organizationalUnit" },
     ]);
     expect(referencesTo(draft, "SerialNumber")).toEqual([
       { nodeId: null, field: "variables[1].default" },
@@ -63,11 +63,15 @@ describe("referencesTo", () => {
     expect(referencesTo(draft, "LastExitCode")).toEqual([{ nodeId: id(6), field: "until" }]);
     expect(referencesTo(draft, "MemoryMegabytes")).toEqual([
       { nodeId: id(7), field: "test.parts[1]" },
+      { nodeId: id(10), field: "when.parts[10]" },
+      { nodeId: id(10), field: "when.parts[11]" },
+      { nodeId: id(10), field: "when.parts[12]" },
+      { nodeId: id(10), field: "when.parts[13]" },
     ]);
   });
 
   it("says which nodes use a name, each once", () => {
-    expect(usedBy(draft, "Office")).toEqual([id(9), id(12)]);
+    expect(usedBy(draft, "Office")).toEqual([id(12), id(9)]);
     expect(usedBy(draft, "Model")).toEqual([id(10)]);
     expect(usedBy(draft, "Nothing")).toEqual([]);
   });
@@ -76,8 +80,8 @@ describe("referencesTo", () => {
     const renamed = renameReferences(draft, "Model", "Hardware");
 
     expect(referencesTo(renamed, "Model")).toEqual([]);
-    expect(referencesTo(renamed, "Hardware")).toHaveLength(15);
-    expect(renameReferences(draft, "JoinAccount", "Joiner").steps.at(-3)).toMatchObject({
+    expect(referencesTo(renamed, "Hardware")).toHaveLength(10);
+    expect(renameReferences(draft, "JoinAccount", "Joiner").steps.at(-2)).toMatchObject({
       account: { accountId: null, input: "Joiner" },
     });
   });

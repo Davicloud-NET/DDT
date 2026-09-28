@@ -19,6 +19,7 @@ public static class DeploymentServiceCollectionExtensions
         services.AddSingleton<UnattendRenderer>();
         services.AddScoped<DeploymentService>();
         services.AddScoped<RunReports>();
+        services.AddScoped<RunValues>();
         services.AddScoped<RunSecrets>();
 
         // The passwords of stored accounts and of accounts given for one run, which reach only the steps of runs.

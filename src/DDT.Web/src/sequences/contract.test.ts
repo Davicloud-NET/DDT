@@ -34,9 +34,10 @@ import {
 
 // The server writes the fixtures (SequenceFixtureTests): its Install Windows template, a document of version 2 with
 // every kind of step, phase, interpreter and condition operator of that version, and one of version 3 with every
-// node, condition, operator, variable and input. So a field, kind or value renamed on one side only fails here. The
-// mirror's own defaults, from newStep and newCondition, stand for its types; null stands for a text or a number that
-// may be missing.
+// node, condition, operator, variable and input. The one of version 3 runs, and a sequence either installs Windows or
+// writes a raw disk image, so it leaves the steps of the latter to the one of version 2. So a field, kind or value
+// renamed on one side only fails here. The mirror's own defaults, from newStep and newCondition, stand for its types;
+// null stands for a text or a number that may be missing.
 function sameShape(value: unknown, mirror: unknown): boolean {
   if (mirror === null) {
     return value === null || typeof value === "string" || typeof value === "number";
@@ -145,7 +146,9 @@ describe("the sequence mirror", () => {
   });
 
   it("knows exactly the server's kinds of step", () => {
-    expect(new Set(nodes.map((node) => node.kind))).toEqual(new Set(stepKinds));
+    expect(new Set([...nodes, ...everyStep.steps].map((node) => node.kind))).toEqual(
+      new Set(stepKinds),
+    );
   });
 
   it("has exactly the server's fields for each kind, with the same types", () => {

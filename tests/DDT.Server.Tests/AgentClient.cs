@@ -47,6 +47,13 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RunReportAsync(Guid machineId, string token, Guid runId, AgentRunReport report) =>
         SendAsync(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId), token, JsonContent.Create(report, options: TestJson.Options));
 
+    public Task<HttpResponseMessage> RunAnswersAsync(Guid machineId, string token, Guid runId, params InputAnswer[] answers) =>
+        SendAsync(
+            HttpMethod.Post,
+            AgentRoutes.RunAnswers(machineId, runId),
+            token,
+            JsonContent.Create(new AgentInputAnswers(answers), options: TestJson.Options));
+
     public Task<HttpResponseMessage> RunFileAsync(
         Guid machineId,
         string token,

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
@@ -10,7 +9,6 @@ using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using DDT.Core.Templates;
-using DDT.Core.Unattend;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
@@ -84,6 +82,12 @@ public static class SequenceChecks
         }
 
         problems.AddRange(SequenceAccountChecks.Check(definition, references));
+
+        // The validator leaves the names only rules and machine roles can give a value to the server, which knows them. A
+        // name nothing gives one is most likely a slip, but a rule added later may still give it one.
+        warnings.AddRange(analysis.ValueNames
+            .Where(name => !references.ValueNames.Contains(name))
+            .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
 
         return new SequenceValidation(problems, warnings);
     }
@@ -197,17 +201,17 @@ public static class SequenceChecks
 
     private static void CheckUnattend(WriteUnattendStep step, SequenceReferences references, Action<string?, ServerMessage> add)
     {
-        if (Value(step.TimeZone) is { } timeZone && !WindowsTimeZones.IsValidId(timeZone))
+        if (Value(step.TimeZone) is { } timeZone && !WindowsSettings.IsTimeZone(timeZone))
         {
             add("timeZone", ServerMessages.SequenceTimeZone.With("timeZone", timeZone));
         }
 
-        if (Value(step.Locale) is { } locale && !IsSpecificCulture(locale))
+        if (Value(step.Locale) is { } locale && !WindowsSettings.IsLocale(locale))
         {
             add("locale", ServerMessages.SequenceLocale.With("locale", locale));
         }
 
-        if (Value(step.Keyboard) is { } keyboard && !keyboard.Split(';').All(IsInputLocale))
+        if (Value(step.Keyboard) is { } keyboard && !WindowsSettings.IsKeyboard(keyboard))
         {
             add("keyboard", ServerMessages.SequenceKeyboard.With("keyboard", keyboard));
         }
@@ -231,38 +235,6 @@ public static class SequenceChecks
         {
             add("organizationalUnit", problem);
         }
-    }
-
-    // A neutral culture such as de names no region, and Windows needs one for its locales.
-    private static bool IsSpecificCulture(string name)
-    {
-        try
-        {
-            return !CultureInfo.GetCultureInfo(name, predefinedOnly: true).IsNeutralCulture;
-        }
-        catch (CultureNotFoundException)
-        {
-            return false;
-        }
-    }
-
-    // A culture name, a language and keyboard layout pair such as 0407:00000407, or a language and a text service
-    // written as two GUIDs, as Windows lists them.
-    private static bool IsInputLocale(string part)
-    {
-        string value = part.Trim();
-
-        if (value.Length > 5 && value[4] == ':' && value[..4].All(char.IsAsciiHexDigit))
-        {
-            string layout = value[5..];
-
-            return (layout.Length == 8 && layout.All(char.IsAsciiHexDigit))
-                || (layout.Length == 76
-                    && Guid.TryParseExact(layout[..38], "B", out _)
-                    && Guid.TryParseExact(layout[38..], "B", out _));
-        }
-
-        return value.Length > 0 && IsSpecificCulture(value);
     }
 
     // A setting as it is written, or null when it is empty or a template, whose values are checked when the run takes

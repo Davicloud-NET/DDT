@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 
@@ -15,11 +16,17 @@ internal static class RunRequests
         Guid machineId,
         Guid sequenceId,
         string? computerName = null,
-        bool allowSecureBootMismatch = false) =>
-        client.PostAsync($"/api/machines/{machineId}/deployments", new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch));
+        bool allowSecureBootMismatch = false,
+        IReadOnlyList<InputAnswer>? answers = null) =>
+        client.PostAsync($"/api/machines/{machineId}/deployments", new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch, answers));
 
-    public static async Task<DeploymentSummary> AssignedAsync(this SignedInClient client, Guid machineId, Guid sequenceId, string? computerName = null) =>
-        (await RegisteredMachine.ReadAsync<MachineSummary>(await client.AssignAsync(machineId, sequenceId, computerName))).Deployment!;
+    public static async Task<DeploymentSummary> AssignedAsync(
+        this SignedInClient client,
+        Guid machineId,
+        Guid sequenceId,
+        string? computerName = null,
+        IReadOnlyList<InputAnswer>? answers = null) =>
+        (await RegisteredMachine.ReadAsync<MachineSummary>(await client.AssignAsync(machineId, sequenceId, computerName, answers: answers))).Deployment!;
 
     public static Task<HttpResponseMessage> EndCurrentAsync(this SignedInClient client, Guid machineId) =>
         client.DeleteAsync($"/api/machines/{machineId}/deployments/current");
@@ -31,6 +38,11 @@ internal static class RunRequests
         this SignedInClient client,
         Guid machineId,
         Guid? expectedSequenceId,
-        bool allowSecureBootMismatch = false) =>
-        client.PostAsync($"/api/machines/{machineId}/approve", new ApproveMachineRequest(expectedSequenceId, allowSecureBootMismatch));
+        bool allowSecureBootMismatch = false,
+        IReadOnlyList<InputAnswer>? answers = null) =>
+        client.PostAsync($"/api/machines/{machineId}/approve", new ApproveMachineRequest(expectedSequenceId, allowSecureBootMismatch, answers));
+
+    // Answers the inputs the machine's run waits for, as its page does.
+    public static Task<HttpResponseMessage> AnswerAsync(this SignedInClient client, Guid machineId, params InputAnswer[] answers) =>
+        client.PostAsync($"/api/machines/{machineId}/deployments/current/answers", new AnswerInputsRequest(answers));
 }

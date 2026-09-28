@@ -148,6 +148,11 @@ msgid "''{value}'' is not an IPv4 address."
 msgstr "''{value}'' is not an IPv4 address."
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerNotAChoice"
+msgid "''{value}'' is not one of the choices of {label}."
+msgstr "''{value}'' is not one of the choices of {label}."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 msgstr "''{value}'' must be written as DOMAIN\\user or user@domain.example."
@@ -532,9 +537,24 @@ msgid "{label} <0>(required)</0>"
 msgstr "{label} <0>(required)</0>"
 
 #: src/lib/serverMessages.ts
+msgctxt "deployment.answerTwice"
+msgid "{label} is answered twice. Give one answer."
+msgstr "{label} is answered twice. Give one answer."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerYesNo"
+msgid "{label} is answered with yes or no."
+msgstr "{label} is answered with yes or no."
+
+#: src/lib/serverMessages.ts
 msgctxt "values.inputRequired"
 msgid "{label} needs an answer before the run can start."
 msgstr "{label} needs an answer before the run can start."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerTooLong"
+msgid "{label} takes at most {max} characters."
+msgstr "{label} takes at most {max} characters."
 
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
@@ -762,6 +782,11 @@ msgid "{name} is the last enabled administrator. Make another account an adminis
 msgstr "{name} is the last enabled administrator. Make another account an administrator first."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.valueUndefined"
+msgid "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
+msgstr "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
+
+#: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
 msgid "{name} signs in through single sign-on and has no password in DDT."
 msgstr "{name} signs in through single sign-on and has no password in DDT."
@@ -936,6 +961,11 @@ msgstr "{sequence} erases a disk, and this machine has more than one. Approve it
 msgctxt "deployment.erasesOneOfManyDisks"
 msgid "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
 msgstr "{sequence} erases a disk, and this machine has more than one. Sign in at it and choose the disk there."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.approveThenNameValue"
+msgid "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a sequence, then assign the sequence with a computer name."
+msgstr "{sequence} names the machine with its ComputerName value, and nothing gives this machine one yet. Approve it without a sequence, then assign the sequence with a computer name."
 
 #: src/machines/AssignDialog.tsx
 msgid "{sequenceName} does not erase the disk of {label}."
@@ -1118,6 +1148,11 @@ msgstr "{when} by {by}"
 #: src/tokens/TokenTable.tsx
 msgid "{when} from <0>{address}</0>"
 msgstr "{when} from <0>{address}</0>"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerAskedElsewhere"
+msgid "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}"
+msgstr "{where, select, web {{label} is asked on the web, not at the machine.} other {{label} is asked at the machine, not on the web.}}"
 
 #: src/sequences/SequenceConflict.tsx
 msgid "{who} saved this sequence at {when} while you were editing."
@@ -1991,6 +2026,11 @@ msgstr "An administrator creates task sequences here. Until then, no machine can
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "An answer is required"
 msgstr "An answer is required"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerNoInput"
+msgid "An answer names no input. Load the page again."
+msgstr "An answer names no input. Load the page again."
 
 #: src/lib/serverMessages.ts
 msgctxt "account.apiTokenCannotChange"
@@ -8874,6 +8914,11 @@ msgstr "The sequence"
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "The sequence already has a variable or an input of that name."
 msgstr "The sequence already has a variable or an input of that name."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.answerUnknown"
+msgid "The sequence asks nothing called {name}. Load the page again."
+msgstr "The sequence asks nothing called {name}. Load the page again."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.cannotGoOn"

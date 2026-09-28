@@ -35,6 +35,9 @@ public sealed class DeployingMachine : IDisposable
     // The newest run token a report or a registration handed out, as the agent keeps it on disk.
     public string? RunToken { get; private set; }
 
+    // The answer to the last report the server accepted.
+    public AgentRunReportResult? LastReported { get; private set; }
+
     public static AgentDisk Disk(int number, string model = "Msft Virtual Disk", long sizeBytes = 64L * 1024 * 1024 * 1024) =>
         new(number, model, sizeBytes, "SCSI", 0);
 
@@ -122,6 +125,7 @@ public sealed class DeployingMachine : IDisposable
         if (response.IsSuccessStatusCode)
         {
             AgentRunReportResult result = (await response.Content.ReadFromJsonAsync<AgentRunReportResult>(TestJson.Options))!;
+            LastReported = result;
             Token = result.Token;
             ResumeToken = result.ResumeToken;
             RunToken = result.RunToken ?? RunToken;

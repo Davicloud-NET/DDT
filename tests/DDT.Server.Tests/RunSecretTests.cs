@@ -9,7 +9,9 @@ using System.Text;
 using System.Xml.Linq;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
+using DDT.Contracts.Values;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
@@ -187,6 +189,70 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         // The answer file step is over, and a step that joins nothing gets no account.
         Assert.Equal(HttpStatusCode.Conflict, (await machine.Agent.RunCredentialsAsync(machine.Id, service.Token!, run.Id, run.Sequence.Steps[2].Id)).StatusCode);
     }
+
+    // The templates of the answer file and the join are worked out from the run's values when the agent fetches them,
+    // with the variables its steps set by then.
+    [Fact]
+    public async Task TheAnswerFileAndTheJoinWorkTheirTemplatesOutFromTheRunsValues()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(
+            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", TimeZone = "{{Zone}}" },
+            new JoinDomainStep { Id = Guid.NewGuid(), Name = "Join", OrganizationalUnit = "OU={{Site}},DC=corp,DC=example" });
+        using DeployingMachine _ = machine;
+        await ValuesAsync(administrator, machine, new NamedValue("Zone", "UTC"), new NamedValue("Site", "Lab"));
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 2));
+        HttpResponseMessage answer = await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id);
+        XDocument xml = XDocument.Parse(await answer.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal("UTC", xml.Descendants(s_unattend + "TimeZone").Single().Value);
+        Assert.Equal("PC-0005", xml.Descendants(s_unattend + "ComputerName").Single().Value);
+
+        // A step changed the site since the run started.
+        await machine.ReportOkAsync(
+            run.Id,
+            Reached(run, 3, SequencePhase.Windows) with { Variables = new Dictionary<string, string> { ["Site"] = "Kiosks" } });
+        AgentJoinDomainCredentials credentials = await RegisteredMachine.ReadAsync<AgentJoinDomainCredentials>(
+            await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id));
+
+        Assert.Equal("OU=Kiosks,DC=corp,DC=example", credentials.OrganizationalUnit);
+    }
+
+    // What the values make is checked as the settings are, before a password leaves the server.
+    [Fact]
+    public async Task WhatWindowsWouldRefuseIsNotServed()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(
+            new WriteUnattendStep { Id = Guid.NewGuid(), Name = "Answer file", TimeZone = "{{Zone}}", LocalAdministrator = true },
+            new JoinDomainStep { Id = Guid.NewGuid(), Name = "Join", OrganizationalUnit = "OU={{Nowhere}},DC=corp,DC=example" });
+        using DeployingMachine _ = machine;
+        await ValuesAsync(administrator, machine, new NamedValue("Zone", "Mars Standard Time"));
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 2));
+        HttpResponseMessage answer = await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, answer.StatusCode);
+        Assert.Equal("The answer file's time zone, Mars Standard Time, is not a Windows time zone.", await TestDatabase.TitleAsync(answer));
+
+        await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
+        HttpResponseMessage join = await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id);
+
+        Assert.Equal(HttpStatusCode.Conflict, join.StatusCode);
+        Assert.StartsWith(
+            "The organizational unit OU={{Nowhere}},DC=corp,DC=example of step Join cannot be worked out from the run's values.",
+            await TestDatabase.TitleAsync(join),
+            StringComparison.Ordinal);
+        Assert.Empty(await SecretReadsAsync(run.Id));
+    }
+
+    // A rule that sets these values for the machine alone.
+    private static Task<RuleView> ValuesAsync(SignedInClient administrator, DeployingMachine machine, params NamedValue[] values) =>
+        administrator.CreatedRuleAsync(RuleRequests.Rule(
+            $"Values for {machine.Registration.PrimaryMac}",
+            new TestCondition(MachineVariableNames.MacAddress, ConditionOperator.Equals, machine.Registration.PrimaryMac),
+            values: values));
 
     // Only the join gets the account, not any other step that runs in Windows.
     [Fact]

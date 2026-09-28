@@ -45,6 +45,9 @@ public static class LiveEvents
     // Carries a RunStepChangedEvent, only to the connections that watch the machine.
     public const string RunStepChanged = "runStepChanged";
 
+    // Carries a RunVariablesChangedEvent, only to the connections that watch the machine.
+    public const string RunVariablesChanged = "runVariablesChanged";
+
     // Carries a MachineLogAppendedEvent, only to the connections that watch the machine.
     public const string MachineLogAppended = "machineLogAppended";
 

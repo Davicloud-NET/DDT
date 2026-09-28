@@ -13,8 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.E2E;
 
-// A signed-in browser's connection to the live hub. It uses long polling, so every message the hub sends passes
-// through a handler that keeps it, and it records the pushes for the machines it watches.
+// A signed-in browser's connection to the live hub, which records the pushes for the machines it watches.
+// Long polling passes every message the hub sends through RecordingHandler, which keeps it for AssertClean.
 internal sealed class LiveRecorder : IAsyncDisposable
 {
     private readonly ConcurrentQueue<string> _traffic = new();
@@ -82,10 +82,8 @@ internal sealed class LiveRecorder : IAsyncDisposable
 
     public Task<MachineLogAppendedEvent> WaitForLogPushAsync(Guid machineId, TimeSpan timeout, Func<string> diagnostics, CancellationToken cancellationToken) =>
         Eventually.GetAsync(
-            $"A machineLogAppended push for machine {machineId}",
-            timeout,
+            new Expectation($"A machineLogAppended push for machine {machineId}", timeout, diagnostics),
             _ => Task.FromResult(LogPushes(machineId).FirstOrDefault()),
-            diagnostics,
             cancellationToken);
 
     public async ValueTask DisposeAsync() => await _connection.DisposeAsync().ConfigureAwait(false);

@@ -6,9 +6,8 @@ using System.Diagnostics;
 
 namespace DDT.E2E;
 
-// The agent as build\Publish-Agent.ps1 publishes it from this repository, so the tests never run an agent older than
-// its sources; unchanged sources publish in seconds. NativeAOT links it with the Visual C++ build tools, whose absence
-// skips the tests. Any other failure, such as an agent that does not compile, fails them.
+// Publishes the agent with build\Publish-Agent.ps1, so the tests never run an agent older than its sources.
+// Without the Visual C++ build tools, which NativeAOT links with, the tests are skipped; any other failure fails them.
 internal static class AgentPublisher
 {
     public const string FileName = "ddt-agent.exe";

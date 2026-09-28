@@ -21,9 +21,8 @@ using Xunit;
 
 namespace DDT.E2E;
 
-// One host for all tests, with the agent published from this repository, a signed-in administrator, a live
-// connection, and the images and packages the sequences use. Everything lives in a temporary directory, which goes
-// with the host, the agents and the dry runs' disks when the tests end.
+// The host, the published agent, a signed-in administrator, a live connection and the uploads all dry runs share.
+// Everything lives in a temporary directory, which goes with the dry runs' disks when the tests end.
 public sealed partial class DryRunLab : IAsyncLifetime
 {
     public const string LocalAdministratorPassword = "E2e-Local-Admin-7Qx4";
@@ -123,15 +122,14 @@ public sealed partial class DryRunLab : IAsyncLifetime
         await DeleteDirectoryAsync(_directory).ConfigureAwait(false);
     }
 
-    // A new machine, or with dryRunId the machine an earlier agent stood in for, whose disk it goes on with. With
-    // slowDownloads, the agent reaches the host through the slow relay, and with secureBoot the machine says Secure Boot
-    // is on.
+    // dryRunId goes on with an earlier agent's machine and disk; slowDownloads reaches the host through SlowRelay.
     internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false)
     {
         int id = dryRunId ?? NewDryRunId();
         string log = Path.Combine(_directory, $"agent-{id}-{Environment.TickCount64}.log");
+        Uri server = slowDownloads ? _relay!.Url : Host.Url;
 
-        return AgentProcess.Start(_agentPath!, slowDownloads ? _relay!.Url : Host.Url, Host.RootCertificatePath, id, log, secureBoot);
+        return AgentProcess.Start(new AgentStartInfo(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot });
     }
 
     internal Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken) =>
@@ -140,10 +138,11 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal async Task<SequenceView> CreateSequenceAsync(string name, SequenceDefinition definition, CancellationToken cancellationToken)
     {
         SequenceView sequence = await Api.SendAsync(
-            HttpMethod.Post,
-            "api/sequences",
-            new CreateSequenceRequest($"{name} {Guid.NewGuid():N}", "Made by the end-to-end tests.", definition),
-            DdtJsonContext.Default.CreateSequenceRequest,
+            new JsonRequest<CreateSequenceRequest>(
+                HttpMethod.Post,
+                "api/sequences",
+                new CreateSequenceRequest($"{name} {Guid.NewGuid():N}", "Made by the end-to-end tests.", definition),
+                DdtJsonContext.Default.CreateSequenceRequest),
             DdtJsonContext.Default.SequenceView,
             HttpStatusCode.Created,
             cancellationToken).ConfigureAwait(false);
@@ -155,47 +154,41 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     internal Task<MachineSummary> WaitForMachineAsync(AgentProcess agent, CancellationToken cancellationToken) =>
         Eventually.GetAsync(
-            $"The registration of {agent.SerialNumber}",
-            TimeSpan.FromMinutes(1),
+            new Expectation($"The registration of {agent.SerialNumber}", TimeSpan.FromMinutes(1), () => agent.Output.Tail()),
             async call => (await Api.GetAsync("api/machines", DdtJsonContext.Default.IReadOnlyListMachineSummary, call).ConfigureAwait(false))
                 .FirstOrDefault(machine => machine.SerialNumber == agent.SerialNumber),
-            () => agent.Output.Tail(),
             cancellationToken);
 
     internal Task<MachineSummary> ApproveAsync(Guid machineId, Guid? expectedSequenceId, CancellationToken cancellationToken) =>
         Api.SendAsync(
-            HttpMethod.Post,
-            $"api/machines/{machineId:D}/approve",
-            new ApproveMachineRequest(expectedSequenceId),
-            DdtJsonContext.Default.ApproveMachineRequest,
+            new JsonRequest<ApproveMachineRequest>(
+                HttpMethod.Post,
+                $"api/machines/{machineId:D}/approve",
+                new ApproveMachineRequest(expectedSequenceId),
+                DdtJsonContext.Default.ApproveMachineRequest),
             DdtJsonContext.Default.MachineSummary,
             HttpStatusCode.OK,
             cancellationToken);
 
-    // answers are the answers to the sequence's inputs asked on the web.
-    internal Task<MachineSummary> AssignAsync(
-        Guid machineId,
-        Guid sequenceId,
-        string? computerName,
-        CancellationToken cancellationToken,
-        bool allowSecureBootMismatch = false,
-        IReadOnlyList<InputAnswer>? answers = null) =>
+    internal Task<MachineSummary> AssignAsync(Guid machineId, AssignSequenceRequest assignment, CancellationToken cancellationToken) =>
         Api.SendAsync(
-            HttpMethod.Post,
-            $"api/machines/{machineId:D}/deployments",
-            new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch, answers),
-            DdtJsonContext.Default.AssignSequenceRequest,
+            AssignmentRequest(machineId, assignment),
             DdtJsonContext.Default.MachineSummary,
             HttpStatusCode.OK,
             cancellationToken);
+
+    // Also for a test that expects the server to refuse the assignment.
+    internal static JsonRequest<AssignSequenceRequest> AssignmentRequest(Guid machineId, AssignSequenceRequest assignment) =>
+        new(HttpMethod.Post, $"api/machines/{machineId:D}/deployments", assignment, DdtJsonContext.Default.AssignSequenceRequest);
 
     // As the machine's page answers the inputs its run waits for at its start.
     internal Task<DeploymentView> AnswerAsync(Guid machineId, IReadOnlyList<InputAnswer> answers, CancellationToken cancellationToken) =>
         Api.SendAsync(
-            HttpMethod.Post,
-            $"api/machines/{machineId:D}/deployments/current/answers",
-            new AnswerInputsRequest(answers),
-            DdtJsonContext.Default.AnswerInputsRequest,
+            new JsonRequest<AnswerInputsRequest>(
+                HttpMethod.Post,
+                $"api/machines/{machineId:D}/deployments/current/answers",
+                new AnswerInputsRequest(answers),
+                DdtJsonContext.Default.AnswerInputsRequest),
             DdtJsonContext.Default.DeploymentView,
             HttpStatusCode.OK,
             cancellationToken);
@@ -203,10 +196,11 @@ public sealed partial class DryRunLab : IAsyncLifetime
     // As the machine's page continues the pause it shows.
     internal Task<DeploymentView> ContinueAsync(Guid machineId, RunPauseView pause, CancellationToken cancellationToken) =>
         Api.SendAsync(
-            HttpMethod.Post,
-            $"api/machines/{machineId:D}/deployments/current/continue",
-            new ContinueRunRequest(pause.StepId, pause.Pass),
-            DdtJsonContext.Default.ContinueRunRequest,
+            new JsonRequest<ContinueRunRequest>(
+                HttpMethod.Post,
+                $"api/machines/{machineId:D}/deployments/current/continue",
+                new ContinueRunRequest(pause.StepId, pause.Pass),
+                DdtJsonContext.Default.ContinueRunRequest),
             DdtJsonContext.Default.DeploymentView,
             HttpStatusCode.OK,
             cancellationToken);
@@ -215,11 +209,12 @@ public sealed partial class DryRunLab : IAsyncLifetime
     // entered again.
     internal Task<AccountView> CreateAccountAsync(string userName, string domain, IReadOnlyList<string> hosts, bool runAs, CancellationToken cancellationToken) =>
         Api.SendReauthenticatedAsync(
-            HttpMethod.Post,
-            "api/accounts",
+            new JsonRequest<SaveAccountRequest>(
+                HttpMethod.Post,
+                "api/accounts",
+                new SaveAccountRequest(0, $"E2E account {Guid.NewGuid():N}", userName, domain, hosts, runAs, new SecretUpdate(SecretAction.Set, AccountPassword)),
+                DdtJsonContext.Default.SaveAccountRequest),
             Host.AdministratorPassword,
-            new SaveAccountRequest(0, $"E2E account {Guid.NewGuid():N}", userName, domain, hosts, runAs, new SecretUpdate(SecretAction.Set, AccountPassword)),
-            DdtJsonContext.Default.SaveAccountRequest,
             DdtJsonContext.Default.AccountView,
             HttpStatusCode.Created,
             cancellationToken);
@@ -249,10 +244,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
         }
     }
 
-    // What every test ends with. The agents warned of nothing and failed at nothing but what the test expects, the
-    // host logged no error, and neither a configured password nor the stored account's, nor the form an answer file
-    // gives them, appears in the agents' output, in text the test saw, in the host's log, in what the hub sent, or in
-    // the host's database files.
+    // What every test ends with: no agent warning or failure the test does not expect, no host error, and no password,
+    // plain or as an answer file has it, in any output, text the test saw, hub traffic or database file.
     internal void AssertClean(IReadOnlyList<AgentProcess> agents, IReadOnlyList<string> expectedProblems, params (string Where, string Text)[] seen)
     {
         ArgumentNullException.ThrowIfNull(agents);
@@ -357,22 +350,10 @@ public sealed partial class DryRunLab : IAsyncLifetime
         await Api.SignInAsync("admin", Host.AdministratorPassword, cancellationToken).ConfigureAwait(false);
         _live = await LiveRecorder.ConnectAsync(Api, _rootCertificate, cancellationToken).ConfigureAwait(false);
 
-        Image = await UploadImageAsync("small.wim", 1, cancellationToken).ConfigureAwait(false);
-        OtherImage = await UploadImageAsync("other.wim", 1, cancellationToken, "Other E2E Windows").ConfigureAwait(false);
-        LargeImage = await UploadImageAsync("large.wim", LargeMegabytes, cancellationToken).ConfigureAwait(false);
-
-        string drivers = Path.Combine(_directory, "drivers.zip");
-        TestContent.WriteDriverPackage(drivers);
-        PackageSummary uploaded = await Api.UploadPackageAsync(drivers, UploadKind.Drivers, cancellationToken).ConfigureAwait(false);
-        Drivers = await Api.SendAsync(
-            HttpMethod.Put,
-            $"api/packages/{uploaded.Id:D}",
-            new UpdatePackageRequest(uploaded.Name, "Drivers for the dry run's model", [new HardwareModel(Manufacturer, Model)]),
-            DdtJsonContext.Default.UpdatePackageRequest,
-            DdtJsonContext.Default.PackageSummary,
-            HttpStatusCode.OK,
-            cancellationToken).ConfigureAwait(false);
-
+        Image = await UploadImageAsync("small.wim", "DDT E2E Windows", 1, cancellationToken).ConfigureAwait(false);
+        OtherImage = await UploadImageAsync("other.wim", "Other E2E Windows", 1, cancellationToken).ConfigureAwait(false);
+        LargeImage = await UploadImageAsync("large.wim", "DDT E2E Windows", LargeMegabytes, cancellationToken).ConfigureAwait(false);
+        Drivers = await UploadDriversAsync(cancellationToken).ConfigureAwait(false);
         Files = await UploadFilesAsync("files.zip", 0, cancellationToken).ConfigureAwait(false);
         LargeFiles = await UploadFilesAsync("large-files.zip", LargeMegabytes, cancellationToken).ConfigureAwait(false);
 
@@ -381,12 +362,30 @@ public sealed partial class DryRunLab : IAsyncLifetime
         RawImage = Assert.Single(await Api.UploadImageAsync(raw, cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<ImageSummary> UploadImageAsync(string name, int megabytes, CancellationToken cancellationToken, string imageName = "DDT E2E Windows")
+    private async Task<ImageSummary> UploadImageAsync(string name, string imageName, int megabytes, CancellationToken cancellationToken)
     {
         string path = Path.Combine(_directory, name);
         TestContent.WriteWim(path, megabytes, imageName);
 
         return Assert.Single(await Api.UploadImageAsync(path, cancellationToken).ConfigureAwait(false));
+    }
+
+    // Uploaded, then assigned to the dry run's model.
+    private async Task<PackageSummary> UploadDriversAsync(CancellationToken cancellationToken)
+    {
+        string path = Path.Combine(_directory, "drivers.zip");
+        TestContent.WriteDriverPackage(path);
+        PackageSummary uploaded = await Api.UploadPackageAsync(path, UploadKind.Drivers, cancellationToken).ConfigureAwait(false);
+
+        return await Api.SendAsync(
+            new JsonRequest<UpdatePackageRequest>(
+                HttpMethod.Put,
+                $"api/packages/{uploaded.Id:D}",
+                new UpdatePackageRequest(uploaded.Name, "Drivers for the dry run's model", [new HardwareModel(Manufacturer, Model)]),
+                DdtJsonContext.Default.UpdatePackageRequest),
+            DdtJsonContext.Default.PackageSummary,
+            HttpStatusCode.OK,
+            cancellationToken).ConfigureAwait(false);
     }
 
     private Task<PackageSummary> UploadFilesAsync(string name, int megabytes, CancellationToken cancellationToken)

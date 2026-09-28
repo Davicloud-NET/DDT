@@ -7,8 +7,8 @@ using System.Globalization;
 
 namespace DDT.E2E;
 
-// The published agent in a dry run, which stands in for machine DRYRUN-<id> and keeps that machine's disk under
-// Root. Its input is redirected, so nobody can type at it: machines are authorized on the web.
+// The published agent in a dry run as machine DRYRUN-<id>, whose disk it keeps under Root.
+// Its input is redirected, so nobody can type at it: machines are authorized on the web.
 internal sealed class AgentProcess : IAsyncDisposable
 {
     private readonly Process _process;
@@ -36,25 +36,24 @@ internal sealed class AgentProcess : IAsyncDisposable
 
     public static string DiskPathOf(int dryRunId) => $"{RootOf(dryRunId)}-disk0.img";
 
-    // With secureBoot, the dry run's machine says Secure Boot is on.
-    public static AgentProcess Start(string agentPath, Uri server, string rootCertificatePath, int dryRunId, string logPath, bool secureBoot = false)
+    public static AgentProcess Start(AgentStartInfo agent)
     {
-        ArgumentNullException.ThrowIfNull(server);
+        ArgumentNullException.ThrowIfNull(agent);
 
         string[] arguments =
         [
             "--dry-run",
             "--dry-run-id",
-            dryRunId.ToString(CultureInfo.InvariantCulture),
+            agent.DryRunId.ToString(CultureInfo.InvariantCulture),
             "--server",
-            server.AbsoluteUri,
+            agent.Server.AbsoluteUri,
             "--root-certificate",
-            rootCertificatePath,
-            .. secureBoot ? (string[])["--dry-run-secure-boot"] : [],
+            agent.RootCertificatePath,
+            .. agent.SecureBoot ? (string[])["--dry-run-secure-boot"] : [],
         ];
-        ProcessStartInfo start = new(agentPath, arguments)
+        ProcessStartInfo start = new(agent.AgentPath, arguments)
         {
-            WorkingDirectory = Path.GetDirectoryName(agentPath),
+            WorkingDirectory = Path.GetDirectoryName(agent.AgentPath),
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardInput = true,
@@ -62,29 +61,29 @@ internal sealed class AgentProcess : IAsyncDisposable
             RedirectStandardError = true,
         };
 
-        Process process = Process.Start(start) ?? throw new InvalidOperationException($"{agentPath} did not start.");
+        Process process = Process.Start(start) ?? throw new InvalidOperationException($"{agent.AgentPath} did not start.");
         KillOnExitJob.Add(process);
-        OutputLines output = new(process, logPath);
+        OutputLines output = new(process, agent.LogPath);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.StandardInput.Close();
 
-        return new AgentProcess(process, output, dryRunId);
+        return new AgentProcess(process, output, agent.DryRunId);
     }
 
-    // Returns while the agent downloads the file with this hash into the run's cache on the dry run's disk, in either
-    // phase: the step that downloads it runs until the download is done. Polled often, as a download takes a second.
+    // Returns while the file with this hash downloads into the run's cache, in either phase: the step that downloads it
+    // runs until the download is done. Polled often, so that even a quick download is seen.
     public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken)
     {
         string part = Path.Combine(Root, "W", "DDT", "cache", $"{sha256}.part");
 
         await Eventually.WaitAsync(
-            $"Agent {DryRunId}'s download of {part}",
-            timeout,
+            new Expectation($"Agent {DryRunId}'s download of {part}", timeout, () => Output.Tail())
+            {
+                Interval = TimeSpan.FromMilliseconds(5),
+            },
             _ => Task.FromResult(File.Exists(part) || _process.HasExited),
-            () => Output.Tail(),
-            cancellationToken,
-            TimeSpan.FromMilliseconds(5)).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false);
 
         if (_process.HasExited)
         {

@@ -7,10 +7,8 @@ using System.Net.Sockets;
 
 namespace DDT.E2E;
 
-// Passes TCP connections on 127.0.0.1 to the host, and what the host sends back at most at bytesPerSecond on each
-// connection. An agent that reaches the host through it downloads so slowly that a step which downloads is sure to
-// outlast the agent's next call to the server, which is how the agent learns of a stop. What it passes on stays
-// encrypted, so the host's certificate has to name 127.0.0.1.
+// Passes connections on 127.0.0.1 to the host and throttles its answers, so a stop reaches the agent mid-download.
+// The traffic stays encrypted, so the host's certificate has to name 127.0.0.1.
 internal sealed class SlowRelay : IAsyncDisposable
 {
     private const int ChunkBytes = 64 * 1024;

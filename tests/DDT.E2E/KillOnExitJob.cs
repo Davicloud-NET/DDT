@@ -10,9 +10,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.E2E;
 
-// A job that holds every process the tests start, and what those start. Windows closes its handle when the test
-// process ends, however it ends, and closing it kills everything in it, so no host, agent or publish outlives the
-// tests.
+// A job holding every process the tests start, and what those start, so no host, agent or publish outlives the tests.
+// Windows closes its handle when the test process ends, however it ends, which kills everything in it.
 internal static partial class KillOnExitJob
 {
     private const int ExtendedLimitInformation = 9;

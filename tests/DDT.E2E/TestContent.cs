@@ -17,9 +17,8 @@ internal static class TestContent
     private const int WimHeaderLength = 208;
     private const int Megabyte = 1024 * 1024;
 
-    // As much of a WIM as the server and a dry run read: the header, data that stands in for the image, and the image
-    // list, uncompressed UTF-16 LE with a byte order mark, naming one x64 image, which the library names after it. A dry
-    // run applies nothing, so no real image and no boot image build is needed.
+    // As much of a WIM as the server and a dry run read: the header, stand-in data, and an image list naming one x64
+    // image, in UTF-16 LE with a byte order mark. A dry run applies nothing, so no real image is needed.
     public static void WriteWim(string path, int dataMegabytes, string imageName = "DDT E2E Windows")
     {
         byte[] list =
@@ -54,9 +53,8 @@ internal static class TestContent
         file.Write(list);
     }
 
-    // A raw disk image as a distribution lays out its cloud image, gzipped as some publish it: an EFI system partition
-    // at 1 MiB with an x64 \EFI\BOOT\BOOTX64.EFI that is not signed, and a root partition of rootMegabytes of random
-    // bytes, with the backup table at the image's end.
+    // Laid out and gzipped as distributions publish cloud images: an EFI system partition at 1 MiB with an unsigned x64
+    // \EFI\BOOT\BOOTX64.EFI, a root partition of rootMegabytes of random bytes, and the backup table at the end.
     public static void WriteRawImage(string path, int rootMegabytes)
     {
         const long espFirst = 2048;

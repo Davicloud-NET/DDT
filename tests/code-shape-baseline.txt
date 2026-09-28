@@ -14,15 +14,3 @@ src/DDT.MachineConsole/Machine/CommandPrompt.cs: CommandPrompt.CreateProcess: ov
 src/DDT.Pxe/PxeLog.cs: PxeLog.Replied: over 5 parameters
 src/DDT.Pxe/PxeLog.cs: PxeLog.TftpCompleted: over 5 parameters
 src/DDT.Server/Deployments/DeploymentLog.cs: DeploymentLog.Failed: over 5 parameters
-tests/DDT.E2E/AdminApi.cs: AdminApi.SendAsync: over 5 parameters
-tests/DDT.E2E/AdminApi.cs: AdminApi.SendReauthenticatedAsync: over 5 parameters
-tests/DDT.E2E/AdminApi.cs: AdminApi.SendRefusedAsync: over 5 parameters
-tests/DDT.E2E/AgentProcess.cs: AgentProcess.Start: over 5 parameters
-tests/DDT.E2E/DryRunLab.cs: DryRunLab.AssignAsync: over 5 parameters
-tests/DDT.E2E/DryRunTests.cs: DryRunTests.AModelRuleLeavesANewMachinePendingUntilAnOperatorApprovesItsSequence: over 60 lines
-tests/DDT.E2E/DryRunTests.cs: DryRunTests.ARawDiskImageNotSignedForSecureBootIsWrittenWithItsSeedOnceAllowed: over 60 lines
-tests/DDT.E2E/DryRunTests.cs: DryRunTests.AWholeSequenceRunsThroughBothPhasesAndTheAgentRemovesItself: over 60 lines
-tests/DDT.E2E/Eventually.cs: Eventually.GetAsync: over 5 parameters
-tests/DDT.E2E/Eventually.cs: Eventually.WaitAsync: over 5 parameters
-tests/DDT.E2E/HostProcess.cs: HostProcess.StartAsync: over 60 lines
-tests/DDT.E2E/TreeDryRunTests.cs: TreeDryRunTests.ATreeTakesItsBranchTriesAgainAfterARestartAndPausesInWindowsUntilTheWebContinuesIt: over 60 lines

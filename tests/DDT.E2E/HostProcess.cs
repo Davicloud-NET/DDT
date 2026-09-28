@@ -9,8 +9,8 @@ using System.Text.RegularExpressions;
 
 namespace DDT.E2E;
 
-// DDT.Host as built from this repository, in a process of its own on a free port of this computer only, with its store
-// and its SQLite database in directory. It issues its certificate from its own root, which the agents pin.
+// DDT.Host built from this repository, on a free localhost port, with its store and SQLite database in directory.
+// It issues its certificate from its own root, which the agents pin.
 internal sealed partial class HostProcess : IAsyncDisposable
 {
     private static readonly TimeSpan s_startTimeout = TimeSpan.FromMinutes(2);
@@ -48,9 +48,46 @@ internal sealed partial class HostProcess : IAsyncDisposable
         }
 
         string store = Path.Combine(directory, "store");
-        string certificates = Path.Combine(store, "certs");
         Uri url = new($"https://localhost:{FreePort()}/");
 
+        ProcessStartInfo start = StartInfo(store, url, settings);
+        Process process = Process.Start(start) ?? throw new InvalidOperationException($"{RepositoryPaths.Host} did not start.");
+        KillOnExitJob.Add(process);
+        OutputLines output = new(process, Path.Combine(directory, "host.log"));
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.StandardInput.Close();
+
+        HostProcess host = new(process, output, url, store);
+
+        try
+        {
+            host.AdministratorPassword = await host.WaitForStartAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await host.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return host;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!_process.HasExited)
+        {
+            _process.Kill(entireProcessTree: true);
+            await _process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        _process.Dispose();
+        Output.Dispose();
+    }
+
+    private static ProcessStartInfo StartInfo(string store, Uri url, IReadOnlyDictionary<string, string> settings)
+    {
+        string certificates = Path.Combine(store, "certs");
         ProcessStartInfo start = new(RepositoryPaths.Host)
         {
             WorkingDirectory = Path.GetDirectoryName(RepositoryPaths.Host),
@@ -78,55 +115,26 @@ internal sealed partial class HostProcess : IAsyncDisposable
             start.Environment[key.Replace(":", "__", StringComparison.Ordinal)] = value;
         }
 
-        Process process = Process.Start(start) ?? throw new InvalidOperationException($"{RepositoryPaths.Host} did not start.");
-        KillOnExitJob.Add(process);
-        OutputLines output = new(process, Path.Combine(directory, "host.log"));
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        process.StandardInput.Close();
+        return start;
+    }
 
-        HostProcess host = new(process, output, url, store);
-
-        try
-        {
-            host.AdministratorPassword = await Eventually.GetAsync(
-                "The host's start",
-                s_startTimeout,
-                _ =>
+    // The host is started once it listens and has logged the first administrator's password, which it returns.
+    private Task<string> WaitForStartAsync(CancellationToken cancellationToken) =>
+        Eventually.GetAsync(
+            new Expectation("The host's start", s_startTimeout, () => Output.Tail()),
+            _ =>
+            {
+                if (_process.HasExited)
                 {
-                    if (process.HasExited)
-                    {
-                        throw new InvalidOperationException($"The host ended with exit code {process.ExitCode}:{Environment.NewLine}{output.Tail()}");
-                    }
+                    throw new InvalidOperationException($"The host ended with exit code {_process.ExitCode}:{Environment.NewLine}{Output.Tail()}");
+                }
 
-                    string text = output.Text;
-                    Match password = AdministratorPasswordLine().Match(text);
+                string text = Output.Text;
+                Match password = AdministratorPasswordLine().Match(text);
 
-                    return Task.FromResult(password.Success && text.Contains("Now listening on", StringComparison.Ordinal) ? password.Groups[1].Value : null);
-                },
-                () => output.Tail(),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            await host.DisposeAsync().ConfigureAwait(false);
-            throw;
-        }
-
-        return host;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (!_process.HasExited)
-        {
-            _process.Kill(entireProcessTree: true);
-            await _process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-
-        _process.Dispose();
-        Output.Dispose();
-    }
+                return Task.FromResult(password.Success && text.Contains("Now listening on", StringComparison.Ordinal) ? password.Groups[1].Value : null);
+            },
+            cancellationToken);
 
     private static bool IsInherited(string key) =>
         key.StartsWith("DDT__", StringComparison.OrdinalIgnoreCase)

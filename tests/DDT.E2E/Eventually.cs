@@ -7,22 +7,17 @@ namespace DDT.E2E;
 // Polls until something holds, and otherwise fails after a bound with what was awaited and what was seen.
 internal static class Eventually
 {
-    private static readonly TimeSpan s_interval = TimeSpan.FromMilliseconds(100);
-
     public static async Task<T> GetAsync<T>(
-        string what,
-        TimeSpan timeout,
+        Expectation expectation,
         Func<CancellationToken, Task<T?>> probe,
-        Func<string> diagnostics,
-        CancellationToken cancellationToken,
-        TimeSpan? interval = null)
+        CancellationToken cancellationToken)
         where T : class
     {
+        ArgumentNullException.ThrowIfNull(expectation);
         ArgumentNullException.ThrowIfNull(probe);
-        ArgumentNullException.ThrowIfNull(diagnostics);
 
         using CancellationTokenSource limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        limit.CancelAfter(timeout);
+        limit.CancelAfter(expectation.Timeout);
 
         try
         {
@@ -33,25 +28,21 @@ internal static class Eventually
                     return value;
                 }
 
-                await Task.Delay(interval ?? s_interval, limit.Token).ConfigureAwait(false);
+                await Task.Delay(expectation.Interval, limit.Token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException($"{what} did not happen within {timeout.TotalSeconds:0} s.{Environment.NewLine}{diagnostics()}");
+            throw new TimeoutException(
+                $"{expectation.What} did not happen within {expectation.Timeout.TotalSeconds:0} s.{Environment.NewLine}{expectation.Diagnostics()}");
         }
     }
 
-    public static Task WaitAsync(
-        string what,
-        TimeSpan timeout,
-        Func<CancellationToken, Task<bool>> probe,
-        Func<string> diagnostics,
-        CancellationToken cancellationToken,
-        TimeSpan? interval = null)
+    public static Task WaitAsync(Expectation expectation, Func<CancellationToken, Task<bool>> probe, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(expectation);
         ArgumentNullException.ThrowIfNull(probe);
 
-        return GetAsync(what, timeout, async call => await probe(call).ConfigureAwait(false) ? what : null, diagnostics, cancellationToken, interval);
+        return GetAsync(expectation, async call => await probe(call).ConfigureAwait(false) ? expectation.What : null, cancellationToken);
     }
 }

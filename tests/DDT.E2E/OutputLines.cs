@@ -6,8 +6,7 @@ using System.Diagnostics;
 
 namespace DDT.E2E;
 
-// What a started process writes to its standard output and error, kept in memory for the checks and in a file for
-// whoever reads up on a failed run.
+// A process's standard output and error, kept in memory for the checks and in a log file for a failed run.
 internal sealed class OutputLines : IDisposable
 {
     private readonly Lock _lock = new();

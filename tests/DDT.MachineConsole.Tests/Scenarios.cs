@@ -41,6 +41,22 @@ internal static class Scenarios
         Step(8, "Restart", "reboot", ConsolePhase.Windows, ConsoleStepState.Pending),
     ];
 
+    // A run of a tree: an IF on the model took Then, so the standard image is off the path, and a Pause step comes after
+    // the drivers. The path has eight steps, as the flat run does.
+    public static readonly ConsoleStep[] TreeSteps =
+    [
+        Step(1, "Partition the disk", "partition", ConsolePhase.WindowsPE, ConsoleStepState.Done) with { Pass = 1 },
+        Step(9, "If a Latitude", "if", ConsolePhase.WindowsPE, ConsoleStepState.Done) with { Pass = 1, Branch = ConsoleBranch.Then },
+        Step(10, "Apply the Latitude image", "applyImage", ConsolePhase.WindowsPE, ConsoleStepState.Done) with { ParentId = Id(9), Depth = 1, Pass = 1 },
+        Step(11, "Apply the standard image", "applyImage", ConsolePhase.WindowsPE, ConsoleStepState.Skipped) with { ParentId = Id(9), Depth = 1 },
+        Step(3, "Inject drivers", "injectDrivers", ConsolePhase.WindowsPE, ConsoleStepState.Done) with { Pass = 1 },
+        Step(12, "Check the BIOS", "pause", ConsolePhase.WindowsPE, ConsoleStepState.Running) with { Pass = 1 },
+        Step(4, "Write the answer file", "writeUnattend", ConsolePhase.WindowsPE, ConsoleStepState.Pending),
+        Step(5, "Restart into Windows", "reboot", ConsolePhase.WindowsPE, ConsoleStepState.Pending),
+        Step(6, "Join the domain", "joinDomain", ConsolePhase.Windows, ConsoleStepState.Pending),
+        Step(7, "Run script: baseline", "runScript", ConsolePhase.Windows, ConsoleStepState.Pending),
+    ];
+
     public static ConsoleState State(ConsoleStage stage) => new(
         stage,
         "1.4.0",
@@ -84,6 +100,93 @@ internal static class Scenarios
     {
         Run = Run([.. Pending(8)], null, null, ConsoleActivity.Preparing),
     };
+
+    // A Pause step of the tree waits.
+    public static ConsoleState Paused => State(ConsoleStage.Running) with
+    {
+        Run = new ConsoleRun(RunId, "Windows 11 24H2 with Office", TreeSteps, Id(12), null, ConsoleActivity.Paused),
+    };
+
+    // The tree applies its image, on the branch its IF took.
+    public static ConsoleState RunningTree => State(ConsoleStage.Running) with
+    {
+        Run = new ConsoleRun(
+            RunId,
+            "Windows 11 24H2 with Office",
+            [
+                .. TreeSteps.Select(step => step.Id == Id(10)
+                    ? step with { State = ConsoleStepState.Running }
+                    : step.Id == Id(3) || step.Id == Id(12) ? step with { State = ConsoleStepState.Pending, Pass = 0 } : step),
+            ],
+            Id(10),
+            37,
+            ConsoleActivity.Step),
+    };
+
+    // A rule's run waits at its start for inputs nobody has answered yet.
+    public static ConsoleState WaitingForInputs => State(ConsoleStage.Running) with
+    {
+        Run = Run([.. Pending(8)], null, null, ConsoleActivity.WaitingForInput),
+    };
+
+    public static PauseQuestion Pause => new(
+        "Check the BIOS",
+        "Set the boot order to the network first and turn TPM 2.0 on, then come back to this screen.");
+
+    // What a sequence asks before it starts; refused, the agent names what was wrong under the fields, and the fields are
+    // one more, which the panel scrolls to.
+    public static InputsQuestion Inputs(bool refused = false) => new(
+        "Windows 11 24H2 with Office",
+        [
+            new ConsoleInput(
+                "Office",
+                "Office edition",
+                null,
+                ConsoleInputKind.Choice,
+                [new ConsoleChoice("Standard", null), new ConsoleChoice("ProPlus", "Professional Plus"), new ConsoleChoice("None", "No Office")],
+                "Standard",
+                true,
+                null,
+                null),
+            new ConsoleInput(
+                "Owner",
+                "Owner of this PC",
+                "Their user name in lab.local, such as anna.berger.",
+                ConsoleInputKind.Text,
+                [],
+                null,
+                true,
+                20,
+                refused ? "annaa is not a user in lab.local." : null),
+            .. refused
+                ? new[]
+                {
+                    new ConsoleInput(
+                        "Languages",
+                        "Extra languages",
+                        null,
+                        ConsoleInputKind.MultiChoice,
+                        [new ConsoleChoice("de-DE", "German"), new ConsoleChoice("fr-FR", "French"), new ConsoleChoice("it-IT", "Italian")],
+                        "de-DE",
+                        false,
+                        null,
+                        null),
+                }
+                : [],
+            new ConsoleInput("BitLocker", "Encrypt the disk with BitLocker", null, ConsoleInputKind.YesNo, [], "true", true, null, null),
+            new ConsoleInput(
+                "JoinAccount",
+                "Account that joins the domain",
+                null,
+                ConsoleInputKind.Account,
+                [],
+                null,
+                true,
+                null,
+                refused ? "Type the password again." : null,
+                "lab.local"),
+        ],
+        null);
 
     public static ConsoleState Restarting => State(ConsoleStage.Restarting) with
     {
@@ -187,8 +290,10 @@ internal static class Scenarios
         Line(95, ConsoleLogLevel.Information, "Step 2, Apply image: applying image 3 of install.wim to W:\\ (62 %)."),
     ];
 
+    public static Guid Id(int step) => Guid.Parse($"0193a4b2-7c1e-7000-8000-00000000b{step:000}");
+
     private static ConsoleStep Step(int number, string name, string kind, ConsolePhase phase, ConsoleStepState state) =>
-        new(Guid.Parse($"0193a4b2-7c1e-7000-8000-00000000b{number:000}"), name, kind, phase, state, null);
+        new(Id(number), name, kind, phase, state, null);
 
     private static ConsoleStepState[] Pending(int count) => [.. Enumerable.Repeat(ConsoleStepState.Pending, count)];
 

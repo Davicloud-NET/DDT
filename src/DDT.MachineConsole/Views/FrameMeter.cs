@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 
@@ -37,6 +38,13 @@ internal sealed class FrameMeter
 
     public static FrameMeter? For(TopLevel top) =>
         Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } path ? new FrameMeter(top, path) : null;
+
+    // What a key press is called in the file: the keys that work the console by name, and any other key only as a key,
+    // since it may be part of a password.
+    public static string KeyName(Key key) =>
+        key is >= Key.F1 and <= Key.F24 or Key.Escape or Key.Enter or Key.Tab or Key.Up or Key.Down or Key.Left or Key.Right
+            ? $"key {key}"
+            : "key";
 
     // Counts the frames of what moves now, for as long as it moves. Something else that starts to move ends the count.
     public void Measure(string what, TimeSpan length)

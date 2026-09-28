@@ -63,7 +63,7 @@ public sealed class ConsoleProtocolTests
         new("Office", "Office", null, ConsoleInputKind.Choice, [new ConsoleChoice("Standard", null), new ConsoleChoice("ProPlus", "Professional Plus")], "Standard", false, null, null),
         new("Languages", "Languages", null, ConsoleInputKind.MultiChoice, [new ConsoleChoice("de-DE", "German")], "de-DE", false, null, null),
         new("Encrypt", "Encrypt the disk", null, ConsoleInputKind.YesNo, [], "true", false, null, null),
-        new("JoinAccount", "Join account", null, ConsoleInputKind.Account, [], null, true, null, null),
+        new("JoinAccount", "Join account", null, ConsoleInputKind.Account, [], null, true, null, null, "corp.example"),
     ];
 
     public static TheoryData<string> Messages => [.. s_messages.Keys];
@@ -98,7 +98,7 @@ public sealed class ConsoleProtocolTests
         ConsoleInputKind[] kinds = [.. s_inputs.Select(input => input.Kind)];
 
         Assert.Equal(
-            """{"type":"question","id":7,"question":{"kind":"inputs","sequenceName":"Install Windows","inputs":[{"name":"JoinAccount","label":"Join account","help":null,"kind":"Account","choices":[],"default":null,"required":true,"maxLength":null,"error":null}],"error":null}}""",
+            """{"type":"question","id":7,"question":{"kind":"inputs","sequenceName":"Install Windows","inputs":[{"name":"JoinAccount","label":"Join account","help":null,"kind":"Account","choices":[],"default":null,"required":true,"maxLength":null,"error":null,"domain":"corp.example"}],"error":null}}""",
             json);
         Assert.Equal(Enum.GetValues<ConsoleInputKind>(), kinds);
         Assert.DoesNotContain("Secret-Join-Password", answer.ToString(), StringComparison.Ordinal);

@@ -200,12 +200,14 @@ public sealed class SequenceRail : Panel
                 StartFlash(parts.Flash, step.State);
             }
 
+            // The state first, so a change fades from the module as it was, waiting or not.
             parts.Module.State = step.State;
+            parts.Module.AwaitsSomeone = step.AwaitsSomeone;
             parts.Module.Percent = step.Percent;
             parts.Number.Text = step.Number;
             parts.Name.Text = step.Name;
-            SetTone(parts.Number, step.State);
-            SetTone(parts.Name, step.State);
+            SetTone(parts.Number, step);
+            SetTone(parts.Name, step);
             Avalonia.Automation.AutomationProperties.SetName(parts.Module, step.Description);
         }
 
@@ -239,12 +241,14 @@ public sealed class SequenceRail : Panel
         return text;
     }
 
-    // The running step's number is blue and its name bold; the steps still to come are quieter.
-    private static void SetTone(TextBlock text, ConsoleStepState state)
+    // The running step's number is blue and its name bold; the step that waits for someone has its number in the
+    // attention colour and its name bold; the steps still to come are quieter.
+    private static void SetTone(TextBlock text, RailStep step)
     {
-        text.Classes.Set("running", state == ConsoleStepState.Running);
-        text.Classes.Set("waiting", state == ConsoleStepState.Pending);
-        text.Classes.Set("failed", state == ConsoleStepState.Failed);
+        text.Classes.Set("running", step.IsRunning);
+        text.Classes.Set("attention", step.AwaitsSomeone);
+        text.Classes.Set("waiting", step.State == ConsoleStepState.Pending);
+        text.Classes.Set("failed", step.State == ConsoleStepState.Failed);
     }
 
     // The column in the state's colour, fading. Only a rail on the screen flashes, and Rebuild leaves out a run shown for

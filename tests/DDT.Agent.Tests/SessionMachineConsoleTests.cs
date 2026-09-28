@@ -15,6 +15,10 @@ namespace DDT.Agent.Tests;
 // back, as the session's shell does while Windows and the agent's service restart.
 public sealed class SessionMachineConsoleTests : IAsyncDisposable
 {
+    private const string Password = "Tr0ub4dor&3-join";
+
+    private static readonly PauseQuestion s_pause = new("Check the BIOS", "Set the boot order to the network first.");
+
     private readonly StringWriter _writer = new();
     private readonly string _pipe = ConsolePipe.NewName();
     private readonly SessionMachineConsole _console;
@@ -65,8 +69,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(ConsoleStage.Connecting, again.Stage);
         Assert.Contains("Written before any console connected.", backlog);
         Assert.Equal(2, Volatile.Read(ref _connected));
-        Assert.False(_console.CanAsk);
-        Assert.Null(await _console.AskAsync(new SignInQuestion(SignInField.UserName, null, null), Cancellation));
+        Assert.True(_console.CanAsk);
     }
 
     [Fact]
@@ -150,12 +153,135 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(ConsoleStage.Failed, (await reading)?.Stage);
     }
 
+    // A Pause step asks while Windows restarts the session: the question waits, and each console that connects gets it
+    // after the state and the lines, until one answers.
+    [Fact]
+    public async Task AsksEachConsoleThatConnectsAfterTheStateAndTheLinesUntilOneAnswers()
+    {
+        _ = new ConsoleStatus(_console, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
+        _log.Information("Written before the pause.");
+        Task<ConsoleAnswer?> asked = _console.AskAsync(s_pause, Cancellation);
+
+        Assert.False(_console.CanAsk);
+
+        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        int id;
+
+        await using (ConsoleClient first = await ConnectAsync())
+        {
+            (QuestionMessage question, List<ConsoleMessage> before) = await UntilAsync<QuestionMessage>(first);
+
+            Assert.Equal(s_pause, question.Question);
+            Assert.IsType<StateMessage>(before[0]);
+            Assert.Contains(before, message => message is LogMessage log && log.Lines.Any(line => line.Text == "Written before the pause."));
+            Assert.True(_console.CanAsk);
+            id = question.Id;
+        }
+
+        // Nobody answered before the session restarted.
+        await using ConsoleClient second = await ConnectAsync();
+        (QuestionMessage again, List<ConsoleMessage> beforeAgain) = await UntilAsync<QuestionMessage>(second);
+
+        Assert.Equal(new QuestionMessage(id, s_pause), again);
+        Assert.IsType<StateMessage>(beforeAgain[0]);
+        Assert.False(asked.IsCompleted);
+
+        await second.AnswerAsync(id, new ConsoleAnswer(Continue: true), Cancellation);
+
+        Assert.Equal(new ConsoleAnswer(Continue: true), await asked.WaitAsync(TimeSpan.FromSeconds(20), Cancellation));
+    }
+
+    // Continued on the web: the asker no longer needs the answer, and the console closes the question.
+    [Fact]
+    public async Task WithdrawsTheQuestionOnceTheAskerNoLongerNeedsIt()
+    {
+        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        await using ConsoleClient client = await ConnectAsync();
+        using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        Task<ConsoleAnswer?> asked = _console.AskAsync(s_pause, asking.Token);
+        (QuestionMessage question, _) = await UntilAsync<QuestionMessage>(client);
+
+        await asking.CancelAsync();
+
+        Assert.Null(await asked);
+        Assert.Equal(new WithdrawMessage(question.Id), (await UntilAsync<WithdrawMessage>(client)).Message);
+    }
+
+    // Enter pressed on the screen of a question withdrawn meanwhile, or an answer to an id never asked, answers nothing.
+    [Fact]
+    public async Task LeavesAnAnswerToAQuestionNoLongerOpenAlone()
+    {
+        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        await using ConsoleClient client = await ConnectAsync();
+        using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        Task<ConsoleAnswer?> withdrawn = _console.AskAsync(s_pause, asking.Token);
+        (QuestionMessage old, _) = await UntilAsync<QuestionMessage>(client);
+        await asking.CancelAsync();
+        Assert.Null(await withdrawn);
+
+        Task<ConsoleAnswer?> asked = _console.AskAsync(new PauseQuestion("Check the dock", "Plug the dock in."), Cancellation);
+        (QuestionMessage current, _) = await UntilAsync<QuestionMessage>(client);
+
+        await client.AnswerAsync(old.Id, new ConsoleAnswer(Back: true), Cancellation);
+        await client.AnswerAsync(current.Id + 100, new ConsoleAnswer(Back: true), Cancellation);
+        await client.AnswerAsync(current.Id, new ConsoleAnswer(Continue: true), Cancellation);
+
+        Assert.NotEqual(old.Id, current.Id);
+        Assert.Equal(new ConsoleAnswer(Continue: true), await asked.WaitAsync(TimeSpan.FromSeconds(20), Cancellation));
+    }
+
+    // An account asked for the run goes to the agent with its password, and no line of the log, on the console or in the
+    // file, has the password in it.
+    [Fact]
+    public async Task NeverLogsWhatAnAnswerCarries()
+    {
+        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        await using ConsoleClient client = await ConnectAsync();
+        ConsoleInput account = new("Join", "Join account", null, ConsoleInputKind.Account, [], null, true, null, null, "corp.example");
+        Task<ConsoleAnswer?> asked = _console.AskAsync(new InputsQuestion("Install Windows", [account], null), Cancellation);
+        (QuestionMessage question, _) = await UntilAsync<QuestionMessage>(client);
+
+        ConsoleInputValue typed = new("Join", null, @"CORP\join", Password);
+        await client.AnswerAsync(question.Id, new ConsoleAnswer(Values: [typed]), Cancellation);
+        ConsoleAnswer? answer = await asked.WaitAsync(TimeSpan.FromSeconds(20), Cancellation);
+        _log.Information("Answered.");
+        (_, List<string> lines) = await ReadAsync(client, "Answered.", withState: false);
+
+        Assert.Equal([typed], answer?.Values);
+        Assert.DoesNotContain(Password, _writer.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(lines, line => line.Contains(Password, StringComparison.Ordinal));
+    }
+
     private Task<ConsoleClient> ConnectAsync(HelloMessage? hello = null) => ConsoleClient.ConnectAsync(
         new NamedPipeClientStream(".", _pipe, PipeDirection.InOut, PipeOptions.Asynchronous),
         hello ?? new HelloMessage(HelloMessage.CurrentVersion, "Test console"),
         null,
         TimeSpan.FromSeconds(10),
         Cancellation);
+
+    // Reads until a message of that kind comes, and returns it with every message before it.
+    private static async Task<(T Message, List<ConsoleMessage> Before)> UntilAsync<T>(ConsoleClient client)
+        where T : ConsoleMessage
+    {
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        List<ConsoleMessage> before = [];
+
+        while (true)
+        {
+            switch (await client.ReceiveAsync(timeout.Token))
+            {
+                case T wanted:
+                    return (wanted, before);
+                case null:
+                    Assert.Fail($"The pipe closed before a {typeof(T).Name} came.");
+                    break;
+                case { } message:
+                    before.Add(message);
+                    break;
+            }
+        }
+    }
 
     // Reads until the line comes, and returns the last state and every line read.
     private static async Task<(ConsoleState State, List<string> Lines)> ReadAsync(ConsoleClient client, string until, bool withState = true)

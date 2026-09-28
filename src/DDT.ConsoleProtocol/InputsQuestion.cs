@@ -12,7 +12,8 @@ public sealed record InputsQuestion(string SequenceName, IReadOnlyList<ConsoleIn
 
 // One field. An Account input is answered with a user name and a password, the password typed where nobody else sees
 // it; every other kind with a value, a MultiChoice one with its values separated by semicolons, a YesNo one with "true"
-// or "false". Default is the value the field starts with; MaxLength bounds a Text answer.
+// or "false". Default is the value the field starts with; MaxLength bounds a Text answer. Domain is the domain an
+// Account input's account is for, where it names one, so the person knows which account to give.
 public sealed record ConsoleInput(
     string Name,
     string Label,
@@ -22,7 +23,8 @@ public sealed record ConsoleInput(
     string? Default,
     bool Required,
     int? MaxLength,
-    string? Error);
+    string? Error,
+    string? Domain = null);
 
 public enum ConsoleInputKind
 {

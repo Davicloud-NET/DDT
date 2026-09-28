@@ -57,6 +57,8 @@ public sealed class MainViewModelTests
         { "computerName", nameof(ComputerNameViewModel) },
         { "erase", nameof(EraseViewModel) },
         { "secureBoot", nameof(SecureBootViewModel) },
+        { "inputs", nameof(InputsViewModel) },
+        { "pause", nameof(PauseViewModel) },
     };
 
     [Fact]
@@ -175,6 +177,101 @@ public sealed class MainViewModelTests
         console.Show(Scenarios.Preparing);
         Assert.IsType<RunViewModel>(console.Model.Screen);
         Assert.Null(console.Model.Question);
+    }
+
+    // Continued on the web: the agent withdraws the question, and the run screen says the run still waits until the next
+    // state says it goes on.
+    [Fact]
+    public void ClosesThePauseWhenItWasContinuedOnTheWeb()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Paused).Ask(11, Scenarios.Pause);
+        Assert.IsType<PauseViewModel>(console.Model.Screen);
+
+        console.Receive(new WithdrawMessage(11));
+
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+        Assert.Null(console.Model.Question);
+        Assert.Equal(("PAUSED", TagTone.Attention), (run.Tag.Text, run.Tag.Tone));
+        Assert.Equal("Paused", run.Heading);
+        Assert.Equal("Check the BIOS", run.Detail);
+        Assert.Empty(console.Answers);
+    }
+
+    // Enter pressed: the pause stays, its key off, until the run moves on to its next step.
+    [Fact]
+    public void KeepsAnAnsweredPauseUntilTheRunMovesOn()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Paused).Ask(11, Scenarios.Pause);
+        PauseViewModel pause = Assert.IsType<PauseViewModel>(console.Model.Screen);
+
+        pause.SubmitCommand.Execute(null);
+        console.Show(Scenarios.Paused);
+
+        Assert.Same(pause, console.Model.Screen);
+        Assert.True(pause.IsSending);
+
+        console.Show(Scenarios.Paused with { Run = Scenarios.Paused.Run! with { Activity = ConsoleActivity.Step } });
+
+        Assert.IsType<RunViewModel>(console.Model.Screen);
+        Assert.Null(console.Model.Question);
+    }
+
+    // The pause follows the run's state: the rail and the place on the path move with it.
+    [Fact]
+    public void ShowsThePauseOverTheRunAsItChanges()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Paused).Ask(11, Scenarios.Pause);
+        PauseViewModel pause = Assert.IsType<PauseViewModel>(console.Model.Screen);
+        ConsoleRun run = Scenarios.Paused.Run!;
+
+        console.Show(Scenarios.Paused with { Run = run with { Steps = [.. run.Steps.Where(step => step.Name != "Inject drivers")] } });
+
+        Assert.Equal("Pause, step 3 of 7 on this path, in Windows PE", pause.Position);
+        Assert.Equal(7, pause.Steps.Count);
+    }
+
+    [Fact]
+    public void SaysWhyNothingRunsWhileTheRunWaitsForItsInputs()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.WaitingForInputs);
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(("WAITING", TagTone.Attention), (run.Tag.Text, run.Tag.Tone));
+        Assert.Equal("Waiting for answers", run.Heading);
+        Assert.Equal("Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web.", run.Note);
+
+        console.Model.Press(Key.F5);
+
+        Assert.Equal("Warten auf Antworten", run.Heading);
+        Assert.Equal("WARTET", run.Tag.Text);
+    }
+
+    // Of a tree, the rail shows the leaves on the run's path in order: no group, IF or repeat node, and not the step of
+    // the branch the IF did not take.
+    [Fact]
+    public void ShowsTheStepsOnTheRunsPath()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.RunningTree);
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(
+            ["Partition the disk", "Apply the Latitude image", "Inject drivers", "Check the BIOS", "Write the answer file", "Restart into Windows", "Join the domain", "Run script: baseline"],
+            run.Steps.Select(step => step.Name));
+        Assert.Equal(["01", "02"], run.Steps.Take(2).Select(step => step.Number));
+        Assert.Equal("Step 2 of 8 on this path, in Windows PE", run.Position);
+        Assert.Equal([6, 2], run.Phases.Select(phase => phase.Steps));
+        Assert.Equal("37", run.Percent);
+
+        // Before the IF has decided, both of its branches are still to come.
+        ConsoleRun undecided = Scenarios.RunningTree.Run! with
+        {
+            Steps = [.. Scenarios.TreeSteps.Select(step => step with { State = ConsoleStepState.Pending, Pass = 0, Branch = null })],
+            CurrentStepId = null,
+        };
+        console.Show(Scenarios.RunningTree with { Run = undecided });
+
+        Assert.Equal(9, run.Steps.Count);
+        Assert.Equal("0 of 9 steps done", run.Position);
     }
 
     [Fact]
@@ -467,6 +564,8 @@ public sealed class MainViewModelTests
         "disk" => Scenarios.Disks,
         "computerName" => Scenarios.ComputerName(),
         "erase" => Scenarios.Erase,
+        "inputs" => Scenarios.Inputs(),
+        "pause" => Scenarios.Pause,
         _ => Scenarios.SecureBoot,
     };
 }

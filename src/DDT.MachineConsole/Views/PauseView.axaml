@@ -1,0 +1,55 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- A Pause step: the run's panel as the run screen shows it, paused, with a pause sign in the attention colour where the
+     percent would be, the step's name, where on the path it is, what its author asks to be done, and the rail. Under the
+     panel, Enter to let the run go on. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.PauseView"
+             x:DataType="vm:PauseViewModel">
+  <StackPanel Spacing="22" VerticalAlignment="Center">
+    <Border Classes="panel" Padding="28,24,28,28">
+      <StackPanel Spacing="22">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="sequence ink2"
+                     Text="{Binding SequenceName}"
+                     TextWrapping="NoWrap"
+                     TextTrimming="CharacterEllipsis"
+                     VerticalAlignment="Center" />
+          <c:StateTag Grid.Column="1" Value="{Binding Tag}" Margin="16,0,0,0" />
+        </Grid>
+
+        <Grid Name="Hero" ColumnDefinitions="Auto,*" ColumnSpacing="34">
+          <StackPanel Name="Glyph" Orientation="Horizontal" Spacing="22" VerticalAlignment="Center" Margin="6,0,0,0">
+            <Border Classes="pauseBar" />
+            <Border Classes="pauseBar" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+            <TextBlock Name="Title" Classes="headline" MaxLines="2" TextTrimming="WordEllipsis" Text="{Binding Title}" />
+            <TextBlock Classes="lead muted" Text="{Binding Position}" IsVisible="{Binding HasPosition}" />
+          </StackPanel>
+        </Grid>
+
+        <Border Classes="well" Padding="18,14" IsVisible="{Binding HasMessage}">
+          <TextBlock Name="Message" Classes="lead" MaxLines="6" TextTrimming="WordEllipsis" Text="{Binding Message}" />
+        </Border>
+
+        <c:SequenceRail Name="Rail" Steps="{Binding Steps}" Phases="{Binding Phases}" IsVisible="{Binding HasSteps}" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Margin="4,0,0,0">
+      <TextBlock Classes="lead ink2" Text="{Binding Hint}" FontSize="18" VerticalAlignment="Center" />
+      <Button Name="Submit" Grid.Column="1" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:KeyCap Key="Enter" />
+          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </StackPanel>
+</UserControl>

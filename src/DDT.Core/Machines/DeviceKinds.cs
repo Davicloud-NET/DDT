@@ -6,8 +6,8 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Core.Machines;
 
-// Tells what kind of computer a machine is from what its firmware reports: the manufacturer and model of the SMBIOS System
-// Information structure and the chassis type of its System Enclosure structure, numbered as in DMTF DSP0134, table 17.
+// Tells what kind of computer a machine is from its SMBIOS manufacturer, model and System Enclosure chassis type,
+// numbered as in DMTF DSP0134, table 17.
 public static class DeviceKinds
 {
     // Hypervisors mostly report a desktop chassis, or Other, so their names decide first. Hyper-V's model is "Virtual

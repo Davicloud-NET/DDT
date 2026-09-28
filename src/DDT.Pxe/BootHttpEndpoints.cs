@@ -13,15 +13,9 @@ namespace DDT.Pxe;
 
 public static class BootHttpEndpoints
 {
-    // Must run after routing, so the endpoint is known, and before static files, the SPA fallback and
-    // authorization, so nothing else can answer on the anonymous cleartext port. The single comparison
-    // closes both directions: only boot files on the boot port, and no boot files on any other port.
-    // Gating on the path prefix instead would let "/boot" with nothing after it fall through to the
-    // SPA fallback over plain HTTP.
-    //
-    // Unlike TFTP and ProxyDHCP, which see the arrival interface, this checks the destination address.
-    // A Linux host accepts a packet for any of its addresses on any interface, so a client elsewhere
-    // that routes to a served address still reaches the files, which are public by design.
+    // After routing and before static files, the SPA fallback and authorization. Comparing the endpoint, not a path
+    // prefix, keeps boot files on the cleartext boot port and all else off it. The destination address decides, not the
+    // arrival interface, so a client routed to a served address reaches files that are public by design.
     public static IApplicationBuilder UseBootListenerIsolation(
         this IApplicationBuilder app,
         int bootPort,
@@ -89,9 +83,8 @@ public static class BootHttpEndpoints
 
         PxeLog.HttpBoot(logger, context.Request.Method, context.Request.Path, client);
 
-        // Firmware resumes an interrupted download with If-Match when it holds an ETag, so the tag has
-        // to be strong. Without one the If-Match is ignored and a range from a replaced image is
-        // spliced onto the old one.
+        // Firmware resumes an interrupted download with If-Match, so the ETag must be strong: a weak one is ignored,
+        // and a range of a replaced image gets spliced onto the old one.
         EntityTagHeaderValue entityTag = new(
             string.Create(CultureInfo.InvariantCulture, $"\"{file.LastWriteTimeUtc.Ticks:x}-{file.Length:x}\""));
 

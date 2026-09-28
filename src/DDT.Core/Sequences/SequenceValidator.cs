@@ -8,11 +8,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// What makes a sequence runnable. The server stores a sequence with problems as a draft but never runs it, and the
-// agent checks again before it starts. The document comes from outside, so members declared non-null can be null.
-//
-// A sequence is a tree, and its rules hold on every path through it: SequencePaths walks the tree once for all of them,
-// so a different image per branch of an IF is fine, and an image on only one branch before a step in Windows is not.
+// What makes a sequence runnable, on every path through its tree. The server keeps one with problems as a draft and
+// never runs it, and the agent checks again. The document comes from outside, so members declared non-null can be null.
 public static class SequenceValidator
 {
     // Steps are the leaves of the tree; nodes are the leaves and the groups, IFs and repeats that hold them.
@@ -109,7 +106,7 @@ public static class SequenceValidator
         return new SequenceAnalysis([.. problems.Distinct()], [.. warnings.Distinct()], paths.Phases(definition), names.ValueNames);
     }
 
-    // Empty places count as steps, as they did when a sequence was a list.
+    // An empty place counts as a step, as in a flat sequence.
     private static void Count(IReadOnlyList<SequenceStep?> steps, ref int leaves, ref int nodes)
     {
         foreach (SequenceStep? step in steps)
@@ -176,9 +173,8 @@ public static class SequenceValidator
         }
     }
 
-    // Later steps rely on these, so they can neither be skipped nor fail quietly. The activity is partition, image or
-    // rawImage, which the messages say in words. Only the step's own conditions skip it: in a branch of an IF, or in a
-    // group with conditions, the paths say whether later steps have what they need.
+    // Later steps rely on these, so their own conditions and ContinueOnError are refused; in an IF or a group with
+    // conditions the paths decide instead. activity is partition, image or rawImage, for the messages.
     internal static void CheckRunsEveryTime(SequenceStep step, string activity, Action<string?, ServerMessage> add)
     {
         if (step.Conditions is { Count: > 0 })

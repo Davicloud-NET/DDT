@@ -67,6 +67,26 @@ public sealed class FatVolumeTests
         Assert.True(volume.Find(@"EFI\BOOT")!.IsDirectory);
     }
 
+    // FAT12 packs two entries into three bytes, so chains that start on an even and on an odd cluster must both
+    // survive.
+    [Fact]
+    public void ReadsFat12ChainsThroughOddAndEvenClusters()
+    {
+        FatVolumeBuilder builder = new(1024 * 1024, "ESP", 1, s_timestamp) { Type = FatType.Fat12 };
+        builder.AddFile("ONE.BIN", Content(1500, 1));
+        builder.AddFile("TWO.BIN", Content(2100, 2));
+
+        FatVolume volume = Open(builder.Build());
+        FatEntry one = volume.Find("ONE.BIN")!;
+        FatEntry two = volume.Find("TWO.BIN")!;
+
+        Assert.Equal(FatType.Fat12, volume.Type);
+        Assert.Equal(0u, one.FirstCluster % 2);
+        Assert.Equal(1u, two.FirstCluster % 2);
+        Assert.Equal(Content(1500, 1), volume.ReadFile(one, MaxBytes));
+        Assert.Equal(Content(2100, 2), volume.ReadFile(two, MaxBytes));
+    }
+
     [Fact]
     public void WritesTheBootSectorFieldsLinuxAndWindowsRead()
     {

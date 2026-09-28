@@ -9,9 +9,8 @@ using System.Text;
 
 namespace DDT.Protocols.Dhcp;
 
-// Appends length prefixed options into a caller supplied buffer, accumulating an overflow flag
-// rather than returning a result from every call, so a reply is written as a flat run of lines
-// with one check at the end.
+// Appends options to a caller's buffer and remembers an overflow instead of failing each call, so a reply is written as
+// a flat run of calls with one check at the end.
 public ref struct DhcpOptionWriter(Span<byte> destination)
 {
     private readonly Span<byte> _destination = destination;

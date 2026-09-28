@@ -13,19 +13,7 @@ public interface IWimLibrary
         IProgress<WimProgress>? progress,
         CancellationToken cancellationToken);
 
-    Task CaptureAsync(
-        string sourceDirectory,
-        string wimPath,
-        string imageName,
-        WimCompression compression,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken);
+    Task CaptureAsync(WimCapture capture, IProgress<WimProgress>? progress, CancellationToken cancellationToken);
 
-    Task ExportAsync(
-        string sourceWimPath,
-        int index,
-        string destinationWimPath,
-        WimCompression compression,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken);
+    Task ExportAsync(WimExport export, IProgress<WimProgress>? progress, CancellationToken cancellationToken);
 }

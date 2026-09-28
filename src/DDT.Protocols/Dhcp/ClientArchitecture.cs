@@ -4,9 +4,8 @@
 
 namespace DDT.Protocols.Dhcp;
 
-// The IANA "Processor Architecture Types" registry for DHCP option 93, complete as published.
-// Deprecated entries are kept because a client may still send them and an operator reading a log
-// is better served by a name than by a number.
+// The IANA "Processor Architecture Types" registry for DHCP option 93, complete as published. Deprecated entries stay,
+// because a client may still send them and a name reads better in a log than a number.
 public enum ClientArchitecture : ushort
 {
     X86Bios = 0x00,

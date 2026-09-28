@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
 using System.Text.Json;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
+using static DDT.Core.Tests.Sequences.TreeFixture;
 
 namespace DDT.Core.Tests.Sequences;
 
@@ -15,9 +15,6 @@ namespace DDT.Core.Tests.Sequences;
 // hand-over from the blob alone, in a fresh engine, as the agent does.
 public sealed class TreeEngineTests
 {
-    private const string Office = "Office";
-    private const string Tries = "tries";
-
     private static readonly MachineVariables s_machine = new(
         "Dell Inc.",
         "Latitude 7440",
@@ -35,13 +32,11 @@ public sealed class TreeEngineTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    // Group, both branches of an IF, a variable a step sets deciding an IF, restarts inside an IF branch and a repeat, a
-    // retry driven by LastExitCode that holds the second time, a repeat that goes on at its limit, a failure a group
-    // catches, and a hand-over to Windows on one branch only.
+    // The fixture's tree through its restarts, its retry, its caught failure and the hand-over on one branch.
     [Fact]
     public async Task RunsATreeThroughItsRestartsAndTheHandOver()
     {
-        Fixture tree = new();
+        TreeFixture tree = new();
 
         Driven run = await DriveAsync(tree.Start(), tree.Behaviours);
 
@@ -82,6 +77,19 @@ public sealed class TreeEngineTests
                 tree.Failing.Id, tree.InWindows.Id, tree.Last.Id,
             ],
             run.Runner.Ran);
+        Assert.Equal(SequenceState.TreeFormat, run.Result.State.Format);
+        Assert.Null(run.Result.State.Cursor);
+    }
+
+    // The run variables hold what steps set, and a step without a phase of its own runs in the phase the branch taken
+    // led to, where conditions read the variables steps set on top of the run's values.
+    [Fact]
+    public async Task KeepsWhatStepsSetAndRunsEachStepInThePhaseItsBranchLedTo()
+    {
+        TreeFixture tree = new();
+
+        Driven run = await DriveAsync(tree.Start(), tree.Behaviours);
+
         Assert.Equal(
             Outputs(
                 (Office, "VIENNA-7440"),
@@ -92,24 +100,18 @@ public sealed class TreeEngineTests
         Assert.Equal(
             "The script ended with exit code 5.",
             run.Result.State.Steps[Order(tree, tree.Guarded)].Error);
-
-        // A step without a phase of its own runs in the phase the branch taken led to, and conditions read the variables
-        // steps set on top of the run's values.
         Assert.Equal(SequencePhase.Windows, run.Runner.Runs.Single(ran => ran.StepId == tree.InWindows.Id).Context.Phase);
         Assert.Equal(SequencePhase.Windows, run.Runner.Runs.Single(ran => ran.StepId == tree.Last.Id).Context.Phase);
         Assert.Equal("VIENNA-7440", run.Runner.Runs.Single(ran => ran.StepId == tree.Elsewhere.Id).Context.Machine.Value(Office));
         Assert.Equal("Vienna", run.Runner.Runs.Single(ran => ran.StepId == tree.Elsewhere.Id).Context.Machine.Value("site"));
-        Assert.Equal(SequenceState.TreeFormat, run.Result.State.Format);
-        Assert.Null(run.Result.State.Cursor);
     }
 
-    // The rule the engine keeps: whatever the save the machine stopped after, a fresh engine resumes from the blob alone
-    // and does exactly what the run did after it. A blob saved while a step that cannot run twice was running is where
-    // the power failed during that step: the resumed run fails it as interrupted before anything else.
+    // Whatever save the machine stopped after, a fresh engine resumes from the blob alone and does what the run did. A
+    // blob saved while a step that cannot run twice was running fails that step as interrupted first.
     [Fact]
     public async Task ResumesFromEverySavedStateInAFreshEngine()
     {
-        Fixture tree = new();
+        TreeFixture tree = new();
         Driven reference = await DriveAsync(tree.Start(), tree.Behaviours);
         string finished = Json(reference.Result.State);
         int resumed = 0;
@@ -153,7 +155,7 @@ public sealed class TreeEngineTests
     [Fact]
     public async Task RecordsTheTestsThatDecidedOnSkippedStepsIfsAndRepeats()
     {
-        Fixture tree = new();
+        TreeFixture tree = new();
 
         SequenceState state = (await DriveAsync(tree.Start(), tree.Behaviours)).Result.State;
 
@@ -428,8 +430,8 @@ public sealed class TreeEngineTests
         Assert.Equal("Yes", run.Result.State.Variables[MachineVariableNames.LastStepFailed]);
     }
 
-    // A stop in the second time through a repeat keeps the Running mark and the iteration, and the resumed run fails the
-    // step as interrupted.
+    // A stop in the second time through a repeat keeps the Running mark and the iteration, and the resumed run fails
+    // the step as interrupted.
     [Fact]
     public async Task StopsInsideARepeatAndKeepsTheRunningMark()
     {
@@ -471,7 +473,8 @@ public sealed class TreeEngineTests
         Assert.Equal(["Repeat Failed 1 x2", "Body Failed 2"], Lines(resumed.State));
     }
 
-    // A failure goes up through the containers to the nearest one that lets the run go on, and the run goes on after it.
+    // A failure goes up through the containers to the nearest one that lets the run go on, and the run goes on after
+    // it.
     [Fact]
     public async Task GoesOnAfterTheNearestAncestorThatAllowsAFailure()
     {
@@ -500,8 +503,8 @@ public sealed class TreeEngineTests
         Assert.Equal("diskpart.exe is missing.", run.Result.State.Steps[1].Error);
     }
 
-    // A file an agent of version 1 or 2 wrote: the run goes on at NextIndex and saves Format 1 again, changing only what
-    // the engine of version 2 changed, without a member of a tree and without the run variables of version 3.
+    // A file an agent of version 1 or 2 wrote: the run goes on at NextIndex and saves Format 1 again, changing only
+    // what the engine of version 2 changed, without a member of a tree and without the run variables of version 3.
     [Fact]
     public async Task ResumesAFormat1FileAsBefore()
     {
@@ -583,7 +586,8 @@ public sealed class TreeEngineTests
         Assert.All(run.Store.States, state => Assert.Equal((SequenceState.CurrentFormat, null), (state.Format, state.Cursor)));
     }
 
-    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave it.
+    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave
+    // it.
     private static async Task<string> BlobWhileRunningAsync(SequenceStep step, SequenceState start)
     {
         BlobStore store = new();
@@ -646,178 +650,11 @@ public sealed class TreeEngineTests
             $"{node.Name} {run.State} {run.Pass}{(run.Iteration > 0 ? $" x{run.Iteration}" : "")}{(run.Branch is { } b ? $" {b}" : "")}"),
     ];
 
-    private static int Order(Fixture tree, SequenceStep node) => SequenceTree.Index(tree.Definition)[node.Id].Order;
+    private static int Order(TreeFixture tree, SequenceStep node) => SequenceTree.Index(tree.Definition)[node.Id].Order;
 
-    private static StepRunState Run(SequenceState state, Fixture tree, SequenceStep node) => state.Steps[Order(tree, node)];
+    private static StepRunState Run(SequenceState state, TreeFixture tree, SequenceStep node) => state.Steps[Order(tree, node)];
 
     private static string Json(SequenceState state) => JsonSerializer.Serialize(state, AgentJsonContext.Default.SequenceState);
 
-    private static int Count(StepContext context) =>
-        int.Parse(context.Variables.GetValueOrDefault(Tries, "0"), NumberStyles.None, CultureInfo.InvariantCulture);
-
-    private static Dictionary<string, string> Outputs(params (string Name, string Value)[] outputs) =>
-        outputs.ToDictionary(output => output.Name, output => output.Value, StringComparer.Ordinal);
-
-    private static SequenceDefinition Tree(params SequenceStep[] steps) =>
-        new(3, steps) { Variables = [new VariableDeclaration { Name = Office, SetBySteps = true }] };
-
-    private static RunScriptStep Script(string name, SequencePhase phase = SequencePhase.WindowsPE) =>
-        new() { Id = Guid.NewGuid(), Name = name, Phase = phase, Script = "exit /b 0" };
-
-    private static RebootStep Reboot(string name) => new() { Id = Guid.NewGuid(), Name = name };
-
     private sealed record Driven(SequenceRunResult Result, BlobStore Store, RecordingRunner Runner);
-
-    // Each step's result comes from its context alone, so a resumed run does what the first one did. Mark is the blob
-    // saved as the step started: its Running mark, or the blob a resumable step was found Running in.
-    private sealed class RecordingRunner(IReadOnlyDictionary<Guid, Func<StepContext, StepResult>> behaviours, BlobStore store) : IStepRunner
-    {
-        private readonly List<(Guid StepId, int Mark, StepContext Context)> _runs = [];
-
-        public IReadOnlyList<(Guid StepId, int Mark, StepContext Context)> Runs => _runs;
-
-        public IReadOnlyList<Guid> Ran => [.. _runs.Select(run => run.StepId)];
-
-        public Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
-        {
-            _runs.Add((step.Id, store.Blobs.Count - 1, context));
-
-            return Task.FromResult(behaviours.TryGetValue(step.Id, out Func<StepContext, StepResult>? behaviour)
-                ? behaviour(context)
-                : step is RebootStep ? StepResult.RebootRequired() : StepResult.Done());
-        }
-    }
-
-    // Partition; a variable made from a run value and a fact; a group with a step skipped by its When; an IF on the model
-    // that restarts in Then; an IF on the variable that takes Else; a retry that fails, restarts and works the second
-    // time; a repeat that goes on at its limit; a group that catches a failure; an IF that goes to Windows in Then; a
-    // restart after it.
-    private sealed class Fixture
-    {
-        public PartitionStep Partition { get; } = new() { Id = Guid.NewGuid(), Name = "Partition" };
-
-        public SetVariableStep SetOffice { get; } = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "Set the office",
-            Variable = "office",
-            Value = "{{Site|upper}}-{{Model|alnum|right:4}}",
-        };
-
-        public RunScriptStep PrepareA { get; } = Script("Prepare a");
-
-        public RunScriptStep OnlyPrecision { get; } = Script("Only on a Precision") with
-        {
-            When = new TestCondition(MachineVariableNames.Model, ConditionOperator.Contains, "Precision"),
-        };
-
-        public GroupStep Prepare => new() { Id = PrepareId, Name = "Prepare", Steps = [PrepareA, OnlyPrecision] };
-
-        public RunScriptStep RestartingInThen { get; } = Script("Restarting in Then") with { RebootAfter = true };
-
-        public RunScriptStep AfterRestart { get; } = Script("After the restart");
-
-        public RunScriptStep NotLatitude { get; } = Script("Not a Latitude");
-
-        public IfStep ByModel => new()
-        {
-            Id = ByModelId,
-            Name = "By model",
-            Test = new TestCondition(MachineVariableNames.FriendlyModel, ConditionOperator.Contains, "Latitude"),
-            Then = [RestartingInThen, AfterRestart],
-            Else = [NotLatitude],
-        };
-
-        public RunScriptStep Berlin { get; } = Script("Berlin");
-
-        public RunScriptStep Elsewhere { get; } = Script("Elsewhere");
-
-        public IfStep ByOffice => new()
-        {
-            Id = ByOfficeId,
-            Name = "By office",
-            Test = new TestCondition(Office, ConditionOperator.Equals, "BERLIN-7440"),
-            Then = [Berlin],
-            Else = [Elsewhere],
-        };
-
-        public RunScriptStep Try { get; } = Script("Try") with { ContinueOnError = true };
-
-        public RebootStep RestartInRetry { get; } = Reboot("Restart in the retry");
-
-        public RepeatStep Retry => new()
-        {
-            Id = RetryId,
-            Name = "Retry",
-            Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
-            MaxTimes = 3,
-            Steps = [Try, RestartInRetry],
-        };
-
-        public RunScriptStep Twice { get; } = Script("Twice");
-
-        public RepeatStep AtMostTwice => new()
-        {
-            Id = AtMostTwiceId,
-            Name = "At most twice",
-            Until = new TestCondition(Office, ConditionOperator.Equals, "nowhere"),
-            MaxTimes = 2,
-            GoOnAtLimit = true,
-            Steps = [Twice],
-        };
-
-        public RunScriptStep Failing { get; } = Script("Failing");
-
-        public RunScriptStep NeverReached { get; } = Script("Never reached");
-
-        public GroupStep Guarded => new() { Id = GuardedId, Name = "Guarded", ContinueOnError = true, Steps = [Failing, NeverReached] };
-
-        public RunScriptStep InWindows { get; } = Script("In Windows", SequencePhase.Windows);
-
-        public RunScriptStep InWindowsPE { get; } = Script("In Windows PE");
-
-        public IfStep BySite => new()
-        {
-            Id = BySiteId,
-            Name = "By site",
-            Test = new TestCondition("Site", ConditionOperator.Equals, "vienna"),
-            Then = [InWindows],
-            Else = [InWindowsPE],
-        };
-
-        public RebootStep Last { get; } = Reboot("Last");
-
-        public SequenceDefinition Definition =>
-            Tree(Partition, SetOffice, Prepare, ByModel, ByOffice, Retry, AtMostTwice, Guarded, BySite, Last);
-
-        public IReadOnlyDictionary<Guid, Func<StepContext, StepResult>> Behaviours => new Dictionary<Guid, Func<StepContext, StepResult>>
-        {
-            [Try.Id] = context =>
-            {
-                int tries = Count(context) + 1;
-                Dictionary<string, string> outputs = Outputs((Tries, tries.ToString(CultureInfo.InvariantCulture)));
-
-                return tries < 2
-                    ? new StepResult(StepOutcome.Failed, "The script ended with exit code 1.", outputs) { ExitCode = 1 }
-                    : StepResult.Done(outputs) with { ExitCode = 0 };
-            },
-            [Failing.Id] = _ => StepResult.Failed("The script ended with exit code 5.") with { ExitCode = 5 },
-        };
-
-        private Guid PrepareId { get; } = Guid.NewGuid();
-
-        private Guid ByModelId { get; } = Guid.NewGuid();
-
-        private Guid ByOfficeId { get; } = Guid.NewGuid();
-
-        private Guid RetryId { get; } = Guid.NewGuid();
-
-        private Guid AtMostTwiceId { get; } = Guid.NewGuid();
-
-        private Guid GuardedId { get; } = Guid.NewGuid();
-
-        private Guid BySiteId { get; } = Guid.NewGuid();
-
-        public SequenceState Start() => SequenceStates.Start(Guid.NewGuid(), Definition);
-    }
 }

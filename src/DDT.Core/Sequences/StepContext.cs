@@ -6,12 +6,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// Variables are the run variables earlier steps output. Machine is what conditions read in the step's phase; in a tree's
-// run its Variables hold the run's values with Variables on top, which is what templates such as a pause's message use.
-// Progress takes the step's percent.
 public sealed record StepContext(
     Guid RunId,
     SequencePhase Phase,
+    // What conditions read in the step's phase; in a tree's run its Variables hold the run's values with Variables on
+    // top, which templates such as a pause's message use.
     MachineVariables Machine,
+    // The run variables earlier steps output.
     IReadOnlyDictionary<string, string> Variables,
     IProgress<int> Progress);

@@ -6,7 +6,7 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Tests.Sequences;
 
-// A kind this version does not have, which erases the disk like the raw image step M6 added.
+// A kind this version does not have, which erases the disk.
 public sealed record FutureStep : SequenceStep
 {
     public override SequencePhase? RequiredPhase => SequencePhase.WindowsPE;

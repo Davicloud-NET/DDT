@@ -12,14 +12,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Pxe;
 
-// One hosted service owns all three listeners. Registering them separately with AddHostedService
-// would silently drop the second ProxyDHCP listener, because it dedupes on implementation type.
-//
-// The settings can change while the server runs, so the listeners are rebuilt whenever the source reports a new version:
-// stopped, and started again with the new setup. A setup whose listeners do not bind is not kept: the previous one is
-// started again, and the failure is reported to the source instead of stopping the host. Only at startup, and only when
-// the source says configuration decided what is served, a bind failure still stops the host before it reports itself
-// started, as it always did.
+// One hosted service owns all three listeners, because AddHostedService dedupes on the implementation type and would
+// drop the second ProxyDHCP listener. Each new settings version rebuilds them; a setup that does not bind rolls back to
+// the previous one and is reported, unless PxeDesiredSetup.StopHostOnFailure asks to stop the host at startup.
 public sealed class PxeHost : IHostedService, IDisposable
 {
     private readonly PxeHostSource _source;
@@ -196,8 +191,29 @@ public sealed class PxeHost : IHostedService, IDisposable
 
     private void Start(PxeSetup setup)
     {
-        NetworkInterfaceMap interfaces = setup.Interfaces;
+        if (!LogInterfaces(setup.Interfaces))
+        {
+            return;
+        }
 
+        LogBootTargets(setup);
+
+        if (setup.Options.EnableProxyDhcp)
+        {
+            StartProxyDhcp(setup);
+        }
+
+        if (setup.Options.EnableTftp)
+        {
+            StartTftp(setup);
+        }
+
+        PxeLog.HttpBootListening(_logger, setup.Options.HttpBootPort, setup.Files.Root);
+    }
+
+    // False when no interface is served, which leaves nothing to start.
+    private bool LogInterfaces(NetworkInterfaceMap interfaces)
+    {
         foreach (string name in interfaces.Unmatched)
         {
             PxeLog.InterfaceNotFound(_logger, name);
@@ -209,7 +225,7 @@ public sealed class PxeHost : IHostedService, IDisposable
                 _logger,
                 string.Join(", ", interfaces.Candidates.Select(candidate => $"{candidate.Name} ({candidate.Address})")));
 
-            return;
+            return false;
         }
 
         foreach (ServedInterface served in interfaces.Served)
@@ -217,51 +233,45 @@ public sealed class PxeHost : IHostedService, IDisposable
             PxeLog.ServingInterface(_logger, served.Name, served.Address, served.Index);
         }
 
-        LogBootTargets(setup);
+        return true;
+    }
 
+    private void StartProxyDhcp(PxeSetup setup)
+    {
+        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces);
+
+        ProxyDhcpListener dhcp = new(
+            ProxyDhcpListenPort.Dhcp,
+            new IPEndPoint(_binding.Address, _binding.DhcpPort),
+            handler,
+            setup.Interfaces,
+            _loggerFactory.CreateLogger<ProxyDhcpListener>());
+        Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+
+        ProxyDhcpListener bootServer = new(
+            ProxyDhcpListenPort.PxeBootServer,
+            new IPEndPoint(_binding.Address, _binding.BootServerPort),
+            handler,
+            setup.Interfaces,
+            _loggerFactory.CreateLogger<ProxyDhcpListener>());
+        Bind(bootServer, "PXE boot server", "bootServer", _binding.BootServerPort);
+    }
+
+    private void StartTftp(PxeSetup setup)
+    {
         PxeOptions options = setup.Options;
-
-        if (options.EnableProxyDhcp)
-        {
-            ProxyDhcpHandler handler = new(setup.ProxyDhcp, interfaces);
-
-            ProxyDhcpListener dhcp = new(
-                ProxyDhcpListenPort.Dhcp,
-                new IPEndPoint(_binding.Address, _binding.DhcpPort),
-                handler,
-                interfaces,
-                _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(dhcp.Start, dhcp.StopAsync, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
-
-            ProxyDhcpListener bootServer = new(
-                ProxyDhcpListenPort.PxeBootServer,
-                new IPEndPoint(_binding.Address, _binding.BootServerPort),
-                handler,
-                interfaces,
-                _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(bootServer.Start, bootServer.StopAsync, "PXE boot server", "bootServer", _binding.BootServerPort);
-        }
-
-        if (options.EnableTftp)
-        {
-            TftpListener tftp = new(
-                new IPEndPoint(_binding.Address, _binding.TftpPort),
-                interfaces,
-                setup.Files,
-                setup.TftpLimits,
-                options.MaxConcurrentTftpTransfers,
-                options.TftpSinglePort,
-                _timeProvider,
-                _loggerFactory.CreateLogger<TftpListener>());
-            Bind(
-                tftp.Start,
-                tftp.StopAsync,
-                options.TftpSinglePort ? "TFTP (single port)" : "TFTP",
-                options.TftpSinglePort ? "tftpSinglePort" : "tftp",
-                _binding.TftpPort);
-        }
-
-        PxeLog.HttpBootListening(_logger, options.HttpBootPort, setup.Files.Root);
+        TftpListener tftp = new(
+            new IPEndPoint(_binding.Address, _binding.TftpPort),
+            setup.Interfaces,
+            setup.Files,
+            new TftpServing(setup.TftpLimits, options.MaxConcurrentTftpTransfers, options.TftpSinglePort),
+            _timeProvider,
+            _loggerFactory.CreateLogger<TftpListener>());
+        Bind(
+            tftp,
+            options.TftpSinglePort ? "TFTP (single port)" : "TFTP",
+            options.TftpSinglePort ? "tftpSinglePort" : "tftp",
+            _binding.TftpPort);
     }
 
     // Ends every TFTP transfer in progress, which a machine then starts again.
@@ -276,11 +286,11 @@ public sealed class PxeHost : IHostedService, IDisposable
     }
 
     // Protocol names the listener in the log, and kind in the message, which says the advice for the socket error too.
-    private void Bind(Action start, Func<Task> stop, string protocol, string kind, int port)
+    private void Bind(IPxeListener listener, string protocol, string kind, int port)
     {
         try
         {
-            start();
+            listener.Start();
         }
         catch (SocketException exception)
         {
@@ -289,7 +299,7 @@ public sealed class PxeHost : IHostedService, IDisposable
                 exception);
         }
 
-        _stops.Add(stop);
+        _stops.Add(listener.StopAsync);
         PxeLog.Listening(_logger, protocol, port);
     }
 
@@ -312,24 +322,4 @@ public sealed class PxeHost : IHostedService, IDisposable
             }
         }
     }
-}
-
-// What the host should serve: the options, or null to serve nothing with Refusal saying why, and the version of the
-// settings they came from. StopHostOnFailure: configuration decided what is served, so a bind failure at startup stops
-// the host rather than being reported.
-public sealed record PxeDesiredSetup(long Version, PxeOptions? Options, ServerMessage? Refusal, bool StopHostOnFailure);
-
-// Interfaces is what the host found when it applied, null when it built no setup. Message is English, and Text the same
-// sentence as a code where it is one DDT knows, such as a port that did not bind; an exception's own text has none.
-public sealed record PxeApplyResult(long Version, bool Succeeded, string? Message, NetworkInterfaceMap? Interfaces, ServerMessage? Text = null);
-
-// How the host learns what to serve, when that changes, and where each result goes. DDT.Pxe knows nothing of the
-// settings store; the host wires these to it.
-public sealed record PxeHostSource(Func<PxeDesiredSetup> Desired, Func<IChangeToken> Changed, Func<PxeApplyResult, Task> Applied);
-
-// Where the listeners bind and how the host finds its interfaces. Standard is the real thing: the wildcard address, which
-// leaves Kestrel alone, the PXE ports, and the host's interfaces as they are at each apply.
-public sealed record PxeListenerBinding(IPAddress Address, int DhcpPort, int BootServerPort, int TftpPort, Func<string, NetworkInterfaceMap> Interfaces)
-{
-    public static PxeListenerBinding Standard { get; } = new(IPAddress.Any, 67, 4011, 69, NetworkInterfaceMap.FromHost);
 }

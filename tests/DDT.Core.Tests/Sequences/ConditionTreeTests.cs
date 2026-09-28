@@ -81,7 +81,7 @@ public sealed class ConditionTreeTests
     }
 
     // Firmware writes model names with stray spaces, so the tree compares them cleaned, as model rules and driver
-    // packages always did.
+    // packages do.
     [Theory]
     [InlineData(MachineVariableNames.Model, "  LATITUDE   5440 ")]
     [InlineData(MachineVariableNames.Manufacturer, "dell inc.")]
@@ -239,7 +239,7 @@ public sealed class ConditionTreeTests
         Assert.True(Holds("lastexitcode", ConditionOperator.Greater, "0"));
     }
 
-    // As today: a name without a value meets only the operators that say it is not something.
+    // A name without a value meets only the operators that say it is not something.
     [Theory]
     [InlineData(ConditionOperator.Equals, false)]
     [InlineData(ConditionOperator.NotEquals, true)]

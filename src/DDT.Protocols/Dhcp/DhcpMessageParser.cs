@@ -42,35 +42,36 @@ public static class DhcpMessageParser
 
         Accumulator accumulator = new();
 
-        if (!accumulator.Read(datagram[OptionsOffset..]))
+        if (!TryReadOptions(datagram, accumulator))
         {
             error = DhcpParseError.OptionOverrunsDatagram;
             return false;
         }
 
-        // RFC 2131 section 4.1: the options field is interpreted first so option 52 is discovered,
-        // then the file field, then the sname field.
-        if ((accumulator.Overload & 1) != 0 && !accumulator.Read(datagram.Slice(BootFileOffset, BootFileLength)))
-        {
-            error = DhcpParseError.OptionOverrunsDatagram;
-            return false;
-        }
-
-        if ((accumulator.Overload & 2) != 0 && !accumulator.Read(datagram.Slice(ServerNameOffset, ServerNameLength)))
-        {
-            error = DhcpParseError.OptionOverrunsDatagram;
-            return false;
-        }
-
-        if (accumulator.MessageType is null)
+        if (accumulator.MessageType is not { } messageType)
         {
             error = DhcpParseError.MissingMessageType;
             return false;
         }
 
+        message = Message(datagram, messageType, accumulator);
+        error = DhcpParseError.None;
+
+        return true;
+    }
+
+    // RFC 2131 section 4.1: the options field is interpreted first so option 52 is discovered,
+    // then the file field, then the sname field.
+    private static bool TryReadOptions(ReadOnlySpan<byte> datagram, Accumulator accumulator) =>
+        accumulator.Read(datagram[OptionsOffset..])
+        && ((accumulator.Overload & 1) == 0 || accumulator.Read(datagram.Slice(BootFileOffset, BootFileLength)))
+        && ((accumulator.Overload & 2) == 0 || accumulator.Read(datagram.Slice(ServerNameOffset, ServerNameLength)));
+
+    private static DhcpMessage Message(ReadOnlySpan<byte> datagram, DhcpMessageType messageType, Accumulator accumulator)
+    {
         byte hardwareLength = Math.Min(datagram[2], (byte)16);
 
-        message = new DhcpMessage
+        return new DhcpMessage
         {
             Operation = datagram[0],
             HardwareType = datagram[1],
@@ -80,7 +81,7 @@ public static class DhcpMessageParser
             ClientAddress = new IPAddress(datagram.Slice(12, 4)),
             GatewayAddress = new IPAddress(datagram.Slice(24, 4)),
             ClientHardwareAddress = datagram.Slice(28, hardwareLength).ToArray(),
-            MessageType = accumulator.MessageType.Value,
+            MessageType = messageType,
             MaximumMessageSize = accumulator.MaximumMessageSize,
             VendorClassIdentifier = accumulator.VendorClass,
             ServerIdentifier = accumulator.ServerIdentifier,
@@ -91,10 +92,6 @@ public static class DhcpMessageParser
             ArchitectureMalformed = accumulator.ArchitectureMalformed,
             VendorSpecific = accumulator.VendorSpecific,
         };
-
-        error = DhcpParseError.None;
-
-        return true;
     }
 
     // RFC 3396: a value split across repeated occurrences of one code is concatenated in the order
@@ -172,9 +169,8 @@ public static class DhcpMessageParser
             return !reader.Truncated;
         }
 
-        // RFC 4578 section 2.1: the length must be an even number greater than zero. Only the first
-        // entry is used, because serving a later one hands a machine an image it cannot execute, and
-        // honouring the list would let a hostile client force a reply by naming every architecture.
+        // RFC 4578 section 2.1: the length is even and above zero. Only the first entry counts: a later one could hand
+        // the machine an image it cannot run, and a hostile client could name every architecture.
         private void ReadArchitecture(scoped ReadOnlySpan<byte> value)
         {
             if (value.Length < 2 || value.Length % 2 != 0)

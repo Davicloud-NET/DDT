@@ -11,11 +11,8 @@ using DDT.Core.Unattend;
 
 namespace DDT.Core.Values;
 
-// Works out a run's values when it starts, and the preview of them on the web. For each name the first source in the
-// order of ValueSources sets it, and the sources after it are shown as overridden. A template may use other values and
-// the machine's facts; a value made from itself, a name nothing gives a value, a computer name Windows refuses and a
-// required input without an answer or a default are problems. A value the machine, a rule or a machine role gives an
-// input's name is that input's default, ahead of the input's own. Names ignore case, as templates do.
+// Works out a run's values when it starts, and their preview on the web. For each name the first source in the order
+// of ValueSources wins and the later ones show as overridden. Names ignore case, as templates do.
 public static class ValueResolver
 {
     // Between the names of a loop of values, for a person to follow it.
@@ -26,32 +23,7 @@ public static class ValueResolver
         ArgumentNullException.ThrowIfNull(sources);
 
         List<ValueProblem> problems = [];
-
-        // Each name as the sequence declares it, or else as the first source to set it writes it.
-        Dictionary<string, List<Candidate>> byName = new(StringComparer.OrdinalIgnoreCase);
-        List<string> order = [];
-
-        foreach (string name in Declared(sources.Sequence))
-        {
-            if (byName.TryAdd(name, []))
-            {
-                order.Add(name);
-            }
-        }
-
-        foreach (Candidate candidate in Candidates(sources, problems))
-        {
-            if (!byName.TryGetValue(candidate.Name, out List<Candidate>? named))
-            {
-                byName[candidate.Name] = named = [];
-                order.Add(candidate.Name);
-            }
-
-            named.Add(candidate);
-        }
-
-        order.RemoveAll(name => byName[name].Count == 0);
-
+        (Dictionary<string, List<Candidate>> byName, List<string> order) = Group(sources, problems);
         Resolution resolution = new(
             order.ToDictionary(name => name, name => byName[name], StringComparer.OrdinalIgnoreCase),
             sources.Facts,
@@ -83,6 +55,49 @@ public static class ValueResolver
                 ServerMessages.ValuesComputerName.With("problem", refused, "value", computerName)));
         }
 
+        List<ResolvedValue> inputDefaults = InputDefaults(sources, byName, effective, resolution, problems);
+
+        return new ValueResolution(values, effective, [.. problems.Distinct()], inputDefaults);
+    }
+
+    // Each name as the sequence declares it, or else as the first source to set it writes it. Names no source sets go.
+    private static (Dictionary<string, List<Candidate>> ByName, List<string> Order) Group(ValueSources sources, List<ValueProblem> problems)
+    {
+        Dictionary<string, List<Candidate>> byName = new(StringComparer.OrdinalIgnoreCase);
+        List<string> order = [];
+
+        foreach (string name in Declared(sources.Sequence))
+        {
+            if (byName.TryAdd(name, []))
+            {
+                order.Add(name);
+            }
+        }
+
+        foreach (Candidate candidate in Candidates(sources, problems))
+        {
+            if (!byName.TryGetValue(candidate.Name, out List<Candidate>? named))
+            {
+                byName[candidate.Name] = named = [];
+                order.Add(candidate.Name);
+            }
+
+            named.Add(candidate);
+        }
+
+        order.RemoveAll(name => byName[name].Count == 0);
+
+        return (byName, order);
+    }
+
+    // A required input needs an answer, or a value to start its question with.
+    private static List<ResolvedValue> InputDefaults(
+        ValueSources sources,
+        Dictionary<string, List<Candidate>> byName,
+        Dictionary<string, string> effective,
+        Resolution resolution,
+        List<ValueProblem> problems)
+    {
         List<ResolvedValue> inputDefaults = [];
 
         foreach (InputDeclaration input in Inputs(sources.Sequence))
@@ -100,12 +115,11 @@ public static class ValueResolver
             }
         }
 
-        return new ValueResolution(values, effective, [.. problems.Distinct()], inputDefaults);
+        return inputDefaults;
     }
 
-    // What an input's question starts with: the value the machine, a rule or a machine role gives its name, as the run
-    // would use it without an answer, or else the input's own Default. Either answers a required input. Overridden when
-    // an answer was given.
+    // The machine's, a rule's or a role's value for the input's name, as the run would use it without an answer, or
+    // else the input's own Default. Either answers a required input.
     private static ResolvedValue? Prefill(
         InputDeclaration input,
         List<Candidate> named,
@@ -128,39 +142,40 @@ public static class ValueResolver
             : new ResolvedValue(input.Name, input.Default, ValueSource.SequenceDefault, null, null, answered);
     }
 
-    // Every value a source sets, in the order they win. A name the catalogue holds is the machine's or the run's alone, so
-    // a source that sets one is a problem, except for ComputerName, which is a value the machine's name comes from.
+    // A name the catalogue holds is the machine's or the run's alone, so a source that sets one is a problem, except
+    // for ComputerName, which is a value the machine's name comes from.
     private static List<Candidate> Candidates(ValueSources sources, List<ValueProblem> problems)
     {
         List<Candidate> candidates = [];
 
-        void Add(string? name, string? text, bool template, ValueSource source, Guid? id = null, string? sourceName = null)
+        foreach (Candidate candidate in Offered(sources).OfType<Candidate>())
         {
-            if (string.IsNullOrEmpty(name) || text is null)
+            if (IsFact(candidate.Name))
             {
-                return;
+                problems.Add(new ValueProblem(candidate.Name, ServerMessages.ValuesFact.With("name", candidate.Name)));
             }
-
-            if (IsFact(name))
+            else
             {
-                problems.Add(new ValueProblem(name, ServerMessages.ValuesFact.With("name", name)));
-
-                return;
+                candidates.Add(candidate);
             }
-
-            candidates.Add(new Candidate(name, text, template, source, id, sourceName));
         }
 
+        return candidates;
+    }
+
+    // Every value a source sets, in the order they win; null where it sets no value.
+    private static IEnumerable<Candidate?> Offered(ValueSources sources)
+    {
         List<InputDeclaration> inputs = Inputs(sources.Sequence);
 
         foreach (InputDeclaration input in inputs)
         {
-            Add(input.Name, Answer(sources.Answers, input.Name), template: false, ValueSource.Input);
+            yield return Offer(input.Name, Answer(sources.Answers, input.Name), template: false, ValueSource.Input);
         }
 
         foreach (NamedValue? value in sources.Machine ?? [])
         {
-            Add(value?.Name, value?.Value, template: false, ValueSource.Machine);
+            yield return Offer(value?.Name, value?.Value, template: false, ValueSource.Machine);
         }
 
         foreach ((IReadOnlyList<ValueSet>? sets, ValueSource source) in SetsInOrder(sources))
@@ -169,28 +184,29 @@ public static class ValueResolver
             {
                 foreach (NamedValue? value in set?.Values ?? [])
                 {
-                    Add(value?.Name, value?.Value, template: true, source, set!.Id, set.Name);
+                    yield return Offer(value?.Name, value?.Value, template: true, source, set);
                 }
             }
         }
 
         foreach (InputDeclaration input in inputs.Where(input => !string.IsNullOrEmpty(input.Default)))
         {
-            Add(input.Name, input.Default, template: false, ValueSource.SequenceDefault);
+            yield return Offer(input.Name, input.Default, template: false, ValueSource.SequenceDefault);
         }
 
         foreach (VariableDeclaration? variable in sources.Sequence?.Variables ?? [])
         {
-            Add(variable?.Name, variable?.Default, template: true, ValueSource.SequenceDefault);
+            yield return Offer(variable?.Name, variable?.Default, template: true, ValueSource.SequenceDefault);
         }
 
         foreach (NamedValue? value in sources.DeploymentDefaults ?? [])
         {
-            Add(value?.Name, value?.Value, template: false, ValueSource.DeploymentDefault);
+            yield return Offer(value?.Name, value?.Value, template: false, ValueSource.DeploymentDefault);
         }
-
-        return candidates;
     }
+
+    private static Candidate? Offer(string? name, string? text, bool template, ValueSource source, ValueSet? set = null) =>
+        string.IsNullOrEmpty(name) || text is null ? null : new Candidate(name, text, template, source, set?.Id, set?.Name);
 
     private static (IReadOnlyList<ValueSet>? Sets, ValueSource Source)[] SetsInOrder(ValueSources sources) =>
         [(sources.Rules, ValueSource.Rule), (sources.Roles, ValueSource.Role)];
@@ -263,8 +279,8 @@ public static class ValueResolver
 
         private string? Render(string name, string text)
         {
-            // Every value the template uses is worked out first, so a loop, or a value that could not be worked out, stops
-            // this one without a problem of its own.
+            // Every value the template uses is worked out first, so a loop, or a value that could not be worked out,
+            // stops this one without a problem of its own.
             if (ValueTemplate.Parse(text).Names.Where(byName.ContainsKey).Any(used => Value(used) is null))
             {
                 return null;

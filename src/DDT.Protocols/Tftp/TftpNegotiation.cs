@@ -4,9 +4,8 @@
 
 namespace DDT.Protocols.Tftp;
 
-// Carries both the values in force and which of them may appear in the OACK. RFC 2347 and the EDK2
-// client agree that a server must never acknowledge an option the client did not ask for: EDK2
-// answers a non conforming OACK with ERROR 4 and no other diagnostic.
+// The values in force, and which of them the OACK may carry: per RFC 2347 a server never acknowledges an option the
+// client did not ask for, and EDK2 answers such an OACK with ERROR 4 and nothing else.
 public readonly record struct TftpNegotiation
 {
     public required int BlockSize { get; init; }

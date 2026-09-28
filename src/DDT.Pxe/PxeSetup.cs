@@ -216,56 +216,9 @@ public sealed class PxeSetup
 
         ClientArchitecture architecture = Enum.Parse<ClientArchitecture>(name);
         int problemsBefore = problems.Count;
-
-        BootMethod? method = target.Method?.Trim().ToUpperInvariant() switch
-        {
-            "TFTP" => BootMethod.Tftp,
-            "HTTP" => BootMethod.Http,
-            _ => null,
-        };
-
-        if (method is null)
-        {
-            problems.Add(new($"{field}:Method", ServerMessages.SettingsPxeMethodInvalid.With()));
-        }
-
-        // The architecture already says which one the firmware speaks: a PXE client never accepts a
-        // URL and an HTTP Boot client never accepts a TFTP path.
-        bool httpArchitecture = name.EndsWith("Http", StringComparison.Ordinal);
-
-        if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
-        {
-            problems.Add(new(
-                $"{field}:Method",
-                ServerMessages.SettingsPxeMethodForArchitecture.With("method", httpArchitecture ? "Http" : "Tftp", "architecture", name)));
-        }
-
-        string bootFile = target.BootFile?.Trim() ?? string.Empty;
-
-        if (bootFile.Length == 0)
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileRequired.With()));
-        }
-        else if (bootFile.Length > MaxBootFileLength || !Ascii.IsValid(bootFile))
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxBootFileLength)));
-        }
-        else if (method == BootMethod.Http && !IsHttpUrl(bootFile))
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileUrl.With()));
-        }
-
-        IPAddress? serverAddress = null;
-
-        if (!string.IsNullOrWhiteSpace(target.ServerAddress))
-        {
-            serverAddress = TryParseVersion4(target.ServerAddress.Trim());
-
-            if (serverAddress is null)
-            {
-                problems.Add(new($"{field}:ServerAddress", ServerMessages.SettingsPxeNotIpv4Address.With("value", target.ServerAddress)));
-            }
-        }
+        BootMethod? method = ReadMethod(name, target.Method, field, problems);
+        string bootFile = ReadBootFile(target.BootFile, method, field, problems);
+        IPAddress? serverAddress = ReadServerAddress(target.ServerAddress, field, problems);
 
         if (target.ServerHostName is { } hostName
             && (hostName.Length > MaxServerHostNameLength || !Ascii.IsValid(hostName)))
@@ -287,6 +240,71 @@ public sealed class PxeSetup
             ServerHostName = target.ServerHostName,
             AdvertiseBootServerDiscovery = target.AdvertiseBootServerDiscovery,
         };
+    }
+
+    private static BootMethod? ReadMethod(string architecture, string? value, string field, List<SettingProblem> problems)
+    {
+        BootMethod? method = value?.Trim().ToUpperInvariant() switch
+        {
+            "TFTP" => BootMethod.Tftp,
+            "HTTP" => BootMethod.Http,
+            _ => null,
+        };
+
+        if (method is null)
+        {
+            problems.Add(new($"{field}:Method", ServerMessages.SettingsPxeMethodInvalid.With()));
+        }
+
+        // The architecture already says which one the firmware speaks: a PXE client never accepts a
+        // URL and an HTTP Boot client never accepts a TFTP path.
+        bool httpArchitecture = architecture.EndsWith("Http", StringComparison.Ordinal);
+
+        if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
+        {
+            problems.Add(new(
+                $"{field}:Method",
+                ServerMessages.SettingsPxeMethodForArchitecture.With("method", httpArchitecture ? "Http" : "Tftp", "architecture", architecture)));
+        }
+
+        return method;
+    }
+
+    private static string ReadBootFile(string? value, BootMethod? method, string field, List<SettingProblem> problems)
+    {
+        string bootFile = value?.Trim() ?? string.Empty;
+
+        if (bootFile.Length == 0)
+        {
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileRequired.With()));
+        }
+        else if (bootFile.Length > MaxBootFileLength || !Ascii.IsValid(bootFile))
+        {
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxBootFileLength)));
+        }
+        else if (method == BootMethod.Http && !IsHttpUrl(bootFile))
+        {
+            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileUrl.With()));
+        }
+
+        return bootFile;
+    }
+
+    private static IPAddress? ReadServerAddress(string? value, string field, List<SettingProblem> problems)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        IPAddress? serverAddress = TryParseVersion4(value.Trim());
+
+        if (serverAddress is null)
+        {
+            problems.Add(new($"{field}:ServerAddress", ServerMessages.SettingsPxeNotIpv4Address.With("value", value)));
+        }
+
+        return serverAddress;
     }
 
     // Kestrel loads a PFX from Path alone, and a PEM key is kept next to its certificate, so every certificate file

@@ -4,10 +4,8 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The Secure Boot override, asked last on a machine with Secure Boot on before the sequence writes a disk image that
-// machine would not start: ImageName is the image, Problem why it would not start, and SignedUnder the CAs its boot file
-// is signed under, for UntrustedCa. As for EraseQuestion, the person types Word, which is ANYWAY, and the console sends
-// what was typed as Text. Anything but the word, or Back, goes back to the list of sequences and erases nothing.
+// Asked last, before the sequence writes a disk image this machine's Secure Boot would not start. As for EraseQuestion,
+// the console sends what was typed as Text, and anything but Word erases nothing. SignedUnder is for UntrustedCa.
 public sealed record SecureBootQuestion(
     string SequenceName,
     string? ImageName,

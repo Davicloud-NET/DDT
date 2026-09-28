@@ -34,18 +34,16 @@ internal sealed class TftpTransfer
         IPEndPoint client,
         FileInfo file,
         TftpReadRequest request,
-        TftpLimits limits,
-        TimeProvider timeProvider,
-        ILogger logger,
+        TftpTransferServices services,
         CancellationToken stopping)
     {
         _transport = transport;
         _client = client;
         _file = file;
         _request = request;
-        _limits = limits;
-        _timeProvider = timeProvider;
-        _logger = logger;
+        _limits = services.Limits;
+        _timeProvider = services.TimeProvider;
+        _logger = services.Logger;
         _stopping = stopping;
         _cancellation = CancellationTokenSource.CreateLinkedTokenSource(stopping);
     }

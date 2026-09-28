@@ -121,7 +121,8 @@ public sealed class ValueResolverTests
         Assert.DoesNotContain(resolution.Values, value => value.Name == "Unset");
     }
 
-    // A value the page shows as overridden is shown as it would have been, and as it is written where that cannot be told.
+    // A value the page shows as overridden is shown as it would have been, and as it is written where that cannot be
+    // told.
     [Fact]
     public void ShowsOverriddenTemplatesRendered()
     {

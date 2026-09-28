@@ -9,10 +9,8 @@ using DDT.Core.Machines;
 
 namespace DDT.Core.Sequences;
 
-// What conditions test and templates read, named by MachineVariableNames. MacAddresses holds every address the machine
-// reported. The members after the constructor are for version 3: the facts the agent found, and Variables, the run's
-// values and variables by name (what inputs, rules, machine roles and defaults set, what steps set, LastStepFailed and
-// LastExitCode). Names are looked up ignoring case, as templates name them.
+// What conditions test and templates read, named by MachineVariableNames and looked up ignoring case. MacAddresses
+// holds every address the machine reported.
 public sealed record MachineVariables(
     string? Manufacturer,
     string? Model,
@@ -33,6 +31,8 @@ public sealed record MachineVariables(
 
     public bool? SecureBootEnabled { get; init; }
 
+    // The run's values and variables by name: what inputs, rules, roles, defaults and steps set, with LastStepFailed
+    // and LastExitCode.
     public IReadOnlyDictionary<string, string>? Variables { get; init; }
 
     // The name a person knows the model by: Lenovo's SMBIOS system version, where Model is a type number such as 21HD,

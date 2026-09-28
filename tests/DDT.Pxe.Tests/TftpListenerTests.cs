@@ -38,9 +38,7 @@ public sealed class TftpListenerTests : IDisposable
             Loopback.AnyPort,
             map ?? Loopback.Map(),
             new BootFileResolver(_root),
-            TftpLimits.Default,
-            maxTransfers: 8,
-            singlePort,
+            new TftpServing(TftpLimits.Default, MaxTransfers: 8, singlePort),
             TimeProvider.System,
             NullLogger<TftpListener>.Instance);
 
@@ -77,14 +75,7 @@ public sealed class TftpListenerTests : IDisposable
 
         await client.SendToAsync(request, listener.LocalEndPoint);
 
-        (byte[] Datagram, IPEndPoint From)? optionAck = await Loopback.ReceiveAsync(client, s_timeout);
-        Assert.NotNull(optionAck);
-        Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(optionAck.Value.Datagram));
-
-        string options = Encoding.ASCII.GetString(optionAck.Value.Datagram, 2, optionAck.Value.Datagram.Length - 2);
-        Assert.Contains("blksize\u00001380\u0000", options, StringComparison.Ordinal);
-
-        IPEndPoint server = optionAck.Value.From;
+        IPEndPoint server = await ReceiveOptionAckAsync(client);
 
         // The client settled on the first answer, then its retransmitted request reached port 69.
         if (repeatBeforeAcknowledging)
@@ -98,27 +89,16 @@ public sealed class TftpListenerTests : IDisposable
 
         for (ushort expected = 1; ; expected++)
         {
-            (byte[] Datagram, IPEndPoint From)? data = await Loopback.ReceiveAsync(client, s_timeout);
+            byte[] data = await ReceiveDataAsync(client, server, expected);
 
-            // A second transfer answering the repeat does so from its own port, which the client ignores.
-            while (data is { } stray && !stray.From.Equals(server))
-            {
-                data = await Loopback.ReceiveAsync(client, s_timeout);
-            }
-
-            Assert.NotNull(data);
-            Assert.Equal((ushort)TftpOpcode.Data, Opcode(data.Value.Datagram));
-            Assert.Equal(expected, BinaryPrimitives.ReadUInt16BigEndian(data.Value.Datagram.AsSpan(2)));
-            Assert.Equal(server, data.Value.From);
-
-            received.AddRange(data.Value.Datagram.AsSpan(4));
+            received.AddRange(data.AsSpan(4));
 
             if (repeatAfterFirstBlock && expected == 1)
             {
                 await client.SendToAsync(request, listener.LocalEndPoint);
             }
 
-            bool last = data.Value.Datagram.Length - 4 < 1380;
+            bool last = data.Length - 4 < 1380;
 
             if (last || expected % 4 == 0)
             {
@@ -132,6 +112,36 @@ public sealed class TftpListenerTests : IDisposable
         }
 
         return ([.. received], server);
+    }
+
+    private static async Task<IPEndPoint> ReceiveOptionAckAsync(Socket client)
+    {
+        (byte[] Datagram, IPEndPoint From)? optionAck = await Loopback.ReceiveAsync(client, s_timeout);
+        Assert.NotNull(optionAck);
+        Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(optionAck.Value.Datagram));
+
+        string options = Encoding.ASCII.GetString(optionAck.Value.Datagram, 2, optionAck.Value.Datagram.Length - 2);
+        Assert.Contains("blksize\u00001380\u0000", options, StringComparison.Ordinal);
+
+        return optionAck.Value.From;
+    }
+
+    // A second transfer answering the repeat does so from its own port, which the client ignores.
+    private static async Task<byte[]> ReceiveDataAsync(Socket client, IPEndPoint server, ushort expected)
+    {
+        (byte[] Datagram, IPEndPoint From)? data = await Loopback.ReceiveAsync(client, s_timeout);
+
+        while (data is { } stray && !stray.From.Equals(server))
+        {
+            data = await Loopback.ReceiveAsync(client, s_timeout);
+        }
+
+        Assert.NotNull(data);
+        Assert.Equal((ushort)TftpOpcode.Data, Opcode(data.Value.Datagram));
+        Assert.Equal(expected, BinaryPrimitives.ReadUInt16BigEndian(data.Value.Datagram.AsSpan(2)));
+        Assert.Equal(server, data.Value.From);
+
+        return data.Value.Datagram;
     }
 
     [Fact]

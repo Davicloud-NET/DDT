@@ -8,15 +8,9 @@ using DDT.Core.Machines;
 
 namespace DDT.Core.Sequences;
 
-// Comparisons ignore case. A variable with several values, such as MacAddress, meets Equals, StartsWith and Contains
-// when any value does, and NotEquals when no value equals. A value the machine did not report meets only NotEquals.
-//
-// A condition tree (version 3) keeps those rules for every operator: a positive one holds when any value meets it, and
-// NotEquals, NotContains and NotExists when none does, so a name without a value meets only those three. It tests by
-// the type MachineVariableNames.Catalogue gives a name; a name that is not a fact is one of the run's values or
-// variables, tested as text. Manufacturer, Model and FriendlyModel are compared cleaned as HardwareModels cleans them,
-// with a board maker's placeholder as no value, so a model rule written as a condition matches the machines it matched
-// before. The legacy Conditions of a step keep their own rules, which agents of versions 1 and 2 run.
+// Comparisons ignore case. In a tree a positive operator holds when any of a name's values meets it, and NotEquals,
+// NotContains and NotExists when none does; legacy Conditions keep the rules of versions 1 and 2. A name is tested by
+// its type in MachineVariableNames.Catalogue, else as text, and model names as HardwareModels cleans them.
 public static class ConditionEvaluator
 {
     // Where a node's condition is, as a SequenceProblem's Field and a TestEvaluation's Path name it.
@@ -108,8 +102,8 @@ public static class ConditionEvaluator
     internal static string NormaliseMac(string value) =>
         string.Concat(value.Where(c => c is not (':' or '-' or '.' or ' '))).ToUpperInvariant();
 
-    // Every part is evaluated, so the run can show each test, however the group turned out. A part that is null, or of a
-    // kind this version does not know, does not hold; the validator refuses both.
+    // Every part is evaluated, so the run can show each test, however the group turned out. A part that is null, or of
+    // a kind this version does not know, does not hold; the validator refuses both.
     private static bool Evaluate(ConditionNode? node, MachineVariables machine, string path, List<TestEvaluation>? evaluations)
     {
         switch (node)
@@ -252,8 +246,8 @@ public static class ConditionEvaluator
         return type == FactType.Mac ? NormaliseMac(value) : value;
     }
 
-    // Numbers, yes or no and IPv4 addresses are the same when their values are, so 2.0 is 2 and yes is true; a value that
-    // is not of its type is compared as text.
+    // Numbers, yes or no and IPv4 addresses are the same when their values are, so 2.0 is 2 and yes is true; a value
+    // that is not of its type is compared as text.
     private static bool Same(string value, string expected, FactType type)
     {
         switch (type)

@@ -7,10 +7,8 @@ using DDT.Contracts.Images;
 
 namespace DDT.Core.Boot;
 
-// Microsoft's third-party UEFI CAs, 2011 and 2023, which sign the shims of Linux distributions, by the SHA-256 of their
-// certificates. Stock PCs hold the 2011 one in db, and the 2023 one once a firmware or Windows update added it.
-// Secured-core PCs, until the CA is allowed in their firmware setup, and Hyper-V's Microsoft Windows template hold
-// neither.
+// Microsoft's third-party UEFI CAs of 2011 and 2023, which sign Linux shims, by their certificates' SHA-256. Stock PCs
+// trust 2011, and 2023 after an update; Secured-core PCs and Hyper-V's Windows template trust neither by default.
 public static class MicrosoftUefiCa
 {
     public const string Thumbprint2011 = "48e99b991f57fc52f76149599bff0a58c47154229b9f8d603ac40d3500248507";

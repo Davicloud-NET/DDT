@@ -7,13 +7,9 @@ using System.Text.RegularExpressions;
 
 namespace DDT.Core.Templates;
 
-// Text with placeholders for values, such as PC-{{SerialNumber|alnum|right:12}}: a name, ignoring case, and filters
-// after bars, done from left to right. upper and lower change the case, trim takes the white space off both ends, alnum
-// keeps only the letters A to Z and the digits, and left:n and right:n keep the first or last n characters. Nothing is
-// cut silently: a name's value goes in whole unless a filter says otherwise. Text between double braces that is not a
-// name followed by filters, such as Jinja's {{ v1.local_hostname }}, is not a placeholder and stays as it is.
-//
-// The web mirrors this in its template field, checked against src/DDT.Web/src/test/fixtures/template-cases.json.
+// Text with placeholders such as PC-{{SerialNumber|alnum|right:12}}: a name, ignoring case, then filters after bars
+// from left to right. A value goes in whole unless a filter cuts it, and other double braces, such as Jinja's, stay as
+// they are. The web client mirrors this, checked against src/DDT.Web/src/test/fixtures/template-cases.json.
 public static partial class ValueTemplate
 {
     // The most characters left:n and right:n take.
@@ -31,7 +27,8 @@ public static partial class ValueTemplate
     // The filters as a person writes them, for a message that lists them.
     internal static string FilterList => $"{Upper}, {Lower}, {Trim}, {Alnum}, {Left}:n, {Right}:n";
 
-    // Known says which names the caller knows, ignoring case; null knows every name. Filter problems are always reported.
+    // Known says which names the caller knows, ignoring case; null knows every name. Filter problems are always
+    // reported.
     public static ParsedTemplate Parse(string text, Func<string, bool>? known = null)
     {
         ArgumentNullException.ThrowIfNull(text);

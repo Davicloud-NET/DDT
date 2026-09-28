@@ -39,9 +39,8 @@ public sealed class ConsoleClient : IAsyncDisposable
         CancellationToken cancellationToken) =>
         ConnectAsync(ConsolePipe.CreateClient(pipeName), hello, null, timeout, cancellationToken);
 
-    // Over a pipe the caller made, such as one to an agent of another account, which check looks at once the pipe is
-    // connected and before anything is sent: it throws UnauthorizedAccessException when the pipe is not the agent's.
-    // The client owns the pipe from here on.
+    // Over a pipe the caller made, such as one to an agent of another account. check runs before anything is sent and
+    // throws UnauthorizedAccessException when the pipe is not the agent's. The client owns the pipe from here on.
     public static async Task<ConsoleClient> ConnectAsync(
         NamedPipeClientStream pipe,
         HelloMessage hello,

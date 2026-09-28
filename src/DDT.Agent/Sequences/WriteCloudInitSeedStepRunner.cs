@@ -54,9 +54,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
 
         GptPartition seed = layout.Partitions.MaxBy(partition => partition.FirstLba)!;
         byte[] volume = CloudInitSeed.Build(
-            metaData,
-            userData,
-            networkConfig,
+            new CloudInitSeedFiles(metaData, userData, networkConfig),
             BitConverter.ToUInt32(RandomNumberGenerator.GetBytes(4)),
             timeProvider.GetUtcNow().UtcDateTime,
             seed.FirstLba);

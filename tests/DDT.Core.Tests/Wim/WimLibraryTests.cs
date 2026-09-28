@@ -42,7 +42,7 @@ public sealed class WimLibraryTests : IDisposable
         string wim = Path.Combine(_root, "captured.wim");
 
         TestTree.Create(Source);
-        await library.CaptureAsync(Source, wim, ImageName, WimCompression.Lzx, progress, Token);
+        await library.CaptureAsync(new WimCapture(Source, wim, ImageName, WimCompression.Lzx), progress, Token);
 
         return wim;
     }
@@ -56,7 +56,7 @@ public sealed class WimLibraryTests : IDisposable
         string appliedFromCaptured = Path.Combine(_root, "applied-lzx");
         string appliedFromExported = Path.Combine(_root, "applied-lzms");
 
-        await library.ExportAsync(captured, 1, exported, WimCompression.Lzms, null, Token);
+        await library.ExportAsync(new WimExport(captured, 1, exported, WimCompression.Lzms), null, Token);
         await library.ApplyAsync(captured, 1, appliedFromCaptured, null, Token);
         await library.ApplyAsync(exported, 1, appliedFromExported, null, Token);
 
@@ -73,7 +73,7 @@ public sealed class WimLibraryTests : IDisposable
         string captured = await CaptureAsync(library);
         string exported = Path.Combine(_root, "exported.esd");
 
-        await library.ExportAsync(captured, 1, exported, WimCompression.Lzms, null, Token);
+        await library.ExportAsync(new WimExport(captured, 1, exported, WimCompression.Lzms), null, Token);
 
         foreach (string wim in (string[])[captured, exported])
         {
@@ -95,7 +95,7 @@ public sealed class WimLibraryTests : IDisposable
         string captured = await CaptureAsync(library);
         string exported = Path.Combine(_root, "exported.esd");
 
-        await library.ExportAsync(captured, 1, exported, WimCompression.Lzms, null, Token);
+        await library.ExportAsync(new WimExport(captured, 1, exported, WimCompression.Lzms), null, Token);
 
         // wimlib writes version 0xE00 for any LZMS output, so only a solid entry in the blob table shows solid mode.
         // The table's resource header is at 48: size in the low 56 bits, flags in the top byte, offset at 56.
@@ -121,7 +121,7 @@ public sealed class WimLibraryTests : IDisposable
         RecordingProgress apply = new();
         string captured = await CaptureAsync(library, capture);
 
-        await library.ExportAsync(captured, 1, Path.Combine(_root, "exported.esd"), WimCompression.Lzms, export, Token);
+        await library.ExportAsync(new WimExport(captured, 1, Path.Combine(_root, "exported.esd"), WimCompression.Lzms), export, Token);
         await library.ApplyAsync(captured, 1, Path.Combine(_root, "applied"), apply, Token);
 
         // Every operation counts the hard-linked file once.

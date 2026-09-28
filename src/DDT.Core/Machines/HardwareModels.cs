@@ -7,10 +7,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Machines;
 
-// Manufacturer and model names as firmware reports them differ in case and spacing between models of one vendor, so
-// they are compared cleaned and in upper case. Board makers leave placeholders in unset fields, which say nothing
-// about the machine and must never choose drivers or a sequence. The server matches driver packages and rules with it,
-// and ConditionEvaluator compares Manufacturer and Model by the same rules.
+// Firmware's manufacturer and model names differ in case and spacing within one vendor, so they compare cleaned and in
+// upper case, and a board maker's placeholder never matches. Driver packages, rules and ConditionEvaluator all use it.
 public static class HardwareModels
 {
     public const int MaxLength = 128;

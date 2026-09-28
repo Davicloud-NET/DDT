@@ -4,9 +4,8 @@
 
 namespace DDT.Protocols.Pxe;
 
-// PXE 2.1 section 2.5.1.1: a redirection service must only respond to messages carrying option 60
-// with the value PXEClient. Clients send the long "PXEClient:Arch:xxxxx:UNDI:yyyzzz" form, so this
-// is a case sensitive prefix match, and the reply echoes the short form.
+// PXE 2.1 section 2.5.1.1: a redirection service answers only option 60 PXEClient. Clients send the long form
+// "PXEClient:Arch:xxxxx:UNDI:yyyzzz", so this is a case sensitive prefix match and the reply echoes the short one.
 public static class PxeVendorClass
 {
     public const string Pxe = "PXEClient";

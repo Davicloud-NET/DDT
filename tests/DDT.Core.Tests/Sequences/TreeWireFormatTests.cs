@@ -11,9 +11,8 @@ using Xunit;
 
 namespace DDT.Core.Tests.Sequences;
 
-// The document of version 3 and the run state of trees, stored and sent as JSON like the flat ones, so these strings
-// never change either. The members version 3 adds to older kinds are left out while unset, which keeps the strings of
-// SequenceWireFormatTests as they were.
+// Version 3 documents and tree run states are stored and sent as JSON, so these strings never change either. Members
+// version 3 adds to older kinds are left out while unset, so the strings of SequenceWireFormatTests stay the same.
 public sealed class TreeWireFormatTests
 {
     private const string Id = "0197a3c0-0000-7000-8000-000000000001";

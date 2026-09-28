@@ -6,9 +6,8 @@ using System.Buffers.Binary;
 
 namespace DDT.Core.Boot;
 
-// The format of the UEFI signature databases db and dbx (UEFI 2.10 section 32.4.1): EFI_SIGNATURE_LISTs one after the
-// other, each naming the type of its signatures, then a header, then signatures of one size, each the GUID of its owner
-// followed by its data.
+// The UEFI signature databases db and dbx (UEFI 2.10 section 32.4.1): EFI_SIGNATURE_LISTs one after the other, each
+// with its signature type, a header, and signatures of one size, each an owner GUID and its data.
 public static class SignatureDatabase
 {
     // EFI_CERT_X509_GUID: each signature's data is a certificate in DER.

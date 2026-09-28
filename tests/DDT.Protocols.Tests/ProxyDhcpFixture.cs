@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Net;
 using DDT.Protocols.Dhcp;
 using DDT.Protocols.Pxe;

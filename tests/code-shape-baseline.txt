@@ -102,13 +102,6 @@ src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: WindowsPhaseLoop: over 400 lines
 src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: WindowsPhaseLoop: over 6 constructor dependencies
 src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: comment block over 4 lines
 src/DDT.Agent/WindowsPhase/WindowsPhaseService.cs: WindowsPhaseService.RunAsync: over 5 parameters
-src/DDT.ConsoleProtocol/ComputerNameQuestion.cs: comment block over 4 lines
-src/DDT.ConsoleProtocol/ConsoleMachine.cs: comment block over 4 lines
-src/DDT.ConsoleProtocol/ConsolePipe.cs: comment block over 4 lines
-src/DDT.ConsoleProtocol/ConsoleState.cs: comment block over 4 lines
-src/DDT.ConsoleProtocol/ConsoleStep.cs: comment block over 4 lines
-src/DDT.ConsoleProtocol/InputsQuestion.cs: more than one type
-src/DDT.ConsoleProtocol/SequenceOption.cs: comment block over 4 lines
 src/DDT.Contracts/Accounts/AccountView.cs: more than one type
 src/DDT.Contracts/Agents/AgentAnswersResult.cs: more than one type
 src/DDT.Contracts/Agents/AgentRegistration.cs: comment block over 4 lines
@@ -158,77 +151,12 @@ src/DDT.Contracts/Settings/SettingsSectionView.cs: comment block over 4 lines
 src/DDT.Contracts/Settings/SettingsSectionView.cs: more than one type
 src/DDT.Contracts/Users/DirectoryCheck.cs: comment block over 4 lines
 src/DDT.Contracts/Values/ResolvedValue.cs: more than one type
-src/DDT.Core/CloudInit/CloudInitSeed.cs: CloudInitSeed.Build: over 5 parameters
-src/DDT.Core/CloudInit/CloudInitTemplate.cs: comment block over 4 lines
-src/DDT.Core/Configuration/SettingProblem.cs: comment block over 4 lines
-src/DDT.Core/Disks/FatVolume.cs: FatVolume.Open: over 60 lines
-src/DDT.Core/Disks/FatVolume.cs: FatVolume.ReadEntries: over 60 lines
-src/DDT.Core/Disks/FatVolume.cs: FatVolume: over 6 constructor dependencies
-src/DDT.Core/Disks/FatVolumeBuilder.cs: FatVolumeBuilder.WriteBootSector: over 60 lines
-src/DDT.Core/Disks/FatVolumeBuilder.cs: FatVolumeBuilder: over 400 lines
-src/DDT.Core/Disks/GptLayout.cs: GptLayout: over 400 lines
-src/DDT.Core/Disks/GptLayout.cs: GptLayout: over 6 constructor dependencies
-src/DDT.Core/Disks/RawImageInspector.cs: RawImageInspector.Inspect: over 60 lines
-src/DDT.Core/Sequences/ConditionEvaluator.cs: comment block over 4 lines
-src/DDT.Core/Sequences/PathState.cs: more than one type
-src/DDT.Core/Sequences/SequenceAnalysis.cs: comment block over 4 lines
-src/DDT.Core/Sequences/SequenceEngine.cs: SequenceEngine.RunLeafAsync: over 60 lines
-src/DDT.Core/Sequences/SequenceEngine.cs: SequenceEngine: over 400 lines
-src/DDT.Core/Sequences/SequenceEngine.cs: comment block over 4 lines
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths.CheckLeaf: over 5 parameters
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths.CheckLeaf: over 60 lines
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths.CheckNode: over 60 lines
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths.Container: over 5 parameters
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths.Container: over 60 lines
-src/DDT.Core/Sequences/SequencePaths.cs: SequencePaths: over 400 lines
-src/DDT.Core/Sequences/SequencePaths.cs: comment block over 4 lines
-src/DDT.Core/Sequences/SequenceSizes.cs: comment block over 4 lines
-src/DDT.Core/Sequences/SequenceValidator.cs: comment block over 4 lines
-src/DDT.Core/Templates/TemplatePlaceholder.cs: more than one type
-src/DDT.Core/Templates/TemplateProblem.cs: more than one type
-src/DDT.Core/Templates/ValueTemplate.cs: comment block over 4 lines
-src/DDT.Core/Values/ValueResolution.cs: comment block over 4 lines
-src/DDT.Core/Values/ValueResolution.cs: more than one type
-src/DDT.Core/Values/ValueResolver.cs: ValueResolver.Add: over 5 parameters
-src/DDT.Core/Values/ValueResolver.cs: ValueResolver.Candidates: over 60 lines
-src/DDT.Core/Values/ValueResolver.cs: ValueResolver.Resolve: over 60 lines
-src/DDT.Core/Values/ValueResolver.cs: comment block over 4 lines
-src/DDT.Core/Values/ValueSources.cs: comment block over 4 lines
-src/DDT.Core/Values/ValueSources.cs: more than one type
-src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.Apply: over 5 parameters
-src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.Capture: over 5 parameters
-src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.CaptureAsync: over 5 parameters
-src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.Export: over 5 parameters
-src/DDT.Core/Wim/WimLibrary.cs: WimLibrary.ExportAsync: over 5 parameters
 src/DDT.Core/Wim/WimNativeMethods.cs: WimNativeMethods.ExportImage: over 5 parameters
 src/DDT.Host/Startup/DdtConfigurationCheck.cs: DdtConfigurationCheck.FindProblems: over 60 lines
 src/DDT.Host/Startup/SettingsConsole.cs: SettingsConsole.CreateAdministratorAsync: over 60 lines
 src/DDT.MachineConsole/Machine/CommandPrompt.cs: CommandPrompt.CreateProcess: over 5 parameters
-src/DDT.Protocols/Dhcp/DhcpMessageParser.cs: DhcpMessageParser.TryParse: over 60 lines
-src/DDT.Protocols/Pxe/ProxyDhcpReplyWriter.cs: ProxyDhcpReplyWriter.TryWrite: over 60 lines
-src/DDT.Protocols/Pxe/ProxyDhcpReplyWriter.cs: comment block over 4 lines
-src/DDT.Protocols/Pxe/ProxyDhcpResponder.cs: ProxyDhcpResponder.Respond: over 60 lines
-src/DDT.Protocols/Tftp/TftpLimits.cs: comment block over 4 lines
-src/DDT.Protocols/Tftp/TftpReadSession.cs: TftpReadSession.OnDatagram: over 60 lines
-src/DDT.Pxe/BootFileResolver.cs: comment block over 4 lines
-src/DDT.Pxe/BootHttpEndpoints.cs: comment block over 4 lines
-src/DDT.Pxe/NetworkInterfaceMap.cs: comment block over 4 lines
-src/DDT.Pxe/ProxyDhcpHandler.cs: ProxyDhcpHandler.Handle: over 5 parameters
-src/DDT.Pxe/ProxyDhcpHandler.cs: ProxyDhcpHandler.Handle: over 60 lines
-src/DDT.Pxe/ProxyDhcpListener.cs: ProxyDhcpListener.RunAsync: over 60 lines
-src/DDT.Pxe/PxeHost.cs: PxeHost.Start: over 60 lines
-src/DDT.Pxe/PxeHost.cs: comment block over 4 lines
-src/DDT.Pxe/PxeHost.cs: more than one type
-src/DDT.Pxe/PxeHostingExtensions.cs: more than one type
 src/DDT.Pxe/PxeLog.cs: PxeLog.Replied: over 5 parameters
 src/DDT.Pxe/PxeLog.cs: PxeLog.TftpCompleted: over 5 parameters
-src/DDT.Pxe/PxeSetup.cs: PxeSetup.TryReadTarget: over 60 lines
-src/DDT.Pxe/TftpListener.cs: TftpListener.AcceptAsync: over 60 lines
-src/DDT.Pxe/TftpListener.cs: TftpListener.RunAsync: over 60 lines
-src/DDT.Pxe/TftpListener.cs: TftpListener.SendErrorAsync: over 5 parameters
-src/DDT.Pxe/TftpListener.cs: TftpListener: over 6 constructor dependencies
-src/DDT.Pxe/TftpListener.cs: comment block over 4 lines
-src/DDT.Pxe/TftpTransfer.cs: TftpTransfer: over 6 constructor dependencies
 src/DDT.Server/Accounts/AccountSites.cs: more than one type
 src/DDT.Server/Authentication/ApiTokenAuthenticationHandler.cs: ApiTokenAuthenticationHandler.HandleAuthenticateAsync: over 60 lines
 src/DDT.Server/Authentication/CredentialVerifier.cs: CredentialVerifier.VerifyAsync: over 60 lines
@@ -499,8 +427,6 @@ tests/DDT.Agent.Tests/TestAgents.cs: TestAgents.WindowsLoop: over 5 parameters
 tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests.GoesOnWithTheRunAndRemovesItselfAfterTheDoneReportThenRestartsWindows: over 60 lines
 tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests.RunAsync: over 5 parameters
 tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests: over 700 lines
-tests/DDT.Core.Tests/Sequences/TreeEngineTests.cs: TreeEngineTests.RunsATreeThroughItsRestartsAndTheHandOver: over 60 lines
-tests/DDT.Core.Tests/Sequences/TreeEngineTests.cs: TreeEngineTests: over 700 lines
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendAsync: over 5 parameters
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendReauthenticatedAsync: over 5 parameters
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendRefusedAsync: over 5 parameters
@@ -513,7 +439,6 @@ tests/DDT.E2E/Eventually.cs: Eventually.GetAsync: over 5 parameters
 tests/DDT.E2E/Eventually.cs: Eventually.WaitAsync: over 5 parameters
 tests/DDT.E2E/HostProcess.cs: HostProcess.StartAsync: over 60 lines
 tests/DDT.E2E/TreeDryRunTests.cs: TreeDryRunTests.ATreeTakesItsBranchTriesAgainAfterARestartAndPausesInWindowsUntilTheWebContinuesIt: over 60 lines
-tests/DDT.Pxe.Tests/TftpListenerTests.cs: TftpListenerTests.DownloadAsync: over 60 lines
 tests/DDT.Server.Tests/AccountEndpointTests.cs: AccountEndpointTests.KeepingThePasswordForANewDestinationIsRefusedAndAudited: over 60 lines
 tests/DDT.Server.Tests/AccountRequests.cs: AccountRequests.Request: over 5 parameters
 tests/DDT.Server.Tests/AgentClient.cs: AgentClient.RunFileAsync: over 5 parameters

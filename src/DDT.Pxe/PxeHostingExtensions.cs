@@ -25,9 +25,8 @@ public static class PxeHostingExtensions
 
         PxeBootstrap bootstrap = ReadBootstrap(builder.Configuration, storePath);
 
-        // Declared as configuration rather than a Listen call, because any explicit Listen makes Kestrel
-        // ignore every endpoint configured elsewhere. Declared whether or not an interface is served, so
-        // the set of listening ports does not depend on which NICs were up when the process started.
+        // Configuration, not a Listen call, which makes Kestrel ignore every endpoint configured elsewhere. Declared
+        // even with nothing served, so the listening ports never depend on which NICs were up at startup.
         builder.Configuration.AddInMemoryCollection(
         [
             new($"Kestrel:Endpoints:{BootEndpointName}:Url", string.Create(CultureInfo.InvariantCulture, $"http://0.0.0.0:{bootstrap.HttpBootPort}")),
@@ -69,6 +68,3 @@ public static class PxeHostingExtensions
         app.MapBootFiles(bootstrap.Files);
     }
 }
-
-// What configuration alone decides for netboot: the port of HTTP boot, and the folder served from.
-public sealed record PxeBootstrap(int HttpBootPort, BootFileResolver Files);

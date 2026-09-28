@@ -10,9 +10,8 @@ using DDT.Core.Templates;
 
 namespace DDT.Core.Sequences;
 
-// The names a sequence declares, and the checks of what uses them: the declarations themselves, templates, account
-// references and shares. Names ignore case, as templates do. An account reference names its input exactly, because the
-// answer is kept for the run under the input's name.
+// The names a sequence declares, and the checks of what uses them: the declarations, templates, account references and
+// shares.
 internal sealed partial class SequenceNames
 {
     // Kept for DDT's own values, such as the DDT_VAR_ variables of a script's environment.
@@ -106,9 +105,8 @@ internal sealed partial class SequenceNames
             add(field, ServerMessages.SequenceAccountInputAsValue.With("name", name));
         }
 
-        // A name this document does not know may still be a value a rule or a machine role sets, which only the server
-        // knows, so it is noted for the server's warning rather than refused here. The run fails at the step if nothing
-        // sets it after all.
+        // An unknown name may be a value a rule or machine role sets, which only the server knows, so it is noted for
+        // the server's warning instead of refused. The run fails at the step if nothing sets it.
         foreach (TemplateProblem problem in parsed.Problems)
         {
             if (problem.Kind == TemplateProblemKind.UnknownName)

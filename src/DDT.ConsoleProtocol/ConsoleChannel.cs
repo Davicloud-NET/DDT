@@ -45,8 +45,8 @@ public sealed class ConsoleChannel(Stream stream) : IDisposable
         }
     }
 
-    // The next message, or null when the stream ended between two messages. A stream that ends inside a message, a length
-    // out of range, and anything that is not a message of this protocol throw ConsoleProtocolException.
+    // The next message, or null when the stream ended between two messages. A stream that ends inside a message, a
+    // length out of range, and anything that is not a message of this protocol throw ConsoleProtocolException.
     public async Task<ConsoleMessage?> ReceiveAsync(CancellationToken cancellationToken)
     {
         byte[] header = new byte[sizeof(int)];

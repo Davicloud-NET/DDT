@@ -11,9 +11,8 @@ namespace DDT.Core.Tests.Machines;
 
 public sealed class HardwareModelsTests
 {
-    // The rules and driver targets of the server's tests (SequenceResolutionTests, the assignment rule tests before M7,
-    // PackageLibraryTests, SequenceAssignmentTests, PostgresDeploymentTests), each with a machine it was tried on:
-    // manufacturer and model of the rule, manufacturer and model the machine reported, and whether it matched.
+    // Rules and driver targets from the server's tests, each with a machine it was tried on: the rule's manufacturer
+    // and model, the machine's, and whether they match.
     public static TheoryData<string?, string, string?, string?, bool> Cases { get; } = new()
     {
         { "Dell Inc.", "Latitude 5440", "DELL INC.", "latitude 5440", true },
@@ -49,8 +48,8 @@ public sealed class HardwareModelsTests
         Assert.Equal(matches, HardwareModels.Matches(manufacturer, machineManufacturer) && HardwareModels.Matches(model, machineModel));
     }
 
-    // The rule migration writes a model rule as all[Manufacturer Equals m, when it has one, Model Equals x or Matches x*],
-    // which must match exactly the machines the rule matched.
+    // The rule migration writes a model rule as all[Manufacturer Equals m, when it has one, Model Equals x or Matches
+    // x*], which must match exactly the machines the rule matched.
     [Theory]
     [MemberData(nameof(Cases))]
     public void AModelRuleAsAConditionMatchesWhatTheRuleMatched(

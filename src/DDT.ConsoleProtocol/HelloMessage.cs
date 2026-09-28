@@ -4,14 +4,9 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The first message of each side: the console's as soon as it is connected, and the agent's once it accepts the console.
-// Version is the protocol version the sender speaks, and the agent accepts only its own. Program names the sender, such
-// as "DDT agent 1.4.0", for the log. This message never changes, so two versions can always tell each other apart.
+// The first message of each side; the agent accepts only its own Version. It never changes, so two versions can always
+// tell each other apart. Program names the sender for the log, such as "DDT agent 1.4.0".
 public sealed record HelloMessage(int Version, string Program) : ConsoleMessage
 {
-    // 2: the console can be the shell of DDT's session in the installed Windows, and the state names the language it is
-    // to speak and the logo it shows.
-    // 3: the questions for a sequence's inputs and a Pause step, answers with values or to continue, and steps that sit
-    // in a tree of groups, IF and repeat nodes.
     public const int CurrentVersion = 3;
 }

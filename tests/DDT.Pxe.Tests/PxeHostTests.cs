@@ -11,9 +11,8 @@ using Xunit;
 
 namespace DDT.Pxe.Tests;
 
-// The listeners follow the settings while the host runs: a new version stops them and starts them with the new setup,
-// and a setup whose sockets do not bind gives way to the one that ran before. Loopback ports of the test's own stand in
-// for 67, 4011 and 69.
+// The listeners follow the settings: a new version restarts them with the new setup, and one whose sockets do not bind
+// gives way to the one before. Loopback ports stand in for 67, 4011 and 69.
 public sealed class PxeHostTests : IDisposable
 {
     private readonly string _boot = Directory.CreateTempSubdirectory("ddt-pxe-host-").FullName;
@@ -94,7 +93,8 @@ public sealed class PxeHostTests : IDisposable
         await host.StopAsync(TestContext.Current.CancellationToken);
     }
 
-    // With nothing that ran before, the listeners stay stopped; the host stops only when configuration named what to serve.
+    // With nothing that ran before, the listeners stay stopped; the host stops only when configuration named what to
+    // serve.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

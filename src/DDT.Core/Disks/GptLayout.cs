@@ -9,9 +9,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
-// A GUID partition table (UEFI 2.10, section 5.3) on a disk of 512-byte sectors, read from a disk image and written for
-// a disk of another size. The partition entries are kept byte for byte as the image has them, so fields DDT does not
-// know survive; only the headers and the protective MBR are written anew.
+// A GUID partition table (UEFI 2.10, section 5.3) of 512-byte sectors, read from an image and written for a disk of
+// another size. The entries stay byte for byte, so fields DDT does not know survive; headers and MBR are written anew.
 public sealed class GptLayout
 {
     public const int SectorSize = 512;
@@ -25,60 +24,36 @@ public sealed class GptLayout
 
     public static readonly string DamagedMessage = ServerMessages.GptDamaged.With().Text;
 
-    private const ulong Signature = 0x5452415020494645;
-    private const uint Revision = 0x00010000;
-    private const int HeaderSize = 92;
-    private const int MinEntrySize = 128;
-    private const int MaxEntrySize = 4096;
-    private const int MaxEntryCount = 4096;
-    private const int NameOffset = 56;
-    private const int NameLength = 72;
-
-    // Real tables put 16 KiB of entries at LBA 2. The caps keep a table within the first mebibyte of the disk, which is
-    // what an agent holds back while it writes an image, and a forged header from asking for gigabytes.
-    private const long MaxEntriesLba = AlignmentSectors / 2;
-    private const long MaxEntryBytes = AlignmentSectors / 2 * SectorSize;
-
     // The most HeadBytes can be.
     public const int MaxHeadBytes = (int)(AlignmentSectors * SectorSize);
 
+    private const int NameOffset = 56;
+    private const int NameLength = 72;
+
+    private readonly GptHeaderFields _fields;
     private readonly byte[] _entries;
 
-    private GptLayout(
-        Guid diskId,
-        long firstUsableLba,
-        long lastUsableLba,
-        long backupLba,
-        long entriesLba,
-        int entryCount,
-        int entrySize,
-        byte[] entries)
+    private GptLayout(GptHeaderFields fields, byte[] entries)
     {
-        DiskId = diskId;
-        FirstUsableLba = firstUsableLba;
-        LastUsableLba = lastUsableLba;
-        BackupLba = backupLba;
-        EntriesLba = entriesLba;
-        EntryCount = entryCount;
-        EntrySize = entrySize;
+        _fields = fields;
         _entries = entries;
-        Partitions = ReadPartitions(entries, entryCount, entrySize);
+        Partitions = ReadPartitions(entries, fields.EntryCount, fields.EntrySize);
     }
 
-    public Guid DiskId { get; }
+    public Guid DiskId => _fields.DiskId;
 
-    public long FirstUsableLba { get; }
+    public long FirstUsableLba => _fields.FirstUsableLba;
 
-    public long LastUsableLba { get; }
+    public long LastUsableLba => _fields.LastUsableLba;
 
     // Where the backup header is, which is the disk's last sector once the table is written for the disk.
-    public long BackupLba { get; }
+    public long BackupLba => _fields.BackupLba;
 
-    public long EntriesLba { get; }
+    public long EntriesLba => _fields.EntriesLba;
 
-    public int EntryCount { get; }
+    public int EntryCount => _fields.EntryCount;
 
-    public int EntrySize { get; }
+    public int EntrySize => _fields.EntrySize;
 
     public IReadOnlyList<GptPartition> Partitions { get; }
 
@@ -98,9 +73,9 @@ public sealed class GptLayout
     public static GptLayout Create(long diskSectors, Guid diskId, int entryCount = 128)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(entryCount, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(entryCount, MaxEntryCount);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(entryCount, GptHeader.MaxEntryCount);
 
-        int entrySectors = SectorsFor((long)entryCount * MinEntrySize);
+        int entrySectors = SectorsFor((long)entryCount * GptHeader.MinEntrySize);
         long firstUsable = 2 + entrySectors;
         long lastUsable = diskSectors - entrySectors - 2;
 
@@ -109,35 +84,34 @@ public sealed class GptLayout
             throw new ArgumentOutOfRangeException(nameof(diskSectors), diskSectors, "The disk is too small for a partition table.");
         }
 
-        return new GptLayout(diskId, firstUsable, lastUsable, diskSectors - 1, 2, entryCount, MinEntrySize, new byte[entrySectors * SectorSize]);
+        return new GptLayout(
+            new GptHeaderFields(diskId, firstUsable, lastUsable, diskSectors - 1, 2, entryCount, GptHeader.MinEntrySize),
+            new byte[entrySectors * SectorSize]);
     }
 
     // The sector size a disk image was made for, from where its primary header is: 512, 4096, or 0 when head, the
     // image's first bytes, holds no GUID partition table at either place.
     public static int SectorSizeOf(ReadOnlySpan<byte> head)
     {
-        if (HasSignatureAt(head, SectorSize))
+        if (GptHeader.HasSignatureAt(head, SectorSize))
         {
             return SectorSize;
         }
 
-        return HasSignatureAt(head, 4096) ? 4096 : 0;
+        return GptHeader.HasSignatureAt(head, 4096) ? 4096 : 0;
     }
 
     // Checks the primary header in the first two sectors and says how many bytes from the start of the disk Read needs.
     public static long HeadBytesFor(ReadOnlySpan<byte> firstSectors)
     {
-        if (firstSectors.Length < 2 * SectorSize || !HasSignatureAt(firstSectors, SectorSize))
+        if (firstSectors.Length < 2 * SectorSize || !GptHeader.HasSignatureAt(firstSectors, SectorSize))
         {
             throw new InvalidGptException((SectorSizeOf(firstSectors) == 4096 ? ServerMessages.GptFourKilobyteSectors : ServerMessages.GptNoTable).With());
         }
 
         ReadOnlySpan<byte> header = firstSectors.Slice(SectorSize, SectorSize);
-        CheckHeader(header);
-
-        long entriesLba = checked((long)BinaryPrimitives.ReadUInt64LittleEndian(header[72..]));
-        int count = (int)BinaryPrimitives.ReadUInt32LittleEndian(header[80..]);
-        int size = (int)BinaryPrimitives.ReadUInt32LittleEndian(header[84..]);
+        GptHeader.Check(header);
+        (long entriesLba, int count, int size) = GptHeader.EntryArray(header);
 
         return (entriesLba + SectorsFor((long)count * size)) * SectorSize;
     }
@@ -153,26 +127,23 @@ public sealed class GptLayout
         }
 
         ReadOnlySpan<byte> header = head.Slice(SectorSize, SectorSize);
-        long firstUsable = ReadLba(header, 40);
-        long lastUsable = ReadLba(header, 48);
-        long backup = ReadLba(header, 32);
-        long entriesLba = ReadLba(header, 72);
-        int count = (int)BinaryPrimitives.ReadUInt32LittleEndian(header[80..]);
-        int size = (int)BinaryPrimitives.ReadUInt32LittleEndian(header[84..]);
-        int entrySectors = SectorsFor((long)count * size);
-        byte[] entries = head.Slice((int)(entriesLba * SectorSize), entrySectors * SectorSize).ToArray();
+        GptHeaderFields fields = GptHeader.Read(header);
+        int entrySectors = SectorsFor((long)fields.EntryCount * fields.EntrySize);
+        byte[] entries = head.Slice((int)(fields.EntriesLba * SectorSize), entrySectors * SectorSize).ToArray();
 
-        if (Crc32.Append(0, entries.AsSpan(0, count * size)) != BinaryPrimitives.ReadUInt32LittleEndian(header[88..]))
+        if (Crc32.Append(0, entries.AsSpan(0, fields.EntryCount * fields.EntrySize)) != GptHeader.EntriesCrc(header))
         {
             throw new InvalidGptException(ServerMessages.GptDamaged.With());
         }
 
-        if (entriesLba + entrySectors > firstUsable || firstUsable > lastUsable + 1 || lastUsable >= backup)
+        if (fields.EntriesLba + entrySectors > fields.FirstUsableLba
+            || fields.FirstUsableLba > fields.LastUsableLba + 1
+            || fields.LastUsableLba >= fields.BackupLba)
         {
             throw new InvalidGptException(ServerMessages.GptDamagedUsableRange.With());
         }
 
-        GptLayout layout = new(new Guid(header.Slice(56, 16)), firstUsable, lastUsable, backup, entriesLba, count, size, entries);
+        GptLayout layout = new(fields, entries);
         CheckPartitions(layout);
 
         return layout;
@@ -214,7 +185,7 @@ public sealed class GptLayout
                 $"The partitions end at sector {LastUsedLba}, which a disk of {diskSectors} sectors cannot hold with its backup table."));
         }
 
-        return new GptLayout(DiskId, FirstUsableLba, lastUsable, diskSectors - 1, EntriesLba, EntryCount, EntrySize, _entries);
+        return new GptLayout(_fields with { LastUsableLba = lastUsable, BackupLba = diskSectors - 1 }, _entries);
     }
 
     // Adds a partition in the first free entry, from firstLba through lastLba.
@@ -262,7 +233,7 @@ public sealed class GptLayout
         BinaryPrimitives.WriteInt64LittleEndian(entry[40..], lastLba);
         Encoding.Unicode.GetBytes(name, entry.Slice(NameOffset, NameLength));
 
-        return new GptLayout(DiskId, FirstUsableLba, LastUsableLba, BackupLba, EntriesLba, EntryCount, EntrySize, entries);
+        return new GptLayout(_fields, entries);
     }
 
     // Adds a partition of sectors at the end of the usable range, starting on a 1 MiB boundary.
@@ -314,59 +285,8 @@ public sealed class GptLayout
     // The entries as they are written at EntriesLba and at BackupEntriesLba, padded to whole sectors.
     public byte[] EntryArray() => (byte[])_entries.Clone();
 
-    private byte[] Header(long myLba, long alternateLba, long entriesLba)
-    {
-        byte[] sector = new byte[SectorSize];
-        Span<byte> header = sector;
-        BinaryPrimitives.WriteUInt64LittleEndian(header, Signature);
-        BinaryPrimitives.WriteUInt32LittleEndian(header[8..], Revision);
-        BinaryPrimitives.WriteUInt32LittleEndian(header[12..], HeaderSize);
-        BinaryPrimitives.WriteInt64LittleEndian(header[24..], myLba);
-        BinaryPrimitives.WriteInt64LittleEndian(header[32..], alternateLba);
-        BinaryPrimitives.WriteInt64LittleEndian(header[40..], FirstUsableLba);
-        BinaryPrimitives.WriteInt64LittleEndian(header[48..], LastUsableLba);
-        DiskId.TryWriteBytes(header[56..]);
-        BinaryPrimitives.WriteInt64LittleEndian(header[72..], entriesLba);
-        BinaryPrimitives.WriteUInt32LittleEndian(header[80..], (uint)EntryCount);
-        BinaryPrimitives.WriteUInt32LittleEndian(header[84..], (uint)EntrySize);
-        BinaryPrimitives.WriteUInt32LittleEndian(header[88..], Crc32.Append(0, _entries.AsSpan(0, EntryCount * EntrySize)));
-        BinaryPrimitives.WriteUInt32LittleEndian(header[16..], Crc32.Append(0, header[..HeaderSize]));
-
-        return sector;
-    }
-
-    private static void CheckHeader(ReadOnlySpan<byte> header)
-    {
-        uint headerSize = BinaryPrimitives.ReadUInt32LittleEndian(header[12..]);
-
-        if (BinaryPrimitives.ReadUInt32LittleEndian(header[8..]) != Revision || headerSize is < HeaderSize or > SectorSize)
-        {
-            throw new InvalidGptException(ServerMessages.GptDamagedHeader.With());
-        }
-
-        Span<byte> copy = stackalloc byte[(int)headerSize];
-        header[..(int)headerSize].CopyTo(copy);
-        BinaryPrimitives.WriteUInt32LittleEndian(copy[16..], 0);
-
-        if (Crc32.Append(0, copy) != BinaryPrimitives.ReadUInt32LittleEndian(header[16..])
-            || BinaryPrimitives.ReadUInt64LittleEndian(header[24..]) != 1)
-        {
-            throw new InvalidGptException(ServerMessages.GptDamaged.With());
-        }
-
-        ulong entriesLba = BinaryPrimitives.ReadUInt64LittleEndian(header[72..]);
-        uint count = BinaryPrimitives.ReadUInt32LittleEndian(header[80..]);
-        uint size = BinaryPrimitives.ReadUInt32LittleEndian(header[84..]);
-
-        if (entriesLba is < 2 or > MaxEntriesLba
-            || count is 0 or > MaxEntryCount
-            || size is < MinEntrySize or > MaxEntrySize
-            || size % 8 != 0
-            || (long)count * size > MaxEntryBytes)
-        {
-            throw new InvalidGptException(ServerMessages.GptDamagedEntries.With());
-        }
-    }
+    private byte[] Header(long myLba, long alternateLba, long entriesLba) =>
+        GptHeader.Write(_fields, myLba, alternateLba, entriesLba, Crc32.Append(0, _entries.AsSpan(0, EntryCount * EntrySize)));
 
     private static void CheckPartitions(GptLayout layout)
     {
@@ -422,16 +342,6 @@ public sealed class GptLayout
     private static ReadOnlySpan<byte> EntryAt(byte[] entries, int index, int size) => entries.AsSpan(index * size, size);
 
     private static bool IsUnused(ReadOnlySpan<byte> entry) => entry[..16].IndexOfAnyExcept((byte)0) < 0;
-
-    private static long ReadLba(ReadOnlySpan<byte> header, int offset)
-    {
-        ulong value = BinaryPrimitives.ReadUInt64LittleEndian(header[offset..]);
-
-        return value > long.MaxValue / SectorSize ? throw new InvalidGptException(ServerMessages.GptDamaged.With()) : (long)value;
-    }
-
-    private static bool HasSignatureAt(ReadOnlySpan<byte> head, int offset) =>
-        head.Length >= offset + 8 && BinaryPrimitives.ReadUInt64LittleEndian(head[offset..]) == Signature;
 
     private static int SectorsFor(long bytes) => (int)((bytes + SectorSize - 1) / SectorSize);
 }

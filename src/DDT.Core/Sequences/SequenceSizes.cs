@@ -7,11 +7,8 @@ using DDT.Core.CloudInit;
 
 namespace DDT.Core.Sequences;
 
-// The space a run needs on the disk it erases, for the server's choice of sequences and the agent's check before it
-// erases a disk: the most any path through the sequence needs. A path counts its partitions, the files its steps put on
-// the disk, and the cloud-init seed once if it writes one. An IF takes the branch that needs more, and every other
-// container's body counts once, a repeat's too, since each time through puts the same files in the same place. A
-// step's own conditions are not tested: a step that may run counts.
+// The most disk space any path through a sequence needs, counting every step that may run: partitions, files and a
+// cloud-init seed once. An IF takes the larger branch; a repeat's body counts once, as each time round is the same.
 public static class SequenceSizes
 {
     private const long Megabyte = 1024 * 1024;
@@ -19,8 +16,8 @@ public static class SequenceSizes
     // The Microsoft reserved partition every Partition step makes.
     public const long ReservedPartitionBytes = 16 * Megabyte;
 
-    // FileBytes gives what a step's files take on the disk once downloaded and unpacked, such as an image's download and
-    // the Windows it expands to; the caller knows the files, which the definition only names.
+    // FileBytes gives what a step's files take on the disk once downloaded and unpacked, such as an image's download
+    // and the Windows it expands to; the caller knows the files, which the definition only names.
     public static long RequiredBytes(SequenceDefinition definition, Func<SequenceStep, long> fileBytes)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -69,9 +66,8 @@ public static class SequenceSizes
             : bodies.Aggregate(new Paths(0, null), (before, body) => before.Then(body));
     }
 
-    // The most the paths through a part of the sequence need: Plain over the paths that write no seed, Seeded over those
-    // that do, the seed's own disk not yet counted, since a path counts it once however many seed steps it passes. Null
-    // is no such path.
+    // The most the paths through a part need: Plain over those that write no seed, Seeded over those that do, without
+    // the seed itself, which a path counts once however many seed steps it passes. Null is no such path.
     private readonly record struct Paths(long? Plain, long? Seeded)
     {
         public static Paths None => new(null, null);

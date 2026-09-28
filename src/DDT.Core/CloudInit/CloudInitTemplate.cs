@@ -9,12 +9,8 @@ using DDT.Core.Templates;
 
 namespace DDT.Core.CloudInit;
 
-// The seed files of a Write the cloud-init seed step are text with placeholders such as {{ComputerName}} for the
-// machine's values, written as ValueTemplate writes them, filters included. A value is escaped for a double-quoted YAML
-// string, where the placeholders belong. The names in Names are placeholders, ignoring case, and so is the name of any
-// of the run's values, such as a variable of the sequence or a value a rule sets, as long as the run has that value.
-// Anything else between double braces stays as it is, because cloud-init's own Jinja templates use the same braces, and
-// so does a known name with a filter DDT does not have.
+// Fills placeholders such as {{ComputerName}} in cloud-init seed files, escaped for a double-quoted YAML string. Other
+// double braces stay, even a known name with a filter DDT lacks, because cloud-init's Jinja templates use them too.
 public static class CloudInitTemplate
 {
     public static IReadOnlyList<string> Names { get; } =
@@ -39,10 +35,8 @@ public static class CloudInitTemplate
     public static string? Known(string placeholder) =>
         Names.FirstOrDefault(name => string.Equals(name, placeholder, StringComparison.OrdinalIgnoreCase));
 
-    // Replaces each placeholder with its value from values, whose names are looked up ignoring case: those in Names, and
-    // any other name values has a value for, the run's values. Throws InvalidOperationException, whose message names the
-    // placeholder, when a name in Names that the text uses has no value. Line ends become LF, which shell scripts in
-    // user-data need.
+    // A placeholder is a name in Names or any name values has, ignoring case; a name in Names without a value throws
+    // InvalidOperationException naming it. Line ends become LF, which shell scripts in user-data need.
     public static string Render(string text, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentNullException.ThrowIfNull(text);

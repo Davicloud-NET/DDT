@@ -23,19 +23,20 @@ public static class CloudInitSeed
     // partition table after it.
     public const long DiskBytes = SizeBytes + (2L * 1024 * 1024);
 
-    // The rendered files; networkConfig is left out when null. firstSector is where the partition starts on the disk.
-    public static byte[] Build(string metaData, string userData, string? networkConfig, uint serialNumber, DateTime timestamp, long firstSector)
+    // firstSector is where the seed's partition starts on the disk.
+    public static byte[] Build(CloudInitSeedFiles files, uint serialNumber, DateTime timestamp, long firstSector)
     {
-        ArgumentNullException.ThrowIfNull(metaData);
-        ArgumentNullException.ThrowIfNull(userData);
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(files.MetaData);
+        ArgumentNullException.ThrowIfNull(files.UserData);
 
         FatVolumeBuilder volume = new(SizeBytes, Label, serialNumber, timestamp) { Type = FatType.Fat16, HiddenSectors = firstSector };
-        volume.AddFile(MetaData, Encoding.UTF8.GetBytes(metaData));
-        volume.AddFile(UserData, Encoding.UTF8.GetBytes(userData));
+        volume.AddFile(MetaData, Encoding.UTF8.GetBytes(files.MetaData));
+        volume.AddFile(UserData, Encoding.UTF8.GetBytes(files.UserData));
 
-        if (networkConfig is not null)
+        if (files.NetworkConfig is not null)
         {
-            volume.AddFile(NetworkConfig, Encoding.UTF8.GetBytes(networkConfig));
+            volume.AddFile(NetworkConfig, Encoding.UTF8.GetBytes(files.NetworkConfig));
         }
 
         return volume.Build();

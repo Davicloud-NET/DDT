@@ -4,9 +4,8 @@
 
 namespace DDT.Core.Disks;
 
-// What a raw disk image holds that DDT needs before it stores the image: its partition table, its EFI system
-// partition, and the files there that firmware starts. BootProblem says why a boot file could not be read, if so, and
-// UnreadableBootFiles names the files that were there but could not be read.
+// A raw disk image's partition table, its EFI system partition and the files there that firmware starts. BootProblem
+// says why boot files could not be read; UnreadableBootFiles names those that are there but unreadable.
 public sealed record RawImageInfo(
     long SizeBytes,
     GptLayout Table,

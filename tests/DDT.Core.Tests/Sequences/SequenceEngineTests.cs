@@ -67,7 +67,7 @@ public sealed class SequenceEngineTests
         Assert.Equal(SequencePhase.WindowsPE, result.State.Phase);
     }
 
-    // The brief's rule for the engine: serialise the state mid-sequence and resume from the blob in a fresh engine.
+    // The engine's rule: serialise the state mid-sequence and resume from the blob in a fresh engine.
     [Fact]
     public async Task ResumesFromTheSavedBlobInAFreshEngineAfterARestart()
     {
@@ -163,7 +163,7 @@ public sealed class SequenceEngineTests
         Assert.All(windows.Runs, run => Assert.Equal(SequencePhase.Windows, run.Context.Machine.Phase));
     }
 
-    // A later kind needs only the agent's runner for it, and the engine stays as it is, as M6's raw image steps did.
+    // A later kind needs only the agent's runner for it, and the engine stays as it is.
     [Fact]
     public async Task RunsAKindItDoesNotKnowAndCompletesWithoutWindows()
     {
@@ -383,8 +383,8 @@ public sealed class SequenceEngineTests
         Assert.Equal(SequenceEngine.InterruptedError, resumed.Error);
     }
 
-    // A runner may end a stopped step as Failed rather than throw, such as a script whose timeout is linked to the stop.
-    // The step then counts as interrupted, so a resumed run does not go on past it.
+    // A runner may end a stopped step as Failed rather than throw, such as a script whose timeout is linked to the
+    // stop. The step then counts as interrupted, so a resumed run does not go on past it.
     [Fact]
     public async Task StopsAndKeepsTheRunningMarkWhenTheStepFailsAsTheStopCame()
     {
@@ -436,7 +436,8 @@ public sealed class SequenceEngineTests
         Assert.Equal("1 Done Pending", Summary(BlobStore.Load(store.Latest)));
     }
 
-    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave it.
+    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave
+    // it.
     private static async Task<string> BlobWhileRunningAsync(SequenceStep step, SequenceState start)
     {
         BlobStore store = new();

@@ -13,9 +13,8 @@ public sealed record ProxyDhcpRequest
 
     public required ProxyDhcpListenPort ReceivedOn { get; init; }
 
-    // The address of the interface the datagram arrived on. Not taken from configuration, because
-    // one host networked process may serve several segments and siaddr has to be the address on
-    // the segment the client is actually on.
+    // The address of the interface the datagram arrived on, not one from configuration: a host serving several segments
+    // must put the address on the client's own segment into siaddr.
     public required IPAddress LocalAddress { get; init; }
 
     public required IPAddress SourceAddress { get; init; }

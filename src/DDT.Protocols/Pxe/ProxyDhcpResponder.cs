@@ -9,9 +9,8 @@ namespace DDT.Protocols.Pxe;
 
 public static class ProxyDhcpResponder
 {
-    // PXE 2.1 section 2.5.1.1: a redirection service offers no address, so yiaddr stays zero and
-    // the reply can never be unicast to it. That is what justifies forcing the broadcast flag
-    // below, against the default rule in RFC 1542 section 5.4.
+    // PXE 2.1 section 2.5.1.1: a redirection service offers no address, so yiaddr stays zero and the reply cannot be
+    // unicast to it. That justifies forcing the broadcast flag, against the default of RFC 1542 section 5.4.
     private const ushort BroadcastFlag = 0x8000;
 
     // Option 43 sub-option 6 (PXE_DISCOVERY_CONTROL) with bit 3 set tells the client to skip
@@ -45,28 +44,11 @@ public static class ProxyDhcpResponder
             return ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.UnrecognisedVendorClass);
         }
 
-        if (message.ArchitectureMalformed)
-        {
-            return ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.MalformedClientArchitecture);
-        }
+        (BootTarget? found, ProxyDhcpSilenceReason reason) = FindTarget(message, family, configuration);
 
-        if (message.Architecture is not { } architecture)
+        if (found is not { } target)
         {
-            return ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.NoClientArchitecture);
-        }
-
-        if (!configuration.BootTargets.TryGetValue(architecture, out BootTarget? target))
-        {
-            return ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.NoBootTargetForArchitecture);
-        }
-
-        // A PXE client must never be handed a URL, and an HTTP Boot client must never be handed a
-        // TFTP path. Both produce a machine that sits at a blank screen until it times out.
-        string expectedFamily = target.Method == BootMethod.Http ? PxeVendorClass.Http : PxeVendorClass.Pxe;
-
-        if (!string.Equals(family, expectedFamily, StringComparison.Ordinal))
-        {
-            return ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.BootMethodDoesNotMatchVendorClass);
+            return ProxyDhcpDecision.Silent(reason);
         }
 
         if (message.ServerIdentifier is { } requested && !IsOurs(requested, configuration, request.LocalAddress))
@@ -82,6 +64,35 @@ public static class ProxyDhcpResponder
         }
 
         return ProxyDhcpDecision.Respond(BuildReply(request, target, relayed, family));
+    }
+
+    // A PXE client must never be handed a URL, and an HTTP Boot client must never be handed a
+    // TFTP path. Both produce a machine that sits at a blank screen until it times out.
+    private static (BootTarget? Target, ProxyDhcpSilenceReason Reason) FindTarget(
+        DhcpMessage message,
+        string family,
+        ProxyDhcpConfiguration configuration)
+    {
+        if (message.ArchitectureMalformed)
+        {
+            return (null, ProxyDhcpSilenceReason.MalformedClientArchitecture);
+        }
+
+        if (message.Architecture is not { } architecture)
+        {
+            return (null, ProxyDhcpSilenceReason.NoClientArchitecture);
+        }
+
+        if (!configuration.BootTargets.TryGetValue(architecture, out BootTarget? target))
+        {
+            return (null, ProxyDhcpSilenceReason.NoBootTargetForArchitecture);
+        }
+
+        string expectedFamily = target.Method == BootMethod.Http ? PxeVendorClass.Http : PxeVendorClass.Pxe;
+
+        return string.Equals(family, expectedFamily, StringComparison.Ordinal)
+            ? (target, ProxyDhcpSilenceReason.None)
+            : (null, ProxyDhcpSilenceReason.BootMethodDoesNotMatchVendorClass);
     }
 
     private static ProxyDhcpReply BuildReply(

@@ -8,9 +8,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The conditions of a node: the legacy list, which agents of versions 1 and 2 run, and the trees of version 3, a node's
-// When, an IF's Test and a repeat's Until. A problem's field goes into the tree, such as when.parts[1].value, as
-// ConditionEvaluator names a test's path.
+// The conditions of a node: the legacy list that agents of versions 1 and 2 run, and version 3's When, Test and Until
+// trees. A problem's field goes into the tree, such as when.parts[1].value, as ConditionEvaluator names a test's path.
 internal static class ConditionChecks
 {
     // The operators that fit a fact of each type. Rules, machine roles and the sequence give values of no type the

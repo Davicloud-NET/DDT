@@ -36,10 +36,8 @@ public sealed record DhcpMessage
 
     public ReadOnlyMemory<byte> ParameterRequestList { get; init; }
 
-    // Option 97 exactly as it arrived, all 17 octets including the leading type byte. Deliberately
-    // not turned into a Guid: SMBIOS, Windows and RFC 4122 disagree about the byte order of the
-    // first three fields, so this layer echoes the bytes and leaves the rendering to a layer that
-    // can be corrected without changing what goes on the wire.
+    // Option 97 as it arrived, all 17 octets with the type byte. Not a Guid: SMBIOS, Windows and RFC 4122 disagree
+    // about the byte order of its first three fields, so this layer only echoes the bytes.
     public ReadOnlyMemory<byte> MachineIdentifier { get; init; }
 
     public ClientArchitecture? Architecture { get; init; }

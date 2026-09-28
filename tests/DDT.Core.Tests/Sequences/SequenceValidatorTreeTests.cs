@@ -15,8 +15,7 @@ public sealed class SequenceValidatorTreeTests
     private static IReadOnlyList<SequencePhase> PhasesOf(SequenceDefinition definition, SequenceStep node) =>
         Assert.Single(SequenceValidator.Analyse(definition).NodePhases, phases => phases.NodeId == node.Id).Phases;
 
-    // A flat sequence has one path, and the validator says of it what it said before sequences were trees, in the same
-    // order.
+    // A flat sequence has one path: the validator reports what a list's checks would, in the order of the steps.
     [Fact]
     public void SaysOfAFlatSequenceWhatItAlwaysSaid()
     {

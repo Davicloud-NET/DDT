@@ -30,6 +30,16 @@ internal static class FatNames
         return sum;
     }
 
+    public static int LongNameEntries(string name) => (name.Length + LongNameCharacters - 1) / LongNameCharacters;
+
+    // Where the character at index sits in a long name entry: five from byte 1, six from byte 14 and two from byte 28.
+    public static int LongNameCharacterOffset(int index) => index switch
+    {
+        < 5 => 1 + (index * 2),
+        < 11 => 14 + ((index - 5) * 2),
+        _ => 28 + ((index - 11) * 2),
+    };
+
     // The name as the 11 bytes of a short entry, or null when it needs a long name: lower case letters, more than
     // 8 and 3 characters, or characters an 8.3 name cannot have.
     public static byte[]? AsShortName(string name)

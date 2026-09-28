@@ -6,9 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// What the validator knows at a point of a sequence about every path that reaches it: the phases a path may be in there,
-// what may have happened on some path, and what must have happened on every path. Joining the states of two paths
-// keeps what either may have done and what both must have done.
+// What the validator knows of every path that reaches a node: the phases a path may be in, what some path may have done
+// and what every path must have done. A join keeps what either may have done and what both must have done.
 internal readonly record struct PathState(PathPhases Phases, Happened May, Happened Must)
 {
     // A run starts in Windows PE with nothing done.
@@ -42,37 +41,4 @@ internal readonly record struct PathState(PathPhases Phases, Happened May, Happe
         },
         _ => this,
     };
-}
-
-[Flags]
-internal enum PathPhases
-{
-    None = 0,
-    WindowsPE = 1,
-    Windows = 2,
-    WindowsPEAfterWindows = 4,
-}
-
-[Flags]
-internal enum PhaseSet
-{
-    None = 0,
-    WindowsPE = 1,
-    Windows = 2,
-}
-
-// What a sequence does at most once in a run, and what later steps rely on. ImageEveryTime is an image applied by a
-// step without conditions of its own, which Windows needs.
-[Flags]
-internal enum Happened
-{
-    None = 0,
-    Partitioned = 1,
-    ImageApplied = 2,
-    ImageEveryTime = 4,
-    UnattendWritten = 8,
-    DomainJoined = 16,
-    RawImageWritten = 32,
-    SeedWritten = 64,
-    All = 127,
 }

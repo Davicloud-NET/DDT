@@ -94,6 +94,7 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         MachineSummary machine = Assert.Single(machines, m => m.Id == registered.MachineId);
         Assert.Equal(uuid, machine.SmbiosUuid);
         Assert.Equal("Virtual Machine", machine.Model);
+        Assert.Null(machine.Facts);
     }
 
     // A machine's Secure Boot state is what its agent says last, unknown for an agent older than raw disk images.
@@ -174,6 +175,31 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
             m => m.GetProperty("id").GetGuid() == registered.MachineId);
 
         Assert.Equal("Desktop", machine.GetProperty("deviceKind").GetString());
+    }
+
+    // Facts are what the last registration that sent any said, cleaned as the rest of a registration is. An agent older
+    // than version 3 sequences sends none, as when an old boot image starts the machine, and the machine keeps its facts.
+    [Fact]
+    public async Task ShowsTheFactsOfTheLastRegistrationThatSentAny()
+    {
+        SignedInClient admin = await _application.AdministratorAsync();
+        using AgentClient agent = Agent();
+        AgentRegistration registration = AgentClient.Registration(NewUuid(), NewMac()) with
+        {
+            Facts = new MachineFacts { MemoryMegabytes = 8192, ProcessorName = "  Intel(R) Xeon(R)\0 ", TpmPresent = false, IPv4Address = "10.0.0.5" },
+        };
+
+        AgentRegistrationResult registered = await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration));
+        Assert.Equal(
+            new MachineFacts { MemoryMegabytes = 8192, ProcessorName = "Intel(R) Xeon(R)", TpmPresent = false, IPv4Address = "10.0.0.5" },
+            (await MachineAsync(admin, registered.MachineId)).Facts);
+
+        MachineFacts later = new() { MemoryMegabytes = 16384, TpmPresent = true, TpmVersion = "2.0", BiosDate = "2024-03-12" };
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { Facts = later }, registered.ResumeToken));
+        Assert.Equal(later, (await MachineAsync(admin, registered.MachineId)).Facts);
+
+        await ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(registration with { Facts = null, SequenceVersion = 2 }, registered.ResumeToken));
+        Assert.Equal(later, (await MachineAsync(admin, registered.MachineId)).Facts);
     }
 
     private static async Task<MachineSummary> MachineAsync(SignedInClient admin, Guid machineId) =>
@@ -523,11 +549,13 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         await connection.StartAsync(TestContext.Current.CancellationToken);
 
         using AgentClient agent = Agent();
-        (await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac()))).EnsureSuccessStatusCode();
+        MachineFacts facts = new() { MemoryMegabytes = 4096, SecureBootCapable = true };
+        (await agent.RegisterAsync(AgentClient.Registration(uuid, NewMac()) with { Facts = facts })).EnsureSuccessStatusCode();
 
         MachineSummary pushed = await received.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         Assert.Equal(uuid, pushed.SmbiosUuid);
         Assert.Equal(MachineState.Pending, pushed.State);
+        Assert.Equal(facts, pushed.Facts);
     }
 }

@@ -163,6 +163,13 @@ public sealed partial class MachineRegistrar(
             machine.EligibleDiskCount = registration.EligibleDiskCount;
         }
 
+        // The same for facts: an agent older than version 3 sequences sends none, as when an old boot image starts the
+        // machine, and the facts a newer one sent stay.
+        if (registration.Facts is { } facts)
+        {
+            machine.Facts = MachineFactsDocuments.Write(facts);
+        }
+
         IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

@@ -11,5 +11,7 @@ public sealed record HelloMessage(int Version, string Program) : ConsoleMessage
 {
     // 2: the console can be the shell of DDT's session in the installed Windows, and the state names the language it is
     // to speak and the logo it shows.
-    public const int CurrentVersion = 2;
+    // 3: the questions for a sequence's inputs and a Pause step, answers with values or to continue, and steps that sit
+    // in a tree of groups, IF and repeat nodes.
+    public const int CurrentVersion = 3;
 }

@@ -45,6 +45,27 @@ public sealed class ConsoleProtocolTests
         new ConsoleRestart(RestartReason.StepAsked, RestartTarget.WindowsPE),
         new ConsoleProblem("The run failed: no disk.", ConsoleRemedy.RunAgain));
 
+    // A repeat holding an IF that took Else, in its second time through, the script in Then skipped.
+    private static readonly Guid s_repeatId = Guid.Parse("0193a4b2-0000-7000-8000-00000000b002");
+    private static readonly Guid s_ifId = Guid.Parse("0193a4b2-0000-7000-8000-00000000b003");
+
+    private static readonly ConsoleStep[] s_tree =
+    [
+        new(s_repeatId, "Until the dock answers", "repeat", ConsolePhase.WindowsPE, ConsoleStepState.Running, null, Pass: 1, Iteration: 2),
+        new(s_ifId, "If a ThinkPad", "if", ConsolePhase.WindowsPE, ConsoleStepState.Done, null, s_repeatId, 1, 2, Branch: ConsoleBranch.Else),
+        new(s_stepId, "Dock firmware", "runScript", ConsolePhase.WindowsPE, ConsoleStepState.Skipped, null, s_ifId, 2, 2),
+        new(Guid.NewGuid(), "Check the BIOS", "pause", ConsolePhase.WindowsPE, ConsoleStepState.Running, null, s_repeatId, 1, 2),
+    ];
+
+    private static readonly ConsoleInput[] s_inputs =
+    [
+        new("Owner", "Owner", "Who gets the PC.", ConsoleInputKind.Text, [], null, true, 64, "An owner is needed."),
+        new("Office", "Office", null, ConsoleInputKind.Choice, [new ConsoleChoice("Standard", null), new ConsoleChoice("ProPlus", "Professional Plus")], "Standard", false, null, null),
+        new("Languages", "Languages", null, ConsoleInputKind.MultiChoice, [new ConsoleChoice("de-DE", "German")], "de-DE", false, null, null),
+        new("Encrypt", "Encrypt the disk", null, ConsoleInputKind.YesNo, [], "true", false, null, null),
+        new("JoinAccount", "Join account", null, ConsoleInputKind.Account, [], null, true, null, null),
+    ];
+
     public static TheoryData<string> Messages => [.. s_messages.Keys];
 
     private static readonly Dictionary<string, ConsoleMessage> s_messages = new()
@@ -61,7 +82,28 @@ public sealed class ConsoleProtocolTests
         ["secure boot"] = new QuestionMessage(6, new SecureBootQuestion("Install Linux", "noble", SecureBootProblem.UntrustedCa, MicrosoftUefiCas.Ca2023, "ANYWAY")),
         ["withdraw"] = new WithdrawMessage(6),
         ["answer"] = new AnswerMessage(6, new ConsoleAnswer(Text: "ANYWAY", SequenceId: Guid.NewGuid(), DiskNumber: 2, Back: true)),
+        ["tree"] = new StateMessage(s_state with { Run = s_state.Run! with { Steps = s_tree, Activity = ConsoleActivity.Paused } }),
+        ["inputs"] = new QuestionMessage(7, new InputsQuestion("Install Windows", s_inputs, "The server did not take the answers.")),
+        ["pause"] = new QuestionMessage(8, new PauseQuestion("Check the BIOS", "Check the BIOS of PC-0042, then continue.")),
+        ["answer with values"] = new AnswerMessage(7, new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "ProPlus"), new ConsoleInputValue("JoinAccount", null, @"CORP\join", "Secret")])),
+        ["continue"] = new AnswerMessage(8, new ConsoleAnswer(Continue: true)),
     };
+
+    // Every kind of input is asked in words, and a password never reaches the text a log would show.
+    [Fact]
+    public void NamesTheInputsInWordsAndKeepsPasswordsOutOfTheText()
+    {
+        string json = Json(new QuestionMessage(7, new InputsQuestion("Install Windows", [s_inputs[^1]], null)));
+        ConsoleInputValue answer = new("JoinAccount", null, @"CORP\join", "Secret-Join-Password");
+        ConsoleInputKind[] kinds = [.. s_inputs.Select(input => input.Kind)];
+
+        Assert.Equal(
+            """{"type":"question","id":7,"question":{"kind":"inputs","sequenceName":"Install Windows","inputs":[{"name":"JoinAccount","label":"Join account","help":null,"kind":"Account","choices":[],"default":null,"required":true,"maxLength":null,"error":null}],"error":null}}""",
+            json);
+        Assert.Equal(Enum.GetValues<ConsoleInputKind>(), kinds);
+        Assert.DoesNotContain("Secret-Join-Password", answer.ToString(), StringComparison.Ordinal);
+        Assert.Contains(@"CORP\join", answer.ToString(), StringComparison.Ordinal);
+    }
 
     [Theory]
     [MemberData(nameof(Messages))]

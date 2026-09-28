@@ -26,4 +26,10 @@ public enum ConsoleActivity
 
     // In the installed Windows only: the agent removes itself.
     Removing,
+
+    // The run waits at its start for answers to its inputs, here or on the web.
+    WaitingForInput,
+
+    // A Pause step waits for someone to continue the run, here or on the web.
+    Paused,
 }

@@ -5,6 +5,7 @@
 using System.Security.Claims;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
+using DDT.Core.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Live;

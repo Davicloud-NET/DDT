@@ -7,6 +7,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
+using DDT.Core.Machines;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;

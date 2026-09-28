@@ -465,6 +465,11 @@ msgstr ""
 msgid "{kind}: {file}, {size}"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "values.inputRequired"
+msgid "{label} needs an answer before the run can start."
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
 msgstr ""
@@ -536,6 +541,16 @@ msgid "{name} and its API tokens are deleted. The audit log keeps its entries. T
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "values.cycle"
+msgid "{name} cannot be worked out, because it is made from itself: {path}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "values.cannotWorkOut"
+msgid "{name} cannot be worked out. {problem}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "directory.roleFromGroup"
 msgid "{name} gets {role} from {group}."
 msgstr ""
@@ -546,6 +561,11 @@ msgstr ""
 
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "values.fact"
+msgid "{name} is a fact of the machine, which a value cannot set."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -678,6 +698,16 @@ msgstr ""
 
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total}, {took} so far"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownName"
+msgid "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownFilter"
+msgid "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3171,6 +3201,16 @@ msgstr ""
 
 #: src/audit/auditView.ts
 msgid "Image uploaded"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterNeedsCount"
+msgid "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterTakesNoCount"
+msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
 msgstr ""
 
 #: src/boot/BootImagePage.tsx
@@ -6255,6 +6295,11 @@ msgid "The compressed file is damaged: {detail}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "values.computerName"
+msgid "The computer name ''{value}'' cannot be used. {problem}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.conditionEmpty"
 msgid "The condition is empty."
 msgstr ""
@@ -6720,6 +6765,11 @@ msgstr ""
 
 #: src/machines/MachinePage.tsx
 msgid "The machine could not be loaded."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.noValue"
+msgid "The machine has no value for {placeholder}."
 msgstr ""
 
 #: src/lib/serverMessages.ts

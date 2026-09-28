@@ -465,6 +465,11 @@ msgstr "{kind}, in {phaseName}"
 msgid "{kind}: {file}, {size}"
 msgstr "{kind}: {file}, {size}"
 
+#: src/lib/serverMessages.ts
+msgctxt "values.inputRequired"
+msgid "{label} needs an answer before the run can start."
+msgstr "{label} braucht eine Antwort, bevor die Ausführung beginnen kann."
+
 #: src/log/LogPanel.tsx
 msgid "{level} at {at}, during {step}. Received {received}."
 msgstr "{level} um {at}, während {step}. Empfangen {received}."
@@ -536,6 +541,16 @@ msgid "{name} and its API tokens are deleted. The audit log keeps its entries. T
 msgstr "{name} und seine API-Token werden gelöscht. Das Änderungsprotokoll behält seine Einträge. Das lässt sich nicht rückgängig machen; um das Konto vorerst fernzuhalten, deaktivieren Sie es stattdessen."
 
 #: src/lib/serverMessages.ts
+msgctxt "values.cycle"
+msgid "{name} cannot be worked out, because it is made from itself: {path}."
+msgstr "{name} lässt sich nicht ermitteln, weil der Wert aus sich selbst gebildet wird: {path}."
+
+#: src/lib/serverMessages.ts
+msgctxt "values.cannotWorkOut"
+msgid "{name} cannot be worked out. {problem}"
+msgstr "{name} lässt sich nicht ermitteln. {problem}"
+
+#: src/lib/serverMessages.ts
 msgctxt "directory.roleFromGroup"
 msgid "{name} gets {role} from {group}."
 msgstr "{name} erhält die Rolle {role} über {group}."
@@ -547,6 +562,11 @@ msgstr "{name} gibt {label}"
 #: src/machines/AssignDialog.tsx
 msgid "{name} has {warnings}. It runs, but look at the sequence first."
 msgstr "{name} hat {warnings}. Sie läuft, aber sehen Sie sich die Tasksequenz vorher an."
+
+#: src/lib/serverMessages.ts
+msgctxt "values.fact"
+msgid "{name} is a fact of the machine, which a value cannot set."
+msgstr "{name} ist ein Merkmal des Geräts, das kein Wert setzen kann."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.localAccount"
@@ -679,6 +699,16 @@ msgstr "{percent} % von {total} mit {speed}/s, bisher {took}"
 #: src/uploads/UploadPanel.tsx
 msgid "{percent}% of {total}, {took} so far"
 msgstr "{percent} % von {total}, bisher {took}"
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownName"
+msgid "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling."
+msgstr "{placeholder} verwendet {name}, das weder ein Gerätemerkmal noch ein deklarierter Wert ist. Prüfen Sie die Schreibweise."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.unknownFilter"
+msgid "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}."
+msgstr "{placeholder} verwendet den Filter ''{filter}'', den DDT nicht kennt. Die Filter sind {filters}."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.httpBootPortInvalid"
@@ -3172,6 +3202,16 @@ msgstr "Image gelöscht"
 #: src/audit/auditView.ts
 msgid "Image uploaded"
 msgstr "Image hochgeladen"
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterNeedsCount"
+msgid "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12."
+msgstr "In {placeholder} braucht {filter} eine Anzahl von Zeichen von 1 bis {max}, etwa {filter}:12."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.filterTakesNoCount"
+msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
+msgstr "In {placeholder} nimmt {filter} keine Zahl. Entfernen Sie den Doppelpunkt und alles danach."
 
 #: src/boot/BootImagePage.tsx
 msgid "In the image"
@@ -6255,6 +6295,11 @@ msgid "The compressed file is damaged: {detail}"
 msgstr "Die komprimierte Datei ist beschädigt: {detail}"
 
 #: src/lib/serverMessages.ts
+msgctxt "values.computerName"
+msgid "The computer name ''{value}'' cannot be used. {problem}"
+msgstr "Der Computername ''{value}'' kann nicht verwendet werden. {problem}"
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.conditionEmpty"
 msgid "The condition is empty."
 msgstr "Die Bedingung ist leer."
@@ -6721,6 +6766,11 @@ msgstr "Das Gerät hat sich geändert, während diese Entscheidung getroffen wur
 #: src/machines/MachinePage.tsx
 msgid "The machine could not be loaded."
 msgstr "Das Gerät konnte nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "valueTemplate.noValue"
+msgid "The machine has no value for {placeholder}."
+msgstr "Das Gerät hat keinen Wert für {placeholder}."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.inState"

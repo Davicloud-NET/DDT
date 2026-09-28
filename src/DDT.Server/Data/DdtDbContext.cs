@@ -4,6 +4,7 @@
 
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
+using DDT.Core.Machines;
 using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;

@@ -4,7 +4,7 @@
 
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
-using DDT.Server.Machines;
+using DDT.Core.Machines;
 
 namespace DDT.Server.Rules;
 

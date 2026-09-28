@@ -7,7 +7,7 @@ using DDT.Contracts;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
-using DDT.Server.Machines;
+using DDT.Core.Machines;
 
 namespace DDT.Server.Packages;
 

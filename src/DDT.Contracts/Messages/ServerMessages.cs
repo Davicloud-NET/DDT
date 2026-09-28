@@ -534,6 +534,50 @@ public static class ServerMessages
         "The sequence continues in Windows, but no Write answer file step adds the local administrator. Windows setup then stops at " +
         "the account page, and the sequence waits there until someone finishes it.");
 
+    // Value templates, such as PC-{{SerialNumber|alnum|right:12}}. Placeholder is the whole placeholder, braces included.
+
+    public static readonly MessageTemplate ValueTemplateUnknownName = Define(
+        "valueTemplate.unknownName",
+        "{placeholder} uses {name}, which is not a machine fact or a declared value. Check the spelling.");
+
+    public static readonly MessageTemplate ValueTemplateUnknownFilter = Define(
+        "valueTemplate.unknownFilter",
+        "{placeholder} uses the filter ''{filter}'', which DDT does not have. The filters are {filters}.");
+
+    public static readonly MessageTemplate ValueTemplateFilterNeedsCount = Define(
+        "valueTemplate.filterNeedsCount",
+        "In {placeholder}, {filter} needs a number of characters from 1 to {max}, such as {filter}:12.");
+
+    public static readonly MessageTemplate ValueTemplateFilterTakesNoCount = Define(
+        "valueTemplate.filterTakesNoCount",
+        "In {placeholder}, {filter} takes no number. Remove the colon and what follows it.");
+
+    public static readonly MessageTemplate ValueTemplateNoValue = Define(
+        "valueTemplate.noValue",
+        "The machine has no value for {placeholder}.");
+
+    // The values of a run, worked out when it starts. Name is the value's name, such as ComputerName.
+
+    public static readonly MessageTemplate ValuesCannotWorkOut = Define(
+        "values.cannotWorkOut",
+        "{name} cannot be worked out. {problem}");
+
+    public static readonly MessageTemplate ValuesCycle = Define(
+        "values.cycle",
+        "{name} cannot be worked out, because it is made from itself: {path}.");
+
+    public static readonly MessageTemplate ValuesComputerName = Define(
+        "values.computerName",
+        "The computer name ''{value}'' cannot be used. {problem}");
+
+    public static readonly MessageTemplate ValuesInputRequired = Define(
+        "values.inputRequired",
+        "{label} needs an answer before the run can start.");
+
+    public static readonly MessageTemplate ValuesFact = Define(
+        "values.fact",
+        "{name} is a fact of the machine, which a value cannot set.");
+
     // Organizational units, for a Join the domain step and the domain check.
 
     public static readonly MessageTemplate OrganizationalUnitWithPrefix = Define(

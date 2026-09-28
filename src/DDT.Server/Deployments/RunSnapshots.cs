@@ -9,7 +9,6 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
-using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Images;
@@ -23,11 +22,6 @@ namespace DDT.Server.Deployments;
 // Driver packages are matched to the machine's model now, so one uploaded later is not part of the run.
 public static class RunSnapshots
 {
-    private const long Megabyte = 1024 * 1024;
-
-    // The Microsoft reserved partition every Partition step makes.
-    private const long ReservedPartitionBytes = 16 * Megabyte;
-
     public static IReadOnlyList<DeploymentStep> Steps(Guid runId, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -113,21 +107,24 @@ public static class RunSnapshots
         return artifacts;
     }
 
-    // The space a run needs on the disk it erases: its partitions, and every file both downloaded and unpacked. A raw
-    // disk image is written as it downloads, so only the disk it holds counts, and the seed after it.
+    // The space a run needs on the disk it erases, the most any path through it needs (see SequenceSizes): its
+    // partitions, and every file both downloaded and unpacked. A raw disk image is written as it downloads, so only the
+    // disk it holds counts, and the seed after it.
     public static long RequiredBytes(SequenceDefinition definition, IReadOnlyList<DeploymentArtifact> artifacts)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(artifacts);
 
-        long partitions = definition.Steps
-            .OfType<PartitionStep>()
-            .Sum(step => ((long)step.SystemPartitionMegabytes + step.RecoveryPartitionMegabytes) * Megabyte + ReservedPartitionBytes);
-        HashSet<Guid> rawSteps = [.. definition.Steps.OfType<WriteRawImageStep>().Select(step => step.Id)];
-        long seed = definition.Steps.Any(step => step is WriteCloudInitSeedStep) ? CloudInitSeed.DiskBytes : 0;
+        HashSet<Guid> rawSteps = [.. SequenceTree.Nodes(definition).OfType<WriteRawImageStep>().Select(step => step.Id)];
+        Dictionary<Guid, long> files = artifacts
+            .GroupBy(artifact => artifact.StepId)
+            .ToDictionary(
+                step => step.Key,
+                step => step.Sum(artifact => rawSteps.Contains(artifact.StepId)
+                    ? artifact.ExpandedBytes
+                    : artifact.SizeBytes + artifact.ExpandedBytes));
 
-        return partitions + seed + artifacts.Sum(artifact =>
-            rawSteps.Contains(artifact.StepId) ? artifact.ExpandedBytes : artifact.SizeBytes + artifact.ExpandedBytes);
+        return SequenceSizes.RequiredBytes(definition, step => files.GetValueOrDefault(step.Id));
     }
 
     // Never a secret: the answer file and the join credentials are fetched while their step runs. An image a Write raw

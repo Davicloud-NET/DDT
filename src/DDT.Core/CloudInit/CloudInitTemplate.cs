@@ -4,16 +4,17 @@
 
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using DDT.Contracts.Sequences;
+using DDT.Core.Templates;
 
 namespace DDT.Core.CloudInit;
 
 // The seed files of a Write the cloud-init seed step are text with placeholders such as {{ComputerName}} for the
-// machine's values. A value is escaped for a double-quoted YAML string, where the placeholders belong. Only these
-// names are placeholders, ignoring case; anything else between double braces stays as it is, because cloud-init's own
-// Jinja templates use the same braces.
-public static partial class CloudInitTemplate
+// machine's values, written as ValueTemplate writes them, filters included. A value is escaped for a double-quoted YAML
+// string, where the placeholders belong. Only these names are placeholders, ignoring case; anything else between double
+// braces stays as it is, because cloud-init's own Jinja templates use the same braces, and so does a known name with a
+// filter DDT does not have.
+public static class CloudInitTemplate
 {
     public static IReadOnlyList<string> Names { get; } =
     [
@@ -30,7 +31,7 @@ public static partial class CloudInitTemplate
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return [.. Placeholder().Matches(text).Select(match => match.Groups[1].Value).Distinct(StringComparer.OrdinalIgnoreCase)];
+        return ValueTemplate.Parse(text).Names;
     }
 
     // The known name a placeholder stands for, or null.
@@ -45,15 +46,16 @@ public static partial class CloudInitTemplate
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(values);
 
-        string rendered = Placeholder().Replace(text, match =>
+        string rendered = ValueTemplate.Replace(text, placeholder =>
         {
-            if (Known(match.Groups[1].Value) is not { } name)
+            if (Known(placeholder.Name) is not { } name
+                || placeholder.Filters.Any(filter => ValueTemplate.FilterProblem(placeholder, filter) is not null))
             {
-                return match.Value;
+                return null;
             }
 
             return values.TryGetValue(name, out string? value) && value is not null
-                ? Escape(value)
+                ? Escape(ValueTemplate.Apply(placeholder, value))
                 : throw new InvalidOperationException($"The machine has no value for {{{{{name}}}}}.");
         });
 
@@ -87,7 +89,4 @@ public static partial class CloudInitTemplate
 
         return escaped.ToString();
     }
-
-    [GeneratedRegex(@"\{\{\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}", RegexOptions.CultureInvariant)]
-    private static partial Regex Placeholder();
 }

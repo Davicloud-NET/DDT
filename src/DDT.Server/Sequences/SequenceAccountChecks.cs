@@ -35,11 +35,13 @@ public static class SequenceAccountChecks
 
     private static Guid? StepId(SequenceStep step) => step.Id == Guid.Empty ? null : step.Id;
 
+    // Whether a reference names exactly one of a stored account and an Account input, and whether that input exists, is
+    // the validator's to say; this adds what only the server knows: the stored accounts and where they may go.
     private static ServerMessage? Problem(AccountSite site, SequenceDefinition definition, SequenceReferences references)
     {
         if (site.Reference is not { } reference || (reference.AccountId is null) == (reference.Input is null))
         {
-            return ServerMessages.SequenceAccountChooseOne.With();
+            return null;
         }
 
         // A server written in the path, not made from a value.
@@ -70,14 +72,10 @@ public static class SequenceAccountChecks
         string name = reference.Input!;
         InputDeclaration? input = definition.Inputs?.FirstOrDefault(i => i is not null && AccountRules.Same(i.Name, name));
 
-        if (input is null)
+        // A missing input, or one that asks for something else, is the validator's accountInputUnknown.
+        if (input is null || input.Kind != InputKind.Account)
         {
-            return ServerMessages.SequenceAccountInputMissing.With("input", name);
-        }
-
-        if (input.Kind != InputKind.Account)
-        {
-            return ServerMessages.SequenceAccountInputNotAccount.With("input", input.Name);
+            return null;
         }
 
         AccountDestination destination = input.Account ?? new AccountDestination();

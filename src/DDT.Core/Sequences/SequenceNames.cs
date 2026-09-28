@@ -21,8 +21,8 @@ internal sealed partial class SequenceNames
     private readonly SequenceDefinition _definition;
     private readonly Dictionary<string, VariableDeclaration> _variables = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _valueInputs = new(StringComparer.OrdinalIgnoreCase);
+    // Names ignore case everywhere: in templates, conditions, and the account inputs a step names.
     private readonly HashSet<string> _accountInputs = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _accountInputsAsWritten = new(StringComparer.Ordinal);
     private readonly List<string> _valueNames = [];
 
     public SequenceNames(SequenceDefinition definition)
@@ -47,7 +47,6 @@ internal sealed partial class SequenceNames
             if (input.Kind == InputKind.Account)
             {
                 _accountInputs.Add(name);
-                _accountInputsAsWritten.Add(name);
             }
             else
             {
@@ -107,9 +106,19 @@ internal sealed partial class SequenceNames
             add(field, ServerMessages.SequenceAccountInputAsValue.With("name", name));
         }
 
+        // A name this document does not know may still be a value a rule or a machine role sets, which only the server
+        // knows, so it is noted for the server's warning rather than refused here. The run fails at the step if nothing
+        // sets it after all.
         foreach (TemplateProblem problem in parsed.Problems)
         {
-            add(field, problem.Message());
+            if (problem.Kind == TemplateProblemKind.UnknownName)
+            {
+                Tested(problem.Name);
+            }
+            else
+            {
+                add(field, problem.Message());
+            }
         }
     }
 
@@ -124,7 +133,7 @@ internal sealed partial class SequenceNames
         {
             add(field, ServerMessages.SequenceAccountChoose.With());
         }
-        else if (asked && !_accountInputsAsWritten.Contains(account!.Input!))
+        else if (asked && !_accountInputs.Contains(account!.Input!))
         {
             add($"{field}.input", ServerMessages.SequenceAccountInputUnknown.With("name", account.Input!));
         }

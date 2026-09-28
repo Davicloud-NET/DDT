@@ -2234,11 +2234,6 @@ msgid "Choose a sequence"
 msgstr "Choose a sequence"
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.accountChooseOne"
-msgid "Choose a stored account or an account input."
-msgstr "Choose a stored account or an account input."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.accountChoose"
 msgid "Choose a stored account or an Account input."
 msgstr "Choose a stored account or an Account input."
@@ -7102,11 +7097,6 @@ msgid "The image store needs {required} free for this upload but has {available}
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.accountInputNotAccount"
-msgid "The input {input} does not ask for an account. Choose an account input."
-msgstr "The input {input} does not ask for an account. Choose an account input."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.accountInputNoRunAs"
 msgid "The input {input} does not let scripts run as the account given for it. Allow that in the input."
 msgstr "The input {input} does not let scripts run as the account given for it. Allow that in the input."
@@ -7526,11 +7516,6 @@ msgstr "The sequence continues in Windows, but no Write answer file step adds th
 #: src/sequences/SequenceEditorPage.tsx
 msgid "The sequence could not be loaded."
 msgstr "The sequence could not be loaded."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.accountInputMissing"
-msgid "The sequence has no input called {input}. Choose one of its account inputs."
-msgstr "The sequence has no input called {input}. Choose one of its account inputs."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.versionTooLow"

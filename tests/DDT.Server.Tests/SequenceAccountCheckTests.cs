@@ -66,8 +66,9 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
 
         Assert.Equal([("runAs", "sequence.accountGone")], AccountProblems(validation, gone));
         Assert.Equal([("runAs", "sequence.accountNoPassword")], AccountProblems(validation, empty));
-        Assert.Equal([("runAs", "sequence.accountChooseOne")], AccountProblems(validation, both));
-        Assert.Equal([("runAs", "sequence.accountChooseOne")], AccountProblems(validation, neither));
+        // Naming exactly one is the validator's check, which the server does not repeat.
+        Assert.Equal([("runAs", "sequence.accountChoose")], AccountProblems(validation, both));
+        Assert.Equal([("runAs", "sequence.accountChoose")], AccountProblems(validation, neither));
         Assert.Contains(without.Name, validation.Problems.Single(problem => problem.Code == "sequence.accountNoPassword").Message, StringComparison.Ordinal);
     }
 
@@ -154,8 +155,8 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
 
         SequenceValidation validation = await ValidateAsync(definition);
 
-        Assert.Equal([("runAs", "sequence.accountInputMissing")], AccountProblems(validation, missing));
-        Assert.Equal([("runAs", "sequence.accountInputNotAccount")], AccountProblems(validation, notAccount));
+        Assert.Equal([("runAs.input", "sequence.accountInputUnknown")], AccountProblems(validation, missing));
+        Assert.Equal([("runAs.input", "sequence.accountInputUnknown")], AccountProblems(validation, notAccount));
         Assert.Equal([("runAs", "sequence.accountInputNoRunAs")], AccountProblems(validation, runAs));
         Assert.Equal([("account", "sequence.accountInputNoDomain")], AccountProblems(validation, join));
         Assert.Equal([("shares[1].account", "sequence.accountInputHostNotAllowed")], AccountProblems(validation, shares));

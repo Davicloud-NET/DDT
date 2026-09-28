@@ -162,15 +162,17 @@ public sealed class SequenceValidatorValueTests
         JoinDomainStep join = JoinDomain() with { OrganizationalUnit = "OU={{Site|shout}}" };
         WriteUnattendStep zone = WriteUnattend() with { TimeZone = "{{Zone}}" };
 
+        SequenceDefinition definition = Declaring([Variable("Office", setBySteps: true), Variable("Site", value: "{{Nowhere}}")], null, set, pause, zone, join);
+
         Assert.Equal(
             [
-                (null, "variables[1].default", "valueTemplate.unknownName"),
-                (set.Id, "value", "valueTemplate.unknownName"),
                 (pause.Id, "message", "valueTemplate.filterNeedsCount"),
-                (zone.Id, "timeZone", "valueTemplate.unknownName"),
                 (join.Id, "organizationalUnit", "valueTemplate.unknownFilter"),
             ],
-            Said(Validate(Declaring([Variable("Office", setBySteps: true), Variable("Site", value: "{{Nowhere}}")], null, set, pause, zone, join))));
+            Said(Validate(definition)));
+
+        // A name the document does not know may be a value a rule or a machine role sets, so it is left to the server.
+        Assert.Equal(["Nowhere", "Offce", "Zone"], SequenceValidator.Analyse(definition).ValueNames);
     }
 
     [Fact]
@@ -212,13 +214,17 @@ public sealed class SequenceValidatorValueTests
             AssertOnly(Validate(Declaring(null, null, script)), script, "runAs", "sequence.accountChoose");
         }
 
-        // The run keeps the answer under the input's name as it is written.
-        foreach (string input in new[] { "Owner", "installer", "Nobody" })
+        foreach (string input in new[] { "Owner", "Nobody" })
         {
             JoinDomainStep join = JoinDomain() with { Account = new AccountReference(null, input) };
 
             AssertOnly(Validate(Declaring(null, null, join)), join, "account.input", "sequence.accountInputUnknown");
         }
+
+        // Names ignore case, as everywhere else; the server keeps the answer under the name as the input writes it.
+        JoinDomainStep lower = JoinDomain() with { Account = new AccountReference(null, "installer") };
+
+        Assert.DoesNotContain(Validate(Declaring(null, null, lower)), problem => problem.Code == "sequence.accountInputUnknown");
     }
 
     [Fact]

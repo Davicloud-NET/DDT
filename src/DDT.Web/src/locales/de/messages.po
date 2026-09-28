@@ -2234,11 +2234,6 @@ msgid "Choose a sequence"
 msgstr "Tasksequenz wählen"
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.accountChooseOne"
-msgid "Choose a stored account or an account input."
-msgstr "Wählen Sie ein gespeichertes Konto oder eine Kontoeingabe."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.accountChoose"
 msgid "Choose a stored account or an Account input."
 msgstr "Wählen Sie ein gespeichertes Konto oder eine Konto-Eingabe."
@@ -7102,11 +7097,6 @@ msgid "The image store needs {required} free for this upload but has {available}
 msgstr "Der Imagespeicher braucht {required} freien Platz für diesen Upload, hat aber {available}. Schaffen Sie Platz auf dem Speichervolume des Servers oder verwerfen Sie unfertige Uploads, und versuchen Sie es dann erneut."
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.accountInputNotAccount"
-msgid "The input {input} does not ask for an account. Choose an account input."
-msgstr "Die Eingabe {input} fragt nicht nach einem Konto. Wählen Sie eine Kontoeingabe."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.accountInputNoRunAs"
 msgid "The input {input} does not let scripts run as the account given for it. Allow that in the input."
 msgstr "Die Eingabe {input} lässt keine Skripts mit dem Konto laufen, das für sie angegeben wird. Erlauben Sie das in der Eingabe."
@@ -7526,11 +7516,6 @@ msgstr "Die Tasksequenz läuft in Windows weiter, aber kein Schritt „Antwortda
 #: src/sequences/SequenceEditorPage.tsx
 msgid "The sequence could not be loaded."
 msgstr "Die Tasksequenz konnte nicht geladen werden."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.accountInputMissing"
-msgid "The sequence has no input called {input}. Choose one of its account inputs."
-msgstr "Die Tasksequenz hat keine Eingabe namens {input}. Wählen Sie eine ihrer Kontoeingaben."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.versionTooLow"

@@ -2089,10 +2089,6 @@ public static class ServerMessages
         "stepAccount.apiToken",
         "An API token cannot change the accounts that steps use. Sign in on the web to do this.");
 
-    public static readonly MessageTemplate SequenceAccountChooseOne = Define(
-        "sequence.accountChooseOne",
-        "Choose a stored account or an account input.");
-
     public static readonly MessageTemplate SequenceAccountGone = Define(
         "sequence.accountGone",
         "The account is no longer on the Accounts page. Choose another one.");
@@ -2116,14 +2112,6 @@ public static class ServerMessages
     public static readonly MessageTemplate SequenceAccountHostNotAllowed = Define(
         "sequence.accountHostNotAllowed",
         "The account {account} may not connect to {host}. Add the server to it on the Accounts page, or choose another account.");
-
-    public static readonly MessageTemplate SequenceAccountInputMissing = Define(
-        "sequence.accountInputMissing",
-        "The sequence has no input called {input}. Choose one of its account inputs.");
-
-    public static readonly MessageTemplate SequenceAccountInputNotAccount = Define(
-        "sequence.accountInputNotAccount",
-        "The input {input} does not ask for an account. Choose an account input.");
 
     public static readonly MessageTemplate SequenceAccountInputNoDomain = Define(
         "sequence.accountInputNoDomain",

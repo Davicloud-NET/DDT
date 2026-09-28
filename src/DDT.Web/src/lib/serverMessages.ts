@@ -765,10 +765,6 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.accountChoose",
     message: "Choose a stored account or an Account input.",
   }),
-  "sequence.accountChooseOne": msg({
-    context: "sequence.accountChooseOne",
-    message: "Choose a stored account or an account input.",
-  }),
   "sequence.accountGone": msg({
     context: "sequence.accountGone",
     message: "The account is no longer on the Accounts page. Choose another one.",
@@ -785,10 +781,6 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.accountInputHostNotAllowed",
     message: "The input {input} does not let the account given for it connect to {host}. Add the server to the input.",
   }),
-  "sequence.accountInputMissing": msg({
-    context: "sequence.accountInputMissing",
-    message: "The sequence has no input called {input}. Choose one of its account inputs.",
-  }),
   "sequence.accountInputNoDomain": msg({
     context: "sequence.accountInputNoDomain",
     message: "The input {input} names no domain, so the account given for it cannot join one. Name the domain in the input.",
@@ -796,10 +788,6 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.accountInputNoRunAs": msg({
     context: "sequence.accountInputNoRunAs",
     message: "The input {input} does not let scripts run as the account given for it. Allow that in the input.",
-  }),
-  "sequence.accountInputNotAccount": msg({
-    context: "sequence.accountInputNotAccount",
-    message: "The input {input} does not ask for an account. Choose an account input.",
   }),
   "sequence.accountInputUnknown": msg({
     context: "sequence.accountInputUnknown",

@@ -14,6 +14,7 @@ using DDT.Contracts.Sequences;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -67,8 +68,17 @@ public sealed class PostgresDeploymentTests
             [run.Id],
             (await RegisteredMachine.ReadAsync<IReadOnlyList<DeploymentSummary>>(await administrator.GetAsync($"/api/machines/{machine.Id}/deployments"))).Select(r => r.Id));
 
+        // An account given for the run lives until the run ends.
+        await application.QueryAsync(database =>
+        {
+            database.RunCredentials.Add(Credential(run.Id));
+
+            return database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
         AgentRun handed = (await machine.NextAsync()).Run!;
         await machine.ReportOkAsync(handed.Id, TestReports.Running(TestReports.Step(handed.Sequence.Steps[0], StepState.Running)));
+        Assert.Equal(1, await CredentialsAsync(application, run.Id));
         await machine.ReportOkAsync(handed.Id, TestReports.Report(
             DeploymentState.Done,
             [.. handed.Sequence.Steps.Select(step => TestReports.Step(step, StepState.Done, "A NUL\0 in a note"))]));
@@ -76,6 +86,7 @@ public sealed class PostgresDeploymentTests
         DeploymentView done = await administrator.RunAsync(run.Id);
 
         Assert.Equal(DeploymentState.Done, done.Summary.State);
+        Assert.Equal(0, await CredentialsAsync(application, run.Id));
         Assert.All(done.Steps, step => Assert.Equal("A NUL in a note", step.Error));
         Assert.Equal(TimeSpan.Zero, done.Steps[0].StartedUtc?.Offset);
         Assert.Equal(MachineState.Done, Assert.Single(
@@ -91,7 +102,31 @@ public sealed class PostgresDeploymentTests
 
         Assert.Equal(1, await application.Services.GetRequiredService<AbandonedRunSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
         Assert.Equal(DeploymentState.Failed, (await administrator.RunAsync(abandoned.Id)).Summary.State);
+
+        // An account stored for a run that is over, as a change by hand would leave it, goes at the next start.
+        await application.QueryAsync(database =>
+        {
+            database.RunCredentials.Add(Credential(abandoned.Id));
+
+            return database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(1, await application.Services.GetRequiredService<RunCredentialSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0, await CredentialsAsync(application, abandoned.Id));
     }
+
+    private static RunCredential Credential(Guid runId) => new()
+    {
+        DeploymentId = runId,
+        InputName = "JoinAccount",
+        UserName = @"CORP\alice",
+        ProtectedPassword = "ciphertext",
+        Hosts = """["files.corp.example.com"]""",
+        CreatedUtc = DateTimeOffset.UtcNow,
+    };
+
+    private static Task<int> CredentialsAsync(PostgresApplication application, Guid runId) =>
+        application.QueryAsync(database => database.RunCredentials.CountAsync(c => c.DeploymentId == runId, TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task StoresTheLibraryOfSequencesPackagesAndRules()

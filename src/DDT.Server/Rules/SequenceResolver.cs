@@ -5,6 +5,7 @@
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Rules;
+using DDT.Core.Machines;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;

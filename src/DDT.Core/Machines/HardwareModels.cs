@@ -5,11 +5,12 @@
 using System.Text;
 using DDT.Contracts.Messages;
 
-namespace DDT.Server.Machines;
+namespace DDT.Core.Machines;
 
 // Manufacturer and model names as firmware reports them differ in case and spacing between models of one vendor, so
 // they are compared cleaned and in upper case. Board makers leave placeholders in unset fields, which say nothing
-// about the machine and must never choose drivers or a sequence.
+// about the machine and must never choose drivers or a sequence. The server matches driver packages and rules with it,
+// and ConditionEvaluator compares Manufacturer and Model by the same rules.
 public static class HardwareModels
 {
     public const int MaxLength = 128;

@@ -239,6 +239,19 @@ public sealed class RunHeartbeat(
         return continued.Task.WaitAsync(cancellationToken);
     }
 
+    // The run's values as a report's answer brought them: the one that started the run, or the first after the inputs
+    // it waited for at its start were answered. Null before any did.
+    public IReadOnlyDictionary<string, string>? Values
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _values;
+            }
+        }
+    }
+
     // Completes with the run's values once a report's answer brings them, which it does once the inputs the run waited
     // for at its start are answered, on the web or at the machine.
     public Task<IReadOnlyDictionary<string, string>> WaitForValuesAsync(CancellationToken cancellationToken)

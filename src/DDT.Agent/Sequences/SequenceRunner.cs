@@ -346,11 +346,16 @@ public sealed class SequenceRunner(
 
         try
         {
-            // The values the run starts with come once its inputs are answered, and conditions and scripts read them.
+            // The values the run starts with come once its inputs are answered, and conditions and scripts read them. A run
+            // this agent got before it started has none of its own: they came with the report that started it.
             if (waitsForInputs)
             {
                 machine = machine with { Variables = await WaitForInputsAsync(session, heartbeat, steps.Token).ConfigureAwait(false) };
                 heartbeat.Activity = RunActivity.Step;
+            }
+            else if (machine.Variables is null && heartbeat.Values is { } started)
+            {
+                machine = machine with { Variables = started };
             }
 
             SequenceRunResult result = state.Phase == SequencePhase.Windows && _phase == SequencePhase.WindowsPE

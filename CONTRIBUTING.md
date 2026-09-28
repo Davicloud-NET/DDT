@@ -5,6 +5,8 @@ bug, ask for a feature, and what a change has to pass. The [README](README.md) d
 works and how to build it, and [docs/roadmap.md](docs/roadmap.md) what comes next and what is not
 planned. Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
+AI-assisted contributions are welcome. Say so in the pull request, understand every line you submit, and expect the same review and tests as any other change.
+
 ## Reporting a bug
 
 Open an issue with the bug report form. A report that DDT can act on says:

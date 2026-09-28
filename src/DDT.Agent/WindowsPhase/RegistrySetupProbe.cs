@@ -7,9 +7,9 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Reads where Windows setup is from the values it keeps under root: it runs while SystemSetupInProgress or OOBEInProgress
-// is set, until the image state is IMAGE_STATE_COMPLETE, and then as defaultuser0, whose updates may restart Windows.
-// signedIn lists the sessions' user names; setupUserExists says whether defaultuser0 exists.
+// Reads how far Windows setup is from the values it keeps under root. Setup runs while SystemSetupInProgress or
+// OOBEInProgress is set, until the image state is IMAGE_STATE_COMPLETE, and then as defaultuser0, whose updates may
+// restart Windows. signedIn lists the sessions' user names. setupUserExists says whether defaultuser0 exists.
 public sealed class RegistrySetupProbe(
     RegistryKey root,
     Func<IEnumerable<string>>? signedIn = null,
@@ -69,13 +69,13 @@ public sealed class RegistrySetupProbe(
         }
     }
 
-    // Setup deletes defaultuser0 once done. Without a session, the account is setup between a restart and its next
-    // sign-in, or, after LeftoverAfter, one setup left behind, which no longer holds the run up.
+    // Setup deletes defaultuser0 once it's done. If the account has no session, setup is between a restart and its next
+    // sign-in. After LeftoverAfter it's an account setup left behind, and it no longer holds up the run.
     private string? FirstUserPending()
     {
         List<string> names = [.. signedIn?.Invoke() ?? []];
 
-        // Setup signs in as DDT's session's account only at its very end, as the answer file says.
+        // Setup only signs in as the session account at its very end, as the answer file says.
         if (names.Any(name => name.Equals(DeploySession.AccountName, StringComparison.OrdinalIgnoreCase)))
         {
             return null;

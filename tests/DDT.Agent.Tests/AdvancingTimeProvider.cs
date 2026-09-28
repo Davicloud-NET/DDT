@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Tests;
 
-// Every delay completes at once and moves the clock on by its length, so code that retries for a while runs to its end
-// in no time, one delay after another. Only for code that waits for one thing at a time.
+// Every delay completes right away and moves the clock forward by its length. Code that retries for a while runs to its
+// end in no time, one delay after another. Only for code that waits for one thing at a time.
 internal sealed class AdvancingTimeProvider : TimeProvider
 {
     private readonly Lock _lock = new();

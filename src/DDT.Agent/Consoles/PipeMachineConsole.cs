@@ -9,7 +9,7 @@ using DDT.ConsoleProtocol;
 namespace DDT.Agent.Consoles;
 
 // ddt-console.exe, the graphical console, fed over a named pipe. A console that fails in any way is ended, so the text
-// console behind it is seen, which takes over for the rest of the run and asks an open question again.
+// console behind it shows. The text console takes over for the rest of the run and asks an open question again.
 public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
 {
     // How long the console has to start and connect.
@@ -54,7 +54,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         _questions = new QuestionSlot(_outbox.Send);
     }
 
-    // The console may still be starting: a question waits for it, or for the text console should it not come.
+    // The console may still be starting. A question waits for it, or for the text console if it never comes.
     public bool CanAsk => !_outbox.IsShut || _fallback.CanAsk;
 
     // True once the text console has taken over.
@@ -73,8 +73,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // ddt-console.exe beside the agent, unless a dry run or redirected input says nobody is at the machine. --console
-    // names one to start whatever the case.
+    // The ddt-console.exe next to the agent, unless a dry run or redirected input says nobody is at the machine.
+    // A console named with --console starts in any case.
     public static string? PathFor(AgentOptions options, bool inputRedirected, string agentDirectory)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -112,7 +112,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // Should the console go away before it answers, the text console asks again.
+    // If the console goes away before it answers, the text console asks again.
     public async Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
@@ -130,7 +130,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         return _fallback.CanAsk ? await _fallback.AskAsync(question, cancellationToken).ConfigureAwait(false) : null;
     }
 
-    // Ends the console at once, for an agent that switches to a newer one, which starts a console of its own.
+    // Ends the console right away. It's for an agent that switches to a newer one, because the newer agent starts its
+    // own console.
     public void Close()
     {
         lock (_lock)
@@ -170,7 +171,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
 
     private async Task RunAsync(CancellationToken stop)
     {
-        // Off the caller's thread: starting a process takes a moment.
+        // Off the caller's thread, because starting a process takes a moment.
         await Task.Yield();
 
         string? reason;
@@ -224,7 +225,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
                 return refused;
             }
 
-            // After the state and the lines, as the console shows the question over them.
+            // After the state and the lines, because the console shows the question on top of them.
             _outbox.Connect();
             _questions.Connected();
 
@@ -244,8 +245,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // Reads answers and sends what comes until one of them stops or the console ends. Both have stopped when it returns,
-    // so the channel can go.
+    // Reads answers and sends messages until one of them stops or the console ends. Both have stopped when it returns,
+    // so the channel can be disposed.
     private async Task<string?> ServeConnectedAsync(ConsoleChannel channel, IConsoleProcess process, CancellationToken stop)
     {
         using CancellationTokenSource serving = CancellationTokenSource.CreateLinkedTokenSource(stop);
@@ -314,7 +315,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
 
         if (refusal is not null)
         {
-            // A console told why gets a moment to end by itself before it is ended.
+            // A console that was told why gets a moment to end by itself before it's stopped.
             if (told)
             {
                 await Task.WhenAny(process.Exited, Task.Delay(s_exitGrace, stop)).ConfigureAwait(false);
@@ -333,7 +334,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         return null;
     }
 
-    // For the rest of the run. reason is null when the agent closed the console itself.
+    // Switches to the text console for the rest of the run. reason is null when the agent closed the console itself.
     private void FallBack(string? reason)
     {
         if (!_outbox.TryShut(out ConsoleState? state))

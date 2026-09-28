@@ -6,7 +6,7 @@ namespace DDT.Server.Data;
 
 public static class AuditEvents
 {
-    // A detail often names what someone typed, NUL included, which PostgreSQL refuses, so StoredText bounds every one.
+    // A detail often holds what someone typed, NUL included, and PostgreSQL refuses NUL. StoredText bounds each one.
     public static AuditEvent Create(string action, string? subjectId, Actor actor, DateTimeOffset now, string? detail)
     {
         ArgumentNullException.ThrowIfNull(actor);

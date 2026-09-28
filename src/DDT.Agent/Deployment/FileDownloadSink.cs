@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace DDT.Agent.Deployment;
 
-// A part file, which keeps what arrived when the agent stops. One longer than the file cannot be the start of it.
+// A part file that keeps what arrived when the agent stops. A part file longer than the file can't be the start of it.
 public sealed class FileDownloadSink : IDownloadSink, IAsyncDisposable
 {
     private const int BufferSize = 1024 * 1024;

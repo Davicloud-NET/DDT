@@ -43,7 +43,7 @@ public sealed class ValueResolverTests
         ],
     };
 
-    // A required input without a default of its own.
+    // A required input without its own default.
     private static readonly SequenceDefinition s_owner = new(SequenceDefinition.CurrentVersion, [])
     {
         Inputs =
@@ -53,7 +53,7 @@ public sealed class ValueResolverTests
         ],
     };
 
-    // Every source sets Office: the answer wins, and the rest are shown overridden in the order they would win.
+    // Every source sets Office. The answer wins, and the rest show as overridden in the order they would win.
     [Fact]
     public void TakesEachNameFromTheFirstSourceThatSetsIt()
     {
@@ -121,8 +121,7 @@ public sealed class ValueResolverTests
         Assert.DoesNotContain(resolution.Values, value => value.Name == "Unset");
     }
 
-    // A value the page shows as overridden is shown as it would have been, and as it is written where that cannot be
-    // told.
+    // The page shows an overridden value as it would have been. When that can't be worked out, it's shown as written.
     [Fact]
     public void ShowsOverriddenTemplatesRendered()
     {
@@ -176,7 +175,7 @@ public sealed class ValueResolverTests
         Assert.Empty(resolution.Effective);
     }
 
-    // The problem is where the value is missing, and the values made from it fail without a problem of their own.
+    // The problem is reported where the value is missing. The values built from it fail without adding more problems.
     [Fact]
     public void NamesAValueTheMachineHasNot()
     {
@@ -291,7 +290,7 @@ public sealed class ValueResolverTests
         Assert.Empty(resolution.Values);
     }
 
-    // Names ignore case: the sequence's spelling wins, and one source's setting a name twice keeps the first.
+    // Names ignore case. The sequence's spelling wins, and when one source sets a name twice, the first is kept.
     [Fact]
     public void TakesANameWhateverItsCase()
     {
@@ -339,7 +338,7 @@ public sealed class ValueResolverTests
         Assert.Empty(resolution.InputDefaults);
     }
 
-    // A rule's value is the input's default, so the question starts with it and a required input is answered by it.
+    // A rule's value becomes the input's default. The question starts with it, and it answers a required input.
     [Fact]
     public void AnswersARequiredInputWithARulesValue()
     {
@@ -376,7 +375,7 @@ public sealed class ValueResolverTests
         Assert.Equal([new ResolvedValue("Owner", "Front desk", ValueSource.Role, s_kiosk, "Kiosk", false)], resolution.InputDefaults);
     }
 
-    // An answer still wins; the default it overrode stays the rule's, for the question.
+    // An answer still wins. The default it overrode stays the rule's value, for the question.
     [Fact]
     public void LetsAnAnswerOverrideARulesValue()
     {
@@ -438,7 +437,7 @@ public sealed class ValueResolverTests
         Assert.Equal([new ResolvedValue("Owner", "IT", ValueSource.SequenceDefault, null, null, false)], byDefault.InputDefaults);
     }
 
-    // The machine's own value comes before the rules', so it is the default the question starts with.
+    // The machine's value comes before the rules' values, so the question starts with it.
     [Fact]
     public void TakesTheMachinesOwnValueAsTheDefaultBeforeARules()
     {

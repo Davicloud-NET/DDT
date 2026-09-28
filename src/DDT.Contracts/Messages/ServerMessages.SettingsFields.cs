@@ -6,8 +6,8 @@ namespace DDT.Contracts.Messages;
 
 public static partial class ServerMessages
 {
-    // Settings: what a section's fields may not hold, worded for someone looking at the field. The names of settings,
-    // such as Domain:Name, are those of configuration.
+    // Settings: what a section's fields may not hold, worded for someone looking at the field. Setting names such as
+    // Domain:Name are the configuration names.
 
     public static readonly MessageTemplate SettingsAtLeastOne = Define("settings.atLeastOne", "Must be at least 1.");
 
@@ -99,8 +99,8 @@ public static partial class ServerMessages
         "settings.ldap.transportInvalid",
         "Must be Ldaps, StartTls or UnencryptedDangerous.");
 
-    // The placeholder is {0}, which the catalog cannot say itself: its web tests take a number in braces for an argument
-    // that was never named.
+    // The placeholder is {0}, but the text uses {placeholder} for it. The catalog's web tests would take a number in
+    // braces for an argument that was never named.
     public static readonly MessageTemplate SettingsLdapUserFilterPlaceholder = Define(
         "settings.ldap.userFilterPlaceholder",
         "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder})).");

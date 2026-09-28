@@ -16,7 +16,7 @@ public sealed record LocalDisk(int Number, string? Model, long SizeBytes, Storag
 
     public ConsoleDisk ToConsoleDisk() => new(Number, Model, SizeBytes, BusType.ToString(), PartitionCount);
 
-    // The partition count is left out: it describes what is on the disk, not which disk it is.
+    // The partition count is left out, because it describes what's on the disk, not which disk it is.
     public bool IsSameDiskAs(LocalDisk other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -26,7 +26,7 @@ public sealed record LocalDisk(int Number, string? Model, long SizeBytes, Storag
 
     public string Describe() => Describe(Number, Model, SizeBytes, BusType.ToString(), PartitionCount);
 
-    // As the text console lists a disk, which it knows only as the console protocol describes it.
+    // How the text console lists a disk. The text console only knows the disk as the console protocol describes it.
     public static string Describe(int number, string? model, long sizeBytes, string busType, int partitionCount) =>
         $"Disk {number}: {DisplayModelOf(model)}, {ByteSize.Format(sizeBytes)}, {busType}, {Partitions(partitionCount)}";
 

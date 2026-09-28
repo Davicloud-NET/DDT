@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Images;
 
-// Completing an upload runs apart from its request, in ImageUploadCompleter.
+// Completing an upload runs separately from its request, in ImageUploadCompleter.
 public sealed class ImageUploadSessions(
     DdtDbContext database,
     ImageStore store,
@@ -22,8 +22,8 @@ public sealed class ImageUploadSessions(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Under the library lock, so two requests for the same file find one session, and two new sessions cannot
-        // both pass the free space check that counts the other one.
+        // Runs under the library lock. That way two requests for the same file find the same session. And two new
+        // sessions can't both pass the free space check that should count the other one.
         await using SemaphoreHold hold = await store.LibraryLock.EnterAsync(cancellationToken).ConfigureAwait(false);
 
         List<ImageUpload> open = await database.ImageUploads
@@ -43,7 +43,7 @@ public sealed class ImageUploadSessions(
             return new UploadCreation(Session(found), Created: false, 0, 0);
         }
 
-        // Decimal, because nothing limits how many sessions are open.
+        // Sum as decimal. Nothing limits how many sessions are open, so a long could overflow.
         decimal required = request.Length + open.Sum(u => (decimal)(u.Length - u.Offset)) + ImageUploadLimits.FreeSpaceMargin;
         long available = store.Volume().AvailableFreeSpace;
 
@@ -114,7 +114,7 @@ public sealed class ImageUploadSessions(
 
         using (held)
         {
-            // Read again under the lock: whoever held it before may have moved the offset or finished the upload.
+            // Read it again under the lock. Whoever held it before may have moved the offset or finished the upload.
             ImageUpload? upload = await database.ImageUploads
                 .FirstOrDefaultAsync(u => u.Id == uploadId, cancellationToken)
                 .ConfigureAwait(false);
@@ -168,7 +168,7 @@ public sealed class ImageUploadSessions(
     {
         Directory.CreateDirectory(store.UploadsDirectory);
 
-        // Unbuffered, so a failed write leaves nothing behind that closing the file would try to write again.
+        // No buffer, so after a failed write there's nothing left that closing the file would try to write again.
         await using (FileStream part = new(
             store.PartPath(upload.Id),
             FileMode.OpenOrCreate,
@@ -177,8 +177,8 @@ public sealed class ImageUploadSessions(
             bufferSize: 0,
             FileOptions.Asynchronous))
         {
-            // Bytes below the committed offset were acknowledged, so a shorter file lost some. Extending it would
-            // fill the gap with zeros; the client sends the file again from the start instead.
+            // Bytes below the committed offset were acknowledged, so a shorter file has lost some. Extending it would
+            // fill the gap with zeros. Instead, the client sends the file again from the start.
             if (part.Length < upload.Offset)
             {
                 upload.Offset = 0;
@@ -201,7 +201,7 @@ public sealed class ImageUploadSessions(
         upload.Offset += length;
         upload.UpdatedUtc = timeProvider.GetUtcNow();
 
-        // The chunk is on disk, so it is recorded even when the client has gone: its retry then moves on.
+        // The chunk is on disk, so record it even if the client has gone. A retry then continues from the new offset.
         await database.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
         return new UploadAppend(UploadAppendStatus.Appended, upload.Offset);
@@ -245,7 +245,7 @@ public sealed class ImageUploadSessions(
                 received += count;
             }
 
-            // On disk before the offset that promises it is saved, so a power loss cannot leave a gap.
+            // Flush to disk before saving the offset that promises these bytes. Then a power loss can't leave a gap.
             part.Flush(flushToDisk: true);
 
             return null;

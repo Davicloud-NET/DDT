@@ -11,11 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The accounts given for a run's Account inputs, each encrypted for that run and input only, and read back just in
-// time for the step that uses it. Nothing here logs or audits a password; the caller audits the answer by input name.
+// The accounts given for a run's Account inputs. Each is encrypted for that run and input only, and read back just in
+// time for the step that uses it. Nothing here logs or audits a password. The caller audits the answer by input name.
 public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector protector, TimeProvider timeProvider)
 {
-    // Only tracks the change: the caller saves it with the answer, so both are stored or neither. Input must come from
+    // Only tracks the change. The caller saves it with the answer, so both are stored or neither. Input must come from
     // the run's own snapshot, never the current sequence, because its destination decides where the password may go.
     public async Task<RunCredentialProblem?> KeepAsync(
         Deployment run,
@@ -77,7 +77,7 @@ public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector
         return null;
     }
 
-    // Null when no account was given for the input; its Password is null when this server's key ring cannot decrypt it.
+    // Null if no account was given for the input. Its Password is null if this server's key ring can't decrypt it.
     public async Task<RunAccount?> ReadAsync(Guid runId, string inputName, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputName);
@@ -103,7 +103,7 @@ public sealed class RunCredentials(DdtDbContext database, RunCredentialProtector
                 credential.CreatedUtc);
     }
 
-    // The account inputs of the run that have an answer, ignoring case as input names do.
+    // The run's account inputs that have an answer, ignoring case like input names do.
     public async Task<IReadOnlySet<string>> AnsweredAsync(Guid runId, CancellationToken cancellationToken)
     {
         List<string> names = await database.RunCredentials

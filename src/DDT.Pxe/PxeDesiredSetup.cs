@@ -6,6 +6,6 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Pxe;
 
-// What the host should serve, or null Options with Refusal saying why. StopHostOnFailure: configuration decided, so a
-// bind failure at startup stops the host instead of being reported.
+// What the host should serve. When Options is null, Refusal says why. StopHostOnFailure means configuration decided
+// the setup, so a bind failure at startup stops the host instead of being reported.
 public sealed record PxeDesiredSetup(long Version, PxeOptions? Options, ServerMessage? Refusal, bool StopHostOnFailure);

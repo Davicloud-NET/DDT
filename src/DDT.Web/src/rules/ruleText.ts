@@ -24,7 +24,8 @@ export function ruleNameInside(rule: Pick<RuleView, "position" | "name">): strin
   return t`rule ${number}, ${name}`;
 }
 
-// Rules named in a sentence, the first as it begins one: "Rule 2, Berlin office, and rule 4, Latitude laptops".
+// Rules named in a sentence, with the first one written to start it: "Rule 2, Berlin office, and rule 4, Latitude
+// laptops".
 export function ruleNames(rules: readonly Pick<RuleView, "position" | "name">[]): string {
   const [first, ...rest] = rules;
 
@@ -38,8 +39,8 @@ export function ruleNames(rules: readonly Pick<RuleView, "position" | "name">[])
   ]);
 }
 
-// What a rule does to the machines it matches, a few words each: "Chooses Kiosk", "Sets TimeZone", "Gives Office
-// PC". A role that is gone is left out; the rule's problems say so.
+// What a rule does to the machines it matches, a few words per effect: "Chooses Kiosk", "Sets TimeZone", "Gives
+// Office PC". A deleted role is left out. The rule's problems already mention it.
 export function ruleEffects(
   rule: Pick<RuleView, "sequenceName" | "values" | "roleIds">,
   roles: readonly { id: string; name: string }[],

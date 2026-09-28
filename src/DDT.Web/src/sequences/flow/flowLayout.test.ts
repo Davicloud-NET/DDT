@@ -153,7 +153,7 @@ function expectSound(steps: SequenceStep[], collapsed: ReadonlySet<string> = new
     [...collapsed].some((container) => container !== id && isWithin(tree, id, container));
   const shown = tree.entries.filter((entry) => !hidden(entry.node.id));
 
-  // One card per node that shows, of its kind's size.
+  // One card per visible node, sized for its kind.
   expect(layout.boxes.map((box) => box.id).sort()).toEqual(
     shown.map((entry) => entry.node.id).sort(),
   );
@@ -195,7 +195,7 @@ function expectSound(steps: SequenceStep[], collapsed: ReadonlySet<string> = new
     }
   });
 
-  // Every card inside its frames, and none of another inside them.
+  // Every card is inside its own frames, and no other card is inside them.
   for (const frame of layout.frames) {
     for (const box of layout.boxes) {
       const within = isWithin(tree, box.id, frame.id);
@@ -239,8 +239,8 @@ function expectSound(steps: SequenceStep[], collapsed: ReadonlySet<string> = new
     ]);
   }
 
-  // One arrowhead into every card but the first, its tip 1 px before the card's top, a wire ending at its base. A
-  // frame takes the wire in to its header card itself, so the first node has one when it is a group or a repeat.
+  // One arrowhead into every card except the first, with its tip 1 px before the card's top and a wire ending at its
+  // base. A frame brings the wire in to its own header card, so the first node has one if it's a group or a Repeat.
   const first = layout.boxes.find((box) => box.id === steps[0]?.id);
   const wireEnds = ends(layout);
 
@@ -263,7 +263,7 @@ function expectSound(steps: SequenceStep[], collapsed: ReadonlySet<string> = new
 
   expectConnected(layout);
 
-  // A slot for every gap of the lists that show, on none of the cards.
+  // A slot for every gap in the visible lists, and none on a card.
   const expected = slotsOf(steps).filter(
     (slot) => slot.parent === null || (!hidden(slot.parent) && !collapsed.has(slot.parent)),
   );

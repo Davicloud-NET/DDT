@@ -26,8 +26,8 @@ if (args.Contains(WindowsServiceHost.Argument))
 
 if (args.Contains(AgentLegalNotices.LicensesArgument))
 {
-    // Console.Out encodes for the console's code page, 437 in an English Windows PE, and replaces what it lacks,
-    // such as the copyright sign. Redirected, the texts go out in UTF-8, so a file gets them unchanged.
+    // Console.Out encodes for the console's code page, 437 in an English WinPE, and replaces characters it lacks,
+    // such as the copyright sign. When output is redirected, the texts go out in UTF-8, so a file gets them unchanged.
     if (Console.IsOutputRedirected)
     {
         using StreamWriter output = new(Console.OpenStandardOutput(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -65,8 +65,8 @@ using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
 AgentLog log = new(TimeProvider.System, Console.Out);
 TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
 
-// The graphical console, where there is one, starts before anything else, so it shows the update check and the
-// connection too. The text console stays underneath it, and takes over should it go away.
+// If there's a graphical console, it starts before anything else, so it shows the update check and the connection
+// too. The text console stays underneath it and takes over if it goes away.
 string? consolePath = PipeMachineConsole.PathFor(options, Console.IsInputRedirected, AppContext.BaseDirectory);
 await using PipeMachineConsole? graphical = consolePath is null
     ? null
@@ -94,7 +94,7 @@ else if (!options.NoUpdate)
         server.CloseConnections();
         graphical?.Close();
     });
-    // A console named with --console stays; the one beside the agent gives way to the server's.
+    // A console passed with --console is kept. The one next to the agent is replaced by the server's version.
     AgentUpdate update = new(
         server,
         relauncher,
@@ -109,8 +109,8 @@ else if (!options.NoUpdate)
     }
 }
 
-// The whole run, both phases, in this process, with a directory for the machine's disk that holds the run until it
-// ends. The Windows phase reaches the server as the agent.json the hand-over staged says.
+// A dry run does the whole run, both phases, in this process. A directory stands in for the machine's disk and holds
+// the run until it ends. The Windows phase reaches the server with the agent.json that the hand-over staged.
 if (options.DryRun)
 {
     DryRunMachine machine = new(
@@ -129,8 +129,8 @@ if (options.DryRun)
     return await machine.RunAsync(stop.Token).ConfigureAwait(false);
 }
 
-// The agent's directory is X:\DDT in Windows PE, on the RAM disk that every restart builds anew. What it stages into
-// Windows needs to reach the server, and nothing else.
+// In WinPE the agent's directory is X:\DDT, on the RAM disk that every restart builds from scratch. The agent.json it
+// stages into Windows only holds what it takes to reach the server.
 ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log));
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
@@ -171,8 +171,8 @@ AgentLoop loop = new(
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);
 
-// The console that goes into the installed Windows with the run: the one that ran here, and only when it spoke this
-// agent's version of the protocol, as a console of another version could not show DDT's session there.
+// The console that goes into the installed Windows with the run. It's the one that ran here, but only if it spoke
+// this agent's version of the protocol. A console of another version couldn't show DDT's session there.
 string? ConsoleForWindows()
 {
     if (graphical is null || consolePath is null)

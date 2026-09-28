@@ -8,8 +8,8 @@ import { AdministratorsOnly } from "@/auth/AdministratorsOnly";
 
 import { ServerSettings } from "./server/ServerSettings";
 
-// Administration > Server: what configuration decides, how every settings section stands, and tabs for the
-// certificate, the proxies, the agent and the log levels. The server refuses everyone but administrators.
+// Administration > Server: what configuration decides, the state of every settings section, and tabs for
+// the certificate, proxies, agent and log levels. The server refuses everyone but administrators.
 export function ServerPage() {
   return (
     <AdministratorsOnly

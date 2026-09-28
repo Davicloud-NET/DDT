@@ -33,7 +33,7 @@ function valuesOf(list: readonly { values: NamedValue[] }[] | undefined): NamedV
 
 export interface ConditionData {
   subjects: Subject[];
-  // The values rules and machine roles set, each name once, the first rule's first.
+  // The values that rules and machine roles set, each name once, with the first rule's values first.
   ruleValues: NamedValue[];
   // The language the labels are in.
   locale: string;
@@ -61,7 +61,7 @@ export function useConditionData(declared: {
 
     return {
       subjects: subjectsOf({
-        // A server that lists no facts yet leaves the catalogue this build knows.
+        // If the server doesn't list any facts yet, the catalogue built into this page is used.
         facts: facts.data !== undefined && facts.data.length > 0 ? facts.data : factCatalogue,
         valueNames: ruleValues.map((value) => value.name),
         variables,

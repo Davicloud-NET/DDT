@@ -15,13 +15,13 @@ public sealed record ConsoleState(
     Guid? MachineId,
     // Who signed in at the machine while an operator still has to approve it on the Machines page.
     string? SignedInBy,
-    // The run going on, or the last one until the next starts.
+    // The run in progress, or the last one until the next one starts.
     ConsoleRun? Run,
     // While Stage is Restarting.
     ConsoleRestart? Restart,
     // The last thing that went wrong, until a run starts.
     ConsoleProblem? Problem,
-    // en or de, as the server says once the agent has registered; null leaves it to Windows.
+    // en or de, as the server says once the agent has registered. Null leaves it to Windows.
     string? Language = null,
-    // A PNG for the right end of the top bar, which is dark in both themes; null shows none.
+    // A PNG for the right end of the top bar, which is dark in both themes. Null shows no logo.
     string? Logo = null);

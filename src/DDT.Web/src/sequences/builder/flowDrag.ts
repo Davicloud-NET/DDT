@@ -7,7 +7,7 @@ import { isTextDropItem, type DropItem } from "react-aria-components";
 import { isWithin, type Slot, type TreeIndex } from "../flow/flowTree";
 import type { StepKind } from "../sequences";
 
-// What the flow carries while something is dragged over it: a kind from the palette, or a node of the flow.
+// What a drag over the flow carries: a kind from the palette, or a node of the flow.
 export const KIND_TYPE = "application/x-ddt-flow-kind";
 export const NODE_TYPE = "application/x-ddt-flow-node";
 

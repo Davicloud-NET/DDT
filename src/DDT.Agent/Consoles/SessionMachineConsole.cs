@@ -10,8 +10,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// The console in the installed Windows: ddt-console.exe as the shell of DDT's session, which Windows starts at its
-// auto-logon and which connects whenever it starts. Nothing falls back: the service has no text console.
+// The console in the installed Windows. It's ddt-console.exe as the shell of DDT's session, which Windows starts at the
+// auto-logon. It connects whenever it starts. There's no fallback, because the service has no text console.
 public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
 {
     private static readonly TimeSpan s_closeTimeout = TimeSpan.FromSeconds(5);
@@ -37,13 +37,14 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         _questions = new QuestionSlot(_outbox.Send);
     }
 
-    // A question asked while no console is connected waits for the next one all the same.
+    // A question asked while no console is connected still waits for the next console.
     public bool CanAsk => IsConnected;
 
     public bool IsConnected => _outbox.IsConnected;
 
-    // Only the agent's account, SYSTEM, and the session's account may open it, and the agent's account owns it, which the
-    // console checks. The agent keeps its one instance between consoles, so the name never comes free for another process.
+    // Only the agent's account, SYSTEM, and the session's account may open it. The agent's account owns it, and the
+    // console checks that. The agent keeps its single instance between consoles, so the name never becomes free for
+    // another process.
     [SupportedOSPlatform("windows")]
     public static NamedPipeServerStream CreatePipe(string name, SecurityIdentifier console)
     {
@@ -66,8 +67,8 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
             security);
     }
 
-    // Serves consoles on the pipe createPipe opens, in the background, until disposed. Until then the state and the
-    // newest lines wait for the first console.
+    // Serves consoles in the background on the pipe that createPipe opens, until disposed. The state and the newest
+    // lines wait for the first console to connect.
     public void Start(Func<NamedPipeServerStream> createPipe)
     {
         ArgumentNullException.ThrowIfNull(createPipe);
@@ -201,7 +202,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
             return ConsoleFailure.NotAMessage(exception);
         }
 
-        // After the state and the lines, as the console shows the question over them.
+        // After the state and the lines, because the console shows the question on top of them.
         _outbox.Connect();
         _questions.Connected();
         _connected?.Invoke();
@@ -224,8 +225,8 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // A disconnect throws away what the console has not read yet, such as the last state as the agent ends, so the
-    // console gets a moment to read it first. One that reads nothing any more does not hold the agent up.
+    // A disconnect throws away what the console hasn't read yet, such as the last state when the agent ends. So the
+    // console gets a moment to read it first. A console that stopped reading doesn't hold the agent up.
     private static async Task DrainAsync(NamedPipeServerStream pipe)
     {
         try

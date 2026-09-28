@@ -8,11 +8,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// What makes a sequence runnable, on every path through its tree. The server keeps one with problems as a draft and
-// never runs it, and the agent checks again. The document comes from outside, so members declared non-null can be null.
+// Checks that a sequence can run, on every path through its tree. The server keeps a sequence with problems as a draft
+// and never runs it, and the agent checks again. The document comes from outside, so members declared non-null can
+// still be null.
 public static class SequenceValidator
 {
-    // Steps are the leaves of the tree; nodes are the leaves and the groups, IFs and repeats that hold them.
+    // Steps are the leaves of the tree. Nodes are the leaves plus the groups, IFs and repeats that hold them.
     public const int MaxSteps = 100;
     public const int MaxNodes = 200;
 
@@ -21,7 +22,7 @@ public static class SequenceValidator
     public const int MaxNameLength = 100;
     public const int MaxConditions = 10;
 
-    // Groups within a condition, and the tests of a node's conditions together.
+    // How deep groups can nest in a condition, and how many tests all of a node's conditions have together.
     public const int MaxConditionDepth = 4;
     public const int MaxTestsPerNode = 20;
     public const int MaxRepeatTimes = 100;
@@ -37,15 +38,15 @@ public static class SequenceValidator
     public const int MaxExitCodes = 16;
     public const int MaxSeedFileBytes = 64 * 1024;
 
-    // Microsoft's minimums: 260 MB for the system partition on 4K native disks, 300 MB for a recovery partition.
-    // The upper limits only catch typing errors, which would otherwise fail after the disk was cleaned.
+    // Microsoft's minimums are 260 MB for the system partition on 4K native disks and 300 MB for a recovery
+    // partition. The upper limits only catch typos, which would otherwise fail after the disk was cleaned.
     private const int MinSystemPartitionMegabytes = 260;
     private const int MaxSystemPartitionMegabytes = 4096;
     private const int MinRecoveryPartitionMegabytes = 300;
     private const int MaxRecoveryPartitionMegabytes = 65536;
 
-    // The values DDT gives every run besides the machine's facts, which templates may use without the sequence
-    // declaring them: the deployment defaults that the answer file and the domain join take.
+    // Values DDT gives every run besides the machine's facts. Templates may use them without the sequence declaring
+    // them. They're the deployment defaults that the answer file and the domain join use.
     public static IReadOnlyList<string> WellKnownNames { get; } = ["TimeZone", "Locale", "Keyboard", "OrganizationalUnit"];
 
     public static IReadOnlyList<SequenceProblem> Validate(SequenceDefinition definition) => Analyse(definition).Problems;
@@ -87,7 +88,8 @@ public static class SequenceValidator
             problems.Add(SequenceProblem.From(null, "steps", ServerMessages.SequenceNodeCount.With("max", MaxNodes)));
         }
 
-        // A tree with a hole in it says little more than that; its phases are still worked out for a page to show.
+        // A tree with a hole in it reports little more than the hole. Its phases are still worked out, so a page can
+        // show them.
         List<SequenceProblem> empty = [];
         Empty(steps, null, "steps", empty);
         problems.AddRange(empty);
@@ -106,7 +108,7 @@ public static class SequenceValidator
         return new SequenceAnalysis([.. problems.Distinct()], [.. warnings.Distinct()], paths.Phases(definition), names.ValueNames);
     }
 
-    // An empty place counts as a step, as in a flat sequence.
+    // An empty slot counts as a step, like in a flat sequence.
     private static void Count(IReadOnlyList<SequenceStep?> steps, ref int leaves, ref int nodes)
     {
         foreach (SequenceStep? step in steps)
@@ -127,7 +129,8 @@ public static class SequenceValidator
         }
     }
 
-    // A list with an empty place, said at the container that holds it, or at the sequence for the top.
+    // Reports a list with an empty slot. The problem goes on the container that holds the list, or on the sequence for
+    // the top level.
     private static void Empty(IReadOnlyList<SequenceStep?> steps, Guid? containerId, string field, List<SequenceProblem> empty)
     {
         if (steps.Contains(null))
@@ -173,8 +176,8 @@ public static class SequenceValidator
         }
     }
 
-    // Later steps rely on these, so their own conditions and ContinueOnError are refused; in an IF or a group with
-    // conditions the paths decide instead. activity is partition, image or rawImage, for the messages.
+    // Later steps rely on these steps, so conditions and ContinueOnError on them are refused. Inside an IF or a group
+    // with conditions, the paths decide instead. activity is partition, image or rawImage, for the messages.
     internal static void CheckRunsEveryTime(SequenceStep step, string activity, Action<string?, ServerMessage> add)
     {
         if (step.Conditions is { Count: > 0 })
@@ -248,7 +251,8 @@ public static class SequenceValidator
             add("successExitCodes", ServerMessages.SequenceSuccessExitCodes.With("max", MaxExitCodes));
         }
 
-        // No restart codes is allowed: a script whose 3010 means success lists it among the success codes instead.
+        // An empty list of restart codes is allowed. A script whose 3010 means success lists it among the success codes
+        // instead.
         if (script.RebootExitCodes is not { Count: <= MaxExitCodes })
         {
             add("rebootExitCodes", ServerMessages.SequenceRebootExitCodes.With("max", MaxExitCodes));

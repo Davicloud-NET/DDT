@@ -11,8 +11,8 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs the steps of the phase the agent is in with the engine, while the heartbeat beats, and ends the phase as the
-// engine's outcome says: restarting, handing over to the installed Windows, finished or failed.
+// Runs the steps of the current phase with the engine while the heartbeat beats. It ends the phase as the engine's
+// outcome says: restarting, handing over to the installed Windows, finished or failed.
 internal sealed class PhaseRunner(
     Func<SequenceRun, IStepRunner> steps,
     RunInputsWait inputs,
@@ -31,8 +31,8 @@ internal sealed class PhaseRunner(
         SequenceOutcome outcome = SequenceOutcome.Failed;
         string? error = null;
 
-        // The engine saved the step that asked for a restart as done, so once that is on the disk, only the restart
-        // itself keeps the next steps from running without it.
+        // The engine saved the step that asked for a restart as done. Once that's on disk, only the restart itself
+        // keeps the next steps from running without it.
         bool restartDue = false;
 
         using CancellationTokenSource stepping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -58,7 +58,7 @@ internal sealed class PhaseRunner(
 
             await FinishPhaseAsync(run, outcome, stepping.Token).ConfigureAwait(false);
 
-            // A beat still on its way can be refused, for example because an operator stopped the run, which still ends
+            // A beat still on its way can be refused, for example because an operator stopped the run. That still ends
             // the run before the last reports.
             await heartbeat.StopAsync().ConfigureAwait(false);
             stepping.Token.ThrowIfCancellationRequested();
@@ -74,8 +74,9 @@ internal sealed class PhaseRunner(
         return await ResolveOutcomeAsync(run, outcome, error, restartDue, cancellationToken).ConfigureAwait(false);
     }
 
-    // Conditions and scripts read the values the run starts with, which come once its inputs are answered, or with the
-    // report that started a run this agent got before it started. A fresh run's seeds are checked against them.
+    // Conditions and scripts read the values the run starts with. They arrive once its inputs are answered. For a run
+    // this agent got before it started, they come with the answer to the report that started it. A fresh run's seeds
+    // are checked against them.
     private async Task TakeValuesAsync(SequenceRun run, CancellationToken cancellationToken)
     {
         if (run.WaitsForInputs)
@@ -94,8 +95,8 @@ internal sealed class PhaseRunner(
         }
     }
 
-    // The hand-over was interrupted, or the firmware started the network first. Doing it again repeats nothing that
-    // could harm what it did before.
+    // The hand-over was interrupted, or the firmware started the network first. Doing it again can't harm what the
+    // first attempt did.
     private async Task<SequenceRunResult> HandOverAgainAsync(SequenceRun run)
     {
         SequenceState state = run.State;

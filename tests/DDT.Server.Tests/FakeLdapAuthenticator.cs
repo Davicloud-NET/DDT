@@ -11,7 +11,7 @@ namespace DDT.Server.Tests;
 // other groups. A user name that starts with "nobody-" matches no entry, and one that starts with "twin-" matches two.
 public sealed class FakeLdapAuthenticator : ILdapAuthenticator
 {
-    // No "=" as in a real DN: the test host passes settings to Program as --key=value arguments.
+    // No "=" like in a real DN, because the test host passes settings to Program as --key=value arguments.
     public const string OperatorsGroup = "operators";
     public const string AdministratorsGroup = "administrators";
     public const string ViewersGroup = "viewers";
@@ -36,7 +36,7 @@ public sealed class FakeLdapAuthenticator : ILdapAuthenticator
     // Groups a user is in instead of the operators group, by user name.
     public ConcurrentDictionary<string, IReadOnlyList<string>> Groups { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    // While set, the directory cannot be asked.
+    // While set, the directory can't be reached.
     public bool Unavailable { get; set; }
 
     // Runs once inside the next bind, which is the slow step a race has to hit.

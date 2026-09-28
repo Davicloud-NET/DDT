@@ -6,7 +6,8 @@ using System.Text;
 
 namespace DDT.MachineConsole.Texts;
 
-// A PO catalog as Lingui writes the web's. Comments, flags, msgctxt and the header are skipped; plurals are not used.
+// A PO catalog in the format Lingui writes for the web. Comments, flags, msgctxt and the header are skipped. Plurals
+// aren't used.
 public sealed class PoCatalog
 {
     private readonly Dictionary<string, string> _messages;
@@ -15,7 +16,7 @@ public sealed class PoCatalog
 
     public IReadOnlyDictionary<string, string> Messages => _messages;
 
-    // The translation, or null where the catalog has none or an empty one.
+    // The translation, or null if the catalog has none or an empty one.
     public string? Find(string message) =>
         _messages.TryGetValue(message, out string? translated) && translated.Length > 0 ? translated : null;
 
@@ -72,7 +73,7 @@ public sealed class PoCatalog
         return result.ToString();
     }
 
-    // The entry being read: a string on a line of its own continues the msgid or msgstr last started.
+    // The entry being read. A quoted string on its own line continues the last msgid or msgstr.
     private sealed class MessageReader
     {
         private StringBuilder? _id;

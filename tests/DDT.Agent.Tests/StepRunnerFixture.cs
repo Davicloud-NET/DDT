@@ -13,7 +13,7 @@ using Xunit;
 namespace DDT.Agent.Tests;
 
 // One run with fakes for everything outside the agent: the disk and wimlib (Tools), the other tools (ToolRunner),
-// the server and time. The disk 0 is chosen for the run, and the server has issued RunToken. Everything on disk lives
+// the server and time. Disk 0 is chosen for the run, and the server has issued RunToken. Everything on disk lives
 // under Tools.Root, which Dispose removes.
 internal sealed class StepRunnerFixture : IDisposable
 {
@@ -22,7 +22,7 @@ internal sealed class StepRunnerFixture : IDisposable
     public static readonly Guid MachineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
-    // variables are the sequence's.
+    // variables are the sequence's declared variables.
     public StepRunnerFixture(
         IReadOnlyList<SequenceStep> steps,
         IReadOnlyList<AgentRunImage>? images = null,
@@ -104,7 +104,7 @@ internal sealed class StepRunnerFixture : IDisposable
     public AgentStepRunner Steps =>
         new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed], StepAccounts, TokenRejections.Add, Log, Time);
 
-    // variables are what steps output so far, values the run's values, which the machine carries.
+    // variables are what steps have output so far. values are the run's values, which the machine carries.
     public StepContext Context(
         SequencePhase phase = SequencePhase.WindowsPE,
         IReadOnlyDictionary<string, string>? variables = null,

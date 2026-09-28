@@ -20,8 +20,8 @@ import { AuditFilters } from "./AuditFilters";
 import { AuditTable } from "./AuditTable";
 import { useAuditFilter } from "./useAuditFilter";
 
-// Who did what and when: every row of the audit table, newest first, a page at a time. New rows reach the page as
-// they are stored, in the logs whose filter they pass, and enter at the top.
+// Who did what and when. Shows the audit table newest first, one page at a time. New rows arrive through the hub
+// as they're stored, and appear at the top if they pass the filter.
 export function AuditPage() {
   const fields = useAuditFilter();
   const filter = fields.filter;

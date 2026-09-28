@@ -7,8 +7,9 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// Puts a SequenceRunner together from the machine's tools, the same way for Windows PE, the installed Windows, a dry
-// run and the tests. Without AccountTools, a dry run only logs accounts and shares, and any other run uses Windows.
+// Puts a SequenceRunner together from the machine's tools, the same way for WinPE, the installed Windows, a dry run
+// and the tests. Without AccountTools, a dry run only logs accounts and shares, and any other run uses Windows for
+// them.
 public sealed class SequenceRunnerBuilder
 {
     public required IAgentServer Server { get; init; }
@@ -23,7 +24,7 @@ public sealed class SequenceRunnerBuilder
 
     public required IRebooter Rebooter { get; init; }
 
-    // Keeps a restart that leaves Windows PE due from the moment the run knows of it until it happens.
+    // Records a restart that WinPE owes, from the moment the run knows about it until it happens.
     public required WindowsPERestartMarker RestartMarker { get; init; }
 
     public required IToolRunner Tools { get; init; }
@@ -59,7 +60,7 @@ public sealed class SequenceRunnerBuilder
             Log);
     }
 
-    // A run's own step runners, as they share its session, store and heartbeat.
+    // Each run gets its own step runners, because they share its session, store and heartbeat.
     private AgentStepRunner StepsFor(SequenceRun run)
     {
         RunSession session = run.Session;

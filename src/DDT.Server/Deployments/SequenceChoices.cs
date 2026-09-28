@@ -25,7 +25,8 @@ public sealed class SequenceChoices(
     SequenceResolver resolver,
     DdtSettings settings)
 {
-    // Someone who may deploy signed in at this machine in its current token generation, and nothing is assigned.
+    // True if someone who may deploy signed in at this machine in its current token generation, and nothing is
+    // assigned.
     public async Task<bool> CanPickAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -67,8 +68,8 @@ public sealed class SequenceChoices(
                 continue;
             }
 
-            // The console asks the inputs and the name after the pick, starting with what the machine, the rules and the
-            // defaults give; a name typed there beats the one the values give.
+            // The console asks the inputs and the name after the pick, prefilled with what the machine, the rules and
+            // the defaults give. A name typed there beats the one from the values.
             ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(machine, resolution, definition, null, deployment));
             choices.Add(Choice(sequence, definition, references, machine, preview) with { Suggested = sequence.Id == suggested });
         }

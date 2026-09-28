@@ -8,8 +8,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Writes the server's answer file, which holds passwords, into the applied Windows: rendered only once reportRunning told
-// the server the step runs, and logged only as a summary. Setup deletes it through a line in SetupComplete.cmd.
+// Writes the server's answer file, which holds passwords, into the applied Windows. The server only renders it once
+// reportRunning has told it the step is running, and it's only logged as a summary. Setup deletes it through a line in
+// SetupComplete.cmd.
 public sealed class WriteUnattendStepRunner(
     IAgentServer server,
     RunSession session,
@@ -41,7 +42,7 @@ public sealed class WriteUnattendStepRunner(
         }
         catch
         {
-            // Half written, it goes at once, whatever else happens to the run.
+            // A half-written file is deleted right away, whatever else happens to the run.
             Leftovers.Delete(UnattendFile.PathIn(volumes.Windows), log);
 
             throw;

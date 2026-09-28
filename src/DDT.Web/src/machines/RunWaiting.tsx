@@ -21,8 +21,9 @@ interface RunWaitingProps {
   canAct: boolean;
 }
 
-// A run that waits at a Pause or for answers, across the page in the colour for that, with a key that lets it go on
-// or gives the answers. The keys are for operators; the person at the machine can do the same there.
+// A banner across the page, in the waiting colour, for a run that waits at a Pause or for answers. Its button
+// continues the run or gives the answers. The buttons are for operators, and the person at the machine can do the
+// same there.
 export function RunWaiting({ machineId, run, view, canAct }: RunWaitingProps) {
   const { t: translate } = useLingui();
   const { asking, setAsking, proceed, answer } = useRunWaitingActions(machineId);

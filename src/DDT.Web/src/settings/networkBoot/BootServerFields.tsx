@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import type { PxeForm } from "../networkBoot";
 import { SettingText } from "../parts/SettingText";
 
-// The boot server a boot target's answer names, as cells of the target's field grid.
+// The boot server that a boot target's answer names, as cells in the target's field grid.
 export function BootServerFields({
   form,
   path,

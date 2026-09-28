@@ -7,9 +7,9 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.Tests;
 
-// Answers from a script; a call whose script runs out stops the loop, so every test ends without timing. Without a
-// script, a log request succeeds, a run report echoes its token and a run file comes from ServeFile. The heartbeat calls
-// from another thread, so one lock guards everything, and scripted answers run outside it.
+// Answers from a script. A call whose script runs out stops the loop, so every test ends without depending on timing.
+// Without a script, a log request succeeds, a run report echoes its token and a run file comes from ServeFile. The
+// heartbeat calls from another thread, so one lock guards everything, and scripted answers run outside it.
 internal sealed class ScriptedAgentServer : IAgentServer
 {
     private readonly Lock _lock = new();
@@ -269,7 +269,7 @@ internal sealed class ScriptedAgentServer : IAgentServer
         await destination.WriteAsync(content, cancellationToken);
     }
 
-    // What every download of the logo answers; without one, the download fails as a missing file does.
+    // What every download of the logo returns. Without one, the download fails like a missing file.
     public byte[]? ConsoleLogo { get; set; }
 
     public async Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken)

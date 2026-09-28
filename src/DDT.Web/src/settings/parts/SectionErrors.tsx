@@ -8,8 +8,7 @@ import { Notice } from "@/ui/Notice";
 
 import type { SettingsForm } from "../useSettingsForm";
 
-// Problems of the section as a whole rather than one field, such as a missing directory proof, next to the save that
-// was refused.
+// Problems of the whole section, such as a missing directory proof, shown next to the refused save.
 export function SectionErrors<T>({ form }: { form: SettingsForm<T> }) {
   const errors = form.fieldErrors("");
   const refused = form.refusal?.kind === "invalid" ? form.refusal : null;

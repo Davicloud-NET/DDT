@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A line of text, starting with the default.
+// A single line of text, prefilled with the default.
 public sealed class TextFieldViewModel : InputFieldViewModel
 {
     private string _text;
@@ -30,7 +30,7 @@ public sealed class TextFieldViewModel : InputFieldViewModel
         }
     }
 
-    // 0 bounds nothing, as the text box takes it.
+    // 0 means no limit to the text box.
     public int MaxLength => Input.MaxLength ?? 0;
 
     public override bool IsAnswered => IsOptional || !string.IsNullOrWhiteSpace(Text);

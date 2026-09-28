@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Machines;
 
-// Records who signed in at a waiting machine, and approves it unless RequireWebApproval wants the web's half as well.
+// Records who signed in at a waiting machine. It also approves it, unless RequireWebApproval needs a web approval too.
 internal sealed class SignInApprovals(
     DdtDbContext database,
     RunQueries queries,
@@ -23,7 +23,7 @@ internal sealed class SignInApprovals(
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
-    // User is the machine's token, checked again when the save loses to a change of the machine.
+    // User is the machine's token. It's checked again if the save loses to a change of the machine.
     public async Task<MachineSignInOutcome> SignedInAsync(Machine machine, Actor signer, ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);

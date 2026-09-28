@@ -6,7 +6,7 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Pxe;
 
-// A listener could not bind its port. The message says which, and what to do about it, for an administrator.
+// Thrown when a listener can't bind its port. The message tells an admin which port and what to do about it.
 public sealed class PxeBindException : InvalidOperationException
 {
     public PxeBindException()
@@ -29,6 +29,6 @@ public sealed class PxeBindException : InvalidOperationException
         Reason = reason;
     }
 
-    // The message as a code, for the settings page to say in the person's language.
+    // The message as a code, so the settings page can show it in the user's language.
     public ServerMessage? Reason { get; }
 }

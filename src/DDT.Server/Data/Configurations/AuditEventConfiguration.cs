@@ -20,8 +20,8 @@ internal sealed class AuditEventConfiguration(bool isSqlite) : IEntityTypeConfig
         builder.HasIndex(a => a.OccurredUtc);
         builder.HasIndex(a => a.Action);
 
-        // SQLite has no DateTimeOffset type and compares it only for equality, but the audit log is filtered by time. UTC
-        // ticks compare in order and keep every digit, which EF Core's own binary converter does not.
+        // SQLite has no DateTimeOffset type and only compares it for equality, but the audit log is filtered by time.
+        // UTC ticks compare in order and keep every digit. EF Core's own binary converter doesn't.
         if (isSqlite)
         {
             builder.Property(a => a.OccurredUtc).HasConversion(new ValueConverter<DateTimeOffset, long>(

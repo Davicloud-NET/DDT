@@ -11,7 +11,7 @@ import { UploadPanel } from "@/uploads/UploadPanel";
 import { packagesQuery, type PackageKind, type PackageSummary } from "./packages";
 import { describeResult } from "./packageView";
 
-// Takes a zip of drivers or files; the package the server answers with joins the list.
+// Takes a zip of drivers or files. The package in the server's answer is added to the list.
 export function PackageUploadPanel({
   kind,
   onEdit,
@@ -51,7 +51,7 @@ export function PackageUploadPanel({
           list === undefined ? list : [...list.filter((item) => item.id !== added.id), added],
         );
 
-        // A new driver package is for no model yet, so it opens at once to choose them.
+        // A new driver package has no models yet, so its dialog opens at once to pick them.
         if (added.kind === "Drivers" && added.targets.length === 0) {
           onEdit(added);
         }

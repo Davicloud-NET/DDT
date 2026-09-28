@@ -10,8 +10,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// Acts on the run a poll names: runs it, goes on with the one on the disk, or reports as failed a run nothing here can
-// go on with.
+// Acts on the run a poll returns. It starts the run, continues the one on disk, or reports a run as failed when
+// nothing here can continue it.
 internal sealed class RunStarter(
     IAgentServer server,
     SequenceRunner runner,
@@ -20,10 +20,10 @@ internal sealed class RunStarter(
     AgentRegistrar registrar,
     AgentLog log)
 {
-    // A run that ended in this process without the server hearing so, and the Failed report that tells it.
+    // A run that ended in this process without the server hearing about it, and the Failed report that tells it.
     private (Guid RunId, AgentRunReport Report)? _abandonedRun;
 
-    // The exit code for a run that ended the agent's part; null for one that failed, or lost the machine's token.
+    // The exit code for a run that ended the agent's part. Null for a run that failed or lost the machine's token.
     public static int? ExitCodeAfter(RunOutcome outcome) => outcome switch
     {
         RunOutcome.Finished => AgentExitCodes.Deployed,
@@ -32,7 +32,8 @@ internal sealed class RunStarter(
         _ => null,
     };
 
-    // The outcome of the run it ran, or null when it ran none. tokens are the poll's, which every answer renews.
+    // Returns the outcome of the run it ran, or null if it ran none. The tokens are the poll's, and every answer
+    // renews them.
     public async Task<RunOutcome?> HandleAsync(Guid machineId, DeploymentTokens tokens, AgentRun? run, CancellationToken cancellationToken)
     {
         if (run is null)
@@ -54,8 +55,8 @@ internal sealed class RunStarter(
         }
         else if (run.State == DeploymentState.Running)
         {
-            // Nothing here can go on with it: its state is not on this machine's disks, a refused token
-            // ended it, or its own failure report did not get through.
+            // Nothing here can continue it. Its state isn't on this machine's disks, a refused token ended it,
+            // or its own failure report didn't get through.
             AgentRunReport report = _abandonedRun is { } abandoned && abandoned.RunId == run.Id
                 ? abandoned.Report
                 : FailedRunReport.Of(SequencePhase.WindowsPE, SequenceRunner.LostContactMessage);
@@ -79,11 +80,11 @@ internal sealed class RunStarter(
 
         _abandonedRun = result.UnsentReport is { } unsent ? (run.Id, unsent) : null;
 
-        // The run kept the session alive; the tokens the poll last saw may have expired.
+        // The run kept the session alive. The tokens the poll last saw may have expired.
         pollTokens.Update(tokens.Token, tokens.ResumeToken);
         runs.RunToken = tokens.RunToken;
 
-        // A run that failed leaves the machine to pick again.
+        // After a failed run the machine may pick again.
         if (ExitCodeAfter(result.Outcome) is null && result.Outcome != RunOutcome.TokenRejected)
         {
             runs.RunToken = null;

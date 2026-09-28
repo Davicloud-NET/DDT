@@ -4,7 +4,7 @@
 
 namespace DDT.Core;
 
-// CRC-32 as zlib computes it, which zip entries and GUID partition tables store. The framework keeps its own internal.
+// CRC-32 the way zlib computes it. Zip entries and GUID partition tables store it. The framework's own one is internal.
 public static class Crc32
 {
     private const uint Polynomial = 0xEDB88320;

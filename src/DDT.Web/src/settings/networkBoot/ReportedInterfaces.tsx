@@ -12,7 +12,7 @@ import type { PxeHostInterfaces } from "../networkBoot";
 
 import { HostInterfaces } from "./HostInterfaces";
 
-// The interfaces the hosts that run network boot reported, each to be listed or taken out.
+// The interfaces that the network boot hosts reported. Each can be added to the list or removed.
 export function ReportedInterfaces({
   hosts,
   entries,

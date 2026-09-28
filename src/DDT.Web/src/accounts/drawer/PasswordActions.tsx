@@ -13,7 +13,7 @@ interface PasswordActionsProps {
   onChange: (action: SecretAction) => void;
 }
 
-// The keys that replace, clear or keep a saved account's password.
+// The buttons that replace, clear or keep a saved account's password.
 export function PasswordActions({ action, stored, onChange }: PasswordActionsProps) {
   return (
     <span className="flex gap-2">

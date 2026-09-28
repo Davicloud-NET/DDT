@@ -8,8 +8,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs each step with the IStepKindRunner for its kind, inside the step's accounts, with the step's id on its log lines.
-// A step that throws fails with the message; a stop and a 401 go on to the engine, a 401 through tokenRejected first.
+// Runs each step with the IStepKindRunner for its kind, inside the step's accounts, with the step's id on its log
+// lines. A step that throws fails with the message. A stop and a 401 are passed on to the engine, and a 401 goes
+// through tokenRejected first.
 public sealed class AgentStepRunner(
     IReadOnlyList<IStepKindRunner> runners,
     StepAccounts accounts,
@@ -68,7 +69,7 @@ public sealed class AgentStepRunner(
         }
     }
 
-    // A Restart step needs no runner, and without one for its kind a step fails.
+    // A Restart step needs no runner. Any other step without a runner for its kind fails.
     private async Task<StepResult> RunKindAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
     {
         if (step is RebootStep)

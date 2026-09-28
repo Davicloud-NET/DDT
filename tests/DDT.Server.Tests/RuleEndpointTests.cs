@@ -21,8 +21,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The ordered rules as the Rules page reads and writes them. The tests of a class share one server, and the rules of
-// every test there are in one list, so a test finds its own rules by id.
+// The ordered rules, as the Rules page reads and writes them.
+// The tests of a class share one server and one list of rules, so a test finds its own rules by ID.
 public sealed class RuleEndpointTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -164,8 +164,8 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
             ],
             [gone]);
 
-    // A rule is saved with what is wrong with it, as an editor saves while the administrator types, and matches nothing
-    // until it is fixed.
+    // A rule is saved with its problems, because the editor saves while the administrator types.
+    // It matches nothing until it's fixed.
     [Fact]
     public async Task SavesARuleWithItsProblems()
     {
@@ -199,7 +199,7 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
         Assert.All(rule.Problems, problem => Assert.Null(problem.StepId));
         Assert.Equal("This comparison does not fit Model, which holds any text.", rule.Problems[1].Message);
 
-        // Fixed, the rule may test the value another rule sets.
+        // Once fixed, the rule may test the value another rule sets.
         RuleView fixedRule = await RegisteredMachine.ReadAsync<RuleView>(await administrator.PutAsync(
             $"{RuleRequests.Rules}/{rule.Id}",
             RuleRequests.Save(rule, save => save with
@@ -239,7 +239,8 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
             sequence));
     }
 
-    // A save names the revision it was made on: one over a newer save is refused with the rule as it is now.
+    // A save names the revision it was made on.
+    // A save over a newer one is refused, and the answer has the rule as it is now.
     [Fact]
     public async Task ChangesARuleOnlyAtTheRevisionItWasRead()
     {
@@ -272,7 +273,7 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal(HttpStatusCode.NotFound, (await administrator.PutAsync($"{RuleRequests.Rules}/{Guid.NewGuid()}", RuleRequests.Save(changed))).StatusCode);
     }
 
-    // The order is the whole list, saved in one go; the rules keep their revisions, as only their places changed.
+    // The order is the whole list, saved in one go. The rules keep their revisions, because only their places changed.
     [Fact]
     public async Task ReordersTheWholeListInOneGo()
     {
@@ -370,7 +371,7 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
             await TestDatabase.TitleAsync(await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{sequence.Id}")),
             StringComparison.Ordinal);
 
-        // Letting it choose none is enough.
+        // Making the other rule choose no sequence is enough.
         (await administrator.PutAsync($"{RuleRequests.Rules}/{second.Id}", RuleRequests.Save(second, save => save with { SequenceId = null }))).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{sequence.Id}")).StatusCode);
     }

@@ -12,7 +12,7 @@ import { EMPTY_CHOICE } from "./sequenceTemplates";
 interface TemplateSelectProps {
   templates: readonly SequenceTemplate[];
   chosen: string;
-  // The template chosen, whose description is the hint; null for an empty sequence.
+  // The chosen template. Its description is the hint. Null for an empty sequence.
   template: SequenceTemplate | null;
   isDisabled: boolean;
   onChange: (choice: string | null) => void;

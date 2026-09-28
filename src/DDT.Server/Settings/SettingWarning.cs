@@ -6,13 +6,13 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Settings;
 
-// Field is a path inside the section, as a SettingProblem's is. Code names a warning a save has to confirm; a warning
-// without one only informs.
+// Field is a path inside the section, the same as in a SettingProblem. A save has to confirm the warnings whose Code
+// is in SettingWarningCodes.NeedConfirmation. Any other warning only informs.
 public sealed record SettingWarning(string Field, ServerMessage Text, string? Code)
 {
     public string Message => Text.Text;
 
-    // By the English text, because Text's Args is a dictionary, which compares only by reference.
+    // Compares by the English text, because Text's Args is a dictionary, and a dictionary only compares by reference.
     public bool Equals(SettingWarning? other) =>
         other is not null && Field == other.Field && Message == other.Message && Code == other.Code;
 

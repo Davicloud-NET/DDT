@@ -32,7 +32,7 @@ interface CanvasNodesProps {
   onDragChange: (drag: FlowDrag) => void;
 }
 
-// The canvas's cards, each at its box of the layout.
+// The canvas's cards, each placed at its box in the layout.
 export function CanvasNodes({
   boxes,
   index,

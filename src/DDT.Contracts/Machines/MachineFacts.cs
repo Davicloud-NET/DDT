@@ -4,8 +4,8 @@
 
 namespace DDT.Contracts.Machines;
 
-// What the agent found out about the machine besides its identity, for conditions and rules to test and for the
-// machine's page. Every member is null where the agent could not tell.
+// What the agent found out about the machine besides its identity. Conditions and rules test it, and the machine's
+// page shows it. Every member is null when the agent couldn't tell.
 public sealed record MachineFacts
 {
     public long? MemoryMegabytes { get; init; }
@@ -23,7 +23,7 @@ public sealed record MachineFacts
 
     public bool? SecureBootCapable { get; init; }
 
-    // The network members are the primary adapter's, the one PrimaryMac names.
+    // The network members describe the primary adapter, the one PrimaryMac names.
     public string? IPv4Address { get; init; }
 
     public int? IPv4PrefixLength { get; init; }
@@ -41,10 +41,10 @@ public sealed record MachineFacts
 
     public string? SystemSku { get; init; }
 
-    // The enclosure's, SMBIOS type 3.
+    // The enclosure's asset tag, from SMBIOS type 3.
     public string? AssetTag { get; init; }
 
-    // SMBIOS type 2.
+    // From SMBIOS type 2.
     public string? BaseboardProduct { get; init; }
 
     // BiosVersion and BiosDate come from SMBIOS type 0.

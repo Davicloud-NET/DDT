@@ -18,18 +18,19 @@ export interface ConfirmDialogProps {
   children: ReactNode;
   confirmLabel: ReactNode;
   onConfirm: () => void;
-  // Actions that remove or stop something use the danger key.
+  // Actions that remove or stop something use the danger button.
   danger?: boolean;
   isBusy?: boolean;
   error?: ReactNode;
-  // A word to type before the confirm key works, such as ERASE. The dialog then carries the hazard band.
+  // A word to type before the confirm button works, such as ERASE. The dialog then shows the hazard band.
   typedWord?: string;
-  // Keeps the confirm key off for a reason the dialog's content explains, such as an allowance not given yet.
+  // Disables the confirm button, for a reason the dialog's content explains, such as an allowance not given yet.
   isConfirmDisabled?: boolean;
 }
 
-// Cancel comes first and takes the focus, so Enter never confirms by accident; with a typedWord, its field does.
-// The content is the dialog's aria-describedby, because the focus lands on a key rather than on the text.
+// Cancel comes first and takes the focus, so Enter never confirms by accident. With a typedWord, its field takes
+// the focus. The content is the dialog's aria-describedby, because the focus lands on a button rather than on
+// the text.
 export function ConfirmDialog({
   isOpen,
   onOpenChange,

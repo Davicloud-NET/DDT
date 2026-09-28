@@ -21,7 +21,8 @@ internal static class TestWim
     private const int HeaderLength = 208;
     private const int DataLength = 4096;
 
-    // One image per architecture code, indexed from 1; null leaves the ARCH element out, as a captured data folder has.
+    // One image per architecture code, indexed from 1.
+    // null leaves out the ARCH element, like a captured data folder does.
     public static byte[] Create(params int?[] architectures) => Build(totalParts: 1, architectures);
 
     // The first part of a WIM split into two .swm files.

@@ -26,8 +26,8 @@ export const stateTone: Record<MachineState, StateTone> = {
   Retired: "retired",
 };
 
-// Pending and Approved are the server's words; to the person at the page, a pending machine waits for someone,
-// and an approved one without a run is ready for one.
+// Pending and Approved are the server's words. On the page, a pending machine is waiting for someone, and an
+// approved one without a run is ready for one.
 export const stateLabel: Record<MachineState, MessageDescriptor> = {
   Pending: msg`Waiting`,
   Approved: msg`Ready`,
@@ -38,8 +38,8 @@ export const stateLabel: Record<MachineState, MessageDescriptor> = {
   Retired: msg`Retired`,
 };
 
-// The state a machine shows: its own, unless its run waits for someone, for answers to its inputs or at a pause,
-// which asks for attention as a waiting machine does.
+// The state a machine shows. It's the machine's own state, unless its run waits for someone, for answers or at a
+// pause. That asks for attention just like a waiting machine.
 export function machineTag(machine: MachineSummary): {
   tone: StateTone;
   label: MessageDescriptor;
@@ -100,8 +100,8 @@ export function inFilter(machine: MachineSummary, filter: MachineFilter): boolea
   );
 }
 
-// What needs someone comes first, then what runs, then what rests. Within a state the newest machine comes first;
-// last seen is not used, because it changes on every contact and would move rows under the pointer.
+// Machines that need someone come first, then running ones, then idle ones. Within a state, the newest machine
+// comes first. Last seen isn't used, because it changes on every contact and would move rows under the pointer.
 const rank: Record<MachineState, number> = {
   Pending: 0,
   Failed: 1,
@@ -157,7 +157,7 @@ export function displayName(machine: MachineSummary): string {
   return machine.assignedName ?? machine.model ?? t`Unknown model`;
 }
 
-// The line under the name: what the name leaves out, among maker, model and serial number.
+// The line under the name. It shows whichever of maker, model and serial number the name leaves out.
 export function hardwareLine(machine: MachineSummary): string {
   const maker =
     machine.assignedName === null ? machine.manufacturer : (machine.model ?? machine.manufacturer);
@@ -187,8 +187,9 @@ export function deviceKind(machine: MachineSummary): DeviceKind {
   }
 }
 
-// The rail from the list's summary of a run, which knows only the step it is on: the steps before it count as done
-// and those after it as waiting. A run's own page draws the rail from its steps instead, skipped ones included.
+// Builds the rail from the list's summary of a run. The summary only knows the current step, so earlier steps
+// count as done and later ones as waiting. A run's own page draws the rail from its steps instead, skipped ones
+// included.
 export function railFromSummary(run: DeploymentSummary): RailStep[] {
   const count = Math.max(run.stepCount, 0);
   const at = run.stepIndex ?? -1;
@@ -227,8 +228,8 @@ const railStates: Record<Exclude<PathState, "notTaken">, RailStepState> = {
   skipped: "skipped",
 };
 
-// The rail of a run's path: the leaf steps it went through, the one it is at, and those still ahead, each with its
-// number in the sequence. The steps of branches it did not take are left out.
+// The rail of a run's path: the leaf steps it went through, the one it's at, and those still ahead. Each has its
+// number in the sequence. Steps in branches the run didn't take are left out.
 export function railFromPath(path: RunPath): RailStep[] {
   return path.leaves.flatMap((leaf): RailStep[] =>
     leaf.state === "notTaken"
@@ -253,8 +254,8 @@ export function railFromView(view: DeploymentView): RailStep[] {
   );
 }
 
-// The rail in words, for screen readers and as its tooltip. A run that ended before its first step, as when the
-// check before it failed or the assignment was cancelled, shows no step done, so it names none.
+// The rail in words, for screen readers and as its tooltip. A run can end before its first step, for example when
+// the check before it failed or the assignment was cancelled. Then no step is done, so the text names none.
 export function railLabel(run: DeploymentSummary): string {
   const count = run.stepCount;
   const number = (run.stepIndex ?? 0) + 1;
@@ -280,7 +281,7 @@ export function railLabel(run: DeploymentSummary): string {
   }
 }
 
-// One step of the rail in words, for screen readers: its number, its name when there is one, and how it stands.
+// One step of the rail in words, for screen readers: its number, its name if it has one, and its state.
 export function railStepText(step: RailStep, index: number): string {
   const number = step.number ?? index + 1;
   const name = typeof step.name === "string" ? step.name : null;

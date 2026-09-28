@@ -84,8 +84,8 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
 
             IPEndPoint source = (IPEndPoint)received.RemoteEndPoint;
 
-            // Nothing a client sends may end this loop: a listener that dies on one malformed datagram
-            // leaves every machine on the segment unable to boot until the process restarts.
+            // Nothing a client sends may end this loop. A listener that dies on one malformed datagram leaves every
+            // machine on the segment unable to boot until the process restarts.
             try
             {
                 ProxyDhcpOutcome outcome = _handler.Handle(
@@ -159,7 +159,7 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
             destination.ToString());
     }
 
-    // Returns whether it logged, which only a datagram from a served interface does.
+    // Returns whether it logged. Only a datagram from a served interface gets logged.
     private bool LogFirst(ProxyDhcpOutcome outcome, int arrivalInterface, IPEndPoint source, int port)
     {
         if (outcome.Kind == ProxyDhcpOutcomeKind.InterfaceNotServed || !_interfaces.TryGetInterface(arrivalInterface, out ServedInterface? served))

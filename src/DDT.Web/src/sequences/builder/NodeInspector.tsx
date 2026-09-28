@@ -36,8 +36,8 @@ interface NodeInspectorProps {
   onShift: (by: -1 | 1) => void;
 }
 
-// The node chosen in the flow, with everything it does. Alt with Up or Down in its fields moves it within its list,
-// as on the canvas.
+// The node chosen in the flow, with everything it does. Alt+Up or Alt+Down in its fields moves it within its list,
+// like on the canvas.
 export function NodeInspector({
   node,
   place,
@@ -69,7 +69,7 @@ export function NodeInspector({
   };
 
   return (
-    // Keyed by the node, so what a field holds while it is typed in stays with its node.
+    // Keyed by the node, so text that's still being typed in a field stays with its node.
     <div key={node.id} onKeyDown={onKey} className="flex flex-col gap-5">
       <NodeSummary node={node} place={place} phases={phases} findings={findings} />
       <UnplacedFindings node={node} findings={findings} />

@@ -24,7 +24,7 @@ interface AccountDrawerProps {
   onClose: () => void;
 }
 
-// An account's form. Its password is only ever typed here: the server never sends it back, and a save sends it once.
+// An account's form. The password is only ever typed here. The server never sends it back, and a save sends it once.
 export function AccountDrawer({ account, onClose }: AccountDrawerProps) {
   const { t } = useLingui();
   const form = useAccountForm({ account, onClose });

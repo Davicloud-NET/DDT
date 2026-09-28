@@ -11,7 +11,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Win32.SafeHandles;
 
-// Removes files from a mounted Windows PE by a trim list. C# 5, which Windows PowerShell 5.1 compiles.
+// Removes files from a mounted Windows PE image following a trim list. Written in C# 5, which Windows PowerShell 5.1
+// can compile.
 public static class DdtBootImageTrim
 {
     private const uint Delete = 0x00010000;
@@ -30,7 +31,7 @@ public static class DdtBootImageTrim
     private const int ErrorNotAllAssigned = 1300;
     private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
 
-    // A copy in a WinSxS component folder, the second name most files in Windows PE have.
+    // A copy in a WinSxS component folder. Most files in Windows PE have one as their second name.
     private static readonly Regex s_componentCopy = new Regex(
         @"^\\Windows\\WinSxS\\(amd64|x86|wow64|msil)_[^\\]+\\", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
@@ -90,7 +91,8 @@ public static class DdtBootImageTrim
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetFileInformationByHandle(SafeFileHandle file, int infoClass, ref uint info, uint length);
 
-    // Removes what the lines name from the Windows PE mounted at mount and returns how many files and folders went.
+    // Removes what the lines name from the Windows PE image mounted at mount. Returns how many files and folders were
+    // removed.
     public static int[] Trim(string mount, string[] lines)
     {
         Regex removed;
@@ -98,14 +100,14 @@ public static class DdtBootImageTrim
         ReadList(lines, out removed, out kept);
 
         string root = Path.GetFullPath(mount).TrimEnd('\\');
-        // Names of a file come back relative to its volume's root, without the drive.
+        // A file's names come back relative to its volume's root, without the drive letter.
         string volumeRelative = root.Substring(Path.GetPathRoot(root).Length - 1);
 
         List<string> files = new List<string>();
         List<string> folders = new List<string>();
 
-        // Windows PE's files belong to TrustedInstaller, so they are opened for backup, which an administrator's backup
-        // and restore privileges allow.
+        // Windows PE's files belong to TrustedInstaller, so they're opened for backup. An administrator's backup and
+        // restore privileges allow that.
         long[] previous = Enable("SeBackupPrivilege", "SeRestorePrivilege");
         try
         {
@@ -127,8 +129,8 @@ public static class DdtBootImageTrim
         }
     }
 
-    // A line is a path in the image; * stands for any characters within one name, and a path takes everything below
-    // it. A line starting with ! keeps what it matches.
+    // A line is a path in the image. * stands for any characters within one name, and a path includes everything
+    // below it. A line starting with ! keeps what it matches.
     private static void ReadList(string[] lines, out Regex removed, out Regex kept)
     {
         List<string> removes = new List<string>();
@@ -156,8 +158,8 @@ public static class DdtBootImageTrim
         kept = Pattern(keeps);
     }
 
-    // A file whose other names are all removed or copies in a WinSxS component folder goes with all its names; one
-    // that has a name anywhere else keeps it and loses only the others.
+    // If a file's other names are all removed too, or are copies in a WinSxS component folder, the file goes with all
+    // its names. A file with a name anywhere else keeps that name and only loses the ones the list matches.
     private static HashSet<string> NamesToRemove(string root, string volumeRelative, List<string> files, Regex removed, Regex kept)
     {
         HashSet<string> doomed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -183,7 +185,8 @@ public static class DdtBootImageTrim
         return doomed;
     }
 
-    // Deepest first, so a folder's folders are gone before it is tried. One that still holds a kept file stays.
+    // Deepest first, so a folder's subfolders are gone before the folder itself is tried. A folder that still holds a
+    // kept file stays.
     private static int RemoveFolders(string root, List<string> folders, Regex removed, Regex kept)
     {
         folders.Sort((a, b) => b.Length.CompareTo(a.Length));
@@ -215,8 +218,9 @@ public static class DdtBootImageTrim
         return removed != null && removed.IsMatch(path) && (kept == null || !kept.IsMatch(path));
     }
 
-    // Every file and folder below the root, as paths in the image. A junction or other reparse point is listed and
-    // never followed. The \\?\ prefix, because some paths in WinSxS pass 260 characters below the mount directory.
+    // Lists every file and folder below the root, as paths in the image. A junction or other reparse point is listed
+    // but never followed. The \\?\ prefix is needed because some paths in WinSxS go past 260 characters below the
+    // mount directory.
     private static void List(string root, string folder, List<string> files, List<string> folders)
     {
         FindData data;
@@ -264,7 +268,7 @@ public static class DdtBootImageTrim
         }
     }
 
-    // Every name of the file, as paths in the image; null for a name outside the mount, which keeps the file.
+    // Every name of the file, as paths in the image. A name outside the mount is null, and it keeps the file.
     private static List<string> Names(string root, string volumeRelative, string file)
     {
         List<string> names = new List<string>();
@@ -322,8 +326,9 @@ public static class DdtBootImageTrim
         }
     }
 
-    // Deletes one name of a file, or an empty folder; false for a folder that is not empty. Many files in Windows PE are
-    // read-only, and they are deleted as they are: their owner and permissions stay for a file that keeps another name.
+    // Deletes one name of a file, or an empty folder. Returns false for a folder that isn't empty. Many files in
+    // Windows PE are read-only, and they're deleted as they are. That way a file that keeps another name keeps its
+    // owner and permissions.
     private static bool Remove(string path)
     {
         using (SafeFileHandle handle = CreateFileW(
@@ -381,7 +386,7 @@ public static class DdtBootImageTrim
                         "This account does not hold " + names[index] + ", which removing files from Windows PE needs.");
                 }
 
-                // Windows reports the state before only for a privilege it changed, so none means it was enabled already.
+                // Windows only reports the previous state for a privilege it changed. No state means it was on already.
                 previous[index * 2] = state.Luid;
                 previous[index * 2 + 1] = old.Count == 0 ? 0x2 : old.Attributes;
             }

@@ -123,8 +123,8 @@ public sealed class PackageArchiveCheckTests
         Assert.StartsWith("The entry good.inf ", inspection.Refusal, StringComparison.Ordinal);
     }
 
-    // A reader stops at the size the zip states, so a smaller one reads as that many bytes without any error, and an
-    // agent would unpack a truncated driver.
+    // A reader stops at the size the zip states.
+    // A smaller size reads as that many bytes without any error, so an agent would unpack a truncated driver.
     [Fact]
     public void RefusesAnEntryThatSaysItIsSmallerThanItIs()
     {

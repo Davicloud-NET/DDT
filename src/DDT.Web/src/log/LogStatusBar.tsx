@@ -12,7 +12,8 @@ import { MAX_BUFFERED_LINES } from "./logBuffer";
 import { LOG_POLL_MS } from "./useMachineLog";
 import type { LogView } from "./useLogView";
 
-// Older lines to load or the limits that stop them, and how new lines arrive while the live connection is down.
+// The button that loads older lines, or the limit that stops it (this page's buffer or the lines the server keeps),
+// and how new lines arrive while the live connection is down.
 export function LogStatusBar({ view }: { view: LogView }) {
   const log = view.log;
   const full = view.all.length >= MAX_BUFFERED_LINES;

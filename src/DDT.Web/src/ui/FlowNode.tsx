@@ -14,7 +14,7 @@ import type { RailStep, RailStepState } from "./SequenceRail";
 import { SequenceRailStrip } from "./SequenceRailStrip";
 import { StateTag } from "./StateTag";
 
-// "edit" while a sequence is edited, where the module marks a problem; a run's state on a run's page.
+// "edit" while a sequence is edited, where the module marks a problem. On a run's page, it's the run's state.
 export type FlowNodeState =
   "edit" | "waiting" | "running" | "done" | "failed" | "skipped" | "paused" | "notTaken";
 
@@ -44,7 +44,7 @@ interface FlowNodeProps {
   selected?: boolean;
   // A finding of the node while it is edited: a problem keeps the sequence from running, a warning does not.
   mark?: "problem" | "warning";
-  // The branch an IF took in a run, whose port label is then in ink.
+  // The branch an IF took in a run. That port's label is then drawn in ink.
   branch?: "then" | "else" | null;
   // A collapsed container's leaves, as the rail draws them, in place of its detail.
   strip?: RailStep[];

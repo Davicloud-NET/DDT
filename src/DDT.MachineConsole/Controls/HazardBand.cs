@@ -8,7 +8,7 @@ using Avalonia.Media;
 
 namespace DDT.MachineConsole.Controls;
 
-// The band of ink and yellow stripes over what erases a disk, and nowhere else.
+// The band of ink and yellow stripes. Only the screen that erases a disk shows it.
 public sealed class HazardBand : Control
 {
     public static readonly StyledProperty<IBrush?> InkProperty = AvaloniaProperty.Register<HazardBand, IBrush?>(nameof(Ink));

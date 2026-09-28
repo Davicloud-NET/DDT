@@ -6,8 +6,8 @@ using System.IO.Pipes;
 
 namespace DDT.ConsoleProtocol;
 
-// The console's end of the pipe. ConnectAsync connects, says hello and waits for the agent's; then the console reads
-// what the agent sends until ReceiveAsync returns null, which it does when the agent ends, and answers questions.
+// The console's end of the pipe. ConnectAsync connects, sends a hello and waits for the agent's hello. Then the console
+// reads what the agent sends and answers questions, until ReceiveAsync returns null when the agent ends.
 public sealed class ConsoleClient : IAsyncDisposable
 {
     private readonly NamedPipeClientStream _pipe;
@@ -31,7 +31,7 @@ public sealed class ConsoleClient : IAsyncDisposable
         CancellationToken cancellationToken) =>
         ConnectAsync(pipeName, new HelloMessage(HelloMessage.CurrentVersion, program), timeout, cancellationToken);
 
-    // With a hello of any version, which only a test needs.
+    // Connects with a hello of any version. Only tests need this.
     public static Task<ConsoleClient> ConnectAsync(
         string pipeName,
         HelloMessage hello,
@@ -39,8 +39,9 @@ public sealed class ConsoleClient : IAsyncDisposable
         CancellationToken cancellationToken) =>
         ConnectAsync(ConsolePipe.CreateClient(pipeName), hello, null, timeout, cancellationToken);
 
-    // Over a pipe the caller made, such as one to an agent of another account. check runs before anything is sent and
-    // throws UnauthorizedAccessException when the pipe is not the agent's. The client owns the pipe from here on.
+    // Connects over a pipe the caller made, such as one to an agent running as another account. check runs before
+    // anything is sent, and throws UnauthorizedAccessException when the pipe isn't the agent's. From here on the client
+    // owns the pipe.
     public static async Task<ConsoleClient> ConnectAsync(
         NamedPipeClientStream pipe,
         HelloMessage hello,

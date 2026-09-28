@@ -7,7 +7,7 @@ import { msg } from "@lingui/core/macro";
 
 import type { AuditActorKind } from "./audit";
 
-// The audit log's kinds of action, by the start of their names, for its filter.
+// The action groups of the audit log's filter. Each matches the start of an action name.
 export const actionGroups: { prefix: string; label: MessageDescriptor }[] = [
   { prefix: "", label: msg`Every action` },
   { prefix: "machine.", label: msg`Machines` },
@@ -72,7 +72,7 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "domain.join-checked": msg`Domain join checked`,
 };
 
-// An action the page knows in words; a newer one as the server names it.
+// A known action gets a translated label. An action this page doesn't know yet shows the server's name for it.
 export function actionLabel(action: string): string {
   const label = actionLabels[action];
 

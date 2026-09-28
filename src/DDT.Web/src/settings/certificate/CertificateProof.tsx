@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { ReauthDialog } from "../parts/ReauthDialog";
 import type { GuardedAction } from "../useGuardedAction";
 
-// The password again, which Generate and Upload both need.
+// The password dialog that Generate and Upload both need.
 export function CertificateProof({
   action,
   confirmLabel,

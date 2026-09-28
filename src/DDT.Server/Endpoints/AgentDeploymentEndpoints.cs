@@ -21,7 +21,7 @@ using Microsoft.Net.Http.Headers;
 namespace DDT.Server.Endpoints;
 
 // What an authorized machine needs to run a task sequence: the sequences it may choose, its run, the run's files and,
-// just in time, its secrets. All of it takes a session token, and the machine's own current generation.
+// just in time, its secrets. Everything needs the machine's own session token, in its current generation.
 public static class AgentDeploymentEndpoints
 {
     public static RouteGroupBuilder MapAgentDeploymentEndpoints(this RouteGroupBuilder group)
@@ -50,7 +50,7 @@ public static class AgentDeploymentEndpoints
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxRequestBytes));
 
-        // HEAD explicitly: the agent checks a file's size before it erases the disk, and a HEAD no endpoint matches
+        // HEAD is mapped explicitly. The agent checks a file's size before it erases the disk, and an unmatched HEAD
         // would fall through to the web UI's index page with 200.
         group.MapMethods("/{id:guid}/runs/{runId:guid}/files/{sha256}", [HttpMethods.Get, HttpMethods.Head], ReadFileAsync)
             .AddEndpointFilter<AgentMachineFilter>()
@@ -70,7 +70,7 @@ public static class AgentDeploymentEndpoints
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
         // An agent from before task sequences never gets an image deployment from this server, so it has no reason to
-        // call these. Answered here rather than by the web UI's fallback page, which would answer a GET with 200.
+        // call these. They're answered here, not by the web UI's fallback page, which would answer a GET with 200.
         group.MapMethods("/{id:guid}/images/{**rest}", [HttpMethods.Get, HttpMethods.Head], Gone)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
@@ -299,7 +299,7 @@ public static class AgentDeploymentEndpoints
         return machine is not null && Principals.HoldsCurrentGeneration(context.User, machine) ? machine : null;
     }
 
-    // The audit rows of the read are saved before the secret leaves, and nothing may keep it.
+    // The read's audit rows are saved before the secret leaves, and no-store tells anything in between not to keep it.
     private static async Task SavedAsync(HttpContext context, DdtDbContext database, CancellationToken cancellationToken)
     {
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

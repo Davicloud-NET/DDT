@@ -14,8 +14,9 @@ import type { DirectoryProof, LdapForm } from "../signIn";
 import { TestResult } from "./TestResult";
 import { useDirectoryTest } from "./useDirectoryTest";
 
-// Tries the values in the form before they are saved: the bind, and with a user name and password, that user's
-// sign-in without a session. A test of one's own sign-in that keeps one an administrator hands back a proof.
+// Tests the values in the form before they're saved. It tries the bind, and with a user name and password,
+// that user's sign-in without a session. If you test your own sign-in and stay an administrator, the server
+// hands back a proof.
 export function DirectoryTest({
   form,
   me,

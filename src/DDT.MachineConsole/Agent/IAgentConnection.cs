@@ -6,7 +6,7 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Agent;
 
-// The console's end of the pipe once the agent has accepted it: what the agent sends, and the answers going back.
+// The console's end of the pipe after the agent accepted it. It receives the agent's messages and sends the answers.
 public interface IAgentConnection : IAsyncDisposable
 {
     // The next message, or null once the agent closed the pipe.

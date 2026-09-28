@@ -9,8 +9,8 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Tests;
 
 // Stands in for the disk, wimlib, bcdboot, the boot order and the restart, and in Windows for setup, the join, the
-// restart marker and the agent's removal, with every call in one journal so a test can check their order. The volumes
-// are directories in a temporary folder that Dispose removes.
+// restart marker and the agent's removal. Every call goes into one journal, so a test can check their order. The
+// volumes are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
     : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
@@ -164,7 +164,7 @@ internal sealed class FakeDeploymentTools
         return Task.CompletedTask;
     }
 
-    // Into Windows it is a plain reboot, as before task sequences.
+    // A reboot into Windows is journaled as a plain reboot, the same as before task sequences.
     public Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
         Record("reboot", into == RestartInto.WindowsPE ? " into Windows PE" : string.Empty);
@@ -272,7 +272,7 @@ internal sealed class FakeDeploymentTools
         return Task.FromResult(code);
     }
 
-    // Set until the test says Windows restarted, as the restart itself would.
+    // Stays set until the test says Windows restarted. A real restart would clear it.
     public bool RestartDue { get; set; }
 
     bool IRestartMarker.IsSet => RestartDue;
@@ -301,7 +301,7 @@ internal sealed class FakeDeploymentTools
         Record("delete at restart", $" {Path.GetRelativePath(Volumes.Windows, path)}");
     }
 
-    // Deletes what was marked, in order, as Windows does when it starts: a directory only once it is empty.
+    // Deletes what was marked, in order, like Windows does when it starts. A directory goes only once it's empty.
     public void DeleteMarkedAsWindowsStarts()
     {
         List<string> marked;

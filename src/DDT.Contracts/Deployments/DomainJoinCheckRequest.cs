@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Deployments;
 
-// OrganizationalUnit: a Join the domain step's own, or null for the configured default.
+// OrganizationalUnit is the OU a Join the domain step sets, or null for the configured default.
 public sealed record DomainJoinCheckRequest(string? OrganizationalUnit);

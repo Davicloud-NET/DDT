@@ -24,7 +24,7 @@ public sealed class UndoableUefiVariables(IUefiVariables variables) : IUefiVaria
         variables.Delete(name);
     }
 
-    // Last change first. False when nothing was changed.
+    // Undoes the last change first. Returns false when nothing was changed.
     public bool Undo()
     {
         bool changed = _before.Count > 0;

@@ -55,7 +55,7 @@ export function usePackageForm(item: PackageSummary, onSaved: () => void) {
     save,
     fieldErrors,
     fieldError: (field: string) => fieldErrors(field).join(" "),
-    // A refusal that names no field has no field to show it at.
+    // A refusal that names no field can't be shown at a field, so the dialog shows it on its own.
     unplacedError:
       save.isError && (errors === null || Object.keys(errors).length === 0)
         ? save.error.message

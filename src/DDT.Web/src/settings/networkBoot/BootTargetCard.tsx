@@ -33,7 +33,7 @@ interface BootTargetCardProps {
   configuration: PxeConfiguration | null;
 }
 
-// One architecture's boot target, as bootTargets.<key> of the section.
+// One architecture's boot target, stored as bootTargets.<key> in the section.
 export function BootTargetCard({
   form,
   targetKey,

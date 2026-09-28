@@ -19,8 +19,8 @@ interface FlowBuilderProps {
   readOnly: boolean;
 }
 
-// Edits a sequence as a flow, or as its outline on a phone. Every change is saved as it is made, and other
-// administrators' saves appear while this page has nothing unsaved.
+// Edits a sequence as a flow, or as an outline on a phone. Every change is saved as it's made. Other administrators'
+// saves show up while this page has nothing unsaved.
 export function FlowBuilder({ initial, readOnly }: FlowBuilderProps) {
   const { t } = useLingui();
   const model = useFlowBuilder(initial, readOnly);

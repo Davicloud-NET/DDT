@@ -36,8 +36,8 @@ interface RunStepsProps {
   onShowLog: (stepId: string) => void;
 }
 
-// Every node on the run's path in order, with what it decided as the agent recorded it; nodes of branches the run did
-// not take are left out.
+// Every node on the run's path in order, with what it decided as the agent recorded it. Nodes in branches the run
+// didn't take are left out.
 export function RunSteps({
   runId,
   steps,

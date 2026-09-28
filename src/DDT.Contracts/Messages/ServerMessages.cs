@@ -4,12 +4,12 @@
 
 namespace DDT.Contracts.Messages;
 
-// Every sentence the server says to a person on the web, by a code that is part of the API: a sentence that says
-// something else gets a new code. The web's catalog is written from All; logs, audits and the agent stay English.
+// Every sentence the server shows a person on the web, each with a code that's part of the API. A sentence that says
+// something else gets a new code. The web's catalog is generated from All. Logs, audits and the agent stay in English.
 public static partial class ServerMessages
 {
-    // Keeps the type from being beforefieldinit, so Find and All load every part first. ServerMessage.Text calls Find
-    // on messages read from JSON, before anything else may have touched this class.
+    // Keeps the type from being beforefieldinit, so every part is loaded before Find or All runs. ServerMessage.Text
+    // calls Find on messages read from JSON, possibly before anything else has touched this class.
     static ServerMessages()
     {
     }
@@ -84,15 +84,15 @@ public static partial class ServerMessages
         "mac.enterPart",
         "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D.");
 
-    // Several sentences said as one, such as the problems of a settings section within a sentence that lists them, and
-    // a problem after the field it is about. See Sentences.
+    // Several sentences combined into one message, such as a settings section's problems inside a sentence that lists
+    // them, or a problem after the field it's about. See Sentences.
 
     public static readonly MessageTemplate CommonSentences = Define("common.sentences", "{first} {rest}");
 
     public static readonly MessageTemplate SettingsFieldProblem = Define("settings.fieldProblem", "{field}: {problem}");
 
-    // The sentences one after another, as one message, which the web says in the person's language as a whole: the
-    // first, then the rest as a message of its own.
+    // Joins the sentences into one message, which the web translates as a whole. Each level holds the first sentence,
+    // then the rest as a nested message.
     public static ServerMessage Sentences(IReadOnlyList<ServerMessage> sentences)
     {
         ArgumentNullException.ThrowIfNull(sentences);

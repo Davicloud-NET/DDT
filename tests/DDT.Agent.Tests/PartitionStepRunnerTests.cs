@@ -73,7 +73,8 @@ public sealed class PartitionStepRunnerTests : IDisposable
     [Fact]
     public async Task OutsideADryRunOnlySystemCanOpenTheRunsDirectory()
     {
-        // With no state and no run token yet, the store writes nothing the test's account could no longer write.
+        // With no state and no run token yet, the store writes nothing into the directory, which the test's account can
+        // no longer write to.
         FileRunStateStore store = new(new DeploymentTokens("session", "resume"));
         PartitionStepRunner partition = new(_run.Tools, _run.Session, store, _run.Log, dryRun: false);
         string directory = Path.Combine(_run.Tools.Volumes.Windows, "DDT");

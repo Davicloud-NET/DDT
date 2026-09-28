@@ -9,8 +9,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Joins the installed Windows to the server's domain, with the account the server hands out once reportRunning told it
-// the step runs. The password never reaches a log or an error. The join takes effect at the restart the step asks for.
+// Joins the installed Windows to the server's domain. The server hands out the account once reportRunning has told it
+// the step is running. The password never reaches a log or an error. The join takes effect at the restart the step
+// asks for.
 public sealed class JoinDomainStepRunner(
     IDomainJoiner joiner,
     IAgentServer server,

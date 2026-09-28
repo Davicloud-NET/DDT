@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// The agent netbooting machines switch to. Null values when there is none. An upload answers with it as well.
+// The agent that netbooting machines switch to. The values are null when there's none. An upload returns it too.
 public sealed record AgentBinaryView(string? Sha256, long? Size, DateTimeOffset? UploadedUtc, string? UploadedBy, AgentBinarySource Source);

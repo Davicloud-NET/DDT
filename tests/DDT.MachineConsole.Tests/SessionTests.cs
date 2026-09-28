@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console as the shell of DDT's session, with an agent that goes and comes back as its service restarts.
+// The console as the shell of DDT's session, with an agent that disappears and comes back as its service restarts.
 public sealed class SessionTests
 {
     [Fact]
@@ -59,7 +59,7 @@ public sealed class SessionTests
         Assert.False(console.Model.End.IsEnded);
         Assert.IsType<RunViewModel>(console.Model.Screen);
 
-        // The agent sends its newest lines again as it connects anew.
+        // The agent sends its newest lines again when it reconnects.
         console.Model.Attached();
         Assert.Empty(console.Model.Log.Lines);
         console.Show(Scenarios.Running).Receive(new LogMessage(Scenarios.Lines));

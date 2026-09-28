@@ -9,7 +9,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The server's tests hold Microsoft's certificates and check that they are found; here only what db can hold otherwise.
+// The server's tests hold Microsoft's certificates and check that they're found. These tests only cover what else db
+// can hold.
 public sealed class SecureBootTrustTests
 {
     [Fact]

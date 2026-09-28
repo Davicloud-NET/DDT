@@ -11,8 +11,8 @@ namespace DDT.Core.Tests.Machines;
 
 public sealed class HardwareModelsTests
 {
-    // Rules and driver targets from the server's tests, each with a machine it was tried on: the rule's manufacturer
-    // and model, the machine's, and whether they match.
+    // Rules and driver targets from the server's tests, each with a machine it was tried on. Each case has the rule's
+    // manufacturer and model, the machine's, and whether they match.
     public static TheoryData<string?, string, string?, string?, bool> Cases { get; } = new()
     {
         { "Dell Inc.", "Latitude 5440", "DELL INC.", "latitude 5440", true },
@@ -49,7 +49,7 @@ public sealed class HardwareModelsTests
     }
 
     // The rule migration writes a model rule as all[Manufacturer Equals m, when it has one, Model Equals x or Matches
-    // x*], which must match exactly the machines the rule matched.
+    // x*]. That must match exactly the machines the rule matched.
     [Theory]
     [MemberData(nameof(Cases))]
     public void AModelRuleAsAConditionMatchesWhatTheRuleMatched(

@@ -4,6 +4,6 @@
 
 namespace DDT.Server.Settings;
 
-// What a pxe host found when it applied the section, kept in SettingsHostState.Detail. Unmatched are the entries of
-// Interfaces that name no interface there.
+// What a PXE host found when it applied the section. It's kept in SettingsHostState.Detail. Unmatched lists the entries
+// of Interfaces that don't match any interface on that host.
 internal sealed record PxeHostDetail(IReadOnlyList<PxeHostCandidate> Candidates, IReadOnlyList<string> Unmatched);

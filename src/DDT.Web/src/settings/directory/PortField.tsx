@@ -10,8 +10,8 @@ import { FieldFrame } from "../parts/FieldFrame";
 import { fieldProps } from "../parts/fieldProps";
 import type { LdapForm } from "../signIn";
 
-// Not a SettingNumber: a port reads better without digit grouping, as in 3269 for the global catalog, and an
-// emptied field keeps the stored port instead of storing null.
+// Not a SettingNumber, for two reasons. A port reads better without digit grouping, such as 3269 for the
+// global catalog. And an emptied field keeps the stored port instead of storing null.
 export function PortField({ form }: { form: LdapForm }) {
   const port = form.values?.port;
 

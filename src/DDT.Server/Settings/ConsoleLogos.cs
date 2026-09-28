@@ -11,11 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Settings;
 
-// The logo the console at the machine shows, as the Deployment defaults page shows and replaces it. Machines take it at
-// their next registration.
+// The logo that the console on the machine shows. The Deployment defaults page shows and replaces it. Machines pick it
+// up at their next registration.
 internal sealed class ConsoleLogos(ConsoleLogoStore logos, DdtDbContext database, TimeProvider timeProvider, LiveNotifier live)
 {
-    // Who uploaded the logo and when come from its latest upload's audit row.
+    // Who uploaded the logo and when comes from the audit row of its latest upload.
     public async Task<ConsoleLogoView> ViewAsync(CancellationToken cancellationToken)
     {
         if (await logos.CurrentAsync(cancellationToken).ConfigureAwait(false) is not { } logo)
@@ -33,7 +33,7 @@ internal sealed class ConsoleLogos(ConsoleLogoStore logos, DdtDbContext database
         return new ConsoleLogoView(logo.Sha256, logo.Size, logo.Width, logo.Height, upload?.OccurredUtc, upload?.ActorName);
     }
 
-    // Refusal is about the logo field, and set instead of View.
+    // Refusal is set instead of View. It's about the logo field.
     public async Task<(ConsoleLogoView? View, ServerMessage? Refusal)> UploadAsync(byte[] png, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(png);

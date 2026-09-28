@@ -7,7 +7,7 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// A window station and desktop of their own for a tool started as an account, open to SYSTEM and the logon SID only.
+// A separate window station and desktop for a tool started as an account. Only SYSTEM and the logon SID may open them.
 // Without them an interactive process fails to start with 0xC0000142.
 [SupportedOSPlatform("windows")]
 internal sealed class AccountDesktop : IDisposable
@@ -27,7 +27,7 @@ internal sealed class AccountDesktop : IDisposable
         Name = name;
     }
 
-    // As STARTUPINFO's lpDesktop takes it: station\desktop.
+    // In the station\desktop form that STARTUPINFO's lpDesktop takes.
     public string Name { get; }
 
     public static unsafe AccountDesktop Create(string logonSid)
@@ -86,7 +86,8 @@ internal sealed class AccountDesktop : IDisposable
         }
     }
 
-    // CreateDesktop creates on the process's own window station, so the station is swapped in around the call.
+    // CreateDesktop creates the desktop on the process's current window station, so the station is swapped in around
+    // the call.
     private static unsafe nint DesktopOn(nint station, nint descriptor)
     {
         SecurityAttributes desktopSecurity = new() { Length = (uint)sizeof(SecurityAttributes), SecurityDescriptor = descriptor };

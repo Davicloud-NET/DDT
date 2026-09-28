@@ -11,7 +11,7 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Wim;
 
-// Reads the image list of a WIM file without wimlib: the header and the XML resource, which WIM writers store
+// Reads the image list of a WIM file without wimlib. It reads the header and the XML resource, which WIM writers store
 // uncompressed as UTF-16 LE with a byte order mark.
 public static class WimMetadata
 {
@@ -26,7 +26,7 @@ public static class WimMetadata
     private const byte CompressedResource = 0x04;
     private const byte SolidResource = 0x10;
 
-    // Real image lists are kilobytes; the cap keeps a forged header from allocating gigabytes.
+    // Real image lists are a few kilobytes. The cap keeps a forged header from allocating gigabytes.
     private const int MaxXmlLength = 16 * 1024 * 1024;
 
 
@@ -216,7 +216,7 @@ public static class WimMetadata
         _ => null,
     };
 
-    // Major, minor and build are required; the service pack build is appended when present.
+    // Major, minor and build are required. The service pack build is added when present.
     private static string? Version(XElement? version)
     {
         uint? major = Number(version?.Element("MAJOR"));

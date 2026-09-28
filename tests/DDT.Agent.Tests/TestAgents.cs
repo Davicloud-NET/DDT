@@ -15,9 +15,9 @@ internal static class TestAgents
     public static AgentConfiguration Configuration { get; } =
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
-    // Everything on the disk is under tools.Root: the volumes, Windows PE's own directory X, and System32 with Windows
-    // PE's tools. As in a dry run, unless options say otherwise, the run's directory stays open to the account the tests
-    // run as, but the restart marker is a real file.
+    // Everything on the disk is under tools.Root: the volumes, WinPE's own directory X, and System32 with WinPE's
+    // tools. Like in a dry run, unless options say otherwise, the run's directory stays open to the account the tests
+    // run as. The restart marker is a real file, though.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -59,8 +59,8 @@ internal static class TestAgents
     public static ConsoleStatus Status(IMachineConsole console) =>
         new(console, Version, new Uri(Configuration.ServerUrl!), "German (Germany)", dryRun: true);
 
-    // Windows PE keeps it in its own directory; here it has one of its own, as the tests' dry runs delete X when they
-    // end and would take the marker along.
+    // WinPE keeps it in its own directory. Here it gets a separate one, because the tests' dry runs delete X when they
+    // end and would delete the marker with it.
     public static WindowsPERestartMarker RestartMarker(FakeDeploymentTools tools, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(tools);
@@ -83,7 +83,7 @@ internal static class TestAgents
             dryRun,
             consoleDirectory is null ? null : () => consoleDirectory);
 
-    // The running agent, as the self-update may have named it.
+    // The running agent, under the name the self-update may have given it.
     public static string AgentSource(FakeDeploymentTools tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
@@ -117,7 +117,7 @@ internal static class TestAgents
         return Loop(server, Status(prompt, machine.Log), machine);
     }
 
-    // The runner, unless given, keeps status up to date too.
+    // Unless the machine brings a runner, the default one keeps status up to date too.
     public static AgentLoop Loop(IAgentServer server, ConsoleStatus status, TestMachine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);

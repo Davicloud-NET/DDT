@@ -12,9 +12,9 @@ import { runPath } from "@/runs/runPath";
 
 // What a waiting run waits for, as its notice says it.
 export interface WaitState {
-  // At a Pause step, rather than at its start for answers.
+  // True at a Pause step. False when the run waits at its start for answers.
   paused: boolean;
-  // What lets the run go on; null until the page knows where it paused.
+  // What continues the run. Null until the page knows where it paused.
   pause: ContinueRunRequest | null;
   message: string | null;
   pausedAt: string;

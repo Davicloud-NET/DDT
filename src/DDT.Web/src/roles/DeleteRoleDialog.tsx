@@ -21,8 +21,9 @@ interface DeleteRoleDialogProps {
   onDeleted: () => void;
 }
 
-// Asks before deleting a machine role. While rules give it the server keeps it, so the dialog says which rules to
-// change instead of offering the deletion; one that became so meanwhile is refused with 409, said the same way.
+// Asks before deleting a machine role. The server keeps a role while rules give it, so then the dialog names the rules
+// to change instead. If a rule started giving it in the meantime, the server refuses with 409 and the dialog says so
+// the same way.
 export function DeleteRoleDialog({ role, rules, onClose, onDeleted }: DeleteRoleDialogProps) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
@@ -42,7 +43,7 @@ export function DeleteRoleDialog({ role, rules, onClose, onDeleted }: DeleteRole
         onDeleted();
       }
 
-      // A rule gives it that this page does not know of yet, so the rules are read to name it.
+      // A rule the page doesn't know about yet gives the role. The rules are fetched again so the dialog can name it.
       if (error instanceof ApiError && error.status === 409) {
         void queryClient.invalidateQueries({ queryKey: rulesQuery.queryKey });
       }

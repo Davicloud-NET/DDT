@@ -11,11 +11,11 @@ using DDT.Core.Unattend;
 
 namespace DDT.Core.Values;
 
-// Works out a run's values when it starts, and their preview on the web. For each name the first source in the order
-// of ValueSources wins and the later ones show as overridden. Names ignore case, as templates do.
+// Works out a run's values when it starts, and their preview on the web. For each name, the first source in
+// ValueSources order wins and the later ones show as overridden. Names ignore case, like in templates.
 public static class ValueResolver
 {
-    // Between the names of a loop of values, for a person to follow it.
+    // Goes between the names in a loop of values, so a person can follow the loop.
     public const string PathSeparator = " > ";
 
     public static ValueResolution Resolve(ValueSources sources)
@@ -60,7 +60,8 @@ public static class ValueResolver
         return new ValueResolution(values, effective, [.. problems.Distinct()], inputDefaults);
     }
 
-    // Each name as the sequence declares it, or else as the first source to set it writes it. Names no source sets go.
+    // Groups the values by name. A name is spelled as the sequence declares it, or else as the first source that sets
+    // it. Names that no source sets are dropped.
     private static (Dictionary<string, List<Candidate>> ByName, List<string> Order) Group(ValueSources sources, List<ValueProblem> problems)
     {
         Dictionary<string, List<Candidate>> byName = new(StringComparer.OrdinalIgnoreCase);
@@ -118,8 +119,8 @@ public static class ValueResolver
         return inputDefaults;
     }
 
-    // The machine's, a rule's or a role's value for the input's name, as the run would use it without an answer, or
-    // else the input's own Default. Either answers a required input.
+    // The machine's, a rule's or a role's value for the input's name, as the run would use it without an answer.
+    // Otherwise it's the input's Default. Either one answers a required input.
     private static ResolvedValue? Prefill(
         InputDeclaration input,
         List<Candidate> named,
@@ -142,8 +143,8 @@ public static class ValueResolver
             : new ResolvedValue(input.Name, input.Default, ValueSource.SequenceDefault, null, null, answered);
     }
 
-    // A name the catalogue holds is the machine's or the run's alone, so a source that sets one is a problem, except
-    // for ComputerName, which is a value the machine's name comes from.
+    // Only the machine or the run sets a name from the catalogue, so a source that sets one is a problem. ComputerName
+    // is the exception, because the machine's name comes from that value.
     private static List<Candidate> Candidates(ValueSources sources, List<ValueProblem> problems)
     {
         List<Candidate> candidates = [];
@@ -163,7 +164,7 @@ public static class ValueResolver
         return candidates;
     }
 
-    // Every value a source sets, in the order they win; null where it sets no value.
+    // Every value the sources set, in the order they win. Null where a source sets no value.
     private static IEnumerable<Candidate?> Offered(ValueSources sources)
     {
         List<InputDeclaration> inputs = Inputs(sources.Sequence);
@@ -218,7 +219,7 @@ public static class ValueResolver
         .. Inputs(sequence).Select(input => input.Name),
     ];
 
-    // The inputs whose answers are values: an Account input's answer is a credential, kept for the run alone.
+    // The inputs whose answers are values. An Account input's answer is a credential, which only the run gets.
     private static List<InputDeclaration> Inputs(SequenceDefinition? sequence) =>
     [
         .. (sequence?.Inputs ?? [])
@@ -238,14 +239,14 @@ public static class ValueResolver
 
     private sealed record Candidate(string Name, string Text, bool Template, ValueSource Source, Guid? SourceId, string? SourceName);
 
-    // The values used, each worked out once and on demand: a walk in depth that finds a loop as a name it is still
-    // working out. byName is keyed by each name as the page spells it, ignoring case.
+    // Works out the values used, each once and on demand. It's a depth-first walk, and a loop shows up as a name it's
+    // still working on. byName is keyed by each name as the page spells it, ignoring case.
     private sealed class Resolution(Dictionary<string, List<Candidate>> byName, MachineVariables? facts, List<ValueProblem> problems)
     {
         private readonly Dictionary<string, string?> _done = new(StringComparer.OrdinalIgnoreCase);
         private readonly List<string> _working = [];
 
-        // Null when the value could not be worked out; its problem is reported once, where it is.
+        // Null when the value couldn't be worked out. Its problem is reported once, at the name that caused it.
         public string? Value(string name)
         {
             if (_done.TryGetValue(name, out string? done))
@@ -273,14 +274,15 @@ public static class ValueResolver
             return value;
         }
 
-        // What an overridden value would have been, for the page to show; as it is written where that cannot be told.
+        // What an overridden value would have been, for the page to show. It's the text as written when that can't be
+        // worked out.
         public string Rendered(Candidate candidate) =>
             candidate.Template && ValueTemplate.TryRender(candidate.Text, Known, out string rendered, out _) ? rendered : candidate.Text;
 
         private string? Render(string name, string text)
         {
-            // Every value the template uses is worked out first, so a loop, or a value that could not be worked out,
-            // stops this one without a problem of its own.
+            // Every value the template uses is worked out first. A loop, or a value that couldn't be worked out, stops
+            // this one without adding another problem.
             if (ValueTemplate.Parse(text).Names.Where(byName.ContainsKey).Any(used => Value(used) is null))
             {
                 return null;

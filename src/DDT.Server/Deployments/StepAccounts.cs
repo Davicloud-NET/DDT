@@ -11,8 +11,8 @@ using DDT.Server.Machines;
 
 namespace DDT.Server.Deployments;
 
-// The accounts a step uses while it runs: the account a script in Windows runs as, and its shares, each connected only
-// to a server its account names. Every read is audited, and one refusal refuses them all.
+// The accounts a step uses while it runs: the account a script in Windows runs as, and its shares. Each share only
+// connects to a server its account lists. Every read is audited, and one refusal refuses them all.
 public sealed class StepAccounts(DdtDbContext database, RunQueries queries, StepAccountLookup lookup, TimeProvider timeProvider)
 {
     public async Task<(AgentStepAccounts? Accounts, string? Refusal)> ReadAsync(
@@ -167,8 +167,8 @@ public sealed class StepAccounts(DdtDbContext database, RunQueries queries, Step
         return (connections, null);
     }
 
-    // The machine's facts as the run started with them, which a registration since, such as the service's in Windows,
-    // does not change. A run that started before its facts were kept takes them as they are now.
+    // The machine's facts as the run started with them. A later registration, such as the service's in Windows, doesn't
+    // change them. A run that started before its facts were kept uses the current ones.
     private static Func<string, string?> ShareValues(Machine machine, RunningStep running)
     {
         Func<string, string?> values = ValueTemplate.Lookup(RunValues.Effective(running.Run) ?? new Dictionary<string, string>());
@@ -177,7 +177,7 @@ public sealed class StepAccounts(DdtDbContext database, RunQueries queries, Step
         return name => values(name) ?? facts(name);
     }
 
-    // Reads each account the step names once, and collects what the audit says of each use.
+    // Reads each account the step names once, and collects the audit detail for each use.
     private sealed class Reads(StepAccountLookup lookup, RunningStep running)
     {
         private readonly Dictionary<string, StepAccount> _read = new(StringComparer.Ordinal);

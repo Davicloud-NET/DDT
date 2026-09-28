@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace DDT.Agent.Deployment;
 
 // The EFI global variables through the Windows firmware variable functions, and the signature database db. They need
-// SeSystemEnvironmentPrivilege, which Windows PE's SYSTEM account holds but has to enable first.
+// SeSystemEnvironmentPrivilege, which WinPE's SYSTEM account holds but has to enable first.
 public sealed class UefiVariables : IUefiVariables
 {
     private const string GlobalVariableGuid = "{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}";
@@ -29,7 +29,7 @@ public sealed class UefiVariables : IUefiVariables
 
     public byte[]? Read(string name) => Read(name, GlobalVariableGuid);
 
-    // The certificates and hashes the firmware trusts with Secure Boot on; null when there are none.
+    // The certificates and hashes the firmware trusts with Secure Boot on. Null when there are none.
     public byte[]? ReadSignatureDatabase() => Read("db", ImageSecurityDatabaseGuid);
 
     private unsafe byte[]? Read(string name, string guid)

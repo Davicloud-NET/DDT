@@ -8,7 +8,8 @@ import { ChoiceSetting } from "../../fields/ChoiceSetting";
 import { TextSetting } from "../../fields/TextSetting";
 import { orNull, type InputPartProps } from "./declarationFields";
 
-// The answer an input has until someone gives another: yes, no or none for a yes or no, else as it is typed.
+// The answer an input has until someone gives another. For a yes or no input it's yes, no or none. Otherwise it's
+// what's typed.
 export function InputDefault({ input, at, findings, update }: InputPartProps) {
   const { t } = useLingui();
   const listed = input.kind === "Choice" || input.kind === "MultiChoice";

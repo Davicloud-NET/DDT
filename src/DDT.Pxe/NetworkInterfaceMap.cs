@@ -10,8 +10,9 @@ using System.Net.Sockets;
 
 namespace DDT.Pxe;
 
-// Maps the interface index from IP_PKTINFO, all a wildcard socket knows of the segment, to a local address for siaddr
-// and option 54, and enforces the allowlist. A snapshot taken at each apply of the pxe settings.
+// Maps the interface index from IP_PKTINFO to a local address for siaddr and option 54, and enforces the allowlist.
+// The index is all a wildcard socket knows about the segment. It's a snapshot taken each time the PXE settings are
+// applied.
 public sealed class NetworkInterfaceMap
 {
     private readonly FrozenDictionary<int, ServedInterface> _served;

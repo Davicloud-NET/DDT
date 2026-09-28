@@ -16,7 +16,7 @@ import {
   type History,
 } from "./history";
 
-// Edits a text, keeping the history as the editor does.
+// Edits a text and keeps the history the same way the editor does.
 function edits(...steps: [string, string | null, number][]) {
   let value = "";
   let history: History<string> = emptyHistory();

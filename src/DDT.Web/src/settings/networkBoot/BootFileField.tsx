@@ -28,8 +28,8 @@ interface BootFileFieldProps {
   configuration: PxeConfiguration | null;
 }
 
-// The boot file, with the two boot managers of the boot image layout to pick from and any other path or URL typed.
-// For HTTP, the URLs are built from a server name, the boot port and /boot/.
+// The boot file. You can pick one of the two boot managers in the boot image layout, or type any other path or
+// URL. For HTTP, the URLs are built from a server name, the boot port and /boot/.
 export function BootFileField({
   form,
   field,

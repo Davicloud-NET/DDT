@@ -8,7 +8,8 @@ import type { ImageUploadSession } from "@/images/images";
 import { percentOf } from "@/lib/format";
 import { Button } from "@/ui/Button";
 
-// Uploads the server holds part of. The page cannot keep a file over a reload, so each resumes when chosen again.
+// Uploads the server holds part of. The page can't keep a file across a reload, so each one resumes when the file is
+// chosen again.
 export function UnfinishedUploads({
   sessions,
   onDiscard,

@@ -14,8 +14,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Sequences;
 
-// Saves task sequences, each change with its audit row. Only what keeps a document from being stored refuses a save;
-// every other problem is saved with it, so an editor that saves as the administrator types keeps a draft.
+// Saves task sequences, with an audit row for each change. A save is only refused if the document can't be stored.
+// Every other problem is saved with it, so an editor that saves while the administrator types keeps a draft.
 internal sealed class SequenceEditor(
     DdtDbContext database,
     SequenceCatalog catalog,
@@ -68,7 +68,7 @@ internal sealed class SequenceEditor(
         return EditOutcome<SequenceView>.Done(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
     }
 
-    // A save names the revision it was made on, and one over a newer revision gets the sequence as it is now.
+    // A save names the revision it was based on. If the sequence has a newer revision, the save gets the current one.
     public async Task<EditOutcome<SequenceView>> SaveAsync(Guid id, SaveSequenceRequest request, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -95,7 +95,7 @@ internal sealed class SequenceEditor(
         string? description = Description(request.Description);
         string definition = SequenceDocuments.Write(request.Definition);
 
-        // An autosave of what is already stored changes nothing and records nothing.
+        // An autosave of what's already stored changes nothing, so nothing is recorded.
         if (name == sequence.Name && description == sequence.Description && definition == sequence.Definition)
         {
             return EditOutcome<SequenceView>.Done(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
@@ -124,7 +124,7 @@ internal sealed class SequenceEditor(
         return await SaveChangedAsync(sequence, savedName, savedDefinition, cancellationToken).ConfigureAwait(false);
     }
 
-    // False for a sequence that is gone; Refusal says why one cannot be deleted.
+    // Found is false if the sequence doesn't exist. Refusal says why it can't be deleted.
     public async Task<(bool Found, ServerMessage? Refusal)> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -155,7 +155,7 @@ internal sealed class SequenceEditor(
         {
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
-        // A save raises the revision, and a rule created meanwhile holds the sequence by its foreign key.
+        // Either a save raised the revision in the meantime, or a new rule now holds the sequence by its foreign key.
         catch (DbUpdateException)
         {
             return (true, ServerMessages.SequenceChangedWhileDeleting.With());
@@ -167,7 +167,7 @@ internal sealed class SequenceEditor(
         return (true, null);
     }
 
-    // The name and the definition as they were stored, whose account uses go out again.
+    // savedName and savedDefinition are the values before this save. They tell which account uses to push again.
     private async Task<EditOutcome<SequenceView>> SaveChangedAsync(
         TaskSequence sequence,
         string savedName,
@@ -236,7 +236,8 @@ internal sealed class SequenceEditor(
         return database.TaskSequences.AnyAsync(s => s.NormalizedName == normalized && s.Id != id, cancellationToken);
     }
 
-    // The unique index settles two saves that took the same name at once; the loser is told as if it had been first.
+    // The unique index decides between two saves that take the same name at once. The loser is told the name is taken,
+    // just as if the other save had come first.
     private async Task<FieldProblems?> CommitAsync(TaskSequence sequence, CancellationToken cancellationToken)
     {
         try

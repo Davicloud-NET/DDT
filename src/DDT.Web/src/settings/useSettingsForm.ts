@@ -17,18 +17,18 @@ import {
 import { useSettingsSave } from "./useSettingsSave";
 import { withValueAt } from "./valuePath";
 
-// One settings section as a form. The draft is the person's own until they save or discard it: a change another
-// administrator saves meanwhile arrives through the hub, replaces the form while it has nothing unsaved, and is
-// otherwise announced so the person can take theirs instead.
+// One settings section as a form. The draft belongs to the user until they save or discard it. A change another
+// administrator saves meanwhile arrives through the hub. It replaces the form if nothing is unsaved, and
+// otherwise it's announced so the user can show theirs instead.
 export function useSettingsForm<T>(
   section: SettingsSectionName,
-  // Headers a save of this section carries besides the proof of identity, such as the directory test's proof.
+  // Extra headers a save of this section sends besides the proof of identity, such as the directory proof.
   headers: () => Record<string, string> = () => ({}),
 ) {
   const query = useQuery(settingsQuery<T>(section));
   const view = query.data ?? null;
 
-  // The version the draft started from, and the draft itself; null while the form shows what is stored.
+  // The version the draft started from, and the draft itself. Null while the form shows what's stored.
   const [draft, setDraft] = useState<{ version: number; values: T } | null>(null);
   const [secrets, setSecrets] = useState<Record<string, SecretAction>>({});
 
@@ -86,7 +86,7 @@ export function useSettingsForm<T>(
       save.clearRefusal();
     },
     save: save.start,
-    // After the password was typed again, the same save goes out once more.
+    // After the password is typed again, the same save is sent once more.
     retryAfterReauth: save.retryAfterReauth,
     cancelReauth: save.cancelReauth,
     confirmWarnings: save.confirmWarnings,

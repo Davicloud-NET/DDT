@@ -24,7 +24,7 @@ interface KeyChoiceProps {
   error: string | null;
 }
 
-// A choice among a few answers as a row of keys, the chosen one raised out of its well, as the filters are.
+// A choice among a few answers as a row of buttons. The chosen one is raised out of its well, like the filters.
 export function KeyChoice({
   label,
   choices,

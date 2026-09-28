@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Runs copype into a fresh work directory and returns where it put what the build uses.
+# Runs copype into a fresh work directory and returns the paths of what the build uses.
 function New-WinPEWorkspace {
     param(
         [Parameter(Mandatory)] $Adk,
@@ -22,7 +22,7 @@ function New-WinPEWorkspace {
     Clear-StaleMount -Dism $workspace.Dism -MountDirectory $workspace.MountDirectory
     Remove-BuildFolder -Path $WorkDirectory
 
-    # copype refuses an existing directory and reads these three variables instead of finding the ADK.
+    # copype refuses an existing directory. It reads these three variables instead of finding the ADK itself.
     $env:WinPERoot = $Adk.WinPE
     $env:DISMRoot = $Adk.Dism
     $env:OSCDImgRoot = $Adk.Oscdimg

@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The console's one window: the frame, the screen of the stage or question, the footer, and what opens over them. -->
+<!-- The console's only window: the frame, the screen for the stage or question, the footer, and the overlays on
+     top. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -61,7 +62,7 @@
         </Grid>
       </Border>
 
-      <!-- The end band, once the pipe has ended or, in DDT's session, the run is over. -->
+      <!-- The end band. It shows once the pipe has ended, or in DDT's session once the run is over. -->
       <Border Grid.Row="1" Classes="raised" Name="EndedBand" c:Motion.Shown="{Binding End.ShowsEndBand}" Margin="36,20,36,0" Padding="22,16">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Spacing="4" VerticalAlignment="Center">
@@ -95,7 +96,7 @@
         </Grid>
       </Border>
 
-      <!-- The screen of the stage, or the question, which gives way to the next as it comes. -->
+      <!-- The screen for the stage or the question. The next one replaces it as it comes. -->
       <TransitioningContentControl Grid.Row="2" Name="Screen" Content="{Binding Screen}" Margin="36,20,36,20">
         <TransitioningContentControl.PageTransition>
           <c:ScreenTransition />

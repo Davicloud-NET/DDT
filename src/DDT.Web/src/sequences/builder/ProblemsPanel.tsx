@@ -10,9 +10,9 @@ import { sequenceFindings, stepFindings, type Findings } from "../problems";
 import { NodeFindingsItem } from "./problems/NodeFindingsItem";
 import { SequenceFindingsItem } from "./problems/SequenceFindingsItem";
 
-// Every problem and warning the server found: the sequence's own first, then by node in the order the flow runs. A
-// finding takes the focus to its field: it chooses the node, moves the flow to it and opens its fields. Problems keep
-// the sequence from running; warnings only tell.
+// Every problem and warning the server found. The sequence's own come first, then each node's in the order the flow
+// runs. A finding moves the focus to its field. It chooses the node, moves the flow to it and opens its fields.
+// Problems keep the sequence from running. Warnings are only information.
 export function ProblemsPanel({
   index,
   findings,

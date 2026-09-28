@@ -31,7 +31,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         public SequenceDefinition Definition => SequenceRequests.Definition(Partition, Choose, Prepare, Retry);
     }
 
-    // Partition; an image per model; a group that goes on when its script fails; a script until it works.
+    // Partition, an image per model, a group that continues if its script fails, and a script repeated until it works.
     private async Task<(Tree Tree, Image ThinkPad, Image Other)> TreeAsync()
     {
         Image thinkPad = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
@@ -98,8 +98,8 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
             Assert.Equal(SequencePhase.WindowsPE, step.Phase);
         });
 
-        // The list of runs counts the steps of the path: before the IF decides, those of its branch with more steps, the
-        // first when both have as many.
+        // The list of runs counts the steps on the path. Before the IF decides, it counts the branch with more steps,
+        // or the first branch if both have the same number.
         Assert.Equal(4, view.Summary.StepCount);
 
         // Either image may be applied, so both are the run's and the agent gets both.
@@ -130,7 +130,8 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(StepState.Skipped, Row(applying, tree.ThinkPadImage).State);
         Assert.Null(Row(applying, tree.ThinkPadImage).StartedUtc);
 
-        // The step number counts the steps of the path, not the IF that holds the image nor the image it did not choose.
+        // The step number counts the steps on the path.
+        // It doesn't count the IF that holds the image or the image it didn't choose.
         Assert.Equal((1, "Apply the other image", 4), (applying.Summary.StepIndex, applying.Summary.StepName, applying.Summary.StepCount));
 
         StepRunState[] imaged = [partitioned, chose with { State = StepState.Done }, notThinkPad, Visit(tree.OtherImage, StepState.Done)];
@@ -143,7 +144,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal((StepState.Done, 1), (tried.State, tried.Pass));
         Assert.NotNull(tried.FinishedUtc);
 
-        // The repeat goes round again: the script's second visit starts over, with its own times.
+        // The repeat goes round again. The script's second visit starts over, with its own times.
         StepRunState secondTry = Visit(tree.Try, StepState.Running, pass: 2);
         await machine.ReportOkAsync(run.Id, Running([.. prepared, Visit(tree.Retry, StepState.Running) with { Iteration = 2 }, secondTry]));
 
@@ -182,7 +183,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
 
         await machine.ReportOkAsync(run.Id, Running(imaged));
 
-        // The image of the other branch was never reached, and may stay pending; the steps after the IF may not.
+        // The image of the other branch was never reached and may stay pending. The steps after the IF may not.
         HttpResponseMessage open = await machine.ReportAsync(
             run.Id,
             Report(DeploymentState.Done, [.. imaged, Visit(tree.Prepare, StepState.Done), Visit(tree.MayFail, StepState.Done)]));
@@ -195,7 +196,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(HttpStatusCode.Conflict, running.StatusCode);
         Assert.StartsWith("Step 8, Try, is running, so the run is not done.", await TestDatabase.TitleAsync(running), StringComparison.Ordinal);
 
-        // Nothing above the repeat's script goes on after its failure.
+        // Nothing above the repeat's script continues after its failure.
         HttpResponseMessage uncaught = await machine.ReportAsync(
             run.Id,
             Report(
@@ -206,7 +207,7 @@ public sealed class RunTreeTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(DeploymentState.Running, (await ViewAsync(run.Id)).Summary.State);
     }
 
-    // The tests of a decision come from outside, and are held to what the engine keeps of them.
+    // The tests of a decision come from outside, so the server bounds them to what the engine keeps of them.
     [Fact]
     public async Task BoundsTheTestsOfADecision()
     {

@@ -28,7 +28,7 @@ export function useCollapsed(sequenceId: string): [ReadonlySet<string>, (id: str
       try {
         window.localStorage.setItem(key, JSON.stringify([...next]));
       } catch {
-        // Kept for this page only.
+        // If storage fails, the state only lasts while the page is open.
       }
 
       return next;

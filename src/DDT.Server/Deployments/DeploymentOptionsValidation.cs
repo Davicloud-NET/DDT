@@ -10,8 +10,8 @@ using DDT.Core.Unattend;
 
 namespace DDT.Server.Deployments;
 
-// A mistake here surfaces only at the first start of a deployed machine, long after DDT reported it done, so
-// every one is refused at startup instead, all of them at once.
+// A mistake here only shows up at the first start of a deployed machine, long after DDT reported it done. So every
+// mistake is refused at startup instead, all of them at once.
 public static class DeploymentOptionsValidation
 {
     private const int MaxAdministratorNameLength = 20;
@@ -94,8 +94,8 @@ public static class DeploymentOptionsValidation
         }
     }
 
-    // Without the culture data of the operating system, as in a globalization invariant build, no name can be checked,
-    // and every one is let through.
+    // Without the operating system's culture data, as in a globalization invariant build, no name can be checked. So
+    // every name is let through.
     private static bool IsCulture(string name)
     {
         try
@@ -129,7 +129,7 @@ public static class DeploymentOptionsValidation
         && name.Length <= MaxAdministratorNameLength
         && name.AsSpan().IndexOfAny(s_forbiddenInAccountName) < 0;
 
-    // Setup takes the name whole in Credentials/Username, which only works in a qualified form.
+    // Setup takes the name as is in Credentials/Username, which only works in a qualified form.
     private static bool IsQualifiedUserName(string userName)
     {
         string[] down = userName.Split('\\');

@@ -7,8 +7,8 @@ using System.Runtime.Versioning;
 
 namespace DDT.Core.Wim;
 
-// wimlib through libwim-15.dll. Each operation runs on its own thread with its own WIMStruct; wimlib's global settings
-// are made once per process, so every instance must ask for the same ones.
+// Calls wimlib through libwim-15.dll. Each operation runs on its own thread with its own WIMStruct. wimlib's global
+// settings are set once per process, so every instance must ask for the same ones.
 [SupportedOSPlatform("windows")]
 public sealed class WimLibrary : IWimLibrary
 {
@@ -19,8 +19,8 @@ public sealed class WimLibrary : IWimLibrary
 
     private readonly bool _strict;
 
-    // Strict fails initialization without the privileges for security descriptors, and an apply that cannot set an ACL
-    // or a symbolic link exactly. The error log gets wimlib's warnings, which it only prints.
+    // With strict, initialization fails without the privileges for security descriptors. An apply also fails when it
+    // can't set an ACL or a symbolic link exactly. The error log gets wimlib's warnings, which wimlib only prints.
     public WimLibrary(bool strict, string? errorLogPath)
     {
         _strict = strict;

@@ -40,8 +40,8 @@ public sealed class HardwareMachineIdentityReader(IFirmwareTables firmware, ISys
     private SmbiosSystemInformation? ReadSmbios() =>
         firmware.Read(FirmwareTables.RawSmbiosProvider, 0) is { } raw ? SmbiosParser.TryReadSystemInformation(raw) : null;
 
-    // The primary MAC is the adapter with the default route, which the server sees and PXE booted from. Adapters without
-    // link still count, as a technician recognises the machine by them.
+    // The primary MAC is the adapter with the default route. That's the one the server sees and the machine PXE booted
+    // from. Adapters without a link still count, because a technician recognises the machine by them.
     private static (string Primary, List<string> All, List<string> PrimaryAddresses, NetworkFacts? Network) ReadMacAddresses()
     {
         List<(string Mac, bool Primary, List<string> Addresses, IPInterfaceProperties Properties)> adapters = [];
@@ -92,7 +92,7 @@ public sealed class HardwareMachineIdentityReader(IFirmwareTables firmware, ISys
         return (primary, all, primaryAddresses, ReadNetwork(primaryProperties));
     }
 
-    // The facts go without the network's settings rather than the machine without an identity.
+    // Better to send the facts without the network settings than to leave the machine without an identity.
     private static NetworkFacts? ReadNetwork(IPInterfaceProperties properties)
     {
         try

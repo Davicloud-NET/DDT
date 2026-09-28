@@ -7,6 +7,6 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Deployments;
 
-// An agent's report as its request brings it. User is the machine's token, whose generation is checked against the
-// machine as it is stored.
+// An agent's report as its request brings it. User is the machine's token. Its generation is checked against the stored
+// machine.
 internal sealed record IncomingReport(Guid MachineId, Guid RunId, AgentRunReport Report, ClaimsPrincipal User, string? Address);

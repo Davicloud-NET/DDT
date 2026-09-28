@@ -9,8 +9,8 @@ using DDT.Core.Boot;
 
 namespace DDT.Agent.Consoles;
 
-// The console Windows PE opens for the agent, and the one the graphical console falls back to. A question is asked a
-// line at a time, with the list or warning it needs logged first, so the machine's log keeps it; what is typed never is.
+// The console WinPE opens for the agent, and the one the graphical console falls back to. A question is asked one line
+// at a time. The list or warning it needs is logged first, so the machine's log keeps it. What's typed is never logged.
 public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMachineConsole
 {
     private readonly TextConsoleInputs _inputs = new(prompt, log);
@@ -57,7 +57,7 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
         return Typed(await prompt.ReadLineAsync(label, secret, cancellationToken).ConfigureAwait(false));
     }
 
-    // The list comes again before every attempt, as a wrong number may have scrolled it away.
+    // The list is shown again before every attempt, because a wrong number may have scrolled it away.
     private async Task<ConsoleAnswer?> SequenceAsync(SequenceQuestion question, CancellationToken cancellationToken)
     {
         IReadOnlyList<SequenceOption> sequences = question.Sequences;
@@ -113,7 +113,7 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
         }
     }
 
-    // Enter alone keeps the name the machine gets without one typed, which the prompt shows.
+    // Enter alone keeps the name the machine would get anyway, which the prompt shows.
     private async Task<ConsoleAnswer?> ComputerNameAsync(ComputerNameQuestion question, CancellationToken cancellationToken)
     {
         log.Information($"{question.SequenceName} needs a computer name for this machine.");

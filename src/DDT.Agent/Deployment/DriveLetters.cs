@@ -6,8 +6,8 @@ namespace DDT.Agent.Deployment;
 
 public static class DriveLetters
 {
-    // S, W and R as in Microsoft's scripts; a letter already in use is replaced by the highest free one, because
-    // Windows PE gives letters to other volumes from C upward. usedMask is GetLogicalDrives: bit 0 is A.
+    // S, W and R, as in Microsoft's scripts. A letter already in use is replaced by the highest free one, because
+    // WinPE gives letters to other volumes from C upward. usedMask comes from GetLogicalDrives, where bit 0 is A.
     public static PartitionLetters Choose(uint usedMask)
     {
         uint taken = usedMask;

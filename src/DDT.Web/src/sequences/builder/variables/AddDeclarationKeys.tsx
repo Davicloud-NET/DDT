@@ -12,7 +12,7 @@ import type { SequenceDraft } from "../../sequenceDraft";
 import type { OpenRow } from "./declarationRows";
 import { newInput, newVariable } from "./newDeclarations";
 
-// Adds a variable or an input under a name no other has yet; onAdded opens its row.
+// Adds a variable or an input with a name that isn't taken yet. onAdded opens its row.
 export function AddDeclarationKeys({
   draft,
   onEdit,

@@ -4,6 +4,6 @@
 
 namespace DDT.Agent.WindowsPhase;
 
-// <Windows>\DDT\session.json, which only SYSTEM can open: the console's pipe, which the session's shell names too, the
-// answer file's sign-in password until the session is up, and the machine's settings as they were, to be put back.
+// <Windows>\DDT\session.json, which only SYSTEM can open. It holds the console's pipe, which the session's shell names
+// too, the answer file's sign-in password until the session is up, and the machine's original settings to put back.
 public sealed record DeploySessionFile(string PipeName, string? Password, IReadOnlyList<SavedSetting>? Saved);

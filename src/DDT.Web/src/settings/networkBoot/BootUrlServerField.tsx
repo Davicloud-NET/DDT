@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { ComboBox, ListBoxItem } from "@/ui/Select";
 
-// The server name an HTTP boot file's offered URLs are built with; only the URLs are stored.
+// The server name used to build the suggested URLs for an HTTP boot file. Only the URLs are stored.
 export function BootUrlServerField({
   server,
   onChange,

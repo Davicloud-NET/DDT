@@ -60,7 +60,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
         Assert.Equal(4, (await ReadAsync<List<DirectoryGroup>>(await administrator.GetAsync($"{Directory}/groups"))).Count);
     }
 
-    // No password, no account and no cookie: only what a sign-in would give, and why.
+    // No password, no account and no cookie. The check only says what a sign-in would give, and why.
     [Fact]
     public async Task ChecksWhatASignInWouldGiveWithoutSigningAnyoneIn()
     {
@@ -202,7 +202,7 @@ public sealed class DirectoryToolsTests(DirectoryApplication application) : ICla
         Assert.Null(after.Role);
         Assert.Equal(RoleSource.DirectoryGroups, after.RoleFrom);
 
-        // A user whose groups never gave a role gets no account, and authorizes no machine.
+        // A user whose groups never gave a role gets no account and can't authorize a machine.
         string stranger = NewUser();
         application.Ldap.Groups[stranger] = [UnmappedGroup];
         using (SignedInClient refused = application.Browser())

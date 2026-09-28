@@ -8,7 +8,7 @@ namespace DDT.Server.Machines;
 // downloads half of one.
 internal static class FileReplacement
 {
-    // A new name in the folder of path, which this creates.
+    // A new file name next to path. Creates the folder if it doesn't exist.
     public static string TemporaryFor(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

@@ -11,8 +11,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// Theme/Tokens.axaml against the tokens.json generate.mjs writes it from: fails as soon as either changes without the
-// other, or a type names a face the console does not carry.
+// Checks Theme/Tokens.axaml against the tokens.json that generate.mjs writes it from. Fails as soon as either changes
+// without the other, or a type names a font the console doesn't ship.
 public sealed class ThemeTests
 {
     private static readonly XNamespace s_x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -94,7 +94,7 @@ public sealed class ThemeTests
         string[] durations = ["press", "fast", "normal", "slow", "flash"];
         string[] easings = ["easing", "enter", "exit"];
 
-        // A motion token the console does not carry yet fails here.
+        // A motion token the console doesn't support yet fails here.
         Assert.Equal(
             [.. durations.Concat(easings).Append("distance").Order(StringComparer.Ordinal)],
             motion.EnumerateObject().Select(property => property.Name).Where(name => !name.StartsWith('$')).Order(StringComparer.Ordinal));

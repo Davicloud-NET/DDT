@@ -14,7 +14,7 @@ import { MachineTable } from "./MachineTable";
 
 interface MachineListProps {
   isPending: boolean;
-  // No machine registered at all, rather than none the filters leave.
+  // No machine has registered at all. That's different from the filters hiding every machine.
   isEmpty: boolean;
   // A phone's width, from useMediaQuery.
   narrow: boolean;
@@ -24,7 +24,7 @@ interface MachineListProps {
   onShowAll: () => void;
 }
 
-// The list's surface: loading, why it is empty, or the machines as a table, or as a list on a phone.
+// The list itself. It shows a loading state, why it's empty, or the machines as a table, or as a list on a phone.
 export function MachineList({
   isPending,
   isEmpty,

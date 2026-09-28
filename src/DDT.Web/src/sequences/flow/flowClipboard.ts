@@ -5,8 +5,8 @@
 import type { SequenceStep } from "../sequences";
 import { isStepKind } from "../steps";
 
-// What Ctrl+C puts on the clipboard: the nodes as the document holds them, marked as DDT's, so a paste can tell them
-// from other text.
+// What Ctrl+C puts on the clipboard: the nodes as the document holds them, marked as DDT's so a paste can tell them
+// apart from other text.
 export interface FlowClipboard {
   ddtFlow: 1;
   nodes: SequenceStep[];
@@ -45,7 +45,7 @@ function isNode(value: unknown): value is SequenceStep {
   return bodies.every((body) => Array.isArray(body) && body.every(isNode));
 }
 
-// The nodes of text Ctrl+C put on the clipboard, or null for any other text. Their ids are the ones copied; a paste
+// The nodes in text that Ctrl+C put on the clipboard, or null for any other text. They keep the copied ids. A paste
 // gives them new ones.
 export function nodesFromClipboard(text: string): SequenceStep[] | null {
   try {

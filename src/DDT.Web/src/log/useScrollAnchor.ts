@@ -7,8 +7,8 @@ import { useLayoutEffect, useRef, type RefObject } from "react";
 import type { MachineLogEntry } from "./log";
 import { ROW_HEIGHT } from "./logRows";
 
-// The viewport's ref. Following keeps the newest line in view; lines loaded before the first one leave the rows in
-// view where they are.
+// Returns the viewport's ref. While following, the newest line stays in view. When older lines load above the
+// first one, the rows in view stay where they are.
 export function useScrollAnchor(
   lines: readonly MachineLogEntry[],
   following: boolean,

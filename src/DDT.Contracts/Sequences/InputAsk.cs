@@ -4,8 +4,8 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Both comes first: a member the JSON leaves out reads as the first value, and an input without AskAt is asked in
-// both places.
+// Both comes first because a member missing from the JSON reads as the first value. That way an input without AskAt
+// is asked in both places.
 public enum InputAsk
 {
     Both,

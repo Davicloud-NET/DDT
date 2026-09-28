@@ -6,8 +6,8 @@ import { ToggleButtonGroup, type Key } from "react-aria-components";
 
 import { FilterKey, filterWellClass, type FilterOption } from "./FilterKey";
 
-// A selector for filtering a list by state: a well holding one key per state, the chosen key raised out of it.
-// The keys differ in width, so the raised one does not slide to another: one sinks and the other rises, in colour.
+// A selector for filtering a list by state: a well with one button per state, the chosen one raised out of it.
+// The buttons differ in width, so the raised one doesn't slide over. One sinks and the other rises, in colour.
 export function FilterSelector({
   label,
   options,

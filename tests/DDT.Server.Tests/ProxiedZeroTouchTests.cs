@@ -38,7 +38,7 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
         Assert.Null((await machine.NextAsync()).Run);
     }
 
-    // The same header through the proxy afterwards shows that it was the connection, not the address, that did not count.
+    // Sending the same header through the proxy afterwards shows that the connection didn't count, not the address.
     [Fact]
     public async Task AClientThatIsNotAProxyCannotClaimAListedNetwork()
     {
@@ -55,9 +55,9 @@ public sealed class ProxiedZeroTouchTests(ProxiedZeroTouchApplication applicatio
         Assert.Equal(deployment, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
-    // A request the proxy forwards without X-Forwarded-For, from an nginx location that dropped it for example, stays at
-    // the proxy's own address, so a zero touch network that holds a listed proxy is refused: configured, the server does
-    // not start.
+    // A request the proxy forwards without X-Forwarded-For stays at the proxy's own address.
+    // An nginx location that drops the header does that, for example.
+    // So a zero touch network that holds a listed proxy is refused, and the server doesn't start with it configured.
     [Fact]
     public void AZeroTouchNetworkThatHoldsAListedProxyStopsTheServer()
     {

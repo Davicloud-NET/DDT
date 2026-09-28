@@ -54,8 +54,8 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   errorComponent: RouteError,
 });
 
-// The server's OpenID Connect callback sends an account with a second factor here for its code, and a sign-in it
-// refused with the reason.
+// The server's OpenID Connect callback sends an account with a second factor here to enter its code. It also sends a
+// refused sign-in here, with the reason.
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
@@ -73,9 +73,9 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
-// The session is checked before the route renders, so a signed out visitor never sees the application flash. An
-// account that must replace a password an administrator was shown stays on the Account page, the only one the server
-// answers for it, until the change updates the cached account.
+// The session is checked before the route renders, so a signed-out visitor never sees the app flash. Some accounts
+// must replace a password an administrator was shown. They stay on the Account page, the only one the server answers
+// for them, until the change updates the cached account.
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "shell",
@@ -134,7 +134,7 @@ const sequencesRoute = createRoute({
   validateSearch: sequencesSearch,
   component: SequencesPage,
 });
-// The flow builder is the one page loaded when it is opened, as it is large and most visits never need it.
+// The flow builder is the only page loaded when it's opened, because it's large and most visits never need it.
 const sequenceRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/deployment/sequences/$sequenceId",

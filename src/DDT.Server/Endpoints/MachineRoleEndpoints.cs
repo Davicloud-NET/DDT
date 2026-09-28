@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// Machine roles are values that rules give machines together, so like rules only an administrator writes them.
+// Machine roles are sets of values that rules give machines. So, like rules, only an administrator writes them.
 public static class MachineRoleEndpoints
 {
     public static RouteGroupBuilder MapMachineRoleEndpoints(this RouteGroupBuilder group)
@@ -48,7 +48,7 @@ public static class MachineRoleEndpoints
         };
     }
 
-    // The client decides what to do with a newer save: take it, or save its own edits over it knowingly.
+    // The client decides what to do with a newer save: take it, or knowingly save its own edits over it.
     private static async Task<Results<Ok<MachineRoleView>, NotFound, Conflict<MachineRoleView>, ValidationProblem>> UpdateAsync(
         Guid id,
         SaveMachineRoleRequest request,

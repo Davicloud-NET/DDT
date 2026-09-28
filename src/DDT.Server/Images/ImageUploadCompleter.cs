@@ -10,8 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Hashing a WIM of several gigabytes can outlast a proxy's read timeout, so the work runs on the stopping token, not
-// the request's. A retry is told the session is busy until the work stored its result, and is then answered from it.
+// Hashing a WIM of several gigabytes can take longer than a proxy's read timeout. So the work runs on the stopping
+// token, not the request's. A retry is told the session is busy until the work has stored its result. After that,
+// the retry is answered from the stored result.
 public sealed partial class ImageUploadCompleter(
     IServiceScopeFactory scopes,
     ImageUploadLocks locks,
@@ -49,7 +50,8 @@ public sealed partial class ImageUploadCompleter(
             return new UploadCompletion(UploadCompletionStatus.Busy, []);
         }
 
-        // No token for Task.Run itself: a cancelled one would skip the delegate and never release the lock.
+        // Don't pass a token to Task.Run itself. A cancelled one would skip the delegate, and the lock would never be
+        // released.
         Task<UploadCompletion> work = Task.Run(
             () => RunAsync(held, actor, lifetime.ApplicationStopping),
             CancellationToken.None);
@@ -77,8 +79,8 @@ public sealed partial class ImageUploadCompleter(
             }
             catch (Exception exception)
             {
-                // Nobody may be waiting for this any more, so the failure is logged here rather than left to a
-                // request that has gone.
+                // Nobody may be waiting for this any more, so log the failure here. The request that started it may
+                // be gone.
                 LogCompletionFailed(held.UploadId, exception);
 
                 return new UploadCompletion(UploadCompletionStatus.Failed, []);

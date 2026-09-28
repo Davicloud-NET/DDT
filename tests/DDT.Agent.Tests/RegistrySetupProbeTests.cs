@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// Setup's values as the probe reads them, under a key of the test's own in the current user's hive, which it deletes.
+// Setup's values as the probe reads them, under a test key in the current user's hive, which the test deletes.
 public sealed class RegistrySetupProbeTests : IDisposable
 {
     private readonly string _path = $@"Software\DDT-test-{Guid.NewGuid():N}";
@@ -50,7 +50,7 @@ public sealed class RegistrySetupProbeTests : IDisposable
         Assert.Null(probe.Pending());
     }
 
-    // Setup's first user looks for updates after the machine's part and may restart Windows, which would cut a step off.
+    // Setup's first user checks for updates after the machine's part and may restart Windows, which cuts a step off.
     [Fact]
     public void SetupHasNotFinishedWhileItsFirstUserIsSignedIn()
     {
@@ -87,7 +87,7 @@ public sealed class RegistrySetupProbeTests : IDisposable
         Assert.Null(probe.Pending());
     }
 
-    // The answer file's auto-logon, which setup does last, whatever it leaves behind of its first user.
+    // The answer file's auto-logon is the last thing setup does, whatever it leaves behind of its first user.
     [Fact]
     public void DdtsSessionEndsTheWaitAtOnce()
     {

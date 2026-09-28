@@ -6,8 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Contracts.Settings;
 
-// Message is English, and Text the same sentence as a code where the host said one DDT knows; an exception's own text
-// has none.
+// Message is in English. Text holds the same sentence as a code, when the host reported one that DDT knows. An
+// exception's own text has no code.
 public sealed record SettingApplyState(
     string Host,
     long Version,

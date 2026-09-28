@@ -10,7 +10,7 @@ import type { MachineSummary } from "@/machines/machines";
 import { isRuleChoice, sequenceResolutionQuery, valuesComputerName } from "@/rules/rules";
 import { canRun, sequenceQuery, sequencesQuery } from "@/sequences/sequences";
 
-// The sequence the assign dialog assigns, with the inputs it asks on the web and what they start with.
+// The sequence the assign dialog assigns, with its inputs asked on the web and their starting values.
 export function useSequenceChoice(machine: MachineSummary) {
   const sequences = useQuery(sequencesQuery);
   const resolution = useQuery(sequenceResolutionQuery(machine.id));
@@ -26,13 +26,15 @@ export function useSequenceChoice(machine: MachineSummary) {
     runnable.find((candidate) => candidate.id === ruleChoice?.sequenceId) ??
     runnable[0] ??
     null;
-  // The inputs of the sequence the machine would get come with what it would get; another sequence's are read from it.
+  // The resolution already has the inputs of the sequence the rules choose for the machine. Another sequence's inputs
+  // are read from its document.
   const resolved = sequence !== null && sequence.id === resolution.data?.sequenceId;
   const document = useQuery({
     ...sequenceQuery(sequence?.id ?? ""),
     enabled: sequence !== null && !resolution.isPending && !resolved,
   });
-  // A name the machine's values give, such as a rule's pattern, is as good as one typed here, which beats it.
+  // A name from the machine's values, such as a rule's name pattern, counts as a name. One typed here still wins over
+  // it.
   const valuesName =
     resolution.data === undefined || sequence === null
       ? null

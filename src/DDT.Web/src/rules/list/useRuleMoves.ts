@@ -15,13 +15,14 @@ import {
   type RuleView,
 } from "../rules";
 
-// Why the last move did not happen as it was made: someone changed the rules meanwhile, or it failed.
+// Why the last move didn't happen as made. Either someone changed the rules in the meantime, or it failed.
 export interface MoveProblem {
   text: string;
   tone: "attention" | "fail";
 }
 
-// Moves of rules. Each sends the whole order, and the list shows it at once and takes the server's answer.
+// Moves rules. Each move sends the whole order. The list shows the new order at once and then takes the server's
+// answer.
 export function useRuleMoves(list: readonly RuleView[]) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
@@ -44,7 +45,7 @@ export function useRuleMoves(list: readonly RuleView[]) {
       queryClient.setQueryData(rulesQuery.queryKey, answer);
       void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
     },
-    // A 409 carries the list as it is now, which someone changed meanwhile; anything else puts the order back.
+    // A 409 carries the current list, which someone changed in the meantime. Any other error puts the order back.
     onError: (error, _order, context) => {
       const current = error instanceof RulesChangedMeanwhile ? error.rules : null;
 
@@ -68,7 +69,7 @@ export function useRuleMoves(list: readonly RuleView[]) {
     reorder: (order: string[]) => {
       move.mutate(order);
     },
-    // By offset places, such as -1 for up; nothing where the rule cannot go further.
+    // Moves by offset places, such as -1 for up. Does nothing if the rule can't go further.
     moveBy: (id: string, offset: number) => {
       const order = movedBy(list, id, offset);
 

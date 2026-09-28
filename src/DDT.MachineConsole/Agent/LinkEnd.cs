@@ -7,9 +7,9 @@ namespace DDT.MachineConsole.Agent;
 // Why the pipe to the agent ended.
 public enum LinkEnd
 {
-    // The agent closed it, as it does when it ends.
+    // The agent closed it. It does that when it exits.
     Closed,
 
-    // It broke, or the agent sent what is not a message of the protocol.
+    // It broke, or the agent sent something that isn't a protocol message.
     Broken,
 }

@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The restarts of Windows the run asks for, which come before anything else goes on.
+// The Windows restarts the run asks for. They come before anything else happens.
 public sealed class WindowsPhaseLoopRestartTests : WindowsPhaseLoopTestBase
 {
     [Fact]
@@ -66,8 +66,8 @@ public sealed class WindowsPhaseLoopRestartTests : WindowsPhaseLoopTestBase
         Assert.Equal(5, (await RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
     }
 
-    // Stopped between the step that asked for the restart and the restart itself, the service starts again in the same
-    // Windows, whose state says the step is done: it restarts Windows instead of going on.
+    // The service was stopped between the step that asked for the restart and the restart itself. It starts again in
+    // the same Windows, whose state says the step is done, so it restarts Windows instead of continuing.
     [Fact]
     public async Task AStopBeforeTheRestartRestartsWindowsAtTheNextStart()
     {
@@ -100,9 +100,9 @@ public sealed class WindowsPhaseLoopRestartTests : WindowsPhaseLoopTestBase
         Assert.Single(_toolRunner.Calls);
     }
 
-    // The server may stop taking the machine's token once the step asked for the restart, when it is told of the
-    // restart or sent the last log lines, which only the runner sends then. Unlike at the hand-over, Windows still
-    // restarts before the next step runs.
+    // The server may stop accepting the machine's token once the step asked for the restart. That can happen when it's
+    // told about the restart or gets the last log lines, which only the runner sends then. Unlike at the hand-over,
+    // Windows still restarts before the next step runs.
     [Theory]
     [InlineData("the restart")]
     [InlineData("the last log lines")]
@@ -153,7 +153,7 @@ public sealed class WindowsPhaseLoopRestartTests : WindowsPhaseLoopTestBase
             .OnRegister(_ => Continued())
             .OnNext(_ =>
             {
-                // As a run that recorded its restart and came back without it leaves the marker.
+                // The marker as a run leaves it when it recorded its restart and came back without it.
                 _tools.RestartDue = true;
 
                 throw new AgentTokenRejectedException();

@@ -8,7 +8,7 @@ namespace DDT.Agent;
 
 internal static class Durations
 {
-    // A timeout as a message names it: "30 s" below a minute, "2.5 minutes" from one on.
+    // Formats a timeout for a message: "30 s" below a minute, "2.5 minutes" from one minute up.
     public static string Describe(TimeSpan duration) => duration < TimeSpan.FromMinutes(1)
         ? string.Create(CultureInfo.InvariantCulture, $"{duration.TotalSeconds:0.#} s")
         : string.Create(CultureInfo.InvariantCulture, $"{duration.TotalMinutes:0.#} minutes");

@@ -7,7 +7,8 @@ using System.Text.Json.Serialization;
 namespace DDT.Contracts.Sequences;
 
 // Waits until someone continues the run at the machine or on the web, or ContinueAfterMinutes (1 to 1440) have passed.
-// Null waits for as long as it takes. Message is a template, shown at the machine and on the machine's page.
+// Without ContinueAfterMinutes it waits for as long as it takes. Message is a template, shown at the machine and on
+// the machine's page.
 public sealed record PauseStep : SequenceStep
 {
     public string Message { get; init; } = "";

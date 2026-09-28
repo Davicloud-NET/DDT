@@ -15,8 +15,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Endpoints;
 
-// The accounts steps use, Deployment > Accounts. Everyone signed in reads them, never a password. Only an administrator
-// changes them, with the password entered again, since an account reaches machines with whatever it may do in the domain.
+// The accounts that steps use, under Deployment > Accounts. Everyone signed in can read them, but never a password.
+// Only an administrator changes them, after entering their password again, because an account reaches machines with
+// whatever it may do in the domain.
 public static class AccountEndpoints
 {
     public static RouteGroupBuilder MapAccountEndpoints(this RouteGroupBuilder group)
@@ -64,7 +65,7 @@ public static class AccountEndpoints
             : (outcome.Problems ?? new FieldProblems()).ToResult();
     }
 
-    // The page decides what to do with a newer save: take it, or save its own over it knowingly.
+    // The page decides what to do with a newer save: take it, or knowingly save its own over it.
     private static async Task<Results<Ok<AccountView>, Conflict<AccountView>, NotFound, ValidationProblem, ProblemHttpResult>> SaveAsync(
         Guid id,
         SaveAccountRequest request,

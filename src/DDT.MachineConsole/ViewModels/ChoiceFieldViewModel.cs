@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A Choice or YesNo input. Only the default starts chosen, so an input without one is answered on purpose.
+// A Choice or YesNo input. Only the default starts selected, so an input without a default is answered on purpose.
 public sealed class ChoiceFieldViewModel : InputFieldViewModel
 {
     private ChoiceItem? _selected;

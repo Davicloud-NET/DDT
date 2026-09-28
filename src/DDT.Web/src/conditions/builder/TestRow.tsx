@@ -45,7 +45,7 @@ export function TestRow({
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Narrow, as in the inspector, the value takes a line of its own under what is tested and how. */}
+      {/* When it's narrow, as in the inspector, the value gets its own line under the subject and the operator. */}
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_1.75rem] items-start gap-1.5 @lg:grid-cols-[minmax(0,10rem)_minmax(0,9rem)_minmax(0,1fr)_1.75rem]">
         <SubjectPicker
           label={t`What condition ${number} tests`}

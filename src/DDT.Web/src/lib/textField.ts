@@ -15,7 +15,7 @@ const notTyped = new Set([
   "submit",
 ]);
 
-// Whether the keys go into a text field, whose own undo takes back its typing.
+// Whether key presses go into a text field. A text field has its own undo for its typing.
 export function isTextField(target: EventTarget | null): boolean {
   if (typeof Element === "undefined" || !(target instanceof Element)) {
     return false;

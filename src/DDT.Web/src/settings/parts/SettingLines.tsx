@@ -18,8 +18,8 @@ export function SettingLines<T>({ form, field, label, hint, canChange }: Setting
   const lines = Array.isArray(value)
     ? value.filter((line): line is string => typeof line === "string")
     : [];
-  // What was typed, blank lines and spaces included, while it still matches the form; a discard or a save from
-  // elsewhere replaces it.
+  // The typed text, blank lines and spaces included, kept while it still matches the form. A discard or a save
+  // from elsewhere replaces it.
   const [text, setText] = useState<string | null>(null);
   const shown = text !== null && equalJson(linesOf(text), lines) ? text : lines.join("\n");
 

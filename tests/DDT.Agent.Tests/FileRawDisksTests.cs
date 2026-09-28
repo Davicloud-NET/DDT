@@ -7,7 +7,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The dry run's disk is a file beside its root, which the next clean deletes.
+// The dry run's disk is a file next to its root, and the next clean deletes it.
 public sealed class FileRawDisksTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"ddt-dry-run-test-{Guid.NewGuid():N}");

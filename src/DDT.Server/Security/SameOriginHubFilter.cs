@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
-// A page on another port of this host, or on a sibling host under the same domain, is same-site: it could open the hub
-// WebSocket with the session cookie, skip negotiation and read every event. Browsers always send Origin on that
-// handshake and no Sec-Fetch-Site, so Origin decides, for GET too, as the upgrade and long polling are GETs.
+// A page on another port of this host, or on a sibling host under the same domain, counts as same-site. It could open
+// the hub WebSocket with the session cookie, skip negotiation and read every event. A browser sending Sec-Fetch-Site
+// needs same-origin, otherwise Origin has to match. Browsers always send Origin on the handshake, so a request with
+// neither isn't a browser. GETs are covered too, because the upgrade and long polling are GETs.
 public sealed class SameOriginHubFilter : IEndpointFilter
 {
     public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
@@ -20,7 +21,7 @@ public sealed class SameOriginHubFilter : IEndpointFilter
         string? fetchSite = request.Headers["Sec-Fetch-Site"];
         string origin = request.Headers.Origin.ToString();
 
-        // No Origin and no Sec-Fetch-Site is a client that is not a browser.
+        // No Origin and no Sec-Fetch-Site means the client isn't a browser.
         bool sameOrigin = fetchSite is not null
             ? fetchSite == "same-origin"
             : origin.Length == 0 || string.Equals(origin, $"{request.Scheme}://{request.Host.Value}", StringComparison.OrdinalIgnoreCase);

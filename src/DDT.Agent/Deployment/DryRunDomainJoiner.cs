@@ -6,8 +6,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Joins nothing and answers as a join that worked. The step fetched the account from the server all the same, which
-// tries the server's side; neither the account nor its password reaches the log.
+// Joins nothing and answers like a join that worked. The step still fetched the account from the server, which tests
+// the server's side. Neither the account nor its password goes to the log.
 public sealed class DryRunDomainJoiner(AgentLog log) : IDomainJoiner
 {
     public Task<int> JoinAsync(AgentJoinDomainCredentials credentials, CancellationToken cancellationToken)

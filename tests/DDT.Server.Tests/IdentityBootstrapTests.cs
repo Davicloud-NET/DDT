@@ -25,8 +25,8 @@ public sealed class IdentityBootstrapTests
         }
     }
 
-    // An administrator without its role could administer nothing, and as an account it would keep every later start
-    // from creating one that can. The bootstrap fails as when the account itself cannot be created.
+    // An administrator without its role can't administer anything. As an existing account, it would also stop every
+    // later start from creating one that can. So the bootstrap fails like when the account itself can't be created.
     [Fact]
     public async Task AFailedRoleAssignmentLeavesNoAdministrator()
     {
@@ -40,7 +40,8 @@ public sealed class IdentityBootstrapTests
         Assert.False(application.Log.Logged(300, LogLevel.Warning));
     }
 
-    // Nobody could be made a viewer, and the first administrator waits for a start that creates every role.
+    // Without the roles, nobody could be made a viewer.
+    // So the first administrator waits for a start that creates every role.
     [Fact]
     public async Task AFailedRoleCreationIsLoggedAndLeavesNoAdministrator()
     {

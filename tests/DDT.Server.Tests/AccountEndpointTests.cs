@@ -21,8 +21,8 @@ using static DDT.Server.Tests.AccountRequests;
 
 namespace DDT.Server.Tests;
 
-// The accounts steps use: everyone signed in reads them without their passwords, only an administrator signed in on the
-// web and with the password entered again writes them, and a stored password goes only where it was entered for.
+// The accounts that steps use. Everyone signed in can read them, but not their passwords. Only an administrator signed
+// in on the web who entered the password again can write them. A stored password only goes where it was entered for.
 public sealed class AccountEndpointTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private SignedInClient? _viewer;
@@ -79,7 +79,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.DoesNotContain(Password, await one.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.NotFound, (await viewer.GetAsync($"{AccountsPath}/{Guid.NewGuid():D}")).StatusCode);
 
-        // Stored encrypted for this account alone.
+        // The password is stored encrypted for this account only. Another account can't decrypt it.
         Account stored = await application.QueryAsync(database => database.Accounts.AsNoTracking().SingleAsync(a => a.Id == created.Id, TestContext.Current.CancellationToken));
         AccountProtector protector = application.Services.GetRequiredService<AccountProtector>();
 
@@ -104,7 +104,8 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.Equal(created.Revision, (await administrator.AccountAsync(created.Id)).Revision);
     }
 
-    // A stolen session alone cannot change where an account goes: every write needs the password again.
+    // A stolen session alone can't change an account or where its password goes.
+    // Every write needs the password entered again.
     [Fact]
     public async Task AnAdministratorWritesOnlyWithThePasswordEnteredAgain()
     {
@@ -130,7 +131,8 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.False((await administrator.AccountAsync(created.Id)).RunAs);
     }
 
-    // A token of a script proves nobody is there, even with a proof its user got in a session.
+    // An API token means a script is calling, so nobody can have entered the password again.
+    // That holds even if the script sends a proof its user got in a session.
     [Fact]
     public async Task AnApiTokenCannotWriteAccounts()
     {
@@ -203,7 +205,8 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.All(audit, e => Assert.DoesNotContain(Password, e.Detail ?? "", StringComparison.Ordinal));
     }
 
-    // Fewer servers, the same names in another case, or the password entered again, reach nothing it was not entered for.
+    // Fewer servers, the same names in another case, or the password entered again are all saved. In each case the
+    // password only reaches destinations it was entered for.
     [Fact]
     public async Task FewerServersOrThePasswordEnteredAgainAreSaved()
     {
@@ -248,7 +251,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.False(account.Password.IsSet);
         Assert.Null(account.Password.UpdatedUtc);
 
-        // Nothing to keep: a new destination needs no password it never had.
+        // The account has no password to keep, so it can move to a new destination.
         AccountView moved = await RegisteredMachine.ReadAsync<AccountView>(
             await administrator.SaveAccountAsync(account.Id, Keep(account) with { Domain = "lab.example" }, proof));
         Assert.Equal("lab.example", moved.Domain);
@@ -259,7 +262,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
             proof));
         Assert.True(set.Password.IsSet);
 
-        // The same save again changes nothing and records nothing.
+        // Saving the same values again changes nothing and records nothing.
         HttpResponseMessage same = await administrator.SaveAccountAsync(account.Id, Keep(set), proof);
         Assert.Equal(set.Revision, (await RegisteredMachine.ReadAsync<AccountView>(same)).Revision);
 
@@ -330,7 +333,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.Equal(HttpStatusCode.Created, (await administrator.CreateAccountAsync(Request() with { UserName = "svc@corp.example", Domain = null, Hosts = [] }, proof)).StatusCode);
     }
 
-    // A run of a sequence that names it would fail at the step, after the disk was erased.
+    // A run of a sequence that uses the account would fail at that step, after the disk was already erased.
     [Fact]
     public async Task AnAccountASequenceUsesCannotBeDeleted()
     {
@@ -367,7 +370,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
             (await AuditAsync(account.Id)).Select(e => e.Action));
     }
 
-    // Every page that shows accounts takes the change from the hub, and no payload holds a password.
+    // Every page that shows accounts gets the change from the hub. No payload contains a password.
     [Fact]
     public async Task ChangesReachTheHubWithoutPasswords()
     {
@@ -383,7 +386,7 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.True(pushed.GetProperty("password").GetProperty("isSet").GetBoolean());
         Assert.DoesNotContain(Password, pushed.GetRawText(), StringComparison.Ordinal);
 
-        // A sequence that starts naming the account changes what it is used by.
+        // When a sequence starts using the account, the account's usedBy list changes.
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(Script(account.Id)));
         JsonElement used = await LiveListener.NextAsync(changed, e => e.GetProperty("id").GetGuid() == account.Id && e.GetProperty("usedBy").GetArrayLength() == 1);
 
@@ -405,7 +408,8 @@ public sealed class AccountEndpointTests(DdtApplication application) : IClassFix
         Assert.Equal([account.Id], gone.GetProperty("accountIds").EnumerateArray().Select(id => id.GetGuid()));
     }
 
-    // Moving the key ring leaves a password that no longer decrypts: it shows so, and keeping it is refused.
+    // Moving the key ring leaves a password that no longer decrypts.
+    // The view shows that, and keeping the password is refused.
     [Fact]
     public async Task APasswordThatNoLongerDecryptsIsShownAndCannotBeKept()
     {

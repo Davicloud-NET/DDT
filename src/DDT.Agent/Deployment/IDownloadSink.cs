@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace DDT.Agent.Deployment;
 
-// Where the bytes of a download go. Length is how many it holds, which is where a resumed download goes on.
+// Where the bytes of a download go. Length is how many it holds, and a resumed download continues from there.
 public interface IDownloadSink
 {
     long Length { get; }
@@ -16,6 +16,6 @@ public interface IDownloadSink
 
     Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken);
 
-    // Back to holding nothing, as when the server sends the whole file again.
+    // Empties the sink, as when the server sends the whole file again.
     void Restart();
 }

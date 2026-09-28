@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Tests;
 
-// Every delay completes at once, and its length is recorded so a test can assert the back off. A timer without a
+// Every delay completes right away, and its length is recorded so a test can assert the back-off. A timer without a
 // due time never fires, and changing a timer does nothing, so a stall watchdog armed with CancelAfter stays quiet.
 internal sealed class ImmediateTimeProvider : TimeProvider
 {

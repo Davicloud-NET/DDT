@@ -7,7 +7,7 @@ using System.Text;
 
 namespace DDT.E2E;
 
-// Keeps every response body as text before the client reads it: over long polling, that is everything the hub sends.
+// Keeps every response body as text before the client reads it. Over long polling, that's everything the hub sends.
 internal sealed class RecordingHandler(HttpMessageHandler inner, ConcurrentQueue<string> bodies) : DelegatingHandler(inner)
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

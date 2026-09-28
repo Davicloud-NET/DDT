@@ -90,8 +90,8 @@ export function moreFor(name: string): HTMLElement {
   return screen.getByRole("button", { name: `More for ${name}` });
 }
 
-// The answers the assign dialog reads, plus what the test adds. It reads a chosen sequence's inputs from its document,
-// and these ask nothing.
+// The server responses the assign dialog reads, plus the test's extra routes. The dialog reads a chosen sequence's
+// inputs from its document, and these sequences ask for none.
 export function assigning(extra: Routes = {}): Routes {
   return {
     "GET /api/sequences": { body: [installWindows] },
@@ -106,7 +106,8 @@ export function assigning(extra: Routes = {}): Routes {
   };
 }
 
-// Opens the assign dialog of the one machine on the page, from its key or, for a waiting machine, its menu.
+// Opens the assign dialog for the only machine on the page. It uses the machine's button, or its menu for a waiting
+// machine.
 export async function openAssign(viaMenu = false): Promise<HTMLElement> {
   await screen.findByRole("link", { name: "Virtual Machine" });
 

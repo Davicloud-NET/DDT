@@ -5,11 +5,11 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { expect } from "vitest";
 
-// React Aria's controls open popovers and menus of their own; these work them as a person would, through their
-// keys and options.
+// React Aria's controls open their own popovers and menus. These helpers work them the way a person would,
+// through their buttons and options.
 
-// A click with a mouse, as a browser sends it. React Aria takes a bare click event for a screen reader's, which
-// moves the focus as a keyboard would; in the machine list that also selects the first row the focus enters.
+// A mouse click, as a browser sends it. React Aria treats a bare click event as a screen reader's, which moves
+// the focus like a keyboard would. In the machine list, that also selects the first row the focus enters.
 export function press(element: Element): void {
   const pointer = { pointerId: 1, pointerType: "mouse", isPrimary: true, width: 1, height: 1 };
 
@@ -20,7 +20,7 @@ export function press(element: Element): void {
   fireEvent.click(element, { button: 0, buttons: 0, detail: 1 });
 }
 
-// Opens the menu behind a key and gives back the names of its items, then closes it again.
+// Opens the menu behind a button, returns the names of its items, and closes it again.
 export async function menuItems(key: HTMLElement): Promise<string[]> {
   press(key);
   const menu = await screen.findByRole("menu");
@@ -46,12 +46,12 @@ export async function chooseMenuItem(key: HTMLElement, item: string): Promise<vo
   });
 }
 
-// The key of a Select, named by its value and its label.
+// The button of a Select, named by its value and its label.
 export function selectKey(scope: HTMLElement, label: string): HTMLElement {
   return within(scope).getByRole("button", { name: new RegExp(`${label}$`) });
 }
 
-// The options a Select offers, with whether each can be chosen, and closes it again.
+// Returns the options a Select offers, with whether each can be chosen, and closes it again.
 export async function selectOptions(
   scope: HTMLElement,
   label: string,

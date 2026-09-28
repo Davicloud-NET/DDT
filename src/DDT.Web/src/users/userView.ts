@@ -10,7 +10,7 @@ import type { UserRole, UserView } from "./users";
 
 // How DDT names accounts, their roles and where those come from.
 
-// Highest first, as a role includes the ones below it.
+// Highest first, because a role includes the ones below it.
 export const ROLES: readonly UserRole[] = ["Administrator", "Operator", "Viewer"];
 
 export function roleLabel(role: string): string {
@@ -42,7 +42,7 @@ export function highestRole(roles: readonly string[]): UserRole | null {
   return ROLES.find((role) => roles.includes(role)) ?? null;
 }
 
-// The roles at or below one, for a choice that may not go above it.
+// The roles at or below the given one, for a choice that can't go above it.
 export function rolesUpTo(role: UserRole | null): UserRole[] {
   return role === null ? [] : ROLES.slice(ROLES.indexOf(role));
 }
@@ -117,7 +117,7 @@ export function isLockedOut(user: UserView, now: number): boolean {
   return user.lockedOutUntil !== null && Date.parse(user.lockedOutUntil) > now;
 }
 
-// What deleting the account leaves behind, and what keeps it out instead.
+// What deleting the account removes and what it leaves behind, and that disabling it keeps it out instead.
 export function userDeletionConsequence(user: UserView): string {
   const name = user.userName;
 
@@ -131,7 +131,7 @@ export function userDeletionConsequence(user: UserView): string {
   }
 }
 
-// A validation refusal names its fields; these are the messages for one of them.
+// A validation refusal names its fields. Returns the messages for one of them.
 export function fieldErrors(error: Error | null, field: string): string[] {
   return error instanceof ApiError && error.status === 400
     ? (error.problem?.errors?.[field] ?? [])

@@ -9,8 +9,8 @@ namespace DDT.Core.Sequences;
 public sealed record StepContext(
     Guid RunId,
     SequencePhase Phase,
-    // What conditions read in the step's phase; in a tree's run its Variables hold the run's values with Variables on
-    // top, which templates such as a pause's message use.
+    // What conditions read in the step's phase. In a tree's run, Machine.Variables holds the run's values with
+    // Variables on top. Templates such as a pause's message use them.
     MachineVariables Machine,
     // The run variables earlier steps output.
     IReadOnlyDictionary<string, string> Variables,

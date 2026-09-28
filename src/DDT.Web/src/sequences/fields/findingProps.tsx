@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { fieldFindings, type Findings } from "../problems";
 
-// A problem marks the field invalid and is said under it; a warning is said under it in the attention colour.
+// A problem marks the field invalid and shows under it. A warning shows under it in the attention colour.
 export function findingProps(findings: Findings, field: string, hint: ReactNode) {
   const { problems, warnings } = fieldFindings(findings, field);
   const warning = warnings.join(" ");

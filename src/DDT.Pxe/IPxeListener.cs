@@ -4,7 +4,7 @@
 
 namespace DDT.Pxe;
 
-// A listener PxeHost starts and stops: Start binds its socket and throws a SocketException when that fails.
+// A listener PxeHost starts and stops. Start binds its socket and throws a SocketException when that fails.
 internal interface IPxeListener
 {
     void Start();

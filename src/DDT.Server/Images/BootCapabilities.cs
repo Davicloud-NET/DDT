@@ -9,16 +9,17 @@ using DDT.Core.Disks;
 
 namespace DDT.Server.Images;
 
-// Judges a raw disk image by \EFI\BOOT\BOOTX64.EFI, the file firmware starts from its EFI system partition and the one
-// DDT's boot entry starts. The shims beside a distribution's boot loader only explain a fallback that is not signed.
+// Judges a raw disk image by \EFI\BOOT\BOOTX64.EFI. Firmware starts this file from the EFI system partition, and DDT's
+// boot entry starts it too. The shims next to a distribution's boot loader only help explain an unsigned fallback.
 public static class BootCapabilities
 {
-    // For a sentence such as "noble will not start with Secure Boot on": an image whose boot file is not signed for it will
-    // not, and one DDT could not judge may not.
+    // Fills in a sentence such as "noble will not start with Secure Boot on". An image whose boot file isn't signed for
+    // Secure Boot will not start. An image DDT couldn't judge may not start.
     public static string NotStarting(ImageBootCapability? capability) =>
         capability == ImageBootCapability.Unknown ? "may not start" : "will not start";
 
-    // The same for a message, which chooses its words by it: maybe for an image DDT could not judge, never otherwise.
+    // The same choice as a message argument, which picks the message's wording. It's "maybe" for an image DDT couldn't
+    // judge, and "never" otherwise.
     public static string NotStartingChoice(ImageBootCapability? capability) =>
         capability == ImageBootCapability.Unknown ? "maybe" : "never";
 
@@ -39,7 +40,8 @@ public static class BootCapabilities
 
         if (fallback is null)
         {
-            // A BOOTX64.EFI that is there but cannot be read, such as one too large, says nothing of the processor.
+            // If BOOTX64.EFI exists but can't be read, for example because it's too large, don't guess the processor
+            // from the other boot files.
             bool fallbackUnreadable = info.UnreadableBootFiles?.Any(path => string.Equals(path, FallbackPath, StringComparison.OrdinalIgnoreCase)) == true;
 
             if (!fallbackUnreadable && info.BootFiles.FirstOrDefault(file => s_otherFallbacks.ContainsKey(file.Path)) is { } other)

@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace DDT.Contracts.Sequences;
 
 // The discriminator values are stored in sequences and run snapshots, so they never change. A step is a node of the
-// sequence's tree: a leaf, or a container (group, if, repeat) whose bodies hold more nodes.
+// sequence's tree. It's either a leaf or a container (group, if, repeat) whose bodies hold more nodes.
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(PartitionStep), "partition")]
 [JsonDerivedType(typeof(ApplyImageStep), "applyImage")]
@@ -25,13 +25,13 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(PauseStep), "pause")]
 public abstract record SequenceStep
 {
-    // Stable across edits: run state, reports and problems name a step by it.
+    // Stable across edits, because run state, reports and problems name a step by it.
     public required Guid Id { get; init; }
 
     public required string Name { get; init; }
 
-    // The step runs only when every condition holds, and When holds as well. Kept for the documents of versions 1 and
-    // 2, which older agents run.
+    // The step only runs when every condition holds and When holds too. Kept for version 1 and 2 documents, which
+    // older agents run.
     public IReadOnlyList<StepCondition> Conditions { get; init; } = [];
 
     public bool ContinueOnError { get; init; }
@@ -47,20 +47,20 @@ public abstract record SequenceStep
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<ShareConnection>? Shares { get; init; }
 
-    // Kind facts, so the engine and the validator never switch on kinds. Null runs the step in the phase of the
-    // step before it. Overrides repeat [JsonIgnore]: the source generator reads it from the override.
+    // Facts about each kind, so the engine and the validator never switch on kinds. Null runs the step in the phase of
+    // the step before it. Overrides repeat [JsonIgnore] because the source generator reads it from the override.
     [JsonIgnore]
     public abstract SequencePhase? RequiredPhase { get; }
 
     [JsonIgnore]
     public virtual bool ErasesDisk => false;
 
-    // The lowest SequenceDefinition.Version whose agents run this kind with these members.
-    // SequenceTree.RequiredVersion adds what every kind has, such as When.
+    // The lowest SequenceDefinition.Version whose agents can run this kind with these members.
+    // SequenceTree.RequiredVersion covers what every kind has, such as When.
     [JsonIgnore]
     public virtual int MinimumVersion => 1;
 
-    // Group, if and repeat: nodes that hold other nodes rather than doing something themselves.
+    // True for group, if and repeat. These nodes hold other nodes instead of doing something themselves.
     [JsonIgnore]
     public virtual bool IsContainer => false;
 
@@ -69,12 +69,13 @@ public abstract record SequenceStep
     [JsonIgnore]
     public virtual IReadOnlyList<StepBody> Bodies => [];
 
-    // A leaf found Running when a run resumes runs again, rather than failing as interrupted, because running it twice
+    // When a run resumes, a leaf found Running runs again instead of failing as interrupted, because running it twice
     // does no harm.
     [JsonIgnore]
     public virtual bool Resumable => false;
 
-    // A copy whose bodies hold these nodes, one list per body in the order of Bodies. A leaf has none and stays as is.
+    // Returns a copy whose bodies hold these nodes, one list per body in the order of Bodies. A leaf has no bodies and
+    // is returned as is.
     public virtual SequenceStep WithBodies(IReadOnlyList<IReadOnlyList<SequenceStep>> bodies)
     {
         ArgumentNullException.ThrowIfNull(bodies);

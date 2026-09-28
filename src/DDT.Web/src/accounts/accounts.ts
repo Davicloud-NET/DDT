@@ -7,22 +7,22 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { ApiError, apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
 import { reauthenticationToken, type SecretAction, type SecretState } from "@/settings/settings";
 
-// Where a step names the account, as a sequence's problem names the field: runAs, account or shares[0].account.
+// A step that names the account. field is named like in a sequence's problems: runAs, account or shares[0].account.
 export interface AccountStepUse {
   stepId: string;
   stepName: string;
   field: string;
 }
 
-// A sequence that names the account, with its steps that do in the order of its tree.
+// A sequence that names the account, with the steps that name it, in tree order.
 export interface AccountUse {
   sequenceId: string;
   sequenceName: string;
   steps?: AccountStepUse[] | null;
 }
 
-// An account steps use, bound to its destinations: domain, the domain a join with it may join; hosts, the share
-// servers it may connect to; runAs, whether a script may run as it.
+// An account that steps use, bound to where it may be used. domain is the domain a join with it may join. hosts are
+// the share servers it may connect to. runAs says whether a script may run as it.
 export interface AccountView {
   id: string;
   name: string;
@@ -30,7 +30,7 @@ export interface AccountView {
   domain: string | null;
   hosts: string[];
   runAs: boolean;
-  // Only whether one is set: the password goes only to the step that uses it, never to a page.
+  // Only whether one is set. The password only goes to the step that uses it, never to a page.
   password: SecretState;
   usedBy: AccountUse[];
   revision: number;
@@ -38,8 +38,8 @@ export interface AccountView {
   updatedBy: string | null;
 }
 
-// revision is the one the page last read; a new account has none to name. password keeps, sets or clears it; a new
-// user name or domain, or another server, needs it set again.
+// revision is the one the page last read. A new account doesn't have one yet. password keeps, sets or clears the
+// password. A new user name, domain or server needs the password set again.
 export interface SaveAccountRequest {
   revision: number;
   name: string;
@@ -55,8 +55,8 @@ export const accountsQuery = queryOptions({
   queryFn: () => apiGet<AccountView[]>("/api/accounts"),
 });
 
-// Every write needs a person signed in on the web who entered their password again a few minutes ago; the server
-// answers 403 with the code stepAccount.reauthenticate without it, and the page asks for the password.
+// Every write needs a person signed in on the web who entered their password again a few minutes ago. Otherwise the
+// server answers 403 with the code stepAccount.reauthenticate, and the page asks for the password.
 async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = reauthenticationToken();
   const response = await apiFetch(path, {
@@ -75,7 +75,7 @@ async function send<T>(method: string, path: string, body?: unknown): Promise<T>
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
-// Whether the server refused because it wants the password of the person again. An API token's 403 is final, since
+// Whether the server refused because it wants the person's password again. A 403 for an API token is final, because
 // only someone signed in on the web may change accounts.
 export function wantsReauthentication(error: unknown): boolean {
   return (
@@ -125,7 +125,8 @@ export interface AccountsRemoved {
   accountIds: string[];
 }
 
-// What an account's drawer edits, as typed. The password is only ever what is typed here, sent once and forgotten.
+// The fields an account's drawer edits, as typed. The password is only what's typed here. It's sent once and then
+// forgotten.
 export interface AccountEdit {
   name: string;
   userName: string;
@@ -165,7 +166,7 @@ export function accountRequestOf(revision: number, edit: AccountEdit): SaveAccou
     domain: domain === "" ? null : domain,
     hosts: edit.hosts.map((row) => row.host.trim()),
     runAs: edit.runAs,
-    // A new account left without a password has none.
+    // A new account whose password field is left empty is saved without one.
     password:
       edit.password.action === "Set" && edit.password.value === ""
         ? { action: "Keep" }
@@ -177,8 +178,8 @@ function sameText(a: string | null, b: string | null): boolean {
   return (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
 }
 
-// Whether the edit sends a stored password somewhere it was not entered for: another user name or domain, or a server
-// it did not name. The server refuses to keep it then, so the page asks for it beforehand.
+// Whether the edit would send a stored password somewhere it wasn't entered for: another user name or domain, or a
+// new server. The server won't keep the password then, so the page asks for it up front.
 export function reachesNewDestination(account: AccountView, edit: AccountEdit): boolean {
   return (
     !sameText(account.userName, edit.userName) ||

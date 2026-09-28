@@ -22,7 +22,7 @@ public sealed class LdapOptions
 
     public string BindDn { get; set; } = string.Empty;
 
-    // Secret: stored encrypted, never in the section's values.
+    // A secret. It's stored encrypted, never in the section's values.
     [JsonIgnore]
     public string BindPassword { get; set; } = string.Empty;
 
@@ -36,8 +36,8 @@ public sealed class LdapOptions
 
     public bool ResolveNestedGroups { get; set; } = true;
 
-    // Group distinguished name to role. Distinguished names are compared without regard to case, as the directory
-    // compares them. While the map is empty, directory groups decide no role and administrators set them.
+    // Maps a group's distinguished name to a role. Distinguished names are compared ignoring case, like the directory
+    // does. While the map is empty, directory groups don't decide any role, and administrators set the roles.
     public Dictionary<string, string> GroupRoleMap { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);

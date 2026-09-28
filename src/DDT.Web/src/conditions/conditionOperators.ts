@@ -9,8 +9,9 @@ import { operatorLabel } from "@/sequences/steps";
 
 import type { ValueKind } from "./conditionSubjects";
 
-// The operators the server's ConditionChecks takes for the fact type behind each kind: memory is a Number, a network
-// or a list of choices Text. A value from a rule, a role or the sequence has no type: text, or one of its choices.
+// The operators the server's ConditionChecks accepts for the fact type behind each kind. Memory is a Number, and a
+// network or a list of choices is Text. A value from a rule, a role or the sequence has no type. It's text, or one of
+// its choices.
 const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
   text: [
     "Equals",
@@ -72,7 +73,7 @@ const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
     "Exists",
     "NotExists",
   ],
-  // Contains is the match on whole bytes the MAC conditions of versions 1 and 2 have.
+  // Contains is the whole-byte match that the MAC conditions of versions 1 and 2 use.
   mac: [
     "Equals",
     "NotEquals",
@@ -86,12 +87,13 @@ const operatorsByKind: Record<ValueKind, readonly ConditionOperator[]> = {
   ],
 };
 
-// The operators that fit a kind of value, the one a new condition takes first.
+// The operators that fit a kind of value. A new condition takes the first one.
 export function operatorsFor(kind: ValueKind): readonly ConditionOperator[] {
   return operatorsByKind[kind];
 }
 
-// What an operator says for a kind: Equals and NotEquals read "is" and "is not" for yes or no and for a list's choices.
+// The text of an operator for a kind. Equals and NotEquals read "is" and "is not" for yes or no and for a list's
+// choices.
 export function operatorText(operator: ConditionOperator, kind: ValueKind): string {
   if (kind === "yesNo" && operator === "Equals") {
     return t`is`;

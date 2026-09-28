@@ -14,12 +14,14 @@ using DDT.Server.Settings;
 
 namespace DDT.Server.Deployments;
 
-// Starts an assigned run, as its agent's first report or the answers given at the machine ask. Nothing here saves.
+// Starts an assigned run when its agent's first report or the answers given at the machine ask for it. Nothing here
+// saves.
 public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValues values, DdtSettings settings)
 {
-    // The values are worked out now, with one settings snapshot for the checks and the capture, so a save in between
-    // cannot start a run with values nobody checked. What keeps the run from starting ends it before any disk is touched,
-    // except a required input the machine asks: the run then waits at its start until someone answers it.
+    // The values are worked out now, with one settings snapshot for the checks and the capture. So a save in between
+    // can't start a run with values nobody checked. Anything that keeps the run from starting ends it before any disk
+    // is touched. The exception is a required input the machine asks: the run waits at its start until someone answers
+    // it.
     public async Task<RunStart> StartAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -80,8 +82,8 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
                 ? $"The run's values have problems, so it did not start: {Sentences(check.Problems.Select(value => value.Message.Text))}"
                 : null;
 
-    // The settings a run needs can go between its assignment and its start, with a restart of the server. The run then
-    // fails at once rather than halfway through, when the agent asks for them.
+    // The settings a run needs can disappear between its assignment and its start, with a server restart. The run then
+    // fails at once, instead of halfway through when the agent asks for them.
     private static string? StartProblem(SettingsSnapshot snapshot, SequenceDefinition definition)
     {
         // A run's error is in the agent's language, English, like every other run error.
@@ -98,7 +100,7 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
             return "The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more. Configure one and assign the sequence again.";
         }
 
-        // A join that names an account joins that account's domain, and needs none of the configured one.
+        // A join that names an account joins that account's domain, and doesn't need the configured one.
         return nodes.OfType<JoinDomainStep>().Any(join => join.Account is null)
             && (string.IsNullOrWhiteSpace(deployment.Domain.Name)
                 || string.IsNullOrWhiteSpace(deployment.Domain.UserName)
@@ -108,7 +110,7 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
     }
 
     // A rule or an input can give a time zone, a locale, a keyboard or an organizational unit the settings page would
-    // refuse. Only what the sequence uses is checked; the computer name was checked with the values.
+    // refuse. Only what the sequence uses is checked. The computer name was already checked with the values.
     private static string? SettingsProblem(SequenceDefinition definition, RunInputs inputs)
     {
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);

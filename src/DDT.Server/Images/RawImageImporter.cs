@@ -15,9 +15,9 @@ using ZstdSharp.Unsafe;
 
 namespace DDT.Server.Images;
 
-// Turns an uploaded disk image into the raw disk, inspected, then compressed with zstd. DDT reads raw, gzip and zstd
-// itself, and converts xz and qcow2 with ConversionTools. What an import that stops leaves next to the part file waits
-// for the next attempt or the sweeper.
+// Turns an uploaded disk image into a raw disk, inspects it, then compresses it with zstd. DDT reads raw, gzip and
+// zstd itself. It converts xz and qcow2 with ConversionTools. If an import stops, the files it left next to the part
+// file wait for the next attempt or the sweeper.
 public sealed partial class RawImageImporter(ImageStore store, ConversionTools tools, ILogger<RawImageImporter> logger)
 {
     public static readonly string NotAnImageMessage = ServerMessages.UploadNotAnImage.With().Text;
@@ -102,7 +102,7 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
     }
 
-    // The part file's disk, expanded when it is compressed, inspected, then compressed with zstd.
+    // Expands the part file's disk if it's compressed, inspects it, then compresses it with zstd.
     private async Task<RawImport> ConvertAsync(Guid uploadId, CancellationToken cancellationToken)
     {
         string part = store.PartPath(uploadId);
@@ -212,8 +212,8 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
     }
 
-    // qemu-img would read a backing file or an external data file from the server's own disk, wherever the upload's
-    // header points, into the image.
+    // qemu-img would copy a backing file or an external data file into the image. It would read that file from the
+    // server's own disk, wherever the upload's header points.
     private static ServerMessage? Qcow2Problem(ReadOnlySpan<byte> head)
     {
         if (head.Length < 104)
@@ -236,13 +236,13 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             return ServerMessages.UploadQcow2Encrypted.With();
         }
 
-        // Bit 2: the data lives in an external file.
+        // Bit 2 means the data lives in an external file.
         return (incompatible & 0x4) != 0
             ? ServerMessages.UploadQcow2ExternalData.With()
             : null;
     }
 
-    // One pass: the raw disk is hashed as it is read, and the compressed copy as it is written.
+    // Works in one pass. The raw disk is hashed as it's read, and the compressed copy is hashed as it's written.
     private static async Task<(string SourceSha256, string Sha256, long Size)> CompressAsync(
         string source,
         string compressed,
@@ -260,7 +260,8 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             {
                 zstd.SetParameter(ZSTD_cParameter.ZSTD_c_nbWorkers, RawImageLimits.CompressionWorkers);
 
-                // The agent's decompressor then checks the content as it unpacks it, besides the file's SHA-256.
+                // With the checksum, the agent's decompressor checks the content while it unpacks it. That's on top of
+                // the file's SHA-256.
                 zstd.SetParameter(ZSTD_cParameter.ZSTD_c_checksumFlag, 1);
                 int read;
 

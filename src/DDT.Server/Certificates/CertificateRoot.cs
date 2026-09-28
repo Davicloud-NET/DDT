@@ -7,12 +7,12 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Certificates;
 
-// DDT's own root, which boot images pin, so a certificate issued from it can change without a new boot image.
+// DDT's own root. Boot images pin it, so a certificate issued from it can change without a new boot image.
 internal sealed class CertificateRoot(CertificateFiles files)
 {
     public bool Exists => File.Exists(files.RootPath);
 
-    // Null while there is none.
+    // Returns null while there's no root.
     public PemPair? Read()
     {
         if (!Exists)
@@ -44,7 +44,7 @@ internal sealed class CertificateRoot(CertificateFiles files)
     {
         PemPair root = ServerCertificateAuthority.CreateRoot(now);
 
-        // The key first: a root certificate without its key could never issue again.
+        // Write the key first. A root certificate without its key could never issue again.
         PemFiles.Write(files.RootKeyPath, root.KeyPem, isKey: true);
         PemFiles.Write(files.RootPath, root.CertificatePem, isKey: false);
 
@@ -53,7 +53,7 @@ internal sealed class CertificateRoot(CertificateFiles files)
 
     public bool Issued(X509Certificate2 certificate) => Of(certificate) is not null;
 
-    // The root's PEM while the certificate comes from it, and null for an administrator's certificate.
+    // Returns the root's PEM if the certificate was issued from it, and null for an administrator's certificate.
     public string? Of(X509Certificate2 certificate)
     {
         if (!Exists)

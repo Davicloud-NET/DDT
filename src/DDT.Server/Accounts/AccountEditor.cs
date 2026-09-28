@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Accounts;
 
-// Saves the accounts steps use, each change with its audit row. A stored password goes only to the user name, domain and
-// servers it was entered for: keeping it while any of them changes is refused and audited.
+// Saves the accounts that steps use, with an audit row for each change. A stored password only goes to the user name,
+// domain and servers it was entered for. A save that keeps it while changing any of them is refused and audited.
 internal sealed class AccountEditor(
     DdtDbContext database,
     AccountProtector protector,
@@ -69,7 +69,7 @@ internal sealed class AccountEditor(
         return await SavedAsync(account, cancellationToken).ConfigureAwait(false);
     }
 
-    // A save names the revision it was made on, and one over a newer revision gets the account as it is now.
+    // A save names the revision it was based on. If the account has a newer revision, the save gets the current one.
     public async Task<EditOutcome<AccountView>> SaveAsync(Guid id, SaveAccountRequest request, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -106,7 +106,7 @@ internal sealed class AccountEditor(
 
         List<string> changes = AccountChanges.Of(account, fields, password is not null, clear && account.ProtectedPassword is not null);
 
-        // A save of what is stored already changes nothing and records nothing.
+        // Saving what's already stored changes nothing, so nothing is recorded.
         if (changes.Count == 0)
         {
             return EditOutcome<AccountView>.Done(await views.ViewAsync(account, cancellationToken).ConfigureAwait(false));
@@ -123,8 +123,8 @@ internal sealed class AccountEditor(
         return await SavedAsync(account, cancellationToken).ConfigureAwait(false);
     }
 
-    // Refused while a sequence names it: a run of that sequence would fail at the step, after the disk was erased. False
-    // for an account that is gone.
+    // Refused while a sequence uses the account. A run of that sequence would fail at the step, after the disk was
+    // already erased. Found is false if the account doesn't exist.
     public async Task<(bool Found, ServerMessage? Refusal)> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -163,8 +163,8 @@ internal sealed class AccountEditor(
         return (true, null);
     }
 
-    // A kept password that no longer decrypts, or would reach a new destination. The second is recorded alone: nothing
-    // else of the refused save is stored.
+    // Refuses a kept password that no longer decrypts or would reach a new destination. The second case is audited,
+    // but nothing else from the refused save is stored.
     private async Task<FieldProblems?> KeptPasswordRefusalAsync(
         Account account,
         AccountFields fields,
@@ -199,7 +199,7 @@ internal sealed class AccountEditor(
         return problems;
     }
 
-    // A set without a value clears the password, as for a setting's secret.
+    // A Set without a value clears the password, the same as for a secret setting.
     private void Apply(Account account, AccountFields fields, SecretUpdate? update, Actor actor, DateTimeOffset now)
     {
         string? password = NewPassword(update);
@@ -229,7 +229,8 @@ internal sealed class AccountEditor(
         account.UpdatedByName = actor.Name;
     }
 
-    // Saved and pushed; the name another save took at the same moment, or the account as it is now after a newer save.
+    // Saves and pushes the account. Returns a problem if another save took the name at the same moment, or the current
+    // account if a newer save got there first.
     private async Task<EditOutcome<AccountView>> SavedAsync(Account account, CancellationToken cancellationToken)
     {
         try
@@ -293,7 +294,8 @@ internal sealed class AccountEditor(
             : (new AccountFields(name, request.UserName?.Trim() ?? "", domain, hosts, request.RunAs), null);
     }
 
-    // The servers the account may connect to, each once, or the problems of those that are none.
+    // The servers the account may connect to, each listed once. Each entry that isn't a valid server, or repeats one,
+    // is added to problems.
     private static List<string> Hosts(IReadOnlyList<string?> requested, FieldProblems problems)
     {
         List<string> hosts = [];
@@ -326,7 +328,7 @@ internal sealed class AccountEditor(
         return hosts;
     }
 
-    // The password a save sets; null to keep or clear it. A set without a value clears, as for a setting's secret.
+    // The password a save sets, or null to keep or clear it. A Set without a value clears it, like a secret setting.
     private static string? NewPassword(SecretUpdate? update) =>
         update is { Action: SecretAction.Set, Value: { Length: > 0 } value } ? value : null;
 
@@ -337,7 +339,8 @@ internal sealed class AccountEditor(
         return database.Accounts.AnyAsync(a => a.NormalizedName == normalized && a.Id != id, cancellationToken);
     }
 
-    // The unique index settles two saves that took the same name at once; the loser is told as if it had been first.
+    // The unique index decides between two saves that take the same name at once. The loser is told the name is taken,
+    // just as if the other save had come first.
     private async Task<FieldProblems?> CommitAsync(Account account, CancellationToken cancellationToken)
     {
         try

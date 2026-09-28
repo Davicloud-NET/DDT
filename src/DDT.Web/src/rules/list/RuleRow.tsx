@@ -24,7 +24,7 @@ interface RuleRowProps {
   subjects: readonly Subject[];
   canEdit: boolean;
   isOpen: boolean;
-  // The live mark's classes.
+  // The classes that mark the row when a live change arrives.
   mark: string;
   onOpen: () => void;
   onMove: (offset: number) => void;
@@ -52,7 +52,7 @@ export function RuleRow({
   const matching = rule.matchingMachines;
   const count =
     matching === 0 ? t`No machine` : plural(matching, { one: "# machine", other: "# machines" });
-  // What a screen reader says of the row: its name, its condition, what it does and what it matches.
+  // What a screen reader says for the row: its name, its condition, what it does and what it matches.
   const text = [name, sentence, effects.join(", "), count].filter((part) => part !== "").join(". ");
 
   return (
@@ -63,7 +63,7 @@ export function RuleRow({
       className={({ isFocusVisible, isDragging }) =>
         cx(
           "grid cursor-pointer items-center gap-x-3 gap-y-1 px-4 py-3 shadow-[inset_0_-1px_0_var(--color-line-soft)] outline-none motion-highlight hover:bg-hover",
-          // On a phone the count goes under the rule, so the rule keeps the width.
+          // On a phone the count goes under the rule, so the rule keeps the full width.
           canEdit
             ? "grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_2rem] sm:grid-cols-[1.375rem_2.125rem_minmax(0,1fr)_6rem_2rem]"
             : "grid-cols-[2.125rem_minmax(0,1fr)] sm:grid-cols-[2.125rem_minmax(0,1fr)_6rem]",

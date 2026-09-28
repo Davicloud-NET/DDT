@@ -69,7 +69,7 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.False(first.MustChangePassword);
     }
 
-    // The highest role counts, and an account without one has nowhere it came from.
+    // The highest role counts. An account without a role has no source for it either.
     [Fact]
     public async Task ShowsTheHighestRoleOfAnAccountWithSeveral()
     {
@@ -88,7 +88,7 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Null((await administrator.UserAsync(none)).Role);
         Assert.Null((await administrator.UserAsync(none)).RoleFrom);
 
-        // Set here, the role is the only one the account has.
+        // Once set here, the role is the only one the account has.
         UserView changed = await ReadAsync<UserView>(await administrator.PatchAsync($"{UsersApi}/{several}", new UpdateUserRequest(null, null, DdtRoleNames.Viewer)));
         Assert.Equal(DdtRoleNames.Viewer, changed.Role);
         Assert.Equal(
@@ -160,7 +160,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal("jane@corp.example", changed.Email);
         Assert.Equal(DdtRoleNames.Operator, changed.Role);
 
-        // Left out, a field stays; empty, it is cleared. The same values again change nothing and write no row.
+        // A field that's left out stays, and an empty one is cleared.
+        // Sending the same values again changes nothing and writes no audit row.
         UserView cleared = await ReadAsync<UserView>(await administrator.PatchAsync($"{UsersApi}/{id}", new UpdateUserRequest(null, "", null)));
         Assert.Equal("Jane Doe", cleared.DisplayName);
         Assert.Null(cleared.Email);
@@ -202,7 +203,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
             .ToListAsync(TestContext.Current.CancellationToken)));
     }
 
-    // Refusing an administrator itself is not enough: a cookie keeps a role for up to a minute after it was taken away.
+    // Only refusing what administrators do to their own account isn't enough.
+    // A cookie keeps a role for up to a minute after it was taken away.
     [Fact]
     public async Task TheLastEnabledAdministratorKeepsTheRole()
     {
@@ -222,7 +224,7 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal(last, await ConflictAsync(await secondBrowser.DeleteAsync($"{UsersApi}/{firstId}")));
         Assert.Equal(last, await ConflictAsync(await secondBrowser.PatchAsync($"{UsersApi}/{firstId}", new UpdateUserRequest(null, null, DdtRoleNames.Viewer))));
 
-        // A disabled administrator is no administrator anyone could sign in as, so it may lose the role.
+        // Nobody can sign in as a disabled administrator, so it may lose the role.
         (await first.PatchAsync($"{UsersApi}/{bootstrap}", new UpdateUserRequest(null, null, DdtRoleNames.Viewer))).EnsureSuccessStatusCode();
         Assert.False((await StoredIn(own, firstId)).IsDisabled);
 
@@ -249,7 +251,7 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         using SignedInClient refused = application.Browser();
         Assert.Null(await refused.SignInAsync(created.User.UserName, DdtApplication.Password));
 
-        // Disabling twice changes nothing more; enabling lets the account sign in again.
+        // Disabling twice changes nothing more. Enabling lets the account sign in again.
         Assert.True((await ReadAsync<UserView>(await administrator.PostAsync($"{UsersApi}/{created.User.Id}/disable"))).Disabled);
         Assert.False((await ReadAsync<UserView>(await administrator.PostAsync($"{UsersApi}/{created.User.Id}/enable"))).Disabled);
         using SignedInClient welcomed = application.Browser();
@@ -259,8 +261,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
             (await application.UserAuditAsync(created.User.Id)).Select(e => e.Action));
     }
 
-    // Groups do not follow a role taken away while a connection is open, so the connection is closed and the page
-    // connects again with what the account holds now.
+    // Hub groups don't follow a role that's taken away while a connection is open.
+    // So the connection is closed, and the page connects again with the account's current roles.
     [Fact]
     public async Task ADemotedAdministratorStopsReceivingWhatOnlyAdministratorsSee()
     {
@@ -428,8 +430,8 @@ public sealed class UserEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal(AuditActions.UserTwoFactorReset, (await application.UserAuditAsync(id))[^1].Action);
     }
 
-    // A directory account without the directory's id is single sign-on's, and a password typed for it must not reach
-    // the directory.
+    // A directory account without the directory's ID belongs to single sign-on.
+    // A password typed for it must not reach the directory.
     [Fact]
     public async Task EarlierSingleSignOnAccountsAreToldApartFromDirectoryAccounts()
     {

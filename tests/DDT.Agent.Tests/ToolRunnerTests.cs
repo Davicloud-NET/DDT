@@ -134,7 +134,7 @@ public sealed class ToolRunnerTests
         }
         finally
         {
-            // Where a process escaped, it still holds its file, and the failure above says so rather than this.
+            // If a process escaped, it still holds its file. Then the failure above reports it, not this cleanup.
             try
             {
                 Directory.Delete(directory, recursive: true);
@@ -166,7 +166,8 @@ public sealed class ToolRunnerTests
         return (new ToolRunner(log, TimeProvider.System), new ScriptedAgentServer(), log);
     }
 
-    // True once the file opens for this process alone, or is not there. A process that never started leaves no file.
+    // True once the file opens exclusively for this process, or doesn't exist. A process that never started leaves no
+    // file.
     private static async Task<bool> NothingHoldsAsync(string path, TimeSpan wait)
     {
         long started = Stopwatch.GetTimestamp();

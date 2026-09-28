@@ -92,7 +92,7 @@ describe("SequenceEditorPage", () => {
 
     expect(screen.getByRole("textbox", { name: "Sequence name" })).toHaveValue("Lab PCs (bob)");
     expect(saves).toHaveLength(1);
-    // Their copy came with the refusal.
+    // Their copy came with the refusal, so it isn't fetched again.
     expect(reads.slice(readsBefore)).not.toContain(`/api/sequences/${sequenceId}`);
   });
 
@@ -196,7 +196,7 @@ describe("SequenceEditorPage", () => {
       target: { value: "Lab" },
     });
 
-    // As the live connection does for a sequenceChanged without a revision.
+    // This is what the live connection does for a sequenceChanged without a revision.
     remove();
     act(() => {
       void queryClient.invalidateQueries({ queryKey: ["sequence", sequenceId] });

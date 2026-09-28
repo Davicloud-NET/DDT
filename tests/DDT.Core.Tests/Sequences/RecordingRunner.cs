@@ -7,8 +7,8 @@ using DDT.Core.Sequences;
 
 namespace DDT.Core.Tests.Sequences;
 
-// Each step's result comes from its context alone, so a resumed run does what the first one did. Mark is the blob
-// saved as the step started: its Running mark, or the blob a resumable step was found Running in.
+// Each step's result depends only on its context, so a resumed run does what the first one did. Mark is the blob saved
+// when the step started. That's its Running mark, or the blob a resumable step was found Running in.
 internal sealed class RecordingRunner(IReadOnlyDictionary<Guid, Func<StepContext, StepResult>> behaviours, BlobStore store) : IStepRunner
 {
     private readonly List<(Guid StepId, int Mark, StepContext Context)> _runs = [];

@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { TextSetting } from "../../fields/TextSetting";
 import type { InputPartProps } from "./declarationFields";
 
-// The longest answer a Text input takes. A number out of range is not taken, so the last one stays.
+// The longest answer a Text input takes. A number out of range is ignored, so the last valid one stays.
 export function MaxLengthSetting({ input, at, findings, update }: InputPartProps) {
   return (
     <TextSetting

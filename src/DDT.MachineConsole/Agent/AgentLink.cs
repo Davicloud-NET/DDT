@@ -6,13 +6,13 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Agent;
 
-// Reads the agent's messages without ever waiting for the UI thread, so the agent never finds its console slow.
-// AnswerAsync may be called from any thread.
+// Reads the agent's messages without waiting for the UI thread, so a busy UI never makes the agent wait.
+// AnswerAsync can be called from any thread.
 public sealed class AgentLink(IAgentConnection connection) : IAsyncDisposable
 {
     private readonly CancellationTokenSource _stop = new();
 
-    // Completes with why the pipe ended. received runs on the reading thread.
+    // Returns why the pipe ended. The received callback runs on the reading thread.
     public async Task<LinkEnd> ReadAsync(Action<ConsoleMessage> received)
     {
         ArgumentNullException.ThrowIfNull(received);
@@ -32,13 +32,13 @@ public sealed class AgentLink(IAgentConnection connection) : IAsyncDisposable
         }
         catch (Exception)
         {
-            // The reading thread's boundary: an IOException, a malformed message or a pipe disposed under the reader
-            // all end the link, and the screen says so.
+            // The reading thread stops here. An IOException, a malformed message or a pipe disposed under the reader
+            // all end the link, and the screen shows it.
             return LinkEnd.Broken;
         }
     }
 
-    // False when the answer could not be sent, because the pipe has ended.
+    // Returns false if the pipe has ended and the answer couldn't be sent.
     public async Task<bool> AnswerAsync(int questionId, ConsoleAnswer answer)
     {
         ArgumentNullException.ThrowIfNull(answer);

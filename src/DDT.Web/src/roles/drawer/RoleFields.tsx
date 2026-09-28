@@ -12,7 +12,7 @@ import { rulesGiving } from "../roles";
 import { RuleLinks } from "../RuleLinks";
 import type { RoleForm } from "./useRoleForm";
 
-// A machine role's fields: its name, what it is for and the values it sets, then the rules that give a saved one.
+// A machine role's fields: its name, its purpose and the values it sets. A saved role also shows the rules giving it.
 export function RoleFields({ form, rules }: { form: RoleForm; rules: readonly RuleView[] }) {
   const { base, edit, findings, change } = form;
   const giving = base === null ? [] : rulesGiving(rules, base.id);

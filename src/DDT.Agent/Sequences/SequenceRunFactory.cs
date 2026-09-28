@@ -9,7 +9,7 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Opens a run: its session, its state as it starts or goes on, its store and heartbeat, and the console's view of it.
+// Opens a run: its session, its state as it starts or continues, its store and heartbeat, and the console's view of it.
 internal sealed class SequenceRunFactory(RunHeartbeatFactory heartbeats, ConsoleStatus? status, AgentLog log)
 {
     public SequenceRun Open(SequencePhase phase, Action recordRestart, RunRequest request)

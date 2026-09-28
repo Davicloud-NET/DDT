@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The sign-in enters beside the ways to authorize when the agent asks for it, and leaves when it is withdrawn. -->
+<!-- The sign-in animates in next to the ways to authorize when the agent asks for it. It leaves when the question is
+     withdrawn. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

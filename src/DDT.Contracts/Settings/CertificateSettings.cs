@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section certificate: the names the server is reached by, which Generate issues for and an upload has to cover.
+// The certificate section. It holds the names clients use to reach the server. Generate issues a certificate for
+// them, and an uploaded one has to cover them.
 public sealed record CertificateSettings(IReadOnlyList<string> SubjectAlternativeNames);

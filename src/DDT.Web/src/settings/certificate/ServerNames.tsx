@@ -12,7 +12,7 @@ import { SettingLines } from "../parts/SettingLines";
 import { SettingsSection } from "../parts/SettingsSection";
 import { useSettingsForm } from "../useSettingsForm";
 
-// The names the server is reached by, which Generate issues for and an upload has to cover.
+// The names the server is reached by. Generate issues a certificate for them, and an uploaded one must cover them.
 export function ServerNames() {
   const form = useSettingsForm<CertificateSettings>("certificate");
 

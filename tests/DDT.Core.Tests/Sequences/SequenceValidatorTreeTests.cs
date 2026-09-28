@@ -15,7 +15,7 @@ public sealed class SequenceValidatorTreeTests
     private static IReadOnlyList<SequencePhase> PhasesOf(SequenceDefinition definition, SequenceStep node) =>
         Assert.Single(SequenceValidator.Analyse(definition).NodePhases, phases => phases.NodeId == node.Id).Phases;
 
-    // A flat sequence has one path: the validator reports what a list's checks would, in the order of the steps.
+    // A flat sequence has one path. The validator reports what the list checks would, in step order.
     [Fact]
     public void SaysOfAFlatSequenceWhatItAlwaysSaid()
     {
@@ -90,7 +90,7 @@ public sealed class SequenceValidatorTreeTests
             "phase",
             "sequence.windowsPEAfterWindows");
 
-        // A restart runs in the phase its path is in: Windows after Then, Windows PE after Else, and both are fine.
+        // A restart runs in its path's phase. That's Windows after Then and Windows PE after Else, and both are fine.
         Assert.Empty(Validate(Partition(), ApplyImage(), If([Script(SequencePhase.Windows)]), Reboot()));
     }
 
@@ -113,7 +113,8 @@ public sealed class SequenceValidatorTreeTests
         AssertOnly(Validate(Partition(), ApplyImage(), If([again])), again, null, "sequence.oneImage");
     }
 
-    // Only a step's own conditions are refused on the steps a run relies on; a group's make the paths.
+    // On the steps a run relies on, only the step's own conditions are refused. A group's conditions just make more
+    // paths.
     [Fact]
     public void SkipsAGroupWithConditionsWithEverythingInIt()
     {
@@ -126,7 +127,8 @@ public sealed class SequenceValidatorTreeTests
         AssertOnly(Validate(Partition(), ownWhen), ownWhen, "when", "sequence.cannotSkip");
     }
 
-    // A failure goes on after the group, so what follows the failing step in it may not have happened.
+    // After a failure the run continues after the group, so the steps after the failing one inside it may not have
+    // happened.
     [Fact]
     public void GoesOnAfterAGroupThatContinuesOnErrorFromWhereAStepFailed()
     {
@@ -184,7 +186,8 @@ public sealed class SequenceValidatorTreeTests
 
         AssertOnly(Validate(Partition(), ApplyImage(), Repeat(inWindows)), inWindows, "phase", "sequence.phaseChangeInRepeat");
 
-        // Said once, however many repeats hold the step, and not again as Windows PE after Windows the next time round.
+        // Reported once, however many repeats hold the step, and not again as Windows PE after Windows in the next
+        // iteration.
         AssertOnly(
             Validate(Partition(), ApplyImage(), Repeat(Script(SequencePhase.WindowsPE), Repeat(nested))),
             nested,
@@ -209,8 +212,8 @@ public sealed class SequenceValidatorTreeTests
         Assert.Empty(Validate(Partition(), Repeat(Reboot()) with { MaxTimes = SequenceValidator.MaxRepeatTimes }));
     }
 
-    // At its limit a repeat fails unless it goes on, and the run goes on after the nearest group that continues on
-    // error, still in Windows PE.
+    // At its limit a repeat fails unless GoOnAtLimit is set. The run then continues after the nearest group that
+    // continues on error, still in Windows PE.
     [Fact]
     public void GoesOnFromARepeatThatFailsAtItsLimit()
     {
@@ -238,7 +241,7 @@ public sealed class SequenceValidatorTreeTests
         Assert.Empty(Validate(Partition(), Nest(SequenceValidator.MaxDepth - 1, Reboot())));
         AssertOnly(Validate(Partition(), Nest(SequenceValidator.MaxDepth, deepest)), deepest, null, "sequence.tooDeep");
 
-        // Once, at the first node too deep.
+        // Reported once, at the first node that's too deep.
         GroupStep tooDeep = (GroupStep)Nest(1, below);
         Assert.Single(Validate(Partition(), Nest(SequenceValidator.MaxDepth, tooDeep)), problem => problem.Code == "sequence.tooDeep");
     }
@@ -251,7 +254,7 @@ public sealed class SequenceValidatorTreeTests
         AssertOnly(Validate(Partition(), tooManySteps), null, "steps", "sequence.stepCount");
         Assert.Empty(Validate(Partition(), tooManySteps with { Steps = tooManySteps.Steps.Skip(1).ToArray() }));
 
-        // A group holds no steps of its own.
+        // An empty group has no steps, because containers don't count as steps.
         AssertOnly(Validate(Group()), null, "steps", "sequence.stepCount");
 
         SequenceStep[] nodes = [Partition(), .. Enumerable.Range(0, SequenceValidator.MaxNodes).Select(_ => Group())];
@@ -307,7 +310,8 @@ public sealed class SequenceValidatorTreeTests
         Assert.Empty(SequenceValidator.Analyse(Definition(Partition(), ApplyImage(), Script(SequencePhase.Windows), Pause())).Warnings);
     }
 
-    // Each node in the order of SequenceTree.Nodes, a container with the phases of its start and of what it holds.
+    // Each node comes in SequenceTree.Nodes order. A container gets the phases of its start and of everything inside
+    // it.
     [Fact]
     public void SaysThePhasesEachNodeMayRunIn()
     {

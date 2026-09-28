@@ -35,7 +35,7 @@ public static class StorageDescriptorReader
         string? vendor = ReadString(descriptor, BinaryPrimitives.ReadUInt32LittleEndian(descriptor[VendorIdOffset..]));
         string? product = ReadString(descriptor, BinaryPrimitives.ReadUInt32LittleEndian(descriptor[ProductIdOffset..]));
 
-        // SCSI pads both fields with spaces; NVMe drives often have no vendor and the whole name as the product.
+        // SCSI pads both fields with spaces. NVMe drives often have no vendor and the whole name as the product.
         string model = string.Join(' ', new[] { vendor, product }.Where(part => part is not null));
 
         return new StorageDeviceInfo(removable, busType, model.Length == 0 ? null : model);

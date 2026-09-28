@@ -12,19 +12,19 @@ import type { TreeIndex } from "../../flow/flowTree";
 import type { SequenceEdit } from "../../sequenceEdits";
 import type { SequenceStep } from "../../sequences";
 
-// The system clipboard where the browser lets the page use it; the builder keeps its own copy beside it.
+// The system clipboard, if the browser lets the page use it. The builder also keeps its own copy.
 function systemClipboard(): Clipboard | undefined {
   return (navigator as { clipboard?: Clipboard }).clipboard;
 }
 
-// Copy and paste of nodes through the system clipboard, with the page's own copy where the browser refuses it.
+// Copies and pastes nodes through the system clipboard. The page's own copy is used if the browser refuses access.
 export function useFlowClipboard(
   index: TreeIndex,
   edit: (change: SequenceEdit) => void,
   show: (id: string) => void,
   announce: (text: string) => void,
 ) {
-  // What Ctrl+C copied, for a browser that keeps the system clipboard from the page.
+  // What Ctrl+C copied, for a browser that doesn't let the page read the system clipboard.
   const clipboard = useRef<SequenceStep[] | null>(null);
 
   const copy = (nodes: SequenceStep[]) => {
@@ -43,7 +43,7 @@ export function useFlowClipboard(
 
       nodes = read ?? nodes;
     } catch {
-      // The browser keeps the clipboard from the page; the builder's own copy is used.
+      // The browser doesn't let the page read the clipboard, so the builder's own copy is used.
     }
 
     if (nodes === null) {

@@ -7,8 +7,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Contracts.Agents;
 
-// Separate from DdtJsonContext so the NativeAOT agent carries metadata only for what it sends. Out of order metadata:
-// a sequence the server kept in PostgreSQL jsonb has each step's "kind" after its "id".
+// Separate from DdtJsonContext, so the NativeAOT agent only carries metadata for what it sends and receives. Out of
+// order metadata is allowed because a sequence stored in PostgreSQL jsonb has each step's "kind" after its "id".
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,

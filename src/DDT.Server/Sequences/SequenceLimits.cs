@@ -4,8 +4,9 @@
 
 namespace DDT.Server.Sequences;
 
-// What the server stores at all, so an editor keeps a draft with problems; SequenceValidator's tighter limits decide what
-// runs. Nodes, containers included, are twice what the validator runs, and a run reports a row for each.
+// Limits for what the server stores at all, so an editor keeps a draft even with problems. SequenceValidator's tighter
+// limits decide what runs. The node limit, containers included, is twice what the validator runs. A run reports a row
+// for each node.
 public static class SequenceLimits
 {
     public const int MaxNameLength = 128;

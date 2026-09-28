@@ -4,9 +4,9 @@
 
 namespace DDT.E2E;
 
-// The published agent, the server it calls with the root it pins, and the dry run it stands in for.
+// The published agent, the server it calls, the root certificate it pins, and the id of the dry run machine it plays.
 internal sealed record AgentStartInfo(string AgentPath, Uri Server, string RootCertificatePath, int DryRunId, string LogPath)
 {
-    // The dry run's machine says Secure Boot is on.
+    // The dry run's machine reports Secure Boot as on.
     public bool SecureBoot { get; init; }
 }

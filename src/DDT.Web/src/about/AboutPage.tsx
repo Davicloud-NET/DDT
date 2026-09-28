@@ -39,8 +39,8 @@ function Section({ title, children }: { title: ReactNode; children: ReactNode })
 
 const linkClass = "text-ink underline underline-offset-3 hover:text-run-text";
 
-// GPLv3 section 0 asks an interactive interface to show these notices, so they do not depend on the server answering.
-// The attribution line stays in English: NOTICE's section 7(b) term asks for it word for word.
+// GPLv3 section 0 asks an interactive interface to show these notices, so they don't depend on the server's answer. The
+// attribution line stays in English because the section 7(b) term in NOTICE asks for it word for word.
 export function AboutPage() {
   const { i18n } = useLingui();
   const about = useQuery(aboutQuery);

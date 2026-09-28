@@ -6,20 +6,20 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 
 import type { MachineFilter } from "@/machines/machineView";
 
-// A change of the list's view; undefined leaves a parameter out of the address.
+// A change to the list's view. An undefined value leaves that parameter out of the URL.
 export interface MachinesSearchChange {
   state?: MachineFilter;
   q?: string;
   selected?: string | undefined;
 }
 
-// The machine list's filter, search text and picked machine, which live in the address (machinesSearch).
+// The machine list's filter, search text and picked machine. They live in the URL (see machinesSearch).
 export function useMachineFilters() {
   const search = useSearch({ from: "/shell/machines" });
   const navigate = useNavigate({ from: "/machines" });
   const filter: MachineFilter = search.state ?? "all";
 
-  // Changes the view without a new history entry. Empty values and the default filter leave the address.
+  // Changes the view without adding a history entry. Empty values and the default filter are left out of the URL.
   function setSearch(next: MachinesSearchChange) {
     void navigate({
       search: (previous) => {

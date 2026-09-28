@@ -31,7 +31,7 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         CreatedUtc = DateTimeOffset.UtcNow,
     };
 
-    // A web assignment of a sequence without problems, and two accounts given for it.
+    // Assigns a sequence without problems on the web and gives two accounts for it.
     private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync()
     {
         SignedInClient administrator = await application.AdministratorAsync();
@@ -136,8 +136,8 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         Assert.Equal((DeploymentState.Failed, 0), (await StateAsync(failed.Id), await CredentialsAsync(failed.Id)));
     }
 
-    // Another agent took the machine over: the run it had fails. A web assignment that has not started stays for the next
-    // boot, and keeps what was given for it.
+    // Another agent took the machine over, so the run it had fails.
+    // A web assignment that hasn't started stays for the next boot and keeps what was given for it.
     [Fact]
     public async Task ARunThatEndsBecauseTheMachineStartedAgainKeepsNone()
     {
@@ -173,7 +173,8 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         Assert.Equal((DeploymentState.Failed, 0), (await StateAsync(run.Id), await CredentialsAsync(run.Id)));
     }
 
-    // The credentials go in the save that ends the run, so a save that fails keeps them with the run it did not end.
+    // The credentials are removed in the same save that ends the run.
+    // So a save that fails keeps them with the run it didn't end.
     [Fact]
     public async Task ASaveThatFailsToEndTheRunKeepsThem()
     {
@@ -213,8 +214,8 @@ public sealed class RunCredentialCleanupTests(DdtApplication application) : ICla
         Assert.Equal((DeploymentState.Cancelled, 0), (await StateAsync(run.Id), await CredentialsAsync(run.Id)));
     }
 
-    // A run that ended without a save through this build, as by another build, loses its credentials at the next start;
-    // a run that goes on keeps them.
+    // A run that ended without a save through this build, for example by another build, loses its credentials at the
+    // next start. A run that's still going keeps them.
     [Fact]
     public async Task TheSweepAtTheStartRemovesTheCredentialsOfRunsThatAreOver()
     {

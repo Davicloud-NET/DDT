@@ -6,5 +6,5 @@ using DDT.Contracts.Settings;
 
 namespace DDT.Server.Settings;
 
-// View is the section as it applies after a save that went through, and null otherwise.
+// View is the section as it applies after a successful save. It's null otherwise.
 internal sealed record SettingsSaved<TValues>(SettingsSaveResult Result, SettingsSectionView<TValues>? View);

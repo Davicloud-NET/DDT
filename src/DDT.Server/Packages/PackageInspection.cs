@@ -6,6 +6,6 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Packages;
 
-// Refusal is the sentence that says why the zip cannot be a package, and RefusalMessage the same as a code; the counts
-// are then zero.
+// Refusal is the sentence that says why the zip can't be a package. RefusalMessage carries the same reason with its
+// message code. The counts are zero then.
 public sealed record PackageInspection(int FileCount, long ExpandedBytes, string? Refusal, ServerMessage? RefusalMessage = null);

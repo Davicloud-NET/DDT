@@ -5,5 +5,5 @@
 namespace DDT.ConsoleProtocol;
 
 // Address is the server's URL as the boot image names it. Problem says why the last request failed, in the words the
-// agent logs, until one gets through; Failures counts them in a row. The agent tries again by itself.
+// agent logs, until one gets through. Failures counts the failures in a row. The agent retries by itself.
 public sealed record ConsoleServer(string Address, string? Problem = null, ConnectionStage? FailedStage = null, int Failures = 0);

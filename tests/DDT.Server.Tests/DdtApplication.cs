@@ -43,7 +43,7 @@ public class DdtApplication : WebApplicationFactory<Program>
         builder.UseSetting("DDT:StorePath", StorePath);
         builder.UseSetting("DDT:RequireHttps", "false");
         builder.UseSetting("ConnectionStrings:ddtdb", string.Empty);
-        // First, so the address is in place before any other startup filter's middleware runs, as a connection's is.
+        // Inserted first, so the address is set before any other startup filter's middleware runs, like a connection's.
         builder.ConfigureServices(services => services.Insert(0, ServiceDescriptor.Transient<IStartupFilter, TestRemoteAddress>()));
 
         ConfigureTestHost(builder);
@@ -67,8 +67,8 @@ public class DdtApplication : WebApplicationFactory<Program>
         return base.CreateHost(builder);
     }
 
-    // Sign in is rate limited per address, and every test client shares one, so the administrator
-    // session is reused across a test class.
+    // Sign-in is rate limited per address, and every test client shares one address.
+    // So the administrator session is reused across a test class.
     public async Task<SignedInClient> AdministratorAsync()
     {
         await _administratorLock.WaitAsync();
@@ -152,7 +152,8 @@ public class DdtApplication : WebApplicationFactory<Program>
         return image;
     }
 
-    // A raw disk image straight into the library. content stands for the compressed disk, which no test here unpacks.
+    // Puts a raw disk image straight into the library.
+    // content stands in for the compressed disk, which no test here unpacks.
     public async Task<Image> SeedRawImageAsync(
         byte[] content,
         ImageBootCapability capability = ImageBootCapability.SecureBootOk,

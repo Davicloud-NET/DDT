@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Writes licenses/web/THIRD-PARTY-LICENSES.txt: the licence text of every package in the non-development closure
-// of package-lock.json, plus the build tools whose own code ends up in the bundle. ThirdPartyNoticesTests checks
-// the file against the lock file, so run `npm run licences` after every change to the dependencies.
-//
-// A package's text comes from the licence file npm installed with it. A package without one keeps the entry the
-// file already has for it, because that entry says where its text came from; the script stops when there is none,
-// so a person writes it. The build tools' entries are hand-written the same way.
+// Writes licenses/web/THIRD-PARTY-LICENSES.txt with the licence of every production package in package-lock.json,
+// plus the build tools whose code ends up in the bundle. ThirdPartyNoticesTests checks it against the lock file, so
+// run `npm run licences` after any dependency change. Texts come from npm's licence files. Build tools and packages
+// without one keep their hand-written entry, which says where its text came from. A missing entry stops the script.
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

@@ -8,7 +8,7 @@ import { Notice } from "@/ui/Notice";
 
 import type { PxeForm } from "../networkBoot";
 
-// The fields outside the boot targets that show their own problems; any other problem is listed here.
+// The fields outside the boot targets that show their own problems. Any other problem is listed here.
 const PLACED_FIELDS = [
   "interfaces",
   "enableProxyDhcp",

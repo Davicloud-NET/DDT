@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Endpoints;
 
-// What the handlers of an account's own sign-in and credentials use, bound with [AsParameters].
+// The services the handlers for signing in and for an account's own credentials need, bound with [AsParameters].
 internal sealed record SignInServices(
     SignInManager<DdtUser> SignInManager,
     UserManager<DdtUser> UserManager,

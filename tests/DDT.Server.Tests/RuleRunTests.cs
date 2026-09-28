@@ -152,7 +152,7 @@ public sealed class RuleRunTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(MachineState.Pending, (await application.MachineAsync(machine.Id)).State);
     }
 
-    // The approval that took the rule's sequence belonged to that boot, like a choice at the machine.
+    // The approval that took the rule's sequence only applied to that boot, like a choice made at the machine.
     [Fact]
     public async Task ARulesRunEndsWhenTheMachineStartsAgainBeforeItBegan()
     {

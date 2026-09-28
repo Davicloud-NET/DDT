@@ -4,5 +4,5 @@
 
 namespace DDT.Core.CloudInit;
 
-// The rendered seed files; a null NetworkConfig leaves network-config out.
+// The rendered seed files. A null NetworkConfig leaves out network-config.
 public sealed record CloudInitSeedFiles(string MetaData, string UserData, string? NetworkConfig);

@@ -98,8 +98,8 @@ public sealed class RunFilesTests : IDisposable
         Assert.Contains($"WARN  {_files.StatePath} ", _console.ToString(), StringComparison.Ordinal);
     }
 
-    // A tree's run goes on after a restart from an entry per node in pre-order and its cursor, which may sit inside a
-    // repeat.
+    // A tree's run continues after a restart from one entry per node in pre-order, plus its cursor, which may sit
+    // inside a repeat.
     [Fact]
     public async Task KeepsATreesStateWithItsCursor()
     {
@@ -185,7 +185,7 @@ public sealed class RunFilesTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(_windows, "DDT")));
     }
 
-    // Partition, then a repeat around a script, stopped at the script in its second time through.
+    // Partition, then a repeat around a script, stopped at the script on its second pass.
     private static SequenceState TreeState()
     {
         RepeatStep repeat = new()

@@ -14,7 +14,7 @@ public sealed partial class App : Application
 {
     public const string BodyFont = "avares://ddt-console/Assets/Fonts#Archivo 400 100";
 
-    // What the console starts with, set by Program before Avalonia starts; tests make their windows themselves.
+    // Program sets this before Avalonia starts. Tests create their windows themselves.
     public static ConsoleStartup? Startup { get; set; }
 
     public static FontManagerOptions FontOptions => new() { DefaultFamilyName = BodyFont };

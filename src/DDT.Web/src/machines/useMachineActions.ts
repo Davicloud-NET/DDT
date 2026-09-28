@@ -19,8 +19,8 @@ import {
 import type { StopRequest } from "./actions/machineRequests";
 import { useApprovalActions } from "./actions/useApprovalActions";
 
-// What an operator does to machines, shared by every page that shows them. One set serves all machines on a
-// page, so one action runs at a time.
+// The actions an operator takes on machines, shared by every page that shows them. One set serves every machine
+// on a page, so only one action runs at a time.
 export function useMachineActions() {
   const queryClient = useQueryClient();
 
@@ -36,8 +36,8 @@ export function useMachineActions() {
     refresh,
   );
 
-  // The server answers a removal with no body, so the list drops the machines itself; the hub's machinesRemoved
-  // does the same for everyone else looking.
+  // The server answers a removal with no body, so the list drops the machines itself. The hub's machinesRemoved
+  // does the same for everyone else watching.
   const remove = useMutation({
     mutationFn: (target: { id: string } | { address: string }) =>
       "id" in target ? removeMachine(target.id) : removeWaitingFrom(target.address),

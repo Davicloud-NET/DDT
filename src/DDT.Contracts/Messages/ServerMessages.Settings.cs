@@ -37,7 +37,7 @@ public static partial class ServerMessages
         "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; " +
         "the save is accepted while a test that kept you an administrator is less than 5 minutes old.");
 
-    // Settings: warnings. A save asks to confirm those with a confirmation code; the others only inform.
+    // Settings: warnings. A save must confirm the ones that have a confirmation code. The others are only information.
 
     public static readonly MessageTemplate SettingsNoLocalAdministrator = Define(
         "settings.noLocalAdministrator",
@@ -162,7 +162,7 @@ public static partial class ServerMessages
         "settings.ldapTest.searchFailed",
         "The search for {name} under {baseDn} failed: {error}");
 
-    // Result is the directory's answer, a message of its own.
+    // Result is the directory's answer, as a nested message.
     public static readonly MessageTemplate SettingsLdapTestNoRole = Define(
         "settings.ldapTest.noRole",
         "{result} The group map gives no role, so a sign-in is refused.");

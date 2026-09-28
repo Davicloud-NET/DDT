@@ -13,8 +13,8 @@ import { Skeleton } from "@/ui/Skeleton";
 import { directoryQuery } from "../users";
 import { DirectoryOn } from "./DirectoryOn";
 
-// The directory sign-in's group map, a group search and a user check, both asked with DDT's bind account. The server
-// answers 409 while the directory is off or incomplete and 502 when unreachable, with the reason as the message.
+// The directory sign-in's group map, a group search and a user check, both using DDT's bind account. The server answers
+// 409 while the directory is off or incomplete and 502 when it's unreachable, with the reason as the message.
 export function DirectoryPanel() {
   const directory = useQuery(directoryQuery);
 

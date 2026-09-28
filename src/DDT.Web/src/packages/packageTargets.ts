@@ -19,7 +19,7 @@ export function targetRows(targets: readonly HardwareModel[]): TargetRow[] {
   }));
 }
 
-// The targets a save sends: rows without a model are left out, and an empty manufacturer stands for any.
+// The targets a save sends. Rows without a model are left out, and an empty manufacturer means any manufacturer.
 export function cleanTargets(rows: readonly TargetRow[]): HardwareModel[] {
   return rows
     .filter((target) => target.model.trim() !== "")
@@ -37,7 +37,7 @@ export function manufacturersOf(models: readonly HardwareModelCount[]): string[]
   ];
 }
 
-// The models to offer for a manufacturer; every model while it is empty.
+// The models to suggest for a manufacturer, or every model while the manufacturer is empty.
 export function modelsOf(
   models: readonly HardwareModelCount[],
   manufacturer: string,

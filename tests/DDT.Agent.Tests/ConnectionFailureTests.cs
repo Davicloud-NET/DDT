@@ -14,8 +14,8 @@ public sealed class ConnectionFailureTests
 {
     private static readonly Uri s_server = new("https://ddt.example:8443/");
 
-    // How SocketsHttpHandler reports a connection that failed: the socket's text with the address, and the socket error
-    // inside.
+    // How SocketsHttpHandler reports a failed connection: the socket's message with the address, and the socket error
+    // as the inner exception.
     private static HttpRequestException Failed(HttpRequestError error, SocketError socketError) =>
         new(error, $"{new SocketException((int)socketError).Message} (ddt.example:8443)", new SocketException((int)socketError));
 
@@ -50,7 +50,7 @@ public sealed class ConnectionFailureTests
             "the name ddt.example cannot be found in DNS",
             ConnectionFailure.Describe(Failed(HttpRequestError.NameResolutionError, socketError), s_server));
 
-    // Their own messages stand: HttpAgentServer's fix for a refused certificate, for example.
+    // Other failures keep their own messages, like HttpAgentServer's fix for a refused certificate.
     [Fact]
     public void HasNoWordsForAnyOtherFailure()
     {

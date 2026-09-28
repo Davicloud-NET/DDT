@@ -8,7 +8,7 @@ import { findingText, type Findings } from "../../problems";
 import { FindingKey } from "./FindingKey";
 import { hasField, tonedFindings } from "./problemList";
 
-// The findings of the sequence's own rather than of a node.
+// The findings about the sequence itself, not about a node.
 export function SequenceFindingsItem({
   findings,
   onGoTo,

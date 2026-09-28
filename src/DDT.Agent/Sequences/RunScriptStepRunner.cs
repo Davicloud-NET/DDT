@@ -10,9 +10,10 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs a sequence author's script with cmd or Windows PowerShell, in either phase, from the run's directory, or from
-// workDirectory before Partition made one. Values reach the script as DDT_VAR_<Name> in its environment, never in its
-// text, and it sets variables through the file DDT_VARIABLES_OUT names; the log gets their names, never their values.
+// Runs a sequence author's script with cmd or Windows PowerShell, in either phase. It runs from the run's directory,
+// or from workDirectory before Partition made one. Values reach the script as DDT_VAR_<Name> in its environment, never
+// in its text. The script sets variables through the file DDT_VARIABLES_OUT names. The log gets their names, never
+// their values.
 public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads downloads, RunSession session, AgentLog log, string workDirectory)
     : IStepKindRunner
 {
@@ -60,8 +61,8 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
     public static byte[] PowerShellLauncher(string powerShell, string script) => Encoding.UTF8.GetBytes(
         $"@chcp 65001 >nul\r\n@\"{Escape(powerShell)}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Escape(script)}\"\r\n");
 
-    // The run's values with what steps set on top, never the agent's own. A name of anything but letters, digits and
-    // underscores cannot be an environment variable's, and a value holding a NUL cannot be one's value; the validator
+    // The run's values with what steps set on top, without the agent's own. A name with anything but letters, digits
+    // and underscores can't be an environment variable's name, and a value with a NUL can't be its value. The validator
     // lets neither through.
     public static IReadOnlyDictionary<string, string> UserVariables(StepContext context)
     {
@@ -86,8 +87,9 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
     public Task<StepResult> RunAsync(RunScriptStep step, StepContext context, CancellationToken cancellationToken) =>
         RunAsync(step, context, null, cancellationToken);
 
-    // account is the account the step runs as, signed in already, or null to run as the agent. Such a script gets a
-    // directory of its own, which the account is let into with the package, as the run's directory is SYSTEM's alone.
+    // account is the account the step runs as, already signed in, or null to run as the agent. A script run as an
+    // account gets a separate directory. The account is let into it and the package, because only SYSTEM may open the
+    // run's directory.
     public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -173,7 +175,8 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         return launcher;
     }
 
-    // The step's package, unpacked on the partitioned disk to be the script's working directory; null without one.
+    // The step's package, unpacked on the partitioned disk to be the script's working directory. Null without a
+    // package.
     private async Task<string?> UnpackAsync(
         RunScriptStep step,
         string directory,
@@ -203,8 +206,8 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         return package;
     }
 
-    // Only a sequence with variables steps may set has somewhere for the script's to go. A file an earlier visit of the
-    // step left, in a repeat or before a restart, must not count as this one's.
+    // Only a sequence with variables that steps may set has somewhere for the script's variables to go. A file left by
+    // an earlier visit of the step, in a repeat or before a restart, must not count for this visit.
     private static string? PrepareOutputs(
         RunScriptStep step,
         string scripts,
@@ -273,8 +276,9 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         return StepResult.Failed(error) with { ExitCode = exitCode };
     }
 
-    // Name=Value lines in UTF-8, or UTF-16 where a byte order mark says so, as Windows PowerShell's Out-File writes. At
-    // most MaxOutputLines lines of MaxOutputLineLength characters, and only names the sequence lets steps set.
+    // Reads Name=Value lines in UTF-8, or UTF-16 when a byte order mark says so, which Windows PowerShell's Out-File
+    // writes. It takes at most MaxOutputLines lines of MaxOutputLineLength characters, and only names the sequence
+    // lets steps set.
     private async Task<IReadOnlyDictionary<string, string>?> ReadOutputsAsync(
         string path,
         IReadOnlyList<VariableDeclaration> settable,
@@ -329,8 +333,8 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         return (new string(buffer, 0, Math.Min(read, MaxOutputCharacters)), read > MaxOutputCharacters);
     }
 
-    // Blank lines are passed over, and a name and its value are trimmed, as cmd's echo leaves a space before >. A name
-    // is taken in the sequence's spelling. Returns how many lines were taken.
+    // Blank lines are skipped, and a name and its value are trimmed, because cmd's echo leaves a space before >. A name
+    // is stored in the sequence's spelling. Returns how many lines were taken.
     private int TakeLines(string[] lines, IReadOnlyList<VariableDeclaration> settable, Dictionary<string, string> set, List<string> dropped)
     {
         int taken = 0;
@@ -374,6 +378,6 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         return taken;
     }
 
-    // A name as the log shows it, cut short: a line without its = could be anything.
+    // A name as the log shows it, cut short, because a line without its = could be anything.
     private static string Named(string name) => name.Length > 64 ? $"{name[..64]}..." : name;
 }

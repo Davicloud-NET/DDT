@@ -21,7 +21,7 @@ public sealed class SequenceValidatorValueTests
 
     private static InputChoice[] Choices(params string[] values) => [.. values.Select(value => new InputChoice(value))];
 
-    // A sequence that applies an image, then these steps, with these declarations: by default Office may be set by
+    // A sequence that applies an image, then runs these steps, with these declarations. By default Office may be set by
     // steps, Owner is asked, and Installer is an account asked for the run.
     private static SequenceDefinition Declaring(
         IReadOnlyList<VariableDeclaration>? variables = null,
@@ -79,7 +79,7 @@ public sealed class SequenceValidatorValueTests
         Assert.Empty(Validate(Declaring([Variable("computerName")], [Input("ComputerName")])));
     }
 
-    // An input may set a declared variable, which is how one is asked; an Account input sets none.
+    // An input may set a declared variable, which is how a variable gets asked for. An Account input never sets one.
     [Fact]
     public void RefusesANameDeclaredTwice()
     {
@@ -146,14 +146,14 @@ public sealed class SequenceValidatorValueTests
         AssertOnlyDeclaration(Declaring([], [choice with { Default = "Home" }]), "inputs[0].default", "sequence.inputDefaultNotChoice");
         AssertOnlyDeclaration(Declaring([], [several with { Default = "de-DE;fr-FR" }]), "inputs[0].default", "sequence.inputDefaultNotChoice");
 
-        // A semicolon is a value like any other when only one answer is chosen, and choices are for choosing.
+        // A semicolon is an ordinary character when only one answer is chosen. And only choice inputs need choices.
         Assert.Empty(Validate(Declaring([], [choice with { Choices = Choices("a;b") }, Input("Owner") with { Choices = [] }])));
     }
 
     [Fact]
     public void ChecksTheTemplatesOfEveryStepAndDefault()
     {
-        // The deployment defaults are values of every run.
+        // The deployment defaults are values every run has.
         WriteUnattendStep unattend = WriteUnattend() with { TimeZone = "{{TimeZone}}", Locale = "{{Locale|lower}}", Keyboard = "{{Keyboard}}" };
         Assert.Empty(Validate(Declaring(null, null, unattend)));
 
@@ -171,7 +171,7 @@ public sealed class SequenceValidatorValueTests
             ],
             Said(Validate(definition)));
 
-        // A name the document does not know may be a value a rule or a machine role sets, so it is left to the server.
+        // A name the document doesn't know may be a value a rule or a machine role sets, so it's left to the server.
         Assert.Equal(["Nowhere", "Offce", "Zone"], SequenceValidator.Analyse(definition).ValueNames);
     }
 
@@ -221,7 +221,7 @@ public sealed class SequenceValidatorValueTests
             AssertOnly(Validate(Declaring(null, null, join)), join, "account.input", "sequence.accountInputUnknown");
         }
 
-        // Names ignore case, as everywhere else; the server keeps the answer under the name as the input writes it.
+        // Names ignore case, like everywhere else. The server keeps the answer under the name as the input spells it.
         JoinDomainStep lower = JoinDomain() with { Account = new AccountReference(null, "installer") };
 
         Assert.DoesNotContain(Validate(Declaring(null, null, lower)), problem => problem.Code == "sequence.accountInputUnknown");

@@ -15,8 +15,8 @@ using DDT.Server.Machines;
 
 namespace DDT.Server.Settings;
 
-// The server certificate as the settings page changes it: an uploaded pair, or one generated from DDT's root for the
-// server names. Certificates is null when Kestrel loads the certificate on its own.
+// Changes the server certificate from the settings page. The page uploads a pair or generates one from DDT's root for
+// the server names. Certificates is null when Kestrel loads the certificate by itself.
 internal sealed class CertificateChanges(
     DdtSettings settings,
     SettingsViews views,
@@ -31,7 +31,7 @@ internal sealed class CertificateChanges(
 
     private ServerCertificates Managed => certificates ?? throw new InvalidOperationException("Kestrel loads the server certificate on its own.");
 
-    // Served is the thumbprint the request's connection was served, and null in a push.
+    // Served is the thumbprint of the certificate this request's connection was served. It's null for a push.
     public async Task<CertificateView> ViewAsync(string? served, CancellationToken cancellationToken)
     {
         SettingsSectionView<CertificateSettings> names = await views.ViewAsync(SettingsApi.Certificate, settings.Current, cancellationToken).ConfigureAwait(false);
@@ -47,8 +47,8 @@ internal sealed class CertificateChanges(
             names);
     }
 
-    // The pair has to load with its key, be valid now, and name the host of this request and every server name. A pair
-    // that does not come from DDT's root, which boot images pin, needs the confirmation certificate.newRoot.
+    // The pair has to load with its key, be valid now, and name the host of this request and every server name. Boot
+    // images pin DDT's root, so a pair that doesn't chain to it needs the confirmation certificate.newRoot.
     public async Task<CertificateChange> UploadAsync(CertificateUpload? upload, string host, string? served, Actor actor, CancellationToken cancellationToken)
     {
         (PemPair? pair, SettingProblem? problem) = CertificateUploads.Read(upload);
@@ -75,8 +75,8 @@ internal sealed class CertificateChanges(
         return new CertificateChange { View = await InstalledAsync(check, "Uploaded", served, actor, cancellationToken).ConfigureAwait(false) };
     }
 
-    // From DDT's root, for localhost, this computer and the server names. Without a root yet, Generate makes one, which
-    // every boot image then has to be built again for.
+    // Issues a pair from DDT's root for localhost, this computer and the server names. If there's no root yet, this
+    // creates one, and every boot image then has to be rebuilt.
     public async Task<CertificateChange> GenerateAsync(IReadOnlyList<string>? confirm, string host, string? served, Actor actor, CancellationToken cancellationToken)
     {
         IReadOnlyList<string> names = ServerNames.Required(((HttpsOptions)settings.Current[SettingsSectionNames.Certificate].Options).SubjectAlternativeNames);
@@ -99,7 +99,8 @@ internal sealed class CertificateChanges(
         return new CertificateChange { View = await InstalledAsync(check, "Generated", served, actor, cancellationToken).ConfigureAwait(false) };
     }
 
-    // Only from a connection that was served the provisional pair: its browser accepted it.
+    // Confirms the provisional pair only from a connection that was served it, which proves its browser accepted it.
+    // Any other connection gets a refusal.
     public async Task<CertificateChange> ConfirmAsync(string? served, Actor actor, CancellationToken cancellationToken)
     {
         string? thumbprint = Managed.Provisional?.Thumbprint;
@@ -125,8 +126,8 @@ internal sealed class CertificateChanges(
         return new CertificateChange { View = await PushAsync(served, cancellationToken).ConfigureAwait(false) };
     }
 
-    // Every boot image was built again with DDT's root, so none pins the certificate the root replaced. False when no boot
-    // image waits for a rebuild.
+    // Records that every boot image was rebuilt with DDT's root, so none pins the certificate the root replaced.
+    // Returns false when no boot image is waiting for a rebuild.
     public async Task<bool> AcknowledgeReplacedAnchorAsync(Actor actor, CancellationToken cancellationToken)
     {
         if (certificates?.ReplacedAnchorSha256() is not { } sha256)
@@ -164,7 +165,7 @@ internal sealed class CertificateChanges(
         return await PushAsync(served, cancellationToken).ConfigureAwait(false);
     }
 
-    // Other pages get the view without ServedHere, which only this request's connection can tell.
+    // Other pages get the view without ServedHere. Only this request's connection knows which pair it was served.
     private async Task<CertificateView> PushAsync(string? served, CancellationToken cancellationToken)
     {
         live.CertificateChanged(await ViewAsync(null, cancellationToken).ConfigureAwait(false));
@@ -172,7 +173,8 @@ internal sealed class CertificateChanges(
         return await ViewAsync(served, cancellationToken).ConfigureAwait(false);
     }
 
-    // Valid now, and for every name the page is reached by: the host of this request and the server names.
+    // The certificate has to be valid now and cover every name the page is reached by. Those are the host of this
+    // request and the server names.
     private ServerMessage? Refusal(X509Certificate2 certificate, string host, DateTimeOffset now)
     {
         if (now < new DateTimeOffset(certificate.NotBefore.ToUniversalTime()) || now > new DateTimeOffset(certificate.NotAfter.ToUniversalTime()))

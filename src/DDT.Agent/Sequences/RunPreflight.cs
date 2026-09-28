@@ -41,8 +41,9 @@ internal sealed class RunPreflight(
         log.Information(session.Disk is { } chosen ? $"Running {run.SequenceName} on {chosen.Describe()}." : $"Running {run.SequenceName}.");
     }
 
-    // A seed step that runs whatever happens needs every value it uses, which the run has once its inputs are answered,
-    // before any step touches the disk. One with conditions, inside a container, or that may fail is left to its step.
+    // A seed step that runs whatever happens needs every value it uses. The run has them once its inputs are answered,
+    // before any step touches the disk. A seed step with conditions, inside a container, or allowed to fail is left for
+    // the step itself to check.
     public static void CheckSeeds(AgentRun run, MachineVariables machine)
     {
         if (!SequenceTree.Nodes(run.Sequence).OfType<WriteRawImageStep>().Any())
@@ -57,7 +58,7 @@ internal sealed class RunPreflight(
         }
     }
 
-    // The server checked the sequence when it was saved; this checks it against what this agent can run.
+    // The server checked the sequence when it was saved. This checks it against what this agent can run.
     private static void CheckSequence(AgentRun run)
     {
         if (SequenceValidator.Validate(run.Sequence) is [var problem, ..])
@@ -105,7 +106,7 @@ internal sealed class RunPreflight(
         }
     }
 
-    // A lean boot image may lack DISM or PowerShell; the installed Windows brings its own PowerShell.
+    // A lean boot image may lack DISM or PowerShell. The installed Windows brings its own PowerShell.
     private void CheckTools(IReadOnlyList<SequenceStep> steps)
     {
         if (steps.OfType<InjectDriversStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))

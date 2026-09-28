@@ -8,15 +8,15 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent;
 
-// The run an earlier start of the agent left on the disk, and the newest run token: from the disk, a registration or
-// the run itself.
+// Tracks the run that an earlier start of the agent left on disk, and the newest run token. The token comes from the
+// disk, a registration or the run itself.
 internal sealed class LocalRunTracker(LocalRunLocator locator, AgentLog log)
 {
     private LocalRun? _localRun;
 
     public string? RunToken { get; set; }
 
-    // Looked for before every registration, so a run that a refused token interrupted is found again too.
+    // Called before every registration, so a run that a refused token interrupted is found again too.
     public async Task FindAsync(CancellationToken cancellationToken)
     {
         Guid? known = _localRun?.State.RunId;
@@ -33,7 +33,7 @@ internal sealed class LocalRunTracker(LocalRunLocator locator, AgentLog log)
         }
     }
 
-    // The server resumes a run only for the run token of its active run, and says so with the run's id.
+    // The server only resumes a run for the run token of its active run, and confirms that with the run's id.
     public void KeepOrDiscard(AgentRegistrationResult registration)
     {
         if (_localRun is { } local && registration.RunId != local.State.RunId)
@@ -46,10 +46,10 @@ internal sealed class LocalRunTracker(LocalRunLocator locator, AgentLog log)
         RunToken = registration.RunId is null ? null : registration.RunToken ?? RunToken;
     }
 
-    // The run on the disk, when the server still runs it.
+    // The run on disk, if the server still has it running.
     public LocalRun? ResumableFor(AgentRun? run) =>
         run is { State: DeploymentState.Running } && _localRun is { } local && local.State.RunId == run.Id ? local : null;
 
-    // A run starts or goes on, and keeps its own state from now on.
+    // A run starts or continues, and keeps track of its own state from now on.
     public void Forget() => _localRun = null;
 }

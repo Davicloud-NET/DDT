@@ -5,7 +5,7 @@
 import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 
-// The sequences that name a file package, as links; users is null while not every sequence is read.
+// The sequences that name a file package, as links. users is null until every sequence has been read.
 export function FileUsers({ users }: { users: readonly { id: string; name: string }[] | null }) {
   if (users === null) {
     return <span className="text-muted">…</span>;

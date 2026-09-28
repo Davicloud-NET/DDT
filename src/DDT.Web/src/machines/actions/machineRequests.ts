@@ -28,7 +28,7 @@ export function isStopRequested(stopOn: StopRequest | null, machine: MachineSumm
   );
 }
 
-// The plan holds while the machine waits. Once someone else decided, the dialog closes.
+// The plan stays valid while the machine waits. Once someone else decides, the dialog closes.
 export function approvalRequested(
   approveOn: ApprovalRequest | null,
   machine: MachineSummary,

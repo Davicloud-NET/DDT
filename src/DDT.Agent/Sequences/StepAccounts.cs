@@ -9,8 +9,8 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Sets up a step's accounts around it: signs the run-as account in and connects the shares, in that account's logon
-// session when there is one, and undoes both after the step, however it ended. No script sees the passwords.
+// Sets up a step's accounts around it. It signs the run-as account in and connects the shares, in that account's logon
+// session when there is one. Both are undone after the step, however it ended. No script sees the passwords.
 public sealed class StepAccounts(
     IAgentServer server,
     RunSession session,
@@ -54,7 +54,7 @@ public sealed class StepAccounts(
             return StepResult.Failed(RunAsInWindowsPE);
         }
 
-        // The server hands out a step's accounts only once it knows the step runs.
+        // The server only hands out a step's accounts once it knows the step is running.
         await reportRunning(cancellationToken).ConfigureAwait(false);
 
         AgentStepAccounts accounts = await ServerCallRules.CallAsync(

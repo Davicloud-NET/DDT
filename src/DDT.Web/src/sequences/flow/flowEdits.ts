@@ -20,22 +20,22 @@ import { sameName } from "./references";
 import { inserted, moved, unwrapped, wrapped } from "./structureEdits";
 import { insertAt, replaceNode, withBody, without, withSteps } from "./treeChanges";
 
-// The flow builder's edits of the whole tree, as data SequenceEdit extends. New ids come from insertNode, insertCopies
-// and wrapIn, never from the reducer, which stays pure; an edit that does not fit, such as a move into itself, changes
-// nothing.
+// The flow builder's edits to the whole tree, as data that SequenceEdit extends. New ids come from insertNode,
+// insertCopies and wrapIn, never from the reducer, so the reducer stays pure. An edit that doesn't fit, such as
+// moving a node into itself, changes nothing.
 
 type BodyField = "steps" | "then" | "else";
 type NodeFieldsOf<S> = S extends SequenceStep ? Partial<Omit<S, "id" | "kind" | BodyField>> : never;
 
-// The fields of one kind of node an update may set: not what identifies it, and not the bodies that hold other nodes,
-// which only the edits of the structure change. A member of version 3 set to null is taken out of the node.
+// The fields of one kind of node that an update may set. That leaves out what identifies it, and the bodies that
+// hold other nodes, which only structural edits change. A version 3 member set to null is removed from the node.
 export type NodePatch = NodeFieldsOf<SequenceStep>;
 
 export type VariablePatch = Partial<Omit<VariableDeclaration, "name">>;
 
 export type InputPatch = Partial<Omit<InputDeclaration, "name">>;
 
-// Which body of an IF stays when the IF is taken away around it.
+// Which body of an IF stays when the IF around it is removed.
 export type UnwrapKeep = "then" | "else" | "both";
 
 export type FlowEdit =
@@ -43,10 +43,10 @@ export type FlowEdit =
   // ids are siblings next to each other, in any order.
   | { type: "moveNodes"; ids: string[]; slot: Slot }
   | { type: "removeNodes"; ids: string[] }
-  // The nodes go into the container's body, or into Then for an IF, where the first of them was.
+  // The nodes go into the container's body, or into Then for an IF. The container goes where the first node was.
   | { type: "wrapNodes"; ids: string[]; container: ContainerStep }
   | { type: "unwrapNode"; id: string; keep?: UnwrapKeep }
-  // chosen marks a patch made by a switch or a list although it sets a text field.
+  // chosen marks a patch made by a switch or a list, even though it sets a text field.
   | { type: "updateNode"; id: string; patch: NodePatch; chosen?: boolean }
   | {
       type: "editCondition";
@@ -59,8 +59,8 @@ export type FlowEdit =
   | { type: "updateVariable"; name: string; patch: VariablePatch; chosen?: boolean }
   | { type: "removeVariable"; name: string }
   | { type: "moveVariable"; name: string; to: number }
-  // Renames a variable, the input of the same name, and every place that names them. Saved at once, so a page
-  // renames when the new name is complete rather than at every key.
+  // Renames a variable, the input of the same name, and every place that names them. It's saved at once, so a page
+  // renames when the new name is complete, not at every key press.
   | { type: "renameVariable"; from: string; to: string }
   | { type: "addInput"; input: InputDeclaration; index?: number }
   | { type: "updateInput"; name: string; patch: InputPatch; chosen?: boolean }

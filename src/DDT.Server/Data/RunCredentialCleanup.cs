@@ -10,8 +10,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DDT.Server.Data;
 
-// Deletes a run's credentials in the save that moves it out of Assigned or Running, so no call site has to remember
-// it and a failed save keeps them. RunCredentialSweeper removes at start what a run that ended otherwise left.
+// Deletes a run's credentials in the save that moves the run out of Assigned or Running. That way no call site has to
+// remember it, and a failed save keeps them. At startup, RunCredentialSweeper removes what runs that ended some other
+// way left behind.
 public sealed class RunCredentialCleanup : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -48,7 +49,7 @@ public sealed class RunCredentialCleanup : SaveChangesInterceptor
 
     private static bool Keeps(DeploymentState state) => state is DeploymentState.Assigned or DeploymentState.Running;
 
-    // The runs this save moves out of Assigned or Running. Entries finds the changes the save is about to make.
+    // Returns the runs this save moves out of Assigned or Running. Entries finds the changes the save is about to make.
     private static List<Guid> Ended(DbContext context) =>
     [
         .. context.ChangeTracker.Entries<Deployment>()
@@ -58,7 +59,7 @@ public sealed class RunCredentialCleanup : SaveChangesInterceptor
             .Select(entry => entry.Entity.Id),
     ];
 
-    // A credential added in this same save was never stored, so it is dropped rather than deleted.
+    // A credential added in this same save was never stored, so it's detached instead of deleted.
     private static void Remove(DbContext context, List<Guid> ended, List<RunCredential> stored)
     {
         List<EntityEntry<RunCredential>> added =

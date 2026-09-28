@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Settings;
 
-// Connects the pxe listeners to the settings: what the snapshot says to serve, the snapshot's change token, and where
-// each result goes. PxeHost applies again only when the pxe section's version changes.
+// Connects the PXE listeners to the settings. It passes what the snapshot says to serve, the snapshot's change token,
+// and where each result goes. PxeHost only applies again when the PXE section's version changes.
 public static class PxeSettingsSource
 {
     public static PxeHostSource Create(IServiceProvider services)

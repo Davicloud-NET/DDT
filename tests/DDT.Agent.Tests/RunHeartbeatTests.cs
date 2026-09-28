@@ -67,8 +67,8 @@ public sealed class RunHeartbeatTests
         Assert.Equal((TestRuns.Unattend.Id, 0), (report.CurrentStepId, report.Percent));
     }
 
-    // The console at the machine reads the position after each change, and tells a step that has not said how far it is
-    // from one at 0 %.
+    // The console at the machine reads the position after each change. It tells a step that hasn't reported its
+    // progress apart from one at 0 %.
     [Fact]
     public void SaysWhenTheRunMovesAndWhetherTheStepsPercentIsKnown()
     {
@@ -155,8 +155,8 @@ public sealed class RunHeartbeatTests
         Assert.Empty(_savedTokens);
     }
 
-    // The sequence's variables go along once each time they change, without the agent's own, until the server has them:
-    // a report that did not get through leaves them for the next.
+    // The sequence's variables are sent once each time they change, without the agent's own, until the server has them.
+    // If a report doesn't get through, the next one carries them.
     [Fact]
     public async Task ReportsTheVariablesWhenTheyChanged()
     {
@@ -181,7 +181,7 @@ public sealed class RunHeartbeatTests
             _server.RunReports.Select(report => report.Variables));
     }
 
-    // The pause's message goes with every report while the run is paused, and the console at the machine hears of it.
+    // The pause's message goes with every report while the run is paused, and the console at the machine gets it too.
     [Fact]
     public void ReportsThePauseWithItsMessage()
     {
@@ -198,7 +198,7 @@ public sealed class RunHeartbeatTests
         Assert.Equal(2, changes);
     }
 
-    // A continue on the web names the visit of the Pause step, so a click that comes late continues no later one, and it
+    // A continue on the web names the visit of the Pause step, so a late click doesn't continue a later visit. It
     // counts even when it came with a report before the wait began.
     [Fact]
     public async Task AContinueOnTheWebEndsTheWaitOfItsVisitOnly()
@@ -238,7 +238,7 @@ public sealed class RunHeartbeatTests
         Assert.Same(values, await _heartbeat.WaitForValuesAsync(cancellationToken));
     }
 
-    // While someone is to answer, the heartbeat reports as often as the server asks, every 5 s unless it says otherwise.
+    // While someone must answer, the heartbeat reports as often as the server asks, by default every 5 s.
     [Theory]
     [InlineData(RunActivity.Paused, null, 5)]
     [InlineData(RunActivity.WaitingForInput, 2, 2)]
@@ -296,7 +296,7 @@ public sealed class RunHeartbeatTests
         await heartbeat.StopAsync();
     }
 
-    // For what happens on the heartbeat's own loop, which a test cannot await.
+    // For work on the heartbeat's own loop, which a test can't await.
     private static async Task WaitForAsync(Func<bool> condition)
     {
         using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);

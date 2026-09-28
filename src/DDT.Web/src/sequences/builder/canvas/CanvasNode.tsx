@@ -56,8 +56,8 @@ export function CanvasNode({
   onDragChange,
 }: CanvasNodeProps) {
   const { t } = useLingui();
-  // Enter opens the node's fields, so the keyboard moves a node with Alt and the arrows, cut and paste, or its menu;
-  // the pointer drags it.
+  // Enter opens the node's fields, so the keyboard doesn't drag nodes. It moves a node with Alt and the arrows, cut
+  // and paste, or the node's menu. The pointer drags it.
   const { dragProps, isDragging } = useDrag({
     hasDragButton: true,
     isDisabled: locked,

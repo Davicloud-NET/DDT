@@ -9,9 +9,10 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Logs what the engine settles without AgentStepRunner, from the states the run saves: skipped steps, steps a restart or
-// a stop interrupted, and in a tree the branch an IF took, a repeat's rounds and a failed container the run goes on
-// after. Each state is compared with the one before, so a step is named once however often the run goes on.
+// Logs what the engine decides without AgentStepRunner, from the states the run saves: skipped steps, steps a restart
+// or a stop interrupted, and in a tree the branch an IF took, a repeat's rounds, and a failed container the run
+// continues after. Each state is compared with the one before, so a step is only named once, however often the run
+// continues.
 public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVariables machine)
 {
     private const string GoesOn = "\"Go on when this step fails\" is on for";
@@ -94,7 +95,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             return;
         }
 
-        // Only a node its own conditions skipped: the line about an IF or a skipped container covers what is inside.
+        // Only a node its own conditions skipped. The line about an IF or a skipped container covers what's inside.
         if (now.State == StepState.Skipped && now.Evaluation is { Count: > 0 } skipped && (before.State != StepState.Skipped || newVisit))
         {
             string because = ConditionStory.Sentence(
@@ -151,7 +152,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
         Write(choice.Id, tests.Count == 0 ? $"{took}." : $"{took}: {string.Join("; ", tests)}.", AgentLogLevel.Information);
     }
 
-    // Each time through the repeat's steps, with why it goes through them again.
+    // Logs each round through the repeat's steps, and why it runs them again.
     private void Iterates(RepeatStep repeat, StepRunState now)
     {
         string most = MostTimes(repeat);
@@ -172,8 +173,8 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             AgentLogLevel.Information);
     }
 
-    // A repeat done without its condition to stop holding stopped at its limit, and the run goes on after it only because
-    // it may.
+    // A repeat that finished without its stop condition holding stopped at its limit. The run only continues after it
+    // because the repeat allows that.
     private void AtLimit(RepeatStep repeat, StepRunState now)
     {
         (bool? held, IReadOnlyList<string> tests) = ConditionStory.Decided(repeat.Until, ConditionEvaluator.UntilPath, now.Evaluation ?? []);
@@ -192,7 +193,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             AgentLogLevel.Warning);
     }
 
-    // stepId puts the line into that step's log on the web; a skipped step never ran, so its line is the run's.
+    // stepId puts the line into that step's log on the web. A skipped step never ran, so its line belongs to the run.
     private void Write(Guid? stepId, string message, AgentLogLevel level)
     {
         Guid? running = log.StepId;
@@ -240,7 +241,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
         return times == 1 ? "at most once" : $"at most {times.ToString(CultureInfo.InvariantCulture)} times";
     }
 
-    // The conditions that did not hold, checked as the engine checked them, in the phase the step would have run in.
+    // The conditions that didn't hold, checked like the engine checked them, in the phase the step would have run in.
     private string Unmet(SequenceDefinition definition, int index)
     {
         MachineVariables inPhase = machine with { Phase = SequencePhases.Of(definition, index) };
@@ -259,7 +260,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
         };
     }
 
-    // As the web shows a condition, with what the machine reported when the engine checked it.
+    // Describes a condition the way the web shows it, with what the machine reported when the engine checked it.
     private static string Describe(StepCondition condition, MachineVariables machine)
     {
         string variable = s_variables.GetValueOrDefault(condition.Variable, condition.Variable);
@@ -290,7 +291,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             return null;
         }
 
-        // A MAC address as the web writes it, its bytes apart with colons.
+        // A MAC address as the web writes it, with colons between its bytes.
         return variable == MachineVariableNames.MacAddress
             ? string.Join(", ", values.Select(mac => string.Join(':', mac.Chunk(2).Select(pair => new string(pair)))))
             : string.Join(", ", values);

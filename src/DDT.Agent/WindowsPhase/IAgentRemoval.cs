@@ -6,6 +6,6 @@ namespace DDT.Agent.WindowsPhase;
 
 public interface IAgentRemoval
 {
-    // Takes the agent off the installed Windows once its run is over there.
+    // Removes the agent from the installed Windows once its run is over there.
     Task RemoveAsync(CancellationToken cancellationToken);
 }

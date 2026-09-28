@@ -14,10 +14,10 @@ public static class SettingWarningCodes
     public const string WideNetwork = "network.wide";
     public const string PxeBootUrl = "pxe.bootUrl";
 
-    // A certificate that does not come from DDT's root, which every boot image pins, or a new root.
+    // A certificate that doesn't come from DDT's root, or a new root. Every boot image pins DDT's root.
     public const string CertificateNewRoot = "certificate.newRoot";
 
-    // Informs only: an entry of Interfaces names nothing on a host that runs the pxe role.
+    // Only informs. An entry of Interfaces doesn't match any interface on a host that runs the PXE role.
     public const string PxeInterfaceNotFound = "pxe.interfaceNotFound";
 
     // The warnings a save is refused for until the update confirms them.

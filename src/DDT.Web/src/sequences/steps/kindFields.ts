@@ -7,8 +7,8 @@ import type { StepPatch } from "../sequenceEdits";
 import type { SequenceStep } from "../sequences";
 import type { StepCatalog } from "../useStepCatalog";
 
-// What every kind's fields get: the step, the server's findings for it, the lists to choose from, and the
-// change to make. chosen says a switch made the change, which is saved at once even when it sets a text field.
+// The props every kind's fields get: the step, the server's findings for it, the lists to choose from, and the
+// change to make. chosen means a switch made the change, so it's saved at once, even if it sets a text field.
 export interface KindFieldsProps<S extends SequenceStep> {
   step: S;
   findings: Findings;
@@ -16,7 +16,7 @@ export interface KindFieldsProps<S extends SequenceStep> {
   onChange: (patch: StepPatch, chosen?: boolean) => void;
 }
 
-// A text setting where nothing entered takes the server's default.
+// A text setting that takes the server's default when it's left empty.
 export function orNull(text: string): string | null {
   return text.trim() === "" ? null : text;
 }

@@ -13,7 +13,7 @@ import type { PathNode } from "../runPath";
 
 interface CurrentStepProps {
   step: PathNode;
-  // The steps on the run's path.
+  // How many steps are on the run's path.
   count: number;
   isTree: boolean;
   artifact: DeploymentView["artifacts"][number] | null;

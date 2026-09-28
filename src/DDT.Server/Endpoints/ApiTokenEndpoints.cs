@@ -17,8 +17,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// Every signed-in user may make tokens for themselves, with no more rights than they have. The fallback policy lets any
-// signed-in user in; what a token then does is up to the policies of the endpoints it calls.
+// Every signed-in user may create tokens for themselves, with no more rights than they have. The fallback policy lets
+// any signed-in user in. What a token can then do is up to the policies of the endpoints it calls.
 public static class ApiTokenEndpoints
 {
     public static RouteGroupBuilder MapApiTokenEndpoints(this RouteGroupBuilder group)
@@ -27,11 +27,11 @@ public static class ApiTokenEndpoints
 
         group.MapGet("/", ListOwnAsync);
         group.MapGet("/all", ListAllAsync).RequireAuthorization(DdtPolicies.Administrator);
-        // A role policy, so an account that still has to change a password it was shown cannot make a token that would
-        // get it past that.
+        // Needs a role policy, so an account that still has to replace a password an administrator has seen can't
+        // create a token to get around that.
         group.MapPost("/", CreateAsync).RequireAuthorization(DdtPolicies.Viewer).RequireSession();
 
-        // A token may revoke itself, or another of its user's: that only ever takes rights away.
+        // A token may revoke itself or another token of its user. That only ever takes rights away.
         group.MapDelete("/{id:guid}", RevokeAsync);
 
         return group;

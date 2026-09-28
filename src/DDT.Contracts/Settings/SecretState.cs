@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// Unreadable: a secret was stored, but this server's key ring cannot decrypt it, so it has to be entered again.
+// Unreadable means a secret was stored, but this server's key ring can't decrypt it, so it has to be entered again.
 public sealed record SecretState(bool IsSet, bool Unreadable, DateTimeOffset? UpdatedUtc);

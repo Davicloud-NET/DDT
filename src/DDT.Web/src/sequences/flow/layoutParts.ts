@@ -13,7 +13,7 @@ import {
 } from "./flowGeometry";
 import type { BodyName } from "./flowTree";
 
-// Between the nodes of a series; above the first and below the last node at the top.
+// The gap between the nodes of a series. At the top level, it's also above the first node and below the last.
 export const GAP = 44;
 // The height of an IF's curves to its branches and back to the join.
 export const SPLIT = 56;
@@ -38,7 +38,7 @@ export interface Part {
   h: number;
   axis: number;
   id: string | null;
-  // A frame takes the wire into it itself, to its header card.
+  // A frame draws the wire into itself, to its header card.
   framed: boolean;
   place: (x: number, y: number) => void;
 }
@@ -55,8 +55,8 @@ export interface Drawing {
   out: FlowLayout;
   line: (start: Point, end: Point, route: WireRoute) => void;
   slot: (x: number, y: number, parent: string | null, body: BodyName, index: number) => void;
-  // The wire from start down to to: to the base of an arrowhead at the node arrowTo, or, without one, to to itself,
-  // where a frame or an empty series carries it on. bend draws it as a curve. Answers where the wire ended.
+  // Draws the wire from start down to to. It ends at the base of an arrowhead at the node arrowTo. Without arrowTo it
+  // ends at to itself, where a frame or an empty series continues it. bend draws it as a curve. Returns where it ended.
   enter: (
     start: Point,
     to: Point,

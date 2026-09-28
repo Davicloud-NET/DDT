@@ -9,7 +9,7 @@ import { SettingsGroup } from "../parts/SettingsGroup";
 import { SettingSwitch } from "../parts/SettingSwitch";
 import type { OidcForm } from "../signIn";
 
-// mapped says whether the claim map has entries, which then decide the role instead of autoProvisionRole.
+// mapped says whether the claim map has entries. If it has, they decide the role instead of autoProvisionRole.
 export function NewAccountsGroup({ form, mapped }: { form: OidcForm; mapped: boolean }) {
   const { t } = useLingui();
 

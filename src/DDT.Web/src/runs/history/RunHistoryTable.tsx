@@ -29,7 +29,7 @@ const deviceKinds: Record<RunHistoryItem["deviceKind"], DeviceKind> = {
 interface RunHistoryTableProps {
   items: RunHistoryItem[];
   now: number;
-  // The live mark's classes of a run's row.
+  // The live mark classes for a run's row.
   mark: (id: string) => string;
 }
 
@@ -98,7 +98,7 @@ export function RunHistoryTable({ items, now, mark }: RunHistoryTableProps) {
   );
 }
 
-// The machine a run ran on, with a way to the run on the machine's page.
+// The machine a run ran on, with a link to the run on the machine's page.
 function RunMachine({ item }: { item: RunHistoryItem }) {
   return (
     <span className="flex min-w-0 items-center gap-3">

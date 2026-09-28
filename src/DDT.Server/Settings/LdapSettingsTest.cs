@@ -14,14 +14,14 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Settings;
 
-// Tries the ldap values as the form holds them, not yet saved. The user part goes through the lockout of a directory
-// sign-in, and signs nobody in.
+// Tries the LDAP values as the form holds them, before they're saved. The user check is subject to the same lockout as
+// a directory sign-in, but it signs nobody in.
 internal sealed class LdapSettingsTest(DdtSettings settings, ILdapTester tester, UserManager<DdtUser> users, DirectoryProofs proofs)
 {
     public const string BindPasswordField = "bindPassword";
 
-    // Null when the values end up with no bind password, as when they name another server than the stored password's
-    // and bring none of their own.
+    // Returns null when the values end up with no bind password. That happens when they name a different server than
+    // the stored password's and don't bring a password of their own.
     public async Task<LdapTestResult?> TestAsync(LdapTestRequest request, ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -61,7 +61,8 @@ internal sealed class LdapSettingsTest(DdtSettings settings, ILdapTester tester,
             (true, { } given) => ServerMessages.SettingsLdapTestRole.With("result", outcome.Text, "role", DirectorySignInService.RoleName(given)),
         };
 
-        // Proof that these values keep the administrator who tests them one: a directory account needs it to save them.
+        // Proof that the administrator testing these values stays an administrator with them. A directory account
+        // needs it to save them.
         string? proof = Principals.UserId(principal) is { } callerId && KeepsAdministrator(principal, userName, outcome, mapped)
             ? proofs.Issue(callerId, candidate)
             : null;
@@ -69,8 +70,8 @@ internal sealed class LdapSettingsTest(DdtSettings settings, ILdapTester tester,
         return new LdapTestResult(outcome.Bound, outcome.UserFound, outcome.PasswordAccepted, outcome.Groups, role, message.Text, proof, message);
     }
 
-    // The fields configuration locks take their configured values. A stored bind password goes only to the server it was
-    // entered for.
+    // Fields locked by configuration take their configured values. A stored bind password only goes to the server it
+    // was entered for.
     private LdapOptions? Candidate(LdapTestRequest request)
     {
         SettingsSectionState state = settings.Current[SettingsSectionNames.Ldap];

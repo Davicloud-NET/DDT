@@ -30,7 +30,7 @@ public static class ImageEndpoints
         return group;
     }
 
-    // A library holds tens of images, and sorting here gives every database the same order.
+    // A library only holds tens of images. Sorting here, not in the database, gives every database the same order.
     private static async Task<Ok<IReadOnlyList<ImageSummary>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);

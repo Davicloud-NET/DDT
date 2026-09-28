@@ -15,7 +15,7 @@ interface MachineKeysProps {
   layout: "row" | "panel";
 }
 
-// The key that matters most for the machine's state, and in the detail panel the key that stops its run.
+// The main button for the machine's state. The detail panel also gets a button that stops the run.
 export function MachineKeys({ machine, actions, canAssign, layout }: MachineKeysProps) {
   const { prepareApproval, busy } = actions;
   const deploymentState = machine.deployment?.state;

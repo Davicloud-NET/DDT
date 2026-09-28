@@ -8,13 +8,13 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Authentication;
 
-// Keeps the ServerMessage of each error beside it, so a validation problem can carry its code for the web. The table
-// holds the errors weakly, so they go with their result.
+// Keeps the ServerMessage next to each error, so a validation problem can carry its code to the web client. The table
+// holds the errors weakly, so they're collected together with their result.
 public sealed class DdtIdentityErrorDescriber : IdentityErrorDescriber
 {
     private static readonly ConditionalWeakTable<IdentityError, ServerMessage> s_messages = [];
 
-    // The message an error says; an error Identity made without this describer says only its English.
+    // Returns null for an error that Identity created without this describer. That error only has its English text.
     public static ServerMessage? MessageOf(IdentityError error)
     {
         ArgumentNullException.ThrowIfNull(error);

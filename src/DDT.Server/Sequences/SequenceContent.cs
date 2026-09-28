@@ -6,5 +6,5 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Sequences;
 
-// What an administrator edits of a sequence, before or after a save.
+// The parts of a sequence an administrator edits, before or after a save.
 public sealed record SequenceContent(string Name, string? Description, SequenceDefinition Definition);

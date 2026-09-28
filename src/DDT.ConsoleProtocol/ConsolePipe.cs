@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 
 namespace DDT.ConsoleProtocol;
 
-// The named pipe between the agent and its console, passed as `--pipe <name>` with a random name. Only one end, of the
-// agent's own account, can connect; in the installed Windows the console runs with `--session` as DDT's session shell.
+// The named pipe between the agent and its console, passed as `--pipe <name>` with a random name. Only one client,
+// running as the agent's account, can connect. In the installed Windows the console runs with `--session` as DDT's
+// session shell.
 public static class ConsolePipe
 {
     // The console's executable, which the agent looks for next to itself.
@@ -20,7 +21,7 @@ public static class ConsolePipe
 
     private const string NamePrefix = "ddt-console-";
 
-    // What the console is made of: the executable and the two libraries it draws with, which go wherever it goes.
+    // The files the console needs. That's the executable and the two libraries it draws with, which always go with it.
     public static IReadOnlyList<string> Files { get; } = [FileName, "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
 
     public static bool IsSession(IReadOnlyList<string> args)
@@ -41,7 +42,7 @@ public static class ConsolePipe
             PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly | PipeOptions.FirstPipeInstance);
 
-    // Connects only to a pipe of this process's own account.
+    // Only connects to a pipe owned by this process's account.
     public static NamedPipeClientStream CreateClient(string name) =>
         new(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 

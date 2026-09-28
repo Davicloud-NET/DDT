@@ -13,14 +13,14 @@ import type { InspectorTab } from "../Inspector";
 export function useFlowSelection(index: TreeIndex) {
   const search = useSearch({ from: "/shell/deployment/sequences/$sequenceId" });
   const navigate = useNavigate({ from: "/deployment/sequences/$sequenceId" });
-  // The node shown. The address holds it too, so a reload shows the same node, but it is read only when the page
-  // opens: a new address arrives a moment after the edit that chose the node, such as adding it.
+  // The node shown. The URL holds it too, so a reload shows the same node. But the URL is only read when the page
+  // opens, because a new URL arrives a moment after the edit that chose the node, such as adding it.
   const [selectedId, setSelectedId] = useState<string | null>(search.step ?? null);
   const [tab, setTab] = useState<InspectorTab>("node");
   const [reveal, setReveal] = useState<FlowReveal | null>(null);
   const requests = useRef(0);
 
-  // The node the address names shows in the flow when the page opens.
+  // When the page opens, the node the URL names is shown in the flow.
   useEffect(() => {
     if (selectedId !== null && index.byId.has(selectedId)) {
       requests.current++;
@@ -43,7 +43,7 @@ export function useFlowSelection(index: TreeIndex) {
     [navigate],
   );
 
-  // Chooses a node and shows it in the flow, with the focus unless a field takes it.
+  // Chooses a node and shows it in the flow. It gets the focus unless a field takes it.
   const show = (id: string, { focus = true, center = false } = {}) => {
     select(id);
     requests.current++;

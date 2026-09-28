@@ -7,8 +7,8 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.Tests;
 
-// What a test changes of the run SequenceRunnerTestBase starts; null keeps the default. Resumed is the run's state found
-// on the disk, and ConfirmedDisk the disk confirmed with ERASE.
+// What a test changes about the run SequenceRunnerTestBase starts. Null keeps the default. Resumed is the run's state
+// found on the disk, and ConfirmedDisk is the disk confirmed with ERASE.
 internal sealed record SequenceRunOptions
 {
     public LocalRun? Resumed { get; init; }

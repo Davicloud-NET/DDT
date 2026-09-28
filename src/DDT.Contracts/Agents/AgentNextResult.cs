@@ -17,8 +17,8 @@ public sealed record AgentNextResult(
     bool CanPickImage = false,
     bool DomainConfigured = false,
     string? AssignedName = null,
-    // Run and the members after it are new rather than a reshaped Deployment, so an agent that predates task sequences
-    // never mistakes a run for an image deployment.
+    // Run and the members after it are new members, not a reshaped Deployment. That way an agent that predates task
+    // sequences never mistakes a run for an image deployment.
     AgentRun? Run = null,
     bool CanPickSequence = false,
     // The sequence an assignment rule chose.

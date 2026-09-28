@@ -5,8 +5,8 @@
 namespace DDT.Contracts.Server;
 
 public sealed record ServerCertificateView(
-    // Issued from DDT's root and renewed by DDT; otherwise an administrator's certificate, and the root fields and
-    // RenewsUtc are null.
+    // True when DDT's root issued the certificate and DDT renews it. False for an administrator's certificate, and
+    // then the root fields and RenewsUtc are null.
     bool ManagedByDdt,
     string Subject,
     string Sha256,
@@ -16,6 +16,6 @@ public sealed record ServerCertificateView(
     string? RootSubject,
     string? RootSha256,
     DateTimeOffset? RootNotAfter,
-    // When DDT replaced the self-signed certificate that older boot images pin; set until an administrator confirms
-    // every boot image was built again with the root.
+    // When DDT replaced the self-signed certificate that older boot images pin. It stays set until an administrator
+    // confirms that every boot image was rebuilt with the root.
     DateTimeOffset? AnchorReplacedUtc);

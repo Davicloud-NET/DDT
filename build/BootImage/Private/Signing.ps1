@@ -36,8 +36,8 @@ function Assert-BootManagerIssuer {
 function Get-BootManagerIssuer {
     param([Parameter(Mandatory)][string] $Path)
 
-    # Get-AuthenticodeSignature cannot be used: it prefers the OS catalog and reports the 2011 PCA for
-    # both files. The embedded signature is read from the PE security directory instead.
+    # Get-AuthenticodeSignature doesn't work here. It prefers the OS catalog and reports the 2011 PCA for
+    # both files. So the embedded signature is read from the PE security directory instead.
     Add-Type -AssemblyName System.Security
 
     $stream = [IO.File]::OpenRead($Path)

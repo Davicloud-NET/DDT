@@ -35,8 +35,8 @@ import { PackageUploadPanel } from "./PackageUploadPanel";
 import { matchesPackage } from "./packageView";
 import { usePackageLibrary } from "./usePackageLibrary";
 
-// The driver packages or the file packages of the library. Drivers go to the machines whose model they name, through
-// an Inject drivers step; files are unpacked for a Run script step that names them. The list is live.
+// The library's driver packages or file packages. An Inject drivers step gives drivers to the machines whose model they
+// name. Files are unpacked for a Run script step that names them. The list is live.
 export function PackagesPage({ kind }: { kind: PackageKind }) {
   const { t: translate } = useLingui();
   const queryClient = useQueryClient();
@@ -48,7 +48,7 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
     queryClient.setQueryData(packagesQuery.queryKey, (list) => removeByIds(list, [id]));
   });
   const drivers = kind === "Drivers";
-  // A package that is added enters; one that is changed, as by its dialog, flashes.
+  // A new package animates in, and a changed one flashes, such as after a save in its dialog.
   const mark = useLiveMarks({
     queryKey: packagesQuery.queryKey,
     items: (list) => list.filter((item) => item.kind === kind),

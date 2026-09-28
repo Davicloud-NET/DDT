@@ -43,8 +43,8 @@ public sealed class ExternalAccountsTests(DdtApplication application) : IClassFi
         Assert.Null(await users.FindByLoginAsync(info.LoginProvider, info.ProviderKey));
     }
 
-    // The identity's own account exists but its sign in stopped short, as at a second factor. A new account signed in
-    // instead would carry the same identity past that factor.
+    // The identity's own account exists, but its sign-in stopped early, like at a second factor.
+    // Signing in a new account instead would carry the same identity past that factor.
     [Fact]
     public async Task AnIdentityThatBelongsToAnotherAccountLeavesNoAccount()
     {
@@ -95,7 +95,7 @@ public sealed class ExternalAccountsTests(DdtApplication application) : IClassFi
         Assert.Contains("DDT:Oidc:AutoProvisionRole: 'Viewers' is not a DDT role.", refusal.Message, StringComparison.Ordinal);
     }
 
-    // Every identity the provider signs in that DDT has not seen would become an administrator.
+    // Otherwise every identity the provider signs in that DDT hasn't seen yet would become an administrator.
     [Fact]
     public void AnAdministratorRoleForNewAccountsStopsTheServer()
     {

@@ -49,21 +49,21 @@ function buildHub(): LiveHub {
   return new HubConnectionBuilder()
     .withUrl("/hubs/live")
     .withAutomaticReconnect({
-      // SignalR counts the retries before this one; backoff counts failures, the first as 1.
+      // SignalR counts the retries before this one. backoff counts failures, starting at 1.
       nextRetryDelayInMilliseconds: (retry) => backoff(retry.previousRetryCount + 1),
     })
     .configureLogging(LogLevel.Warning)
     .build();
 }
 
-// A refused watch, for example past the server's limit per connection, only means that no events come for
-// that machine; its page still reads what it shows.
+// A refused watch, for example past the server's limit per connection, only means no events come for that machine.
+// Its page still reads what it shows.
 function invokeQuietly(hub: LiveHub, methodName: string, machineId: string): void {
   hub.invoke(methodName, machineId).catch(() => undefined);
 }
 
-// The signed in application's one hub connection. Every connect reads again what events sent while it was down would
-// have patched. start and stop may alternate, as in React's strict mode; each start builds a new hub.
+// The signed-in app's single hub connection. After every connect, it re-reads what the events it missed would have
+// patched. start and stop may alternate, as in React's strict mode, and each start builds a new hub.
 export function createLiveConnection(
   queryClient: QueryClient,
   build: () => LiveHub = buildHub,
@@ -162,7 +162,8 @@ export function createLiveConnection(
     stop,
     status: () => status,
     onStatusChange: statusListeners.subscribe,
-    // While the connection is down there are no groups to join or leave; connected watches every machine again.
+    // While the connection is down, there are no groups to join or leave. Once it's connected again, every machine
+    // is watched again.
     watchMachine: watchThrough(watches, (methodName, machineId) => {
       if (hub !== null && status === "live") {
         invokeQuietly(hub, methodName, machineId);

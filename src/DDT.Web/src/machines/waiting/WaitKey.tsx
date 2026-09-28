@@ -11,7 +11,7 @@ const keyClass =
   "inline-flex h-9.5 shrink-0 cursor-pointer items-center justify-center rounded-key bg-on-attention px-4 type-label font-bold text-attention key-motion outline-none " +
   "hover:bg-on-attention/85 pressed:bg-on-attention/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-attention disabled:cursor-not-allowed disabled:opacity-60";
 
-// A key in the inverted colours of the notice's attention background, which no Button variant has.
+// A button in the inverted colours of the notice's attention background. No Button variant has these colours.
 export function WaitKey({
   isDisabled,
   onPress,

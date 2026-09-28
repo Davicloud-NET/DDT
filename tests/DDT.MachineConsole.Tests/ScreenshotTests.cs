@@ -16,8 +16,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// Every screen drawn as the console draws it, in both themes and languages and at other screen sizes. With
-// DDT_CONSOLE_SHOTS naming a folder, the pictures are saved there for a person to look at.
+// Draws every screen like the console does, in both themes and languages and at other screen sizes. If
+// DDT_CONSOLE_SHOTS names a folder, the pictures are saved there for a person to look at.
 public sealed class ScreenshotTests
 {
     private static readonly Dictionary<string, Action<TestConsole>> s_shots = new()
@@ -197,7 +197,7 @@ public sealed class ScreenshotTests
         account.Password = "correct horse";
     }
 
-    // More than a handful of colours: a screen that failed to draw is one colour.
+    // Checks for more than a handful of colours, because a screen that failed to draw is a single colour.
     private static bool HasContent(WriteableBitmap frame)
     {
         using ILockedFramebuffer buffer = frame.Lock();

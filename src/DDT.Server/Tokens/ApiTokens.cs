@@ -15,10 +15,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Tokens;
 
-// API tokens as their users make and revoke them. A token has no more rights than its user.
+// Lists, creates and revokes the API tokens users make. A token never has more rights than its user.
 internal sealed class ApiTokens(DdtDbContext database, LiveNotifier live, TimeProvider timeProvider)
 {
-    // A user has a few tokens and a server a few dozen, so they are ordered here: SQLite cannot order by DateTimeOffset.
+    // SQLite can't order by DateTimeOffset, so the tokens are sorted here. A user has a few and a server a few dozen.
     public async Task<IReadOnlyList<ApiTokenView>> ViewsAsync(Guid? userId, CancellationToken cancellationToken)
     {
         IQueryable<ApiToken> tokens = userId is { } owner ? database.ApiTokens.Where(t => t.UserId == owner) : database.ApiTokens;
@@ -37,7 +37,7 @@ internal sealed class ApiTokens(DdtDbContext database, LiveNotifier live, TimePr
         ];
     }
 
-    // Problems is set instead of the token when the request has any.
+    // Returns the problems instead of the token when the request has any.
     public async Task<(CreatedApiToken? Created, FieldProblems? Problems)> CreateAsync(
         Guid userId,
         string? userName,
@@ -130,8 +130,8 @@ internal sealed class ApiTokens(DdtDbContext database, LiveNotifier live, TimePr
         return ApiTokenRevocation.Revoked;
     }
 
-    // The role may not be higher than the highest the user holds in the database; the cookie's roles are those of the
-    // sign-in.
+    // The token's role can't be higher than the highest role the user holds in the database. The cookie only has the
+    // roles from the sign-in.
     private async Task<FieldProblems> ProblemsAsync(Guid userId, TokenRequest asked, DateTimeOffset now, CancellationToken cancellationToken)
     {
         (string name, string? role, int days) = asked;
@@ -178,7 +178,7 @@ internal sealed class ApiTokens(DdtDbContext database, LiveNotifier live, TimePr
         return problems;
     }
 
-    // The role within the sentence, with the article English gives it.
+    // Returns the role with its English article, for use inside a sentence.
     private static object WithArticle(string role) => role switch
     {
         DdtRoleNames.Administrator => ServerMessages.RoleAnAdministrator.With(),
@@ -187,6 +187,6 @@ internal sealed class ApiTokens(DdtDbContext database, LiveNotifier live, TimePr
         _ => $"a {role}",
     };
 
-    // Role is null for one DDT does not know.
+    // Role is null for a role DDT doesn't know.
     private sealed record TokenRequest(string Name, string? Role, int Days);
 }

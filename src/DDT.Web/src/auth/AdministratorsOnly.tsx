@@ -12,7 +12,7 @@ import { PageHeader } from "@/ui/PageHeader";
 import { currentUserQuery, type CurrentUser } from "./auth";
 import { useIsAdministrator } from "./useIsAdministrator";
 
-// A page only administrators reach. Everyone else sees its title and why, since the server refuses them anyway.
+// A page only administrators can use. Everyone else sees its title and why, since the server refuses them anyway.
 export function AdministratorsOnly({
   title,
   refusal,
@@ -22,7 +22,7 @@ export function AdministratorsOnly({
   title: ReactNode;
   // Why the page shows nothing, and where to look instead.
   refusal: ReactNode;
-  // The refusal's page class, where it matches the page's own.
+  // The Page class for the refusal, so it can match the real page's class.
   className?: string;
   children: (me: CurrentUser) => ReactNode;
 }) {

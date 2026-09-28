@@ -105,7 +105,8 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SettingsConsoleLogoTooLarge = Define("settings.consoleLogo.tooLarge", "The logo may be at most {max} KB.");
 
-    // Settings: how a host applied a section that rebuilds a subsystem. An exception's own text stays English, as a value.
+    // Settings: how a host applied a section that rebuilds a subsystem. An exception's own text is passed as a value
+    // and stays in English.
 
     public static readonly MessageTemplate SettingsApplyProxiesClosed = Define(
         "settings.apply.proxiesClosed",
@@ -123,7 +124,7 @@ public static partial class ServerMessages
         "settings.apply.pxeClosed",
         "The pxe settings have problems, so nothing is served until they are fixed: {problems}");
 
-    // Error is the name of the socket error, which also chooses the advice.
+    // Error is the name of the socket error. It also picks the advice.
     public static readonly MessageTemplate SettingsApplyPxeBindFailed = Define(
         "settings.apply.pxeBindFailed",
         "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} " +

@@ -8,8 +8,8 @@ public sealed class PxeOptions
 {
     public const string SectionName = "DDT:Pxe";
 
-    // Comma separated interface names or IPv4 addresses, deliberately without a default: a NIC may sit on a segment
-    // whose DHCP belongs to someone else, where DDT must not answer PXE. Unset serves nothing.
+    // Comma separated interface names or IPv4 addresses, deliberately without a default. A NIC may sit on a segment
+    // whose DHCP belongs to someone else, and DDT must not answer PXE there. Unset serves nothing.
     public string Interfaces { get; set; } = string.Empty;
 
     // Everything below it is served to anyone who asks. A relative path is inside DDT:StorePath.
@@ -23,12 +23,12 @@ public sealed class PxeOptions
 
     public bool EnableTftp { get; set; } = true;
 
-    // Replies from port 69 instead of a fresh port per transfer. The fix when a read request reaches
-    // DDT but the client never receives data, because a stateful firewall drops the reply.
+    // Replies from port 69 instead of a new port per transfer. Use it when a read request reaches DDT but the client
+    // never receives data, because a stateful firewall drops the reply.
     public bool TftpSinglePort { get; set; }
 
-    // Caps the window whatever the BCD asks for. Only 4 has Microsoft backing, but 16 measured reliable and about 40
-    // percent faster; a lossy link lowers this without new boot images.
+    // Caps the window, whatever the BCD asks for. Only 4 has Microsoft backing, but 16 measured reliable and about 40
+    // percent faster. For a lossy link, lower this. That needs no new boot images.
     public int TftpMaxWindowSize { get; set; } = 16;
 
     // Comma separated rather than a list, for the same reason as DDT:Roles.

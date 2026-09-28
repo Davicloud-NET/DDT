@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Rules;
 
-// Every rule counts the machines it matches, so the list goes out again when a registration changes what a rule may
-// test, or machines are removed: at most once per interval, after the last of a lab netbooting at once, in its own
-// scope.
+// Every rule shows how many machines it matches. So the list is pushed again when a registration changes what a rule
+// may test, or machines are removed. It's pushed at most once per interval, in its own scope. That way a whole lab
+// netbooting at once causes one push, after the last machine.
 public sealed partial class RuleRecount(
     IServiceScopeFactory scopes,
     LiveNotifier live,
@@ -28,7 +28,7 @@ public sealed partial class RuleRecount(
 
     public void MachinesChanged() => _throttle.Push(Guid.Empty, PushAsync);
 
-    // What a rule's condition may test about the machine that a registration sets, to tell whether the counts changed.
+    // The machine fields a registration sets that a rule's condition may test. Tells whether the counts changed.
     public static string Tested(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -58,7 +58,7 @@ public sealed partial class RuleRecount(
                 live.RulesChanged(await RuleViews.ListAsync(database, lifetime.ApplicationStopping).ConfigureAwait(false));
             }
         }
-        // Stopping cancels the count, or disposes of what it needs.
+        // Stopping the host cancels the count or disposes of what it needs.
         catch (Exception) when (lifetime.ApplicationStopping.IsCancellationRequested)
         {
         }

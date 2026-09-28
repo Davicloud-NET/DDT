@@ -15,16 +15,16 @@ import { useRunFlowModel } from "./flow/useRunFlowModel";
 
 interface RunFlowProps {
   view: DeploymentView;
-  // The run as the machine list follows it, which is newer than the one the run was read with.
+  // The run as the machine list tracks it. It's newer than the copy the run was read with.
   summary: DeploymentSummary;
   now: number;
   onShowLog: (stepId: string) => void;
-  // More beside the flow, under the details, such as the run's values.
+  // Extra content next to the flow, under the details, such as the run's values.
   children?: ReactNode;
 }
 
-// A run on the flow of the sequence it was given, with the chosen node's details beside it. A default export, as the
-// machine's page loads it with React's lazy when it shows a flow.
+// A run on the flow of the sequence it was given, with the chosen node's details next to it. It's a default export
+// because the machine's page loads it with React's lazy when it shows a flow.
 export default function RunFlow({ view, summary, now, onShowLog, children }: RunFlowProps) {
   const { t: translate } = useLingui();
   const model = useRunFlowModel(view, summary);

@@ -12,9 +12,9 @@ import {
   type SettingsFinding,
 } from "./settings";
 
-// An action outside a section's save that needs a fresh proof of identity, and sometimes confirmed warnings, such as
-// a certificate from a new root: it asks for what the server wants and sends the action again. askFirst asks for the
-// password before sending when no proof is held, which spares a large body the server would refuse unread.
+// An action outside a section's save that needs a fresh proof of identity, and sometimes confirmed warnings, such as a
+// certificate from a new root. It asks for what the server wants and sends the action again. With askFirst it asks for
+// the password first when no proof is held, so a large body isn't sent just to be refused unread.
 export function useGuardedAction<T>({
   send,
   onDone,
@@ -26,7 +26,7 @@ export function useGuardedAction<T>({
 }) {
   const [needsReauth, setNeedsReauth] = useState(false);
   const [warnings, setWarnings] = useState<SettingsFinding[] | null>(null);
-  // The warnings this action has confirmed, which it goes out with again after the password.
+  // The warnings this action has confirmed. The resend after the password includes them again.
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const [refusal, setRefusal] = useState<SaveRefusal | null>(null);
 

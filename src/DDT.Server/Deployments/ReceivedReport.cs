@@ -8,8 +8,8 @@ using DDT.Server.Machines;
 
 namespace DDT.Server.Deployments;
 
-// An agent's report with the run and the rows it applies to. Tree is the run's definition where it has containers, whose
-// IFs decide the path; null for a flat run. Now is the server's time, which the rows take.
+// An agent's report with the run and the rows it applies to. Tree is the run's definition if it has containers, whose
+// IFs decide the path. It's null for a flat run. Now is the server's time, which the rows use.
 internal sealed record ReceivedReport(
     Machine Machine,
     Deployment Run,

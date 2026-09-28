@@ -46,7 +46,7 @@ export function placeLabel(index: TreeIndex, entry: TreeEntry): string {
   }
 }
 
-// A node as a screen reader says it: where it is, its name, its kind where the name is not that, and its findings,
+// A node's screen reader label: where it is, its name, its kind if the name isn't just the kind, and its findings,
 // such as "Step 2 of Then of 'If: Is it a Latitude?', Apply image, 1 problem".
 export function nodeLabel(
   index: TreeIndex,
@@ -73,7 +73,7 @@ export function nodeLabel(
     .join(", ");
 }
 
-// A gap as the key that adds there says it.
+// The label of a gap, as the button that adds a step there reads it.
 export function slotLabel(index: TreeIndex, slot: Slot): string {
   const list = index.entries.filter(
     (entry) => entry.parent === slot.parent && entry.body === slot.body,

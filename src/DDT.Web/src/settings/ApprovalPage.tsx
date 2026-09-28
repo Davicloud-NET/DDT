@@ -23,8 +23,8 @@ export interface MachineSettings {
   zeroTouchNetworks: string[];
 }
 
-// Who lets a netbooting machine deploy: someone who signs in at it, an operator on the web, or, on the networks listed
-// for zero touch, nobody. Machines already approved are not judged again. Operators read these settings.
+// Who lets a netbooting machine deploy: someone who signs in at the machine, an operator on the web, or nobody on the
+// networks listed for zero touch. Approved machines aren't checked again. Operators can read these settings.
 export function ApprovalPage() {
   const form = useSettingsForm<MachineSettings>("machines");
   const canChange = useIsAdministrator();

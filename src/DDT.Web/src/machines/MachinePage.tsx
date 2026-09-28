@@ -27,8 +27,9 @@ import { RunWaiting } from "./RunWaiting";
 import { useCanDecide } from "./useCanDecide";
 import { useMachineActions } from "./useMachineActions";
 
-// One machine, with the run it shows, what that waits for, its values, facts, log and every run it had. It is live: the
-// machine and its run from the hub's pushes, the steps, variables and log lines from the machine's watch.
+// One machine's page: the run it shows and what that run waits for, the values, facts, log and every run the machine
+// had. It's live. The machine and its run come from the hub's pushes, and the steps, variables and log lines come from
+// the machine's watch.
 export function MachinePage() {
   const { machineId } = useParams({ from: "/shell/machines/$machineId" });
   const pinnedRunId = useSearch({ from: "/shell/machines/$machineId" }).run ?? null;
@@ -134,7 +135,7 @@ export function MachinePage() {
   );
 }
 
-// Offers the run the machine started while the page shows a pinned older one.
+// Links to the run the machine started while the page shows an older, pinned run.
 function NewerRunNotice({ machineId }: { machineId: string }) {
   return (
     <Notice tone="info">

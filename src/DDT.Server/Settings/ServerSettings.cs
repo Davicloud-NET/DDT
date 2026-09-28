@@ -10,9 +10,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace DDT.Server.Settings;
 
-// What configuration alone decides, for the page's read-only server panel. Only the keys below show a value, any other
-// only whether it is set and where; a key whose last segment is Password, Secret, Key or Headers, and every connection
-// string, never does.
+// What configuration alone decides, for the page's read-only server panel. Only the keys below show a value. Any other
+// key only shows whether it's set and where. A key whose last segment ends in Password, Secret, Key or Headers never
+// shows its value, and neither does a connection string.
 public static class ServerSettings
 {
     private static readonly string[] s_shown =
@@ -75,7 +75,7 @@ public static class ServerSettings
         return settings;
     }
 
-    // Shown with its default when unset, as the server applies it.
+    // An unset key is shown with the default the server applies.
     private static ServerSetting Setting(IConfiguration configuration, string key, bool shown)
     {
         string? value = configuration[key];
@@ -97,7 +97,8 @@ public static class ServerSettings
         return new ServerSetting(key, shown && !secret ? value : null, isSet, isSet ? ConfigurationSources.Describe(configuration, key) : null, secret);
     }
 
-    // The provider, host and database of the connection string, and never the rest of it, which holds the password.
+    // Shows the provider, host and database of the connection string. The rest is never shown because it holds the
+    // password.
     private static ServerSetting Connection(IConfiguration configuration)
     {
         const string Key = "ConnectionStrings:ddtdb";

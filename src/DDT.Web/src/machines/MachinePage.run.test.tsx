@@ -35,7 +35,7 @@ describe("MachinePage", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "PC-042" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Install Windows" })).toBeInTheDocument();
 
-    // The step that runs, large, and the whole run as a rough share.
+    // The running step in large type, and the whole run's progress as a rough percentage.
     await screen.findByRole("list", { name: "Steps" });
     expect(screen.getByText(/^Revision 3, started .*, running for 5 min 0 s$/)).toBeInTheDocument();
     expect(screen.getByText("Step 5 of 6, Windows PE")).toBeInTheDocument();

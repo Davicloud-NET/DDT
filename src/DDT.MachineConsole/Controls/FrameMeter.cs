@@ -11,9 +11,9 @@ using Avalonia.Threading;
 
 namespace DDT.MachineConsole.Controls;
 
-// Counts the frames drawn while something moves, to tell whether the motion stays smooth in Windows PE. With
-// DDT_CONSOLE_FRAMES naming a file, each animation adds a line: what moved, the screen in pixels, the frames drawn, the
-// frames per second, and the longest gap and the first frame's delay in ms.
+// Counts the frames drawn while something moves, to check that motion stays smooth in WinPE. If DDT_CONSOLE_FRAMES
+// names a file, each animation adds a line to it: what moved, the screen size in pixels, the frames drawn, the frames
+// per second, the longest gap and the first frame's delay in ms.
 internal sealed class FrameMeter
 {
     public const string Variable = "DDT_CONSOLE_FRAMES";
@@ -37,13 +37,13 @@ internal sealed class FrameMeter
     public static FrameMeter? For(TopLevel top) =>
         Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } path ? new FrameMeter(top, path) : null;
 
-    // Only the console's own keys by name, since any other key may be part of a password.
+    // Names only the console's own keys, because any other key may be part of a password.
     public static string KeyName(Key key) =>
         key is >= Key.F1 and <= Key.F24 or Key.Escape or Key.Enter or Key.Tab or Key.Up or Key.Down or Key.Left or Key.Right
             ? $"key {key}"
             : "key";
 
-    // Counts the frames of what moves now, for as long as it moves. Something else that starts to move ends the count.
+    // Counts the frames of the current animation until it ends. If something else starts to move, the count ends.
     public void Measure(string what, TimeSpan length)
     {
         if (_what is not null)
@@ -153,7 +153,7 @@ internal sealed class FrameMeter
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // A measurement that cannot be written is lost; the console goes on.
+            // If the file can't be written, the measurement is lost and the console continues.
         }
     }
 }

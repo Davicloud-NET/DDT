@@ -9,7 +9,8 @@ public enum RoleSource
 {
     // An administrator set it.
     Manual,
-    // This and SingleSignOnGroups: the account's groups decide it at each sign-in, so it cannot be changed in DDT.
+    // For this and SingleSignOnGroups, the account's groups decide the role at each sign-in, so it can't be changed in
+    // DDT.
     DirectoryGroups,
     SingleSignOnGroups,
     // DDT gave it when single sign-on created the account, and no administrator has changed it since.

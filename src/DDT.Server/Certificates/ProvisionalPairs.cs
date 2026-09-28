@@ -7,9 +7,9 @@ using System.Net.Security;
 
 namespace DDT.Server.Certificates;
 
-// Outside Development the host sends HSTS, so a browser refuses a new pair it does not trust, with no way to click
-// through. A pair the page installs therefore goes back to the one before unless a connection served it confirms it in
-// time, and the deadline's file survives a restart. Callers hold the file lock for Install and RestorePrevious.
+// Outside Development the host sends HSTS. A browser then refuses a new pair it doesn't trust, and the user can't click
+// through. So a pair the page installs is rolled back unless a connection that was served it confirms it in time. The
+// deadline file survives a restart. Callers hold the file lock for Install and RestorePrevious.
 internal sealed class ProvisionalPairs(
     CertificateFiles files,
     ServedCertificate served,
@@ -24,8 +24,8 @@ internal sealed class ProvisionalPairs(
     // Null while nothing waits for a confirmation.
     public ProvisionalCertificate? Current => Volatile.Read(ref _provisional);
 
-    // The files of the pair before are kept once, for the first of several provisional pairs, so a rollback goes back to
-    // the pair that was confirmed last rather than to another provisional one.
+    // The previous pair's files are only kept for the first of several provisional pairs. That way a rollback
+    // returns to the last confirmed pair, not to another provisional one.
     public CertificateCheck Install(PemPair pair, DateTimeOffset now)
     {
         if (_provisional is null)
@@ -69,8 +69,8 @@ internal sealed class ProvisionalPairs(
         return CertificateConfirmation.Confirmed;
     }
 
-    // The pair before goes back into place, as its files and in memory. Null when there is none, which leaves the
-    // provisional pair in service.
+    // Puts the previous pair back in place, both on disk and in memory. Returns null if there's no previous pair, and
+    // the provisional pair stays in service.
     public CertificateCheck? RestorePrevious(DateTimeOffset now)
     {
         if (!File.Exists(files.PreviousCertificatePath) || !File.Exists(files.PreviousKeyPath))
@@ -94,7 +94,7 @@ internal sealed class ProvisionalPairs(
         File.Delete(files.ProvisionalPath);
     }
 
-    // After a restart: a deadline that passed meanwhile rolls back now, and one still ahead is kept.
+    // After a restart, a deadline that passed in the meantime rolls back now. A deadline still ahead is kept.
     public async Task ResumeAsync(CancellationToken cancellationToken)
     {
         if (_provisional is not null || !File.Exists(files.ProvisionalPath))
@@ -127,8 +127,8 @@ internal sealed class ProvisionalPairs(
         File.Delete(files.ProvisionalPath);
     }
 
-    // At startup, a certificate and key that do not load together, such as a pair half replaced by hand, give way to the
-    // previous pair, which every replacement keeps.
+    // At startup, a certificate and key that don't load together, such as a pair half replaced by hand, are replaced by
+    // the previous pair. Every replacement keeps one.
     public async Task RecoverPreviousAsync(CancellationToken cancellationToken)
     {
         if (served.Context is not null

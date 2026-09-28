@@ -8,11 +8,12 @@ using System.Text.Json;
 
 namespace DDT.Contracts.Messages;
 
-// The part of ICU MessageFormat that the catalog and the web's Lingui share: {name}, plural with # and select. Plural
-// forms are English only. Apostrophes quote as in ICU: '' is one, and one before {, } or a plural's # quotes up to the next.
+// The part of ICU MessageFormat that the catalog and the web's Lingui share. That's {name}, plural with # and select.
+// Plural forms are English only. Apostrophes quote as in ICU. '' is a literal apostrophe, and one before {, } or a
+// plural's # quotes everything up to the next one.
 public static class MessageFormat
 {
-    // Throws FormatException for a template this formatter, and so the web, would read differently.
+    // Throws FormatException for a template that this formatter, and so the web, would misread.
     public static IReadOnlyList<string> Arguments(string template)
     {
         ArgumentNullException.ThrowIfNull(template);
@@ -73,7 +74,7 @@ public static class MessageFormat
         }
     }
 
-    // An exact form such as =0 first, then English's one for 1 and other for the rest.
+    // An exact form such as =0 wins. Otherwise English uses one for 1 and other for everything else.
     private static IReadOnlyList<Node> PluralForm(ChoiceNode choice, long? number)
     {
         if (number is { } exact && choice.Forms.TryGetValue($"={exact}", out IReadOnlyList<Node>? exactForm))
@@ -87,7 +88,7 @@ public static class MessageFormat
     private static IReadOnlyList<Node> SelectForm(ChoiceNode choice, string? key) =>
         key is not null && choice.Forms.TryGetValue(key, out IReadOnlyList<Node>? chosen) ? chosen : choice.Forms["other"];
 
-    // A message received as JSON has its values as JsonElement, a nested message as an object with a code and values.
+    // A message received as JSON has its values as JsonElement. A nested message is an object with a code and values.
     private static string Text(object value) => value switch
     {
         string text => text,

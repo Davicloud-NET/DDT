@@ -12,14 +12,14 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DDT.Server.Data;
 
-// Pushes every new audit row to the live connections once it is stored, after the save or the commit of its
-// transaction, never after a rollback. A row of a user who acted with an API token gets the token before it is stored.
+// Pushes every new audit row to the live connections once it's stored. That's after the save, or after its transaction
+// commits, and never after a rollback. When a user acted with an API token, the row gets the token before it's stored.
 public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor httpContextAccessor) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
     private const int MaxActorNameLength = 256;
 
-    // The rows of a save in progress, and those saved in a transaction that has not committed yet, per context. A pooled
-    // context serves one request at a time, and the table forgets a context that is gone.
+    // Holds, per context, the rows of a save in progress and the rows saved in a transaction that hasn't committed
+    // yet. A pooled context serves one request at a time, and the table forgets a context once it's gone.
     private readonly ConditionalWeakTable<DbContext, List<AuditEvent>> _saving = [];
     private readonly ConditionalWeakTable<DbContext, List<AuditEvent>> _uncommitted = [];
 
@@ -119,7 +119,8 @@ public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor htt
         }
     }
 
-    // Named as alice (token build-server), so the log reads right without a lookup, and the token's id kept beside it.
+    // Names the actor as alice (token build-server), so the log reads right without a lookup. The token's id is kept
+    // next to it.
     private void NameTokenActor(List<AuditEvent> added)
     {
         if (httpContextAccessor.HttpContext?.User is not { } user

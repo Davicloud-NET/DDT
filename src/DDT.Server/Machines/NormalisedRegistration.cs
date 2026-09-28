@@ -8,9 +8,9 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Server.Machines;
 
-// A member is null where the agent could not tell, sent what cannot be right, or is older than the member: Disks and
-// EligibleDiskCount, SecureBootEnabled, TrustedUefiCas, ChassisType, and Facts, which agents older than version 3
-// sequences omit.
+// Some members are null if the agent couldn't tell, sent something that can't be right, or is older than the member.
+// They're Disks and EligibleDiskCount, SecureBootEnabled, TrustedUefiCas, ChassisType, and Facts, which agents older
+// than version 3 sequences omit.
 public sealed record NormalisedRegistration(
     string SmbiosUuid,
     string PrimaryMac,
@@ -30,8 +30,7 @@ public sealed record NormalisedRegistration(
     int? ChassisType = null,
     MachineFacts? Facts = null)
 {
-    // What an older agent does not report, its disks and its facts, stays as a newer one reported it rather than turn
-    // unknown.
+    // If an older agent doesn't report its disks or facts, the newer agent's values are kept rather than made unknown.
     public void ApplyTo(Machine machine, string? address, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(machine);

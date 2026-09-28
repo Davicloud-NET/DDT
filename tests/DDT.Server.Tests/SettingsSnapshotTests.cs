@@ -13,8 +13,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// What applies: a configured key over the stored value over the code default, and what is safe while a section has
-// problems.
+// Which value applies. A configured key wins over the stored value, which wins over the code default.
+// Also what's safe while a section has problems.
 public sealed class SettingsSnapshotTests
 {
     [Fact]
@@ -41,7 +41,7 @@ public sealed class SettingsSnapshotTests
         Assert.Empty(snapshot[SettingsSectionNames.Deployment].Locks);
     }
 
-    // An empty value locks too, so configuration can force the safe value: here, no zero touch at all.
+    // An empty value locks too, so the configuration can force the safe value. Here that's no zero touch at all.
     [Fact]
     public void AConfiguredKeyLocksItsFieldEvenWhenEmpty()
     {
@@ -77,8 +77,8 @@ public sealed class SettingsSnapshotTests
         Assert.False(Assert.Single(snapshot[SettingsSectionNames.Machines].Locks).StoredDiffers);
     }
 
-    // The binder adds configured entries to a list's defaults; the settings read them on their own, so a list without
-    // profile and email removes them.
+    // The binder adds configured entries to a list's defaults.
+    // The settings read them on their own, so a list without profile and email removes them.
     [Fact]
     public void AConfiguredCollectionIsReadOnItsOwnAndLocksAsAWhole()
     {
@@ -103,7 +103,8 @@ public sealed class SettingsSnapshotTests
         Assert.False(snapshot.LogLevels.ContainsKey("Microsoft.AspNetCore"));
     }
 
-    // Secrets are values of their own: configured, they lock like any field, and stored, only whether one is set shows.
+    // Secrets are separate values. A configured secret locks like any field.
+    // For a stored one, only whether it's set shows.
     [Fact]
     public void ASecretAppliesFromConfigurationOrTheStore()
     {
@@ -137,7 +138,7 @@ public sealed class SettingsSnapshotTests
         Assert.False(snapshot.Ldap.Enabled);
     }
 
-    // A problem caused only by stored values does not stop the server: the section fails closed until the page fixes it.
+    // A problem caused only by stored values doesn't stop the server. The section fails closed until the page fixes it.
     [Fact]
     public void AStoredDeploymentWithProblemsRefusesNewRuns()
     {
@@ -148,7 +149,7 @@ public sealed class SettingsSnapshotTests
         Assert.Null(DeploymentPolicy.SettingsProblem(Build([])));
     }
 
-    // Web approval stays on when either source asked for it; the caps take their defaults and zero touch is off.
+    // Web approval stays on when either source asked for it. The caps take their defaults, and zero touch is off.
     [Fact]
     public void AStoredMachinesSectionWithProblemsFailsClosed()
     {
@@ -182,7 +183,7 @@ public sealed class SettingsSnapshotTests
         Assert.Equal("LogLevel:Default", Assert.Single(snapshot[SettingsSectionNames.Logging].Problems).Field);
     }
 
-    // With the proxies closed nothing is trusted, and zero touch is off as well: an address could be a proxy's.
+    // With the proxies closed, nothing is trusted and zero touch is off as well, because an address could be a proxy's.
     [Fact]
     public void ClosedProxiesTrustNothingAndTurnZeroTouchOff()
     {
@@ -238,8 +239,8 @@ public sealed class SettingsSnapshotTests
         Assert.Contains(machines.Warnings, warning => warning.Message.StartsWith("fd00::/32 is wider than a /48.", StringComparison.Ordinal));
     }
 
-    // A field is named on the page as the stored document names it, and an entry of a map in brackets. A key may hold
-    // colons, as a claim value does, and only a member of the map's entries ends it.
+    // A field is named on the page the way the stored document names it, and a map entry goes in brackets.
+    // A key may contain colons, like a claim value does, and only a member of the map's entries ends it.
     [Theory]
     [InlineData(SettingsSectionNames.Deployment, "Domain:UserName", "domain.userName")]
     [InlineData(SettingsSectionNames.Pxe, "BootTargets:X64Uefi:Method", "bootTargets[X64Uefi].method")]
@@ -256,7 +257,7 @@ public sealed class SettingsSnapshotTests
         Assert.Equal(expected, SettingsDefinitions.Find(section)!.PageName(path));
     }
 
-    // A value of another build that no longer converts takes its default, and the section names the field.
+    // A value from another build that no longer converts takes its default, and the section names the field.
     [Fact]
     public void AStoredValueThatNoLongerConvertsTakesItsDefault()
     {

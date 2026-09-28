@@ -14,8 +14,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The answer file and the join credentials a run needs, handed to its agent only while their step runs, and every read
-// audited. The caller saves the audit rows before it answers.
+// The answer file and the join credentials a run needs. They're only handed to its agent while their step runs, and
+// every read is audited. The caller saves the audit rows before it answers.
 public sealed class RunSecrets(
     DdtDbContext database,
     UnattendRenderer renderer,
@@ -69,8 +69,9 @@ public sealed class RunSecrets(
         return (answerFile, null);
     }
 
-    // The configured domain the run started with: a domain named elsewhere could send the join account to a foreign
-    // controller. A step that names an account joins that account's. Joins run in Windows, so only the service there gets it.
+    // Hands out the credentials to join the configured domain the run started with. A domain named elsewhere could send
+    // the join account to a foreign controller. A step that names an account joins that account's domain instead. Joins
+    // run in Windows, so only the service there gets the credentials.
     public async Task<(AgentJoinDomainCredentials? Credentials, string? Refusal)> JoinCredentialsAsync(
         Machine machine,
         Guid runId,
@@ -132,7 +133,8 @@ public sealed class RunSecrets(
     internal static AuditEvent SecretRead(Deployment run, Machine machine, string? address, DateTimeOffset now, string detail) =>
         AuditEvents.Create(AuditActions.DeploymentSecretRead, run.Id.ToString("D"), Actor.OfMachine(machine.Id, address), now, detail);
 
-    // The default organizational unit is the configured domain's, so it applies only when the account's domain is that one.
+    // The default organizational unit belongs to the configured domain, so it only applies if the account's domain is
+    // that one.
     private (AgentJoinDomainCredentials? Credentials, string? Refusal) AccountJoin(
         Machine machine,
         RunningStep running,
@@ -183,8 +185,8 @@ public sealed class RunSecrets(
             : (unit, null);
     }
 
-    // The values the run started with and the variables its steps set since, by name, and the machine's facts, which no
-    // value overrides but the computer name.
+    // The values the run started with and the variables its steps set since, by name, plus the machine's facts. No
+    // value overrides a fact except the computer name.
     private static Func<string, string?> TemplateValues(Machine machine, Deployment run)
     {
         Dictionary<string, string> values = new(RunValues.Effective(run) ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);

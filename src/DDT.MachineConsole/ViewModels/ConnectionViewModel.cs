@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The Starting and Connecting stages. A failed request shows how far it got, stage by stage of a connection.
+// The Starting and Connecting stages. A failed request shows how far it got through the stages of a connection.
 public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private static readonly ConnectionStage[] s_stages =
@@ -42,7 +42,7 @@ public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(lo
 
     public string ProblemLabel => T("What the agent saw");
 
-    // The agent's words, as it logged them.
+    // The agent's message, exactly as it logged it.
     public string Problem => _state?.Server.Problem ?? string.Empty;
 
     public string Failures => _state?.Server.Failures switch
@@ -56,7 +56,7 @@ public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(lo
 
     public string Advice => _state?.Server.FailedStage is { } stage ? Say.ConnectionAdvice(L, stage) : string.Empty;
 
-    // The stages of a request, up to the one that failed; empty while nothing failed or the agent cannot tell where.
+    // The stages of a request, up to the one that failed. Empty while nothing failed or if the agent can't tell where.
     public IReadOnlyList<ConnectionStageItem> Stages =>
         _state?.Server.FailedStage is { } failed
             ? [.. s_stages.Select(stage => new ConnectionStageItem(

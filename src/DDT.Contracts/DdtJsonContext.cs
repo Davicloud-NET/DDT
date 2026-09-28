@@ -24,8 +24,9 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts;
 
-// Out of order metadata: PostgreSQL jsonb and browsers may put a step's "kind" after its other properties. A message's
-// values are objects, so the problem details need every type they can be, and JsonElement once read back from JSON.
+// Out of order metadata is allowed because PostgreSQL jsonb and browsers may put a step's "kind" after its other
+// properties. A message's values are objects, so the problem details need every type a value can have. They also
+// need JsonElement for values read back from JSON.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,

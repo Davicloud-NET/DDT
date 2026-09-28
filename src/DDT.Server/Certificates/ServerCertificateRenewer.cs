@@ -22,7 +22,7 @@ public sealed class ServerCertificateRenewer(
 
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
-            // A failed check must not stop the host; the certificate loaded before stays in service.
+            // A failed check must not stop the host. The certificate loaded before stays in service.
             try
             {
                 CertificateLog.Checked(logger, certificates, await certificates.CheckAsync(stoppingToken).ConfigureAwait(false));

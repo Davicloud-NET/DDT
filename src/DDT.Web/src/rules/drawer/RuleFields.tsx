@@ -24,7 +24,7 @@ interface RuleFieldsProps {
   canEdit: boolean;
 }
 
-// A rule's fields: its name, the condition it applies when, the sequence it chooses, the values it sets and the
+// A rule's fields: its name, the condition for when it applies, the sequence it chooses, the values it sets and the
 // machine roles it gives.
 export function RuleFields({ form, roles, sequences, subjects, canEdit }: RuleFieldsProps) {
   const { edit, findings, change } = form;

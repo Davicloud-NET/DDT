@@ -20,8 +20,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The LDAP test tries the values of the form before they are saved, with a stored bind password only against the server
-// it was entered for.
+// The LDAP test tries the form's values before they're saved.
+// It only uses a stored bind password against the server it was entered for.
 public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication application) : IClassFixture<SettingsLdapTests.TesterApplication>
 {
     private const string BindPassword = "Bind password 7";
@@ -85,8 +85,8 @@ public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication applic
             TestContext.Current.CancellationToken)));
     }
 
-    // The user part goes through the lockout of a directory sign-in: a wrong password counts, and a local account's
-    // password is never sent to the directory.
+    // The user part goes through the lockout of a directory sign-in.
+    // A wrong password counts, and a local account's password is never sent to the directory.
     [Fact]
     public async Task TheUserPartKeepsToTheRulesOfASignIn()
     {
@@ -101,7 +101,7 @@ public sealed class SettingsLdapTests(SettingsLdapTests.TesterApplication applic
         Assert.NotEqual(local, application.Tester.UserName);
     }
 
-    // Without the proof of its own test, a directory administrator could save values that take away their role.
+    // Without proof that the new values passed a test, a directory administrator could take away their own role.
     [Fact]
     public async Task ADirectoryAdministratorSavesNewDirectoryValuesOnlyWithTheProofOfATest()
     {

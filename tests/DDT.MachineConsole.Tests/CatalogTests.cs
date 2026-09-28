@@ -9,11 +9,11 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// Every message the code passes to T or F is in both catalogs with its placeholders: a missing one would show English
-// on a German screen, and a dropped placeholder a hole in a sentence.
+// Every message the code passes to T or F must be in both catalogs with its placeholders. A missing message would show
+// English on a German screen, and a dropped placeholder would leave a hole in a sentence.
 public sealed partial class CatalogTests
 {
-    // Files that pass T or F a message they got, rather than a literal.
+    // Files that pass T or F a message they received instead of a literal.
     private static readonly string[] s_forwarders = ["Texts/Localizer.cs", "ViewModels/ScreenViewModel.cs"];
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed partial class CatalogTests
         Assert.Empty(used.Keys.Where(message => !english.Messages.ContainsKey(message)).Order(StringComparer.Ordinal));
         Assert.Empty(english.Messages.Where(pair => pair.Key != pair.Value).Select(pair => pair.Key));
 
-        // And nothing the code no longer says.
+        // And the catalogs hold no message the code no longer uses.
         Assert.Empty(english.Messages.Keys.Where(message => !used.ContainsKey(message)).Order(StringComparer.Ordinal));
     }
 
@@ -142,7 +142,7 @@ public sealed partial class CatalogTests
     [GeneratedRegex("""\b[TF]\(\s*("(?:[^"\\]|\\.)*"(?:\s*\+\s*"(?:[^"\\]|\\.)*")*)""")]
     private static partial Regex Call();
 
-    // A call of T or F whose message is not a literal; the declarations, "string T(", are not calls.
+    // A call to T or F whose message isn't a literal. The declarations, "string T(", aren't calls.
     [GeneratedRegex("""(?<!string )\b[TF]\((?!\s*")[^)\n]*""")]
     private static partial Regex NonLiteralCall();
 

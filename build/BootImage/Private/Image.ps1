@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Mounts boot.wim, puts into it what the build asks for, and commits it. A failure discards every change.
+# Mounts boot.wim, adds what the build asks for, and commits it. A failure discards every change.
 function Update-BootWim {
     param(
         [Parameter(Mandatory)] $Workspace,
@@ -26,12 +26,12 @@ function Update-BootWim {
         if ($ExtraPath) { Copy-ExtraFile -MountDirectory $mount -ExtraPath $ExtraPath }
         Write-StartNet -MountDirectory $mount
 
-        # The NativeAOT agent imports the universal C runtime. Stock WinPE carries it; fail if that changes.
+        # The NativeAOT agent imports the universal C runtime. Stock WinPE has it, and the build fails if that changes.
         if (-not (Test-Path -LiteralPath (Join-Path $mount 'Windows\System32\ucrtbase.dll'))) {
             throw 'boot.wim has no ucrtbase.dll, which DDT.Agent needs.'
         }
 
-        # Set in the image rather than with wpeutil SetKeyboardLayout in startnet.cmd, which by field reports only
+        # Set in the image instead of with wpeutil SetKeyboardLayout in startnet.cmd. Field reports say that only
         # reaches consoles opened after it, and the agent runs in the first one.
         if ($Agent -and $Agent.KeyboardLayout) {
             Invoke-Native $dism "/Image:$mount" "/Set-InputLocale:$($Agent.KeyboardLayout)" | Out-Null
@@ -39,14 +39,14 @@ function Update-BootWim {
 
         Invoke-Native $dism "/Image:$mount" /Set-ScratchSpace:512 | Out-Null
 
-        # Makes the added packages permanent and removes the component versions they superseded, the step
-        # Microsoft documents for a serviced Windows PE image.
+        # Makes the added packages permanent and removes the component versions they replaced. Microsoft documents
+        # this step for a serviced Windows PE image.
         if ($Package.Count -gt 0) {
             $scratch = New-Item -ItemType Directory -Force -Path $Workspace.ScratchDirectory
             Invoke-Native $dism "/Image:$mount" /Cleanup-Image /StartComponentCleanup /ResetBase "/ScratchDir:$($scratch.FullName)" | Out-Null
         }
 
-        # Last, because it takes the servicing stack that DISM used above.
+        # Runs last, because it removes the servicing stack that DISM used above.
         if ($TrimListPath) { Remove-TrimmedFile -MountDirectory $mount -ListPath $TrimListPath }
 
         Invoke-Native $dism /Unmount-Image "/MountDir:$mount" /Commit | Out-Null
@@ -81,8 +81,8 @@ function Add-ImageDriver {
         [string] $DriverPath
     )
 
-    # Without /ForceUnsigned: Windows PE could not load an unsigned driver with Secure Boot on, so DISM refusing one
-    # here is the earlier and the clearer failure.
+    # No /ForceUnsigned. Windows PE couldn't load an unsigned driver with Secure Boot on, so DISM refusing it here
+    # fails earlier and more clearly.
     if ($ServerDriver) {
         foreach ($driver in $ServerDriver.Drivers) {
             Write-Host "Adding the drivers of $($driver.name)"
@@ -150,9 +150,9 @@ function Copy-ExtraFile {
 function Write-StartNet {
     param([Parameter(Mandatory)][string] $MountDirectory)
 
-    # wpeinit brings up the network. WaitForNetwork is unverified on this WinPE build; if it is not recognised, the
-    # agent's own retry covers the time DHCP takes. The path lets the prompt left after the agent stops run
-    # ddt-agent --licenses, as the agent's legal notices say.
+    # wpeinit brings up the network. WaitForNetwork isn't verified on this WinPE build. If it isn't recognised, the
+    # agent's own retry covers the time DHCP takes. The PATH entry lets you run ddt-agent --licenses at the prompt
+    # that's left after the agent stops, as the agent's legal notices say.
     $startnet = @(
         '@echo off'
         'wpeinit'
@@ -163,8 +163,8 @@ function Write-StartNet {
     Set-Content -LiteralPath (Join-Path $MountDirectory 'Windows\System32\startnet.cmd') -Value $startnet -Encoding Ascii
 }
 
-# Replaces boot.wim with an export of it. Committing a mounted image adds what changed and keeps what it replaced in
-# the file; an export copies only what the image still uses. It stays bootable, as copype's boot.wim is.
+# Replaces boot.wim with an export of it. Committing a mounted image adds what changed but keeps what it replaced in
+# the file. An export only copies what the image still uses. It stays bootable, like copype's boot.wim.
 function Export-BootWim {
     param([Parameter(Mandatory)] $Workspace)
 

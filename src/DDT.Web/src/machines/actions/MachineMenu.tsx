@@ -16,8 +16,8 @@ import type { MachineActionState } from "@/machines/useMachineActions";
 import { MenuItem } from "@/ui/Menu";
 import { RowActionsMenu } from "@/ui/RowActionsMenu";
 
-// Reject is terminal. It is offered where a machine may be one to throw out; a running deployment is stopped
-// instead.
+// Reject is terminal, so it's only offered when the machine might be one to throw out. A running deployment
+// is stopped instead.
 const rejectableStates: readonly MachineState[] = ["Pending", "Approved", "Failed"];
 
 interface MachineMenuProps {
@@ -28,7 +28,7 @@ interface MachineMenuProps {
   layout: "row" | "panel";
 }
 
-// The menu beside the machine's key, with everything else that fits its state.
+// The menu next to the machine's main button. It holds every other action that fits the machine's state.
 export function MachineMenu({ machine, actions, canAssign, strays, layout }: MachineMenuProps) {
   const { t: translate } = useLingui();
   const { decide, remove, cancel, busy } = actions;

@@ -6,8 +6,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Machines;
 
-// What a sign-in at the machine came to. Neither a status nor Unauthorized: the machine is gone. Unauthorized: the
-// machine started over since the token was checked.
+// The result of a sign-in at the machine. With neither a status nor Unauthorized, the machine doesn't exist.
+// Unauthorized means the machine started over after the token was checked.
 internal sealed record MachineSignInOutcome(AgentSignInStatus? Status, bool Unauthorized)
 {
     public static MachineSignInOutcome NotFound { get; } = new(null, false);

@@ -31,7 +31,7 @@ export function UploadProgress({
   const file = run.fileName;
   const total = formatBytes(progress.length);
   const took = formatDuration(elapsed);
-  // The average of this run, which is steadier than the last slice.
+  // The average speed of this run, which is steadier than the last slice's.
   const speed =
     !verifying && elapsed >= 1_000 ? formatBytes((progress.sentBytes * 1000) / elapsed) : null;
 

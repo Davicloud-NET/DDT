@@ -7,9 +7,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// SequenceValidator's walk through a sequence's tree, with a PathState for every path that reaches a node. A node that
-// may not run joins its input with its output, an IF joins its branches, a failure joins the nearest container with
-// ContinueOnError, and a repeat's body is walked until the states a time round starts with stop growing.
+// SequenceValidator's walk through a sequence's tree, with a PathState for all paths that reach a node. A node that
+// may not run joins its input with its output. An IF joins its branches, and a failure joins the nearest container
+// with ContinueOnError. A repeat's body is walked until the state an iteration starts with stops growing.
 internal sealed class SequencePaths
 {
     // Each pass can only add to what a repeat starts with, and the state has few bits, so this is never reached.
@@ -21,13 +21,14 @@ internal sealed class SequencePaths
     private readonly HashSet<Guid> _ids = [];
     private readonly Dictionary<SequenceStep, PhaseSet> _phases = new(ReferenceEqualityComparer.Instance);
 
-    // For each container with ContinueOnError around the node, innermost last: the join of what failures in it left.
+    // One entry per container with ContinueOnError around the node, innermost last. Each holds the join of the states
+    // that failures inside it left.
     private readonly List<PathState> _catchers = [];
 
-    // Nodes in the tree's pre-order, which the messages that count steps use.
+    // Counts nodes in the tree's pre-order. Messages that number steps use it.
     private int _number;
 
-    // Set while a repeat's body is walked to find the states a time round starts with.
+    // Set while a repeat's body is walked to find the state an iteration starts with.
     private bool _silent;
 
     public SequencePaths(SequenceDefinition definition, SequenceNames names, List<SequenceProblem> problems, List<SequenceProblem> warnings)
@@ -35,7 +36,7 @@ internal sealed class SequencePaths
         _problems = problems;
         _warnings = warnings;
 
-        // A sequence either installs Windows or writes a raw disk image, wherever the step that writes it is.
+        // A sequence either installs Windows or writes a raw disk image. The raw image step may be anywhere in it.
         _rules = new StepRules(names, SequenceTree.Nodes(definition).Any(node => node is WriteRawImageStep));
     }
 
@@ -65,11 +66,11 @@ internal sealed class SequencePaths
 
     private static PhaseSet Of(SequencePhase phase) => phase == SequencePhase.Windows ? PhaseSet.Windows : PhaseSet.WindowsPE;
 
-    // Own conditions: a node's list and its When. An IF's Test and a repeat's Until are not its own.
+    // A node's own conditions are its list and its When. An IF's Test and a repeat's Until don't count.
     private static bool HasOwnConditions(SequenceStep step) => step.Conditions is not { Count: 0 } || step.When is not null;
 
-    // Partitioning, applying the image and writing a raw disk image can neither be skipped nor fail quietly. StepRules
-    // refuses their own conditions and ContinueOnError, so later steps are checked as if they ran instead.
+    // Partitioning, applying the image and writing a raw disk image can't be skipped or fail quietly. StepRules refuses
+    // conditions and ContinueOnError on them, so later steps are checked as if they always ran.
     private static bool RunsEveryTime(SequenceStep step) => step is PartitionStep or ApplyImageStep or WriteRawImageStep;
 
     private static Happened Establishes(SequenceStep step) => step switch
@@ -144,8 +145,8 @@ internal sealed class SequencePaths
             output = entered.Join(output);
         }
 
-        // A step that fails, having done some or none of its work, ends the run or goes on after the nearest container
-        // with ContinueOnError.
+        // A failing step may have done some or none of its work. The run then ends, or continues after the nearest
+        // container with ContinueOnError.
         if (everyTime || !step.ContinueOnError)
         {
             Fail(entered.Join(output));
@@ -169,7 +170,7 @@ internal sealed class SequencePaths
             _catchers.RemoveAt(_catchers.Count - 1);
         }
 
-        // When its own conditions do not hold, the container is skipped with everything in it.
+        // When the container's conditions don't hold, it's skipped with everything in it.
         if (HasOwnConditions(step))
         {
             output = input.Join(output);
@@ -203,7 +204,7 @@ internal sealed class SequencePaths
 
                 PathState output = Repeat(repeat.Steps ?? [], input, depth + 1);
 
-                // At its limit, a repeat whose Until never held fails, unless it goes on.
+                // A repeat that reaches its limit without Until holding fails, unless GoOnAtLimit is set.
                 if (!repeat.GoOnAtLimit)
                 {
                     Fail(output);
@@ -224,7 +225,7 @@ internal sealed class SequencePaths
         }
     }
 
-    // A container runs in the phase it is entered in, and in every phase its steps run in.
+    // A container runs in the phase it's entered in, and in every phase its steps run in.
     private void RecordPhases(SequenceStep container, PathState input)
     {
         PhaseSet phases = input.Current;
@@ -240,8 +241,8 @@ internal sealed class SequencePaths
         _phases[container] = _phases.GetValueOrDefault(container) | phases;
     }
 
-    // A time round starts where the last one ended, in the phase the repeat started in: a phase change inside is
-    // refused on its own, and would otherwise come back as Windows PE after Windows.
+    // Each iteration starts where the last one ended, in the phase the repeat started in. A phase change inside a
+    // repeat is refused separately. Otherwise it would come back as Windows PE after Windows.
     private PathState Repeat(IReadOnlyList<SequenceStep?> body, PathState input, int depth)
     {
         bool silent = _silent;

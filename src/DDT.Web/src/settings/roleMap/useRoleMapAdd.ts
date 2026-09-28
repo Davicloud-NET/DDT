@@ -6,8 +6,8 @@ import { useState } from "react";
 
 import { hasEntry } from "../signIn";
 
-// The key typed to add to a role map. The server compares keys without regard to case, so a key the map has in any
-// case is refused with the duplicate text; an added one gives Viewer.
+// The key typed to add to a role map. The server compares keys ignoring case, so a key the map already has in any
+// case is refused with the duplicate text. A new entry gives Viewer.
 export function useRoleMapAdd(
   map: Record<string, string>,
   onChange: (map: Record<string, string>) => void,

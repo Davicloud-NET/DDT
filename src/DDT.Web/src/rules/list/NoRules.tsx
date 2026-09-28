@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { EmptyState } from "@/ui/EmptyState";
 import { Panel } from "@/ui/Panel";
 
-// What the page shows without rules, and who adds them.
+// What the page shows when there are no rules, and who can add them.
 export function NoRules({ canEdit }: { canEdit: boolean }) {
   return (
     <Panel>

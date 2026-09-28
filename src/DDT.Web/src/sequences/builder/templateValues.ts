@@ -9,8 +9,8 @@ import type { NamedValue } from "@/conditions/subjects";
 import { lookup, renderTemplate } from "../flow/templates";
 import type { InputDeclaration, VariableDeclaration } from "../sequences";
 
-// Every name a template can use, each once, in the order completion offers them: the sequence's own first, then the
-// values of rules and roles, then the facts. An Account input sets no value.
+// Every name a template can use, each once, in the order completion offers them: the sequence's own names first,
+// then the values of rules and roles, then the facts. An Account input doesn't set a value.
 export function templateNames(
   variables: readonly VariableDeclaration[],
   inputs: readonly InputDeclaration[],
@@ -44,7 +44,7 @@ export function sampleValues(
   const facts = lookup(sampleMachine);
   const rules = lookup(Object.fromEntries(ruleValues.map((value) => [value.name, value.value])));
 
-  // A default is a template itself; one that names itself, directly or through others, has no value.
+  // A default is a template too. One that refers to itself, directly or through others, has no value.
   const sample = (name: string, seen: readonly string[] = []): string | null => {
     if (seen.some((other) => sameName(other, name))) {
       return null;

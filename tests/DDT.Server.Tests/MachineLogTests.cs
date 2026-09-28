@@ -60,7 +60,8 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
         Assert.Equal(HttpStatusCode.NotFound, (await viewer.GetAsync($"/api/machines/{Guid.NewGuid()}/log")).StatusCode);
     }
 
-    // The Windows PE clock can be hours off. The batch says when the agent sent it by that clock, which corrects it.
+    // The WinPE clock can be hours off.
+    // The batch says when the agent sent it by that clock, and the server corrects the times with that.
     [Fact]
     public async Task CorrectsAClockThatIsOff()
     {
@@ -79,10 +80,10 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
         Assert.Equal(received - TimeSpan.FromSeconds(10), lines["behind"].TimestampUtc);
         Assert.Equal(agentNow - TimeSpan.FromSeconds(10), lines["behind"].AgentTimestampUtc);
 
-        // Never after the moment it arrived.
+        // A line is never later than the moment it arrived.
         Assert.Equal(received, lines["ahead"].TimestampUtc);
 
-        // Below the tolerance, the difference is the network's delay. From the tolerance on, it is the clock's.
+        // Below the tolerance, the difference is network delay. From the tolerance on, it's the clock being off.
         Assert.Equal(received - TimeSpan.FromSeconds(5), lines["network"].TimestampUtc);
         Assert.Equal(received - TimeSpan.FromSeconds(3), lines["tolerance"].TimestampUtc);
 
@@ -115,7 +116,7 @@ public sealed class MachineLogTests(ManualClockApplication application) : IClass
         await LogAsync(machine, new AgentLogBatch([Line(now, "during", step), Line(now, "between")]));
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [Step(run.Sequence.Steps[0], StepState.Failed, "Exit code 1.")]) with { Error = "Exit code 1." });
 
-        // A run that ended claims no more lines, whatever step the agent names.
+        // A run that ended doesn't take any more lines, whatever step the agent names.
         await LogAsync(machine, new AgentLogBatch([Line(now, "after", step)]));
 
         MachineLogPage all = await ReadAsync(machine.Id);

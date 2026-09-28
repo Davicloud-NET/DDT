@@ -19,7 +19,7 @@ internal static class TreeSteps
 
     public static IReadOnlyList<SequenceProblem> Validate(SequenceDefinition definition) => SequenceValidator.Validate(definition);
 
-    // Each problem as where it is and what it says, which is what a test compares.
+    // Reduces each problem to where it is and what it says, which is what the tests compare.
     public static IEnumerable<(Guid? StepId, string? Field, string? Code)> Said(IEnumerable<SequenceProblem> problems) =>
         problems.Select(problem => (problem.StepId, problem.Field, problem.Code));
 

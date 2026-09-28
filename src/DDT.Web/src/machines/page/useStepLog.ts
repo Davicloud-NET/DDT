@@ -4,7 +4,7 @@
 
 import { useId, useState } from "react";
 
-// The machine's log filtered to one step of the run shown, from the step's row or from the flow.
+// Filters the machine's log to one step of the shown run. The step is picked from its row or from the flow.
 export function useStepLog(runId: string | null) {
   // A step belongs to one run, so its filter ends when another run is shown.
   const [stepFilter, setStepFilter] = useState<{ runId: string | null; stepId: string } | null>(
@@ -14,7 +14,7 @@ export function useStepLog(runId: string | null) {
   const showStepLog = (stepId: string | null) => {
     setStepFilter(stepId === null ? null : { runId, stepId });
   };
-  // From the flow, the log is further down the page, so the page goes there.
+  // The log is further down the page than the flow, so the page scrolls to it.
   const logId = useId();
   const showLogFromFlow = (stepId: string) => {
     showStepLog(stepId);

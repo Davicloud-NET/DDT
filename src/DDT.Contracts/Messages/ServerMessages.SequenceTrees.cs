@@ -6,8 +6,9 @@ namespace DDT.Contracts.Messages;
 
 public static partial class ServerMessages
 {
-    // Task sequences as trees: the paths through groups, IFs and repeats, conditions, the sequence's variables and
-    // inputs, templates, accounts and shares. Name is a variable's, an input's or a fact's.
+    // Task sequences as trees. This covers the paths through groups, IFs and repeats, conditions, the sequence's
+    // variables and inputs, templates, accounts and shares. In the messages, name is the name of a variable, an input
+    // or a fact.
 
     public static readonly MessageTemplate SequenceNodeCount = Define(
         "sequence.nodeCount",
@@ -192,7 +193,8 @@ public static partial class ServerMessages
         "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another " +
         "machine on the network can relay. Name the server instead, best by its full DNS name.");
 
-    // Value templates, such as PC-{{SerialNumber|alnum|right:12}}. Placeholder is the whole placeholder, braces included.
+    // Value templates, such as PC-{{SerialNumber|alnum|right:12}}. Placeholder is the whole placeholder, including the
+    // braces.
 
     public static readonly MessageTemplate ValueTemplateUnknownName = Define(
         "valueTemplate.unknownName",

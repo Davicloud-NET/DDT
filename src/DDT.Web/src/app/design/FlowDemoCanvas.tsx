@@ -18,7 +18,7 @@ interface FlowDemoCanvasProps {
   selected: string | null;
 }
 
-// The demo flow on the canvas, with the slots of the editor while it is not a run.
+// The demo flow on the canvas. Unless it shows a run, it has the editor's slots.
 export function FlowDemoCanvas({ flow, run, selected }: FlowDemoCanvasProps) {
   const { byId, tree, layout, stateOf, tone } = flow;
 

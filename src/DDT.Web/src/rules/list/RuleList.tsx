@@ -30,7 +30,7 @@ interface RuleListProps {
   onDelete: (rule: RuleView) => void;
 }
 
-// The rules in order. Someone who may change them moves them by dragging, with Alt and the arrow keys, or from a
+// The rules in order. Someone who may change them can move them by dragging, with Alt and the arrow keys, or from a
 // rule's menu.
 export function RuleList({
   list,

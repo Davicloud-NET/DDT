@@ -199,7 +199,7 @@ public sealed class FirmwareBootEntryTests
         Assert.Equal(Order(0), _variables.Values["BootOrder"]);
     }
 
-    // Windows over Linux, or Linux over Windows: the entry of the erased partition is dead whatever it started.
+    // Windows over Linux, or Linux over Windows. The erased partition's entry is dead, whatever it started.
     [Fact]
     public void ReusesAnEntryOfTheErasedPartitionThatStartedAnotherLoader()
     {

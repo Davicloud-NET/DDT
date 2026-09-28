@@ -20,7 +20,7 @@ interface AuthenticatorEnrollmentProps {
   onCancel: () => void;
 }
 
-// Setting up an authenticator: its QR code or key, then a code it shows.
+// Sets up an authenticator. It shows the QR code or the key, then asks for a code from the authenticator.
 export function AuthenticatorEnrollment({
   enrollment,
   code,

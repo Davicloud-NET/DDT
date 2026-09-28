@@ -46,7 +46,7 @@ public sealed class WaitingMachineCleanupTests(DdtApplication application) : ICl
         using RegisteredMachine fresh = await application.RegisterMachineAsync();
         using RegisteredMachine approvedOnce = await application.RegisterMachineAsync();
 
-        // Approved, then booted again without its resume token: waiting again, but vouched for once.
+        // Approved, then booted again without its resume token. It's waiting again, but someone vouched for it once.
         (await administrator.PostAsync($"/api/machines/{approvedOnce.Id}/approve")).EnsureSuccessStatusCode();
         (await approvedOnce.Agent.RegisterAsync(approvedOnce.Registration)).EnsureSuccessStatusCode();
 

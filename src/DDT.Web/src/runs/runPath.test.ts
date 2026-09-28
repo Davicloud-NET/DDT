@@ -59,7 +59,7 @@ describe("runPath", () => {
     expect(toneOf(node.latitude, node.applyOther)).toEqual(["not"]);
     expect(toneOf(node.applyOther, null)).toEqual(["not", "not"]);
     expect(toneOf(node.drivers, null)).toEqual(["taken"]);
-    // The repeat went round again; the pause holds the run, so the wire to the restart is ahead.
+    // The repeat went round again. The pause holds the run, so the wire to the restart is still ahead.
     expect(toneOf(node.wait, node.wait)).toEqual(["taken"]);
     expect(toneOf(node.wait, node.pause)).toEqual(["taken"]);
     expect(toneOf(node.pause, node.restart)).toEqual(["ahead"]);

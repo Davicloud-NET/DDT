@@ -12,7 +12,7 @@ public sealed record RuleMatch(
     IReadOnlyList<RuleEntry> Matched,
     // The first of them that chooses a sequence.
     RuleEntry? Chooser,
-    // What they set, top rule first, the order ValueSources takes them in.
+    // The values they set, top rule first, which is the order ValueSources expects.
     IReadOnlyList<ValueSet> RuleValues,
     // What their machine roles set, each role once, in the order the rules gave them.
     IReadOnlyList<ValueSet> RoleValues,

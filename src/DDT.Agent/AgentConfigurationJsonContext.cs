@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Agent;
 
-// Written only for the agent staged into Windows, which has no keyboard layout to show.
+// The agent only writes this file for the copy it stages into Windows. That copy has no keyboard layout to show.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,

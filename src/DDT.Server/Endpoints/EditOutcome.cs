@@ -6,8 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Endpoints;
 
-// What a save of an item a page edits came to: Saved, or Current for a save on an older revision, the fields' Problems,
-// or a Refusal of the whole (409). None of them: the item is gone.
+// The result of saving an item a page edits: Saved, or Current for a save on an older revision, the fields' Problems,
+// or a Refusal of the whole save (409). With none of them set, the item doesn't exist.
 internal sealed record EditOutcome<T>(T? Saved, T? Current, FieldProblems? Problems, ServerMessage? Refusal)
     where T : class
 {

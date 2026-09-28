@@ -45,7 +45,8 @@ export function SubjectPicker({
     );
   }
 
-  // Beside the fields with a label kept for screen readers, which stand as far down as its gap.
+  // The fields beside it keep a label for screen readers, and the gap under that label pushes them down. The padding
+  // lines this one up with them.
   return (
     <div data-field={field} className="pt-1.5">
       <Select

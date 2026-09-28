@@ -12,7 +12,7 @@ using Xunit;
 namespace DDT.Core.Tests.Sequences;
 
 // Version 3 documents and tree run states are stored and sent as JSON, so these strings never change either. Members
-// version 3 adds to older kinds are left out while unset, so the strings of SequenceWireFormatTests stay the same.
+// that version 3 adds to older kinds are left out while unset, so the strings in SequenceWireFormatTests stay the same.
 public sealed class TreeWireFormatTests
 {
     private const string Id = "0197a3c0-0000-7000-8000-000000000001";
@@ -188,7 +188,7 @@ public sealed class TreeWireFormatTests
         }
     }
 
-    // As an agent of version 1 or 2 saved it: no cursor, and no member of a tree on any step.
+    // The way a version 1 or 2 agent saved it, with no cursor and no tree members on any step.
     [Fact]
     public void ReadsAStateOfFormat1()
     {
@@ -239,8 +239,9 @@ public sealed class TreeWireFormatTests
         Assert.Equal(json, JsonSerializer.Serialize(read, AgentJsonContext.Default.SequenceState));
     }
 
-    // The source generator sets every init member, so one the JSON leaves out reads as its type's default, not as the
-    // value C# gives it: the validator and the tree have to cope with 0 and null. Bodies stand in for a missing list.
+    // The source generator sets every init member. So a member the JSON leaves out reads as its type's default, not
+    // the value C# gives it. The validator and the tree have to cope with 0 and null. Bodies stand in for a missing
+    // list.
     [Theory]
     [MemberData(nameof(Contexts))]
     public void ReadsAMemberLeftOutAsItsTypesDefault(string context)

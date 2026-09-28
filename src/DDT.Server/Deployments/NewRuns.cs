@@ -17,7 +17,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// What an assignment, an approval and a pick share. Nothing here saves; a caller that creates a run holds
+// What an assignment, an approval and a pick share. Nothing here saves. A caller that creates a run holds
 // ImageStore.LibraryLock, so nothing the run downloads can be deleted between the lookup and the save.
 public sealed class NewRuns(
     DdtDbContext database,
@@ -29,7 +29,7 @@ public sealed class NewRuns(
     public Task<TaskSequence?> LoadAsync(Guid sequenceId, CancellationToken cancellationToken) =>
         database.TaskSequences.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sequenceId, cancellationToken);
 
-    // A sequence runs only without problems, which depend on the library and the settings of the moment.
+    // A sequence only runs without problems. The problems depend on the current library and settings.
     public async Task<CheckedSequence> CheckAsync(TaskSequence sequence, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sequence);
@@ -46,8 +46,8 @@ public sealed class NewRuns(
         return new CheckedSequence(sequence, definition, references, problem);
     }
 
-    // An input asked only where the answers were given needs one unless a value or a default answers it; one asked in both
-    // places may be left for the other, and the run then waits for it.
+    // An input that's only asked where these answers were given needs an answer, unless a value or a default answers
+    // it. One asked in both places may be left for the other place, and the run then waits for it.
     public async Task<GivenAnswers> GivenAsync(RunRequest request, DateTimeOffset now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -86,8 +86,8 @@ public sealed class NewRuns(
         return new GivenAnswers(kept, answered, resolved, problems);
     }
 
-    // The computer name, the answers and the Secure Boot allowance, refused by field as the web and the console ask them
-    // again. AllowMismatch is what the run keeps of the allowance.
+    // Checks the computer name, the answers and the Secure Boot allowance. A refusal names the field, so the web and
+    // the console can ask again. AllowMismatch is what the run keeps of the allowance.
     public static (bool AllowMismatch, DeploymentDecision? Refusal) Validate(RunRequest request, GivenAnswers given)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -116,8 +116,8 @@ public sealed class NewRuns(
             : (false, DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem));
     }
 
-    // Creates the run, adds the DeploymentInputsAnswered audit and keeps the Account answers; the refusal of the first
-    // account that cannot be kept. A refused run stays tracked, so the caller must not save.
+    // Creates the run, adds the DeploymentInputsAnswered audit and keeps the Account answers. Returns a refusal for the
+    // first account that can't be kept. A refused run stays tracked, so the caller mustn't save.
     public async Task<(Deployment Run, DeploymentDecision? Refusal)> CreateAsync(NewRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -142,8 +142,9 @@ public sealed class NewRuns(
         return (deployment, null);
     }
 
-    // Windows setup or the image makes up a name, except where the sequence needs one: it joins the domain under it, or a
-    // cloud-init seed names the machine. A name the run's values give, such as a rule's pattern, is as good as one given here.
+    // Windows setup or the image makes up a name, unless the sequence needs one. It does when it joins the domain under
+    // the name, or a cloud-init seed names the machine. A name from the run's values, such as a rule's pattern, is as
+    // good as one given here.
     private static ServerMessage? ComputerNameProblem(Machine machine, string? computerName, ServerMessage? use, ValueResolution values)
     {
         if (!string.IsNullOrWhiteSpace(computerName))

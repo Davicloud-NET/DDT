@@ -17,8 +17,8 @@ import {
 
 import { cx } from "./cx";
 
-// A menu in a popover at its trigger. Outside a MenuTrigger, triggerRef names what it opens from and isOpen and
-// onOpenChange whether it is open, as for a node's menu opened by a key.
+// A menu in a popover at its trigger. Outside a MenuTrigger, triggerRef names what it opens from, and isOpen
+// and onOpenChange say whether it's open. A node's menu, opened by right-click or Shift+F10, works this way.
 export function Menu<T extends object>({
   className,
   placement = "bottom end",

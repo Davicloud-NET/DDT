@@ -9,11 +9,12 @@ import type { FlowViewportHandle } from "@/ui/FlowViewport";
 
 export type RunFollow = ReturnType<typeof useFollowRun>;
 
-// The canvas follows the node the run is at until a move it did not make itself; setFollowing(true) takes it up again.
+// The canvas follows the node the run is at, until something else moves the canvas. setFollowing(true) starts following
+// again.
 export function useFollowRun(layout: FlowLayout, currentId: string | null) {
   const [following, setFollowing] = useState(true);
   const viewport = useRef<FlowViewportHandle>(null);
-  // The canvas moves itself while it follows the run; any other move is the person's, which ends the following.
+  // The canvas moves itself while it follows the run. Any other move comes from the person and stops the following.
   const moving = useRef(false);
 
   const follow = useEffectEvent((id: string) => {

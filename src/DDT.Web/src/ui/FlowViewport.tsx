@@ -22,8 +22,8 @@ import {
 } from "./viewTransform";
 import { ZoomControls } from "./ZoomControls";
 
-// What a page asks of the canvas: to show a part of the content, such as the node the keyboard went to, moving as
-// little as it takes, or in the middle, such as a node a finding points at.
+// What a page can ask of the canvas. reveal shows a part of the content, moving as little as it takes, such as the
+// node the keyboard went to. With center, it puts the part in the middle, such as a node a finding points at.
 export interface FlowViewportHandle {
   reveal: (rect: ViewRect, center?: boolean) => void;
 }
@@ -34,10 +34,10 @@ interface FlowViewportProps {
   contentHeight: number;
   transform?: ViewTransform;
   onTransformChange?: (next: ViewTransform) => void;
-  // The parts the minimap draws, in the content's pixels; none leaves it out.
+  // The parts the minimap draws, in the content's pixels. Without it, there's no minimap.
   minimap?: MinimapItem[];
   children: ReactNode;
-  // More keys beside the zoom controls, such as one that follows a run.
+  // More buttons next to the zoom controls, such as one that follows a run.
   controls?: ReactNode;
   className?: string;
   tabbable?: boolean;
@@ -46,8 +46,8 @@ interface FlowViewportProps {
   start?: "fit" | "top";
 }
 
-// A canvas that pans and zooms a flow laid out in its own pixels, contentWidth by contentHeight. It is one Tab stop
-// unless tabbable is false, where its content holds that stop, such as the flow builder's nodes.
+// A canvas that pans and zooms a flow laid out in its own pixels, contentWidth by contentHeight. It's one Tab stop,
+// unless tabbable is false. Then its content holds that stop, like the flow builder's nodes.
 export function FlowViewport({
   label,
   contentWidth,

@@ -8,8 +8,8 @@ import { AdministratorsOnly } from "@/auth/AdministratorsOnly";
 
 import { AllTokens } from "./AllTokens";
 
-// Administration > API tokens: every user's tokens, to see what scripts reach DDT and to revoke any of them. Each
-// person makes their own on the Account page, so none is made here.
+// Administration > API tokens. Lists every user's tokens, to see which scripts reach DDT and to revoke any of
+// them. Everyone makes their own tokens on the Account page, so none are made here.
 export function TokensPage() {
   return (
     <AdministratorsOnly

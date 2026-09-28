@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// Sent back in the X-DDT-Reauthentication header of a save that changes a field listed in a section's reauthenticate.
+// Sent back in the X-DDT-Reauthentication header when a save changes a field that a section's Reauthenticate list
+// names.
 public sealed record ReauthenticationToken(string Token, DateTimeOffset ExpiresUtc);

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// A deployment step cannot go on. The message is a sentence for the operator and becomes the deployment's error.
+// A deployment step can't continue. The message is a sentence for the operator and becomes the deployment's error.
 public sealed class DeploymentStepException : Exception
 {
     public DeploymentStepException()
@@ -24,7 +24,7 @@ public sealed class DeploymentStepException : Exception
     {
     }
 
-    // Names what failed, with the last P/Invoke error: so it comes before any other call, a handle's Dispose included.
+    // Names what failed, with the last P/Invoke error. So call it before any other call, including a handle's Dispose.
     internal static DeploymentStepException ForLastWin32Error(string what)
     {
         int error = Marshal.GetLastPInvokeError();

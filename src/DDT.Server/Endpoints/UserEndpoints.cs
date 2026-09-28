@@ -119,7 +119,7 @@ public static class UserEndpoints
         _ => throw new UnreachableException(),
     };
 
-    // Several errors make one title, which has no code of its own.
+    // Several errors are joined into one title, which has no code.
     private static ProblemHttpResult NotSaved(IdentityResult result)
     {
         if (result.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure)))

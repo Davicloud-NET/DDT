@@ -8,8 +8,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The one open question of a console over a pipe, as the graphical console and the console of DDT's session share it:
-// what goes to a console as it comes and goes, and which answers count.
+// The single open question of a console over a pipe, shared by the graphical console and the console of DDT's session.
+// It covers what a console gets as it connects and disconnects, and which answers count.
 public sealed class QuestionSlotTests
 {
     private static readonly PauseQuestion s_pause = new("Check the BIOS", "Set the boot order.");
@@ -73,7 +73,7 @@ public sealed class QuestionSlotTests
         Assert.Equal(new ConsoleAnswer(Continue: true), (await second).Answer);
     }
 
-    // As when the graphical console goes away for good: the asker asks the text console instead.
+    // Like when the graphical console goes away for good. The asker asks the text console instead.
     [Fact]
     public async Task ClosingGivesEveryQuestionUpSoItCanBeAskedElsewhere()
     {

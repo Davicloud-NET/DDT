@@ -14,7 +14,7 @@ import { Notice } from "@/ui/Notice";
 
 import { confirmCertificate, putCertificate } from "../certificate";
 
-// A new pair on trial, which only a connection that was served it can keep.
+// A new pair on trial. Only a connection that was served the new pair can keep it.
 export function ProvisionalNotice({ until }: { until: string }) {
   const { t } = useLingui();
   const queryClient = useQueryClient();

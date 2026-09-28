@@ -23,8 +23,8 @@ export interface SignInEntry {
 const lockedMessage = msg`This account is locked. Try again later or ask an administrator.`;
 const unfinishedMessage = msg`The sign-in at the identity provider did not finish. Try again.`;
 
-// Why the server's OpenID Connect callback refused a sign-in. A reason this page does not know yet reads as a sign-in
-// that did not finish.
+// Why the server's OpenID Connect callback refused a sign-in. A reason this page doesn't know yet shows as a sign-in
+// that didn't finish.
 const externalErrors: Record<string, MessageDescriptor> = {
   external: unfinishedMessage,
   unlinked: msg`No DDT account is linked to that identity. Ask an administrator.`,
@@ -34,11 +34,11 @@ const externalErrors: Record<string, MessageDescriptor> = {
   "no-role": msg`Your account is in none of the groups DDT maps to a role. Ask an administrator.`,
 };
 
-// Signs in with a password, then with a second factor where the account has one. The search is the sign-in page's.
+// Signs in with a password, then with a second factor if the account has one. search is the page's URL query.
 export function useSignIn(search: { step?: "two-factor"; error?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  // After an OpenID Connect sign-in the server knows the account, and only its code is asked for.
+  // After an OpenID Connect sign-in the server already knows the account, so the page only asks for the code.
   const [step, setStep] = useState<SignInStep>(
     search.step === "two-factor" ? "twoFactor" : "credentials",
   );

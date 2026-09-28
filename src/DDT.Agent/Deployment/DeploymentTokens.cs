@@ -48,7 +48,7 @@ public sealed class DeploymentTokens(string token, string resumeToken, string? r
         }
     }
 
-    // A null newRunToken keeps the run token there is: an answer without one does not end the run.
+    // A null newRunToken keeps the current run token. An answer without one doesn't end the run.
     public void Update(string newToken, string newResumeToken, string? newRunToken = null)
     {
         TaskCompletionSource changed;

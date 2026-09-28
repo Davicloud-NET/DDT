@@ -14,7 +14,7 @@ import { demoFlow, demoSequence, type DemoNode } from "./demoFlow";
 
 export type DemoFlow = ReturnType<typeof useDemoFlow>;
 
-// The demo flow laid out, edited or as a run, with its group collapsed or not.
+// The demo flow laid out, in the editor or as a run, with its group collapsed or not.
 export function useDemoFlow(run: boolean, collapsed: boolean) {
   const { steps, byId } = useMemo(() => {
     const nodes = new Map<string, DemoNode>();

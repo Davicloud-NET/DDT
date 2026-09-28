@@ -7,8 +7,8 @@ using DDT.Core.Disks;
 
 namespace DDT.Core.CloudInit;
 
-// cloud-init's NoCloud data source finds its seed on any file system labelled CIDATA, and reads user-data, meta-data
-// and network-config from its root. The seed is a FAT volume of its own partition at the end of the disk.
+// cloud-init's NoCloud data source looks for its seed on any file system labelled CIDATA. It reads user-data,
+// meta-data and network-config from the root. The seed is a FAT volume on a separate partition at the end of the disk.
 public static class CloudInitSeed
 {
     public const string Label = "CIDATA";
@@ -16,11 +16,11 @@ public static class CloudInitSeed
     public const string MetaData = "meta-data";
     public const string NetworkConfig = "network-config";
 
-    // Far more than seeds need, and still FAT16, which every Linux reads.
+    // Far more than a seed needs, and still FAT16, which every Linux reads.
     public const long SizeBytes = 64L * 1024 * 1024;
 
-    // What the seed takes on a disk beyond the image: itself, the mebibyte its start is aligned to, and the backup
-    // partition table after it.
+    // The disk space the seed needs beyond the image. That's the seed itself, a mebibyte to align its start, and the
+    // backup partition table after it.
     public const long DiskBytes = SizeBytes + (2L * 1024 * 1024);
 
     // firstSector is where the seed's partition starts on the disk.

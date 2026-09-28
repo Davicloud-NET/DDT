@@ -10,15 +10,15 @@ import { cx } from "@/ui/cx";
 
 interface RoleTagProps {
   roleName: string;
-  // Where the server puts a problem of this role, such as roleIds[0].
+  // The field the server names in a problem with this role, such as roleIds[0].
   field: string;
   hasProblem: boolean;
-  // Read only, without the key that takes the role out.
+  // Read-only, without the button that removes the role.
   locked: boolean;
   onRemove: () => void;
 }
 
-// A machine role a rule gives, as a tag with a key that takes it out.
+// A machine role a rule gives, as a tag with a button that removes it.
 export function RoleTag({ roleName, field, hasProblem, locked, onRemove }: RoleTagProps) {
   const { t } = useLingui();
 

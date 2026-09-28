@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// Saves machine roles, each change with its audit row. A role has no problems of its own to be saved with: values a run
-// could not use are refused. A role that rules give cannot be deleted until they no longer give it.
+// Saves machine roles, with an audit row for each change. A role is never saved with problems. Values a run couldn't
+// use are refused instead. A role can't be deleted while rules still give it.
 internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live, TimeProvider timeProvider)
 {
     public async Task<EditOutcome<MachineRoleView>> CreateAsync(SaveMachineRoleRequest request, Actor actor, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
         return EditOutcome<MachineRoleView>.Done(roles.Single(r => r.Id == role.Id));
     }
 
-    // A save names the revision it was made on, and one over a newer revision gets the role as it is now.
+    // A save names the revision it was based on. If the role has a newer revision, the save gets the current one.
     public async Task<EditOutcome<MachineRoleView>> UpdateAsync(Guid id, SaveMachineRoleRequest request, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -84,7 +84,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
             }.Where(field => field.Changed).Select(field => field.Field),
         ];
 
-        // An autosave of what is stored already changes nothing and records nothing.
+        // An autosave of what's already stored changes nothing, so nothing is recorded.
         if (changed.Length == 0)
         {
             database.ChangeTracker.Clear();
@@ -98,7 +98,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
         return await SaveChangedAsync(role, cancellationToken).ConfigureAwait(false);
     }
 
-    // False for a role that is gone; Refusal says why one cannot be deleted.
+    // Found is false if the role doesn't exist. Refusal says why it can't be deleted.
     public async Task<(bool Found, ServerMessage? Refusal)> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -110,7 +110,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
             return (false, null);
         }
 
-        // RoleIds is JSON, so no foreign key holds the role; the rules are read instead.
+        // RoleIds is JSON, so no foreign key protects the role. The rules are read instead.
         int rules = RuleViews.RuleCount(await RuleBook.LoadAsync(database, cancellationToken).ConfigureAwait(false), id);
 
         if (rules > 0)
@@ -158,7 +158,8 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
         return EditOutcome<MachineRoleView>.Done(roles.Single(r => r.Id == role.Id));
     }
 
-    // What keeps a role from being saved: its name, taken or not, and values a run could not use.
+    // What keeps a role from being saved: a bad or taken name, a description that's too long, or values a run couldn't
+    // use.
     private async Task<FieldProblems?> RefusalAsync(Guid? id, SaveMachineRoleRequest request, CancellationToken cancellationToken)
     {
         FieldProblems problems = new();
@@ -200,7 +201,8 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
         return database.MachineRoles.AnyAsync(r => r.NormalizedName == normalized && r.Id != id, cancellationToken);
     }
 
-    // The unique index settles two saves that took the same name at once; the loser is told as if it had been first.
+    // The unique index decides between two saves that take the same name at once. The loser is told the name is taken,
+    // just as if the other save had come first.
     private async Task<FieldProblems?> CommitAsync(MachineRole role, CancellationToken cancellationToken)
     {
         try
@@ -241,7 +243,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
     private async Task<MachineRoleView> ViewAsync(Guid id, CancellationToken cancellationToken) =>
         (await RuleViews.ListRolesAsync(database, cancellationToken).ConfigureAwait(false)).Single(r => r.Id == id);
 
-    // A role's values are what a rule's condition may test besides the facts, so the rules go out again too.
+    // A rule's condition may test a role's values as well as the facts, so the rules are pushed again too.
     private async Task<MachineRoleView[]> PushAsync(CancellationToken cancellationToken)
     {
         MachineRoleView[] roles = await RuleViews.ListRolesAsync(database, cancellationToken).ConfigureAwait(false);
@@ -257,7 +259,7 @@ internal sealed class MachineRoleEditor(DdtDbContext database, LiveNotifier live
 
     private static string Normalize(string name) => name.Trim().ToUpperInvariant();
 
-    // PostgreSQL text cannot hold a NUL. Null for nothing.
+    // PostgreSQL text can't hold a NUL. Returns null for empty text.
     private static string? Text(string? text)
     {
         string? trimmed = text?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim();

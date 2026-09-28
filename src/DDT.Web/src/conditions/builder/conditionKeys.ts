@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// The builder's keys: an icon that removes a condition, and the text keys that add or remove a row.
+// The builder's buttons: an icon that removes a condition, and the text buttons that add or remove a row.
 export const iconKey =
   "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none " +
   "hover:bg-hover hover:text-ink pressed:bg-key-quiet-pressed focus-visible:outline-2 focus-visible:outline-focus";

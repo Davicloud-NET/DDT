@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import type { AuditFilter } from "./audit";
 
-// The audit log's filter fields, and the filter the server reads with.
+// The audit log's filter fields, and the filter that's sent to the server.
 export function useAuditFilter() {
   const [action, setAction] = useState("");
   const [typedActor, setTypedActor] = useState("");
@@ -14,8 +14,8 @@ export function useAuditFilter() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // The server searches the actor, so the search waits until typing pauses. Not useDebouncedValue, since clearing
-  // the filter clears the actor at once.
+  // The server searches for the actor, so the search waits until typing pauses. This doesn't use
+  // useDebouncedValue, because clearing the filter must clear the actor at once.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setActor(typedActor);

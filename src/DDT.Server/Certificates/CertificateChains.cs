@@ -10,11 +10,11 @@ namespace DDT.Server.Certificates;
 
 internal static class CertificateChains
 {
-    // What DDT generated before it had a root: self-signed, not a CA, and named like this.
+    // The subject of the certificate DDT generated before it had a root. That one is self-signed and isn't a CA.
     private const string LegacySubject = "CN=DDT";
 
-    // The certificate with its key, and the intermediates that follow it in its file, as Kestrel sends them from its
-    // own PEM files.
+    // Loads the certificate with its key, plus the intermediates that follow it in its file. Kestrel sends its own PEM
+    // files the same way.
     public static SslStreamCertificateContext? TryLoad(CertificateFiles files, out string? problem)
     {
         try
@@ -49,7 +49,7 @@ internal static class CertificateChains
         }
     }
 
-    // An expired certificate still came from the root, and is renewed rather than taken for someone else's.
+    // Ignores expiry. An expired certificate still came from the root, so it's renewed, not taken for someone else's.
     public static bool ChainsTo(X509Certificate2 certificate, X509Certificate2 root)
     {
         using X509Chain chain = new();
@@ -70,7 +70,7 @@ internal static class CertificateChains
         && certificate.SubjectName.RawData.AsSpan().SequenceEqual(certificate.IssuerName.RawData)
         && certificate.Extensions.OfType<X509BasicConstraintsExtension>().All(constraints => !constraints.CertificateAuthority);
 
-    // Whatever is there is kept next to it, to go back to by hand.
+    // Moves whatever is at the path next to it, so an admin can go back to it by hand.
     public static void KeepAsPrevious(string path, string previousPath)
     {
         if (File.Exists(path))
@@ -81,8 +81,8 @@ internal static class CertificateChains
 
     public static DateTimeOffset Utc(DateTime local) => new(local.ToUniversalTime());
 
-    // SChannel cannot serve a key that exists only in memory, as one read from PEM does, so on Windows it goes through
-    // PKCS#12, as Kestrel does with its own PEM files.
+    // SChannel can't serve a key that only exists in memory, like one read from PEM. So on Windows the certificate
+    // goes through PKCS#12. Kestrel does the same with its own PEM files.
     private static X509Certificate2 Servable(X509Certificate2 certificate)
     {
         if (!OperatingSystem.IsWindows())

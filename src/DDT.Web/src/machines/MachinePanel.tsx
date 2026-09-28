@@ -31,8 +31,8 @@ import {
   railStepText,
 } from "./machineView";
 
-// The machine picked in the list, beside it: what it is and its run, with the steps live from the hub. It enters from
-// the list's side when it opens; picking another machine only changes what it shows.
+// The panel next to the list for the picked machine. It shows what the machine is and its run, with the steps live
+// from the hub. It slides in from the list's side when it opens. Picking another machine only changes its content.
 export function MachinePanel({
   machine,
   actions,

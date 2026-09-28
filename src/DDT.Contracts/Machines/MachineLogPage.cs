@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Machines;
 
-// Lines in the order they arrived. HasOlder says whether lines before the first one exist, to page back with before.
+// Lines in the order they arrived. HasOlder says whether there are lines before the first one, to page back with the
+// before parameter.
 public sealed record MachineLogPage(IReadOnlyList<MachineLogEntry> Lines, bool HasOlder);

@@ -19,7 +19,7 @@ interface UsersTableProps {
   now: number;
   meId: string;
   isEnabling: boolean;
-  // The live mark's class of each row.
+  // The live mark class for each row.
   mark: (id: string) => string;
   onAction: (action: UserAction, user: UserView) => void;
 }

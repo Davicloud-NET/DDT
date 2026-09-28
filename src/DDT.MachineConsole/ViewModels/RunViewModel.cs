@@ -8,8 +8,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The Running, Restarting, Finished, Failed and Stopped stages: the step that runs, or why the run stopped and what to
-// do, above the sequence rail.
+// The Running, Restarting, Finished, Failed and Stopped stages. Above the sequence rail it shows the running step, or
+// why the run stopped and what to do.
 public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private ConsoleState? _state;
@@ -33,7 +33,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         _ => Tag.Of(Say.Stage(L, Stage), TagTone.Fail),
     };
 
-    // The steps on the run's path, which the rail shows and the position counts.
+    // The steps on the run's path. The rail shows them and the position counts them.
     private IReadOnlyList<ConsoleStep> PathSteps => Run is { } run ? RunPath.Steps(run) : [];
 
     private int? CurrentIndex => RunPath.IndexOf(PathSteps, Run?.CurrentStepId);
@@ -54,7 +54,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         _ => T("The agent has stopped"),
     };
 
-    // The step's own name under the heading, where the heading says what its kind does.
+    // The step's name under the heading, when the heading describes what the step's kind does.
     public string? Detail => Stage switch
     {
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) is null ? null : step.Name,
@@ -124,7 +124,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         }
     }
 
-    // The failed step's error, in the agent's words, where the problem does not say it already.
+    // The failed step's error, in the agent's words, unless the problem already says it.
     public string? StepError =>
         FailedIndex is { } index && PathSteps[index].Error is { } error && _state?.Problem?.Reason.Contains(error, StringComparison.Ordinal) != true
             ? error
@@ -143,8 +143,8 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
-    // Why nothing runs while the run waits, or else to leave the machine on. The restart into Windows is ahead only
-    // while steps in Windows PE are still to come.
+    // Why nothing runs while the run waits, or otherwise a note to leave the machine on. The restart into Windows is
+    // only mentioned while WinPE steps are still to come.
     public string? Note => Stage switch
     {
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput =>
@@ -163,7 +163,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public IReadOnlyList<RailStep> Steps => Run is { } run ? RunPath.Rail(L, run, PathSteps) : [];
 
-    // The phases the steps run in, above the rail, where the run has more than one.
+    // The phases the steps run in, shown above the rail when the run has more than one.
     public IReadOnlyList<RailPhase> Phases => RunPath.Phases(L, PathSteps);
 
     public override void Update(ConsoleState state)

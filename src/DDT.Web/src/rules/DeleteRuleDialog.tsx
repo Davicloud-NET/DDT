@@ -16,7 +16,7 @@ interface DeleteRuleDialogProps {
   onDeleted: () => void;
 }
 
-// Asks before deleting a rule. The answer is the list, since the rules below move up a place.
+// Asks before deleting a rule. The server answers with the whole list, because the rules below move up one place.
 export function DeleteRuleDialog({ rule, onClose, onDeleted }: DeleteRuleDialogProps) {
   const { t } = useLingui();
   const queryClient = useQueryClient();

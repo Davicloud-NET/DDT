@@ -18,7 +18,7 @@ import { FlowDots } from "./FlowDots";
 import { FlowWires, type WireTone } from "./FlowWires";
 import { Minimap } from "./Minimap";
 
-// In a landmark, as a page puts them.
+// Inside a landmark, the way a page puts them.
 function renderWithI18n(node: ReactNode) {
   return render(
     <I18nProvider i18n={i18n}>
@@ -83,7 +83,7 @@ describe("FlowViewport", () => {
     expect(screen.getByText("100%")).toBeInTheDocument();
     fireEvent.keyDown(group, { key: "+" });
     expect(screen.getByText("125%")).toBeInTheDocument();
-    // Ctrl with + zooms the browser's page, and a text field keeps its keys.
+    // Ctrl with + zooms the browser's page, and a text field keeps its own key presses.
     fireEvent.keyDown(group, { key: "-", ctrlKey: true });
     fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "-" });
     expect(screen.getByText("125%")).toBeInTheDocument();

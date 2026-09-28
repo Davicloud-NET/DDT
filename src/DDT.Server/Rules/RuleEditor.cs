@@ -14,13 +14,13 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DDT.Server.Rules;
 
-// Saves the rules and their order, each change with its audit row, and pushes the whole list, since places move.
-// Positions count from 0 at the top and have no gaps.
+// Saves the rules and their order, with an audit row for each change. It pushes the whole list, because positions
+// move. Positions count from 0 at the top and have no gaps.
 internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeProvider timeProvider)
 {
     private const int MaxAttempts = 3;
 
-    // A new rule goes to the bottom of the list, below every rule it could take a value or the sequence from.
+    // A new rule goes to the bottom of the list, so it can't take a value or the sequence away from an existing rule.
     public async Task<EditOutcome<RuleView>> CreateAsync(SaveRuleRequest request, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -40,8 +40,8 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         Rule rule = new() { Id = Guid.CreateVersion7(now), Name = "", Revision = 1, CreatedUtc = now };
         RuleFields.Apply(rule, request, actor, now);
 
-        // Two administrators adding a rule at once take the same place, and the unique index keeps the first; the second
-        // takes the next one.
+        // Two administrators who add a rule at once take the same position. The unique index keeps the first, and the
+        // second retries with the next position.
         for (int attempt = 1; ; attempt++)
         {
             rule.Position = (await database.Rules.MaxAsync(r => (int?)r.Position, cancellationToken).ConfigureAwait(false) ?? -1) + 1;
@@ -71,7 +71,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         return EditOutcome<RuleView>.Done(rules.Single(r => r.Id == rule.Id));
     }
 
-    // A save names the revision it was made on, and one over a newer revision gets the rule as it is now.
+    // A save names the revision it was based on. If the rule has a newer revision, the save gets the current one.
     public async Task<EditOutcome<RuleView>> UpdateAsync(Guid id, SaveRuleRequest request, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -99,7 +99,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         RuleFields.Apply(rule, request, actor, now);
         string[] changed = RuleFields.Changes(before, rule);
 
-        // An autosave of what is stored already changes nothing and records nothing.
+        // An autosave of what's already stored changes nothing, so nothing is recorded.
         if (changed.Length == 0)
         {
             database.ChangeTracker.Clear();
@@ -125,7 +125,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         return EditOutcome<RuleView>.Done(rules.Single(r => r.Id == id));
     }
 
-    // The rules below move up a place, so the answer is the list. Null for a rule that is gone.
+    // The rules below move up one position, so this returns the whole list. Returns null if the rule doesn't exist.
     public async Task<RuleView[]?> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -143,8 +143,8 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         return await PushAsync(RuleDocuments.ReadRoleIds(deleted.RoleIds).Count > 0, cancellationToken).ConfigureAwait(false);
     }
 
-    // The order names every rule once, top first, and the rules are numbered from 0 again in it. An order made before
-    // someone added, removed or moved a rule gets the list as it is now.
+    // The order names every rule once, top first, and the rules are renumbered from 0 in that order. An order made
+    // before someone added, removed or moved a rule gets the current list back.
     public async Task<EditOutcome<IReadOnlyList<RuleView>>> ReorderAsync(IReadOnlyList<Guid> order, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(order);
@@ -167,7 +167,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         }
         catch (Exception exception) when (exception is DbUpdateException or DbException)
         {
-            // A rule was deleted or moved meanwhile, and a place was taken twice.
+            // A rule was deleted or moved in the meantime, so a position was taken twice.
             moved = null;
         }
 
@@ -185,7 +185,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         return EditOutcome<IReadOnlyList<RuleView>>.Done(list);
     }
 
-    // A refusal when the save lost to a change of the rule, or to the deletion of its sequence.
+    // Returns a refusal if the save lost to another change of the rule, or its sequence was deleted.
     private async Task<EditOutcome<RuleView>?> CommitAsync(Guid id, SaveRuleRequest request, CancellationToken cancellationToken)
     {
         try
@@ -216,7 +216,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         }
     }
 
-    // In one transaction with the moves of the rules below, so the list never has a gap.
+    // Runs in one transaction with moving the rules below, so the list never has a gap.
     private async Task<Rule?> RemoveAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         database.ChangeTracker.Clear();
@@ -232,7 +232,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         database.AuditEvents.Add(AuditEvents.Create(AuditActions.RuleDeleted, rule.Id.ToString("D"), actor, timeProvider.GetUtcNow(), $"Rule {rule.Position + 1}, {rule.Name}."));
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        // One at a time from the top, so each moves into a place that is free: the index is checked row by row.
+        // One at a time from the top, so each moves into a free position. The unique index is checked row by row.
         List<Guid> below = await database.Rules
             .Where(r => r.Position > rule.Position)
             .OrderBy(r => r.Position)
@@ -253,7 +253,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
         return rule;
     }
 
-    // Null when the order does not name every rule once; false when no rule moves.
+    // Returns null if the order doesn't name every rule once, and false if no rule moves.
     private async Task<bool?> MoveAllAsync(IReadOnlyList<Guid> order, Actor actor, CancellationToken cancellationToken)
     {
         database.ChangeTracker.Clear();
@@ -275,7 +275,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
             return false;
         }
 
-        // Out of the way first, into places no rule has, then into the new ones: the index is checked row by row.
+        // First out of the way into unused positions, then into the new ones. The unique index is checked row by row.
         foreach ((Rule rule, int position) in moves)
         {
             await MoveAsync(rule.Id, -1 - position, cancellationToken).ConfigureAwait(false);
@@ -304,7 +304,7 @@ internal sealed class RuleEditor(DdtDbContext database, LiveNotifier live, TimeP
     private async Task<RuleView> ViewAsync(Guid id, CancellationToken cancellationToken) =>
         (await RuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false)).Single(r => r.Id == id);
 
-    // Every change goes out as the whole list, and to the machine roles too where it changed how many rules give one.
+    // Every change pushes the whole list. The machine roles are pushed too if it changed how many rules give a role.
     private async Task<RuleView[]> PushAsync(bool roles, CancellationToken cancellationToken)
     {
         RuleView[] rules = await RuleViews.ListAsync(database, cancellationToken).ConfigureAwait(false);

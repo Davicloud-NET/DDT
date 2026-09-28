@@ -7,11 +7,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.E2E;
 
-// The tree dry run's sequence: an IF on the model, a repeat whose first try restarts Windows PE and fails, the hand-over,
-// a pause in Windows, and a script that runs as a stored account with a share of it connected.
+// The sequence of the tree dry run. It has an IF on the model, a repeat whose first try restarts WinPE and fails, the
+// hand-over, a pause in Windows, and a script that runs as a stored account with a share connected as that account.
 internal sealed class TreeSequence
 {
-    // Set variable has no sums, so the count of tries is written out: 0, then 0+1 on the first try, 0+1+1 on the second.
+    // Set variable can't add numbers, so the count of tries is written out. It's 0, then 0+1 on the first try and 0+1+1
+    // on the second.
     public const string Tries = "Tries";
     private const string FirstTryCount = "0+1";
 
@@ -52,8 +53,8 @@ internal sealed class TreeSequence
             Else = [ApplyOther],
         };
 
-        // A dry run takes every script's exit code as 0, so the first try fails by accepting only 1, and the second works.
-        // Each runs only on its own try, which the count says.
+        // A dry run takes every script's exit code as 0, so the first try fails by accepting only 1, and the second
+        // works. The count decides which try each script runs on.
         Count = new() { Id = Guid.CreateVersion7(), Name = "Count the try", Variable = Tries, Value = "{{Tries}}+1" };
         Restart = new() { Id = Guid.CreateVersion7(), Name = "Restart before the first try", When = onFirstTry };
         FirstTry = DryRunTests.Script("Install the tool", SequencePhase.WindowsPE, "setup.exe /quiet") with

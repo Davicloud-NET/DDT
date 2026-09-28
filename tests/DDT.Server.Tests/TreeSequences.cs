@@ -6,7 +6,7 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Tests;
 
-// Nodes of the sequences runs of trees are tested with, each with a new id, and the visits an agent reports of them.
+// Nodes of the sequences used to test tree runs, each with a new ID, and the visits an agent reports for them.
 internal static class TreeSequences
 {
     public static TestCondition ThinkPad { get; } = new(MachineVariableNames.FriendlyModel, ConditionOperator.Matches, "ThinkPad*");

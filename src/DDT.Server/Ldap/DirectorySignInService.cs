@@ -22,12 +22,12 @@ public sealed partial class DirectorySignInService(
     DdtSettings settings,
     ILogger<DirectorySignInService> logger)
 {
-    // Once per scope, as the authenticator takes it: a change applies at the next sign-in.
+    // Read once per scope, the same way the authenticator reads it. A change applies at the next sign-in.
     private readonly LdapOptions _options = settings.Current.Ldap;
 
     public bool Enabled => _options.Enabled;
 
-    // Enabled, and with the server and the part of the directory to search.
+    // Enabled, with a server and a base DN to search.
     public bool Configured => _options.Enabled && !string.IsNullOrWhiteSpace(_options.Host) && !string.IsNullOrWhiteSpace(_options.BaseDn);
 
     public async Task<SignInResult> SignInAsync(string userName, string password, CancellationToken cancellationToken)
@@ -42,8 +42,8 @@ public sealed partial class DirectorySignInService(
         return result;
     }
 
-    // Everything a directory sign-in checks and updates, without issuing a cookie. The user is returned only on success.
-    // A user whose groups give no role while the map decides roles gets NoRoleSignInResult.
+    // Does everything a directory sign-in checks and updates, but doesn't issue a cookie. The user is only returned on
+    // success. If the group map decides roles and the user's groups give no role, this returns NoRoleSignInResult.
     public async Task<(SignInResult Result, DdtUser? User)> AuthenticateAsync(
         string userName,
         string password,
@@ -77,8 +77,8 @@ public sealed partial class DirectorySignInService(
 
         GroupRoles mapped = GroupRoles.From(identity.GroupDns, _options.GroupRoleMap);
 
-        // The directory is authoritative: an account whose groups no longer give it a role loses the one it had, and no
-        // account is made for a user whose groups never gave one.
+        // The directory is authoritative. An account whose groups no longer give it a role loses the role it had. No
+        // account is created for a user whose groups never gave one.
         if (mapped.Decides && mapped.Role is null)
         {
             await TakeRoleAsync(identity, existing, cancellationToken).ConfigureAwait(false);
@@ -89,8 +89,8 @@ public sealed partial class DirectorySignInService(
         return await AcceptAsync(identity, existing, mapped, cancellationToken).ConfigureAwait(false);
     }
 
-    // What a sign-in with this user name would give and why, read with the bind account: no password, no account made,
-    // no cookie. Throws LdapUnavailableException when the directory cannot be asked.
+    // Explains what a sign-in with this user name would give and why. It reads with the bind account, so there's no
+    // password, no new account and no cookie. Throws LdapUnavailableException when the directory can't be queried.
     public async Task<DirectoryCheck> CheckAsync(string userName, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userName);
@@ -120,7 +120,8 @@ public sealed partial class DirectorySignInService(
             message.Args);
     }
 
-    // A role DDT knows as a message, so the web names it as its role pages do; any other as it is.
+    // Returns a role DDT knows as a message, so the web client names it the same way its role pages do. Any other role
+    // is returned as it is.
     internal static object RoleName(string role) => role switch
     {
         DdtRoleNames.Administrator => ServerMessages.RoleAdministrator.With(),
@@ -129,8 +130,8 @@ public sealed partial class DirectorySignInService(
         _ => role,
     };
 
-    // Before anything goes to the directory. DDT applies its own lockout first: without this brake, DDT is a convenient
-    // way to lock out arbitrary domain accounts.
+    // Runs before anything goes to the directory. DDT applies its own lockout first. Without this brake, DDT would be a
+    // convenient way to lock out arbitrary domain accounts.
     private async Task<SignInResult?> RefusalAsync(DdtUser existing)
     {
         if (existing.Source != AccountSource.Directory)
@@ -157,7 +158,7 @@ public sealed partial class DirectorySignInService(
         LogNoRole(identity.UserName, identity.ImmutableId);
     }
 
-    // The directory accepted the password: the account is made or brought up to date, and its role applied.
+    // The directory accepted the password. The account is created or updated, and its role is applied.
     private async Task<(SignInResult Result, DdtUser? User)> AcceptAsync(
         LdapIdentity identity,
         DdtUser? existing,
@@ -176,7 +177,7 @@ public sealed partial class DirectorySignInService(
             return (SignInResult.NotAllowed, null);
         }
 
-        // A user Identity refused to save has no row, so handing it back would sign in an account that does not
+        // If Identity refused to save the user, it has no row. Returning it would sign in an account that doesn't
         // exist, with roles that were never stored.
         if (!Saved(user, await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false)))
         {
@@ -200,7 +201,7 @@ public sealed partial class DirectorySignInService(
         return (SignInResult.Success, user);
     }
 
-    // In the sign-in's own order, so the first reason that would stop a sign-in is the one given.
+    // Checks in the same order as the sign-in, so the reason given is the first one that would stop a sign-in.
     private async Task<(string? Role, ServerMessage Message)> ReasonAsync(string userName, LdapLookup lookup, GroupRoles mapped)
     {
         DdtUser? account = await userManager.FindByNameAsync(userName).ConfigureAwait(false);
@@ -258,8 +259,8 @@ public sealed partial class DirectorySignInService(
     private static DirectoryCheck NotFound(ServerMessage message) =>
         new(false, null, null, [], [], null, message.Text, message.Code, message.Args);
 
-    // Keyed on the directory's immutable identifier, never on the user name or the distinguished
-    // name: both of those change when someone is renamed or moved between organisational units.
+    // Keyed on the directory's immutable identifier, never on the user name or the distinguished name. Both of those
+    // change when someone is renamed or moved between organisational units.
     private async Task<DdtUser?> KnownAsync(string immutableId, DdtUser? matchedByName) =>
         await userManager.Users
             .FirstOrDefaultAsync(u => u.DirectoryObjectId == immutableId)

@@ -2,8 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The console's control themes. The focus ring is drawn outside the part, so nothing moves. Hover and selection fade
-     a layer of the new tone in, since a colour faded from transparent would pass through white on the way. -->
+<!-- The console's control themes. The focus ring is drawn outside the part, so nothing shifts. Hover and selection
+     fade in a layer of the new tone, because a colour faded from transparent would pass through white on the way. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -27,8 +27,8 @@
     </Setter>
   </ControlTheme>
 
-  <!-- Keys. Secondary is the default; primary is the one next step on a screen, filled with ink; danger is an outline
-       until it may be pressed, and then filled red; quiet has no edge. -->
+  <!-- Keys. Secondary is the default. Primary is the single next step on a screen, filled with ink. Danger is an
+       outline until it may be pressed, and then filled red. Quiet has no edge. -->
   <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
     <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
@@ -50,8 +50,8 @@
     </Setter>
     <Setter Property="Template">
       <ControlTemplate>
-        <!-- The key, with its focus ring, sinks as a whole; the hover tone and the shade of a press fade in over the
-             face, inside its edge. -->
+        <!-- The key sinks as a whole, focus ring included. The hover tone and the press shade fade in over the face,
+             inside its edge. -->
         <Panel Name="key" RenderTransform="translateY(0px)">
           <Panel.Transitions>
             <Transitions>
@@ -231,7 +231,8 @@
       </ControlTemplate>
     </Setter>
 
-    <!-- The edge turns red over fast when what was typed is refused; the ring is there at once. -->
+    <!-- The edge turns red over the Fast duration when the typed value is refused. The focus ring appears right
+         away. -->
     <Style Selector="^ /template/ Border#border">
       <Setter Property="Transitions">
         <Transitions>
@@ -276,8 +277,8 @@
     </Setter>
   </ControlTheme>
 
-  <!-- A row to choose: the hover tone under the pointer, the selected tone with an edge once chosen. When the choice
-       moves, the tone fades from one row to the next rather than jumping. -->
+  <!-- A row to pick: the hover tone under the pointer, and the selected tone with an edge once picked. When the
+       selection moves, the tone fades from one row to the next instead of jumping. -->
   <ControlTheme x:Key="{x:Type ListBoxItem}" TargetType="ListBoxItem">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="Transparent" />
@@ -351,8 +352,8 @@
     </Style>
   </ControlTheme>
 
-  <!-- A choice as a key, filled as the primary key once chosen. ChoiceKey is a ListBoxItem, one of which is chosen;
-       ChoiceToggle a ToggleButton that turns on and off by itself. -->
+  <!-- A choice shown as a key, filled like the primary key once chosen. ChoiceKey is a ListBoxItem, and only one can
+       be chosen. ChoiceToggle is a ToggleButton that turns on and off by itself. -->
   <ControlTheme x:Key="ChoiceKey" TargetType="ListBoxItem">
     <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />

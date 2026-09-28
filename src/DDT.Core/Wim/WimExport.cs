@@ -4,5 +4,5 @@
 
 namespace DDT.Core.Wim;
 
-// One image of a WIM, from 1, exported into a new WIM with its own compression.
+// Exports one image of a WIM into a new WIM with its own compression. Index counts from 1.
 public sealed record WimExport(string SourceWimPath, int Index, string DestinationWimPath, WimCompression Compression);

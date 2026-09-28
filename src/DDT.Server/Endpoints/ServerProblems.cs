@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DDT.Server.Endpoints;
 
-// Problem details carry the message's code and args beside its English title, so the web can say a refusal in the
-// person's language. A validation problem adds errorCodes: its English errors as codes, field by field.
+// Problem details carry the message's code and args next to its English title, so the web client can show a refusal in
+// the person's language. A validation problem also adds errorCodes, which holds its errors as codes, field by field.
 public static class ServerProblems
 {
     public const string CodeExtension = "code";

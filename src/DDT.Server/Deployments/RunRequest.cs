@@ -8,7 +8,7 @@ using DDT.Server.Rules;
 
 namespace DDT.Server.Deployments;
 
-// What an assignment, an approval or a pick asks of a new run. Giver is who requests the run and answers its inputs;
+// What an assignment, an approval or a pick asks of a new run. Giver is who requests the run and answers its inputs.
 // ComputerName is the name the request gives the machine.
 public sealed record RunRequest(
     Machine Machine,
@@ -19,6 +19,6 @@ public sealed record RunRequest(
     RunCredentialGiver Giver,
     string? Address)
 {
-    // The rules walked for the machine already; null to walk them for the answers.
+    // The rules already walked for the machine, or null to walk them for the answers.
     public SequenceResolution? Resolution { get; init; }
 }

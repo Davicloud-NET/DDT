@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Values;
 
-// A value a rule or a machine role sets, such as ComputerName = PC-{{SerialNumber|alnum|right:12}}. Value is a
-// template. Every signed-in user can read it, so it never holds a password; accounts hold those.
+// A value that a rule or a machine role sets, such as ComputerName = PC-{{SerialNumber|alnum|right:12}}. Value is a
+// template. Every signed-in user can read it, so it never holds a password. Passwords belong in accounts.
 public sealed record NamedValue(string Name, string Value);

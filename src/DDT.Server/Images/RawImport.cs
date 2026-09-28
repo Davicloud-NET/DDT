@@ -7,9 +7,9 @@ using DDT.Core.Disks;
 
 namespace DDT.Server.Images;
 
-// CompressedPath holds the raw disk compressed with zstd, which Sha256 and SizeBytes describe; SourceSha256 and Info
-// describe the raw disk. Refusal is set instead, and Retryable says its cause lies with the server, such as a missing
-// tool or a full volume, so the upload is kept.
+// CompressedPath holds the raw disk compressed with zstd, and Sha256 and SizeBytes describe that copy. SourceSha256 and
+// Info describe the raw disk. When the import fails, Refusal is set instead. Retryable means the cause lies with the
+// server, such as a missing tool or a full volume, so the upload is kept.
 public sealed record RawImport(
     ServerMessage? Refusal,
     string CompressedPath = "",

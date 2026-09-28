@@ -6,8 +6,8 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { createLiveConnection, type LiveConnection, type LiveHub } from "@/live/liveConnection";
 
-// The application's live connection over a hub the test drives: it pushes the server's events, and loses and
-// regains the connection. The events go through the same handlers as in the application, into the query cache.
+// The app's live connection over a hub the test drives. The test pushes the server's events, and loses and
+// regains the connection. The events go through the same handlers as in the app, into the query cache.
 export interface TestHub {
   live: LiveConnection;
   // The hub methods the page invoked, such as "WatchMachine <id>", in order.

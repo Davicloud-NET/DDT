@@ -13,7 +13,7 @@ import {
   type PxeHostInterfaces,
 } from "../networkBoot";
 
-// A key that is no architecture sorts after every architecture.
+// A key that isn't an architecture sorts after all architectures.
 function order(key: string): number {
   const index = architecturesInOrder.indexOf(canonicalArchitecture(key) ?? "");
 
@@ -24,7 +24,7 @@ export function targetKeysInOrder(targets: Record<string, BootTargetSettings>): 
   return Object.keys(targets).sort((a, b) => order(a) - order(b) || a.localeCompare(b, "en"));
 }
 
-// The server matches keys without regard to case, so an architecture with a key in any case has its target.
+// The server matches keys ignoring case, so an architecture already has a target if its key exists in any case.
 export function architecturesWithout(keys: readonly string[]): string[] {
   const used = new Set(keys.map((key) => key.toLowerCase()));
 
@@ -67,7 +67,7 @@ export function withoutTarget(
   return Object.fromEntries(Object.entries(targets).filter(([other]) => other !== key));
 }
 
-// The boot managers as TFTP paths, or as URLs on the boot port, which offer nothing while the port is unknown.
+// The boot managers as TFTP paths, or as URLs on the boot port. No URLs are offered while the port is unknown.
 export function bootFileOptions(
   http: boolean,
   server: string,
@@ -80,8 +80,8 @@ export function bootFileOptions(
   });
 }
 
-// This page's host name, then the addresses of the interfaces the hosts serve, which a machine reaches without a
-// name to look up.
+// This page's host name, then the addresses of the interfaces the hosts serve. A machine can reach an address
+// without a name lookup.
 export function serverNameOptions(here: string, hosts: readonly PxeHostInterfaces[]): string[] {
   const addresses = hosts.flatMap((host) =>
     host.interfaces

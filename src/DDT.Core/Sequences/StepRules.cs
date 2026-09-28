@@ -7,15 +7,15 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The rules of each node of a sequence, which SequencePaths checks where it meets the node.
+// The rules for each node of a sequence. SequencePaths checks them when it reaches the node.
 internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 {
-    // Before Partition the run's state exists only in memory, so a restart in Windows PE would lose the run. A raw disk
-    // image leaves no partition DDT could keep the run's state or unpack a package on.
+    // Before Partition, the run's state only exists in memory, so a restart in Windows PE would lose the run. A raw
+    // disk image leaves no partition where DDT could keep the run's state or unpack a package.
     private readonly MessageTemplate _noRestart =
         writesRawImage ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition;
 
-    // With a raw disk image, the rules of a Windows installation would only repeat what is wrong in other words.
+    // With a raw disk image, the Windows installation rules would only restate the same problem in other words.
     public bool InstallsWindows(SequenceStep step, SequencePhase? required) =>
         writesRawImage
         && (step is PartitionStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
@@ -33,7 +33,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
             problems.Add("name", ServerMessages.SequenceStepNameTooLong.With("max", SequenceValidator.MaxNameLength));
         }
 
-        // Said once, at the first node too deep, rather than at every node below it.
+        // Reported once, at the first node that's too deep, instead of at every node below it.
         if (depth == SequenceValidator.MaxDepth)
         {
             problems.Add(null, ServerMessages.SequenceTooDeep.With("max", SequenceValidator.MaxDepth));
@@ -41,7 +41,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 
         CheckConditions(step, problems);
 
-        // A share is connected for as long as its step runs, so a container, which runs nothing itself, has none.
+        // A share is connected while its step runs. A container runs nothing itself, so it can't have shares.
         if (step.IsContainer && step.Shares is { Count: > 0 })
         {
             problems.Add("shares", ServerMessages.SequenceSharesOnlyOnSteps.With());
@@ -72,7 +72,8 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         CheckKind(step, place, problems);
     }
 
-    // After a container its paths decide, which may have left Windows PE without a partition.
+    // After a container, its paths decide whether a restart is safe. Some may still be in Windows PE without a
+    // partition.
     public void CheckRestartAfterContainer(SequenceStep container, PathState after, StepProblems problems)
     {
         if (container.RebootAfter && (after.Current & PhaseSet.WindowsPE) != 0 && !after.MustHave(Happened.Partitioned))
@@ -81,7 +82,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         }
     }
 
-    // An IF decides by its test alone: its own conditions would only skip both branches, which an IF around it says.
+    // An IF decides by its test alone. Conditions on it would only skip both branches, and an IF around it can do that.
     public static void CheckIf(IfStep branch, StepProblems problems)
     {
         if (branch.Conditions is { Count: > 0 })
@@ -131,7 +132,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         }
     }
 
-    // What a run does once, and which a repeat would do again.
+    // Steps a run does only once, which a repeat would do again.
     private static bool RunsOnce(SequenceStep step) =>
         step is PartitionStep or WriteRawImageStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
             or WriteCloudInitSeedStep;
@@ -185,7 +186,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 
         if (place.Required == SequencePhase.Windows && !writesRawImage && !place.Before.MustHave(Happened.ImageEveryTime))
         {
-            // An image on some paths but not on every one is a matter of the paths, not of the step's conditions.
+            // When only some paths apply an image, the paths are the problem, not the step's conditions.
             MessageTemplate needsImage = !place.Before.MustHave(Happened.ImageApplied) && place.Before.MayHave(Happened.ImageApplied)
                 ? ServerMessages.SequenceWindowsNeedsImageOnEveryPath
                 : ServerMessages.SequenceWindowsNeedsImage;

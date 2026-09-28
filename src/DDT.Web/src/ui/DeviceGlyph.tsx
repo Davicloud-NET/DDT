@@ -15,7 +15,7 @@ import {
 import { cx } from "./cx";
 
 // What kind of computer a machine is, so a list shows the hardware and not only names. It comes from the SMBIOS
-// chassis type the agent reads; "unknown" until an agent reports it.
+// chassis type the agent reads, and it's "unknown" until an agent reports it.
 export type DeviceKind = "laptop" | "desktop" | "tablet" | "server" | "virtual" | "unknown";
 
 const glyphs: Record<DeviceKind, Icon> = {

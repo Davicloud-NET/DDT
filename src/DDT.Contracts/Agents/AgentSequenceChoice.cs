@@ -16,14 +16,15 @@ public sealed record AgentSequenceChoice(
     bool NeedsComputerName,
     // The disk space the run needs.
     long RequiredBytes,
-    // The sequence an assignment rule chose for this machine; a rule only suggests, it never starts a run.
+    // The sequence an assignment rule chose for this machine. A rule only suggests a sequence and never starts a run.
     bool Suggested,
     // The raw disk image the sequence writes, if any.
     string? RawImageName = null,
     ImageBootCapability? RawImageBootCapability = null,
     UefiCa? RawImageSignedUnder = null,
-    // What the machine asks after the pick; the answers go with the AgentRunRequest.
+    // What the machine asks after the pick. The answers are sent with the AgentRunRequest.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<AgentInput>? Inputs = null,
-    // For a sequence that needs a name: what the run gets when the technician types none, from the machine's own name,
-    // the rules (such as PC-{{SerialNumber}}) or the defaults. The computer name question starts with it.
+    // For a sequence that needs a name, the name the run gets if the technician doesn't type one. It comes from the
+    // machine's own name, the rules (such as PC-{{SerialNumber}}) or the defaults. The computer name question is
+    // prefilled with it.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ComputerName = null);

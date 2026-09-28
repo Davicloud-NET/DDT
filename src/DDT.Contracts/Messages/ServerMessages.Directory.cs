@@ -20,7 +20,7 @@ public static partial class ServerMessages
         "organizationalUnit.notDistinguished",
         "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com.");
 
-    // The directory for sign-ins, and the domain Join the domain steps join.
+    // The directory used for sign-ins, and the domain that Join the domain steps join.
 
     public static readonly MessageTemplate DirectoryEnterUserName = Define("directory.enterUserName", "Enter the user name to check.");
 

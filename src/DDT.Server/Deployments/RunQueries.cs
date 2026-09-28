@@ -55,8 +55,8 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
         return deployments.ToDictionary(d => d.MachineId);
     }
 
-    // Null for an agent too old for the run's sequence, which would throw on a kind it does not know, and for the
-    // service in Windows, which only ever continues a run that is running.
+    // Null for an agent too old for the run's sequence, which would throw on a step kind it doesn't know. Also null for
+    // the service in Windows, which only ever continues a running run.
     public async Task<AgentRun?> HandOverAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -95,8 +95,8 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             await PendingInputsAsync(machine, run, definition, cancellationToken).ConfigureAwait(false));
     }
 
-    // The inputs the machine asks before an assigned run can start: none unless a required one it asks has no answer,
-    // and then every one it asks without an answer, so they are asked together.
+    // The inputs the machine asks before an assigned run can start. None, unless a required input it asks has no
+    // answer. Then it's every input it asks without an answer, so they're asked together.
     public async Task<IReadOnlyList<AgentInput>?> PendingInputsAsync(
         Machine machine,
         Deployment run,

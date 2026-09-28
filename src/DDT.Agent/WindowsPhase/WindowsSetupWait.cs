@@ -8,8 +8,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Windows setup, however long someone takes at the out-of-box experience, comes before the run's next step: a step that
-// ran during it would be cut off by its restarts. The heartbeat keeps the run's page up to date meanwhile.
+// Windows setup comes before the run's next step, however long someone takes at the out-of-box experience. A step that
+// ran during setup would be cut off by its restarts. The heartbeat keeps the run's page up to date meanwhile.
 internal sealed class WindowsSetupWait(
     IWindowsSetupProbe setup,
     RunHeartbeatFactory heartbeats,
@@ -17,11 +17,12 @@ internal sealed class WindowsSetupWait(
     AgentLog log,
     TimeProvider timeProvider)
 {
-    // At every start of the service, before anything that can take long: setup may sign in to DDT's session any moment.
+    // Called at every start of the service, before anything that can take long, because setup may sign in to DDT's
+    // session any moment.
     public Task PrepareSessionAsync(CancellationToken cancellationToken) => console.PrepareAsync(cancellationToken);
 
-    // Once setup has finished, the session takes over the sign-in settings and the answer file goes. False when the
-    // server did not take the heartbeat's report meanwhile, which the next registration sorts out.
+    // Once setup has finished, the session takes over the sign-in settings and the answer file is deleted. Returns
+    // false when the server didn't take the heartbeat's report meanwhile. The next registration sorts that out.
     public async Task<bool> WaitAsync(WindowsRunContact contact, AgentRun run, LocalRun local, CancellationToken cancellationToken)
     {
         if (setup.Pending() is { } pending && !await WaitUntilFinishedAsync(pending, contact, run, local, cancellationToken).ConfigureAwait(false))
@@ -79,7 +80,7 @@ internal sealed class WindowsSetupWait(
         return true;
     }
 
-    // Warns now and then, as setup may wait for someone at the machine.
+    // Warns now and then, because setup may wait for someone at the machine.
     private async Task PollAsync(string? pending, CancellationToken cancellationToken)
     {
         long started = timeProvider.GetTimestamp();
@@ -99,7 +100,7 @@ internal sealed class WindowsSetupWait(
         }
     }
 
-    // Setup has read the answer file, and its SetupComplete.cmd line may never have run: an OEM key skips it.
+    // Setup has read the answer file, and its SetupComplete.cmd line may never have run, because an OEM key skips it.
     private void DeleteAnswerFile(LocalRun local)
     {
         string path = UnattendFile.PathIn(local.WindowsRoot);

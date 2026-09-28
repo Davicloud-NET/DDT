@@ -115,7 +115,8 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate AuditRangeEnd = Define("audit.rangeEnd", "The end of the range must come after its start.");
 
-    // What ASP.NET Core Identity refuses, in its own English, which DdtIdentityErrorDescriber gives it from here.
+    // What ASP.NET Core Identity refuses, in Identity's own English. DdtIdentityErrorDescriber hands these messages to
+    // Identity.
 
     public static readonly MessageTemplate IdentityDefaultError = Define("identity.defaultError", "An unknown failure has occurred.");
 
@@ -193,6 +194,6 @@ public static partial class ServerMessages
         "identity.passwordRequiresUpper",
         "Passwords must have at least one uppercase ('A'-'Z').");
 
-    // An error Identity made some other way, in its English.
+    // An error that Identity created some other way, in its own English.
     public static readonly MessageTemplate IdentityOther = Define("identity.other", "{description}");
 }

@@ -13,9 +13,9 @@ namespace DDT.Pxe;
 
 public static class BootHttpEndpoints
 {
-    // After routing and before static files, the SPA fallback and authorization. Comparing the endpoint, not a path
-    // prefix, keeps boot files on the cleartext boot port and all else off it. The destination address decides, not the
-    // arrival interface, so a client routed to a served address reaches files that are public by design.
+    // Goes after routing and before static files, the SPA fallback and authorization. It compares the endpoint, not a
+    // path prefix, to keep boot files on the cleartext boot port and everything else off it. The destination address
+    // decides, not the arrival interface. A client routed to a served address reaches files that are public by design.
     public static IApplicationBuilder UseBootListenerIsolation(
         this IApplicationBuilder app,
         int bootPort,
@@ -53,8 +53,8 @@ public static class BootHttpEndpoints
         });
     }
 
-    // GET and HEAD both: UEFI HTTP Boot sends HEAD first, and a HEAD that matches no endpoint falls
-    // through to the deny by default policy and becomes a redirect the firmware refuses to follow.
+    // Maps both GET and HEAD. UEFI HTTP Boot sends HEAD first, and a HEAD that matches no endpoint falls through to the
+    // deny by default policy. That turns it into a redirect the firmware refuses to follow.
     public static IEndpointConventionBuilder MapBootFiles(this IEndpointRouteBuilder endpoints, BootFileResolver files)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -83,8 +83,8 @@ public static class BootHttpEndpoints
 
         PxeLog.HttpBoot(logger, context.Request.Method, context.Request.Path, client);
 
-        // Firmware resumes an interrupted download with If-Match, so the ETag must be strong: a weak one is ignored,
-        // and a range of a replaced image gets spliced onto the old one.
+        // Firmware resumes an interrupted download with If-Match, so the ETag must be strong. A weak one is ignored,
+        // and then a range of a replaced image gets spliced onto the old one.
         EntityTagHeaderValue entityTag = new(
             string.Create(CultureInfo.InvariantCulture, $"\"{file.LastWriteTimeUtc.Ticks:x}-{file.Length:x}\""));
 

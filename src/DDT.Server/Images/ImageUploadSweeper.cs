@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Removes sessions nobody continued for a day with their part files, completed sessions a day after they finished, and
-// part files of no session. The library itself is never swept.
+// Removes sessions nobody continued for a day, together with their part files. It also removes completed sessions a day
+// after they finished, and part files that belong to no session. The library itself is never swept.
 public sealed partial class ImageUploadSweeper(
     IServiceScopeFactory scopes,
     ImageStore store,
@@ -25,14 +25,14 @@ public sealed partial class ImageUploadSweeper(
     {
         DateTimeOffset cutoff = timeProvider.GetUtcNow() - ImageUploadLimits.SessionLifetime;
 
-        // Listed before the sessions are read: a part file created after this list cannot be taken for an orphan
-        // just because its session was created after the read.
+        // List the part files before reading the sessions. If the list came after the read, a new part file could look
+        // like an orphan just because its session was created after the read.
         List<(Guid UploadId, FileInfo File)> parts = ListParts();
 
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
-        // SQLite cannot compare DateTimeOffset, so ages are judged here.
+        // SQLite can't compare DateTimeOffset, so the ages are checked here instead of in the query.
         var sessions = await database.ImageUploads
             .AsNoTracking()
             .Select(u => new { u.Id, u.UpdatedUtc, Completed = u.CompletedSha256 != null })
@@ -144,7 +144,7 @@ public sealed partial class ImageUploadSweeper(
 
         List<(Guid UploadId, FileInfo File)> parts = [];
 
-        // The part files, and the raw disks and compressed copies an import of a disk image made from them.
+        // Lists the part files, plus the raw disks and compressed copies that a disk image import made from them.
         foreach (FileInfo file in uploads.EnumerateFiles("*.*").Where(file => file.Extension is ".part" or ".raw" or ".zst"))
         {
             if (Guid.TryParseExact(Path.GetFileNameWithoutExtension(file.Name), "N", out Guid uploadId))

@@ -19,7 +19,7 @@ internal sealed class RunCredentialConfiguration : IEntityTypeConfiguration<RunC
         builder.Property(c => c.Domain).HasMaxLength(AccountLimits.MaxDomainLength);
         builder.Property(c => c.ProvidedByName).HasMaxLength(256);
 
-        // A run's credentials go with it, though RunCredentialCleanup deletes them long before, when the run ends.
+        // Deleting a run deletes its credentials. RunCredentialCleanup already removes them when the run ends.
         builder.HasOne<Deployment>().WithMany().HasForeignKey(c => c.DeploymentId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<DdtUser>().WithMany().HasForeignKey(c => c.ProvidedByUserId).OnDelete(DeleteBehavior.SetNull);
     }

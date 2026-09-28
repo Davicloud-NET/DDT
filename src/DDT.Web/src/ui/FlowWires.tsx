@@ -8,8 +8,9 @@ import { arrowPath, wirePath } from "@/sequences/flow/wirePaths";
 import { cx } from "./cx";
 import { wireFills } from "./wireFills";
 
-// How a wire is drawn. While a sequence is edited every wire is "edit". On a run's page the path the run took is
-// "taken", in ink; what is still ahead of it is "ahead"; a branch it did not take is "not", dashed and faint.
+// How a wire is drawn. While a sequence is edited, every wire is "edit". On a run's page, the path the run took
+// is "taken", in ink. What's still ahead of it is "ahead", and a branch it didn't take is "not", dashed and
+// faint.
 export type WireTone = "edit" | "taken" | "ahead" | "not";
 
 const strokes: Record<WireTone, string> = {

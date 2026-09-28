@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// Rules choose code to run as SYSTEM, and the values it runs with, without anyone choosing each time, so only an
-// administrator writes them. Every answer is what changed: the rule, or the whole list where places moved.
+// Rules choose code to run as SYSTEM, and the values it runs with, without anyone choosing each time. So only an
+// administrator writes them. Every response holds what changed: the rule, or the whole list if positions moved.
 public static class RuleEndpoints
 {
     public static RouteGroupBuilder MapRuleEndpoints(this RouteGroupBuilder group)
@@ -49,7 +49,7 @@ public static class RuleEndpoints
         };
     }
 
-    // The client decides what to do with a newer save: take it, or save its own edits over it knowingly.
+    // The client decides what to do with a newer save: take it, or knowingly save its own edits over it.
     private static async Task<Results<Ok<RuleView>, NotFound, Conflict<RuleView>, ValidationProblem>> UpdateAsync(
         Guid id,
         SaveRuleRequest request,

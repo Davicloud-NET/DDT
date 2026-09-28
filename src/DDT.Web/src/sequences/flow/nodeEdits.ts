@@ -10,7 +10,7 @@ import type { FlowEdit, NodePatch } from "./flowEdits";
 import { findNode } from "./flowTree";
 import { replaceNode, withSteps } from "./treeChanges";
 
-// The members of version 3 a node may be given although it has none yet.
+// The version 3 members a node may get even though it doesn't have them yet.
 function optionalMembers(node: SequenceStep): string[] {
   return [
     "when",

@@ -15,18 +15,18 @@ import {
   type LdapSettings,
 } from "../signIn";
 
-// The proof of a directory test, which a directory administrator's save that changes who can sign in carries, so
-// that nobody locks themselves out.
+// Proof from a directory test. When an admin who signs in through the directory changes who can sign in, the save
+// must carry this proof, so they can't lock themselves out.
 export function useDirectoryProof() {
   const [proof, setProof] = useState<DirectoryProof | null>(null);
   const now = useNow(10_000);
 
   return {
     setProof,
-    // The save reads the real clock: the ticking one can be seconds behind.
+    // The save checks the real clock, because the ticking one can be seconds behind.
     header: (): Record<string, string> =>
       proof !== null && proof.expires > Date.now() ? { [DIRECTORY_PROOF_HEADER]: proof.token } : {},
-    // fresh is the proof while it fits these values and has not expired.
+    // fresh is the proof while it matches these values and hasn't expired.
     check: (
       signsInThroughDirectory: boolean,
       stored: LdapSettings,

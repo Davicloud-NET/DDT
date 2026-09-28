@@ -4,8 +4,9 @@
 
 namespace DDT.Agent;
 
-// This agent as an update sees it. ConsolePath is the console beside it, which the server's replaces; null without one
-// or when --console named one, which stays. ExecutablePath, Environment.ProcessPath unless set, starts for a new console.
+// This agent as an update sees it. ConsolePath is the console next to it, which the server's console replaces. It's
+// null when there's none, or when --console named one, because that one is kept. ExecutablePath is started again for
+// a new console. It defaults to Environment.ProcessPath.
 public sealed record RunningAgent(
     string Sha256,
     string Directory,

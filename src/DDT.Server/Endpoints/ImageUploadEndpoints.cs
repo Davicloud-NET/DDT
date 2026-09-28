@@ -19,8 +19,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// A resumable upload: a session, the file in chunks at the offset the server holds, then completion. Every answer to a
-// chunk carries the committed offset in Upload-Offset, where the client continues.
+// A resumable upload. The client creates a session, sends the file in chunks at the offset the server holds, then
+// completes it. Every answer to a chunk carries the committed offset in Upload-Offset, where the client continues.
 public static class ImageUploadEndpoints
 {
     private const string UploadOffsetHeader = "Upload-Offset";
@@ -33,7 +33,7 @@ public static class ImageUploadEndpoints
         group.MapGet("/", ListAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         // The body is streamed to disk and never bound, so the CSRF filters run before any of it is read. The handler
-        // refuses an oversized chunk by its Content-Length; the size limit is a second line of defence.
+        // refuses an oversized chunk by its Content-Length. The size limit is a second line of defence.
         group.MapPatch("/{id:guid}", AppendAsync)
             .RequireAuthorization(DdtPolicies.Administrator)
             .WithMetadata(new RequestSizeLimitAttribute(ImageUploadLimits.ChunkBytes + 1));
@@ -156,7 +156,7 @@ public static class ImageUploadEndpoints
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The client has gone. The work goes on, and its stored result answers the client's next attempt.
+            // The client is gone. The work continues, and its stored result answers the client's next attempt.
             return TypedResults.StatusCode(StatusCodes.Status499ClientClosedRequest);
         }
 

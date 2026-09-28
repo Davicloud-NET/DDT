@@ -13,7 +13,7 @@ using Microsoft.Extensions.Primitives;
 namespace DDT.Pxe;
 
 // One hosted service owns all three listeners, because AddHostedService dedupes on the implementation type and would
-// drop the second ProxyDHCP listener. Each new settings version rebuilds them; a setup that does not bind rolls back to
+// drop the second ProxyDHCP listener. Each new settings version rebuilds them. A setup that doesn't bind rolls back to
 // the previous one and is reported, unless PxeDesiredSetup.StopHostOnFailure asks to stop the host at startup.
 public sealed class PxeHost : IHostedService, IDisposable
 {
@@ -42,7 +42,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         _logger = loggerFactory.CreateLogger<PxeHost>();
     }
 
-    // The setup whose listeners run, which the HTTP boot gate reads on every request. Null while nothing is served.
+    // The setup whose listeners are running. The HTTP boot gate reads it on every request. Null while nothing is
+    // served.
     public PxeSetup? Applied => Volatile.Read(ref _applied);
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -128,7 +129,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
         catch (InvalidOperationException exception)
         {
-            // The source checked the values; this is what changed on the host since, and the running setup stays.
+            // The source already checked the values, so this comes from something that changed on the host since. The
+            // running setup stays.
             PxeLog.ApplyFailed(_logger, exception.Message);
 
             return new PxeApplyResult(desired.Version, false, exception.Message, previous?.Interfaces);
@@ -168,7 +170,7 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
     }
 
-    // Only a new version is applied; the source fires for a change of any setting.
+    // Only a new version is applied. The source fires when any setting changes.
     private async Task ApplyChangedAsync()
     {
         try
@@ -274,7 +276,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             _binding.TftpPort);
     }
 
-    // Ends every TFTP transfer in progress, which a machine then starts again.
+    // Ends every TFTP transfer in progress. The machines then start them again.
     private async Task StopListenersAsync()
     {
         foreach (Func<Task> stop in _stops)
@@ -285,7 +287,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         _stops.Clear();
     }
 
-    // Protocol names the listener in the log, and kind in the message, which says the advice for the socket error too.
+    // protocol names the listener in the log, and kind names it in the message. The message also gives advice for the
+    // socket error.
     private void Bind(IPxeListener listener, string protocol, string kind, int port)
     {
         try

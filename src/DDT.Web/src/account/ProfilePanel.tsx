@@ -10,7 +10,7 @@ import { Facts } from "@/ui/Facts";
 import { Panel } from "@/ui/Panel";
 import { roleLabel, sourceLabel } from "@/users/userView";
 
-// Who the signed-in person is to DDT.
+// Who the signed-in user is: the name, the kind of account and the roles.
 export function ProfilePanel({ user }: { user: CurrentUser }) {
   const roles = user.roles.map(roleLabel).join(", ");
 

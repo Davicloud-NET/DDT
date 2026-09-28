@@ -8,8 +8,8 @@ using DDT.Server.Live;
 
 namespace DDT.Server.Users;
 
-// Pushes an account as it is now to the administrators' pages. Closing its live connections first makes them connect
-// again with what the account may see now.
+// Pushes the account's current state to the administrators' pages. Closing its live connections first makes them
+// reconnect with what the account may see now.
 internal sealed class UserChangePublisher(UserViews views, LiveNotifier live, LiveConnections connections)
 {
     public async Task<UserView> ChangedAsync(DdtUser user, bool closeConnections, CancellationToken cancellationToken)

@@ -10,8 +10,8 @@ import { cx } from "@/ui/cx";
 
 import { categories } from "./navigation";
 
-// The pages of a category. The underline of the page shown moves to the next page chosen in the same row; another
-// category's row starts with its own.
+// The pages of a category. The underline moves to the next page chosen in the same row. Another category's row
+// starts with its own underline.
 export function SubNavigation({
   categoryId,
   activePage,

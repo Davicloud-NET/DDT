@@ -18,15 +18,17 @@ interface InspectorInput {
   openDrawer: () => void;
 }
 
-// The inspector beside the flow: where a finding sends the focus, and Escape from a node's fields back to the node.
+// The inspector beside the flow. It handles where a finding sends the focus, and Escape from a node's fields back to
+// the node.
 export function useInspector({ index, selection, view, phone, openDrawer }: InspectorInput) {
   const { selectedId, tab, setTab, show } = selection;
   const [openRow, setOpenRow] = useState<OpenRow | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  // Where a finding sends the focus, once its field shows, and how many renders it has waited.
+  // The field a finding sends the focus to once it shows, and how many renders it has waited so far.
   const pendingFocus = useRef<{ field: string; waited: number } | null>(null);
 
-  // Another node's fields start at their top. Before the focus a finding sends, which scrolls to its field.
+  // Another node's fields start scrolled to the top. This runs before the focus from a finding, which scrolls to its
+  // field.
   useEffect(() => {
     const panel = ref.current?.querySelector<HTMLElement>('[role="tabpanel"]');
 
@@ -59,12 +61,13 @@ export function useInspector({ index, selection, view, phone, openDrawer }: Insp
     }
   });
 
-  // Sends the focus to a field once it shows; "" sends it to the node's findings.
+  // Sends the focus to a field once it shows. "" sends it to the node's findings.
   const focusWhenShown = (field: string) => {
     pendingFocus.current = { field, waited: 0 };
   };
 
-  // A finding takes the focus to its field: a node's in the node's fields, the sequence's own in its tab.
+  // A finding moves the focus to its field. A node's finding goes to the node's fields, and the sequence's own go to
+  // its tab.
   const goTo = (stepId: string | null, field: string | null) => {
     if (stepId !== null && index.byId.has(stepId)) {
       focusWhenShown(field ?? "");

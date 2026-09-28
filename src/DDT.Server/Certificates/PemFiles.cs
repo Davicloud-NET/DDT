@@ -11,8 +11,8 @@ namespace DDT.Server.Certificates;
 
 internal static class PemFiles
 {
-    // Written beside the target and renamed into place, so a reader never sees half a file. A key is owner-only from the
-    // moment it exists rather than after a change of mode.
+    // Writes next to the target and renames the file into place, so a reader never sees half a file. A key is
+    // owner-only from the moment it exists, not after a later change of mode.
     public static void Write(string path, string pem, bool isKey)
     {
         string temporary = path + ".tmp";
@@ -43,8 +43,8 @@ internal static class PemFiles
         return new FileStream(path, options);
     }
 
-    // The account DDT runs as, SYSTEM and administrators, and nobody else: a folder on a data drive passes read and
-    // write access for every signed in user down to what is created in it.
+    // Grants access only to the account DDT runs as, SYSTEM and administrators. Inheritance is off because a folder
+    // on a data drive passes read and write access for every signed-in user down to the files created in it.
     [SupportedOSPlatform("windows")]
     private static FileSecurity OwnerOnly()
     {

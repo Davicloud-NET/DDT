@@ -16,8 +16,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Endpoints;
 
-// Packages are uploaded through /api/images/uploads, so a proxy that lets large uploads through there needs no second
-// rule. They run as SYSTEM on every machine that gets them, so only an administrator changes the library.
+// Packages are uploaded through /api/images/uploads, so a proxy that allows large uploads there doesn't need a second
+// rule. Packages run as SYSTEM on every machine that gets them, so only an administrator may change the library.
 public static class PackageEndpoints
 {
     public static RouteGroupBuilder MapPackageEndpoints(this RouteGroupBuilder group)

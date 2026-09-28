@@ -64,8 +64,8 @@ public sealed class SequenceRunnerPreflightTests : SequenceRunnerTestBase
         Assert.Contains("partition 0", _tools.Calls);
     }
 
-    // Which branch a run takes it finds out only as it goes, so the image of every branch is checked before anything is
-    // erased, and only the branch taken applies its own.
+    // A run only finds out which branch it takes as it goes. So the image of every branch is checked before anything is
+    // erased, and only the branch taken applies its image.
     [Fact]
     public async Task ChecksTheImageOfEveryBranchBeforeErasing()
     {
@@ -181,7 +181,7 @@ public sealed class SequenceRunnerPreflightTests : SequenceRunnerTestBase
         }
     }
 
-    // wimlib that cannot be used, or an image the server does not have as the run expects it.
+    // wimlib that can't be used, or an image the server doesn't have in the form the run expects.
     private PreflightFailure ServerFailure(string failure, ScriptedAgentServer server)
     {
         switch (failure)

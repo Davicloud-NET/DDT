@@ -11,8 +11,8 @@ import { matchingMachines, packagesQuery, sequencesUsing, type PackageSummary } 
 
 export type PackageLibrary = ReturnType<typeof usePackageLibrary>;
 
-// The packages with what uses them: the models machines reported, and every sequence's steps, which the list
-// of sequences does not carry. A library holds a few sequences, so each is read.
+// The packages and what uses them: the models machines reported, and every sequence's steps. The sequence
+// list doesn't carry the steps, but a library only holds a few sequences, so each one is read.
 export function usePackageLibrary() {
   const packages = useQuery(packagesQuery);
   const models = useQuery(modelsQuery);

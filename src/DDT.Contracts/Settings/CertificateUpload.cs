@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// Either CertificatePem and KeyPem, the certificate followed by its intermediates, or Pfx in base64 with its password.
-// Confirm lists the warning codes the administrator accepted, such as certificate.newRoot.
+// Either CertificatePem and KeyPem, or Pfx in base64 with its password. CertificatePem holds the certificate followed
+// by its intermediates. Confirm lists the warning codes the administrator accepted, such as certificate.newRoot.
 public sealed record CertificateUpload(string? CertificatePem, string? KeyPem, string? Pfx, string? PfxPassword, IReadOnlyList<string>? Confirm);

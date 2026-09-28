@@ -12,7 +12,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console over a real named pipe, with a stand-in for the agent that speaks the protocol as the agent does.
+// The console over a real named pipe, with a stand-in agent that speaks the protocol like the real one.
 public sealed class PipeFlowTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -58,7 +58,7 @@ public sealed class PipeFlowTests
         signIn.SubmitCommand.Execute(null);
         Assert.Equal(new AnswerMessage(1, new ConsoleAnswer(Text: "anna")), await agent.ReceiveAsync(Cancellation));
 
-        // An approval on the web takes the next question away.
+        // An approval on the web withdraws the next question.
         await agent.SendAsync(new QuestionMessage(2, new SignInQuestion(SignInField.Password, "anna", null)), Cancellation);
         await ui.UntilAsync(() => signIn.AsksPassword ? signIn : null);
         await agent.SendAsync(new WithdrawMessage(2), Cancellation);

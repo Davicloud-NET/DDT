@@ -6,9 +6,9 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.Deployment;
 
-// A restart Windows PE owes the run, as a file on X:, which every start of Windows PE builds anew, so the restart clears
-// it. An agent stopped before the restart, or started by hand after wpeutil failed, finds it and restarts. A marker that
-// cannot be written or read only costs that check, so it never fails the run.
+// A restart that WinPE still owes the run, kept as a file on X:. Every WinPE start builds X: from scratch, so the
+// restart clears it. An agent stopped before the restart, or started by hand after wpeutil failed, finds it and
+// restarts. A marker that can't be written or read only costs that check, so it never fails the run.
 public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool dryRun)
 {
     public const string FileName = "restart-due";

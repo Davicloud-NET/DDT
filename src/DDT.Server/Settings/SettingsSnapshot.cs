@@ -13,8 +13,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Every section validated, decrypted and parsed, as one immutable value consumers read once per request or decision. A
-// section with problems fails closed: the typed members then hold what is safe, never what was stored.
+// Every section validated, decrypted and parsed into one immutable value. Consumers read it once per request or
+// decision. A section with problems fails closed. The typed members then hold what's safe, never what was stored.
 public sealed class SettingsSnapshot
 {
     private readonly Dictionary<string, SettingsSectionState> _sections;
@@ -46,14 +46,15 @@ public sealed class SettingsSnapshot
     // Trusts nothing while the proxies section has problems.
     public ForwardedHeadersOptions ForwardedHeaders => _inForce.ForwardedHeaders;
 
-    // Null while the section has problems, which keeps the listeners stopped. HttpBootPort and BootDirectory are the
-    // configured ones.
+    // Null while the section has problems, which keeps the listeners stopped. HttpBootPort and BootDirectory always
+    // come from configuration.
     public PxeOptions? Pxe => _inForce.Pxe;
 
-    // The code defaults while the section has problems. Default is the level of every other category.
+    // The code defaults while the section has problems. The Default entry is the level for every other category.
     public IReadOnlyDictionary<string, LogLevel> LogLevels => _inForce.LogLevels;
 
-    // From the stored rows and the configuration that overrides them; Saving names the section a save previews.
+    // Builds the snapshot from the stored rows and the configuration that overrides them. Saving names the section a
+    // save previews.
     public static SettingsSnapshot Build(IReadOnlyDictionary<string, StoredSettingsSection> stored, IConfiguration configuration, string? saving = null) =>
         SettingsSnapshotBuilder.Build(stored, configuration, saving);
 }

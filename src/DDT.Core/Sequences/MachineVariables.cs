@@ -9,8 +9,8 @@ using DDT.Core.Machines;
 
 namespace DDT.Core.Sequences;
 
-// What conditions test and templates read, named by MachineVariableNames and looked up ignoring case. MacAddresses
-// holds every address the machine reported.
+// The values that conditions test and templates read. Their names come from MachineVariableNames and are looked up
+// ignoring case. MacAddresses holds every address the machine reported.
 public sealed record MachineVariables(
     string? Manufacturer,
     string? Model,
@@ -26,17 +26,17 @@ public sealed record MachineVariables(
 
     public DeviceKind? DeviceKind { get; init; }
 
-    // Null takes the first of MacAddresses, which the agent reports first.
+    // When null, the first address in MacAddresses is used, which is the one the agent reported first.
     public string? PrimaryMacAddress { get; init; }
 
     public bool? SecureBootEnabled { get; init; }
 
-    // The run's values and variables by name: what inputs, rules, roles, defaults and steps set, with LastStepFailed
-    // and LastExitCode.
+    // The run's values and variables by name. Inputs, rules, roles, defaults and steps set them, and they include
+    // LastStepFailed and LastExitCode.
     public IReadOnlyDictionary<string, string>? Variables { get; init; }
 
-    // The name a person knows the model by: Lenovo's SMBIOS system version, where Model is a type number such as 21HD,
-    // and Model otherwise.
+    // The model name people know. For Lenovo that's the SMBIOS system version, because Model is a type number such as
+    // 21HD. For everyone else it's Model.
     public string? FriendlyModel =>
         HardwareModels.Normalize(Manufacturer) == Lenovo
         && HardwareModels.Clean(Facts?.SystemVersion) is { } version
@@ -52,8 +52,8 @@ public sealed record MachineVariables(
             ? string.Create(CultureInfo.InvariantCulture, $"{Ipv4.Format(parsed & Ipv4.Mask(prefix))}/{prefix}")
             : null;
 
-    // Empty for an unknown name and for a value the machine did not report. A fact is always the machine's, whatever
-    // Variables hold, except ComputerName: a run's value or a step may set it, and the latest wins.
+    // Empty for an unknown name and for a value the machine didn't report. A fact always comes from the machine,
+    // whatever Variables holds. ComputerName is the exception. A run's value or a step may set it, and the latest wins.
     public IReadOnlyList<string> Values(string variable)
     {
         ArgumentNullException.ThrowIfNull(variable);
@@ -95,7 +95,8 @@ public sealed record MachineVariables(
         };
     }
 
-    // The one value a template puts in: the first of several, such as the MAC address the machine reported first.
+    // The single value a template puts in. With several values it's the first, such as the MAC address the machine
+    // reported first.
     public string? Value(string variable) => Values(variable) is [var first, ..] ? first : null;
 
     // The catalogue's spelling of a fact's name, or null for any other name. LastStepFailed and LastExitCode are in the

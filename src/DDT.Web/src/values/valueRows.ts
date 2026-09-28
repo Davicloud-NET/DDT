@@ -11,7 +11,7 @@ import { usedValues, valueSourceText, type ResolvedValue } from "./values";
 // One value as the machine's page lists it.
 export interface ValueRow {
   name: string;
-  // Null for a secret, which shows only that it was given.
+  // Null for a secret. The page only shows that it was given.
   value: string | null;
   source: string;
 }
@@ -20,8 +20,8 @@ function sameName(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-// The values a run works with, each with where it came from: those it started with, and those its steps set since,
-// as the agent reported them. A step that set a value is named by its number and name.
+// The values a run works with and where each came from. That's the values it started with, plus the ones its steps
+// set later, as the agent reported them. A step that set a value is named by its number and name.
 export function valueRows({
   values,
   variables = null,
@@ -42,7 +42,7 @@ export function valueRows({
 
     return entry === undefined ? null : { number: entry.number, name: entry.node.name };
   };
-  // The last Set variable step that ran for the name; a script may have set it instead.
+  // The last Set variable step that ran for the name. A script may have set it instead.
   const setterOf = (name: string) =>
     stepNamed(
       entries

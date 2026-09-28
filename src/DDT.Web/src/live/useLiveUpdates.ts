@@ -7,8 +7,9 @@ import { useEffect, useMemo } from "react";
 
 import { createLiveConnection, type LiveConnection } from "./liveConnection";
 
-// Keeps the application's live connection up while the shell is shown. The shell hands it to the pages
-// through LiveContext. Off, it stays offline: the hub refuses an account that has to set its own password first.
+// Keeps the app's live connection up while the shell is shown. The shell hands it to the pages through
+// LiveContext. When disabled, it stays offline, because the hub refuses an account that has to set its
+// own password first.
 export function useLiveUpdates(enabled = true): LiveConnection {
   const queryClient = useQueryClient();
   const live = useMemo(() => createLiveConnection(queryClient), [queryClient]);

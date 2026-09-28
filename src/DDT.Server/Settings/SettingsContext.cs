@@ -7,8 +7,8 @@ using DDT.Server.Security;
 
 namespace DDT.Server.Settings;
 
-// What a section's rules may need of other sections and of configuration alone. Saving names the section a save
-// changes, for the rules that are checked on a save of either of two sections but belong to one of them at load.
+// What a section's rules may need from other sections and from configuration alone. Saving names the section a save
+// changes. Some rules are checked when either of two sections is saved, but belong to only one of them at load.
 public sealed class SettingsContext
 {
     public required MachineOptions Machines { get; init; }

@@ -7,12 +7,13 @@ using System.Text.RegularExpressions;
 
 namespace DDT.Core.Templates;
 
-// Text with placeholders such as PC-{{SerialNumber|alnum|right:12}}: a name, ignoring case, then filters after bars
-// from left to right. A value goes in whole unless a filter cuts it, and other double braces, such as Jinja's, stay as
-// they are. The web client mirrors this, checked against src/DDT.Web/src/test/fixtures/template-cases.json.
+// Text with placeholders such as PC-{{SerialNumber|alnum|right:12}}. A placeholder is a name, ignoring case, then
+// filters after bars, applied from left to right. A value goes in whole unless a filter cuts it. Other double braces,
+// such as Jinja's, stay as they are. The web client mirrors this, tested against
+// src/DDT.Web/src/test/fixtures/template-cases.json.
 public static partial class ValueTemplate
 {
-    // The most characters left:n and right:n take.
+    // The most characters left:n and right:n can keep.
     public const int MaxCount = 1024;
 
     public const string Upper = "upper";
@@ -24,11 +25,11 @@ public static partial class ValueTemplate
 
     public static IReadOnlyList<string> Filters { get; } = [Upper, Lower, Trim, Alnum, Left, Right];
 
-    // The filters as a person writes them, for a message that lists them.
+    // The filters the way someone writes them, for messages that list them.
     internal static string FilterList => $"{Upper}, {Lower}, {Trim}, {Alnum}, {Left}:n, {Right}:n";
 
-    // Known says which names the caller knows, ignoring case; null knows every name. Filter problems are always
-    // reported.
+    // known says which names the caller knows, ignoring case. Null means every name is known. Filter problems are
+    // always reported.
     public static ParsedTemplate Parse(string text, Func<string, bool>? known = null)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -52,8 +53,8 @@ public static partial class ValueTemplate
         return new ParsedTemplate(placeholders, [.. problems.Distinct()]);
     }
 
-    // The text with each placeholder's value, filtered. Values gives a name's value, or null when there is none, which
-    // is a problem, as a filter written wrong is; rendering stops at the first.
+    // Replaces each placeholder with its filtered value. values returns a name's value, or null when there's none. A
+    // missing value is a problem, just like a badly written filter. Rendering stops at the first problem.
     public static bool TryRender(string text, Func<string, string?> values, out string rendered, out TemplateProblem? problem)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -94,11 +95,11 @@ public static partial class ValueTemplate
         return problem is null;
     }
 
-    // As TryRender; a problem throws TemplateException.
+    // Like TryRender, but a problem throws TemplateException.
     public static string Render(string text, Func<string, string?> values) =>
         TryRender(text, values, out string rendered, out TemplateProblem? problem) ? rendered : throw new TemplateException(problem!);
 
-    // Values by name, ignoring case whatever the dictionary's comparer.
+    // Looks values up by name, ignoring case, whatever the dictionary's comparer is.
     public static string Render(string text, IReadOnlyDictionary<string, string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -106,7 +107,7 @@ public static partial class ValueTemplate
         return Render(text, Lookup(values));
     }
 
-    // A name's value from values, ignoring case whatever the dictionary's comparer.
+    // Looks up a name's value in values, ignoring case, whatever the dictionary's comparer is.
     public static Func<string, string?> Lookup(IReadOnlyDictionary<string, string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -130,7 +131,7 @@ public static partial class ValueTemplate
         };
     }
 
-    // The value with the placeholder's filters done, which must have no problems.
+    // Applies the placeholder's filters to the value. The filters must have no problems.
     public static string Apply(TemplatePlaceholder placeholder, string value)
     {
         ArgumentNullException.ThrowIfNull(placeholder);
@@ -153,7 +154,7 @@ public static partial class ValueTemplate
         return value;
     }
 
-    // What is wrong with one filter, or null.
+    // What's wrong with one filter, or null.
     public static TemplateProblem? FilterProblem(TemplatePlaceholder placeholder, TemplateFilter filter)
     {
         ArgumentNullException.ThrowIfNull(placeholder);
@@ -178,7 +179,7 @@ public static partial class ValueTemplate
             name);
     }
 
-    // Each placeholder becomes what replace gives it; null leaves the placeholder as it is written.
+    // Replaces each placeholder with what replace returns. Null leaves the placeholder as written.
     internal static string Replace(string text, Func<TemplatePlaceholder, string?> replace)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -215,7 +216,7 @@ public static partial class ValueTemplate
         return new TemplatePlaceholder(match.Value, match.Groups[1].Value, read);
     }
 
-    // A name, then filters, each after a bar and holding no brace or bar.
+    // A name, then filters. Each filter follows a bar and contains no brace or bar.
     [GeneratedRegex(@"\{\{\s*([A-Za-z][A-Za-z0-9_]*)(\s*(?:\|[^{}|]*)*)\}\}", RegexOptions.CultureInvariant)]
     private static partial Regex Placeholder();
 }

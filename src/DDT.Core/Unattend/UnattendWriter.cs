@@ -17,8 +17,8 @@ public static class UnattendWriter
     // Setup reads a LocalAccount password with PlainText false as Base64 of UTF-16LE text ending in this suffix.
     private const string LocalAccountPasswordSuffix = "Password";
 
-    // A password written by LocalAccounts expires after 42 days on clients, and the change Windows then forces
-    // gives every PC its own password.
+    // A password set through LocalAccounts expires after 42 days on clients. The change Windows then forces would give
+    // every PC its own password.
     private const string LiftPasswordAgeCommand = "net accounts /maxpwage:unlimited";
 
     public static string Write(UnattendSettings settings)

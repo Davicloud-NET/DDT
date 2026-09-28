@@ -21,8 +21,8 @@ using Xunit;
 
 namespace DDT.E2E;
 
-// The host, the published agent, a signed-in administrator, a live connection and the uploads all dry runs share.
-// Everything lives in a temporary directory, which goes with the dry runs' disks when the tests end.
+// The host, the published agent, a signed-in administrator, a live connection and the uploads that all dry runs share.
+// Everything lives in a temporary directory, which is deleted with the dry runs' disks when the tests end.
 public sealed partial class DryRunLab : IAsyncLifetime
 {
     public const string LocalAdministratorPassword = "E2e-Local-Admin-7Qx4";
@@ -30,12 +30,12 @@ public sealed partial class DryRunLab : IAsyncLifetime
     public const string AccountPassword = "E2e-Share-Secret-3Vn6";
     public const string Domain = "e2e.ddt.test";
 
-    // What a dry run of this model reports, and what the driver package targets.
+    // The model a dry run reports, and the one the driver package targets.
     public const string Manufacturer = "DDT";
     public const string Model = "Dry run";
 
-    // Large enough that downloading it through the slow relay outlasts the agent's calls to the server by far: 32 s at
-    // 4 MB/s, when the agent calls at least every 10 s.
+    // Large enough that a download through the slow relay takes far longer than the gap between the agent's calls to
+    // the server. It takes 32 s at 4 MB/s, and the agent calls at least every 10 s.
     private const int LargeMegabytes = 128;
     private const int SlowBytesPerSecond = 4 * 1024 * 1024;
 
@@ -59,7 +59,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     public ImageSummary Image { get; private set; } = null!;
 
-    // Another Windows image, of another name, for the branch a dry run does not take.
+    // Another Windows image with a different name, for the branch a dry run doesn't take.
     public ImageSummary OtherImage { get; private set; } = null!;
 
     public ImageSummary LargeImage { get; private set; } = null!;
@@ -86,7 +86,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
         }
     }
 
-    // Also after a failed start, and more than once.
+    // Safe to call after a failed start, and more than once.
     public async ValueTask DisposeAsync()
     {
         if (_live is { } live)
@@ -122,7 +122,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
         await DeleteDirectoryAsync(_directory).ConfigureAwait(false);
     }
 
-    // dryRunId goes on with an earlier agent's machine and disk; slowDownloads reaches the host through SlowRelay.
+    // dryRunId continues with an earlier agent's machine and disk. With slowDownloads, the agent reaches the host
+    // through SlowRelay.
     internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false)
     {
         int id = dryRunId ?? NewDryRunId();
@@ -181,7 +182,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal static JsonRequest<AssignSequenceRequest> AssignmentRequest(Guid machineId, AssignSequenceRequest assignment) =>
         new(HttpMethod.Post, $"api/machines/{machineId:D}/deployments", assignment, DdtJsonContext.Default.AssignSequenceRequest);
 
-    // As the machine's page answers the inputs its run waits for at its start.
+    // Answers the inputs the run waits for before it starts, like the machine's page does.
     internal Task<DeploymentView> AnswerAsync(Guid machineId, IReadOnlyList<InputAnswer> answers, CancellationToken cancellationToken) =>
         Api.SendAsync(
             new JsonRequest<AnswerInputsRequest>(
@@ -193,7 +194,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
             HttpStatusCode.OK,
             cancellationToken);
 
-    // As the machine's page continues the pause it shows.
+    // Continues the pause, like the machine's page does.
     internal Task<DeploymentView> ContinueAsync(Guid machineId, RunPauseView pause, CancellationToken cancellationToken) =>
         Api.SendAsync(
             new JsonRequest<ContinueRunRequest>(
@@ -205,8 +206,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
             HttpStatusCode.OK,
             cancellationToken);
 
-    // A stored account with AccountPassword, saved as the Accounts page saves one: with the administrator's password
-    // entered again.
+    // A stored account with AccountPassword. It's saved like the Accounts page saves one, with the administrator's
+    // password entered again.
     internal Task<AccountView> CreateAccountAsync(string userName, string domain, IReadOnlyList<string> hosts, bool runAs, CancellationToken cancellationToken) =>
         Api.SendReauthenticatedAsync(
             new JsonRequest<SaveAccountRequest>(
@@ -244,8 +245,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
         }
     }
 
-    // What every test ends with: no agent warning or failure the test does not expect, no host error, and no password,
-    // plain or as an answer file has it, in any output, text the test saw, hub traffic or database file.
+    // What every test ends with. No agent warning or failure the test doesn't expect, no host error, and no password in
+    // any output, text the test saw, hub traffic or database file. That covers plain passwords and passwords as an
+    // answer file stores them.
     internal void AssertClean(IReadOnlyList<AgentProcess> agents, IReadOnlyList<string> expectedProblems, params (string Where, string Text)[] seen)
     {
         ArgumentNullException.ThrowIfNull(agents);
@@ -332,7 +334,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
             _directory,
             new Dictionary<string, string>
             {
-                // For the slow relay, which the agents reach by address.
+                // For the slow relay, which the agents reach by IP address.
                 ["DDT:Https:SubjectAlternativeNames"] = "127.0.0.1",
                 ["DDT:Deployment:TimeZone"] = "W. Europe Standard Time",
                 ["DDT:Deployment:Locale"] = "de-DE",

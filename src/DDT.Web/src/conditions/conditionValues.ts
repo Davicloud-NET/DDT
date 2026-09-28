@@ -18,7 +18,7 @@ export function listOf(value: string): string[] {
     .filter((item) => item !== "");
 }
 
-// Memory is stored in MB and entered in GB, to two places, a list as In takes it item by item.
+// Memory is stored in MB and entered in GB, to two decimal places. A list for In is converted item by item.
 export function gigabytesOf(megabytes: string): string {
   if (megabytes.includes(";")) {
     return listOf(megabytes).map(gigabytesOf).join("; ");
@@ -80,7 +80,7 @@ export function isMac(value: string, part: boolean): boolean {
   );
 }
 
-// What is wrong with a value as it is typed, for the field to say before the server does; null when nothing is.
+// What's wrong with a value as it's typed, so the field can say it before the server does. Null if nothing is.
 export function valueProblem(
   kind: ValueKind,
   operator: ConditionOperator,
@@ -92,7 +92,7 @@ export function valueProblem(
 
   const items = operator === "In" ? listOf(value) : [value.trim()];
   const every = (check: (item: string) => boolean) => items.every(check);
-  // An address or a network is compared whole; the other operators take a part of one, or a pattern.
+  // Equals, NotEquals and In compare a whole address or network. The other operators take part of one, or a pattern.
   const whole = operator === "Equals" || operator === "NotEquals" || operator === "In";
 
   if (operator === "InSubnet") {
@@ -135,8 +135,8 @@ export function newTestOf(subject: Subject): TestCondition {
   };
 }
 
-// The test after its subject changed: the operator stays where it fits the new kind, and the value where the kind
-// stayed the same.
+// The test after its subject changed. The operator stays if it fits the new kind, and the value stays if the kind is
+// the same.
 export function withSubject(test: TestCondition, from: Subject, to: Subject): TestCondition {
   const fits = operatorsFor(to.kind).includes(test.operator);
   const fresh = newTestOf(to);

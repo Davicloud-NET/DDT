@@ -25,7 +25,7 @@ public static class AuditEntries
             audit.Detail);
     }
 
-    // A technician who signs in at a machine is recorded with both ids, and it is the person who acted.
+    // A technician who signs in at a machine is recorded with both ids. The person counts as the one who acted.
     private static AuditActorKind KindOf(AuditEvent audit) =>
         audit.ActorTokenId is not null ? AuditActorKind.Token
         : audit.ActorUserId is not null ? AuditActorKind.User

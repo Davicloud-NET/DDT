@@ -51,7 +51,7 @@ describe("SequenceEditorPage", () => {
     expect(
       screen.getByText("Machines where Model contains Latitude go along Then."),
     ).toBeInTheDocument();
-    // One stop of the Tab key among the nodes and the gaps: the chosen node.
+    // Of all the nodes and gaps, only the chosen node is a Tab stop.
     expect(
       [...document.querySelectorAll<HTMLElement>("[data-flow-node], [aria-haspopup=menu]")].filter(
         (element) => element.tabIndex === 0 && element.closest("[role=group]") !== null,
@@ -87,7 +87,7 @@ describe("SequenceEditorPage", () => {
     }, saveWait);
 
     const saved = saves.at(-1);
-    // The page sends the highest version it knows; the server stores the lowest the steps need.
+    // The page sends the highest version it knows. The server stores the lowest one the steps need.
     expect(saved?.definition.version).toBe(SEQUENCE_VERSION);
     expect(Object.keys(saved?.definition ?? {})).toEqual(["version", "steps"]);
 
@@ -200,7 +200,7 @@ describe("SequenceEditorPage", () => {
       screen.getByText("Apply Windows 11 for Latitudes moved to position 2 of 2."),
     ).toBeInTheDocument();
 
-    // At the end of its list it stays.
+    // At the end of its list, it doesn't move any further.
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "ArrowDown", altKey: true });
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "d", ctrlKey: true });
 
@@ -270,7 +270,7 @@ describe("SequenceEditorPage", () => {
       expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "i", "s"]);
     }, saveWait);
 
-    // In a text field, the keys are the field's own.
+    // In a text field, the shortcuts belong to the field.
     fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "z", ctrlKey: true });
     expect(node(/^Step 2, Apply image/)).toBeInTheDocument();
 
@@ -284,7 +284,7 @@ describe("SequenceEditorPage", () => {
       expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "i", "s"]);
     }, saveWait);
 
-    // The header's keys do the same.
+    // The header's Undo button does the same.
     press(screen.getByRole("button", { name: "Undo" }));
     await waitFor(() => {
       expect(ids(saves.at(-1)?.definition.steps ?? [])).toEqual(["p", "s"]);
@@ -336,7 +336,7 @@ describe("SequenceEditorPage", () => {
         expect(node(/^Step 2, Set wallpaper/)).toHaveFocus();
       });
 
-      // A browser that keeps the clipboard from the page pastes what the page copied.
+      // If the browser doesn't let the page read the clipboard, it pastes what the page copied.
       readText.mockRejectedValue(new Error("Not allowed"));
       fireEvent.keyDown(document.activeElement ?? document.body, { key: "v", ctrlKey: true });
 

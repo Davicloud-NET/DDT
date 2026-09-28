@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Deployments;
 
-// Answers given at the machine while its run waits for them. Answers that complete what the run lacks start it; answers
-// given on the machine's page first win, and these are refused.
+// Saves answers given at the machine while its run waits for them. Answers that complete what the run lacks start it.
+// If answers were given on the machine's page first, those win and these are refused.
 internal sealed class AgentAnswerSaves(
     DdtDbContext database,
     WaitingRuns waiting,
@@ -53,7 +53,7 @@ internal sealed class AgentAnswerSaves(
             return new AgentAnswering(null, AnsweredAlready);
         }
 
-        // The problems are said by input, and the machine asks again.
+        // The problems are listed by input, and the machine asks again.
         if (answering.Problems.Count > 0 || answering.Check is not { } check)
         {
             return new AgentAnswering(

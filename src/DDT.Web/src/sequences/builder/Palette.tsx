@@ -20,8 +20,8 @@ interface PaletteProps {
   className?: string;
 }
 
-// What can be added to the flow, to drag onto a wire. The keyboard picks one up with Enter, goes from wire to wire with
-// Tab and puts it down with Enter; a click adds it after the chosen node.
+// What can be added to the flow, to drag onto a wire. With the keyboard, Enter picks one up, Tab goes from wire to
+// wire, and Enter puts it down. A click adds it after the chosen node.
 export function Palette({ onAdd, onDragChange, className }: PaletteProps) {
   const { t } = useLingui();
   const [find, setFind] = useState("");

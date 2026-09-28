@@ -6,5 +6,5 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts.Rules;
 
-// Revision is the one the page last read; a new role has none to name.
+// Revision is the one the page last read. A new role doesn't have one, so the server ignores it.
 public sealed record SaveMachineRoleRequest(long Revision, string Name, string? Description, IReadOnlyList<NamedValue> Values);

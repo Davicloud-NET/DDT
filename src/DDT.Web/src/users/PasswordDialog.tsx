@@ -12,11 +12,11 @@ import { SecretValue } from "@/ui/SecretValue";
 export interface ShownPassword {
   name: string;
   password: string;
-  // Made by a reset, not for a new account.
+  // True when a reset made the password, not a new account.
   reset: boolean;
 }
 
-// The password the server made up for a new account or a reset, shown once. Closing the dialog forgets it.
+// Shows the password the server generated for a new account or a reset, once. Closing the dialog forgets it.
 export function PasswordDialog({
   shown,
   onClose,

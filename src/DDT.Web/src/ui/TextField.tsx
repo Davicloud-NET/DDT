@@ -15,7 +15,7 @@ import {
 
 import { cx } from "./cx";
 
-// The frame changes colour in fast, as when a value turns invalid, but the focus ring appears at once.
+// The frame changes colour quickly, for example when a value turns invalid, but the focus ring appears at once.
 export const fieldClass =
   "w-full rounded-key bg-field px-2.5 text-ink shadow-[inset_0_0_0_1px_var(--color-control)] motion-colors outline-none " +
   "focus:shadow-[inset_0_0_0_2px_var(--color-focus)] focus:duration-0 invalid:shadow-[inset_0_0_0_1.5px_var(--color-fail-text)] " +

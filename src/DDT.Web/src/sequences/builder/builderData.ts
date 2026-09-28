@@ -9,17 +9,17 @@ import type { Subject } from "@/conditions/conditionSubjects";
 
 import type { InputDeclaration, VariableDeclaration } from "../sequences";
 
-// What the fields of the flow builder choose from and complete, beside the step catalog.
+// What the flow builder's fields choose from and complete, besides the step catalog.
 export interface BuilderData {
   subjects: Subject[];
-  // Every name a template can use, in the order completion offers them: the sequence's own first.
+  // Every name a template can use, in the order completion offers them, with the sequence's own names first.
   names: string[];
   known: (name: string) => boolean;
   // A name's value on the sample machine, with the sequence's defaults and the values of rules and roles.
   sample: (name: string) => string | null;
   variables: readonly VariableDeclaration[];
   inputs: readonly InputDeclaration[];
-  // Null while the server lists none, as before it has accounts.
+  // Null if the server doesn't list accounts, like an older server without them.
   accounts: AccountView[] | null;
 }
 

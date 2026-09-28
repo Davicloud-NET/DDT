@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Users;
 
-// What an account's own sign-in changes about it reaches the Users page too, with the account as it is now.
+// When an account's own sign-in changes something about it, the Users page gets the account's current state too.
 public sealed class UserActivity(
     UserManager<DdtUser> userManager,
     UserViews views,
@@ -16,8 +16,8 @@ public sealed class UserActivity(
     LiveConnections connections,
     TimeProvider timeProvider)
 {
-    // The last sign-in is that of a web session. A sign-in at a machine is kept with the machine and in the audit table.
-    // Only a date, so a save that fails leaves the sign-in standing.
+    // Records the last web sign-in. A sign-in at a machine is kept with the machine and in the audit table. It's only a
+    // date, so a failed save doesn't undo the sign-in.
     public async Task SignedInAsync(DdtUser user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -30,9 +30,9 @@ public sealed class UserActivity(
         }
     }
 
-    // The one role the account's groups give it, or none, as the directory or the provider says at its sign-in. A
-    // change closes the account's live connections, which connect again with the new role; the caller tells the Users
-    // page once for the whole sign-in.
+    // Sets the one role the account's groups give it, or none, based on what the directory or provider says at sign-in.
+    // A change closes the account's live connections, and they reconnect with the new role. The caller updates the
+    // Users page once for the whole sign-in.
     public async Task<(IdentityResult Result, bool Changed)> ApplyGroupRoleAsync(DdtUser user, string? role)
     {
         ArgumentNullException.ThrowIfNull(user);

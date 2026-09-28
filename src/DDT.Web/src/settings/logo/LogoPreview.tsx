@@ -8,7 +8,7 @@ import { Logo } from "@/ui/Logo";
 
 import { consoleLogoImage, type ConsoleLogoView } from "../consoleLogo";
 
-// The console's header as it looks with the logo, on the header's own colour.
+// A preview of the console's header with the logo, on the header's own colour.
 export function LogoPreview({ view }: { view: ConsoleLogoView }) {
   const { t: translate } = useLingui();
 

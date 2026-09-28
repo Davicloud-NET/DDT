@@ -13,7 +13,7 @@ import type { Findings } from "../../problems";
 import type { SequenceEdit, StepPatch } from "../../sequenceEdits";
 import type { RepeatStep } from "../../sequences";
 
-// When a Repeat stops: its until, and the limit of times with what happens when it is reached.
+// When a Repeat stops: its until, and the maximum number of times with what happens when it's reached.
 export function RepeatSettings({
   node,
   subjects,

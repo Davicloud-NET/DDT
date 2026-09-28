@@ -23,13 +23,14 @@ public static class ServerEndpoints
 
         group.MapGet("/certificate", GetCertificate).RequireAuthorization(DdtPolicies.Viewer);
 
-        // The banner that asks for a boot image rebuild goes away for everyone, so only an administrator ends it.
+        // Dismissing the banner that asks for a boot image rebuild hides it for everyone, so only an administrator may.
         group.MapDelete("/certificate/replaced-anchor", AcknowledgeReplacedAnchorAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
     }
 
-    // Not found when Kestrel loads the certificate on its own: a PFX, a key under a password, or TLS at a proxy.
+    // Returns 404 when Kestrel loads the certificate by itself. That's the case for a PFX, a password-protected key, or
+    // TLS at a proxy.
     private static Results<Ok<ServerCertificateView>, NotFound> GetCertificate([FromServices] ServerCertificates? certificates) =>
         certificates?.Describe() is { } view ? TypedResults.Ok(view) : TypedResults.NotFound();
 

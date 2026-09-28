@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Users;
 
-// What an administrator's change to an account came to. Password is the one-time password the administrator hands over.
+// The result of an administrator's change to an account. Password is the one-time password the admin hands over.
 internal sealed record UserChange(UserChangeStatus Status)
 {
     public static UserChange NotFound { get; } = new(UserChangeStatus.NotFound);

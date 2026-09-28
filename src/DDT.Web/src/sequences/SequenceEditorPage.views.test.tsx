@@ -46,7 +46,7 @@ describe("SequenceEditorPage", () => {
     expect(screen.queryByText("All changes saved")).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("readonly");
     expect(screen.getByRole("textbox", { name: "Script" })).toHaveAttribute("readonly");
-    // A choice reads as text.
+    // A read-only choice shows as text.
     expect(screen.getByRole("textbox", { name: "Interpreter" })).toHaveValue("PowerShell");
 
     const share = node(/^Step 1 of 'Group: Berlin office'/);

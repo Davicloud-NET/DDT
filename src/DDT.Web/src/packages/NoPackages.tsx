@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { EmptyState } from "@/ui/EmptyState";
 
-// An empty driver or file library, with what a package of it is for.
+// An empty driver or file package list, with what such a package is for.
 export function NoPackages({ drivers }: { drivers: boolean }) {
   return (
     <EmptyState

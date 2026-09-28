@@ -6,8 +6,8 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Settings;
 
-// A section written as its new version. Row is the one read, null for a section never written; the audit rows say Lead,
-// then Changes. Publish applies the section in this process at once.
+// A section written as its new version. Row is the row that was read, or null for a section that was never written.
+// The audit rows say Lead, then Changes. Publish applies the section in this process right away.
 internal sealed record SettingsWrite(
     SettingsSectionDefinition Definition,
     SettingsSection? Row,

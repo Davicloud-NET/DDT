@@ -54,7 +54,7 @@ public sealed class PinnedRootTests
         Assert.Contains("ddt-root.pem", refusal.Message, StringComparison.Ordinal);
     }
 
-    // DDT's root is not the fix for a certificate an administrator brought: its CA's root is, or the intermediate the
+    // DDT's root isn't the fix for a certificate an administrator brought. Its CA's root is, or the intermediate the
     // server left out.
     [Fact]
     public async Task ACertificateFromAnotherCaIsRefusedWithoutPointingAtDdtsRoot()
@@ -116,7 +116,7 @@ public sealed class PinnedRootTests
     private static Uri AddressOf(TcpListener listener) =>
         new($"https://{Address}:{((IPEndPoint)listener.LocalEndpoint).Port}/");
 
-    // Answers one request with 404, which the agent takes as a server that offers no agent of its own.
+    // Answers one request with 404, which the agent reads as a server that doesn't offer an agent.
     private static async Task AnswerNotFoundAsync(TcpListener listener, X509Certificate2 certificate, CancellationToken cancellationToken)
     {
         using TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);

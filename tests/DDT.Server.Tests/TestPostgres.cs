@@ -10,7 +10,7 @@ namespace DDT.Server.Tests;
 
 internal static class TestPostgres
 {
-    // Null without Docker, and the test that asked skips.
+    // Returns null without Docker, and the test that asked is skipped.
     public static async Task<PostgreSqlContainer?> StartAsync()
     {
         PostgreSqlContainer? container = null;

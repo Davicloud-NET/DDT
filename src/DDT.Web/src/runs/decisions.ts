@@ -15,8 +15,8 @@ import type { SequenceDefinition, SequenceStep } from "@/sequences/sequences";
 import { operatorTakesValue } from "@/sequences/steps";
 import type { ResolvedValue } from "@/values/values";
 
-// Why a run took its path, from the tests the agent recorded when it decided, never from what the machine reports
-// now. The tests read as the flow builder writes them.
+// Explains why a run took its path. It uses the tests the agent recorded when it decided, never what the machine
+// reports now. The tests read the same way the flow builder writes them.
 
 // What a run's conditions can name: the machine's facts, the run's own values, the values of rules and machine roles,
 // and the sequence's variables and inputs.
@@ -32,8 +32,8 @@ export function runSubjects(
   });
 }
 
-// A test's parts as a sentence shows them: what it tests, how, and the value; null for a test of whether there is a
-// value at all.
+// A test's parts as a sentence shows them: what it tests, how, and the value. The value is null for a test of whether
+// there's a value at all.
 export interface TestWords {
   subject: string;
   operator: string;
@@ -53,13 +53,14 @@ export function testWords(test: TestCondition, subjects: readonly Subject[]): Te
 // One test as the run decided it.
 export interface TestOutcome {
   path: string;
-  // The test, null where the path names nothing in the node, as for a node changed since.
+  // The test. Null if the path names nothing in the node, for example because the node has changed since.
   test: TestCondition | null;
   held: boolean;
   actual: string | null;
 }
 
-// Every test of a node by the path a problem and an evaluation name it with: conditions[0], when, test.parts[1].
+// Every test of a node, keyed by the path that problems and evaluations use for it: conditions[0], when,
+// test.parts[1].
 export function testsByPath(node: SequenceStep): Map<string, TestCondition> {
   const found = new Map<string, TestCondition>();
 
@@ -76,8 +77,8 @@ export function testsByPath(node: SequenceStep): Map<string, TestCondition> {
   return found;
 }
 
-// The tests the run recorded for a node, of one field or of all: "test" for an IF's test, "until" for a repeat's end,
-// "condition" for the node's own conditions and when.
+// The tests the run recorded for a node, for one field or for all. "test" is an IF's test, "until" a repeat's end, and
+// "condition" the node's own conditions and its when.
 export function outcomesOf(
   node: SequenceStep,
   step: DeploymentStepView | null,
@@ -141,8 +142,8 @@ function clauses(outcomes: readonly TestOutcome[], subjects: readonly Subject[])
   return outcomes.map((outcome) => outcomeText(outcome, subjects)).join("; ");
 }
 
-// A step's decision in the list of steps: the branch an IF took, why a node was skipped or when a repeat stopped, with
-// its tests. Null where the node decided nothing, or the agent recorded no tests, as older agents do not.
+// A step's decision in the list of steps: the branch an IF took, why a node was skipped, or when a repeat stopped,
+// with its tests. Null if the node decided nothing, or the agent recorded no tests. Older agents don't record them.
 export function decisionLine(
   node: SequenceStep,
   step: DeploymentStepView | null,
@@ -215,7 +216,7 @@ export function decisionTitle(node: SequenceStep, step: DeploymentStepView | nul
   return null;
 }
 
-// How far a repeat went: the time through its body it is on, or how many it took.
+// How far a repeat went: the iteration it's on, or how many iterations it took.
 export function repeatText(most: number, step: DeploymentStepView): string {
   const times = step.iteration ?? 0;
 

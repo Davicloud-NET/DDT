@@ -20,7 +20,7 @@ export interface RunStepChanged {
   step: DeploymentStepView;
 }
 
-// The server's runVariablesChanged: the agent reported the sequence's variables anew, all of them.
+// The server's runVariablesChanged: the agent reported all of the sequence's variables again.
 export interface RunVariablesChanged {
   machineId: string;
   deploymentId: string;
@@ -32,18 +32,18 @@ export interface MachineWatchHandlers {
   onLogAppended?: (event: MachineLogAppended) => void;
   onRunStepChanged?: (event: RunStepChanged) => void;
   onRunVariablesChanged?: (event: RunVariablesChanged) => void;
-  // Called once the machine is watched again after the connection was lost, or first came up after the
-  // watch began. Events sent meanwhile are lost, so this is when a watcher reads what it missed.
+  // Called once the machine is watched again after the connection was lost, or when the connection first came up
+  // after the watch began. Events sent meanwhile are lost, so this is when a watcher reads what it missed.
   onReconnect?: () => void;
 }
 
-// One watcher; the registry tells watchers apart by identity, so one page may watch a machine twice.
+// One watcher. The registry tells watchers apart by identity, so one page may watch a machine twice.
 export interface MachineWatch {
   handlers: MachineWatchHandlers;
 }
 
 export interface WatchRegistry {
-  // True for a machine's first watcher, whose machine the hub has to watch.
+  // True for a machine's first watcher, because then the hub has to start watching the machine.
   add: (machineId: string, watch: MachineWatch) => boolean;
   // True once the machine's last watcher left, so the hub can stop watching it. A repeated remove is false.
   remove: (machineId: string, watch: MachineWatch) => boolean;
@@ -90,8 +90,8 @@ export function createWatchRegistry(): WatchRegistry {
   };
 }
 
-// Watches a machine, and asks the hub through invoke to watch or unwatch it where the registry says so. Returns the
-// unwatch.
+// Watches a machine. When the registry says so, it asks the hub through invoke to watch or unwatch it. Returns the
+// unwatch function.
 export function watchThrough(
   registry: WatchRegistry,
   invoke: (methodName: string, machineId: string) => void,
@@ -111,8 +111,8 @@ export function watchThrough(
   };
 }
 
-// Groups do not survive a lost connection, so every watched machine is watched again before its watchers read
-// what they missed. Nobody is told once the hub is no longer the current one.
+// Groups don't survive a lost connection. So every watched machine is watched again before its watchers read what
+// they missed. Nobody is told if the hub is no longer the current one.
 export async function watchAgain(
   registry: WatchRegistry,
   hub: LiveHub,

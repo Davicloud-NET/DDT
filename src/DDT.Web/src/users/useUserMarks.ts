@@ -6,7 +6,7 @@ import { useLiveMarks } from "@/live/useLiveMarks";
 
 import { usersQuery } from "./users";
 
-// An account that appears enters; one whose role, sign-in or state changes flashes, as after an action here.
+// A new account animates in. One whose role, sign-in or state changes flashes, such as after an action here.
 export function useUserMarks(): (id: string) => string {
   return useLiveMarks({
     queryKey: usersQuery.queryKey,

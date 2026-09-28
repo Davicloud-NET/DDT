@@ -27,13 +27,13 @@ interface TemplateFieldProps {
   multiline?: boolean;
   rows?: number;
   mono?: boolean;
-  // Whether the field says how to use a value, where templates are the point of it.
+  // Whether the field explains how to use a value. Set it where templates are the point of the field.
   howTo?: boolean;
   className?: string;
 }
 
-// A text setting that is a template, such as a computer name made of PC-{{SerialNumber|alnum|right:12}}, with
-// completion of the names the sequence knows and a preview on a sample machine.
+// A text setting that's a template, such as a computer name made of PC-{{SerialNumber|alnum|right:12}}. It completes
+// the names the sequence knows and shows a preview for a sample machine.
 export function TemplateField({
   label,
   field,

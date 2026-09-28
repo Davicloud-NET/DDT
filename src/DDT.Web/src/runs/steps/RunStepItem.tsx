@@ -30,13 +30,13 @@ interface RunStepItemProps {
   machine: MachineSummary | null;
   subjects: readonly Subject[];
   now: number;
-  // The live mark's classes, so a step that ends while the page is open flashes in the colour it ended in.
+  // The live mark classes. A step that ends while the page is open flashes in the colour it ended in.
   markClass: string;
   onShowLog: (stepId: string) => void;
 }
 
-// One node of the run's path. The running tint comes and goes at once: fading it would hold the flash back, as a
-// transition of a colour wins over an animation of it.
+// One node of the run's path. The running tint appears and disappears instantly. Fading it would hold back the
+// flash, because a CSS transition on a colour wins over an animation of it.
 export function RunStepItem({
   node,
   steps,

@@ -12,8 +12,8 @@ public sealed class SequenceTreeTests
 {
     private static readonly TestCondition s_latitude = new(MachineVariableNames.Model, ConditionOperator.Contains, "Latitude");
 
-    // Partition, then a group holding a repeat, which holds an IF (a script in Then, a variable and a restart in Else)
-    // and a pause, and a restart after the repeat; a restart at the end.
+    // Partition, a group and a restart at the end. The group holds a repeat, then a restart. The repeat holds an IF,
+    // then a pause. The IF has a script in Then, and a variable and a restart in Else.
     private static readonly PartitionStep s_partition = new() { Id = NodeId(1), Name = "Partition" };
     private static readonly RunScriptStep s_script = new() { Id = NodeId(5), Name = "Script", Script = "exit 0" };
     private static readonly SetVariableStep s_set = new() { Id = NodeId(6), Name = "Set", Variable = "Office" };
@@ -73,7 +73,7 @@ public sealed class SequenceTreeTests
         Assert.Throws<ArgumentException>(() => SequenceTree.Successor(s_nested, index, Guid.NewGuid()));
     }
 
-    // A flat document walks as Format 1 did: one index after the other.
+    // A flat document is walked like Format 1, one index after the other.
     [Fact]
     public void WalksAFlatDocumentAsAList()
     {
@@ -85,7 +85,7 @@ public sealed class SequenceTreeTests
         Assert.Null(SequenceTree.Successor(flat, index, s_end.Id));
     }
 
-    // Documents come from outside: null lists and nodes are passed over, and a repeated id keeps its first node.
+    // Documents come from outside. Null lists and nodes are skipped, and a repeated id keeps its first node.
     [Fact]
     public void PassesOverWhatADocumentFromOutsideLeftOut()
     {
@@ -177,7 +177,7 @@ public sealed class SequenceTreeTests
             [dell, new StepCondition(MachineVariableNames.Model, ConditionOperator.Contains, "Latitude"), new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "WindowsPE")],
             folded.Conditions);
 
-        // A lone test and an all of nothing need no tree either.
+        // A single test and an empty All need no tree either.
         Assert.Equal<StepCondition>([new StepCondition(MachineVariableNames.Model, ConditionOperator.Contains, "Latitude")], Folded(s_latitude).Conditions);
         Assert.Empty(Folded(new AllCondition()).Conditions);
         Assert.Null(Folded(new AllCondition()).When);
@@ -220,7 +220,7 @@ public sealed class SequenceTreeTests
         Assert.Equal(SequenceTree.LegacyMaxConditions, Assert.Single(Flat(eight).Normalised().Steps).Conditions.Count);
     }
 
-    // Inside a container too, although the container keeps the document at version 3.
+    // Folding works inside a container too, although the container keeps the document at version 3.
     [Fact]
     public void FoldsAWhenAtEveryDepth()
     {

@@ -9,10 +9,10 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// Registers the machine with what it reads of it, and tries again until the server answers.
+// Registers the machine with the facts it reads, and tries again until the server answers.
 internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, ConsoleStatus status, AgentLog log, TimeProvider timeProvider)
 {
-    // Kept, as the run's conditions test it.
+    // Kept because the run's conditions test it.
     public MachineIdentity? LastIdentity { get; private set; }
 
     // Null once stopped.
@@ -26,7 +26,7 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
         {
             try
             {
-                // Read again on every attempt: the adapter with the default route, which is the primary MAC,
+                // Read it again on every attempt. The primary MAC is the adapter with the default route, and that
                 // may only be known once DHCP has finished.
                 MachineIdentity identity = machine.Identity.Read();
                 ReportIdentity(identity);
@@ -82,8 +82,8 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
             ChassisType: identity.ChassisType,
             Facts: identity.Facts);
 
-    // The server refuses a web assignment to a machine with several disks, so it has to know them. A machine whose
-    // disks cannot be read registers without them rather than not at all.
+    // The server refuses a web assignment to a machine with several disks, so it has to know the disks. If they can't
+    // be read, the machine registers without them rather than not at all.
     private async Task<IReadOnlyList<AgentDisk>?> ReadDisksAsync(CancellationToken cancellationToken)
     {
         try

@@ -10,8 +10,8 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// What the DdtSequence service runs: the agent the hand-over staged into <Windows volume>\DDT\agent, going on with the
-// run. Nobody watches its console, so it logs into DDT\logs\agent.log as well as to the server.
+// What the DdtSequence service runs: the agent the hand-over staged into <Windows volume>\DDT\agent, continuing the
+// run. Nobody watches its console, so it logs to DDT\logs\agent.log as well as to the server.
 public static class WindowsPhaseService
 {
     public static string LogPathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "logs", "agent.log");
@@ -57,8 +57,8 @@ public static class WindowsPhaseService
         ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
-        // The console of DDT's session, which Windows starts at its auto-logon, gets the run as the console in Windows PE
-        // does. Its pipe opens once the session is prepared, for the session's account alone.
+        // The console of DDT's session, which Windows starts at its auto-logon, gets the run just like the console in
+        // WinPE. Its pipe opens once the session is prepared, and only for the session's account.
         DeploySession? session = null;
         SessionMachineConsole console = new(log, version, () => session?.SessionIsUp());
 

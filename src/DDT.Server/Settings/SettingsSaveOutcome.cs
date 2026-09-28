@@ -11,10 +11,10 @@ public enum SettingsSaveOutcome
     // Someone saved the section since the version the update names.
     Conflict,
 
-    // Problems, a refused secret or an unconfirmed warning: nothing was saved.
+    // Nothing was saved because of problems, a refused secret or an unconfirmed warning.
     Invalid,
 
-    // The update changes fields that need a fresh proof of identity, which Fields names.
+    // The update changes fields that need a fresh proof of identity. Fields names them.
     Reauthenticate,
 
     // This process cannot read the key ring of the stored secrets, so it saves nothing.

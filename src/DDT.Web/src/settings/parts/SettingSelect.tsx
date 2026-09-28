@@ -18,8 +18,8 @@ export interface SettingOption {
   description?: ReactNode;
 }
 
-// One value of a closed list, such as a transport or a role. With empty set, the field can also hold null, shown as
-// that option's label.
+// One value from a fixed list, such as a transport or a role. If empty is given, it adds an option with that label, and
+// picking it stores null.
 export function SettingSelect<T>({
   form,
   field,

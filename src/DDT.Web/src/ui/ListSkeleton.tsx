@@ -5,7 +5,7 @@
 import { cx } from "./cx";
 import { Skeleton } from "./Skeleton";
 
-// The lines a list shows while it loads, one per width. A panel with padding of its own takes them unpadded.
+// The lines a list shows while it loads, one per width. A panel with its own padding uses them unpadded.
 export function ListSkeleton({
   widths = ["w-1/2", "w-2/3"],
   padded = true,

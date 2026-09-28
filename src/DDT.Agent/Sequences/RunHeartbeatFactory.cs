@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run's heartbeat and the store of its state, wired together: the heartbeat reports a state only once the store has
-// written it, and the store writes each new run token the heartbeat's reports bring.
+// Wires a run's heartbeat and its state store together. The heartbeat only reports a state once the store has written
+// it, and the store writes each new run token the heartbeat's reports bring.
 internal sealed class RunHeartbeatFactory(IAgentServer server, AgentLog log, TimeProvider timeProvider, TimeSpan interval)
 {
     // saved sees each written state before the heartbeat does.

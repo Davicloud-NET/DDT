@@ -4,14 +4,14 @@
 
 import { isStray, type MachineSummary } from "@/machines/machines";
 
-// The strays that registered from one address, which the first of them offers to remove at once.
+// The strays that registered from one address. The first of them offers to remove them all at once.
 export interface StrayOffer {
   address: string;
   count: number;
 }
 
-// A machine that registered and waits without anyone having approved it may be a stray. Where more than one came
-// from the same address, the first of them offers to remove them all.
+// A machine that registered and waits, but was never approved, may be a stray. If several came from the same
+// address, the first of them offers to remove them all.
 export function straysOffer(machines: readonly MachineSummary[]): Map<string, StrayOffer> {
   const byAddress = new Map<string, MachineSummary[]>();
 

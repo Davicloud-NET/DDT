@@ -71,7 +71,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
         ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer())
             .OnRunReport(DeploymentState.Running, _ => new AgentRunReportResult("session-1", "resume-1", "run-token-1"));
 
-        // A dry hand-over, as the console's directory would otherwise let only SYSTEM write to it.
+        // A dry hand-over, because otherwise only SYSTEM could write to the console's directory.
         Assert.Equal(new RunResult(RunOutcome.Restarting), await RunAsync(server, InWindows(), new() { DryRunHandOver = true, ConsoleDirectory = console }));
 
         string staged = Path.Combine(Windows, "DDT", WindowsHandOver.ConsoleDirectory);
@@ -140,7 +140,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
 
         Assert.Equal(RunOutcome.Stopped, (await RunAsync(server, InWindows())).Outcome);
 
-        // The service is registered before the state says the run goes on in Windows.
+        // The service is registered before the state says the run continues in Windows.
         LocalRun? found = await LocalRun.LoadAsync(Windows, Log(), cancellationToken);
         Assert.NotNull(found);
         Assert.Equal(interruptedAt == "firmware" ? SequencePhase.Windows : SequencePhase.WindowsPE, found.State.Phase);
@@ -158,8 +158,8 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
             ],
             _tools.Calls[callsBefore..]);
 
-        // A Windows PE that finds the run in the Windows phase counts it, so firmware that always starts from the
-        // network cannot hand the run over for ever.
+        // A WinPE that finds the run in the Windows phase counts it, so firmware that always boots from the network
+        // can't hand the run over forever.
         LocalRun? staged = await LocalRun.LoadAsync(Windows, Log(), cancellationToken);
         Assert.NotNull(staged);
         Assert.Equal((SequencePhase.Windows, 3, "run-token-1"), (staged.State.Phase, staged.State.NextIndex, staged.RunToken));
@@ -222,7 +222,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
         RunResult result = await RunAsync(server, InWindows());
 
         // Most likely the run was stopped. The registration with the run token decides, so the state and the answer
-        // file stay, but Windows must not start and go on with the run meanwhile.
+        // file stay, but Windows must not start and continue the run in the meantime.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);

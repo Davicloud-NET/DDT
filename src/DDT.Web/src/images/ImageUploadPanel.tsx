@@ -13,7 +13,7 @@ import { describeResult } from "./imageView";
 
 const imageKinds = ["Image"] as const;
 
-// Takes WIM, ESD and disk image files; the images the server answers with join the list.
+// Takes WIM, ESD and disk image files. The images in the server's answer are added to the list.
 export function ImageUploadPanel() {
   const queryClient = useQueryClient();
 

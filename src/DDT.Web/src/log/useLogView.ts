@@ -36,7 +36,7 @@ export function useLogView({
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [selected, setSelected] = useState<MachineLogEntry | null>(null);
 
-  // Other lines replace the loaded ones, so the view starts again at the newest.
+  // A new scope loads other lines, so the view starts over at the newest.
   const [shownScope, setShownScope] = useState(deploymentId);
 
   if (shownScope !== deploymentId) {

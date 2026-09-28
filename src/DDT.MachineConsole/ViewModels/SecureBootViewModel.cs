@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The Secure Boot override: the disk image would not start with the Secure Boot this machine has on.
+// The Secure Boot override, for a disk image that wouldn't start with this machine's Secure Boot turned on.
 public sealed class SecureBootViewModel : TypedWordViewModel
 {
     private readonly MicrosoftUefiCas? _trusted;

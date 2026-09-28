@@ -305,8 +305,8 @@ describe("ApprovalPage", () => {
     expect(networks()).toHaveAttribute("readonly");
   });
 
-  // The server sends each message as a code beside its English: a problem of the stored section, how a host applied
-  // it, with the problems within the sentence, and a warning to confirm.
+  // The server sends each message as a code next to its English text. The test covers a problem of the stored section,
+  // a host's apply state with the problems inside its sentence, and a warning to confirm.
   it("says the server's problems, apply states and warnings in German", async () => {
     await inGerman();
     const wide = {
@@ -378,7 +378,7 @@ describe("ApprovalPage", () => {
     ).toBeInTheDocument();
   });
 
-  // A refusal carries its field errors as codes, and a code this build does not know keeps the server's English.
+  // A refusal carries its field errors as codes. A code this build doesn't know shows the server's English.
   it("says a refused field in German, and the English of a code it does not know", async () => {
     await inGerman();
     serve({

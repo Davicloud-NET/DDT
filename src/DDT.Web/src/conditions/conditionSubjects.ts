@@ -17,7 +17,7 @@ const runVariables: ReadonlySet<string> = new Set(["LastStepFailed", "LastExitCo
 export type ValueKind =
   "text" | "number" | "memory" | "yesNo" | "ipv4" | "network" | "mac" | "oneOf";
 
-// A kind of value as the subject picker names it beside a subject.
+// The name of a value kind, as the subject picker shows it beside a subject.
 export function valueKindLabel(kind: ValueKind): string {
   switch (kind) {
     case "text":
@@ -146,8 +146,9 @@ export function sameName(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-// Every subject a condition of the sequence can test, each name once, in the picker's order: facts, the run's values,
-// names rules and roles set, then the sequence's variables and inputs. An Account input sets no value, so is none.
+// Every subject a condition in the sequence can test, each name once, in the picker's order: facts, the run's values,
+// names that rules and roles set, then the sequence's variables and inputs. An Account input doesn't set a value, so
+// it isn't a subject.
 export function subjectsOf({
   facts,
   valueNames,
@@ -205,7 +206,7 @@ export function subjectsOf({
   ];
 }
 
-// The subject a condition names, ignoring case; a name no list has is tested as text, as the server does.
+// The subject a condition names, ignoring case. Like on the server, a name that's in no list is tested as text.
 export function subjectFor(subjects: readonly Subject[], name: string): Subject {
   return (
     subjects.find((subject) => sameName(subject.name, name)) ?? {

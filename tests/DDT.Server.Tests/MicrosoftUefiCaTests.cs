@@ -12,8 +12,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The agent recognises Microsoft's third-party UEFI CAs in a machine's db by thumbprints Core keeps; they have to be
-// the certificates the server checks boot files against.
+// The agent recognises Microsoft's third-party UEFI CAs in a machine's db by thumbprints that Core keeps.
+// They have to be the certificates the server checks boot files against.
 public sealed class MicrosoftUefiCaTests
 {
     private static byte[] X509List(params X509Certificate2[] certificates)

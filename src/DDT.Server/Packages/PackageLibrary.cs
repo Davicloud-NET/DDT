@@ -17,8 +17,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Packages;
 
-// The packages of the library as administrators change them. The boot image page lists the packages that go into the
-// boot image by name, so it is pushed again when that list changes.
+// Applies administrators' changes to the packages in the library. The boot image page lists the packages that go into
+// the boot image by name, so the page is pushed again when that list changes.
 internal sealed class PackageLibrary(
     DdtDbContext database,
     ImageStore store,
@@ -26,8 +26,8 @@ internal sealed class PackageLibrary(
     LiveNotifier live,
     TimeProvider timeProvider)
 {
-    // The last save wins: packages are edited rarely, and only by administrators. Both are null when there is no such
-    // package.
+    // The last save wins. Packages are edited rarely, and only by administrators. Both values are null when there's no
+    // such package.
     public async Task<(PackageSummary? Summary, FieldProblems? Problems)> UpdateAsync(
         Guid id,
         UpdatePackageRequest request,
@@ -80,7 +80,8 @@ internal sealed class PackageLibrary(
         return (summary, null);
     }
 
-    // Under the library lock, so an upload of the same file cannot add a row for the stored file while it goes.
+    // Runs under the library lock. That way an upload of the same file can't add a row for the stored file while it's
+    // being deleted.
     public async Task<LibraryDeletion> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         bool wasInBootImage;
@@ -114,7 +115,7 @@ internal sealed class PackageLibrary(
 
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            // The row is gone, so the stored file goes too unless an image or another package still uses it.
+            // The row is gone, so delete the stored file too, unless an image or another package still uses it.
             await store.DeleteObjectIfUnreferencedAsync(database, package.Sha256, CancellationToken.None).ConfigureAwait(false);
         }
 
@@ -128,7 +129,7 @@ internal sealed class PackageLibrary(
         return LibraryDeletion.Deleted;
     }
 
-    // Only drivers go into the boot image: Windows PE loads drivers, and nothing runs a files package there before a
+    // Only drivers go into the boot image. WinPE loads drivers, and nothing runs a files package there before a
     // sequence does.
     private static FieldProblems Problems(Package package, UpdatePackageRequest request, string name, string? description)
     {

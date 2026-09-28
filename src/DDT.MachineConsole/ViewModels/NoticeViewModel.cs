@@ -11,7 +11,7 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
 {
     private ConsoleNotice _current;
 
-    // The band keeps the last note's words while it fades out.
+    // The band keeps the last note's text while it fades out.
     private ConsoleNotice _shown;
 
     public ConsoleNotice Current
@@ -56,7 +56,7 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
 
     public void Show(ConsoleNotice notice) => Current = notice;
 
-    // Only that note goes; another one stays.
+    // Dismisses only that note. A different note stays.
     public void Dismiss(ConsoleNotice notice)
     {
         if (Current == notice)

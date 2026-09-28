@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Tests;
 
-// The join account of DomainDeploymentApplication, checked at a named domain controller that a fake answers for.
+// The join account from DomainDeploymentApplication, checked at a named domain controller.
+// A fake answers for that controller.
 public sealed class DomainJoinCheckApplication() : SettingsApplication(
     ("DDT:Deployment:LocalAdministrator:Password", DomainDeploymentApplication.AdministratorPassword),
     ("DDT:Deployment:Domain:Name", "corp.example"),

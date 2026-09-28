@@ -8,7 +8,7 @@ import { isTextField } from "@/lib/textField";
 
 import { historyCommand, type HistoryCommand } from "./flow/history";
 
-// Ctrl+Z and Ctrl+Y anywhere on the page but in a text field, whose own undo takes back its typing.
+// Ctrl+Z and Ctrl+Y anywhere on the page except in a text field, which has its own undo for its typing.
 export function useHistoryKeys(step: (command: HistoryCommand) => void): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

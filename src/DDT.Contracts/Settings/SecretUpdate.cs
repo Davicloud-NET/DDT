@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// Value only with Set.
+// Value is only used with Set.
 public sealed record SecretUpdate(SecretAction Action, string? Value);

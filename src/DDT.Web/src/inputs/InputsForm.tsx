@@ -15,8 +15,8 @@ import type { Answers } from "./useAnswers";
 
 const emptyDraft: AnswerDraft = { value: "", values: [], userName: "", password: "" };
 
-// The fields of a sequence's inputs by their kinds. A field says where its first value came from and what the page or
-// the server refused; a password is never shown again.
+// The fields for a sequence's inputs, by kind. A field says where its first value came from and what the page or the
+// server refused. A password is never shown again.
 export function InputsForm({
   inputs,
   answers,

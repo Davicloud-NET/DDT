@@ -10,7 +10,8 @@ using DDT.Core.Templates;
 namespace DDT.Core.CloudInit;
 
 // Fills placeholders such as {{ComputerName}} in cloud-init seed files, escaped for a double-quoted YAML string. Other
-// double braces stay, even a known name with a filter DDT lacks, because cloud-init's Jinja templates use them too.
+// double braces are left alone, even a known name with a filter DDT doesn't have. cloud-init's Jinja templates use
+// them too.
 public static class CloudInitTemplate
 {
     public static IReadOnlyList<string> Names { get; } =
@@ -23,7 +24,7 @@ public static class CloudInitTemplate
         MachineVariableNames.MacAddress,
     ];
 
-    // Every name between double braces that looks like a placeholder, known or not, once each, in order.
+    // Every name in double braces that looks like a placeholder, known or not. Each name comes once, in order.
     public static IReadOnlyList<string> Placeholders(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -35,8 +36,8 @@ public static class CloudInitTemplate
     public static string? Known(string placeholder) =>
         Names.FirstOrDefault(name => string.Equals(name, placeholder, StringComparison.OrdinalIgnoreCase));
 
-    // A placeholder is a name in Names or any name values has, ignoring case; a name in Names without a value throws
-    // InvalidOperationException naming it. Line ends become LF, which shell scripts in user-data need.
+    // A placeholder is a name from Names or any key in values, ignoring case. A name from Names without a value throws
+    // an InvalidOperationException that names it. Line ends become LF, because shell scripts in user-data need that.
     public static string Render(string text, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -80,8 +81,8 @@ public static class CloudInitTemplate
         return null;
     }
 
-    // What YAML needs escaped in a double-quoted string: the backslash, the quote and control characters, the C1 ones
-    // too, which firmware strings read as Latin-1 can hold and YAML parsers refuse unescaped.
+    // Escapes the backslash, the quote and control characters for a double-quoted YAML string. That includes the C1
+    // controls. Firmware strings read as Latin-1 can contain them, and YAML parsers refuse them unescaped.
     private static string Escape(string value)
     {
         StringBuilder escaped = new(value.Length);

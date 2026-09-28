@@ -18,7 +18,7 @@ export interface AccountItem {
   description: string | null;
 }
 
-// The accounts and Account inputs that fit a use, and how the chosen one reads.
+// The accounts and Account inputs that fit a use, and how the chosen one is shown.
 export function useAccountChoices(
   value: AccountReference | null,
   use: AccountUse,
@@ -46,7 +46,7 @@ export function useAccountChoices(
     (input) => value?.accountId === null && input.name === value.input,
   );
   const lostInput = value?.input ?? "";
-  // A choice the lists do not have any more, such as an account deleted since, is still shown as it is.
+  // A choice that's no longer in the lists, such as a deleted account, is still shown.
   const missing =
     key === NONE || chosenAccount !== undefined || chosenInput !== undefined
       ? null

@@ -14,8 +14,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// What version 3 sequences add to the agent's wire: members at the end that older readers never see while unset, the
-// answers to inputs, and the accounts a step uses, whose passwords never reach a log.
+// What version 3 sequences add to the agent's wire format: members at the end that older readers never see while unset,
+// the answers to inputs, and the accounts a step uses. Their passwords never reach a log.
 public sealed class AgentTreeContractTests
 {
     private const string MachineId = "0197a3c0-0000-7000-8000-00000000000a";
@@ -140,7 +140,7 @@ public sealed class AgentTreeContractTests
             """);
     }
 
-    // What a server from before version 3 sends reads with every new member unset.
+    // What a server older than version 3 sends is read with every new member unset.
     [Fact]
     public void ReadsARunAndAResultWithoutTheMembersOfVersion3()
     {
@@ -151,7 +151,7 @@ public sealed class AgentTreeContractTests
         Assert.Equal(new AgentRunReportResult("session", "resume", null), result);
     }
 
-    // Part is a piece of the JSON the value is written as; reading it back writes the same JSON.
+    // part is a piece of the JSON the value is written as. Reading the value back writes the same JSON.
     private static void AssertRoundTrip<T>(T value, JsonTypeInfo<T> typeInfo, string part)
     {
         string json = JsonSerializer.Serialize(value, typeInfo);

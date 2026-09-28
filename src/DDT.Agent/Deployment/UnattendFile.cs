@@ -9,7 +9,7 @@ using System.Xml.Linq;
 namespace DDT.Agent.Deployment;
 
 // Puts the server's answer file where Setup looks for it in an applied image, and has Setup delete it once Windows
-// is installed: it holds the local administrator's and the domain join account's passwords.
+// is installed. It holds the local administrator's and the domain join account's passwords.
 public static class UnattendFile
 {
     public const string CleanupLine = "del /q /f \"%WINDIR%\\Panther\\unattend.xml\"";
@@ -39,9 +39,9 @@ public static class UnattendFile
             .ConfigureAwait(false);
     }
 
-    // Has Setup sign in as userName once after its last restart, which nothing outside Setup can time. False without an
-    // answer file or its oobeSystem Shell-Setup component. The password is encoded as the answer file encodes every
-    // password, which only hides it from a glance; the file goes when Setup has read it.
+    // Has Setup sign in as userName once after its last restart, which nothing outside Setup can time. Returns false
+    // without an answer file or its oobeSystem Shell-Setup component. The password is encoded like every password in
+    // the answer file, which only hides it from a glance. The file is deleted once Setup has read it.
     public static async Task<bool> AddAutoLogonAsync(string windowsRoot, string userName, string password, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -74,7 +74,7 @@ public static class UnattendFile
 
         shell.Element(s_unattend + "AutoLogon")?.Remove();
 
-        // First, as Windows System Image Manager orders the settings; the suffix is the one every account password gets.
+        // First, the way Windows System Image Manager orders the settings. Every account password gets this suffix.
         shell.AddFirst(new XElement(
             s_unattend + "AutoLogon",
             new XElement(

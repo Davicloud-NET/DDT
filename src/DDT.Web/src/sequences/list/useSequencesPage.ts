@@ -16,8 +16,8 @@ import { rulesQuery } from "@/rules/rules";
 import { inFilter, matchesSearch, type SequenceFilter } from "../sequenceList";
 import { sequencesQuery } from "../sequences";
 
-// The sequence list's data, which the hub keeps current and a timer reads only while the live connection is down, the
-// view the address holds, and the open dialog.
+// The sequence list's state. The hub keeps the data current, and a timer only fetches it while the live connection is
+// down. It also has the view from the URL, and the open dialog.
 export function useSequencesPage() {
   const search = useSearch({ from: "/shell/deployment/sequences" });
   const navigate = useNavigate({ from: "/deployment/sequences" });
@@ -40,7 +40,7 @@ export function useSequencesPage() {
   const shown = matching.filter((sequence) => inFilter(sequence, filter));
   const deleting = all.find((sequence) => sequence.id === deletingId) ?? null;
 
-  // Changes the view without a new history entry. Empty values and the default filter leave the address.
+  // Changes the view without a new history entry. Empty values and the default filter are left out of the URL.
   function setSearch(next: { state?: SequenceFilter; q?: string }) {
     void navigate({
       search: (previous) => {

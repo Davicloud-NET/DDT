@@ -60,7 +60,7 @@ export function useConditionRows({
 }: ConditionRowsOptions): RowContext {
   const locked = useContext(EditorLock) || isReadOnly;
   const place = fieldOf ?? ((path: readonly number[]) => conditionPath(field, path));
-  // A when or a rule may hold nothing and then holds always; an IF's test and a repeat's until keep an empty group.
+  // A when or a rule can be empty, and then it always holds. An IF's test and a Repeat's until keep an empty group.
   const mayBeNone = use === "when" || use === "rule";
   const numbers = numbering(value);
 

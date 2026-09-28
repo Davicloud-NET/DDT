@@ -22,7 +22,7 @@ export function withBody(node: SequenceStep, name: BodyName, steps: SequenceStep
   }
 }
 
-// The tree with the first node that has the id changed; the same lists where nothing changed.
+// The tree with the first node that has the id changed. Lists where nothing changed stay the same objects.
 export function replaceNode(
   steps: SequenceStep[],
   id: string,
@@ -32,7 +32,7 @@ export function replaceNode(
   // Read through a call, since visiting a body may set it.
   const finished = () => done;
 
-  // The node with its bodies visited, up to the one that held the node with the id.
+  // Visits the node's bodies, stopping after the one that held the node with the id.
   const visitBodies = (node: SequenceStep): SequenceStep => {
     let next = node;
 
@@ -80,7 +80,7 @@ export function replaceNode(
   return visit(steps);
 }
 
-// The tree with the list a slot names changed, undefined where there is no such list.
+// The tree with the list a slot names changed. Undefined if there's no such list.
 export function changeList(
   steps: SequenceStep[],
   parent: string | null,

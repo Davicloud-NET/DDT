@@ -9,7 +9,7 @@ import { cx } from "@/ui/cx";
 
 import type { PaletteEntry } from "./usePaletteEntries";
 
-// One kind of entry in the palette's results, left out while it has none.
+// One kind of entry in the palette's results. It's left out while it has no entries.
 export function PaletteSection({ title, entries }: { title: ReactNode; entries: PaletteEntry[] }) {
   if (entries.length === 0) {
     return null;

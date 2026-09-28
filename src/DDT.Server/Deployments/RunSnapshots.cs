@@ -22,19 +22,20 @@ using DDT.Server.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// What is frozen when a run is created: a row per node and the files its steps download, resolved for the machine now,
-// so a driver package uploaded later is not part of the run.
+// What's frozen when a run is created: a row per node, and the files its steps download, resolved for the machine now.
+// So a driver package uploaded later isn't part of the run.
 public static class RunSnapshots
 {
-    // The kinds that hold other nodes, as documents name them, so a run's rows tell its steps from their containers.
+    // The step kinds that hold other nodes, as documents name them. They tell a run's steps apart from their
+    // containers.
     private static readonly FrozenSet<string> s_containerKinds = typeof(SequenceStep)
         .GetCustomAttributes<JsonDerivedTypeAttribute>()
         .Where(kind => ((SequenceStep)RuntimeHelpers.GetUninitializedObject(kind.DerivedType)).IsContainer)
         .Select(kind => (string)kind.TypeDiscriminator!)
         .ToFrozenSet(StringComparer.Ordinal);
 
-    // One row per node in pre-order, containers included. A node whose phase depends on an IF starts with the first phase
-    // it may run in, and takes the one the agent reports when it runs.
+    // One row per node in pre-order, containers included. A node whose phase depends on an IF starts with the first
+    // phase it may run in. It gets the phase the agent reports when it runs.
     public static IReadOnlyList<DeploymentStep> Steps(Guid runId, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -85,8 +86,8 @@ public static class RunSnapshots
         return [.. SequenceTree.Nodes(definition).SelectMany(step => StepArtifacts(runId, step, references, machine))];
     }
 
-    // The most any path needs on the disk it erases (see SequenceSizes): partitions, and every file downloaded and unpacked.
-    // A raw disk image is written as it downloads, so only the disk it holds, and the seed after it, count.
+    // The most any path needs on the disk it erases (see SequenceSizes): partitions, plus every file downloaded and
+    // unpacked. A raw disk image is written while it downloads, so only the disk it holds and the seed after it count.
     public static long RequiredBytes(SequenceDefinition definition, IReadOnlyList<DeploymentArtifact> artifacts)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -104,8 +105,9 @@ public static class RunSnapshots
         return SequenceSizes.RequiredBytes(definition, step => files.GetValueOrDefault(step.Id));
     }
 
-    // Never a secret: the answer file and the credentials are fetched while their step runs, and the values never hold an
-    // Account input's answer. An image a Write raw disk image step names is a raw disk image, whatever the library holds now.
+    // Never a secret. The answer file and the credentials are fetched while their step runs, and the values never hold
+    // an Account input's answer. An image a Write raw disk image step names is a raw disk image, whatever the library
+    // holds now.
     public static AgentRun ForAgent(
         Deployment run,
         SequenceDefinition definition,
@@ -185,7 +187,8 @@ public static class RunSnapshots
             _ => [],
         };
 
-    // The discriminator the document gives the step, as the serializer writes it, so a new kind needs nothing here.
+    // The discriminator the document gives the step, as the serializer writes it. So a new step kind needs no change
+    // here.
     private static string Kind(SequenceStep step) =>
         JsonSerializer.SerializeToElement(step, DdtJsonContext.Default.SequenceStep).GetProperty("kind").GetString() ?? "";
 

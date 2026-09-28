@@ -13,8 +13,8 @@ export interface Deletion<T> {
   mutation: UseMutationResult<void, Error, string>;
 }
 
-// The entry a delete dialog asks about and the request that deletes it once confirmed. onDeleted patches the
-// cache, since the server answers a delete with nothing but its status.
+// The entry a delete dialog asks about, and the request that deletes it once confirmed. onDeleted patches
+// the cache, because the server answers a delete with only a status code.
 export function useDeletion<T>(
   request: (id: string) => Promise<void>,
   onDeleted: (id: string) => void,

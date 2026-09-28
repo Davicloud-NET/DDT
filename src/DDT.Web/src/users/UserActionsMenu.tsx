@@ -10,8 +10,8 @@ import { RowActionsMenu } from "@/ui/RowActionsMenu";
 import type { UserView } from "./users";
 import type { UserAction } from "./useUserActions";
 
-// What an administrator may do to an account. The server refuses to disable, delete or reset the one asking, so those
-// are not offered on the own row; that account's password and second factor are on its Account page.
+// What an administrator can do to an account. The server refuses to disable, delete or reset the person asking, so
+// those actions aren't offered on your own row. Your own password and second factor are on the Account page.
 export function UserActionsMenu({
   user,
   isSelf,

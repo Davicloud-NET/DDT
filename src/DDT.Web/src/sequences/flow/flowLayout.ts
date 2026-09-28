@@ -15,8 +15,8 @@ import { ifPart } from "./layoutBranches";
 import { createDrawing, GAP, type LayoutContext, type Part, type Place } from "./layoutParts";
 import { seriesPart } from "./layoutSeries";
 
-// Where the flow draws a sequence, top to bottom, from the tree alone: the same tree always gives the same layout,
-// and nothing is placed by hand or saved. The numbers are pixels of the flow at 100 %.
+// Where the flow draws a sequence, top to bottom, worked out from the tree alone. The same tree always gives the
+// same layout, and nothing is placed by hand or saved. The numbers are pixels at 100 % zoom.
 
 export interface FlowLayoutOptions {
   // Containers drawn as one card, without what is inside them.

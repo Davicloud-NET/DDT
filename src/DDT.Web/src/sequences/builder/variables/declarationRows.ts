@@ -19,7 +19,7 @@ export function rowKey(list: OpenRow["list"], index: number): string {
 // What the list of variables and the list of inputs get from the panel.
 export interface DeclarationRowsProps {
   draft: SequenceDraft;
-  // The findings of the sequence's own, such as variables[1].name.
+  // The sequence's own findings, such as variables[1].name.
   findings: Findings;
   isOpen: (list: OpenRow["list"], index: number) => boolean;
   onToggle: (list: OpenRow["list"], index: number) => void;

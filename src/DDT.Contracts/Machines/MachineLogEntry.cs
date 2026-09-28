@@ -8,8 +8,8 @@ namespace DDT.Contracts.Machines;
 
 public sealed record MachineLogEntry(
     long Id,
-    // The agent's time, corrected by how far its clock was off when it sent the line (hours, in Windows PE).
-    // AgentTimestampUtc is the agent's own, ReceivedUtc the server's.
+    // The agent's time, corrected by how far its clock was off when it sent the line. In WinPE that can be hours.
+    // AgentTimestampUtc is the agent's uncorrected time, and ReceivedUtc is the server's.
     DateTimeOffset TimestampUtc,
     DateTimeOffset ReceivedUtc,
     AgentLogLevel Level,

@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Where a node sits in its definition's tree. Body is the parent's member that holds the node, as StepBody names it,
-// and null at the top like ParentId. SiblingIndex, Order (within SequenceTree.Nodes) and Depth count from 0.
+// Where a node sits in its definition's tree. Body is the parent's member that holds the node, as StepBody names it.
+// Like ParentId, it's null at the top. SiblingIndex, Order (within SequenceTree.Nodes) and Depth count from 0.
 public sealed record NodePosition(SequenceStep Step, Guid? ParentId, string? Body, int SiblingIndex, int Order, int Depth);

@@ -21,8 +21,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Single sign-on is switched on and off while the server runs: the scheme is added and removed at runtime, its options
-// come from the snapshot, and a scheme that cannot start is removed while local sign-in keeps working.
+// Single sign-on is switched on and off while the server runs. The scheme is added and removed at runtime, and its
+// options come from the snapshot. A scheme that can't start is removed while local sign-in keeps working.
 public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication application) : IClassFixture<SettingsOidcTests.OidcApplication>
 {
     private const string Authority = "https://idp.example/realms/ddt";
@@ -155,8 +155,8 @@ public sealed class SettingsOidcTests(SettingsOidcTests.OidcApplication applicat
         return await RegisteredMachine.ReadAsync<SettingsSectionView<OidcSettings>>(response);
     }
 
-    // A provider that answers the discovery request for the authority, and a switch that makes the handler's options fail
-    // after the save's own checks, as a provider could make them fail only once it is running.
+    // A provider that answers the discovery request for the authority. A switch makes the handler's options fail after
+    // the save's own checks. A real provider could only make them fail once it's running.
     public sealed class OidcApplication : DdtApplication
     {
         public bool BreakHandler { get; set; }

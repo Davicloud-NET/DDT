@@ -10,9 +10,9 @@ public sealed record LdapLookup(
     LdapLookupStatus Status,
     string? DistinguishedName,
     string? DisplayName,
-    // Null when the entry has none, which a sign-in refuses.
+    // Null when the entry has no immutable id. A sign-in refuses that.
     string? ImmutableId,
-    // Every group the user is in, nested ones included; empty while ResolveNestedGroups is off.
+    // Every group the user is in, including nested ones. Empty while ResolveNestedGroups is off.
     IReadOnlyList<string> GroupDns)
 {
     public static LdapLookup Missing(LdapLookupStatus status) => new(status, null, null, null, []);

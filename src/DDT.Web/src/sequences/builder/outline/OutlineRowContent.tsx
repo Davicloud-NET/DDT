@@ -18,7 +18,7 @@ import type { OutlineRow } from "./outlineRows";
 interface OutlineRowContentProps {
   row: OutlineRow;
   title: string;
-  // A node's own findings; null on a Then or an Else row.
+  // A node's own findings. Null on a Then or an Else row.
   own: Findings | null;
   locked: boolean;
   hasChildItems: boolean;
@@ -70,7 +70,7 @@ export function OutlineRowContent({
         {title}
       </span>
       {locked ? null : row.kind === "branch" ? (
-        // A Then or an Else stays with its IF; the tree still looks for the key.
+        // A Then or an Else stays with its IF, but the tree still looks for a drag key.
         <AriaButton slot="drag" isDisabled className="invisible size-7 shrink-0" />
       ) : (
         <AriaButton

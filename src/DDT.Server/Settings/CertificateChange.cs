@@ -8,8 +8,9 @@ using DDT.Core.Configuration;
 
 namespace DDT.Server.Settings;
 
-// What a change to the server certificate came to: the view once it is served, or why not. Problem names a field of
-// the request, NewRoot asks for the confirmation certificate.newRoot, and Refusal is a conflict with the server's state.
+// The result of a change to the server certificate. View is set once the new pair is served, the other fields say why
+// not. Problem names a field of the request, NewRoot asks for the confirmation certificate.newRoot, and Refusal means
+// the change conflicts with the server's state.
 internal sealed record CertificateChange
 {
     public CertificateView? View { get; init; }

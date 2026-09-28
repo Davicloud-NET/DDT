@@ -16,7 +16,7 @@ const levelClass: Record<AgentLogLevel, string> = {
   Error: "text-console-fail",
 };
 
-// One log line on a row of its own, the message's first line only. index places it in the viewport.
+// One log line per row, showing only the message's first line. index places the row in the viewport.
 export function LogRow({
   line,
   index,

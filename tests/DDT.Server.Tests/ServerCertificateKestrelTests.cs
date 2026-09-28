@@ -143,7 +143,7 @@ public sealed class ServerCertificateKestrelTests : IDisposable
 
     public void Dispose() => _folder.Dispose();
 
-    // Trusts the pinned root and nothing else, downloads nothing and checks no revocation, as the agent does.
+    // Trusts the pinned root and nothing else, downloads nothing and checks no revocation, like the agent.
     private static HttpClient AgentClient(Uri address, X509Certificate2 pin)
     {
         SocketsHttpHandler handler = new();
@@ -167,7 +167,7 @@ public sealed class ServerCertificateKestrelTests : IDisposable
         return certificates;
     }
 
-    // The files are replaced the way a renewal always does it: renamed into place.
+    // The files are replaced the way a renewal always does it, by renaming them into place.
     private async Task RenewAsync(ServerCertificates certificates, CancellationToken cancellationToken)
     {
         _clock.Advance(TimeSpan.FromDays(61));

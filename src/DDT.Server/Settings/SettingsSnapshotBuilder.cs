@@ -19,8 +19,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// The one function that builds a SettingsSnapshot. A field configuration locks takes its configured value; any other,
-// a seeded one included, takes its stored value, or its default.
+// The only place that builds a SettingsSnapshot. A field that configuration locks takes its configured value. Every
+// other field, seeded ones included, takes its stored value or its default.
 internal static class SettingsSnapshotBuilder
 {
     public static SettingsSnapshot Build(IReadOnlyDictionary<string, StoredSettingsSection> stored, IConfiguration configuration, string? saving)
@@ -64,7 +64,7 @@ internal static class SettingsSnapshotBuilder
 
     private static SettingsSectionState State(Draft draft, SettingsContext context)
     {
-        // A rule that cannot run on what was read, such as one of another build, must not take the snapshot down.
+        // A rule that can't run on what was read, such as values from another build, must not take the snapshot down.
         try
         {
             draft.Problems.AddRange(draft.Definition.FindProblems(draft.Options, context));
@@ -152,8 +152,8 @@ internal static class SettingsSnapshotBuilder
         return new Draft(definition, stored, values, storedValues, options, locks, problems, [], secrets, secretValues);
     }
 
-    // Configuration that cannot be read counts as the defaults, with a problem that says why: a locked field takes its
-    // default, the others keep their stored values.
+    // Configuration that can't be read counts as the defaults, with a problem that says why. A locked field then takes
+    // its default, and the other fields keep their stored values.
     private static JsonObject Configured(SettingsSectionDefinition definition, IConfiguration configuration, JsonObject defaults, List<SettingProblem> problems)
     {
         try
@@ -170,7 +170,7 @@ internal static class SettingsSnapshotBuilder
         }
     }
 
-    // Value is null for none. Differs says whether a configured value hides another stored one.
+    // Value is null when there's no secret. Differs says whether a configured value hides a different stored one.
     private static (string? Value, SecretState State, bool Differs) ReadSecret(StoredSecret? secret, string? configuredSecret, bool isConfigured)
     {
         string? value = isConfigured ? configuredSecret : secret?.Value;
@@ -185,8 +185,8 @@ internal static class SettingsSnapshotBuilder
     private static SettingLockState Lock(SettingField field, string key, IConfiguration configuration, bool storedDiffers) =>
         new(field, key, ConfigurationSources.Describe(configuration, key) ?? "configuration", storedDiffers);
 
-    // A stored value that no longer converts, written by another build for example, takes its default, and the section
-    // lists the field until someone saves it again.
+    // A stored value that no longer converts, for example one written by another build, is replaced by its default. The
+    // section lists the field as a problem until someone saves it again.
     private static object ReadOptions(
         SettingsSectionDefinition definition,
         JsonObject values,
@@ -235,7 +235,7 @@ internal static class SettingsSnapshotBuilder
                 proxiesClosed ? ZeroTouchNetworks.None : ZeroTouchNetworks.Parse(options.ZeroTouchNetworks));
         }
 
-        // Web approval stays on when either the page or configuration asked for it, whichever else is wrong.
+        // Web approval stays on if either the page or configuration asked for it, no matter what else is wrong.
         MachineOptions defaults = new();
         SettingField requireWebApproval = SettingsDefinitions.Machines.Field("requireWebApproval")!;
 

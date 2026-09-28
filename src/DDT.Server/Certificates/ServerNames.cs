@@ -11,7 +11,7 @@ namespace DDT.Server.Certificates;
 // The agent validates the host name against the certificate, so every name the server is reached by has to be in it.
 public static class ServerNames
 {
-    // localhost, this computer's name and the configured names, from the comma separated DDT:Https:SubjectAlternativeNames.
+    // Returns localhost, this computer's name and the names in the comma separated DDT:Https:SubjectAlternativeNames.
     public static IReadOnlyList<string> Required(string configured)
     {
         ArgumentNullException.ThrowIfNull(configured);
@@ -29,7 +29,8 @@ public static class ServerNames
         return names;
     }
 
-    // Added when a certificate is issued, but never a reason to issue one: an IPv6 privacy address changes daily.
+    // These addresses go into a certificate when one is issued, but they're never a reason to issue one. An IPv6
+    // privacy address changes daily.
     public static IReadOnlyList<IPAddress> LocalAddresses()
     {
         try
@@ -46,7 +47,7 @@ public static class ServerNames
         }
     }
 
-    // The DNS names and addresses in the certificate's subject alternative names.
+    // Returns the DNS names and addresses in the certificate's subject alternative names.
     public static IReadOnlyList<string> Of(X509Certificate2 certificate)
     {
         ArgumentNullException.ThrowIfNull(certificate);
@@ -58,7 +59,8 @@ public static class ServerNames
             : [.. names.EnumerateDnsNames(), .. names.EnumerateIPAddresses().Select(address => address.ToString())];
     }
 
-    // Every name, and every name that is an address, appears among the certificate's subject alternative names.
+    // True when every name appears in the certificate's subject alternative names. Addresses are compared as addresses,
+    // not as text.
     public static bool Covers(X509Certificate2 certificate, IEnumerable<string> names)
     {
         ArgumentNullException.ThrowIfNull(names);

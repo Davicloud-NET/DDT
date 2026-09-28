@@ -23,7 +23,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The flagged drivers are the whole library's, so each test starts with none flagged and no build in the boot directory.
+// Driver flags apply to the whole library.
+// So each test starts with no drivers flagged and no build in the boot directory.
 public sealed class BootImageTests(DdtApplication application) : IClassFixture<DdtApplication>, IAsyncLifetime
 {
     private const string BootImage = "/api/boot-image";
@@ -55,7 +56,7 @@ public sealed class BootImageTests(DdtApplication application) : IClassFixture<D
     private async Task<PackageSummary> FlaggedAsync(Package package, bool? bootImage = true) =>
         await RegisteredMachine.ReadAsync<PackageSummary>(await FlagAsync(package, bootImage));
 
-    // As Build-BootImage.ps1 writes it, with the drivers it put in.
+    // Writes the manifest the way Build-BootImage.ps1 does, with the drivers it put in.
     private async Task WriteManifestAsync(params Package[] drivers)
     {
         string entries = string.Join(",", drivers.Select(d => $$"""{ "packageId": "{{d.Id}}", "name": "{{d.Name}}", "sha256": "{{d.Sha256.ToUpperInvariant()}}" }"""));

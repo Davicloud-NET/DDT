@@ -39,8 +39,8 @@ public sealed class AcpiTpmTests
         Assert.Null(AcpiTpm.Version([]));
     }
 
-    // Windows lists each id as a DWORD in memory: TPM2 is 0x324D5054, which GetSystemFirmwareTable takes to read it.
-    // The letters the other way round are not the table.
+    // Windows lists each id as a DWORD in memory. TPM2 is 0x324D5054, and GetSystemFirmwareTable takes that value to
+    // read it. The letters in reverse order don't name the table.
     [Fact]
     public void ReadsTheSignaturesInTheOrderOfTheirLetters()
     {
@@ -60,7 +60,7 @@ public sealed class AcpiTpmTests
         Assert.Null(AcpiTpm.Version(Ids("FACP", "TPM")));
     }
 
-    // The list of a PC with a TPM 2.0, as Windows 11 gave it.
+    // The list from a PC with a TPM 2.0, exactly as Windows 11 returned it.
     [Fact]
     public void FindsTheTpmInTheListOfARealMachine()
     {

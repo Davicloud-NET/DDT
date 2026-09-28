@@ -31,8 +31,8 @@ import { ImageUploadPanel } from "./ImageUploadPanel";
 import { deleteConsequence, matchesImage } from "./imageView";
 import { NoImages } from "./NoImages";
 
-// The operating system images machines are deployed with: the Windows images of WIM and ESD files, and whole disk
-// images such as Linux cloud images. An image that is added enters the list, and one that changes flashes.
+// The operating system images that machines are deployed with. These are the Windows images in WIM and ESD files,
+// and whole disk images such as Linux cloud images. A new image joins the list, and a changed one flashes.
 export function ImagesPage() {
   const { t: translate } = useLingui();
   const queryClient = useQueryClient();

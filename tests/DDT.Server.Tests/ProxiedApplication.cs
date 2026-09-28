@@ -15,7 +15,8 @@ public sealed class ProxiedApplication : DdtApplication
 
     public const string ProxyNetwork = "198.51.100.0/24";
 
-    // An agent whose requests arrive from connection, the proxy unless another is named, carrying X-Forwarded-For.
+    // An agent whose requests carry X-Forwarded-For and arrive from connection.
+    // That's the proxy unless another address is given.
     public static AgentClient Agent(DdtApplication host, string forwardedFor, string connection = Proxy)
     {
         ArgumentNullException.ThrowIfNull(host);

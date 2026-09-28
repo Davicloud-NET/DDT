@@ -23,7 +23,7 @@ import { settingsOverviewQuery } from "../settings";
 import { ConfigurationPanel } from "./ConfigurationPanel";
 import { SectionsPanel } from "./SectionsPanel";
 
-// The tab shown is in the address, so the overview can link to a tab and a reload stays on it.
+// The shown tab is in the URL, so the overview can link to a tab and a reload stays on it.
 export function ServerSettings() {
   const { t } = useLingui();
   const search = serverSearch({ ...useSearch({ from: "/shell/admin/server" }) });

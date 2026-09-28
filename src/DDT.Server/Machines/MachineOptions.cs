@@ -8,18 +8,18 @@ public sealed class MachineOptions
 {
     public const string SectionName = "DDT:Machines";
 
-    // Off, a technician signing in at the machine authorizes it. On, that sign-in only records who is at the
-    // machine, and an operator also has to approve it on the web.
+    // When off, a technician who signs in at the machine authorizes it. When on, that sign-in only records who is at
+    // the machine, and an operator also has to approve it on the web.
     public bool RequireWebApproval { get; set; }
 
-    // Registration is open to anyone who reaches the server, so machines nobody has approved yet are capped per
-    // address, which a lab behind one NAT address still fits in, and in total.
+    // Registration is open to anyone who reaches the server, so machines nobody has approved yet are capped. There's a
+    // cap per address, which a lab behind one NAT address still fits in, and one in total.
     public int MaxWaitingPerAddress { get; set; } = 100;
 
     public int MaxWaiting { get; set; } = 10_000;
 
-    // CIDR networks, comma separated, from which a machine assigned a sequence on the web stays authorized at its netboot;
-    // empty turns zero touch off. Behind a proxy listed in DDT:ForwardedHeaders the client address is the one the proxy
-    // reports, so no network may hold a proxy's own address.
+    // CIDR networks, comma separated. A machine assigned a sequence on the web stays authorized when it netboots from
+    // one of them. Empty turns zero touch off. Behind a proxy listed in DDT:ForwardedHeaders, the client address is the
+    // one the proxy reports, so no network may contain a proxy's own address.
     public string ZeroTouchNetworks { get; set; } = string.Empty;
 }

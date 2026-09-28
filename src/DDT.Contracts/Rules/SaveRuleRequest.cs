@@ -9,8 +9,8 @@ namespace DDT.Contracts.Rules;
 
 // Creates a rule at the end of the list, or saves one.
 public sealed record SaveRuleRequest(
-    // The one the page last read; a save over a newer one is refused with the rule as it is now. A new rule has none
-    // to name.
+    // The revision the page last read. A save over a newer revision is refused and returns the rule as it is now. A
+    // new rule doesn't have one, so the server ignores it.
     long Revision,
     string Name,
     string? Description,

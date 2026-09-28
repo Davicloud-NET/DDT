@@ -15,7 +15,8 @@ import { TextSetting } from "../../fields/TextSetting";
 import type { InputChoice } from "../../sequences";
 import { iconKey, orNull, type InputPartProps } from "./declarationFields";
 
-// The choices of an input that takes one or several of a list, each a value and the label a person reads.
+// The choices of an input that takes one or several items from a list. Each has a value and the label a person
+// reads.
 export function InputChoices({ input, at, findings, update }: InputPartProps) {
   const { t } = useLingui();
   const locked = useContext(EditorLock);

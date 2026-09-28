@@ -358,7 +358,7 @@ describe("MachinesPage", () => {
       expect(server.changes()).toEqual([]);
     });
 
-    // A rule's name pattern gives the machine a name, as the server takes it; a name typed here would beat it.
+    // A rule's name pattern gives the machine a name, and the server uses it. A name typed here would win over it.
     it("takes the computer name the machine's values give when none is typed", async () => {
       const machine = machineSummary();
       const { server } = await open(
@@ -523,7 +523,7 @@ describe("MachinesPage", () => {
       const dialog = await openAssign();
       await assignable(dialog);
 
-      // A Windows sequence starts with Secure Boot on: nothing to allow.
+      // A Windows sequence boots with Secure Boot on, so there's nothing to allow.
       expect(within(dialog).queryByRole("checkbox")).not.toBeInTheDocument();
 
       await chooseOption(dialog, "Task sequence", "Install Linux");

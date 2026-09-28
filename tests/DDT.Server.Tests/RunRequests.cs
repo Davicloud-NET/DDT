@@ -40,7 +40,7 @@ internal static class RunRequests
         IReadOnlyList<InputAnswer>? answers = null) =>
         client.PostAsync($"/api/machines/{machineId}/approve", new ApproveMachineRequest(expectedSequenceId, allowSecureBootMismatch, answers));
 
-    // Answers the inputs the machine's run waits for, as its page does.
+    // Answers the inputs the machine's run waits for, like the machine's page does.
     public static Task<HttpResponseMessage> AnswerAsync(this SignedInClient client, Guid machineId, params InputAnswer[] answers) =>
         client.PostAsync($"/api/machines/{machineId}/deployments/current/answers", new AnswerInputsRequest(answers));
 }

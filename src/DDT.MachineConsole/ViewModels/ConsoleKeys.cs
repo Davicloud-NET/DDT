@@ -6,14 +6,14 @@ using Avalonia.Input;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The keys that work whatever the screen shows, as a table from key to command. A key whose command cannot run now
-// goes on to the screen.
+// The keys that work on every screen, as a table from key to command. If a key's command can't run right now, the key
+// is passed on to the screen.
 public sealed class ConsoleKeys(NoticeViewModel notice, EndViewModel end, Command openPrompt, IReadOnlyDictionary<Key, Command> commands)
 {
-    // True when the console used the key. Only Shift+F10 takes a modifier; every other key works alone.
+    // Returns true if the console handled the key. Only Shift+F10 uses a modifier. Every other key works alone.
     public bool Press(Key key, KeyModifiers modifiers)
     {
-        // The note about closing has been read once the person presses on.
+        // Once the person presses another key, they've read the note about closing.
         notice.Dismiss(ConsoleNotice.CloseRefused);
 
         if (key == Key.F10 && modifiers == KeyModifiers.Shift)
@@ -58,8 +58,8 @@ public sealed class ConsoleKeys(NoticeViewModel notice, EndViewModel end, Comman
         return true;
     }
 
-    // What a laptop's top row sends without Fn and Windows PE still turns into keys. Brightness and the like go to the
-    // firmware and never arrive.
+    // What a laptop's top row sends without Fn, which WinPE still turns into keys. Brightness keys and the like go to
+    // the firmware and never arrive.
     private static bool IsMediaKey(Key key) => key is Key.VolumeMute or Key.VolumeDown or Key.VolumeUp
         or Key.MediaPlayPause or Key.MediaNextTrack or Key.MediaPreviousTrack or Key.MediaStop
         or Key.BrowserBack or Key.BrowserForward or Key.BrowserRefresh or Key.BrowserSearch or Key.BrowserHome;

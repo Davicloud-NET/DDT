@@ -7,8 +7,8 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The restarts of Windows a run asks for. The marker keeps one due from the moment the run knows of it until it
-// happens, so a service that starts again without it restarts Windows instead of going on.
+// The Windows restarts a run asks for. The marker keeps a restart due from the moment the run knows about it until it
+// happens. So if the service starts again before the restart happened, it restarts Windows instead of continuing.
 internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, AgentLog log, TimeProvider timeProvider, bool dryRun)
 {
     public bool IsDue => marker.IsSet;
@@ -27,8 +27,8 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
         }
     }
 
-    // The restart stops the service, and until then there is nothing to do but ask again now and then, in case the
-    // restart never came. A dry run has no service to stop.
+    // The restart stops the service. Until then there's nothing to do but ask again now and then, in case the restart
+    // never comes. A dry run has no service to stop.
     public async Task<int> WaitAsync(CancellationToken cancellationToken)
     {
         if (dryRun)
@@ -51,7 +51,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
         }
     }
 
-    // After the agent removed itself: Windows deletes the files still in use as it starts.
+    // Called after the agent removed itself. Windows deletes the files still in use as it starts.
     public async Task RestartOnceMoreAsync(CancellationToken cancellationToken)
     {
         log.Information("Windows restarts once more, which deletes what is left of the agent.");

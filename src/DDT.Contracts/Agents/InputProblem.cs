@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Agents;
 
-// Message is English, in the words the agent logs.
+// Message is in English, worded the way the agent logs it.
 public sealed record InputProblem(string Name, string Message);

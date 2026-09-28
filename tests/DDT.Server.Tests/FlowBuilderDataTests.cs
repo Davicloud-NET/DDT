@@ -112,7 +112,7 @@ public sealed class FlowBuilderDataTests(DdtApplication application) : IClassFix
         UpdatedUtc = s_now,
     };
 
-    // A rule is read back through the contracts, as the rules page and the resolver read it.
+    // A rule is read back through the contracts, the same way the rules page and the resolver read it.
     [Fact]
     public async Task KeepsARuleAsTheContractsWriteIt()
     {
@@ -166,7 +166,7 @@ public sealed class FlowBuilderDataTests(DdtApplication application) : IClassFix
         }));
     }
 
-    // Two saves swap two rules: the first moves them out of the way, as the index is checked row by row.
+    // Swapping two rules takes two saves. The index is checked row by row, so the first save moves them out of the way.
     [Fact]
     public async Task RulesSwapPlacesInTwoSaves()
     {
@@ -277,7 +277,7 @@ public sealed class FlowBuilderDataTests(DdtApplication application) : IClassFix
         Assert.Equal(("[]", "[]", (string?)null), (role.Values, account.Hosts, account.ProtectedPassword));
     }
 
-    // A machine removed with its runs takes their credentials with it, in the database itself.
+    // Removing a machine with its runs removes their credentials too, in the database itself.
     [Fact]
     public async Task ARunsCredentialsGoWithItsMachine()
     {
@@ -307,7 +307,8 @@ public sealed class FlowBuilderDataTests(DdtApplication application) : IClassFix
         Assert.Equal(0, await InScopeAsync(database => database.RunCredentials.CountAsync(c => c.DeploymentId == runId, Cancellation)));
     }
 
-    // Runs as the server made them before trees read as they did, and a run of a tree keeps its node fields.
+    // Steps without node fields, like the server wrote them before trees, still read the same.
+    // A step in a tree keeps its node fields.
     [Fact]
     public async Task ARunKeepsItsTreeValuesAndPause()
     {
@@ -362,7 +363,7 @@ public sealed class FlowBuilderDataTests(DdtApplication application) : IClassFix
         Assert.Equal(((Guid?)parentId, 1, 2, 3, (IfBranch?)IfBranch.Else), Node(steps[1]));
         Assert.Equal(evaluation, JsonSerializer.Deserialize(steps[1].Evaluation!, DdtJsonContext.Default.IReadOnlyListTestEvaluation));
 
-        // The branch is stored by its name, as every other enum of a run is.
+        // The branch is stored by name, like every other enum of a run.
         string branch = await InScopeAsync(database => database.Database
             .SqlQuery<string>($"SELECT \"Branch\" AS \"Value\" FROM \"DeploymentSteps\" WHERE \"StepId\" = {pauseId}")
             .SingleAsync(Cancellation));

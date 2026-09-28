@@ -20,7 +20,7 @@ import {
 
 type FramedStep = Extract<SequenceStep, { kind: "group" | "repeat" }>;
 
-// A group or a repeat is a frame around its header card and its body; a repeat keeps a lane on the left for the
+// A group or a Repeat is a frame around its header card and its body. A Repeat keeps a lane on the left for the
 // wire back from the end of its body to its start.
 export function framePart(
   context: LayoutContext,

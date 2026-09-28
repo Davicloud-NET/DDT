@@ -38,16 +38,16 @@ export interface AutosaveSnapshot<T> {
 export interface AutosaveOptions<T, R> {
   initial: Revised<T>;
   save: (value: T, revision: number, keepalive: boolean) => Promise<R>;
-  // The server's form of the copy a save stored, which later reads of the document repeat.
+  // The server's form of the copy a save stored. Later reads of the document return the same form.
   savedAs: (result: R) => Revised<T>;
   equals: (a: T, b: T) => boolean;
-  // Whether a 409 says that someone else saved a newer revision. Otherwise it refuses this value.
+  // Whether a 409 means someone else saved a newer revision. Otherwise a 409 refuses this value.
   conflicts?: boolean;
   onSaved?: (result: R) => void;
   // Called when a save finds a newer revision, so the page reads it.
   onConflict?: () => void;
-  // Called when the page shows a copy someone else saved in place of its own: one read while nothing was unsaved, or
-  // theirs taken after a conflict.
+  // Called when the page shows someone else's copy in place of its own. That's a copy read while nothing was
+  // unsaved, or theirs taken after a conflict.
   onTakenIn?: (copy: Revised<T>) => void;
   debounceMs?: number;
   maxWaitMs?: number;
@@ -60,8 +60,8 @@ export interface Autosaver<T> {
   update: (change: (value: T) => T, immediate?: boolean) => void;
   // A copy read from the server, for example after another page saved.
   receive: (value: T, revision: number) => void;
-  // Resolves true once everything is saved, false when saving failed or cannot go on. keepalive sends what is
-  // there and does not wait, for a page that is being closed.
+  // Resolves true once everything is saved, and false if saving failed or can't continue. keepalive sends what's
+  // there without waiting, for a page that's being closed.
   flush: (keepalive?: boolean) => Promise<boolean>;
   takeTheirs: () => void;
   keepMine: () => void;

@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <!-- Only libwim-15.dll, never the managed wrapper. The agent carries it inside the executable, so the boot image
-         and the self-update stay one file; WimLibraryFile writes it out before the first wimlib call, unless a
+         and the self-update stay one file. WimLibraryFile writes it out before the first wimlib call, unless a
          libwim-15.dll is already next to the agent. -->
     <PackageReference Include="ManagedWimLib" IncludeAssets="native" GeneratePathProperty="true" />
     <!-- Unpacks raw disk images, which the server stores compressed with zstd, as they download. -->
@@ -30,8 +30,8 @@
     <EmbeddedResource Include="$(PkgManagedWimLib)\runtimes\win-x64\native\libwim-15.dll" LogicalName="libwim-15.dll" />
   </ItemGroup>
 
-  <!-- The package's DLL next to the published agent would be used instead of the one the agent carries, which may be
-       a libwim someone embedded in its place. The build still copies it, for the tests. -->
+  <!-- The package's DLL next to the published agent would be used instead of the one the agent carries. That one may
+       be a libwim someone embedded instead. The build still copies the package's DLL for the tests. -->
   <Target Name="LeaveOutThePackageWimLibrary" AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Filename)%(Extension)' == 'libwim-15.dll'" />

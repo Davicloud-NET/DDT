@@ -18,14 +18,14 @@ import { MachinePlate } from "./MachinePlate";
 
 interface MachineHeaderProps {
   machine: MachineSummary;
-  // Null for someone who may only look.
+  // Null for someone with read-only access.
   actions: MachineActionState | null;
   // Why the machine would get the sequence it gets, as the server explains it.
   resolution: string | null;
   now: number;
 }
 
-// The machine's name, state and plate of facts, with what an operator can do to it.
+// The machine's name, state and fact plate, with the actions an operator can take.
 export function MachineHeader({ machine, actions, resolution, now }: MachineHeaderProps) {
   const { i18n } = useLingui();
   // The name and state flash when the state changes while the page is open.

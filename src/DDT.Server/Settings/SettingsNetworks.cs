@@ -11,14 +11,14 @@ using DDT.Server.Security;
 
 namespace DDT.Server.Settings;
 
-// The rules that compare networks: how wide one may be without a confirmation, and why a zero touch network must not
-// hold a trusted proxy.
+// The rules that compare networks. They check how wide a network may be without a confirmation, and that no zero touch
+// network holds a trusted proxy.
 internal static class SettingsNetworks
 {
     private const int WidestVersion4 = 16;
     private const int WidestVersion6 = 48;
 
-    // Wide says what an address in the network counts as, with the network and the widest prefix it may have.
+    // Wide says what an address in the network counts as. It gets the network and the widest prefix allowed.
     public static IReadOnlyList<SettingWarning> Wide(IEnumerable<IPNetwork> networks, string field, MessageTemplate wide) =>
     [
         .. networks
@@ -30,9 +30,9 @@ internal static class SettingsNetworks
                 SettingWarningCodes.WideNetwork)),
     ];
 
-    // A request a proxy forwards without the client's address comes from the proxy's own, which a zero touch network
-    // must not hold. Field names the zero touch field for a problem of the machines section; null puts it on the
-    // proxies field.
+    // When a proxy forwards a request without the client's address, the request comes from the proxy's own address. A
+    // zero touch network must not hold that address. Field names the zero touch field for a problem of the machines
+    // section. Null puts the problem on the proxies field.
     public static IReadOnlyList<SettingProblem> Overlaps(string zeroTouchNetworks, DdtForwardedHeadersOptions proxies, string? field)
     {
         List<SettingProblem> problems = [];

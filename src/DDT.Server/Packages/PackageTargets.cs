@@ -11,7 +11,7 @@ using DDT.Core.Machines;
 
 namespace DDT.Server.Packages;
 
-// The hardware models a driver package is for, stored as JSON text in Package.Targets.
+// Handles the hardware models a driver package is for. They're stored as JSON text in Package.Targets.
 public static class PackageTargets
 {
     public static IReadOnlyList<HardwareModel> Read(Package package)
@@ -24,7 +24,7 @@ public static class PackageTargets
     public static string Write(IReadOnlyList<HardwareModel> targets) =>
         JsonSerializer.Serialize(targets, DdtJsonContext.Default.IReadOnlyListHardwareModel);
 
-    // Cleaned as HardwareModels cleans them, in the order given.
+    // Cleans each target the way HardwareModels does, and keeps the order given.
     public static IReadOnlyList<HardwareModel> Clean(IReadOnlyList<HardwareModel> targets)
     {
         ArgumentNullException.ThrowIfNull(targets);
@@ -32,7 +32,8 @@ public static class PackageTargets
         return [.. targets.Select(t => new HardwareModel(HardwareModels.Clean(t.Manufacturer), HardwareModels.Clean(t.Model) ?? ""))];
     }
 
-    // What is wrong with the targets a request sets, or null. A Files package is chosen by the steps that name it.
+    // Returns what's wrong with the targets a request sets, or null. A Files package has no targets, because the steps
+    // that name it choose it.
     public static ServerMessage? Problem(PackageKind kind, IReadOnlyList<HardwareModel?>? targets)
     {
         if (targets is null)

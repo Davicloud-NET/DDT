@@ -4,8 +4,8 @@
 
 import type { RuleView } from "./rules";
 
-// The list in the order of ids, each numbered by its place again. Ids the list does not have are left out, and rules
-// the ids do not name keep their order after the rest.
+// The list in the order of ids, with each rule renumbered by its place. Ids that aren't in the list are left out.
+// Rules the ids don't name keep their order after the rest.
 export function inOrder(list: readonly RuleView[], ids: readonly string[]): RuleView[] {
   const named = ids.flatMap((id) => list.filter((rule) => rule.id === id));
   const rest = list.filter((rule) => !ids.includes(rule.id));
@@ -15,7 +15,7 @@ export function inOrder(list: readonly RuleView[], ids: readonly string[]): Rule
   );
 }
 
-// The order after the rule moves by offset places, such as -1 for up; null where it cannot go further.
+// The order after the rule moves by offset places, such as -1 for up. Null if it can't go further.
 export function movedBy(list: readonly RuleView[], id: string, offset: number): string[] | null {
   const ids = list.map((rule) => rule.id);
   const from = ids.indexOf(id);
@@ -31,7 +31,7 @@ export function movedBy(list: readonly RuleView[], id: string, offset: number): 
   return ids;
 }
 
-// The order after the rules were dropped before or after another; null where nothing moves.
+// The order after the rules were dropped before or after another. Null if nothing moves.
 export function droppedAt(
   list: readonly RuleView[],
   moving: readonly string[],

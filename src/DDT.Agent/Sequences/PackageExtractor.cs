@@ -8,7 +8,8 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Sequences;
 
 // Unpacks a package zip into a new directory. The agent runs as SYSTEM, so it checks every entry's name and size before
-// it writes anything, although the server checked the package at upload, and every entry's content as it unpacks it.
+// it writes anything, even though the server checked the package at upload. It checks each entry's content as it
+// unpacks it too.
 public static class PackageExtractor
 {
     private const int BufferSize = 1024 * 1024;
@@ -66,7 +67,7 @@ public static class PackageExtractor
         }
     }
 
-    // Every entry checked, before anything is written.
+    // Checks every entry before anything is written.
     private static Contents ContentsOf(ZipArchive archive, string root, string name)
     {
         List<(ZipArchiveEntry Entry, string Path)> files = [];
@@ -124,8 +125,8 @@ public static class PackageExtractor
         return path;
     }
 
-    // Windows drops a trailing dot or space, so "a." would meet "a", and it opens a device for a name such as
-    // "con.txt" in any directory.
+    // Windows drops a trailing dot or space, so "a." would clash with "a". And Windows opens a device for a name such
+    // as "con.txt" in any directory.
     private static bool IsSafe(string segment) =>
         segment.Length > 0
         && segment is not ("." or "..")

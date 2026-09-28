@@ -7,8 +7,8 @@ using DDT.Core.Unattend;
 
 namespace DDT.Server.Deployments;
 
-// Whether a setting the answer file takes is one Windows knows. The server checks each wherever it comes from, since the
-// agent runs without globalization data.
+// Whether a setting the answer file takes is one Windows knows. The server checks each one wherever it comes from,
+// because the agent runs without globalization data.
 public static class WindowsSettings
 {
     public static bool IsTimeZone(string value)

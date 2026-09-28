@@ -20,7 +20,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Runs of sequences that write a raw disk image, and who may let one that will not start with Secure Boot on run.
+// Runs of sequences that write a raw disk image, and who may let one run that won't start with Secure Boot on.
 public sealed class RawImageRunTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private Task<Image> DiskImageAsync(ImageBootCapability capability = ImageBootCapability.SecureBootOk, UefiCa? signedUnder = null) =>
@@ -156,15 +156,15 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
             [$"{sequence.Name}, revision 1, to machine {on.Id:D}. It may write {image.Name} although it will not start with Secure Boot on."],
             await AuditAsync(allowed.Id));
 
-        // Where the machine did not say, its agent checks the firmware itself before it writes.
+        // If the machine didn't report it, its agent checks the firmware itself before it writes.
         DeploymentSummary unasked = await administrator.AssignedAsync(unknown.Id, sequence.Id, "LINUX-04");
         Assert.False(Assert.IsType<AgentRun>((await unknown.NextAsync()).Run).AllowSecureBootMismatch);
         Assert.Equal([$"{sequence.Name}, revision 1, to machine {unknown.Id:D}."], await AuditAsync(unasked.Id));
     }
 
-    // A machine with Secure Boot on starts no image signed only under CAs its firmware does not trust: one that holds
-    // only the 2011 CA refuses a shim signed since June 2026, and a Secured-core PC or Hyper-V's Windows template
-    // refuses both.
+    // A machine with Secure Boot on won't start an image signed only under CAs its firmware doesn't trust.
+    // Firmware with only the 2011 CA refuses a shim signed since June 2026.
+    // A Secured-core PC or Hyper-V's Windows template refuses both.
     [Fact]
     public async Task AsksForTheOverrideForASignedImageWhereTheFirmwareDoesNotTrustItsCa()
     {

@@ -11,6 +11,6 @@ internal enum UserChangeStatus
     Invalid,
     Refused,
 
-    // Identity did not save the account, which after validation means it changed meanwhile or the store failed.
+    // Identity didn't save the account. After validation, that means it changed in the meantime or the store failed.
     NotSaved,
 }

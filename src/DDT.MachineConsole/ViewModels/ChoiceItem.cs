@@ -4,7 +4,7 @@
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A key of a choice. IsChosen is for the keys that turn on and off; a single choice is its list's selection.
+// One option of a choice. IsChosen is for options that toggle on and off. A single choice uses its list's selection.
 public sealed class ChoiceItem(string value, Func<string> label, Action? changed = null) : ObservableObject
 {
     private bool _isChosen;

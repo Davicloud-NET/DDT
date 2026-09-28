@@ -21,8 +21,8 @@ import { LastBuild } from "./LastBuild";
 import { ReplacedAnchor } from "./ReplacedAnchor";
 import { WindowsPEDrivers } from "./WindowsPEDrivers";
 
-// The Windows PE boot image machines netboot into: what the last build put into it, whether the drivers flagged for
-// Windows PE have changed since, and how to build it again.
+// The WinPE boot image that machines netboot into. Shows what the last build put in it, whether the drivers flagged for
+// WinPE changed since, and how to build it again.
 export function BootImagePage() {
   const live = useLiveStatus();
   const boot = useQuery({ ...bootImageQuery, ...liveListOptions(live) });

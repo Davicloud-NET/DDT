@@ -22,12 +22,12 @@ export interface UploadProgress {
   retrying: boolean;
 }
 
-// "added": this upload put the file's contents into the library. "duplicate": they were in the library
-// already. "unclear": they are in the library, but an earlier complete request whose answer never arrived may
-// have added them, and the server answers a repeated complete as it answers a duplicate.
+// "added": this upload put the file's contents into the library. "duplicate": they were already in the
+// library. "unclear": they're in the library, but an earlier complete request whose answer never arrived may
+// have added them. The server answers a repeated complete the same way as a duplicate.
 export type UploadOutcome = "added" | "duplicate" | "unclear";
 
-// library is what the server answers the completion with: the images of a WIM, or the package of a zip.
+// library is the server's answer to the completion: the images of a WIM, or the package of a zip.
 export interface ResumableResult<T> {
   outcome: UploadOutcome;
   library: T;
@@ -37,7 +37,7 @@ export interface UploadOptions {
   signal: AbortSignal;
   onSession?: (session: ImageUploadSession) => void;
   onProgress?: (progress: UploadProgress) => void;
-  // Replaced in tests, so the back off does not wait for real.
+  // Replaced in tests, so the back off doesn't really wait.
   wait?: (milliseconds: number, signal: AbortSignal) => Promise<void>;
 }
 
@@ -52,7 +52,7 @@ interface Transfer {
   readonly file: File;
   readonly options: UploadOptions;
   readonly signal: AbortSignal;
-  // The pause before a request goes again, which the abort ends.
+  // The pause before a request is sent again. The abort ends it.
   readonly pause: (milliseconds: number) => Promise<void>;
   phase: UploadPhase;
   offset: number;
@@ -63,9 +63,9 @@ interface Transfer {
   completeRequests: number;
 }
 
-// The server keeps the offset it has stored, so every request says where its bytes start, and a refusal
-// says where the server stands. That covers a lost answer, a second tab and a reload, which the server
-// recognises by the file's name, length, modification time and kind.
+// The server keeps the offset it has stored. Every request says where its bytes start, and a refusal says
+// where the server is. That covers a lost answer, a second tab and a reload. The server recognises the file
+// by its name, length, modification time and kind.
 export async function resumableUpload<T>(
   file: File,
   kind: UploadKind,
@@ -121,7 +121,7 @@ async function send(transfer: Transfer, attempt: () => Promise<Response>): Promi
     try {
       response = await attempt();
     } catch {
-      // A network error, or the abort, which the check below turns into the abort error.
+      // A network error, or the abort. The check below turns the abort into the abort error.
       throwIfAborted(transfer.signal);
     }
 
@@ -206,7 +206,7 @@ async function sendSlices(transfer: Transfer, path: string, chunkBytes: number):
   }
 }
 
-// Null when the server holds fewer bytes than the file, or is still busy with it, so the upload goes on.
+// Null when the server holds fewer bytes than the file, or is still busy with it. Then the upload continues.
 async function complete<T>(transfer: Transfer, path: string): Promise<ResumableResult<T> | null> {
   transfer.phase = "verifying";
   report(transfer);
@@ -218,8 +218,8 @@ async function complete<T>(transfer: Transfer, path: string): Promise<ResumableR
 
   if (response.status === 200 || response.status === 201) {
     return {
-      // Only the request that did the work answers 201. A 200 means a duplicate only when no complete
-      // request went before it.
+      // Only the request that did the work gets a 201. A 200 only means a duplicate when no complete request
+      // came before it.
       outcome:
         response.status === 201
           ? "added"
@@ -239,8 +239,8 @@ async function complete<T>(transfer: Transfer, path: string): Promise<ResumableR
   return null;
 }
 
-// A 409 either names another offset the server has stored, or asks to try again later because another
-// request holds the session. A busy answer to a chunk names the offset too, and it is the one just sent.
+// A 409 either names a different offset the server has stored, or asks to try again later because another
+// request holds the session. A busy answer to a chunk also names an offset, and it's the one just sent.
 async function followConflict(transfer: Transfer, response: Response, sent: number): Promise<void> {
   const moved = readOffset(response, transfer.file.size);
 

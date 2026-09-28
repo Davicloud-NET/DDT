@@ -4,7 +4,7 @@
 
 namespace DDT.MachineConsole.Machine;
 
-// What the console may do to the machine once the agent has ended: restart it, which only ever happens in Windows PE.
+// What the console may do to the machine after the agent has ended. That's a restart, and only ever in WinPE.
 public interface IMachinePower
 {
     bool IsWindowsPE { get; }

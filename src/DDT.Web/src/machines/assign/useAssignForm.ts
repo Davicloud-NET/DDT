@@ -20,8 +20,8 @@ import { secureBootRisk } from "@/machines/secureBoot";
 import { nameRequiredText } from "./assignText";
 import { useSequenceChoice } from "./useSequenceChoice";
 
-// The assign dialog's state: the sequence, the computer name, the answers and the Secure Boot allowance, what keeps
-// the assignment from being sent, and the assignment, whose answer replaces the machine in the list.
+// The assign dialog's state: the sequence, the computer name, the answers and the Secure Boot allowance. It also
+// knows what blocks sending, and sends the assignment. The server's answer replaces the machine in the list.
 export function useAssignForm(machine: MachineSummary, onClose: () => void) {
   const queryClient = useQueryClient();
   const choice = useSequenceChoice(machine);
@@ -30,8 +30,8 @@ export function useAssignForm(machine: MachineSummary, onClose: () => void) {
   const now = useNow(5_000) + (options.data?.serverClockOffsetMs ?? 0);
   const [computerName, setComputerName] = useState(machine.assignedName ?? "");
   const [nameProblem, setNameProblem] = useState<string | null>(null);
-  // The sequence and image the allowance was given for, so another sequence, or another image written by the same
-  // one after a live update, asks again.
+  // The sequence and image the allowance was given for. Another sequence asks again, and so does the same sequence
+  // once a live update makes it write another image.
   const [allowedFor, setAllowedFor] = useState<string | null>(null);
 
   const assign = useMutation({

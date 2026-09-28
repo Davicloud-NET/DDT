@@ -8,7 +8,7 @@ import { Button } from "@/ui/Button";
 import { CopyButton } from "@/ui/CopyButton";
 import { Dialog } from "@/ui/Dialog";
 
-// New recovery codes, shown once; closing the dialog forgets them.
+// Shows new recovery codes once. Closing the dialog forgets them.
 export function RecoveryCodesDialog({
   codes,
   onClose,

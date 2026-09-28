@@ -4,9 +4,9 @@
 
 namespace DDT.Agent;
 
-// Frozen range: an agent from an older boot image starts newer ones and passes their exit codes on, and takes any
-// code outside 0 to HighestAgentCode, or ConfigurationError, to mean the new agent could not run at all. So
-// ConfigurationError may only ever mean that the arguments or agent.json could not be read.
+// Frozen. An agent from an older boot image starts newer agents and passes their exit codes on. It takes
+// ConfigurationError, or any code outside 0 to HighestAgentCode, to mean the new agent couldn't run at all.
+// So ConfigurationError may only ever mean that the arguments or agent.json couldn't be read.
 public static class AgentExitCodes
 {
     public const int Stopped = 0;
@@ -14,7 +14,7 @@ public static class AgentExitCodes
     public const int ConfigurationError = 3;
     public const int Deployed = 4;
 
-    // The machine restarts in the middle of a run, which goes on from its state on the disk after the restart.
+    // The machine restarts in the middle of a run. The run continues from its state on disk after the restart.
     public const int Restarting = 5;
 
     public const int HighestAgentCode = 63;

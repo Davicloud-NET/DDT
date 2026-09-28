@@ -14,8 +14,8 @@ public sealed class RunSnapshotSizeTests
 {
     private const long Megabyte = 1024L * 1024;
 
-    // Partitions, an image both downloaded and applied, two driver packages of one step, and a raw disk image that
-    // counts only the disk it holds, with the seed after it: the sum it always was.
+    // Partitions, an image both downloaded and applied, two driver packages in one step, and a raw disk image followed
+    // by the seed. The raw disk image only counts the disk it holds. The sum is what it always was.
     [Fact]
     public void AddsUpAFlatSequenceAsBefore()
     {
@@ -40,7 +40,7 @@ public sealed class RunSnapshotSizeTests
             required);
     }
 
-    // A different image per model: the run needs the room of the larger one.
+    // A different image per model. The run needs room for the larger one.
     [Fact]
     public void TakesTheLargerImageOfTwoBranches()
     {

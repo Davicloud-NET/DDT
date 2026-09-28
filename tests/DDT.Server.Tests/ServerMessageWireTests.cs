@@ -12,7 +12,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// What the web reads to say the server's messages in the person's language: a code and its values beside the English.
+// What the web reads to show the server's messages in the person's language.
+// That's a code and its values next to the English text.
 public sealed class ServerMessageWireTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static async Task<JsonObject> JsonAsync(HttpResponseMessage response) =>
@@ -67,7 +68,7 @@ public sealed class ServerMessageWireTests(DdtApplication application) : IClassF
         Assert.Equal("{}", problem["args"]!.ToJsonString());
     }
 
-    // The explanation names the rule by its place and name, which the web says in the same language.
+    // The explanation names the rule by its place and name, so the web can show that in the person's language too.
     [Fact]
     public async Task TheResolutionCarriesItsExplanationAsCodes()
     {
@@ -90,7 +91,7 @@ public sealed class ServerMessageWireTests(DdtApplication application) : IClassF
             resolution["explanationArgs"]!.ToJsonString());
     }
 
-    // A rule's problem is a sequence problem without a step: its field is the path within the rule.
+    // A rule's problem is a sequence problem without a step. Its field is the path within the rule.
     [Fact]
     public async Task ARuleProblemCarriesItsCodeAndValues()
     {
@@ -113,7 +114,7 @@ public sealed class ServerMessageWireTests(DdtApplication application) : IClassF
             problem.ToJsonString());
     }
 
-    // Identity's own refusals get codes too, by Identity's code as the field.
+    // Identity's own refusals get codes too, with Identity's code as the field.
     [Fact]
     public async Task APasswordIdentityRefusesCarriesItsCode()
     {

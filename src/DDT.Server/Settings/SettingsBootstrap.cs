@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace DDT.Server.Settings;
 
-// Configuration alone decides these, and the pxe section takes them from there.
+// Only configuration decides these values. The PXE section takes them from there.
 internal sealed record SettingsBootstrap(int HttpBootPort, string BootDirectory)
 {
     public static SettingsBootstrap From(IConfiguration configuration)

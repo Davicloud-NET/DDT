@@ -41,8 +41,8 @@ public static class SmbiosParser
     // Bit 6 of a processor's status says that its socket holds one. Servers list their empty sockets too.
     private const byte SocketPopulated = 0x40;
 
-    // Reads the first structure of each type, which firmware lists in any order. A malformed structure ends the pass,
-    // as nothing after it can be found safely, but keeps what was read before it.
+    // Reads the first structure of each type. Firmware lists them in any order. A malformed structure ends the pass,
+    // because nothing after it can be found safely, but what was read before it is kept.
     public static SmbiosSystemInformation? TryReadSystemInformation(ReadOnlySpan<byte> raw)
     {
         if (raw.Length < RawHeaderLength)
@@ -63,7 +63,8 @@ public static class SmbiosParser
         return found.ToSystemInformation();
     }
 
-    // The structure at offset, and offset moved past it; false at the end of the table or at a malformed structure.
+    // Reads the structure at offset and moves offset past it. Returns false at the end of the table or at a malformed
+    // structure.
     private static bool TryReadStructure(ReadOnlySpan<byte> table, ref int offset, out Structure structure)
     {
         structure = default;
@@ -95,8 +96,8 @@ public static class SmbiosParser
         return true;
     }
 
-    // The BIOS release date is mm/dd/yyyy, or mm/dd/yy for 19yy in tables from before SMBIOS 2.3. Anything else is not a
-    // date the agent can report.
+    // The BIOS release date is mm/dd/yyyy, or mm/dd/yy for 19yy in tables from before SMBIOS 2.3. Anything else isn't
+    // a date the agent can report.
     private static string? ReleaseDate(string? value)
     {
         string[] parts = value?.Split('/') ?? [];
@@ -138,7 +139,7 @@ public static class SmbiosParser
         return -1;
     }
 
-    // The string whose number the structure holds at offset, null when the structure is too short to have that field.
+    // The string whose number the structure holds at offset. Null when the structure is too short to have that field.
     private static string? StringAt(ReadOnlySpan<byte> formatted, ReadOnlySpan<byte> strings, int offset) =>
         offset < formatted.Length ? ReadString(strings, formatted[offset]) : null;
 

@@ -8,8 +8,9 @@ using DDT.Server.Configuration;
 
 namespace DDT.Host.Startup;
 
-// Every authentication control depends on TLS: over plain HTTP Secure cookies are dropped, so a sign-in seems to work and
-// every later request is anonymous. Reads configuration, because Kestrel:Endpoints does not fill IServerAddressesFeature.
+// Every authentication control depends on TLS. Over plain HTTP, Secure cookies are dropped, so a sign-in seems to work
+// but every later request is anonymous. This reads configuration, because Kestrel:Endpoints doesn't fill
+// IServerAddressesFeature.
 public static class HttpsConfigurationCheck
 {
     public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
@@ -20,8 +21,8 @@ public static class HttpsConfigurationCheck
 
         IConfigurationSection[] endpoints = [.. configuration.GetSection("Kestrel:Endpoints").GetChildren()];
 
-        // Kestrel ignores every URL and port setting once any endpoint is declared. The pxe role declares
-        // one, so without another the UI and API would silently stop listening, behind a proxy too.
+        // Kestrel ignores every URL and port setting once any endpoint is declared. The pxe role declares one. Without
+        // a second one, the UI and API would silently stop listening, even behind a proxy.
         if (endpoints.Length > 0 && endpoints.All(endpoint => endpoint.Key == PxeHostingExtensions.BootEndpointName))
         {
             throw new InvalidOperationException(
@@ -30,8 +31,8 @@ public static class HttpsConfigurationCheck
                 "Kestrel endpoint when DDT:RequireHttps is false.");
         }
 
-        // Netbooted machines reach the web role over this same endpoint. Bound to loopback it answers this
-        // computer alone, and every agent times out with nothing on either side saying why.
+        // Netbooted machines reach the web role over this same endpoint. Bound to loopback, it only answers this
+        // computer, and every agent times out without either side saying why.
         string[] httpsUrls = [.. endpoints.Select(endpoint => endpoint["Url"]).Where(IsHttps).OfType<string>()];
 
         if (roles.Contains(DeploymentRole.Pxe) && roles.Contains(DeploymentRole.Web) && httpsUrls.Length > 0 && httpsUrls.All(IsLoopback))

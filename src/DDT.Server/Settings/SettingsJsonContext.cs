@@ -13,7 +13,7 @@ using DDT.Server.Security;
 
 namespace DDT.Server.Settings;
 
-// The stored document of each section is its option class, so an older build that meets a newer member skips it.
+// Each section's stored document is its option class, so an older build skips a member it doesn't know yet.
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(DeploymentOptions))]
 [JsonSerializable(typeof(MachineOptions))]

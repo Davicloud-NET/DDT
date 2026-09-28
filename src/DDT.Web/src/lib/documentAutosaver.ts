@@ -28,14 +28,14 @@ export class DocumentAutosaver<T, R> implements Autosaver<T> {
   // What the server holds as this page knows it: the copy it last sent or read.
   #server: T;
   #revision: number;
-  // The server's own form of that copy, for example with the name trimmed. A read repeats it, and taking it over
-  // while someone types would move the text under the cursor.
+  // The server's own form of that copy, for example with the name trimmed. A read returns it again. Taking it
+  // over while someone types would move the text under the cursor.
   #echo: T;
   #state: AutosaveState = { kind: "saved", at: null };
   #theirs: Revised<T> | null = null;
   #savedAt: number | null = null;
   #inFlight = false;
-  // A copy read while a save was on its way, looked at once the save answered.
+  // A copy read while a save was on its way. It's checked once the save has answered.
   #received: Revised<T> | null = null;
   #firstEditAt: number | null = null;
   #lastEditAt = 0;
@@ -319,8 +319,8 @@ export class DocumentAutosaver<T, R> implements Autosaver<T> {
     this.#publish();
   }
 
-  // After a save: what was typed meanwhile is saved next, and a page that waits for everything to be saved, or is
-  // gone, does not wait for a pause.
+  // After a save, what was typed meanwhile is saved next. If a page waits for everything to be saved, or is gone,
+  // the next save doesn't wait for a pause.
   #goOn(): void {
     if (!this.#isDirty()) {
       this.#state = { kind: "saved", at: this.#savedAt };

@@ -30,8 +30,9 @@ export function branchOf(node: PathNode): "then" | "else" | null {
         : null;
 }
 
-// The first node at the top that the run reached in the installed Windows after nodes in Windows PE, where the flow
-// draws the line between the phases; null where the run has not handed over, or the line would not run across.
+// The first top-level node the run reached in the installed Windows, after top-level nodes in WinPE. The flow draws
+// the line between the phases above it. Null if the run hasn't handed over, or the line wouldn't run across the
+// flow.
 export function handover(path: RunPath): string | null {
   const top = path.nodes.filter((node) => node.entry.parent === null);
   const index = top.findIndex((node) => node.step?.phase === "Windows");

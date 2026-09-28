@@ -6,9 +6,9 @@ import type { Page } from "@playwright/test";
 
 import type { CurrentUser } from "@/auth/auth";
 
-// The server a page is shown against: the API answers from answers, keyed "METHOD path" with or without the query, and
-// the hub connects and then stays quiet, so the page is live and shows no banner about a lost connection. Returns the
-// requests nothing answered, which a test can print to see what a page reads.
+// The server a page is shown against. The API answers from answers, keyed "METHOD path" with or without the query. The
+// hub connects and then stays quiet, so the page is live and shows no lost-connection banner. Returns the requests
+// nothing answered, which a test can print to see what a page reads.
 export async function serve(
   page: Page,
   user: CurrentUser | null,
@@ -54,8 +54,8 @@ export async function serve(
   return unanswered;
 }
 
-// SignalR over long polling: the negotiation offers only that transport, the first poll opens the connection, the
-// second brings the handshake's answer, and later polls are never answered, as a hub with nothing to say keeps them.
+// SignalR over long polling. The negotiation offers only that transport. The first poll opens the connection and the
+// second brings the handshake's answer. Later polls are never answered, just as a hub with nothing to say holds them.
 async function quietHub(page: Page): Promise<void> {
   let polls = 0;
 

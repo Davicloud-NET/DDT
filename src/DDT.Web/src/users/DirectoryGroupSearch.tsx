@@ -13,11 +13,11 @@ import { useDebouncedValue } from "@/ui/useDebouncedValue";
 
 import { findGroups, type DirectoryGroup } from "./users";
 
-// How long typing rests before the directory is asked, so a group name is not searched letter by letter.
+// How long typing must pause before the directory is searched, so a group name isn't searched letter by letter.
 const SEARCH_DELAY_MS = 300;
 
-// Finds directory groups by name, as the server's saved directory settings see them. The caller draws each group's
-// row, with what it offers for the group.
+// Finds directory groups by name, using the server's saved directory settings. The caller renders each group's
+// row, with whatever it offers for the group.
 export function DirectoryGroupSearch({
   heading: Heading,
   className,
@@ -26,11 +26,11 @@ export function DirectoryGroupSearch({
   unavailable,
   renderGroup,
 }: {
-  // The heading's level where the search sits.
+  // The heading level that fits where the search sits.
   heading: "h3" | "h4";
   // The search field's width.
   className: string;
-  // Under the field, such as that unsaved changes do not count yet.
+  // Shown under the field, such as a note that unsaved changes don't count yet.
   note?: ReactNode;
   // What shows before anything is typed.
   idle?: ReactNode;

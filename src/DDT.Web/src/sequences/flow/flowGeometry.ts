@@ -7,11 +7,11 @@ import type { BodyName, Slot } from "./flowTree";
 export const NODE_WIDTH = 236;
 export const LEAF_HEIGHT = 64;
 export const IF_HEIGHT = 100;
-// A group's or a repeat's header card, and a container shown collapsed.
+// The height of a group's or a Repeat's header card, and of a collapsed container.
 export const HEADER_HEIGHT = 84;
 // The Then and Else ports sit this far in from the sides of an IF's card.
 export const PORT_INSET = 25;
-// An arrowhead ends 1 px before the node it points at; its wire ends at its base.
+// An arrowhead ends 1 px before the node it points at. Its wire ends at its base.
 export const ARROW_LENGTH = 8;
 export const ARROW_HALF_WIDTH = 5;
 export const LOOP_RADIUS = 12;
@@ -30,8 +30,8 @@ export interface Rect {
 
 export type FlowBoxKind = "leaf" | "if" | "group" | "repeat" | "collapsed";
 
-// A node's card. extent is all the node takes: the card for a leaf, the frame for a group or a repeat, the card,
-// the branches and the join for an IF.
+// A node's card. extent is all the space the node takes: the card for a leaf, the frame for a group or a Repeat, and
+// the card, the branches and the join for an IF.
 export interface FlowBox extends Rect {
   id: string;
   kind: FlowBoxKind;
@@ -62,12 +62,12 @@ export interface WireRoute {
   // The nodes before and after the wire, null at a port, a join or a frame's edge.
   from: string | null;
   to: string | null;
-  // Set on an IF's wires that no node of the branch decides: its curves, the run to the join, an empty branch.
+  // Set on an IF's wires that no node in the branch decides: its curves, the stretch to the join, and an empty branch.
   branch: { id: string; name: "then" | "else" } | null;
 }
 
-// A line; a curve that leaves start and reaches end going down, as a cubic whose control points sit halfway down
-// above each end; or a repeat's wire back, a polyline with rounded corners.
+// A line, a curve, or a Repeat's wire back. The curve leaves start and reaches end going down. It's a cubic whose
+// control points sit halfway down, one below start and one above end. The wire back is a polyline with rounded corners.
 export type FlowWire =
   | ({ shape: "line"; start: Point; end: Point } & WireRoute)
   | ({ shape: "bend"; start: Point; end: Point } & WireRoute)

@@ -8,8 +8,8 @@ namespace DDT.Agent;
 
 public sealed class ConsoleSignInPrompt(AgentLog log, TimeProvider timeProvider, string? keyboardLayout) : ISignInPrompt
 {
-    // Console.ReadKey cannot be cancelled, so keys are polled instead: an approval on the web has to be able to
-    // take the prompt away.
+    // Console.ReadKey can't be cancelled, so keys are polled instead. An approval on the web has to be able to take
+    // the prompt away.
     private static readonly TimeSpan s_keyPollInterval = TimeSpan.FromMilliseconds(50);
 
     private bool _layoutShown;
@@ -80,8 +80,8 @@ public sealed class ConsoleSignInPrompt(AgentLog log, TimeProvider timeProvider,
             return false;
         }
 
-        // AltGr arrives as Control plus Alt, and it types the @ and \ of user names on many layouts,
-        // so characters are judged by what they are, not by the modifiers held.
+        // AltGr arrives as Control plus Alt, and on many layouts it types the @ and \ in user names. So characters
+        // are judged by what they are, not by the modifiers held.
         if (key.KeyChar != '\0' && !char.IsControl(key.KeyChar))
         {
             typed.Append(key.KeyChar);
@@ -91,8 +91,8 @@ public sealed class ConsoleSignInPrompt(AgentLog log, TimeProvider timeProvider,
         return false;
     }
 
-    // Keys typed while nothing reads them would land in the next field, or in the command shell once the agent
-    // exits: a password in plain sight either way.
+    // Keys typed while nothing reads them would land in the next field, or in the command shell once the agent exits.
+    // Either way a password would end up in plain sight.
     private static void DiscardTypedKeys()
     {
         while (Console.KeyAvailable)

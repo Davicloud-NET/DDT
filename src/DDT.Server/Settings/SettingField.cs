@@ -29,10 +29,10 @@ public sealed class SettingField
     // The configuration key below the section, such as Domain:Name.
     public string Path { get; }
 
-    // Path in camel case, such as domain.name, so the page and the stored document name the field alike.
+    // Path in camel case, such as domain.name, so the page and the stored document use the same name.
     public string Name { get; }
 
-    // Where the stored document and the serialized options keep it.
+    // The path where the stored document and the serialized options keep the field.
     public IReadOnlyList<string> Segments { get; }
 
     public SettingFieldKind Kind { get; }
@@ -42,16 +42,16 @@ public sealed class SettingField
 
     public bool IsSecret => Kind == SettingFieldKind.Secret;
 
-    // Configuration only seeds it: its key is imported while the field was never written, but it never locks the field,
-    // because the key means something of its own that stays in configuration.
+    // Configuration only seeds this field. Its key is imported as long as the field was never written, but it never
+    // locks the field. The key has a meaning of its own that stays in configuration.
     public bool Seeds { get; }
 
-    // The members of a map's entries where an entry is an object, such as a boot target's Method, by their names in
-    // configuration; empty where an entry is a single value, such as the role of a group in a group map.
+    // The member names of a map's entries, as configuration spells them, when an entry is an object, such as a boot
+    // target's Method. It's empty when an entry is a single value, such as the role of a group in a group map.
     public IReadOnlyList<string> EntryMembers { get; }
 
     public override string ToString() => Name;
 
-    // As the source generated context names the members of the options, so both agree on every name.
+    // Uses the same naming as the source generated context uses for the options' members, so both agree on every name.
     internal static string Camel(string segment) => JsonNamingPolicy.CamelCase.ConvertName(segment);
 }

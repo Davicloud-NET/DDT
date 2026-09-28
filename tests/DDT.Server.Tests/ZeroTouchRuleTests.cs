@@ -11,8 +11,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Zero touch keeps an approval a person gave on the web. A rule is no such approval, so a listed network gives a
-// machine that a rule matches nothing either.
+// Zero touch keeps an approval a person gave on the web.
+// A rule isn't such an approval, so a listed network gives a machine that a rule matches nothing either.
 public sealed class ZeroTouchRuleTests(ZeroTouchApplication application) : IClassFixture<ZeroTouchApplication>
 {
     [Fact]
@@ -26,7 +26,7 @@ public sealed class ZeroTouchRuleTests(ZeroTouchApplication application) : IClas
         using RegisteredMachine machine = await application.RegisterModelAsync("Dell Inc.", model, "10.200.7.1");
         Assert.Equal(MachineState.Pending, (await machine.NextAsync()).State);
 
-        // Netbooted again from the listed network, as a zero touch machine is.
+        // Netbooted again from the listed network, like a zero touch machine.
         AgentRegistrationResult again = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await machine.Agent.RegisterAsync(machine.Registration));
         AgentNextResult next = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, again.Token!));
@@ -38,8 +38,8 @@ public sealed class ZeroTouchRuleTests(ZeroTouchApplication application) : IClas
         Assert.Equal(SequenceResolutionSource.Rule, (await administrator.ResolutionAsync(machine.Id)).Source);
     }
 
-    // Nor is an approval that took the rule's sequence: it belonged to that boot, so the next netboot from a listed
-    // network starts over, as anywhere else.
+    // Nor is an approval that took the rule's sequence.
+    // It only applied to that boot, so the next netboot from a listed network starts over, like anywhere else.
     [Fact]
     public async Task ARulesRunDoesNotKeepTheMachineApprovedOnAZeroTouchNetwork()
     {

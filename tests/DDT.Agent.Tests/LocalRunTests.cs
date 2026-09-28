@@ -26,7 +26,7 @@ public sealed class LocalRunTests : IDisposable
 
     public void Dispose() => Directory.Delete(_windows, recursive: true);
 
-    // The answer file holds passwords, and its step sits inside a group here, after the entries of the group and the
+    // The answer file holds passwords. Here its step sits inside a group, after the entries for the group and the
     // image.
     [Theory]
     [InlineData(StepState.Running, false)]

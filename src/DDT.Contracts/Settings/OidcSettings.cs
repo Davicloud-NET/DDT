@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section oidc. Secrets: clientSecret.
+// The oidc section. Its secret is clientSecret.
 public sealed record OidcSettings(
     bool Enabled,
     string Authority,
@@ -14,6 +14,6 @@ public sealed record OidcSettings(
     bool AutoProvision,
     string AutoProvisionRole,
     string GroupsClaim,
-    // A value of the GroupsClaim claim to a role. While it has entries, it decides the role of the accounts single
-    // sign-on made, and AutoProvisionRole is not used.
+    // Maps a value of the GroupsClaim claim to a role. While it has entries, it decides the role of accounts that
+    // single sign-on created, and AutoProvisionRole isn't used.
     IReadOnlyDictionary<string, string> GroupRoleMap);

@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Users;
 
-// Shown this once. The account must change it at its next sign-in.
+// Shown only this once. The user must change it at the next sign-in.
 public sealed record OneTimePassword(string Password);

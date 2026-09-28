@@ -56,7 +56,7 @@ public sealed class DiskpartPartitionerTests : IDisposable
     }
 
     // Reads this PC's disks with the real IOCTLs and changes nothing. Opening a disk for its size needs an
-    // elevated session, as in Windows PE.
+    // elevated session, like in WinPE.
     [Fact]
     [Trait("Category", "E2E")]
     public async Task FindsThisComputersInternalDisk()

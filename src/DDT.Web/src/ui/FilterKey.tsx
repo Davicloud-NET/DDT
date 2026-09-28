@@ -14,11 +14,11 @@ export interface FilterOption {
   tone?: "attention" | "fail";
 }
 
-// The well FilterSelector and FilterChips hold their keys in.
+// The well that FilterSelector and FilterChips hold their buttons in.
 export const filterWellClass =
   "flex flex-wrap gap-0.5 rounded-panel bg-well p-0.75 shadow-[inset_0_0_0_1px_var(--color-line-soft)]";
 
-// Each key carries its count; a count that needs someone (waiting, failed) is printed on a signal-coloured tag.
+// Each button shows its count. A count that needs someone (waiting, failed) is printed on a signal-coloured tag.
 export function FilterKey({ option }: { option: FilterOption }) {
   return (
     <ToggleButton

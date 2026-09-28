@@ -6,10 +6,10 @@ namespace DDT.Server.Tokens;
 
 public enum ApiTokenRevocation
 {
-    // Also when it was revoked before.
+    // Also returned when the token was already revoked.
     Revoked,
     NotFound,
 
-    // Another user's token, which only an administrator revokes.
+    // The token belongs to another user, and only an administrator can revoke it.
     NotOwner,
 }

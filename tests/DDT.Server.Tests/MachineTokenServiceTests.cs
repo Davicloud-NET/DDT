@@ -73,8 +73,8 @@ public sealed class MachineTokenServiceTests
     [Fact]
     public void OnlyThePollSessionResumeAndRunPurposesExist()
     {
-        // Image and secret grants were never used: the machine's own session token and its running deployment
-        // decide what it may download and read.
+        // Image and secret grants were never used.
+        // The machine's own session token and its running deployment decide what it may download and read.
         Assert.Equal(
             [MachineTokenPurpose.Poll, MachineTokenPurpose.Session, MachineTokenPurpose.Resume, MachineTokenPurpose.Run],
             Enum.GetValues<MachineTokenPurpose>());
@@ -100,7 +100,7 @@ public sealed class MachineTokenServiceTests
         Assert.Null(tokens.ValidateRunToken(token));
     }
 
-    // A run token is presented only at registration. As any other purpose it is nothing.
+    // A run token is only presented at registration. It isn't valid for any other purpose.
     [Fact]
     public void ARunTokenIsNoOtherToken()
     {

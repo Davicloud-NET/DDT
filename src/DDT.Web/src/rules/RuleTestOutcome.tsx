@@ -16,8 +16,8 @@ interface RuleTestOutcomeProps {
   rules: readonly RuleView[];
 }
 
-// What the rules give the tested machine: the rules that match, top first; the sequence and where it comes from; each
-// value with the rule or machine role it came from and what else set it.
+// What the rules give the tested machine. That's the matching rules, top first, and the sequence and where it comes
+// from. It also shows each value with the rule or machine role it came from, and what else set it.
 export function RuleTestOutcome({ resolution, rules }: RuleTestOutcomeProps) {
   const matched = (resolution.matchedRuleIds ?? []).flatMap((id) =>
     rules.filter((rule) => rule.id === id),

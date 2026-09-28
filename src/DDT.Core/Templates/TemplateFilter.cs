@@ -6,11 +6,11 @@ using System.Globalization;
 
 namespace DDT.Core.Templates;
 
-// A filter as it is written: its name, and what follows its colon, such as 12 in right:12. Null is no colon.
+// A filter as written. Argument is what follows its colon, such as 12 in right:12, or null when there's no colon.
 public sealed record TemplateFilter(string Name, string? Argument)
 {
-    // The number of characters left:n and right:n take, or null when the argument is not a whole number of 1 to
-    // ValueTemplate.MaxCount written in the digits 0 to 9.
+    // The number of characters left:n and right:n keep. Null when the argument isn't a whole number from 1 to
+    // ValueTemplate.MaxCount, written with the digits 0 to 9.
     public int? Count =>
         Argument is { Length: > 0 and <= 4 } digits
         && digits.All(char.IsAsciiDigit)

@@ -7,7 +7,7 @@ import { editedValues, namedValues, type EditedValue } from "@/values/values";
 
 import type { RuleView, SaveRuleRequest } from "./rules";
 
-// What a rule's drawer edits, as typed.
+// The fields a rule's drawer edits, as typed.
 export interface RuleEdit {
   name: string;
   description: string;

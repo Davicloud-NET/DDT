@@ -7,7 +7,7 @@ import { useState, type ReactNode } from "react";
 
 import { Button, type ButtonProps } from "./Button";
 
-// A key that copies text to the clipboard and says "Copied" once it has.
+// A button that copies text to the clipboard and says "Copied" once it has.
 export function CopyButton({
   text,
   children,
@@ -15,9 +15,9 @@ export function CopyButton({
   ...props
 }: Omit<ButtonProps, "onPress" | "children"> & {
   text: string;
-  // The key's label until it has copied, such as "Copy command".
+  // The button's label until it has copied, such as "Copy command".
   children: ReactNode;
-  // Hears whether the browser let it copy. Without it, a refusal is left to the browser's console.
+  // Called with whether the browser allowed the copy. Without it, a refusal ends up in the browser's console.
   onCopy?: (copied: boolean) => void;
 }) {
   const [copied, setCopied] = useState(false);

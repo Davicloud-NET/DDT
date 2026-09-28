@@ -7,7 +7,7 @@ import { useId, useState, type KeyboardEvent, type RefObject } from "react";
 import { complete, completionAt } from "../../flow/templates";
 import { offeredNames } from "./offeredNames";
 
-// Completion in a template field: typing {{ offers the names, Up and Down choose one and Enter or Tab puts it in.
+// Completion in a template field. Typing {{ offers the names, Up and Down choose one, and Enter or Tab inserts it.
 export function useTemplateCompletion({
   input,
   value,
@@ -80,7 +80,8 @@ export function useTemplateCompletion({
         break;
       }
       case "Escape":
-        // The completion closes; the inspector around keeps the focus in the field.
+        // Escape only closes the completion. Stopping it here keeps the inspector from moving the focus out of the
+        // field.
         event.stopPropagation();
         setTyping(null);
         break;

@@ -21,8 +21,8 @@ public static class MachineVariableNames
     // Version 3. Laptop, Desktop and so on, as DeviceKind names them.
     public const string DeviceKind = "DeviceKind";
 
-    // The name a person knows the model by: Lenovo's SMBIOS system version, such as "ThinkPad T14 Gen 4", where its
-    // Model is a type number, and Model otherwise.
+    // The name people know the model by. For Lenovo, whose Model is a type number, it's the SMBIOS system version,
+    // such as "ThinkPad T14 Gen 4". For everyone else it's Model.
     public const string FriendlyModel = "FriendlyModel";
 
     public const string MemoryMegabytes = "MemoryMegabytes";
@@ -36,7 +36,7 @@ public static class MachineVariableNames
     public const string SecureBootCapable = "SecureBootCapable";
     public const string SecureBootEnabled = "SecureBootEnabled";
 
-    // The primary adapter's.
+    // From the primary adapter.
     public const string IPv4Address = "IPv4Address";
     public const string IPv4PrefixLength = "IPv4PrefixLength";
 
@@ -47,8 +47,8 @@ public static class MachineVariableNames
     public const string DhcpServer = "DhcpServer";
     public const string PrimaryMacAddress = "PrimaryMacAddress";
 
-    // SMBIOS: the system's version, family and SKU (type 1), its asset tag (type 3), the baseboard's product (type 2),
-    // and the BIOS version and date (type 0), the date as yyyy-MM-dd.
+    // From SMBIOS. The system's version, family and SKU come from type 1, the asset tag from type 3, the baseboard's
+    // product from type 2, and the BIOS version and date from type 0. The date is yyyy-MM-dd.
     public const string SystemVersion = "SystemVersion";
     public const string SystemFamily = "SystemFamily";
     public const string SystemSku = "SystemSku";
@@ -57,18 +57,18 @@ public static class MachineVariableNames
     public const string BiosVersion = "BiosVersion";
     public const string BiosDate = "BiosDate";
 
-    // Run variables: whether the last step that ran failed, and the exit code of the last script, so a repeat can try
-    // again until a step works.
+    // Run variables. They hold whether the last step that ran failed and the exit code of the last script, so a
+    // repeat can try again until a step works.
     public const string LastStepFailed = "LastStepFailed";
     public const string LastExitCode = "LastExitCode";
 
-    // The variables of versions 1 and 2, frozen: an agent of those versions tests nothing else, and a condition on any
+    // The variables of versions 1 and 2, frozen. An agent of those versions tests nothing else, and a condition on any
     // other name makes a document version 3.
     public static IReadOnlyList<string> All { get; } =
         [Manufacturer, Model, SerialNumber, SmbiosUuid, MacAddress, ComputerName, Phase];
 
-    // Every name a condition can test besides the sequence's own variables and the values of rules and machine roles,
-    // with its type, which decides the operators that fit it. In the order a page lists them.
+    // Every name a condition can test, apart from the sequence's own variables and the values of rules and machine
+    // roles. Each has a type, which decides the operators that fit it. Pages list them in this order.
     public static IReadOnlyDictionary<string, FactType> Catalogue { get; } = new OrderedDictionary<string, FactType>(StringComparer.Ordinal)
     {
         [Manufacturer] = FactType.Text,
@@ -106,7 +106,7 @@ public static class MachineVariableNames
         [LastExitCode] = FactType.Number,
     };
 
-    // The names whose value changes while a run goes on. Everything else is fixed when the run starts, which is what a
-    // share's host may be made of.
+    // The names whose value changes during a run. Everything else is fixed when the run starts, and only fixed values
+    // may make up a share's host.
     public static IReadOnlyList<string> ChangeDuringRun { get; } = [Phase, LastStepFailed, LastExitCode];
 }

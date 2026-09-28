@@ -9,7 +9,7 @@ import { roleLabel } from "@/users/userView";
 
 import { entryOf } from "../signIn";
 
-// The tested user's groups, folded away, each with the role the map gives it.
+// The tested user's groups in a collapsed list, each with the role the map gives it.
 export function TestedGroups({ groups, map }: { groups: string[]; map: Record<string, string> }) {
   const count = groups.length;
 

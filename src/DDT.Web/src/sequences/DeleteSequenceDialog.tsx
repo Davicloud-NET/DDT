@@ -14,7 +14,7 @@ import { deletionBlocker, deletionConsequence, removeSummary } from "./sequenceL
 import { deleteSequence, sequenceQuery, type SequenceSummary } from "./sequences";
 
 // Asks before deleting a sequence and says what that does to the machines that use it. The server keeps a sequence
-// a rule chooses, so while one does, the dialog names the rules to change instead of offering the deletion.
+// while a rule chooses it, so then the dialog names the rules to change instead.
 export function DeleteSequenceDialog({
   sequence,
   rules,
@@ -24,7 +24,7 @@ export function DeleteSequenceDialog({
   sequence: SequenceSummary;
   // The rules that choose it.
   rules: readonly RuleView[];
-  // The machines it is assigned to or running on now.
+  // The machines it's assigned to or running on right now.
   activeRuns: number;
   onClose: () => void;
 }) {

@@ -141,8 +141,8 @@ public static partial class ServerMessages
         "deployment.historyCursor",
         "The cursor is not one this server handed out. Start again from the first page.");
 
-    // The answers to a run's inputs, a computer name a run's values give, and a name a sequence uses that nothing gives a
-    // value.
+    // Answers to a run's inputs, a computer name set by a run's values, and a name the sequence uses that nothing sets
+    // a value for.
 
     public static readonly MessageTemplate DeploymentAnswerNoInput = Define(
         "deployment.answerNoInput",
@@ -181,7 +181,7 @@ public static partial class ServerMessages
         "sequence.valueUndefined",
         "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it.");
 
-    // Computer names, as the Windows answer file takes them.
+    // Computer names, following the rules of the Windows answer file.
 
     public static readonly MessageTemplate ComputerNameEmpty = Define("computerName.empty", "Enter a computer name.");
 

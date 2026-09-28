@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The last word before the sequence erases the disk.
+// The last confirmation before the sequence erases the disk.
 public sealed class EraseViewModel : TypedWordViewModel
 {
     public EraseViewModel(Localizer localizer, int id, EraseQuestion question, Action<int, ConsoleAnswer> answer)

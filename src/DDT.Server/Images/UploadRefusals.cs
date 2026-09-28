@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// A refused upload loses its session, so the reason is kept here for a retry that no longer finds it. It logs under
-// ImageUploadCompleter's category, which the logging settings may name.
+// A refused upload loses its session, so the reason is kept here for a retry that can't find the session any more. It
+// logs under ImageUploadCompleter's category, because the logging settings may name that category.
 public sealed partial class UploadRefusals(ImageStore store, TimeProvider timeProvider, ILogger<ImageUploadCompleter> logger)
 {
     private readonly ConcurrentDictionary<Guid, (ServerMessage Reason, DateTimeOffset RefusedUtc)> _refusals = new();
@@ -40,8 +40,8 @@ public sealed partial class UploadRefusals(ImageStore store, TimeProvider timePr
         return new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal);
     }
 
-    // Recorded before the session is removed, so a retry that no longer finds the session finds the reason. Kept as
-    // long as the session could have lived.
+    // Record the reason before the session is removed, so a retry that can't find the session finds the reason instead.
+    // It's kept as long as the session could have lived.
     private void Remember(Guid uploadId, ServerMessage reason)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();

@@ -4,8 +4,8 @@
 
 import { canonicalArchitecture, type PxeForm } from "../networkBoot";
 
-// The problems of a boot target's field, which the server names bootTargets[X64Uefi].bootFile. A key typed in another
-// case is named as stored by some checks and by its member name by others, so both are looked up.
+// The problems of a boot target's field, which the server names like bootTargets[X64Uefi].bootFile. For a key typed in
+// another case, some checks use the stored key and others the member name, so both are looked up.
 export function targetErrors(form: PxeForm, key: string, field: string): string[] {
   const canonical = canonicalArchitecture(key);
   const suffix = field === "" ? "" : `.${field}`;
@@ -18,8 +18,8 @@ export function targetErrors(form: PxeForm, key: string, field: string): string[
   return names.flatMap((name) => form.fieldErrors(name));
 }
 
-// The form as a boot target's shared fields see it: bootTargets.X64Uefi.serverAddress reads and changes the value, its
-// problems come under the server's name for it, and the collection's lock shows once, above the targets.
+// The form as a boot target's shared fields see it. bootTargets.X64Uefi.serverAddress reads and changes the value. Its
+// problems are looked up under the server's name for it. The collection's lock shows only once, above the targets.
 export function targetForm(form: PxeForm): PxeForm {
   return {
     ...form,

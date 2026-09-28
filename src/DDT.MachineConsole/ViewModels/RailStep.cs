@@ -7,7 +7,7 @@ using DDT.ConsoleProtocol;
 namespace DDT.MachineConsole.ViewModels;
 
 // A module of the sequence rail. AwaitsSomeone marks the current step while the run waits at a Pause step or for
-// answers, which is not running although it is current.
+// answers. That step is current but not running.
 public sealed record RailStep(string Number, string Name, ConsoleStepState State, int? Percent, string Description, bool AwaitsSomeone = false)
 {
     public bool IsRunning => State == ConsoleStepState.Running && !AwaitsSomeone;

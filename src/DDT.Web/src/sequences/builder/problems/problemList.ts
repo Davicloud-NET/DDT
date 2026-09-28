@@ -19,7 +19,7 @@ export function tonedFindings(
   ];
 }
 
-// A finding of the sequence's own leads to a field only where the inspector has one for it.
+// A finding about the sequence itself only leads to a field if the inspector has one for it.
 export function hasField(field: string | null): boolean {
   return field === "name" || field === "description" || declarationPlace(field) !== null;
 }

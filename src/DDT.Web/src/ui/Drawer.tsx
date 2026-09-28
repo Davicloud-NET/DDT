@@ -17,7 +17,7 @@ import {
 import { cx } from "./cx";
 
 // A panel from the right edge for details and forms of the page underneath, such as a machine picked on a phone.
-// Fixed to that edge, it is the one overlay that travels further than the motion distance.
+// It's fixed to that edge, so it's the only overlay that travels further than the motion distance.
 export function Drawer({
   isOpen,
   onOpenChange,

@@ -4,8 +4,8 @@
 
 namespace DDT.ConsoleProtocol;
 
-// A run of a task sequence: every step of the sequence in its order, the step that is running, if any, its percent
-// where the step says how far it is, and what the agent does between steps.
+// A run of a task sequence. It has every step in order, the running step if there is one, and its percent when the
+// step reports progress. Activity says what the agent does between steps.
 public sealed record ConsoleRun(
     Guid Id,
     string SequenceName,

@@ -11,31 +11,31 @@ import type { ConditionNode } from "@/sequences/sequenceConditions";
 import type { InputDeclaration, SequenceProblem } from "@/sequences/sequences";
 import type { NamedValue, ResolvedValue } from "@/values/values";
 
-// Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine, the
-// first matching rule that chooses one. Only older servers say MacRule and ModelRule.
+// Where a machine's sequence comes from, in the order they're checked: an assignment on the web, a choice at the
+// machine, then the first matching rule that chooses one. Only older servers send MacRule and ModelRule.
 export type SequenceResolutionSource =
   "None" | "Assigned" | "Console" | "MacRule" | "ModelRule" | "Rule";
 
-// The sequence a machine would get and why. A rule only chooses: the machine still needs an approval or a sign-in.
+// The sequence a machine would get and why. A rule only chooses. The machine still needs an approval or a sign-in.
 export interface MachineSequenceResolution {
   source: SequenceResolutionSource;
   sequenceId: string | null;
   sequenceName: string | null;
   ruleId: string | null;
-  // Above zero, the chosen sequence cannot run until it is fixed.
+  // Above zero, the chosen sequence can't run until it's fixed.
   problemCount: number;
-  // The server's English; resolutionText says it in the person's language.
+  // The server's English text. resolutionText shows it in the person's language.
   explanation: string;
   explanationCode?: string | null;
   explanationArgs?: ServerArguments | null;
-  // The rest previews what a run would start with, from servers that send it. The matching rules, top first.
+  // The fields below preview what a run would start with, if the server sends them. The matching rules, top first.
   matchedRuleIds?: string[] | null;
-  // Each with its source; a running run shows the values it started with.
+  // Each with its source. A run in progress shows the values it started with.
   values?: ResolvedValue[] | null;
   inputs?: InputDeclaration[] | null;
-  // What the inputs' questions start with.
+  // The answers the inputs' questions are prefilled with.
   inputDefaults?: ResolvedValue[] | null;
-  // What would keep the run from starting now, each field the value's or the input's name.
+  // What would keep the run from starting now. Each field is the name of the value or the input.
   valueProblems?: SequenceProblem[] | null;
 }
 
@@ -43,7 +43,7 @@ export function resolutionText(resolution: MachineSequenceResolution): string {
   return serverText(resolution.explanationCode, resolution.explanationArgs, resolution.explanation);
 }
 
-// The root of every machine's resolution, which a change of the rules or the sequences makes stale.
+// The root query key of every machine's resolution. A change to the rules or the sequences makes them stale.
 export const sequenceResolutionsKey = ["machine-sequence"] as const;
 
 export function sequenceResolutionQuery(machineId: string) {
@@ -63,8 +63,8 @@ export function isRuleChoice(resolution: MachineSequenceResolution): boolean {
   );
 }
 
-// The ComputerName a run gets from its values when none is given, or null where there is none or it has a problem.
-// For a sequence other than the previewed one (sameSequence false), only machine, rule and role values count.
+// The ComputerName a run gets from its values when none is given. Null if there's none or it has a problem. For a
+// sequence other than the previewed one (sameSequence false), only machine, rule and role values count.
 export function valuesComputerName(
   resolution: MachineSequenceResolution,
   sameSequence = true,
@@ -92,7 +92,7 @@ export function valuesComputerName(
     : null;
 }
 
-// The rule that chose a machine's sequence, as the subject of a sentence and inside one: "Rule 2" and "rule 2".
+// The rule that chose a machine's sequence, written to start a sentence and inside one: "Rule 2" and "rule 2".
 export function ruleChoiceWords(resolution: MachineSequenceResolution): {
   subject: string;
   inside: string;
@@ -111,8 +111,8 @@ export function ruleChoiceWords(resolution: MachineSequenceResolution): {
   }
 }
 
-// One rule of the ordered list. Where its when holds, or it has none, it chooses sequenceId, sets values and gives
-// roleIds; the first rule to choose a sequence or set a value wins it. Rules never authorize a machine.
+// One rule of the ordered list. If its when holds, or it has none, it chooses sequenceId, sets values and gives
+// roleIds. The first rule to choose a sequence or set a value wins it. Rules never authorize a machine.
 export interface RuleView {
   id: string;
   // From 0 at the top.
@@ -126,7 +126,7 @@ export interface RuleView {
   values: NamedValue[];
   roleIds: string[];
   revision: number;
-  // Keep the rule from matching until fixed; each names its field, such as when.parts[0].value or roleIds[0].
+  // They keep the rule from matching until fixed. Each names its field, such as when.parts[0].value or roleIds[0].
   problems: SequenceProblem[];
   // How many known machines the rule matches.
   matchingMachines: number;
@@ -134,8 +134,8 @@ export interface RuleView {
   updatedBy: string | null;
 }
 
-// Creates a rule at the bottom of the list, or saves one. revision is the one the page last read, and a save over a
-// newer one is refused with the rule as it is now; a new rule has none to name.
+// Creates a rule at the bottom of the list, or saves one. revision is the one the page last read. A save over a newer
+// revision is refused with the rule as it is now. A new rule doesn't have a revision yet.
 export interface SaveRuleRequest {
   revision: number;
   name: string;
@@ -160,13 +160,13 @@ export function updateRule(id: string, request: SaveRuleRequest): Promise<RuleVi
   return apiPut<RuleView>(`/api/rules/${id}`, request);
 }
 
-// The rules below move up a place, so the answer is the whole list.
+// The rules below move up one place, so the server answers with the whole list.
 export function deleteRule(id: string): Promise<RuleView[]> {
   return apiDelete<RuleView[]>(`/api/rules/${id}`);
 }
 
-// The server refused an order made before someone added, removed or moved a rule, and answered with the list as it
-// is now.
+// The server refused an order because someone added, removed or moved a rule first. It answered with the current
+// list.
 export class RulesChangedMeanwhile extends Error {
   public readonly rules: RuleView[];
 
@@ -177,8 +177,8 @@ export class RulesChangedMeanwhile extends Error {
   }
 }
 
-// Every rule's id in the new order, top first. The server refuses an order that does not name exactly the rules there
-// are with 409 and the list as it is now, which comes as RulesChangedMeanwhile.
+// Sends every rule's id in the new order, top first. If the order doesn't name exactly the rules there are, the
+// server answers 409 with the current list. That comes back as RulesChangedMeanwhile.
 export async function reorderRules(ruleIds: readonly string[]): Promise<RuleView[]> {
   const response = await apiFetch("/api/rules/order", {
     method: "POST",
@@ -201,7 +201,7 @@ function byPosition(a: RuleView, b: RuleView): number {
   return a.position - b.position;
 }
 
-// Puts a saved rule into the list, where its position says.
+// Puts a saved rule into the list at its position.
 export function putRule(queryClient: QueryClient, rule: RuleView): void {
   queryClient.setQueryData(rulesQuery.queryKey, (list) =>
     list === undefined
@@ -210,7 +210,7 @@ export function putRule(queryClient: QueryClient, rule: RuleView): void {
   );
 }
 
-// A value's name with the value it takes and where from, and the sources further down that set it too.
+// A value's name with the value it takes and where from, plus the lower sources that also set it.
 export interface ValueLine {
   name: string;
   used: ResolvedValue;

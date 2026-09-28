@@ -10,9 +10,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// The machine a dry run stands in for: each restart starts the phase the run's state names over, with new instances,
-// until the run ends. Tools only log and nothing on this computer changes. The installed Windows reaches the server
-// through connect, as the agent.json the hand-over staged says.
+// The machine a dry run stands in for. Each restart starts the phase named in the run's state again, with new
+// instances, until the run ends. Tools only log, and nothing on this computer changes. The installed Windows reaches
+// the server through connect, with the settings from the agent.json that the hand-over staged.
 public sealed class DryRunMachine(
     DryRunMachineOptions options,
     IAgentServer server,
@@ -50,7 +50,7 @@ public sealed class DryRunMachine(
         return loop.RunAsync(cancellationToken);
     }
 
-    // As Windows would start the service: the staged agent.json has to name the server.
+    // Starts the agent the way Windows would start the service. The staged agent.json has to name the server.
     private async Task<int> RunWindowsAsync(CancellationToken cancellationToken)
     {
         string configuration = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory, WindowsHandOver.ConfigurationFileName);
@@ -97,8 +97,8 @@ public sealed class DryRunMachine(
 
     private DryRunMachineIdentityReader Identity() => new(options.Agent.DryRunId, options.Agent.DryRunSecureBoot);
 
-    // The hand-over really stages the agent into the directory that stands in for Windows. In Windows PE the root
-    // stands in for the agent's own directory, and only there does the console show the run.
+    // The hand-over really stages the agent into the directory that stands in for Windows. In WinPE the root stands
+    // in for the agent's directory. The console only shows the run in WinPE.
     private SequenceRunner Runner(IAgentServer runServer, DryRunDiskPartitioner disks, DryRunToolRunner tools, IRebooter rebooter, SequencePhase phase)
     {
         bool inWindows = phase == SequencePhase.Windows;

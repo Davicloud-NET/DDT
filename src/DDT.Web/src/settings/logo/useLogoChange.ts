@@ -19,7 +19,7 @@ import { logoProblem } from "./logoProblem";
 // Uploads a chosen logo or removes the current one, and puts the server's answer into the cache.
 export function useLogoChange() {
   const queryClient = useQueryClient();
-  // The file being sent, which the upload reads when it starts; its name stays for the answer.
+  // The file being sent. The upload reads it when it starts, and its name is kept to show with the result.
   const chosen = useRef<File | null>(null);
   const [name, setName] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function useLogoChange() {
     setProblem(null);
   };
 
-  // A chosen file is sent at once; a wrong one is replaced or removed just as quickly.
+  // A chosen file is sent at once, without a confirmation. A wrong one is just as quick to replace or remove.
   const pick = (file: File | undefined) => {
     if (file === undefined || busy) {
       return;

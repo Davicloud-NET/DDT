@@ -25,8 +25,8 @@ public sealed class ProxySettingsSection() : SettingsSectionDefinition<DdtForwar
 
     protected override DdtForwardedHeadersOptions? Bind(IConfigurationSection section) => section.Get<DdtForwardedHeadersOptions>();
 
-    // A save of this section is refused when it overlaps the zero touch networks. At load the overlap is the machines
-    // section's problem, which turns zero touch off instead of trusting nothing at all.
+    // A save of this section is refused when it overlaps the zero touch networks. At load, the overlap is the machines
+    // section's problem. That turns zero touch off instead of trusting no proxy at all.
     protected override IReadOnlyList<SettingProblem> FindProblems(DdtForwardedHeadersOptions options, SettingsContext context)
     {
         IReadOnlyList<SettingProblem> problems = DdtForwardedHeadersExtensions.FindProblems(options);

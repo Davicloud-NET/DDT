@@ -4,8 +4,8 @@
 
 namespace DDT.Core.Templates;
 
-// Parse reports the first four: a name the caller does not know, and filters that are not written as DDT's filters
-// are. Rendering reports a filter problem too, and a name without a value.
+// Parse reports the first four, which are a name the caller doesn't know and badly written filters. Rendering also
+// reports filter problems, and a name without a value.
 public enum TemplateProblemKind
 {
     UnknownName,

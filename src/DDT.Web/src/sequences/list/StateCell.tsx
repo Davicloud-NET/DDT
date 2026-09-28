@@ -9,7 +9,7 @@ import { StateTag } from "@/ui/StateTag";
 import { findingCounts } from "../sequenceList";
 import type { SequenceSummary } from "../sequences";
 
-// Whether the sequence can run. A sequence with problems is a draft; warnings only tell.
+// Whether the sequence can run. A sequence with problems is a draft. Warnings are only information.
 export function StateCell({ sequence }: { sequence: SequenceSummary }) {
   const counts = findingCounts(sequence.problemCount, sequence.warningCount);
 

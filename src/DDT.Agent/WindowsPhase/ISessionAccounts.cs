@@ -10,8 +10,8 @@ namespace DDT.Agent.WindowsPhase;
 // account's profile, and the sessions it is signed in to.
 public interface ISessionAccounts
 {
-    // Creates a local standard account with that password, a member of Users; false when it exists already, whose
-    // password stays as it was.
+    // Creates a local standard account with that password, as a member of Users. Returns false when it already exists,
+    // and then its password stays as it was.
     bool Create(string name, string password);
 
     SecurityIdentifier Sid(string name);
@@ -32,7 +32,7 @@ public interface ISessionAccounts
     // Null deletes it.
     void SetAutoLogonPassword(string? password);
 
-    // The account's profile, created as a new one would be at its first sign-in, or the one it has. Returns its path.
+    // Creates the account's profile the way its first sign-in would, or uses the one it has. Returns its path.
     string CreateProfile(SecurityIdentifier sid, string name);
 
     // False when the account has no profile. Throws when the profile is still in use.

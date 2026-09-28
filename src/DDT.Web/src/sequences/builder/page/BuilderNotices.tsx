@@ -10,7 +10,7 @@ import { Notice } from "@/ui/Notice";
 import { SequenceConflict } from "../../SequenceConflict";
 import type { SequenceEditorState } from "../../useSequenceEditor";
 
-// Why the flow cannot be changed, and another administrator's save that conflicts with this page's.
+// Why the flow can't be changed, and another administrator's save that conflicts with this page's edits.
 export function BuilderNotices({
   editor,
   readOnly,

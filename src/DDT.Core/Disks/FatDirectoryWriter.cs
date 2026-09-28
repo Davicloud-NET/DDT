@@ -7,7 +7,8 @@ using System.Text;
 
 namespace DDT.Core.Disks;
 
-// The directory entries of FatVolumeBuilder's nodes, all stamped with one time. The root holds the volume label.
+// Writes the directory entries of FatVolumeBuilder's nodes. Every entry gets the same timestamp. The root directory
+// holds the volume label.
 internal sealed class FatDirectoryWriter(string label, DateTime timestamp)
 {
     private const int DirectoryEntryBytes = 32;
@@ -48,7 +49,7 @@ internal sealed class FatDirectoryWriter(string label, DateTime timestamp)
         return entries;
     }
 
-    // The long name's parts go in reverse, the last part first and marked with 0x40.
+    // The long name's parts are written in reverse. The last part comes first and is marked with 0x40.
     private static int WriteLongName(byte[] entries, int offset, string name, byte checksum)
     {
         int count = FatNames.LongNameEntries(name);

@@ -7,9 +7,9 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Tests;
 
-// A console as the graphical one sees the agent, answering each question at once with the next answer of the script,
-// which is given the question. Once the script runs out it waits, as a technician who has walked away does, until the
-// question is withdrawn. It keeps every state, line and question it got; the run's heartbeat shows from its own thread.
+// A console that sees the agent like the graphical one. It answers each question right away with the script's next
+// answer, which gets the question. When the script runs out it waits, like a technician who walked away, until the
+// question is withdrawn. It keeps every state, line and question. The heartbeat's states arrive from its own thread.
 internal sealed class ScriptedMachineConsole(params Func<ConsoleQuestion, ConsoleAnswer>[] answers) : IMachineConsole
 {
     private readonly Lock _lock = new();

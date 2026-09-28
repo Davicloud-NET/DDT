@@ -9,8 +9,9 @@ namespace DDT.Server.Authentication;
 
 public static class OidcOptionsValidation
 {
-    // A role that does not exist would surface only at the first sign in of an unknown identity, as a failure. Values the
-    // handler needs are checked only while single sign-on is on, so a section that is off can be filled in step by step.
+    // A role that doesn't exist would only show up as a failure at the first sign-in of an unknown identity. The values
+    // the handler needs are only checked while single sign-on is on, so a section that's off can be filled in step by
+    // step.
     public static IReadOnlyList<SettingProblem> FindProblems(OidcOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -46,7 +47,7 @@ public static class OidcOptionsValidation
         return problems;
     }
 
-    // AutoProvisionRole names a role below Administrator, and the group map only roles DDT knows.
+    // AutoProvisionRole must name a role below Administrator, and the group map may only name roles DDT knows.
     private static void AddRoleProblems(OidcOptions options, List<SettingProblem> problems)
     {
         string? provisioned = DdtRoleNames.Canonical(options.AutoProvisionRole);

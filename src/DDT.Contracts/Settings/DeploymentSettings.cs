@@ -4,12 +4,12 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section deployment. Secrets: localAdministrator.password and domain.password.
+// The deployment section. Its secrets are localAdministrator.password and domain.password.
 public sealed record DeploymentSettings(
     string? TimeZone,
     string? Locale,
     string? Keyboard,
     LocalAdministratorSettings LocalAdministrator,
     DomainSettings Domain,
-    // The language the console at the machine starts in, en or de; null for the language of Windows PE.
+    // The language the console at the machine starts in, en or de. Null means the language of WinPE.
     string? ConsoleLanguage = null);

@@ -9,8 +9,8 @@ using DDT.MachineConsole.Agent;
 
 namespace DDT.MachineConsole;
 
-// ddt-console.exe --pipe <name>, as the agent starts it. It connects before it opens a window and exits at once when no
-// agent takes it, so the agent's text console stays in view. With --session it is the shell of DDT's session.
+// The agent starts it as ddt-console.exe --pipe <name>. It connects before it opens a window. If no agent accepts it,
+// it exits right away, so the agent's text console stays in view. With --session it's the shell of DDT's session.
 public static partial class Program
 {
     public const int Closed = 0;
@@ -57,8 +57,8 @@ public static partial class Program
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
-    // Software rendering only: Windows PE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP. Nor has it Segoe
-    // UI, so text without a face of its own is set in the console's Archivo.
+    // Software rendering only, because WinPE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP. WinPE has no
+    // Segoe UI either, so text without its own font family uses the console's Archivo.
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UseWin32()
@@ -71,8 +71,8 @@ public static partial class Program
             })
             .With(App.FontOptions);
 
-    // Avalonia times its frames with the system timer, whose 15.6 ms ticks turn a 16.7 ms frame into two, so motion
-    // would run at 32 frames a second. A 1 ms timer resolution for the console's lifetime keeps it at 60.
+    // Avalonia times its frames with the system timer. Its 15.6 ms ticks stretch a 16.7 ms frame over two ticks, so
+    // motion would run at 32 frames a second. A 1 ms timer resolution for the console's lifetime keeps it at 60.
     private static void FineTimer()
     {
         try
@@ -81,7 +81,7 @@ public static partial class Program
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            // Then the console moves at the coarser rate.
+            // Without winmm.dll the console animates at the coarser rate.
         }
     }
 

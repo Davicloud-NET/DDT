@@ -14,7 +14,7 @@ import { ChoiceList } from "./ChoiceList";
 import { MemoryValue } from "./MemoryValue";
 import { choicesOf, placeholderOf, yesNoOf } from "./valueFields";
 
-// The value of a test, entered as its subject's kind of value takes it.
+// The value of a test, with a field that fits its subject's kind of value.
 export function ValueEditor({
   label,
   field,
@@ -62,7 +62,8 @@ export function ValueEditor({
     );
   }
 
-  // Part of a value or a pattern is typed, as for text.
+  // Only Equals and NotEquals pick one of the choices. The other operators take part of a value or a pattern, typed
+  // like text.
   if (subject.kind === "oneOf" && (test.operator === "Equals" || test.operator === "NotEquals")) {
     return (
       <ChoiceSetting

@@ -11,7 +11,7 @@ interface DrawerFooterProps {
   saveLabel: ReactNode;
   deleteLabel: ReactNode;
   isSaveDisabled: boolean;
-  // False for a new thing, and for one someone deleted meanwhile.
+  // False for a new item, and for one that someone deleted in the meantime.
   canDelete: boolean;
   isBusy: boolean;
   onSave: () => void;
@@ -19,7 +19,7 @@ interface DrawerFooterProps {
   onDelete: () => void;
 }
 
-// The keys under the form of a rule's, a machine role's or an account's drawer, for someone who may change it.
+// The buttons under the form in a rule's, machine role's or account's drawer, for someone who may change it.
 export function DrawerFooter({
   saveLabel,
   deleteLabel,

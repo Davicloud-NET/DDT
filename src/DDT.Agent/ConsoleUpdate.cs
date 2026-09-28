@@ -7,10 +7,12 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// Fetches the graphical console the server offers in place of the one beside the agent, into a folder of its own.
+// Downloads the graphical console the server offers into a separate folder. It's used instead of the console next to
+// the agent.
 internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAgent agent)
 {
-    // The new console's executable, or null to keep the one there is. Nothing that goes wrong here stops the machine.
+    // Returns the new console's executable, or null to keep the current one. Nothing that goes wrong here stops the
+    // machine.
     public async Task<string?> NewConsoleAsync(CancellationToken cancellationToken)
     {
         if (agent.ConsolePath is not { } consolePath)
@@ -27,7 +29,7 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
                 return null;
             }
 
-            // The names become paths, so only the console's own are taken.
+            // The names become paths, so only the console's known file names are accepted.
             if (!IsConsole(release))
             {
                 throw new InvalidDataException("the server names other files than the console's");

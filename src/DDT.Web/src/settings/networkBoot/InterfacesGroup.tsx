@@ -33,7 +33,7 @@ export function InterfacesGroup({
   values: PxeSettings;
   hosts: UseQueryResult<PxeHostInterfaces[]>;
 }) {
-  // Held here, not in AddInterfaceForm, so what was typed outlasts a lock that comes and goes.
+  // Kept here instead of in AddInterfaceForm, so the typed text survives a lock that comes and goes.
   const [typed, setTyped] = useState("");
   const entries = values.interfaces;
   const lock = form.lockOf("interfaces");

@@ -87,7 +87,7 @@ public static class Extensions
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
-            // Answers while the process does.
+            // Healthy as long as the process runs.
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
         return builder;
@@ -98,7 +98,7 @@ public static class Extensions
         // Health endpoints outside Development have security implications, see https://aka.ms/dotnet/aspire/healthchecks.
         if (app.Environment.IsDevelopment())
         {
-            // Ready once every check passes; alive while the checks tagged live pass.
+            // /health is ready once every check passes. /alive only needs the checks tagged live.
             app.MapHealthChecks(HealthEndpointPath).AllowAnonymous();
 
             app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions

@@ -6,8 +6,8 @@ namespace DDT.Server.Machines;
 
 public static class LastSeen
 {
-    // A poll or a report only records that the machine was seen, and a write plus a push per machine every ten
-    // seconds buys nothing an operator can see. True when the machine changed and needs saving.
+    // A poll or a report only records that the machine was seen. A write and a push per machine every ten seconds would
+    // show an operator nothing new. Returns true if the machine changed and needs saving.
     public static bool Record(Machine machine, DateTimeOffset now, string? address)
     {
         ArgumentNullException.ThrowIfNull(machine);

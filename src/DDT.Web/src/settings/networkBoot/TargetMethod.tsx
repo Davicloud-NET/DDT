@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { Button } from "@/ui/Button";
 
-// The method the architecture decides, and a way back to it while the stored one differs.
+// The method the architecture decides, and a way to switch back to it while the stored method differs.
 export function TargetMethod({
   method,
   stored,

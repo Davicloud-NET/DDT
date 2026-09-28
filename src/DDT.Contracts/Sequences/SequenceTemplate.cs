@@ -7,8 +7,8 @@ namespace DDT.Contracts.Sequences;
 // A starting point for a new sequence. Its steps get new ids every time it is read.
 public sealed record SequenceTemplate(
     string Key,
-    // English, like Description; their codes and args say the same for a client in the person's language. The step
-    // names are the new sequence's own text and stay English.
+    // In English, like Description. Their codes and args carry the same text for a client in the person's language.
+    // The step names become the new sequence's own text and stay in English.
     string Name,
     string Description,
     SequenceDefinition Definition,

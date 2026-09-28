@@ -8,8 +8,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// A machine that has registered and holds its first poll token, as the agent does right before it asks the
-// technician to sign in.
+// A machine that has registered and holds its first poll token.
+// That's the agent's state right before it asks the technician to sign in.
 public sealed class RegisteredMachine(
     AgentClient agent,
     AgentRegistration registration,

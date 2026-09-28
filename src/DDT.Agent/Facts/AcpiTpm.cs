@@ -4,15 +4,15 @@
 
 namespace DDT.Agent.Facts;
 
-// Which TPM the machine has, from the ACPI table that describes it: TPM2 for a TPM 2.0, firmware TPMs included, and TCPA
-// for a TPM 1.2. Windows PE has no TPM Base Services, but the ACPI tables are there in both phases.
+// Which TPM the machine has, from the ACPI table that describes it: TPM2 for a TPM 2.0, firmware TPMs included, and
+// TCPA for a TPM 1.2. WinPE has no TPM Base Services, but the ACPI tables are there in both phases.
 public static class AcpiTpm
 {
     public const string Version20 = "2.0";
     public const string Version12 = "1.2";
 
-    // Null for none. tableIds is EnumSystemFirmwareTables' ACPI list: each table's four-letter signature, which read as a
-    // little-endian DWORD is also GetSystemFirmwareTable's id. Firmware that lists both describes a TPM 2.0.
+    // Null for none. tableIds is EnumSystemFirmwareTables' ACPI list of four-letter table signatures. Read as a
+    // little-endian DWORD, each is also GetSystemFirmwareTable's id. Firmware that lists both describes a TPM 2.0.
     public static string? Version(ReadOnlySpan<byte> tableIds)
     {
         bool tpm12 = false;

@@ -15,7 +15,7 @@ interface StepFailureProps {
   runState: DeploymentState;
 }
 
-// Why a step failed, and whether the run went on because the step may fail.
+// Why a step failed, and whether the run continued because the step is allowed to fail.
 export function StepFailure({ node, steps, runState }: StepFailureProps) {
   const step = node.step;
 

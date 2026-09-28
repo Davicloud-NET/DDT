@@ -7,13 +7,13 @@ import type { MachineActionState } from "@/machines/useMachineActions";
 
 import type { StrayOffer } from "./strays";
 
-// What the table and the phone's list show of the machines, beside the machines themselves.
+// What the table and the phone list need besides the machines themselves.
 export interface MachineRowsProps {
   machines: MachineSummary[];
   now: number;
   canDecide: boolean;
   actions: MachineActionState;
-  // By the id of the machine that offers the removal.
+  // Keyed by the id of the machine that offers to remove the strays.
   strays: Map<string, StrayOffer>;
   // A row's classes from useLiveMarks.
   mark: (id: string) => string;

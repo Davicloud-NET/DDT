@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// What a rule's save request writes, and what keeps it from being stored at all. Everything else about a rule is a
-// problem it is saved with.
+// What a rule's save request writes, and what keeps it from being stored at all. Any other issue is a problem the
+// rule is saved with.
 internal static class RuleFields
 {
     public static async Task<FieldProblems?> RefusalAsync(DdtDbContext database, SaveRuleRequest request, CancellationToken cancellationToken)
@@ -78,7 +78,7 @@ internal static class RuleFields
         RoleIds = rule.RoleIds,
     };
 
-    // The fields a save changed, for the audit, without what they hold.
+    // The fields a save changed, for the audit row, without their contents.
     public static string[] Changes(Rule before, Rule after) =>
     [
         .. new (string Field, bool Changed)[]
@@ -93,7 +93,7 @@ internal static class RuleFields
         }.Where(field => field.Changed).Select(field => field.Field),
     ];
 
-    // PostgreSQL text cannot hold a NUL. Null for nothing.
+    // PostgreSQL text can't hold a NUL. Returns null for empty text.
     private static string? Text(string? text)
     {
         string? trimmed = text?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim();

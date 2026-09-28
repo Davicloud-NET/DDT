@@ -10,8 +10,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// What the machine asks at its console while it polls: the sign-in, and the sequence and disk to pick. Only reading
-// the keyboard runs alongside polling; the answer goes to the server from the loop.
+// The questions the machine asks at its console while it polls: the sign-in, and which sequence and disk to pick.
+// Only reading the keyboard runs alongside polling. The loop sends the answer to the server.
 internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, IDiskPartitioner disks, AgentLog log, AgentRegistrar registrar)
 {
     private SignInConversation _conversation = new(status.Console, log);
@@ -20,15 +20,15 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
     private Task<ConsoleAnswer?>? _typing;
     private bool _typingForPicker;
 
-    // The disks the picker offers, read once each time the machine may pick; null until then.
+    // The disks the picker offers. They're read once each time the machine may pick, and are null until then.
     private IReadOnlyList<LocalDisk>? _pickableDisks;
     private bool _toldNoSequences;
 
-    // The disk last confirmed with ERASE in this process. Kept past the pick's answer: a pick the server stored but
-    // did not confirm still arrives as an Assigned run.
+    // The disk last confirmed with ERASE in this process. It's kept after the pick is answered, because a pick the
+    // server stored but didn't confirm still arrives as an Assigned run.
     public LocalDisk? ConfirmedDisk { get; private set; }
 
-    // The run last chosen at this console without a disk confirmed with ERASE, which therefore must not erase one.
+    // The run last picked at this console without confirming a disk with ERASE. That run must not erase a disk.
     public Guid? PickedWithoutErase { get; set; }
 
     public bool CanSignIn => _conversation.IsAvailable;
@@ -46,7 +46,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         _pickableDisks = null;
     }
 
-    // After a run that failed, the machine may pick again, with the disks read again.
+    // After a failed run the machine may pick again, and the disks are read again.
     public void ResetPicker()
     {
         _picker.Reset();
@@ -80,7 +80,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         return _picker.IsOffered;
     }
 
-    // The typed line, once Typing completed.
+    // Returns the typed line once Typing has completed.
     public async Task<ConsoleAnswer?> TakeAnswerAsync()
     {
         ConsoleAnswer? answer = _typing is null ? null : await _typing.ConfigureAwait(false);
@@ -106,7 +106,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         _typing = null;
     }
 
-    // A refused token and a stop reach the caller.
+    // A refused token and a stop are passed on to the caller.
     public Task SendAsync(Guid machineId, string token, ConsoleAnswer answer, CancellationToken cancellationToken) =>
         _typingForPicker
             ? SendPickAsync(machineId, token, answer, cancellationToken)
@@ -155,8 +155,8 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         }
     }
 
-    // Asks for the sequences until there are some, and reads the disks once per stretch in which the machine may pick,
-    // when a sequence erases one. Without a disk only sequences that erase none are offered, until a restart finds one.
+    // Asks for the sequences until there are some. If a sequence erases a disk, the disks are read once per stretch in
+    // which the machine may pick. Without a disk, only sequences that erase none are offered until a restart finds one.
     private async Task OfferSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken)
     {
         IReadOnlyList<AgentSequenceChoice> sequences;
@@ -167,7 +167,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         }
         catch (HttpRequestException exception) when (ServerCallRules.IsRefusal(exception))
         {
-            // The machine may no longer pick; the next poll says so.
+            // The machine may no longer pick. The next poll will say so.
             return;
         }
 

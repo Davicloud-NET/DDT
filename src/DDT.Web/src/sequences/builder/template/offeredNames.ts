@@ -5,7 +5,7 @@
 // The most names the completion offers at once.
 const OFFERED = 8;
 
-// The names that start with what is typed, then those that hold it further on, ignoring case.
+// The names that start with what's typed, then the ones that contain it further in, ignoring case.
 export function offeredNames(names: readonly string[], typed: string): string[] {
   const lower = typed.toLowerCase();
 

@@ -99,7 +99,8 @@ public sealed class WriteRawImageStepRunnerTests : IDisposable
         Assert.Equal(["clean 0"], _run.Tools.Calls);
     }
 
-    // A firmware with only the 2011 CA does not start a shim signed since June 2026, under the 2023 one.
+    // Firmware with only the 2011 CA doesn't start a shim signed under the 2023 CA, which is how shims are signed since
+    // June 2026.
     [Fact]
     public async Task RefusesASignedImageWhereTheFirmwareDoesNotTrustItsCa()
     {

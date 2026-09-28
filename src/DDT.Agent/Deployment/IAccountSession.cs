@@ -4,18 +4,19 @@
 
 namespace DDT.Agent.Deployment;
 
-// An account signed in for one step, which the step's script runs as and whose logon session its shares are connected
-// in. It keeps no password: that went to the sign-in and nowhere else. Disposing it signs the account out again.
+// An account signed in for one step. The step's script runs as it, and the step's shares are connected in its logon
+// session. It keeps no password, because that went to the sign-in and nowhere else. Disposing it signs the account out
+// again.
 public interface IAccountSession : IDisposable
 {
     // As the server sent it, DOMAIN\user or a UPN.
     string UserName { get; }
 
-    // Runs action on a thread of its own that acts as the account, so what it connects belongs to the account's logon
+    // Runs action on a separate thread that acts as the account, so what it connects belongs to the account's logon
     // session and not to the agent's.
     Task<T> ImpersonateAsync<T>(Func<T> action);
 
-    // Lets this logon session read, change and run what is in directory, which is otherwise open to SYSTEM alone: the
-    // step's script and package.
+    // Lets this logon session read, change and run what's in directory, such as the step's script and package.
+    // Otherwise only SYSTEM may open it.
     void Admit(string directory);
 }

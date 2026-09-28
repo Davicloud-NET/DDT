@@ -13,8 +13,8 @@ public enum UploadCompletionStatus
     Incomplete,
     Refused,
 
-    // Not added for a cause on the server, such as a missing conversion tool or a full volume. The upload stays, to be
-    // completed again once that is fixed, or discarded.
+    // The file wasn't added because of a problem on the server, such as a missing conversion tool or a full volume. The
+    // upload stays, so it can be completed again once that's fixed, or discarded.
     Kept,
     Failed,
     Stopping,

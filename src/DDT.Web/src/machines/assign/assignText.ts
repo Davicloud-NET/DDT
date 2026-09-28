@@ -100,10 +100,10 @@ export function nameHint(
     : t`Optional. Left empty, the machine keeps the name ${current}, which its cloud-init seed gets.`;
 }
 
-// What the assignment does to a machine that is not authorized yet, with now on the server's clock. Without web
-// approval, the assignment authorizes a machine waiting at the prompt; one not seen for a while is authorized by
-// the next sign-in at it, or by its next netboot from a zero touch network. With web approval, zero touch is off,
-// and a sign-in and an assignment together authorize the machine in either order.
+// What the assignment does to a machine that isn't authorized yet. now is on the server's clock. Without web
+// approval, the assignment authorizes a machine that waits at the prompt. A machine not seen for a while is
+// authorized by the next sign-in at it, or by its next netboot from a zero touch network. With web approval, zero
+// touch is off. A sign-in and an assignment together authorize the machine, in either order.
 export function pendingConsequence(
   machine: MachineSummary,
   options: DeploymentOptionsView,

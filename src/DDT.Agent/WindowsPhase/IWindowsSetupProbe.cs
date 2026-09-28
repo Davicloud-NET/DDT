@@ -6,7 +6,7 @@ namespace DDT.Agent.WindowsPhase;
 
 public interface IWindowsSetupProbe
 {
-    // Null once Windows setup has finished, the out-of-box experience included; otherwise what it is still doing, for
-    // the log.
+    // Null once Windows setup has finished, including the out-of-box experience. Otherwise it says what setup is still
+    // doing, for the log.
     string? Pending();
 }

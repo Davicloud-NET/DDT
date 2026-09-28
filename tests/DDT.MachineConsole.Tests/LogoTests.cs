@@ -15,7 +15,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The organisation's logo, which the agent downloads and names by its path: at the right end of the header.
+// The organisation's logo, which the agent downloads and passes as a path. It shows at the right end of the header.
 public sealed class LogoTests : IDisposable
 {
     private readonly string _directory = Directory.CreateTempSubdirectory("ddt-console-logo-").FullName;
@@ -70,7 +70,7 @@ public sealed class LogoTests : IDisposable
         Assert.Equal(120, width, 1);
     }
 
-    // What the header never draws larger is not kept larger.
+    // A logo is never kept larger than the header draws it.
     [Fact]
     public async Task KeepsATallLogoSmall()
     {

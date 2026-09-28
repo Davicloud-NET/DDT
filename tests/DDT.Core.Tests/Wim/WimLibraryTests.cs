@@ -18,7 +18,7 @@ public sealed class WimLibraryTests : IDisposable
     private const byte CompressedResource = 0x04;
     private const byte SolidResource = 0x10;
 
-    // A resource header of 24 bytes, whose flags are its byte 7, then part number, reference count and SHA-1.
+    // A 24-byte resource header with its flags in byte 7, then the part number, the reference count and the SHA-1.
     private const int BlobTableEntryBytes = 50;
 
     private readonly string _root = Directory.CreateTempSubdirectory("ddt-wim-").FullName;
@@ -98,7 +98,8 @@ public sealed class WimLibraryTests : IDisposable
         await library.ExportAsync(new WimExport(captured, 1, exported, WimCompression.Lzms), null, Token);
 
         // wimlib writes version 0xE00 for any LZMS output, so only a solid entry in the blob table shows solid mode.
-        // The table's resource header is at 48: size in the low 56 bits, flags in the top byte, offset at 56.
+        // The table's resource header is at 48. It has the size in the low 56 bits and the flags in the top byte, and
+        // the offset follows at 56.
         byte[] wim = await File.ReadAllBytesAsync(exported, Token);
         ulong blobTable = BinaryPrimitives.ReadUInt64LittleEndian(wim.AsSpan(48));
         int blobTableSize = checked((int)(blobTable & 0x00FF_FFFF_FFFF_FFFF));

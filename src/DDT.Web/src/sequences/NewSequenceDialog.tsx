@@ -13,12 +13,12 @@ import { TextField } from "@/ui/TextField";
 import { TemplateSelect } from "./list/TemplateSelect";
 import { useNewSequenceForm } from "./list/useNewSequenceForm";
 
-// Creates a sequence from a template or empty, and opens it in the editor, where it is changed in place.
+// Creates a sequence, empty or from a template, and opens it in the editor, where it's edited in place.
 export function NewSequenceDialog({
   taken,
   onClose,
 }: {
-  // The names in use, so the new sequence gets one of its own.
+  // The names already in use, so the new sequence gets a unique one.
   taken: readonly string[];
   onClose: () => void;
 }) {

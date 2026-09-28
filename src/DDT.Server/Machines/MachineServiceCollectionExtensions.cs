@@ -39,7 +39,8 @@ public static class MachineServiceCollectionExtensions
         services.AddSingleton<RuleRecount>();
         services.AddSingleton<LiveConnections>();
 
-        // The context's own option reaches only its own options, not these.
+        // DdtJsonContext's AllowOutOfOrderMetadataProperties only applies to its own options, not to these, so it's set
+        // again.
         services.AddSignalR()
             .AddJsonProtocol(json =>
             {

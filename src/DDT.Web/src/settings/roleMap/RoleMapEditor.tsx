@@ -26,8 +26,8 @@ interface RoleMapEditorProps {
   duplicate: string;
 }
 
-// A map from something the sign-in brings along, a directory group or a claim value, to the role it gives. An entry
-// added here gives Viewer until another role is chosen in its row.
+// Maps something the sign-in brings along, like a directory group or a claim value, to the role it gives. A new entry
+// gives Viewer until another role is picked in its row.
 export function RoleMapEditor({
   label,
   map,

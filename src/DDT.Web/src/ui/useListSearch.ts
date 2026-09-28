@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 
-// A list's search field and the items it leaves. matches gets the search in lower case, without spaces around it.
+// A list's search field and the items that match it. matches gets the search in lower case, trimmed.
 export function useListSearch<T>(items: T[], matches: (item: T, needle: string) => boolean) {
   const [query, setQuery] = useState("");
   const needle = query.trim().toLowerCase();

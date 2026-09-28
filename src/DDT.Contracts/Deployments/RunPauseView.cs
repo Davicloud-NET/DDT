@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Deployments;
 
-// The Pause step a run waits at, and its visit, which a ContinueRunRequest names. Message is worked out by the agent.
-// ContinuesUtc is when the pause goes on by itself, null when it waits for someone.
+// The Pause step a run waits at, and its pass. A ContinueRunRequest names both. The agent fills in the values in
+// Message. ContinuesUtc is when the pause continues by itself, or null when it waits for someone.
 public sealed record RunPauseView(Guid StepId, int Pass, string? Message, DateTimeOffset? SinceUtc, DateTimeOffset? ContinuesUtc);

@@ -8,8 +8,8 @@ import { AdministratorsOnly } from "@/auth/AdministratorsOnly";
 
 import { UserAdministration } from "./UserAdministration";
 
-// Administration > Users and roles: every account DDT knows, with what it may do and where that comes from, and the
-// directory's group map. Only administrators reach it; the server refuses everyone else.
+// Administration > Users and roles. Lists every account DDT knows, with its role and where that role comes from, plus
+// the directory's group map. Only administrators can use it, and the server refuses everyone else.
 export function UsersPage() {
   return (
     <AdministratorsOnly

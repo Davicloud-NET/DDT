@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
-// Each read request on port 69 becomes a TftpTransfer on its own task, so one slow client cannot stall the rest. A
-// transfer answers from a port of its own, or in single port mode from port 69 with this loop routing its datagrams.
+// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest. A
+// transfer answers from its own port. In single port mode it answers from port 69, and this loop routes its datagrams.
 public sealed class TftpListener : IPxeListener, IAsyncDisposable
 {
     private const int ReceiveBufferLength = 1024;
@@ -178,8 +178,8 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
-        // Dropped rather than refused: an ERROR aborts the client's boot, while a dropped request is
-        // retransmitted and succeeds once a transfer finishes.
+        // Dropped instead of refused. An ERROR aborts the client's boot, while a dropped request is retransmitted and
+        // succeeds once a transfer finishes.
         if (_transfers.Count >= _serving.MaxTransfers)
         {
             PxeLog.TftpBusy(_logger, request.FileName, client, _serving.MaxTransfers);
@@ -213,8 +213,9 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
         return false;
     }
 
-    // A repeated request means no answer reached the client yet. With a port per transfer it gets its own and the
-    // client keeps the port it heard first; in single port mode it replaces an unanswered transfer. False ignores it.
+    // A repeated request means no answer has reached the client yet. With a port per transfer, it gets its own transfer
+    // and the client keeps the port it heard first. In single port mode it replaces an unanswered transfer. False means
+    // the request is ignored.
     private bool ReplacePrevious(IPEndPoint client)
     {
         if (_singlePortClients.TryGetValue(client, out TftpTransfer? previous))

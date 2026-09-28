@@ -19,8 +19,8 @@ interface AddNodeMenuProps {
   isDisabled?: boolean;
 }
 
-// A key that opens the kinds to add. fullLabel says the key with its place for screen readers, such as "Add a step
-// after Apply image", and starts with the words the key shows; the menu is named by its key.
+// A button that opens the kinds to add. fullLabel is the button's screen reader label with its place, such as "Add a
+// step after Apply image". It starts with the words the button shows. The menu is named after its button.
 export function AddNodeMenu({
   label,
   fullLabel,

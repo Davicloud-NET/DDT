@@ -16,7 +16,7 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
 
     public Exception Failure { get; set; } = new DeploymentStepException("The scripted share failed.");
 
-    // The remotes connected right now, so a step can look while it runs.
+    // The remotes connected right now, so a step can check them while it runs.
     public IReadOnlyList<string> Connected
     {
         get

@@ -33,10 +33,10 @@ function Get-AdkPath {
     return $paths
 }
 
-# The version the ADK's installers register, by which Microsoft names its releases, such as 10.1.26100.2454. The
-# Windows PE add-on's first, since boot.wim comes from it.
+# The version the ADK's installers register, which Microsoft uses to name its releases, such as 10.1.26100.2454. The
+# Windows PE add-on's version wins, because boot.wim comes from it.
 function Get-AdkVersion {
-    # Strict mode requires checking the properties before reading them, as some uninstall entries lack them.
+    # Strict mode requires checking the properties before reading them, because some uninstall entries lack them.
     $entries = @(Get-ItemProperty -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
                                         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
         Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.PSObject.Properties['DisplayVersion'] -and
@@ -50,11 +50,11 @@ function Get-AdkVersion {
     return $null
 }
 
-# The packages of the Windows PE optional components PowerShell needs, which a running Windows PE cannot add.
+# The packages of the Windows PE optional components that PowerShell needs. A running Windows PE can't add them.
 function Get-PowerShellComponentPackage {
     param([Parameter(Mandatory)][string] $ComponentDirectory)
 
-    # WMI, NetFx, Scripting and PowerShell in that order, which the other three each need.
+    # WMI, NetFx, Scripting and PowerShell come first and in that order, because each of the other three needs them.
     # WinPE-SecureBootCmdlets has no language resources, so the ADK ships no en-us package for it.
     $components = @(
         [pscustomobject]@{ Name = 'WinPE-WMI'; HasLanguagePackage = $true }

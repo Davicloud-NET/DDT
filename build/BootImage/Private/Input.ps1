@@ -31,7 +31,7 @@ function Resolve-BuildInput {
 
     if ($ApiToken) { Assert-ApiToken -ApiToken $ApiToken -ServerUrl $ServerUrl -RootCertificatePath $RootCertificatePath }
 
-    # The agent pins the root in boot.wim, and the download of the drivers trusts it alone.
+    # The agent pins the root in boot.wim, and the driver download trusts only this root.
     $root = $null
     if ($RootCertificatePath -and ($AgentPath -or $ApiToken)) { $root = Read-RootCertificate -Path $RootCertificatePath }
 
@@ -73,7 +73,7 @@ function Resolve-BuildInput {
     }
 }
 
-# The provider path of an input, or an error saying that it is missing.
+# Returns the provider path of an input, or throws an error saying it's missing.
 function Resolve-InputPath {
     param(
         [Parameter(Mandatory)][string] $Path,
@@ -130,11 +130,11 @@ function Assert-ApiToken {
     }
 }
 
-# The PEM text and the DER bytes of the root the agent pins, after checking that it is one.
+# The PEM text and the DER bytes of the root certificate the agent pins, after checking that the file is one.
 function Read-RootCertificate {
     param([Parameter(Mandatory)][string] $Path)
 
-    # Read as a plain string: Get-Content attaches properties that ConvertTo-Json writes out as an object.
+    # Read as a plain string, because Get-Content attaches properties that ConvertTo-Json writes out as an object.
     $pem = [IO.File]::ReadAllText((Resolve-InputPath -Path $Path -Name 'Root certificate'))
 
     if ($pem -notmatch '-----BEGIN CERTIFICATE-----') {
@@ -172,7 +172,8 @@ function Resolve-DriverFolder {
     return $folder
 }
 
-# The files Publish-Console.ps1 writes: the console and the native libraries it draws with, which go together.
+# The files Publish-Console.ps1 writes. That's the console and the native libraries it draws with, which belong
+# together.
 function Resolve-ConsoleFile {
     param([Parameter(Mandatory)][string] $Path)
 

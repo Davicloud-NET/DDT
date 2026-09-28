@@ -8,7 +8,8 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// A tool started suspended with CreateProcessAsUserW, inside a job that kills its whole tree when the job handle closes.
+// A tool started suspended with CreateProcessAsUserW, inside a job that kills its whole tree when the job handle
+// closes.
 [SupportedOSPlatform("windows")]
 internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 {
@@ -89,7 +90,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _exitCode = GetExitCodeProcess(process, out uint code) ? unchecked((int)code) : 0;
     }
 
-    // Closing the job kills the tree too, but this ends it at once so the wait returns without waiting for the
+    // Closing the job kills the tree too, but this ends it right away, so the wait returns without waiting for the
     // handles to close.
     public void Kill()
     {
@@ -115,7 +116,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _output?.Dispose();
         _error?.Dispose();
 
-        // Kills the tree, as the job limit says.
+        // Kills the tree, because of the job's kill-on-close limit.
         _job?.Dispose();
         _thread?.Dispose();
         _process?.Dispose();

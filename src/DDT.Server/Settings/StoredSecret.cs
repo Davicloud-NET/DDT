@@ -4,8 +4,8 @@
 
 namespace DDT.Server.Settings;
 
-// Value is null when the secret was cleared or no longer decrypts, which Unreadable tells apart. Protected is the
-// stored ciphertext, kept so a secret this process cannot read survives a save of the other fields.
+// Value is null when the secret was cleared or no longer decrypts. Unreadable tells the two apart. Protected is the
+// stored ciphertext. It's kept so a secret this process can't read survives a save of the other fields.
 public sealed record StoredSecret(string? Value, bool Unreadable, DateTimeOffset UpdatedUtc, string? Protected)
 {
     // The generated ToString would print the secret into any log or assertion message that shows one.

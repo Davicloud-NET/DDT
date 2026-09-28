@@ -28,8 +28,8 @@ interface PanZoomOptions {
   start: "fit" | "top";
 }
 
-// The transform a canvas shows: the page's when it passes one, else the canvas's own, starting fitted or at the top.
-// Every change is clamped, so some of the content always stays in view.
+// The transform a canvas shows: the page's if it passes one, or else the canvas's own, which starts fitted or at the
+// top. Every change is clamped, so some of the content always stays in view.
 export function usePanZoom({ content, size, transform, onTransformChange, start }: PanZoomOptions) {
   const [own, setOwn] = useState<ViewTransform | null>(null);
   const view =

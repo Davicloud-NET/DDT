@@ -7,8 +7,8 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Settings;
 
-// How this host applied a version of a section. Message is English, and Text the same sentence as a code, where it is one
-// DDT knows. Detail is a JSON object, such as the interfaces a pxe host found.
+// How this host applied a version of a section. Message is in English. Text is the same sentence as a message code,
+// when it's one DDT knows. Detail is a JSON object, such as the interfaces a PXE host found.
 public sealed record SettingsApplyReport(string Section, long Version, SettingsApplyResult Result, string? Message)
 {
     public string? Detail { get; init; }

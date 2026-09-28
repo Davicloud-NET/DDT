@@ -6,7 +6,8 @@ import { cx } from "@/ui/cx";
 
 import type { RunDetailTone } from "./runDetail";
 
-// Title and detail share a line where the column is wide; beside the details panel the detail goes under it.
+// Title and detail share a line when the column is wide. When the details panel is open, the detail goes under the
+// title.
 export function RunLines({
   title,
   detail,

@@ -6,6 +6,6 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Accounts;
 
-// Where a step names an account. Field names the place as a sequence problem does; Reference is null for a share
-// whose account a document from outside left out.
+// A place where a step names an account. Field names the place the same way a sequence problem does. Reference is
+// null for a share whose account was left out of a document from outside the server.
 public sealed record AccountSite(SequenceStep Step, string Field, AccountReference? Reference, AccountPurpose Purpose, string? SharePath);

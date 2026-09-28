@@ -15,7 +15,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// How the service goes on with the run, waits for Windows setup, and removes the agent and DDT's session once it is over.
+// How the service continues the run, waits for Windows setup, and removes the agent and DDT's session once it's over.
 public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 {
     [Fact]
@@ -48,7 +48,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
             ("run-token-1", AgentEnvironment.Windows, SequenceDefinition.CurrentVersion, null, null),
             (registration.RunToken, registration.Environment, registration.SequenceVersion, registration.ResumeToken, registration.Disks));
 
-        // The installed Windows reports the facts as Windows PE did, as conditions test them in both phases.
+        // The installed Windows reports the same facts as WinPE did, because conditions test them in both phases.
         Assert.NotNull(registration.Facts);
         Assert.Equal(new DryRunMachineIdentityReader(1).Read().Facts, registration.Facts);
 
@@ -62,7 +62,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
             _toolRunner.Calls);
         Assert.StartsWith(Environment.SystemDirectory, RunScriptStepRunner.CmdPath, StringComparison.OrdinalIgnoreCase);
 
-        // The answer file went before the first step, and the count of returns to Windows PE stays with the run.
+        // The answer file was gone before the first step, and the count of returns to WinPE stays with the run.
         Assert.Equal([(false, "1"), (false, "1")], found);
 
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.Windows, report.Phase));
@@ -178,9 +178,9 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
         Assert.False(File.Exists(AnswerFile));
     }
 
-    // The network may still be coming up while Windows starts, or a proxy in front of the server may answer for it:
-    // only the server's own answer that the run is over ends it here, as the agent's removal cannot be undone. A
-    // registration the server refuses as invalid is tried again as well.
+    // The network may still be coming up while Windows starts, or a proxy in front of the server may answer for it.
+    // Only the server's own answer that the run is over ends it here, because the agent's removal can't be undone. A
+    // registration the server refuses as invalid is retried as well.
     [Theory]
     [InlineData(null)]
     [InlineData(HttpStatusCode.InternalServerError)]
@@ -268,8 +268,8 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.WaitingForWindowsSetup), (waiting.State, waiting.Phase, waiting.Activity));
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), waiting.Steps.Select(step => step.State));
 
-        // Then the run went on. Its one quick step can be over before the heartbeat's first beat, which then says
-        // Finishing already, as changes this close together share a beat.
+        // Then the run continued. Its one quick step can finish before the heartbeat's first beat, which then already
+        // says Finishing, because changes this close together share a beat.
         Assert.Contains(server.RunReports[1].Activity, (RunActivity[])[RunActivity.Step, RunActivity.Finishing]);
         Assert.False(File.Exists(AnswerFile));
     }
@@ -426,7 +426,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         int exitCode = await RunAsync(server, new() { Session = new FakeDeploySession(_tools, ends: false) });
 
-        // The service stays, finds no run at its next start, and ends the session and itself then.
+        // The service stays, finds no run at its next start, and then ends the session and itself.
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.Equal(["prepare the session", "setup finished", "the session takes over the sign-in", "end the session once someone signed out"], _tools.Calls);
     }

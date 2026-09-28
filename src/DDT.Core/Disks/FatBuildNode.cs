@@ -4,7 +4,7 @@
 
 namespace DDT.Core.Disks;
 
-// A file or directory FatVolumeBuilder lays out, in the order it was added.
+// A file or directory for FatVolumeBuilder to lay out. Nodes are laid out in the order they were added.
 internal sealed class FatBuildNode(string name, byte[]? content)
 {
     public string Name { get; } = name;
@@ -16,7 +16,7 @@ internal sealed class FatBuildNode(string name, byte[]? content)
 
     public List<FatBuildNode> Children { get; } = [];
 
-    // The 11 bytes of its short entry, and whether long name entries go before it.
+    // The 11 bytes of the short entry. HasLongName says whether long name entries go before it.
     public byte[] ShortName { get; set; } = [];
 
     public bool HasLongName { get; set; }

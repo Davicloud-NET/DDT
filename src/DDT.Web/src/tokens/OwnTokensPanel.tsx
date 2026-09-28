@@ -23,8 +23,8 @@ import { ownTokensQuery, type ApiTokenView } from "./tokens";
 import { TokenTable } from "./TokenTable";
 import { byState } from "./tokenView";
 
-// The signed-in person's API tokens on the Account page. The list is live: a token made, used or revoked, here or by
-// an administrator, arrives through the hub.
+// The signed-in user's API tokens on the Account page. The list is live. A token that's made, used or revoked, here or
+// by an administrator, arrives through the hub.
 export function OwnTokensPanel({ user }: { user: CurrentUser }) {
   const { t } = useLingui();
   const live = useLiveStatus();

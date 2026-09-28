@@ -19,7 +19,7 @@ interface ImagesTableProps {
   now: number;
   canEdit: boolean;
   mark: (id: string) => string;
-  // Both stay the same from render to render, as the rows keep them.
+  // Both must stay the same across renders, because the rows keep them.
   onDetails: (id: string) => void;
   onDelete: (image: ImageSummary) => void;
 }

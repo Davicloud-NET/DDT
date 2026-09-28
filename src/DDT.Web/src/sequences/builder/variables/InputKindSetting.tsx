@@ -10,8 +10,8 @@ import type { InputPartProps } from "./declarationFields";
 
 const inputKinds: InputKind[] = ["Text", "Choice", "MultiChoice", "YesNo", "Account"];
 
-// The kind of answer an input takes. Another kind keeps only what it can use: choices for a list, a destination for
-// an account.
+// The kind of answer an input takes. Switching kinds keeps only what the new kind can use: choices for a list, a
+// destination for an account.
 export function InputKindSetting({ input, at, findings, update }: InputPartProps) {
   const { t } = useLingui();
   const kindLabels: Record<InputKind, string> = {

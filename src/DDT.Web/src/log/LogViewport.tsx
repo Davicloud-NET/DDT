@@ -20,7 +20,7 @@ export interface LogViewportProps {
   onSelect: (line: MachineLogEntry) => void;
 }
 
-// The log on the console well, rendering only the rows in view, since a log holds up to MAX_BUFFERED_LINES.
+// The log on the console well. It renders only the rows in view, because a log holds up to MAX_BUFFERED_LINES lines.
 export function LogViewport({
   lines,
   following,

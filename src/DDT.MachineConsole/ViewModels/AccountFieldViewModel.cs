@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// An account for the run: a user name and its password, which is masked, sent once and then forgotten.
+// An account for the run: a user name and a password. The password is masked, sent once and then forgotten.
 public sealed class AccountFieldViewModel : InputFieldViewModel
 {
     private string _userName;
@@ -48,7 +48,7 @@ public sealed class AccountFieldViewModel : InputFieldViewModel
 
     public string PasswordLabel => L.T("Password");
 
-    // What the account is for, that its password stays with DDT for the run, and the keyboard layout it is typed with.
+    // Says what the account is for, that DDT keeps its password for the run, and which keyboard layout it's typed with.
     public string Note => HasKeyboardLayout ? $"{Keeping} {KeyboardHint}" : Keeping;
 
     public string? KeyboardLayout { get; private set; }
@@ -59,7 +59,7 @@ public sealed class AccountFieldViewModel : InputFieldViewModel
         "The keyboard layout is {layout}. A password typed with another layout would be wrong.",
         ("layout", KeyboardLayout ?? string.Empty));
 
-    // Both or, where the account may stay unanswered, neither.
+    // Both are filled in. If the account is optional, neither may be.
     public override bool IsAnswered => (HasUserName && Password.Length > 0) || (IsOptional && !HasUserName && Password.Length == 0);
 
     private bool HasUserName => !string.IsNullOrWhiteSpace(UserName);

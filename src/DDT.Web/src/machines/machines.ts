@@ -16,8 +16,8 @@ export type MachineState =
 // What kind of computer the server takes the machine for, from its firmware's chassis type and its maker's name.
 export type DeviceKindName = "Unknown" | "Laptop" | "Desktop" | "Tablet" | "Server" | "Virtual";
 
-// The server's MachineFacts: what the agent found out besides the machine's identity, for conditions and rules to
-// test. A member is null where the agent could not tell; the network members are the primary adapter's.
+// The server's MachineFacts: what the agent found out besides the machine's identity. Conditions and rules test
+// these. A member is null when the agent couldn't tell. The network members come from the primary adapter.
 export interface MachineFacts {
   memoryMegabytes?: number | null;
   processorName?: string | null;
@@ -32,7 +32,8 @@ export interface MachineFacts {
   defaultGateway?: string | null;
   dnsSuffix?: string | null;
   dhcpServer?: string | null;
-  // systemVersion, systemFamily and systemSku are the SMBIOS system's, assetTag its enclosure's.
+  // systemVersion, systemFamily and systemSku come from the SMBIOS system structure, assetTag from the enclosure
+  // structure.
   systemVersion?: string | null;
   systemFamily?: string | null;
   systemSku?: string | null;
@@ -68,27 +69,27 @@ export interface MachineSummary {
   deployment: DeploymentSummary | null;
   // Whether the firmware started the agent with Secure Boot on; null when it did not say.
   secureBootEnabled: boolean | null;
-  // Which of Microsoft's third-party UEFI CAs, which sign Linux shims, the firmware trusts, as the server writes the
-  // flags: "None", "Microsoft2011", "Microsoft2023" or "Microsoft2011, Microsoft2023"; null when unknown.
+  // Which of Microsoft's third-party UEFI CAs the firmware trusts. These CAs sign Linux shims. The value is the
+  // server's flags text: "None", "Microsoft2011", "Microsoft2023" or "Microsoft2011, Microsoft2023". Null when
+  // unknown.
   trustedUefiCas: string | null;
-  // What kind of computer it is, from its SMBIOS chassis type, or Virtual from its maker and model. Unknown until
-  // an agent that reports the chassis registers it.
+  // What kind of computer it is, from its SMBIOS chassis type. Virtual comes from its maker and model instead. It's
+  // Unknown until an agent that reports the chassis registers it.
   deviceKind: DeviceKindName;
-  // What the agent last registered with; null for an agent older than version 3 sequences, and left out by servers
-  // before them.
+  // The facts the agent sent at its last registration. Null for agents older than version 3 sequences. Servers older
+  // than that leave it out.
   facts?: MachineFacts | null;
 }
 
-// A hardware model as the machine's firmware reports it, compared without regard to case or runs of spaces. A
-// null manufacturer matches any, and a model that ends in * matches every model that starts with the text
-// before it.
+// A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null
+// manufacturer matches any, and a model ending in * matches every model that starts with the text before it.
 export interface HardwareModel {
   manufacturer: string | null;
   model: string;
 }
 
-// A model the registered machines report, with how many report it, for the pickers of rules and package
-// targets. Placeholders that firmware leaves in unset fields are left out.
+// A model that registered machines report, and how many report it. The rule and package target pickers use it.
+// Placeholders that firmware leaves in unset fields are left out.
 export interface HardwareModelCount {
   manufacturer: string | null;
   model: string;
@@ -120,7 +121,7 @@ export function upsertMachine(queryClient: QueryClient, machine: MachineSummary)
   );
 }
 
-// The hub's machinesRemoved names the machines, so the list drops them without being read again.
+// The hub's machinesRemoved message names the machines, so the list drops them without reading the list again.
 export interface MachinesRemoved {
   machineIds: string[];
 }
@@ -131,8 +132,8 @@ export function removeMachines(queryClient: QueryClient, machineIds: readonly st
   );
 }
 
-// With expectedSequenceId, the sequence the page showed a rule choosing, the approval also runs it, and the server
-// refuses when the rules choose otherwise by now. Without it the approval runs nothing.
+// expectedSequenceId is the sequence the page showed a rule choosing. With it, the approval also runs that sequence,
+// and the server refuses if the rules now choose another one. Without it, the approval runs nothing.
 export function approveMachine(
   id: string,
   expectedSequenceId: string | null = null,
@@ -155,8 +156,8 @@ export function rejectMachine(id: string): Promise<MachineSummary> {
   return apiPost<MachineSummary>(`/api/machines/${id}/reject`);
 }
 
-// Anyone who reaches the server can register a machine, so a waiting machine nobody ever approved may be a
-// stray, and an operator can throw it away. One with an assigned sequence waits for it on purpose.
+// Anyone who reaches the server can register a machine. So a waiting machine that nobody ever approved may be a
+// stray, and an operator can throw it away. A machine with an assigned sequence waits for it on purpose.
 export function isStray(machine: MachineSummary): boolean {
   return machine.state === "Pending" && !machine.everApproved && !isActive(machine.deployment);
 }
@@ -191,7 +192,7 @@ export function machineLabel(machine: MachineSummary): string {
   return model === null ? t`the machine with MAC ${mac}` : `${model} (${mac})`;
 }
 
-// The server's DeploymentLimits.WaitingAtPrompt, which decides whether an assignment authorizes a waiting
-// machine; change both together. A machine waiting at the prompt checks in every few seconds and is
-// recorded at most every 30 s.
+// Mirrors the server's DeploymentLimits.WaitingAtPrompt, so change both together. It decides whether an assignment
+// authorizes a waiting machine. A machine waiting at the prompt checks in every few seconds and is recorded at most
+// every 30 s.
 export const WAITING_WINDOW_MS = 90_000;

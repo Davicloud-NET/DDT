@@ -25,7 +25,7 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
 
         RunResult result = await RunAsync(server);
 
-        // The registration with the run token decides whether the run goes on, so its state stays.
+        // The registration with the run token decides whether the run continues, so its state stays.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.NotNull(result.UnsentReport);
         Assert.Contains(new StepRunState(TestRuns.Unattend.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentReport.Steps);
@@ -64,8 +64,8 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
 
         RunResult result = await running.WaitAsync(cancellationToken);
 
-        // Going on without the restart would run the next steps in the same Windows PE; after it, the registration
-        // decides whether the run goes on.
+        // Continuing without the restart would run the next steps in the same WinPE. After the restart, the
+        // registration decides whether the run continues.
         Assert.Equal(RunOutcome.Restarting, result.Outcome);
         Assert.Equal("reboot into Windows PE", _tools.Calls[^1]);
         Assert.Equal(2, (await LoadStateAsync())?.NextIndex);
@@ -100,7 +100,7 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
 
         RunResult result = await run;
 
-        // The registration with the run token decides whether the run goes on, so its state stays.
+        // The registration with the run token decides whether the run continues, so its state stays.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.NotNull(result.UnsentReport);
         Assert.Contains(new StepRunState(TestRuns.Apply.Id, StepState.Failed, SequenceRunner.LostContactMessage), result.UnsentReport.Steps);
@@ -140,7 +140,7 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
 
         RunResult result = await RunAsync(server);
 
-        // The run goes on after a start from the network, so its state and answer file stay, and no restart into the
+        // The run continues after a start from the network, so its state and answer file stay, and no restart into the
         // installed Windows is due.
         Assert.Equal(new RunResult(RunOutcome.Stopped), result);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
@@ -164,7 +164,7 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
 
         RunResult result = await run;
 
-        // The registration with the run token decides whether the run goes on, so its state and answer file stay.
+        // The registration with the run token decides whether the run continues, so its state and answer file stay.
         Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
         Assert.Equal(SequenceRunner.LostContactMessage, result.UnsentReport?.Error);
         Assert.Equal(["firmware after the answer file", "restore"], _tools.Calls[^2..]);
@@ -230,7 +230,7 @@ public sealed class SequenceRunnerServerTests : SequenceRunnerTestBase
         Task<RunResult> run = RunAsync(server, options: new() { Time = time, HeartbeatInterval = TimeSpan.FromSeconds(10) });
         await _tools.ApplyStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
 
-        // A proxy restarting, then a server that took too long: both pass on their own.
+        // A proxy restarting, then a server that took too long. Both go away on their own.
         int beats = 0;
         server.AnswerRunReports = (report, token) => report.State != DeploymentState.Running
             ? new AgentRunReportResult(token, "resume", null)

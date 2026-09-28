@@ -49,7 +49,7 @@ public sealed class ComputerNameViewModel : QuestionViewModel
         "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first.",
         ("max", L.Number(_question.MaxLength)));
 
-    // The agent's words about the name before.
+    // The agent's error message about the previous name.
     public string? Error => _question.Error;
 
     public bool HasError => !string.IsNullOrEmpty(_question.Error);

@@ -14,8 +14,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The pxe section as the page shows it: how each host that serves netboot applied it, the interfaces each found, and a
-// rescan that makes every host apply it again.
+// The pxe section as the page shows it. That's how each host that serves netboot applied it, the interfaces each host
+// found, and a rescan that makes every host apply it again.
 public sealed class SettingsPxeTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     [Fact]
@@ -58,8 +58,8 @@ public sealed class SettingsPxeTests(DdtApplication application) : IClassFixture
             TestContext.Current.CancellationToken)));
     }
 
-    // While the section has problems nothing is served; configuration that names the interfaces decides that a bind
-    // failure at startup stops the host.
+    // While the section has problems, nothing is served.
+    // If the configuration names the interfaces, a bind failure at startup stops the host.
     [Fact]
     public void TheListenersServeWhatTheSnapshotSays()
     {
@@ -79,7 +79,7 @@ public sealed class SettingsPxeTests(DdtApplication application) : IClassFixture
         Assert.True(configured.StopHostOnFailure);
     }
 
-    // A host writes its state after it applied, while the request that asked goes on.
+    // A host writes its state after it applied the section, while the request that asked for it continues.
     internal static async Task Eventually(Func<Task<bool>> condition)
     {
         for (int attempt = 0; attempt < 100 && !await condition(); attempt++)

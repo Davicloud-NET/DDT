@@ -77,20 +77,21 @@ function invalidate(queryClient: QueryClient, queryKey: QueryKey): void {
   void queryClient.invalidateQueries({ queryKey });
 }
 
-// What a machine would run is the server's answer to the rules and to whether the chosen sequence has problems.
+// What a machine would run is the server's answer. It depends on the rules and on whether the chosen sequence has
+// problems.
 function refetchResolutions(queryClient: QueryClient): void {
   invalidate(queryClient, sequenceResolutionsKey);
 }
 
-// A sequence's problems depend on the library, so an image or package that is gone reads the sequences again,
-// which their editors take without losing unsaved edits.
+// A sequence's problems depend on the library. So when an image or package is gone, the sequences are read again.
+// Their editors take the new copy without losing unsaved edits.
 function refetchSequenceProblems(queryClient: QueryClient): void {
   invalidate(queryClient, sequencesQuery.queryKey);
   invalidate(queryClient, sequenceDocumentsKey);
   refetchResolutions(queryClient);
 }
 
-// An upload that finished leaves the list of unfinished ones, which only the server keeps.
+// A finished upload drops out of the list of unfinished ones. Only the server keeps that list.
 function uploadFinished(queryClient: QueryClient): void {
   invalidate(queryClient, uploadsQuery.queryKey);
 }
@@ -149,12 +150,12 @@ function libraryEvents(queryClient: QueryClient) {
       queryClient.setQueryData(rulesQuery.queryKey, rules);
       refetchResolutions(queryClient);
     },
-    // Machine roles too, as a change of one changes what the rules that give it do.
+    // Machine roles too, because changing one changes what the rules that give it do.
     rolesChanged: (roles: MachineRoleView[]) => {
       queryClient.setQueryData(machineRolesQuery.queryKey, roles);
       refetchResolutions(queryClient);
     },
-    // An account carries no password, only whether one is set, and comes again when a sequence starts or stops
+    // An account carries no password, only whether one is set. It's pushed again when a sequence starts or stops
     // naming it.
     accountChanged: (account: AccountView) => {
       putAccount(queryClient, account);
@@ -184,7 +185,8 @@ function administrationEvents(queryClient: QueryClient) {
       removeTokensOf(queryClient, event.userIds);
     },
     // Administrators get every section, operators the deployment and machine ones. The overview counts problems and
-    // locks, so it is read again, and so is the directory after the ldap section changed: only it knows group names.
+    // locks, so it's read again. So is the directory after the ldap section changed, because only it knows group
+    // names.
     settingsChanged: (view: SettingsSectionView<unknown>) => {
       putSection(queryClient, view);
       invalidate(queryClient, settingsOverviewQuery.queryKey);
@@ -215,7 +217,8 @@ function administrationEvents(queryClient: QueryClient) {
           ? { ...view, servedHere: (current as { servedHere?: unknown }).servedHere ?? null }
           : view,
       );
-      // The boot image page shows the served certificate as the server endpoint describes it, in another shape.
+      // The boot image page shows the served certificate in another shape, as the server endpoint describes it. So
+      // that query is read again.
       invalidate(queryClient, serverCertificateQuery.queryKey);
     },
     // Administrators and the token's owner receive it.
@@ -234,8 +237,8 @@ export function cacheEventHandlers(queryClient: QueryClient) {
   } satisfies Record<string, EventHandler>;
 }
 
-// Everything the events would have patched is read once more, since what was sent while disconnected is lost.
-// Only the lists a page shows are read at once; the rest when a page next needs them.
+// Everything the events would have patched is read again, because what was sent while disconnected is lost. Only
+// the lists a page shows are read at once, and the rest when a page next needs them.
 export function reconnectKeys(): QueryKey[] {
   return [
     machinesQuery.queryKey,

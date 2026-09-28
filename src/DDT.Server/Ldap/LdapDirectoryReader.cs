@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Ldap;
 
-// The connections and searches a sign-in makes, for one version of the ldap section.
+// Makes the connections and searches a sign-in needs, for one version of the ldap section.
 internal sealed class LdapDirectoryReader(LdapOptions options, ILogger<LdapAuthenticator> logger)
 {
     public LdapConnection CreateConnection()
@@ -44,7 +44,8 @@ internal sealed class LdapDirectoryReader(LdapOptions options, ILogger<LdapAuthe
         return connection;
     }
 
-    // A second match is enough to refuse, so the search stops there; the directory answers that with a size limit error.
+    // A second match is enough to refuse, so the search stops there. The directory answers that with a size limit
+    // error.
     public (LdapLookupStatus Status, SearchResultEntry? Entry) FindUser(LdapConnection connection, string userName)
     {
         string filter = string.Format(CultureInfo.InvariantCulture, options.UserFilter, LdapFilter.EscapeValue(userName));
@@ -137,7 +138,8 @@ internal sealed class LdapDirectoryReader(LdapOptions options, ILogger<LdapAuthe
         return groups;
     }
 
-    // Null when the entry does not exist, or lies outside what the directory serves, as a referral.
+    // Returns null when the entry doesn't exist, or when it lies outside what the directory serves and comes back as a
+    // referral.
     public static string? ReadCommonName(LdapConnection connection, string distinguishedName)
     {
         try
@@ -153,7 +155,7 @@ internal sealed class LdapDirectoryReader(LdapOptions options, ILogger<LdapAuthe
         }
     }
 
-    // A search that reaches its size limit fails, with the entries it found up to there.
+    // A search that reaches its size limit fails, but still returns the entries it found up to that point.
     public static List<SearchResultEntry> Entries(LdapConnection connection, SearchRequest request)
     {
         SearchResponse response;

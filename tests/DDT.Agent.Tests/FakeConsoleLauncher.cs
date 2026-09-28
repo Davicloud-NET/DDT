@@ -6,8 +6,8 @@ using DDT.Agent.Consoles;
 
 namespace DDT.Agent.Tests;
 
-// Starts program, standing in for ddt-console.exe, as a process would: Exited completes with what it returns, or with
-// -1 once Stop ended it, and an exception it throws is a crash.
+// Starts program as a stand-in for ddt-console.exe, like a process would. Exited completes with what it returns, or
+// with -1 once Stop ended it. An exception it throws counts as a crash.
 internal sealed class FakeConsoleLauncher(Func<string, CancellationToken, Task<int>> program) : IConsoleLauncher
 {
     private readonly List<FakeConsoleProcess> _started = [];

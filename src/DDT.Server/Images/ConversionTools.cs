@@ -7,14 +7,14 @@ using System.Text;
 
 namespace DDT.Server.Images;
 
-// qemu-img for qcow2 and xz for .xz, found on PATH, and on Windows also where QEMU's installer puts qemu-img. The
-// container image installs both; find stands in for the search in tests.
+// Finds and runs qemu-img for qcow2 and xz for .xz. It looks on PATH, and on Windows also where QEMU's installer puts
+// qemu-img. The container image installs both. Tests pass their own find to replace the search.
 public sealed class ConversionTools(Func<string, string?> find)
 {
     public const string QemuImg = "qemu-img";
     public const string Xz = "xz";
 
-    // A tool that writes more than this to its error output has said all that helps.
+    // Only this much of a tool's error output is kept. Anything past it doesn't help.
     private const int MaxErrorCharacters = 4096;
 
     public ConversionTools()
@@ -22,11 +22,11 @@ public sealed class ConversionTools(Func<string, string?> find)
     {
     }
 
-    // The full path of tool, or null when it is not installed.
+    // Returns the full path of tool, or null when it isn't installed.
     public string? Find(string tool) => find(tool);
 
-    // Runs the tool and waits for it. With standardOutput, what it writes to its output goes into that file. Throws
-    // ConversionFailedException with the tool's last error line when it fails.
+    // Runs the tool and waits for it to exit. If standardOutput is set, the tool's output is written to that file.
+    // Throws ConversionFailedException with the tool's last error line when it fails.
     public async Task RunAsync(string path, IReadOnlyList<string> arguments, string? standardOutput, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(arguments);

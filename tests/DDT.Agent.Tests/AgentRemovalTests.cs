@@ -21,7 +21,8 @@ public sealed class AgentRemovalTests : IDisposable
 
     public AgentRemovalTests()
     {
-        // What the service control manager's deletion found left of the run.
+        // Records what was left of the run when a tool ran, which shows what the service control manager's deletion
+        // found.
         _toolRunner.Answer = (fileName, arguments) =>
         {
             _tools.Note($"run {Path.GetFileName(fileName)} {string.Join(' ', arguments)} with {string.Join(", ", Left())}");
@@ -77,7 +78,7 @@ public sealed class AgentRemovalTests : IDisposable
         Assert.True(Directory.Exists(Windows));
     }
 
-    // Also what the service finds when its run was never handed over completely, or its state is already gone.
+    // This is also what the service finds when its run was never fully handed over, or its state is already gone.
     [Fact]
     public async Task MarksOnlyWhatIsThere()
     {
@@ -95,8 +96,8 @@ public sealed class AgentRemovalTests : IDisposable
             _tools.Calls);
     }
 
-    // Whatever stops the removal half way, nothing left can act as the machine: the token goes by its own name before
-    // anything else. Here nothing can even list the run's directory.
+    // Whatever stops the removal halfway, nothing left behind can act as the machine. The token is deleted by its own
+    // name before anything else. Here nothing can even list the run's directory.
     [Fact]
     public async Task TheRunTokenGoesFirst()
     {
@@ -128,8 +129,8 @@ public sealed class AgentRemovalTests : IDisposable
         Assert.False(File.Exists(Path.Combine(run.FullName, "state.json")));
     }
 
-    // A script may leave a process behind, such as an installer's helper, which Windows ends when it restarts: the
-    // program it runs from a package goes then, and so does the folder it works in.
+    // A script may leave a process behind, like an installer's helper, which Windows ends when it restarts. The program
+    // it runs from a package is deleted then, and so is the folder it works in.
     [Fact]
     public async Task WhatAProcessStillHoldsGoesWhenWindowsNextStarts()
     {
@@ -153,7 +154,7 @@ public sealed class AgentRemovalTests : IDisposable
             }
         }
 
-        // The console host of cmd.exe can hold the directory a moment longer; a real restart ends every process.
+        // cmd.exe's console host can hold the directory a moment longer. A real restart ends every process.
         await WaitUntilFreeAsync(scripts);
 
         Assert.Equal(
@@ -174,7 +175,7 @@ public sealed class AgentRemovalTests : IDisposable
         Assert.False(Directory.Exists(DdtDirectory));
     }
 
-    // Whatever a link in the directory leads to is not DDT's to delete.
+    // Whatever a link in the directory points to isn't DDT's to delete.
     [Fact]
     public async Task ALinkIsMarkedItselfAndNeverFollowed()
     {
@@ -201,7 +202,8 @@ public sealed class AgentRemovalTests : IDisposable
         }
         finally
         {
-            // Unlike a recursive delete, which fails on a junction without an administrator, this deletes only the link.
+            // Unlike a recursive delete, which fails on a junction without an administrator, this deletes only the
+            // link.
             Directory.Delete(link);
         }
 
@@ -238,7 +240,7 @@ public sealed class AgentRemovalTests : IDisposable
         new AgentRemoval(Windows, _toolRunner, _tools, new AgentLog(new ImmediateTimeProvider(), _console))
             .RemoveAsync(TestContext.Current.CancellationToken);
 
-    // A process that works in directory until it is ended, and has started by the time this returns.
+    // Starts a process in directory that runs until it's ended. It has started by the time this returns.
     private static async Task<Process> StartInAsync(string directory)
     {
         Process process = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), "/d /c pause")
@@ -250,7 +252,7 @@ public sealed class AgentRemovalTests : IDisposable
             RedirectStandardOutput = true,
         }) ?? throw new InvalidOperationException("cmd.exe did not start.");
 
-        // pause says so once it waits.
+        // pause prints its prompt once it waits.
         char[] said = new char[1];
         await process.StandardOutput.ReadAsync(said, TestContext.Current.CancellationToken);
 

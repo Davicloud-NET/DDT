@@ -7,8 +7,8 @@ import { useId, useState, type ReactNode } from "react";
 
 import { CopyButton } from "./CopyButton";
 
-// A secret the server shows once, such as a one-time password or an API token: in the mono face on a well, whole and
-// selectable, with a key that copies it. Whoever shows it forgets it when its dialog closes.
+// A secret the server shows once, such as a one-time password or an API token. It's shown whole in the mono face on
+// a well, selectable, with a button that copies it. Whoever shows it forgets it when its dialog closes.
 export function SecretValue({ label, value }: { label: ReactNode; value: string }) {
   const id = useId();
   const [failed, setFailed] = useState(false);

@@ -8,7 +8,7 @@ import { DirectoryGroupSearch } from "@/users/DirectoryGroupSearch";
 
 import { FoundGroup } from "./FoundGroup";
 
-// Groups found by name, to add to the map. The server searches the directory as the section is saved.
+// Finds groups by name to add to the map. The server searches the directory with the saved settings.
 export function GroupFinder({
   ready,
   unsaved,

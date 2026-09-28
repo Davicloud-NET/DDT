@@ -46,7 +46,8 @@ public sealed class PauseStepRunnerTests
         _heartbeat.Update(SequenceStates.Start(TestRuns.RunId, definition) with { Steps = [new StepRunState(s_pause.Id, StepState.Running, null, Pass: 2)] });
     }
 
-    // The pause is reported at once with its message worked out, and the question at the machine continues it.
+    // The pause is reported right away with its message filled in, and answering the question at the machine continues
+    // it.
     [Fact]
     public async Task GoesOnOnceSomeoneContinuesAtTheMachine()
     {
@@ -62,8 +63,8 @@ public sealed class PauseStepRunnerTests
         Assert.Contains("Someone continued the run at this machine.", _console.ToString(), StringComparison.Ordinal);
     }
 
-    // A continue on the web for an earlier visit leaves the pause waiting; the one for this visit ends it, and the question
-    // at the machine goes away.
+    // A continue on the web for an earlier visit leaves the pause waiting. The one for this visit ends it, and the
+    // question at the machine goes away.
     [Fact]
     public async Task GoesOnOnceSomeoneContinuesThisVisitOnTheWeb()
     {
@@ -101,7 +102,7 @@ public sealed class PauseStepRunnerTests
         Assert.Contains("The run goes on after 10 minutes.", _console.ToString(), StringComparison.Ordinal);
     }
 
-    // Where nobody can type, the web or the time decides.
+    // Where nobody can type, the web or the timeout decides.
     [Fact]
     public async Task DoesNotAskWhereNobodyCanAnswer()
     {
@@ -114,8 +115,8 @@ public sealed class PauseStepRunnerTests
         Assert.Empty(console.Questions);
     }
 
-    // The console in DDT's session asks even while none is connected, as Windows starts the session when it will, and a
-    // console that connects later gets the question and continues the run.
+    // The console in DDT's session asks even while none is connected, because Windows starts the session whenever it
+    // wants. A console that connects later gets the question and continues the run.
     [Fact]
     public async Task AsksTheConsoleOfDdtsSessionBeforeItConnects()
     {
@@ -147,7 +148,7 @@ public sealed class PauseStepRunnerTests
         Assert.Contains("Someone continued the run at this machine.", _console.ToString(), StringComparison.Ordinal);
     }
 
-    // A stop ends the wait as a stop, which leaves the step running for the run to go on with after a restart.
+    // A stop ends the wait as a stop. That leaves the step running, so the run can continue with it after a restart.
     [Fact]
     public async Task AStopEndsTheWait()
     {

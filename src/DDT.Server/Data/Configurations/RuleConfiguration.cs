@@ -18,11 +18,11 @@ internal sealed class RuleConfiguration : IEntityTypeConfiguration<Rule>
         builder.Property(r => r.Revision).IsConcurrencyToken();
         builder.Property(r => r.UpdatedByName).HasMaxLength(256);
 
-        // Two rules never share a place. The index is checked for each row as it changes, so a reorder that swaps
-        // places first moves the rules it changes out of the way, in a save of its own.
+        // Two rules never share a position. The database checks the index for each row as it changes. So a reorder
+        // that swaps positions first moves the changed rules out of the way, in a separate save.
         builder.HasIndex(r => r.Position).IsUnique();
 
-        // A sequence that rules choose cannot be deleted, so no rule is left pointing nowhere.
+        // A sequence that a rule chooses can't be deleted, so no rule is left pointing at nothing.
         builder.HasOne<TaskSequence>().WithMany().HasForeignKey(r => r.TaskSequenceId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<DdtUser>().WithMany().HasForeignKey(r => r.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
     }

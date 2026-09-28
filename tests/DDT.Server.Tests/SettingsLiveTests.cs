@@ -14,7 +14,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Other browsers learn of a save through the hub, with the view the save answered, so they patch what they show.
+// Other browsers learn about a save through the hub.
+// They get the view the save answered with, so they can patch what they show.
 public sealed class SettingsLiveTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     [Fact]
@@ -58,7 +59,7 @@ public sealed class SettingsLiveTests(DdtApplication application) : IClassFixtur
         Assert.Equal("10.40.0.1", found.GetProperty("addresses")[0].GetString());
     }
 
-    // Operators may read deployment and machines, so they receive those, and nothing else of the page.
+    // Operators may read the deployment and machines sections, so they receive those and nothing else from the page.
     [Fact]
     public async Task OperatorsReceiveOnlyTheSectionsTheyMayRead()
     {

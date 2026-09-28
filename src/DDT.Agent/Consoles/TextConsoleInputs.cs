@@ -7,8 +7,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// A sequence's inputs at the text console, a prompt for each field in order. Choices are typed as numbers, which only
-// this console has, so it checks them itself; the agent checks the answers again, and asks again with what was wrong.
+// Asks a sequence's inputs at the text console, one prompt per field in order. Only this console types choices as
+// numbers, so it checks them itself. The agent checks the answers again, and asks again with what was wrong.
 internal sealed class TextConsoleInputs(ISignInPrompt prompt, AgentLog log)
 {
     public async Task<ConsoleAnswer?> AskAsync(InputsQuestion question, CancellationToken cancellationToken)
@@ -80,7 +80,7 @@ internal sealed class TextConsoleInputs(ISignInPrompt prompt, AgentLog log)
         }
     }
 
-    // The list comes again before every attempt, as with the sequences.
+    // The list is shown again before every attempt, as with the sequences.
     private async Task<ConsoleInputValue?> ChoiceAsync(ConsoleInput input, CancellationToken cancellationToken)
     {
         while (true)
@@ -189,8 +189,8 @@ internal sealed class TextConsoleInputs(ISignInPrompt prompt, AgentLog log)
         }
     }
 
-    // A user name, then its password where nobody sees it. An empty password goes back to the user name, as at the
-    // sign-in; an empty user name leaves an input that is not required unanswered.
+    // Asks for a user name, then its password without showing it. An empty password goes back to the user name, as at
+    // the sign-in. An empty user name leaves an optional input unanswered.
     private async Task<ConsoleInputValue?> AccountAsync(ConsoleInput input, CancellationToken cancellationToken)
     {
         string label = string.IsNullOrEmpty(input.Default) ? "User name" : $"User name [{input.Default}]";

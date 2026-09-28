@@ -14,8 +14,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Controls;
 
-// The run screen's sequence rail: a module per step in equal columns, with the phases above. Names drop out where the
-// columns get too narrow, since the heading above the rail names the running step anyway.
+// The sequence rail on the run screen. It shows a module per step in equal columns, with the phases above. Step names
+// are dropped when the columns get too narrow, because the heading above the rail names the running step anyway.
 public sealed class SequenceRail : Panel
 {
     public static readonly StyledProperty<IReadOnlyList<RailStep>?> StepsProperty =
@@ -141,7 +141,7 @@ public sealed class SequenceRail : Panel
             }
         }
 
-        // Half the gap either side, so two columns flashing at once meet but do not overlap.
+        // Each flash reaches half the gap to either side, so two columns flashing at once meet but don't overlap.
         for (int index = 0; index < _steps.Count; index++)
         {
             double x = index * (column + Gap);
@@ -158,7 +158,7 @@ public sealed class SequenceRail : Panel
         return Math.Max(4, (width - (count - 1) * Gap) / count);
     }
 
-    // The parts are kept where the rail has as many steps as before, so a running module keeps moving.
+    // If the rail has as many steps as before, the parts are kept, so a running module keeps moving.
     private void Rebuild()
     {
         IReadOnlyList<RailStep> steps = Steps ?? [];
@@ -210,7 +210,7 @@ public sealed class SequenceRail : Panel
             StartFlash(parts.Flash, step.State);
         }
 
-        // The state first, so a change fades from the module as it was, waiting or not.
+        // Set the state first, so a change fades from the module as it was, waiting or not.
         parts.Module.State = step.State;
         parts.Module.AwaitsSomeone = step.AwaitsSomeone;
         parts.Module.Percent = step.Percent;
@@ -251,7 +251,7 @@ public sealed class SequenceRail : Panel
         return text;
     }
 
-    // The classes Surfaces.axaml sets a step's number and name by.
+    // Sets the classes that Surfaces.axaml uses to style a step's number and name.
     private static void SetTone(TextBlock text, RailStep step)
     {
         text.Classes.Set("running", step.IsRunning);

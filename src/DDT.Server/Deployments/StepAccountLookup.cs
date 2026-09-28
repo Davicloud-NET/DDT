@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The account a step names: a stored account as it is now, or the account given for the input with the destination the
-// input declared when it was given. Nothing here logs a password.
+// The account a step names: a stored account as it is now, or the account given for the input, with the destination the
+// input declared at that time. Nothing here logs a password.
 public sealed class StepAccountLookup(DdtDbContext database, AccountProtector accounts, RunCredentials credentials)
 {
     // The input is looked up in the run's own copy of the sequence.

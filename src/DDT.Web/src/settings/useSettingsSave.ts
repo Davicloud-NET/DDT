@@ -18,21 +18,21 @@ import {
 
 interface SettingsSaveOptions<T> {
   section: SettingsSectionName;
-  // The draft to send; it throws while there is nothing to save, which fails the save.
+  // The draft to send. It throws while there's nothing to save, which fails the save.
   update: () => Omit<SettingsSectionUpdate<T>, "confirm">;
   headers: () => Record<string, string>;
   // Called once the saved section is in the cache.
   onSaved: () => void;
 }
 
-// A section's save through the server's checks: its warnings wait for a confirmation, fields that grant roles or
-// trust ask for the password again first, and any other refusal stays until the next change.
+// Saves a section through the server's checks. Warnings wait for a confirmation, and fields that grant roles or
+// trust ask for the password again first. Any other refusal stays until the next change.
 export function useSettingsSave<T>({ section, update, headers, onSaved }: SettingsSaveOptions<T>) {
   const queryClient = useQueryClient();
   const [refusal, setRefusal] = useState<SaveRefusal | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
   const [warnings, setWarnings] = useState<SettingsFinding[] | null>(null);
-  // The warnings this save has confirmed, which a save again after the password goes out with.
+  // The warnings this save has confirmed. The resend after the password includes them again.
   const [confirmed, setConfirmed] = useState<string[]>([]);
 
   const save = useMutation({

@@ -7,7 +7,7 @@ namespace DDT.Contracts.Sequences;
 // Where an account may be used. A password given for one destination is never sent to another.
 public sealed record AccountDestination
 {
-    // The domain the account joins.
+    // The domain the account may join machines to.
     public string? Domain { get; init; }
 
     // The share hosts it may connect to.

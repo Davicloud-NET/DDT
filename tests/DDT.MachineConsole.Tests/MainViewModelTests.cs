@@ -14,8 +14,8 @@ namespace DDT.MachineConsole.Tests;
 // The console as the agent drives it, without the views.
 public sealed class MainViewModelTests
 {
-    // The deployment setting, which the agent passes on once it has registered. What someone at the machine chose with F5
-    // stands.
+    // The language comes from the deployment setting, which the agent passes on once it has registered. A language
+    // someone picked with F5 at the machine is kept.
     [Fact]
     public void SpeaksTheLanguageTheServerNamesUnlessSomeoneChoseOne()
     {
@@ -169,7 +169,7 @@ public sealed class MainViewModelTests
         Assert.True(sequences.IsSending);
         Assert.False(sequences.SubmitCommand.CanExecute(null));
 
-        // A state of the same stage, such as a server problem, keeps it; the run moving on takes it away.
+        // A state of the same stage, like a server problem, keeps it. When the run moves on, it goes away.
         console.Show(Scenarios.State(ConsoleStage.Choosing));
         Assert.Same(sequences, console.Model.Screen);
 
@@ -178,8 +178,8 @@ public sealed class MainViewModelTests
         Assert.Null(console.Model.Question);
     }
 
-    // Continued on the web: the agent withdraws the question, and the run screen says the run still waits until the next
-    // state says it goes on.
+    // Continued on the web. The agent withdraws the question, and the run screen shows the run as waiting until the
+    // next state says it continues.
     [Fact]
     public void ClosesThePauseWhenItWasContinuedOnTheWeb()
     {
@@ -196,7 +196,7 @@ public sealed class MainViewModelTests
         Assert.Empty(console.Answers);
     }
 
-    // Enter pressed: the pause stays, its key off, until the run moves on to its next step.
+    // After Enter the pause stays, with its key off, until the run moves on to its next step.
     [Fact]
     public void KeepsAnAnsweredPauseUntilTheRunMovesOn()
     {
@@ -215,7 +215,7 @@ public sealed class MainViewModelTests
         Assert.Null(console.Model.Question);
     }
 
-    // The pause follows the run's state: the rail and the place on the path move with it.
+    // The pause follows the run's state. The rail and the position on the path move with it.
     [Fact]
     public void ShowsThePauseOverTheRunAsItChanges()
     {
@@ -245,8 +245,8 @@ public sealed class MainViewModelTests
         Assert.Equal("WARTET", run.Tag.Text);
     }
 
-    // Of a tree, the rail shows the leaves on the run's path in order: no group, IF or repeat node, and not the step of
-    // the branch the IF did not take.
+    // For a tree, the rail shows the leaves on the run's path in order. It skips group, IF and repeat nodes, and the
+    // step on the branch the IF didn't take.
     [Fact]
     public void ShowsTheStepsOnTheRunsPath()
     {
@@ -370,14 +370,14 @@ public sealed class MainViewModelTests
         // Before the agent has said anything.
         Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
 
-        // Over a question with the log open, which both stay.
+        // Over a question with the log open. Both stay.
         console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(4, Scenarios.Sequences);
         console.Model.Press(Key.F1);
         Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
         Assert.Equal(Overlay.Log, console.Model.OverlayShown);
         Assert.IsType<SequenceChoiceViewModel>(console.Model.Screen);
 
-        // Once the agent has ended, even while the restart is asked about, which is still asked.
+        // Once the agent has ended, even while the restart confirmation is open. The confirmation stays open.
         console.Model.Ended(LinkEnd.Closed);
         console.Model.Press(Key.F8);
         Assert.True(console.Model.Press(Key.F10, KeyModifiers.Shift));
@@ -437,8 +437,8 @@ public sealed class MainViewModelTests
         Assert.StartsWith("Die obere Tastenreihe", german.Model.Notice.Text, StringComparison.Ordinal);
     }
 
-    // Alt+F4 while the agent works would leave the machine to the text console, and passers-by press it. The console
-    // stays and says how to reach a prompt; once the agent has ended, closing is F9's job and goes through.
+    // Alt+F4 while the agent works would leave the machine with only the text console, and passers-by do press it. The
+    // console stays and says how to reach a prompt. Once the agent has ended, closing is F9's job and goes through.
     [Fact]
     public void RefusesToCloseWhileTheAgentWorksAndSaysHowToReachAPrompt()
     {
@@ -451,7 +451,7 @@ public sealed class MainViewModelTests
             "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt.",
             console.Model.Notice.Text);
 
-        // The next key has read it; the note leaves and keeps its words while it fades.
+        // The next key means the person read it. The note leaves and keeps its text while it fades.
         console.Model.Press(Key.F1);
         Assert.False(console.Model.Notice.IsShown);
         Assert.Equal(["Shift", "F10"], console.Model.Notice.Keys);
@@ -488,7 +488,7 @@ public sealed class MainViewModelTests
         Assert.True(console.Model.Press(Key.Escape));
         Assert.False(console.Model.HasOverlay);
 
-        // Esc with nothing open is the screen's own.
+        // With nothing open, Esc belongs to the screen.
         Assert.False(console.Model.Press(Key.Escape));
     }
 

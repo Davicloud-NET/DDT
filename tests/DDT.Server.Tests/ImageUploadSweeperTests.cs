@@ -46,7 +46,7 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
         return await database.ImageUploads.AnyAsync(u => u.Id == uploadId, TestContext.Current.CancellationToken);
     }
 
-    // A part file, or with pathOf another file of an upload that no session has.
+    // A part file of an upload that no session has. With pathOf, it's another file of such an upload.
     private string OrphanPart(TimeSpan age, Func<Guid, string>? pathOf = null)
     {
         string path = (pathOf ?? Store.PartPath)(Guid.NewGuid());
@@ -91,12 +91,12 @@ public sealed class ImageUploadSweeperTests(DdtApplication application) : IClass
         Assert.True(File.Exists(leftovers.FreshOrphan));
         Assert.True(File.Exists(leftovers.Foreign));
 
-        // Left for the next pass, which finds it free.
+        // It's left for the next pass, which finds it free.
         Assert.Equal(1, await sweeper.SweepOnceAsync(TestContext.Current.CancellationToken));
         Assert.False(await ExistsAsync(sessions.Busy.Id));
     }
 
-    // Abandoned, Busy and Finished were last updated two days ago; Finished and JustFinished completed.
+    // Abandoned, Busy and Finished were last updated two days ago. Finished and JustFinished are completed.
     private async Task<Sessions> SessionsAsync(SignedInClient administrator)
     {
         ImageUploadSession abandoned = await StartedUploadAsync(administrator);

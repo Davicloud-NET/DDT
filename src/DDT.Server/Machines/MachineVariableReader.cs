@@ -9,8 +9,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Server.Machines;
 
-// What rules test and templates read about a machine. A board maker's placeholder is no value (see HardwareModels), so
-// no condition or pattern such as PC-{{SerialNumber}} takes one. The phase is the one its agent registered from.
+// What rules test and templates read about a machine. A board maker's placeholder counts as no value (see
+// HardwareModels), so no condition or pattern such as PC-{{SerialNumber}} picks one up. The phase is the one its agent
+// registered from.
 public static class MachineVariableReader
 {
     public static MachineVariables Read(Machine machine)

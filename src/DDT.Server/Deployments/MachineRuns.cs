@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// A run assigned on the Machines page, or the machine's run stopped there, saved, then logged and pushed.
+// Assigns a run on the Machines page, or stops the machine's run there. The change is saved, then logged and pushed.
 internal sealed class MachineRuns(
     DdtDbContext database,
     RunQueries queries,
@@ -53,7 +53,7 @@ internal sealed class MachineRuns(
         return await CompleteAsync(decision, machine, before, ServerMessages.MachineRunChangedWhileStopping.With(), cancellationToken).ConfigureAwait(false);
     }
 
-    // Conflict is the refusal when the machine changed before the save.
+    // Conflict is the refusal if the machine changed before the save.
     private async Task<MachineOutcome> CompleteAsync(
         DeploymentDecision decision,
         Machine machine,

@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// A run as its page shows it. Never an answer to an Account input, nor who typed which password: only that an input
-// has its answer and who gave it.
+// A run as its page shows it. It never shows an answer to an Account input, or who typed which password. Only that an
+// input has an answer, and who gave it.
 public static class DeploymentViews
 {
     public static async Task<DeploymentView?> ReadAsync(DdtDbContext database, Guid runId, CancellationToken cancellationToken)
@@ -64,7 +64,7 @@ public static class DeploymentViews
             Pause(run, definition, steps));
     }
 
-    // Who gave an account for the run, never the account: the answer itself stays for the step that uses it.
+    // Who gave an account for the run, never the account itself. The answer is only for the step that uses it.
     private static async Task<IReadOnlyList<RunInputView>> InputsAsync(
         DdtDbContext database,
         Deployment run,
@@ -95,7 +95,7 @@ public static class DeploymentViews
         ];
     }
 
-    // The pause the run waits at, until someone continued it; the agent learns that with its next report.
+    // The pause the run waits at, until someone continues it. The agent learns that with its next report.
     private static RunPauseView? Pause(Deployment run, SequenceDefinition? definition, List<DeploymentStep> steps)
     {
         if (run is not { State: DeploymentState.Running, PauseStepId: { } stepId, PausePass: { } pass } || DeploymentSummaries.Continued(run))

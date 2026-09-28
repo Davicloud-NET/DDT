@@ -10,7 +10,7 @@ namespace DDT.Agent.Sequences;
 // continued on the web, and the run's values once the inputs it waited for are answered.
 internal sealed class RunAnswers
 {
-    // What the server may ask for, so a mistake neither floods it nor leaves the run waiting unseen.
+    // Limits on what the server may ask for, so a mistake neither floods it nor leaves the run waiting unseen.
     private static readonly TimeSpan s_shortestWait = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan s_longestWait = TimeSpan.FromMinutes(5);
 
@@ -33,7 +33,8 @@ internal sealed class RunAnswers
         }
     }
 
-    // The one that started the run, or the first after its inputs were answered. Null before any did.
+    // The values from the answer that started the run, or from the first answer after its inputs were answered. Null
+    // before either arrived.
     public IReadOnlyDictionary<string, string>? Values
     {
         get

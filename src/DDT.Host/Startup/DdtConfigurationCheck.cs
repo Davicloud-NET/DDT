@@ -14,11 +14,11 @@ using DDT.Server.Settings;
 
 namespace DDT.Host.Startup;
 
-// Stops the server on every configuration mistake DDT recognises, all in one message, before any section is used. A
-// key nothing reads binds nothing, so every key under DDT must be one DDT reads, whichever roles this process runs.
+// Stops the server before any section is used, with every configuration mistake DDT recognises in one message. A key
+// that nothing reads is silently ignored, so every key under DDT must be one that DDT reads, whatever roles run here.
 public static class DdtConfigurationCheck
 {
-    // Listed rather than bound with ErrorOnUnknownConfiguration, which on DdtOptions would refuse every section.
+    // Listed by hand, because binding DdtOptions with ErrorOnUnknownConfiguration would refuse every section.
     private static readonly string[] s_rootKeys =
         ["Roles", "StorePath", "RequireHttps", "Https", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
 
@@ -43,10 +43,10 @@ public static class DdtConfigurationCheck
         AddUnknownRootKeys(configuration, problems);
         PxeOptions? pxe = ReadSections(configuration, problems);
 
-        // The values of every settings section, as far as configuration sets them. The rest is on the settings page.
+        // Checks the values that configuration sets for each settings section. The rest are set on the settings page.
         problems.AddRange(ConfiguredSettings.FindProblems(configuration, roles.Contains(DeploymentRole.Pxe)));
 
-        // What configuration alone decides for netboot, checked only where it is served.
+        // Netboot settings that only configuration decides. They're only checked where netboot is served.
         if (pxe is not null && roles.Contains(DeploymentRole.Pxe))
         {
             Add(problems, PxeOptions.SectionName, PxeSetup.FindBootDirectoryProblems(pxe, options.StorePath, configuration));
@@ -68,8 +68,8 @@ public static class DdtConfigurationCheck
         }
     }
 
-    // The binder stops at the first object with an unknown key, so the nested objects are read on their own, and first:
-    // a section then reports the failure of its nested object again, which Report leaves out.
+    // The binder stops at the first object with an unknown key, so nested objects are read separately, and first. Their
+    // section then reports the same failure again, and Report skips that duplicate.
     private static PxeOptions? ReadSections(IConfiguration configuration, List<string> problems)
     {
         _ = Read(
@@ -106,8 +106,8 @@ public static class DdtConfigurationCheck
 
     private static void Strict(BinderOptions binder) => binder.ErrorOnUnknownConfiguration = true;
 
-    // The caller binds the concrete type, because the binding generator cannot bind a type parameter. A section with an
-    // unknown key is read again without the key check, so the key does not hide its values.
+    // The caller binds the concrete type, because the binding generator can't bind a type parameter. A section with an
+    // unknown key is read again without the key check, so the unknown key doesn't hide the section's values.
     private static T? Read<T>(
         IConfiguration configuration,
         string sectionName,
@@ -138,7 +138,8 @@ public static class DdtConfigurationCheck
         }
     }
 
-    // A value that cannot be converted fails both reads, and the failure of a nested object fails its section's read.
+    // A value that can't be converted fails both reads, and a failing nested object also fails its section's read. Each
+    // message is only reported once.
     private static void Report(List<string> problems, IConfigurationSection section, InvalidOperationException exception)
     {
         if (!problems.Exists(problem => problem.EndsWith(exception.Message, StringComparison.Ordinal)))

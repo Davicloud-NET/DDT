@@ -13,8 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.E2E;
 
-// A signed-in browser's connection to the live hub, which records the pushes for the machines it watches.
-// Long polling passes every message the hub sends through RecordingHandler, which keeps it for AssertClean.
+// Acts as a signed-in browser's connection to the live hub and records the pushes for the machines it watches.
+// With long polling, every message the hub sends goes through RecordingHandler, which keeps it for AssertClean.
 internal sealed class LiveRecorder : IAsyncDisposable
 {
     private readonly ConcurrentQueue<string> _traffic = new();
@@ -71,7 +71,7 @@ internal sealed class LiveRecorder : IAsyncDisposable
         }
     }
 
-    // The variables of the machine's run as each push had them, in the order they came.
+    // The variables of the machine's run from each push, in the order they arrived.
     public IReadOnlyList<IReadOnlyDictionary<string, string>> VariablePushes(Guid machineId)
     {
         lock (_lock)

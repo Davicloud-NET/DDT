@@ -12,7 +12,7 @@ import { logLevels } from "./log";
 import { levelLabel } from "./logLabels";
 import type { LogView } from "./useLogView";
 
-// The level chips, with the loaded lines of each level, and the search over the loaded lines.
+// The level chips, each with its count of loaded lines, and the search over the loaded lines.
 export function LogFilters({ view }: { view: LogView }) {
   const { t: translate } = useLingui();
   const loaded = view.all.length;

@@ -20,7 +20,7 @@ import { useFlowClipboard } from "./useFlowClipboard";
 import { useFlowSelection } from "./useFlowSelection";
 import { useInspector } from "./useInspector";
 
-// The flow builder's page: the sequence being edited, its tree and layout, what is chosen, and what edits it.
+// The flow builder page's state: the sequence being edited, its tree and layout, the chosen node, and the edits.
 export function useFlowBuilder(initial: SequenceView, readOnly: boolean) {
   const editor = useSequenceEditor(initial, readOnly);
   const phone = useMediaQuery("(max-width: 767px)");
@@ -65,7 +65,7 @@ export function useFlowBuilder(initial: SequenceView, readOnly: boolean) {
     collapsed,
     selection,
     selected,
-    // The palette and the outline's key add after the chosen node, or at the end.
+    // The palette and the outline's button add after the chosen node, or at the end.
     addAtSelection: (kind: StepKind) => {
       edits.add(slotAfter(index, selected?.node.id ?? null), kind);
     },

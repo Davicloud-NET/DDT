@@ -19,7 +19,7 @@ import { useLogView } from "./useLogView";
 
 export interface LogPanelProps {
   machineId: string;
-  // The run the page shows, whose lines the panel shows first.
+  // The run the page shows. The panel starts with this run's lines.
   runId: string | null;
   active: boolean;
   steps: readonly DeploymentStepView[];
@@ -29,7 +29,7 @@ export interface LogPanelProps {
 }
 
 // A machine's log as the agent sent it: the run's lines or all of the machine's, filtered by level, text and
-// step. New lines arrive live; scrolling up pauses following, and a bar says how many arrived meanwhile.
+// step. New lines arrive live. Scrolling up pauses following, and a bar says how many lines arrived since.
 export function LogPanel({
   machineId,
   runId,

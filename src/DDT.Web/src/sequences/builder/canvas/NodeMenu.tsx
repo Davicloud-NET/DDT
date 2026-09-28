@@ -21,7 +21,7 @@ interface NodeMenuProps {
   onAction: (action: NodeAction, id: string) => void;
 }
 
-// A node's menu, from its context menu or Shift+F10; a viewer only copies and collapses.
+// A node's menu, opened as its context menu or with Shift+F10. A viewer can only copy and collapse.
 export function NodeMenu({
   node,
   triggerRef,

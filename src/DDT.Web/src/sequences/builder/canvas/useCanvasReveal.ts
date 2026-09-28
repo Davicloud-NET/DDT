@@ -8,7 +8,7 @@ import type { FlowViewportHandle } from "@/ui/FlowViewport";
 
 import type { FlowLayout } from "../../flow/flowGeometry";
 
-// Asks the canvas to show a node, and to give it the focus unless the page takes that elsewhere.
+// Asks the canvas to show a node and focus it, unless the page moves the focus somewhere else.
 export interface FlowReveal {
   id: string;
   focus: boolean;
@@ -17,7 +17,7 @@ export interface FlowReveal {
   count: number;
 }
 
-// Shows the node each new request names, and focuses it where the request asks.
+// Shows the node each new request names, and focuses it if the request asks for that.
 export function useCanvasReveal(
   reveal: FlowReveal | null,
   layout: FlowLayout,
@@ -39,8 +39,8 @@ export function useCanvasReveal(
       return;
     }
 
-    // A menu that closes keeps the rest of the page out of reach until it is gone, so the focus is given again on the
-    // next frames until the node has it.
+    // A closing menu keeps the rest of the page out of reach until it's gone. So the focus is set again on the next
+    // frames until the node has it.
     let frame = 0;
     let tries = 0;
     const give = () => {
@@ -58,7 +58,7 @@ export function useCanvasReveal(
     return () => {
       cancelAnimationFrame(frame);
     };
-    // Only a new request moves the view; a new layout alone does not.
+    // Only a new request moves the view. A new layout alone doesn't.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reveal]);
 }

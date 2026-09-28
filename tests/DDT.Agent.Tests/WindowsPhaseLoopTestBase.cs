@@ -33,7 +33,7 @@ public abstract class WindowsPhaseLoopTestBase : IDisposable
 
     private protected int Restarts() => _tools.Calls.Count(call => call == "reboot");
 
-    // For what happens on the loop's own thread, which a test cannot await.
+    // For work on the loop's own thread, which a test can't await.
     private protected static async Task WaitForAsync(Func<bool> condition)
     {
         using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -55,8 +55,8 @@ public abstract class WindowsPhaseLoopTestBase : IDisposable
     private protected AgentRun Run(params SequenceStep[] inWindows) =>
         TestRuns.Run([.. TestRuns.InstallWindows, .. inWindows], _image, DeploymentState.Running);
 
-    // As the hand-over leaves the run: the steps in Windows PE done, the answer file for setup, the run token, and one
-    // start of Windows PE too many on the way.
+    // The run as the hand-over leaves it: the WinPE steps done, the answer file for setup, the run token, and one extra
+    // return to WinPE on the way.
     private protected async Task HandOverAsync(AgentRun run, SequencePhase phase = SequencePhase.Windows)
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;

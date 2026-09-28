@@ -29,13 +29,13 @@ import { useHistoryKeys } from "./useHistoryKeys";
 import { useSequenceAutosave } from "./useSequenceAutosave";
 import { useStepCatalog } from "./useStepCatalog";
 
-// A node taken out of the flow, and the gap it left, so it can be put back there.
+// A node removed from the flow, and the gap it left, so it can be put back there.
 export interface RemovedNode {
   node: SequenceStep;
   slot: Slot;
 }
 
-// The node with the gap it leaves when it is taken out, or null where the draft has no such node.
+// The node with the gap it leaves when removed. Null if the draft has no such node.
 function removal(steps: SequenceStep[], nodeId: string): RemovedNode | null {
   const index = indexTree(steps);
   const node = index.byId.get(nodeId)?.node;
@@ -44,7 +44,7 @@ function removal(steps: SequenceStep[], nodeId: string): RemovedNode | null {
   return node === undefined || slot === undefined ? null : { node, slot };
 }
 
-// A removed node's gap, or the end of the flow where its container is gone too.
+// A removed node's gap, or the end of the flow if its container is gone too.
 function restoredSlot(steps: SequenceStep[], slot: Slot): Slot {
   const index = indexTree(steps);
 
@@ -57,7 +57,7 @@ function restoredSlot(steps: SequenceStep[], slot: Slot): Slot {
       };
 }
 
-// The newer copy someone else saved, which this page shows since it had nothing unsaved.
+// The newer copy someone else saved. This page shows it because it had nothing unsaved.
 function savedElsewhereOf(
   latest: SequenceView,
   initialRevision: number,
@@ -71,7 +71,7 @@ function savedElsewhereOf(
     : null;
 }
 
-// The copy another administrator saved, while this page's own edits are not saved over it.
+// The copy another administrator saved, while this page's own edits haven't been saved over it.
 function conflictOf(autosave: AutosaveSnapshot<SequenceDraft>, latest: SequenceView) {
   const theirs = autosave.theirs;
 
@@ -83,8 +83,8 @@ function conflictOf(autosave: AutosaveSnapshot<SequenceDraft>, latest: SequenceV
     : null;
 }
 
-// One sequence being edited: the draft, saved as it changes, and the server's copy, which other administrators' saves
-// replace live while nothing is unsaved. Read only, nothing changes it.
+// One sequence being edited. It holds the draft, which is saved as it changes, and the server's copy. Other
+// administrators' saves replace that copy live while nothing is unsaved. When read-only, nothing changes it.
 export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
   // The copy the page opened with. Later copies arrive through the query, so a new one from the caller is ignored.
   const [initial] = useState(first);
@@ -139,7 +139,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     }, typing === null);
   };
 
-  // Goes a step back or forward, saved at once like any edit that is not typing.
+  // Goes one step back or forward. It's saved at once, like any edit that isn't typing.
   const step = (direction: HistoryCommand) => {
     if (locked) {
       return;
@@ -184,7 +184,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     },
     canUndo: !locked && history.past.length > 0,
     canRedo: !locked && history.future.length > 0,
-    // Takes a node out of the flow, wherever it is, and answers it with the gap it left.
+    // Removes a node from the flow, wherever it is, and returns it with the gap it left.
     remove: (nodeId: string): RemovedNode | null => {
       const removed = locked ? null : removal(draft.steps, nodeId);
 
@@ -194,7 +194,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
 
       return removed;
     },
-    // Puts a removed node back in its gap, or at the end where its container is gone too.
+    // Puts a removed node back in its gap, or at the end if its container is gone too.
     restore: ({ node, slot }: RemovedNode) => {
       edit({ type: "insertNodes", slot: restoredSlot(newest.current.steps, slot), nodes: [node] });
     },

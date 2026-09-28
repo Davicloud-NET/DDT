@@ -6,7 +6,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// What a StateTag shows. Of sets the text in capitals, as every tag is set.
+// What a StateTag shows. Of sets the text in capitals, like every tag.
 public sealed record Tag(string Text, TagTone Tone)
 {
     public bool IsRun => Tone == TagTone.Run;

@@ -10,7 +10,7 @@ public sealed record DomainJoinCheckView(
     string? Domain,
     string? UserName,
     string? Controller,
-    // The organizational unit or the default Computers container; null when the check stopped before it.
+    // The organizational unit or the default Computers container. Null when the check stopped before getting there.
     string? Container,
     // What was checked, in order, and what to change.
     IReadOnlyList<DomainJoinFinding> Findings,

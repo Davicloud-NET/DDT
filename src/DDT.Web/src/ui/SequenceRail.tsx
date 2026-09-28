@@ -8,8 +8,8 @@ import { cx } from "./cx";
 import { RailModule } from "./RailModule";
 import { railColumns } from "./railColumns";
 
-// The sequence rail has one module per step, the same part in a table row, on a run's page, on the console in
-// Windows PE and along the top of a flow's node. A paused step waits for someone, so it takes the signal colour.
+// The sequence rail has one module per step. It's the same part in a table row, on a run's page, on the console in
+// WinPE and along the top of a flow node. A paused step waits for someone, so it takes the signal colour.
 export type RailStepState = "done" | "running" | "failed" | "skipped" | "waiting" | "paused";
 
 export interface RailStep {
@@ -21,8 +21,8 @@ export interface RailStep {
   meta?: ReactNode;
   // A finding on a step of a sequence being edited: a problem keeps the sequence from running, a warning does not.
   mark?: "problem" | "warning";
-  // The step's number in its sequence, where it is not its place on the rail: a run's rail leaves out the steps of the
-  // branches it did not take.
+  // The step's number in its sequence, if it differs from its place on the rail. A run's rail leaves out the steps of
+  // branches the run didn't take.
   number?: number;
 }
 

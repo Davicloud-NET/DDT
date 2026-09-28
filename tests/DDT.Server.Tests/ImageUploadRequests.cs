@@ -47,7 +47,7 @@ internal static class ImageUploadRequests
     public static Task<HttpResponseMessage> CompleteUploadAsync(this SignedInClient client, Guid uploadId) =>
         client.PostAsync($"{Uploads}/{uploadId}/complete");
 
-    // A completion the client can give up on, as a browser behind a proxy's read timeout does.
+    // Completes an upload, but can give up like a browser behind a proxy's read timeout does.
     public static async Task<HttpResponseMessage> CompleteUploadOrGiveUpAsync(this SignedInClient client, Guid uploadId, CancellationToken giveUp)
     {
         ArgumentNullException.ThrowIfNull(client);

@@ -43,7 +43,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         _client = NewClient();
     }
 
-    // Before the agent starts a newer one: Windows PE's next start reuses the client ports, and would collide with
+    // Called before the agent starts a newer one. WinPE's next start reuses the client ports, which would collide with
     // connections a restart left open on the server. Later requests open new connections.
     public void CloseConnections() => Interlocked.Exchange(ref _client, NewClient()).Dispose();
 
@@ -121,8 +121,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             AgentJsonContext.Default.AgentAnswersResult,
             cancellationToken);
 
-    // A GET of the first byte rather than HEAD: an answer to HEAD has no body, so a refusal would lose the server's
-    // reason. Only the headers are read, in case a server ignores the range and sends the whole file.
+    // Sends a GET for the first byte instead of a HEAD. An answer to HEAD has no body, so a refusal would lose the
+    // server's reason. Only the headers are read, in case a server ignores the range and sends the whole file.
     public async Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = Request(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token);
@@ -136,7 +136,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             : response.Content.Headers.ContentLength;
     }
 
-    // Without a deadline: an image takes far longer than a request may, and the caller catches a stalled read.
+    // No deadline here. An image takes far longer than a request may, and the caller catches a stalled read.
     public async Task<AgentImageStream> OpenRunFileAsync(Guid machineId, string token, RunFileRange file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -206,8 +206,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     private HttpClient NewClient()
     {
-        // No proxy: Windows PE has none, and looking for one loads WinHTTP for nothing. The connect timeout covers
-        // the name lookup and the TLS handshake too, and ServerConnection notes which of them it ran out in.
+        // No proxy. WinPE has none, and looking for one loads WinHTTP for nothing. The connect timeout covers the name
+        // lookup and the TLS handshake too. ServerConnection notes which of them ran out of time.
         SocketsHttpHandler handler = new()
         {
             UseProxy = false,
@@ -218,7 +218,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
         _tls?.Apply(handler.SslOptions);
 
-        // SendAsync gives each request its deadline instead: HttpClient's own timeout fails a request the same way the
+        // SendAsync gives each request its deadline instead. HttpClient's own timeout fails a request the same way the
         // connect timeout does, and the log has to say which of the two it was.
         return new HttpClient(handler) { BaseAddress = _serverUrl, Timeout = Timeout.InfiniteTimeSpan };
     }
@@ -231,7 +231,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
     }
 
-    // Null when the server answers 404, as one that offers no such release does.
+    // Returns null when the server answers 404, which it does when it offers no such release.
     private async Task<T?> GetUnlessMissingAsync<T>(string route, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
         where T : class
     {
@@ -259,8 +259,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return await ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
     }
 
-    // A download can wait in the server's queue behind a whole lab for longer than a request may take, so only its own
-    // deadline bounds it.
+    // A download can wait in the server's queue behind a whole lab for longer than a request may take. So only the
+    // download timeout limits it.
     private async Task DownloadAsync(string route, Stream destination, CancellationToken cancellationToken)
     {
         using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -313,8 +313,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         return response;
     }
 
-    // A timeout becomes a ServerTimeoutException that says which one it was, and a connection that failed says why. A
-    // cancelled token stays a cancellation.
+    // A timeout becomes a ServerTimeoutException that says which timeout it was. A failed connection says why it
+    // failed. A cancelled token stays a cancellation.
     private async Task<HttpResponseMessage> SendWithDeadlineAsync(
         HttpRequestMessage request,
         HttpCompletionOption completion,
@@ -338,8 +338,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         catch (OperationCanceledException exception) when (exception.InnerException is TimeoutException
             && !cancellationToken.IsCancellationRequested)
         {
-            // SocketsHttpHandler's connect timeout. The address is named, as a mistyped one is the likeliest cause, and
-            // so is how far the connection got.
+            // SocketsHttpHandler's connect timeout. The message names the address, because a typo there is the
+            // likeliest cause. It also says how far the connection got.
             string server = $"{_serverUrl.Host}:{_serverUrl.Port}";
             string limit = Durations.Describe(_connectTimeout);
 

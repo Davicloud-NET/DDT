@@ -21,13 +21,13 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's motion on the real views, on a test clock with a frame every 16 ms. With DDT_CONSOLE_FILMSTRIPS naming
-// a folder, the frames of each transition are saved there for a person to look at.
+// The console's motion on the real views, on a test clock with a frame every 16 ms. If DDT_CONSOLE_FILMSTRIPS names a
+// folder, the frames of each transition are saved there for a person to look at.
 public sealed class MotionTests
 {
     private static readonly TimeSpan s_frame = TimeSpan.FromMilliseconds(16);
 
-    // A few frames more than a transition takes: one that follows another starts on the frame after.
+    // A few frames longer than a transition takes, because a transition that follows another starts on the next frame.
     private static readonly TimeSpan s_settle = TimeSpan.FromMilliseconds(64);
 
     private static string? FilmFolder => Environment.GetEnvironmentVariable("DDT_CONSOLE_FILMSTRIPS");
@@ -44,7 +44,7 @@ public sealed class MotionTests
         Frame();
         ContentPresenter after = Page(window);
 
-        // The new screen waits, clear, while the old one leaves, and that takes no click meanwhile.
+        // The new screen waits, transparent, while the old one leaves. The old one takes no clicks in the meantime.
         Assert.NotSame(before, after);
         Assert.Equal(0, after.Opacity);
         Assert.True(before.IsVisible);
@@ -126,7 +126,7 @@ public sealed class MotionTests
         KeyCap enter = Caps(window, "Enter").Single();
         KeyCap escape = Caps(window, "Esc").Single();
 
-        // Erase works only once the word is typed, so its Enter stays up; Esc goes back and goes down.
+        // Erase works only once the word is typed, so its Enter key stays up. Esc goes back, so its key goes down.
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
 
@@ -217,7 +217,7 @@ public sealed class MotionTests
         Run = Scenarios.Run([ConsoleStepState.Done, ConsoleStepState.Done, ConsoleStepState.Running, .. Enumerable.Repeat(ConsoleStepState.Pending, 5)], 2, 8),
     };
 
-    // With motion on, as the console runs it, for this test only.
+    // Turns motion on, like in the real console, for this test only.
     private static Task Moving(Action test) => Headless.RunAsync(() =>
     {
         Motion.IsEnabled = true;
@@ -241,7 +241,7 @@ public sealed class MotionTests
         return window;
     }
 
-    // One frame: what was posted runs, layout, and the animations take their next step.
+    // One frame: posted work runs, then layout, then the animations take their next step.
     private static void Frame()
     {
         Dispatcher.UIThread.RunJobs();
@@ -249,7 +249,7 @@ public sealed class MotionTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    // Frames for that long, in real time, as the console would draw them.
+    // Draws frames for that long, in real time, like the console would.
     private static void Run(TimeSpan time)
     {
         Stopwatch clock = Stopwatch.StartNew();
@@ -294,8 +294,8 @@ public sealed class MotionTests
     private static Border[] Flashes(Window window) =>
         [.. window.Find<SequenceRail>("Rail").Children.OfType<Border>().Where(border => border.Classes.Contains("flash")).Reverse()];
 
-    // The frames of a transition at those times after it starts, saved as <name>/<ms>.png. Its animations run on a
-    // clock of the test's own, so each frame is exactly where the time says.
+    // Saves the frames of a transition at those times after it starts, as <name>/<ms>.png. Its animations run on the
+    // test's own clock, so each frame is exactly at the given time.
     private static void Film(string name, int[] times, Func<TestConsole> before, Action<TestConsole, MainWindow> change)
     {
         string folder = Path.Combine(FilmFolder!, name);
@@ -340,7 +340,7 @@ public sealed class MotionTests
 
         public TimeSpan Now { get; private set; }
 
-        // A frame every 16 ms for that long, as at 60 frames a second, with what each frame posts run after it.
+        // A frame every 16 ms for that long, like at 60 frames a second. Whatever each frame posts runs after it.
         public void Play(TimeSpan time)
         {
             TimeSpan until = Now + time;

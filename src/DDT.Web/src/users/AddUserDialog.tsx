@@ -11,7 +11,7 @@ import { AddUserForm } from "./AddUserForm";
 import { useAddUser } from "./useAddUser";
 import type { CreatedUser } from "./users";
 
-// Adds a local account. The server makes up its password, which the page shows once when this dialog has closed.
+// Adds a local account. The server generates its password, and the page shows it once after this dialog closes.
 export function AddUserDialog({
   onClose,
   onCreated,

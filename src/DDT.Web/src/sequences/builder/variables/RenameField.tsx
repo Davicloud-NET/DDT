@@ -14,8 +14,8 @@ import type { FlowEdit } from "../../flow/flowEdits";
 import type { SequenceDraft } from "../../sequenceDraft";
 import type { OpenRow } from "./declarationRows";
 
-// A name is changed everywhere at once: in templates, conditions, Set variable steps and account references, and for
-// the variable and the input of that name alike. The field holds what is typed until then.
+// A rename changes the name everywhere at once: in templates, conditions, Set variable steps and account references,
+// for both the variable and the input of that name. Until then the field holds what's typed.
 export function RenameField({
   list,
   index,

@@ -7,8 +7,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Slot, TreeIndex } from "../../flow/flowTree";
 import { slotId } from "./slotId";
 
-// The two menus of the canvas, a slot's kinds to add and a node's actions, each opened from the element it belongs
-// to. addAfter opens the kinds of the gap after a node, as that node's menu asks.
+// The canvas's two menus: a slot's kinds to add, and a node's actions. Each opens from the element it belongs to.
+// addAfter opens the kinds of the gap after a node, when that node's menu asks for it.
 export function useCanvasMenus(
   addAfter: string | null,
   index: TreeIndex,

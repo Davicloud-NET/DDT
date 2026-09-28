@@ -41,7 +41,7 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <SetVariableFields step={step} {...rest} />;
     case "pause":
       return <PauseFields step={step} {...rest} />;
-    // A container's own fields are the inspector's.
+    // The inspector shows a container's own fields.
     case "group":
     case "if":
     case "repeat":

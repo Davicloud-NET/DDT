@@ -29,7 +29,7 @@ public sealed class HeaderViewModel(Localizer localizer) : ObservableObject
         _ => localizer.F("Connected to {server}", ("server", Say.Host(_state.Server.Address))),
     };
 
-    // In DDT's session, while the agent's service restarts with Windows.
+    // True in DDT's session while the agent's service restarts with Windows.
     public bool IsDetached
     {
         get => _isDetached;
@@ -44,7 +44,7 @@ public sealed class HeaderViewModel(Localizer localizer) : ObservableObject
 
     public Tag DryRunTag => Tag.Of(localizer.T("Dry run"), TagTone.Attention);
 
-    // Null without a logo, or when the file is not a picture the console can draw.
+    // Null if there's no logo, or if the file isn't a picture the console can draw.
     public Bitmap? Logo { get; private set; }
 
     public bool HasLogo => Logo is not null;
@@ -63,7 +63,7 @@ public sealed class HeaderViewModel(Localizer localizer) : ObservableObject
         Raise(nameof(Connection));
     }
 
-    // Read once for each path, since the agent names a new path for a new logo.
+    // Read once per path, because the agent sends a new path for a new logo.
     public void ShowLogo(string? path)
     {
         if (path == _logoPath)

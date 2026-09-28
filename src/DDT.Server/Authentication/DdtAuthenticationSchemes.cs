@@ -12,7 +12,7 @@ public static class DdtAuthenticationSchemes
     // A user's API token, the ddt_ secret in an Authorization: Bearer header.
     public const string ApiToken = "DDT.ApiToken";
 
-    // The API token when the request carries a bearer token, the session cookie otherwise, never both. So a token
-    // request may skip the CSRF filters, and a cookie riding along with it grants nothing.
+    // Uses the API token when the request carries a bearer token, and the session cookie otherwise, never both. So a
+    // token request may skip the CSRF filters, and a cookie riding along with it grants nothing.
     public const string User = "DDT.User";
 }

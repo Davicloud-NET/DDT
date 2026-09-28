@@ -11,14 +11,14 @@ namespace DDT.Contracts.Deployments;
 public sealed record DeploymentSummary(
     Guid Id,
     Guid? SequenceId,
-    // The sequence's name when it was assigned, or the image's for a deployment that predates task sequences, which
-    // has no steps.
+    // The sequence's name when it was assigned. A deployment that predates task sequences has no steps and uses the
+    // image's name.
     string Title,
     DeploymentState State,
     DeploymentSource Source,
     string? RequestedBy,
     int StepCount,
-    // Counts from 0. It, StepName, Percent and Phase are the step the agent reported last.
+    // Counts from 0. This, StepName, Percent and Phase describe the step the agent reported last.
     int? StepIndex,
     string? StepName,
     int Percent,
@@ -29,6 +29,6 @@ public sealed record DeploymentSummary(
     DateTimeOffset? FinishedUtc,
     DateTimeOffset UpdatedUtc,
     string? Error,
-    // The run needs someone, for answers to its inputs or to continue a pause.
+    // The run needs someone to answer its inputs or to continue a pause.
     bool Waiting = false,
     string? PauseMessage = null);

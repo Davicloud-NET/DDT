@@ -6,15 +6,15 @@ using System.Security.Cryptography;
 
 namespace DDT.Agent.Deployment;
 
-// The agent carries libwim-15.dll as a resource, so one executable is all the boot image and the self-update
-// deliver. The runtime looks for the library next to the executable, which is where it is written.
+// The agent carries libwim-15.dll as a resource, so the boot image and the self-update only deliver one executable.
+// The runtime looks for the library next to the executable, so that's where it's written.
 public static class WimLibraryFile
 {
     public const string FileName = "libwim-15.dll";
 
-    // Writes the carried library only where there is none. One that is there is used as it is, even when it
-    // differs: wimlib's licence, the LGPL, lets users run the agent with a libwim they built themselves. Must run
-    // before the first wimlib call: a loaded library cannot be replaced.
+    // Only writes the carried library when there's none. A library that's already there is used as it is, even when
+    // it differs. wimlib's licence, the LGPL, lets users run the agent with a libwim they built themselves. Must run
+    // before the first wimlib call, because a loaded library can't be replaced.
     public static WimLibraryInUse EnsureExtracted(string directory)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);

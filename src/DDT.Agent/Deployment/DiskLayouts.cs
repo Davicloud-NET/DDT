@@ -47,8 +47,8 @@ internal sealed class DiskLayouts(AgentLog log)
         return (int)BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(number + 4, 4));
     }
 
-    // Only a cleanup depends on it: a firmware boot entry for an erased EFI system partition is reused instead of
-    // staying behind, dead.
+    // Only a cleanup depends on it. A firmware boot entry for an erased EFI system partition is reused instead of
+    // staying behind as a dead entry.
     public IReadOnlyList<Guid> ReadSystemPartitionIds(int number)
     {
         using SafeFileHandle handle = OpenDisk(number);
@@ -77,7 +77,7 @@ internal sealed class DiskLayouts(AgentLog log)
         }
     }
 
-    // Only shown to the technician, so a layout that cannot be read counts as none rather than hiding the disk.
+    // Only shown to the technician, so a layout that can't be read counts as no partitions rather than hiding the disk.
     public int ReadPartitionCount(SafeFileHandle handle, int number)
     {
         if (ReadLayout(handle, number) is not { } layout)
@@ -97,7 +97,7 @@ internal sealed class DiskLayouts(AgentLog log)
         }
     }
 
-    // Null, after a warning, when the layout cannot be read.
+    // Logs a warning and returns null when the layout can't be read.
     public unsafe byte[]? ReadLayout(SafeFileHandle handle, int number)
     {
         int size = DriveLayoutReader.HeaderLength + (16 * DriveLayoutReader.EntryLength);

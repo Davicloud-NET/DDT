@@ -10,8 +10,9 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Deployments;
 
-// Asks the domain, as the join account, whether a Join the domain step would get its computer account, before a machine
-// finds out an hour into its run. The settings are read on every check, so a change counts at once.
+// Asks the domain, as the join account, whether a Join the domain step would get its computer account. That's better
+// than a machine finding out an hour into its run. The settings are read on every check, so a change takes effect at
+// once.
 public sealed class DomainJoinCheck(IDomainDirectory directory, DdtSettings settings, TimeProvider timeProvider)
 {
     public async Task<DomainJoinCheckView> RunAsync(string? organizationalUnit, CancellationToken cancellationToken)

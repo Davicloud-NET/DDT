@@ -22,7 +22,7 @@ public ref struct DhcpOptionReader
 
     public ReadOnlySpan<byte> Value { get; private set; }
 
-    // The block ended inside an option rather than at End or the buffer's edge, which the parser must not take for a
+    // The block ended inside an option instead of at End or the buffer's edge. The parser mustn't treat that as a
     // whole message.
     public bool Truncated { get; private set; }
 

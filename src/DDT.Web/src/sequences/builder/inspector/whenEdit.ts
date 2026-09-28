@@ -8,8 +8,8 @@ import { changedCondition, type ConditionChange } from "../../flow/conditionTree
 import type { SequenceEdit } from "../../sequenceEdits";
 import type { SequenceStep } from "../../sequences";
 
-// The edit of a change to a node's when. The conditions of versions 1 and 2 show with the when as one tree, and become
-// the when at the first change; null when the change does not fit that tree.
+// Turns a change to a node's when into an edit. Version 1 and 2 conditions show up in one tree with the when, and
+// they become the when at the first change. Null if the change doesn't fit that tree.
 export function whenEdit(
   node: SequenceStep,
   path: readonly number[],

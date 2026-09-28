@@ -23,7 +23,7 @@ export interface DialogProps {
   footer?: ReactNode;
   // A band above the title, for dialogs that erase something.
   hazard?: boolean;
-  // While true, Escape and a click outside do not close it, as during a save.
+  // While true, Escape and a click outside don't close it, for example during a save.
   isBusy?: boolean;
   width?: "md" | "lg";
   // The id of what a screen reader reads out with the title as the dialog opens.

@@ -10,8 +10,8 @@ import { TextField } from "@/ui/TextField";
 
 import { gigabytesOf, megabytesOf } from "../conditionValues";
 
-// Memory is entered in GB. What is typed stays while the field is typed in, so "1." is not turned into "1" before the
-// next digit.
+// Memory is entered in GB. The typed text is kept while someone types in the field, so "1." doesn't turn into "1"
+// before the next digit.
 export function MemoryValue({
   label,
   field,

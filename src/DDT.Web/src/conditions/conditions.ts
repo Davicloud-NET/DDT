@@ -17,9 +17,9 @@ import { operatorText } from "./conditionOperators";
 import { sameName, subjectFor, type Subject } from "./conditionSubjects";
 import { gigabytesOf, listOf } from "./conditionValues";
 
-// The words a condition reads as, in the flow builder and in the rules.
+// How a condition reads in words, in the flow builder and in the rules.
 
-// A value as a sentence says it: yes or no, memory in GB, the label of a choice, a list joined.
+// A value the way a sentence says it: yes or no, memory in GB, the label of a choice, or a joined list.
 export function valueText(subject: Subject, value: string): string {
   const one = (item: string) => {
     switch (subject.kind) {
@@ -114,7 +114,7 @@ export function conditionSummary(node: ConditionNode | null, subjects: readonly 
 
 export type ConditionUse = "when" | "test" | "until" | "rule";
 
-// What a condition means where it is, as the builder says it under its rows.
+// What the condition means where it's used. The builder shows this under its rows.
 export function conditionSentence(
   use: ConditionUse,
   node: ConditionNode | null,
@@ -142,7 +142,7 @@ export const MAX_CONDITION_DEPTH = 4;
 
 export const groupKinds: readonly ConditionGroupKind[] = ["all", "any", "none"];
 
-// A group as its choice in the builder says it.
+// The label of a group kind, as the builder's choice shows it.
 export function groupLabel(kind: ConditionGroupKind): string {
   switch (kind) {
     case "all":
@@ -154,7 +154,7 @@ export function groupLabel(kind: ConditionGroupKind): string {
   }
 }
 
-// A step's conditions of versions 1 and 2 as a tree, with its when beside them, so the builder shows both as one.
+// Puts a step's version 1 and 2 conditions and its when into one tree, so the builder shows them together.
 export function legacyTree(
   conditions: readonly StepCondition[],
   when: ConditionNode | null | undefined,
@@ -168,8 +168,8 @@ export function legacyTree(
   return { kind: "all", parts: when === null || when === undefined ? tests : [...tests, when] };
 }
 
-// Where a place of the tree legacyTree made is in the step: its conditions for the tests that came from them, its
-// when for the rest, such as "conditions[1]" or "when.parts[0]".
+// Maps a place in the tree from legacyTree back to the step. Tests that came from the old conditions map to
+// conditions, and the rest to the when, such as "conditions[1]" or "when.parts[0]".
 export function legacyPath(legacyCount: number, hasWhen: boolean, path: readonly number[]): string {
   const parts = (from: readonly number[]) =>
     from.map((index) => `.parts[${String(index)}]`).join("");

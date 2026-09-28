@@ -10,5 +10,5 @@ public sealed record AboutInfo(
     string Attribution,
     string License,
     string SourceUrl,
-    // The paths /api/about/legal/{path} serves, relative to the legal folder, with forward slashes.
+    // The paths that /api/about/legal/{path} serves. They're relative to the legal folder and use forward slashes.
     IReadOnlyList<string> LegalDocuments);

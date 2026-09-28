@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// The typed settings a snapshot hands its consumers, with what is safe in place of a section that has problems.
+// The typed settings a snapshot hands its consumers. A section that has problems is replaced by safe values.
 internal sealed record SettingsInForce(
     MachinePolicy Machines,
     LdapOptions Ldap,

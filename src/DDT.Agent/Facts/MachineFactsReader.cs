@@ -7,15 +7,15 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent.Facts;
 
-// Reads what conditions and rules test besides the machine's identity. A fact that cannot be read stays null and the
-// others are still reported, as no fact is worth a machine that cannot register.
+// Reads what conditions and rules test besides the machine's identity. A fact that can't be read stays null and the
+// others are still reported. No fact is worth a machine that can't register.
 public sealed class MachineFactsReader(IFirmwareTables firmware, ISystemHardware hardware, IUefiVariables uefi)
 {
     private const ulong KilobytesPerMegabyte = 1024;
     private const ulong BytesPerMegabyte = 1024 * 1024;
 
-    // smbios is the table the identity came from, and network the primary adapter's settings, both null when they could
-    // not be read.
+    // smbios is the table the identity came from, and network holds the primary adapter's settings. Both are null when
+    // they couldn't be read.
     public MachineFacts Read(SmbiosSystemInformation? smbios, NetworkFacts? network)
     {
         ProcessorCount? processors = Try(() => hardware.ProcessorCores() is { } records ? ProcessorCount.From(records) : null);
@@ -46,8 +46,8 @@ public sealed class MachineFactsReader(IFirmwareTables firmware, ISystemHardware
         };
     }
 
-    // What the SMBIOS memory devices add up to, which is what the machine's label says; what Windows can use where they
-    // add up to nothing, as on some virtual machines.
+    // What the SMBIOS memory devices add up to, which matches the machine's label. If they add up to nothing, as on
+    // some virtual machines, it's what Windows can use.
     private long? ReadMemoryMegabytes()
     {
         ulong? installed = Try(hardware.InstalledMemoryKilobytes);
@@ -62,11 +62,11 @@ public sealed class MachineFactsReader(IFirmwareTables firmware, ISystemHardware
         return usable is > 0 ? (long)(usable.Value / BytesPerMegabyte) : null;
     }
 
-    // The firmware defines the SecureBoot variable when it can do Secure Boot, on or off. Its variables cannot be read on a
-    // machine that did not start in UEFI mode, which leaves the answer unknown, as SecureBootEnabled is there.
+    // The firmware defines the SecureBoot variable when it can do Secure Boot, on or off. On a machine that didn't
+    // start in UEFI mode its variables can't be read, so the answer stays unknown, like SecureBootEnabled.
     private bool? ReadSecureBootCapable() => uefi.Read("SecureBoot") is not null;
 
-    // Printable, a control character as a space, and no longer than the server keeps.
+    // Makes the text printable, with control characters as spaces, and no longer than the server keeps.
     private static string? Text(string? value)
     {
         if (value is null)

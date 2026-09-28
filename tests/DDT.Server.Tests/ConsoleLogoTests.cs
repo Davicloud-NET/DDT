@@ -17,15 +17,15 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The logo the console at the machine shows: administrators upload a PNG, operators see it, and every registration
-// names its hash, so the agent downloads it anonymously like the agent and the console.
+// The logo the console shows at the machine. Administrators upload a PNG and operators can see it.
+// Every registration names its hash, so the agent downloads it anonymously, like the agent and console builds.
 public sealed class ConsoleLogoTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     // A transparent pixel, 1 by 1.
     internal static readonly byte[] Pixel = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
 
-    // The pixel, claiming another size in its header.
+    // The same pixel, but its header claims another size.
     private static byte[] Sized(int width, int height)
     {
         byte[] png = [.. Pixel];
@@ -51,7 +51,7 @@ public sealed class ConsoleLogoTests(DdtApplication application) : IClassFixture
         Assert.NotNull(uploaded.UploadedUtc);
         Assert.Equal(sha256, (await LiveListener.NextAsync(changes)).GetProperty("sha256").GetString());
 
-        // Operators read the page it is on.
+        // Operators can read the page it's on.
         SignedInClient @operator = await application.SignInAsync(DDT.Server.Authentication.DdtRoleNames.Operator);
         Assert.Equal(sha256, (await RegisteredMachine.ReadAsync<ConsoleLogoView>(await @operator.GetAsync("/api/settings/console-logo"))).Sha256);
         HttpResponseMessage image = await @operator.GetAsync("/api/settings/console-logo/image");
@@ -67,7 +67,7 @@ public sealed class ConsoleLogoTests(DdtApplication application) : IClassFixture
             audit => audit.Action == AuditActions.ConsoleLogoUploaded && audit.SubjectId == sha256,
             cancellationToken)));
 
-        // Removed, machines show none from their next registration.
+        // Once it's removed, machines show no logo from their next registration on.
         ConsoleLogoView removed = await RegisteredMachine.ReadAsync<ConsoleLogoView>(await administrator.DeleteAsync("/api/settings/console-logo"));
         Assert.Null(removed.Sha256);
         Assert.Null((await LiveListener.NextAsync(changes)).GetProperty("sha256").GetString());

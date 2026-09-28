@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Deployments;
 
 // What an operator gives a waiting run on the machine's page: answers to its inputs, or a continue at its pause. A
-// request that came too late gets the run as it is.
+// request that came too late gets the current run.
 internal sealed class WaitingRunSaves(DdtDbContext database, RunQueries queries, WaitingRuns waiting, LiveNotifier live)
 {
     public async Task<WaitingRunOutcome> AnswerAsync(Guid machineId, AnswerInputsRequest request, Actor actor, CancellationToken cancellationToken)

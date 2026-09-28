@@ -4,5 +4,5 @@
 
 namespace DDT.Server.Endpoints;
 
-// A machine's run, as the agent's report route names it; bound with [AsParameters].
+// A machine's run, as the agent's report route names it. Bound with [AsParameters].
 internal sealed record AgentRunRoute(Guid Id, Guid RunId);

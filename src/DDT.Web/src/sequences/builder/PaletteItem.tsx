@@ -44,7 +44,7 @@ export function PaletteItem({ kind, onAdd, onDragChange }: PaletteItemProps) {
       onClick={(event: MouseEvent<HTMLButtonElement>) => {
         dragProps.onClick?.(event);
 
-        // A screen reader's click starts a drag; a pointer's adds the kind.
+        // A click from a screen reader starts a drag. A pointer click adds the kind.
         if (!event.defaultPrevented) {
           onAdd(kind);
         }

@@ -11,9 +11,9 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // The only sender of a run's reports and log batches, so none overlap or arrive out of order. It beats every interval
-// and when the run's state or activity changes; each report renews the session's tokens, and saveRunToken writes a new
-// run token to the disk. While someone is to answer, it beats as often as the server asks, as answers come with the
-// reports.
+// and whenever the run's state or activity changes. Each report renews the session's tokens, and saveRunToken writes a
+// new run token to disk. While someone has to answer, it beats as often as the server asks, because answers come with
+// the reports.
 public sealed class RunHeartbeat(
     IAgentServer server,
     AgentLog log,
@@ -24,13 +24,13 @@ public sealed class RunHeartbeat(
 {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
 
-    // The server takes 60 calls a minute from a machine, and a beat is two: its report and a batch of log lines. Quick
-    // steps change the run many times a second, so the changes that follow a beat this closely share the next one.
+    // The server takes 60 calls a minute from a machine, and a beat is two calls: its report and a batch of log lines.
+    // Quick steps change the run many times a second, so changes this close after a beat share the next one.
     public static readonly TimeSpan MinimumSpacing = TimeSpan.FromSeconds(3);
 
     public static readonly TimeSpan WaitingInterval = TimeSpan.FromSeconds(5);
 
-    // What a report holds of the variables at most, so a sequence that sets many long ones cannot make it too large.
+    // The most variables a report holds, so a sequence that sets many long ones can't make it too large.
     public const int MaxReportedVariables = 64;
 
     public const int MaxReportedValueLength = 1024;
@@ -42,16 +42,16 @@ public sealed class RunHeartbeat(
     private CancellationTokenSource? _run;
     private Task? _loop;
 
-    // After every change of the state, the running step's percent or the activity, on the thread that made it, for the
-    // console at the machine, which reads Position then.
+    // Raised after every change of the state, the running step's percent or the activity, on the thread that made it.
+    // It's for the console at the machine, which reads Position then.
     public event Action? Changed
     {
         add => _position.Changed += value;
         remove => _position.Changed -= value;
     }
 
-    // Why the heartbeat ended the run: AgentTokenRejectedException, also for a step's own call, or a
-    // DeploymentStepException carrying the server's refusal. Null while it runs or when it was stopped.
+    // Why the heartbeat ended the run. It's an AgentTokenRejectedException, also for a step's own call, or a
+    // DeploymentStepException with the server's refusal. Null while it runs or when it was stopped.
     public Exception? Failure { get; private set; }
 
     // Percent is null until the running step has said how far it is.
@@ -63,11 +63,11 @@ public sealed class RunHeartbeat(
         set => _position.Activity = value;
     }
 
-    // The run's values as a report's answer brought them: the one that started the run, or the first after its inputs
-    // were answered. Null before any did.
+    // The run's values from a report's answer. That's the answer that started the run, or the first one after its
+    // inputs were answered. Null before either arrived.
     public IReadOnlyDictionary<string, string>? Values => _answers.Values;
 
-    // Every state the run saves, which the store passes on once it is written.
+    // Gets every state the run saves. The store passes it on once it's written.
     public void Update(SequenceState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -85,7 +85,7 @@ public sealed class RunHeartbeat(
     // Every step that has left Pending, and the running one's percent.
     public AgentRunReport Snapshot(DeploymentState state, string? error = null) => _position.Snapshot(state, error);
 
-    // A Pause step waits, with its message worked out. The activity tells the server and the console at once.
+    // A Pause step waits, with its message filled in. The activity tells the server and the console right away.
     public void Pause(string message)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -113,8 +113,8 @@ public sealed class RunHeartbeat(
         _loop = BeatAsync(run, _stop.Token, cancellationToken);
     }
 
-    // A step's own call, such as the one for the answer file, was refused with a 401: the run ends as it does when a
-    // beat is refused.
+    // A step's own call, such as the one for the answer file, was refused with a 401. The run ends the same way as
+    // when a beat is refused.
     public void TokenRejected(AgentTokenRejectedException exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
@@ -164,7 +164,7 @@ public sealed class RunHeartbeat(
         }
     }
 
-    // The server hands out a step's secrets only once it knows the step runs. A refusal fails the step.
+    // The server only hands out a step's secrets once it knows the step is running. A refusal fails the step.
     public Task ReportNowAsync(CancellationToken cancellationToken) =>
         ServerCallRules.CallAsync(
             call => ReportAsync(Snapshot(DeploymentState.Running), call),
@@ -198,8 +198,8 @@ public sealed class RunHeartbeat(
         _answers.Took(result);
     }
 
-    // The token on the disk only matters after a restart, and the next save writes it again, so a failure here does
-    // not end the run.
+    // The token on disk only matters after a restart, and the next save writes it again. So a failure here doesn't
+    // end the run.
     private async Task SaveRunTokenAsync()
     {
         try
@@ -212,13 +212,14 @@ public sealed class RunHeartbeat(
         }
     }
 
-    // How long a beat waits for the next when nothing changes: while someone is to answer, as often as the server asks.
+    // How long to wait for the next beat when nothing changes. While someone has to answer, it's as often as the
+    // server asks.
     private TimeSpan Interval() =>
         _position.Activity is RunActivity.Paused or RunActivity.WaitingForInput ? _answers.ReportAfter ?? WaitingInterval : interval;
 
     private async Task BeatAsync(CancellationTokenSource run, CancellationToken stop, CancellationToken cancellationToken)
     {
-        // Continue on the thread pool, so Start returns at once.
+        // Continue on the thread pool, so Start returns right away.
         await Task.Yield();
 
         bool warned = false;
@@ -255,9 +256,9 @@ public sealed class RunHeartbeat(
         }
     }
 
-    // A beat that has started finishes even when the heartbeat is stopped meanwhile: the request is bounded by the
-    // client's timeout, and cancelling it could lose a report the server already stored. Returns whether an outage was
-    // warned of, or null once Failure ends the run.
+    // A beat that has started finishes even if the heartbeat is stopped meanwhile. The client's timeout limits the
+    // request, and cancelling it could lose a report the server already stored. Returns whether an outage was warned
+    // about, or null once Failure ends the run.
     private async Task<bool?> BeatOnceAsync(AgentRunReport report, bool warned, CancellationToken cancellationToken)
     {
         try
@@ -285,7 +286,7 @@ public sealed class RunHeartbeat(
         }
         catch (Exception exception) when (ServerCallRules.IsTransient(exception, cancellationToken))
         {
-            // Once per outage: a warning per beat would fill the queue the outage keeps from draining.
+            // Warn once per outage. A warning per beat would fill the log queue, which can't drain during the outage.
             if (!warned)
             {
                 log.Warning($"Cannot report progress to the server ({exception.Message}). The run goes on.");

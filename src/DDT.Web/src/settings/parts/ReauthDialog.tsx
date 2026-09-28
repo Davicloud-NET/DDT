@@ -13,7 +13,7 @@ import { TextField } from "@/ui/TextField";
 import { useReauthForm } from "./useReauthForm";
 
 // Fields that grant roles or trust, and actions such as the agent upload, need the password again. The server's
-// token lasts a few minutes, so several saves in a row ask once. onAccepted sends again what the server refused.
+// token lasts a few minutes, so several saves in a row ask only once. onAccepted resends the refused request.
 export function ReauthDialog({
   isOpen,
   onAccepted,
@@ -24,7 +24,7 @@ export function ReauthDialog({
   isOpen: boolean;
   onAccepted: () => void;
   onCancel: () => void;
-  // Why the password is needed, where it is not a section's save.
+  // Why the password is needed, when it's not for a section's save.
   reason?: ReactNode;
   confirmLabel?: ReactNode;
 }) {

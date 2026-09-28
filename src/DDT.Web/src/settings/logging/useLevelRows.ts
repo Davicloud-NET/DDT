@@ -16,8 +16,8 @@ import {
   type LoggingSettings,
 } from "./logLevels";
 
-// The rows as typed, kept while they still say what the form holds, so a row keeps its place and a blank one stays
-// while its category is typed; a discard or a change saved elsewhere replaces them.
+// The rows as typed. They're kept while they still match what the form holds, so a row keeps its place and a blank
+// one stays while its category is typed. A discard or a change saved elsewhere replaces them.
 export function useLevelRows(
   form: SettingsForm<LoggingSettings>,
   logLevel: Record<string, string>,

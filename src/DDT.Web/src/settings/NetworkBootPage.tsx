@@ -8,8 +8,8 @@ import { AdministratorsOnly } from "@/auth/AdministratorsOnly";
 
 import { NetworkBootSettings } from "./networkBoot/NetworkBootSettings";
 
-// Boot > Network boot. The pxe section runs code on every machine that netboots, so only administrators read it; the
-// server refuses everyone else.
+// Boot > Network boot. The pxe section runs code on every machine that netboots, so only administrators can read it.
+// The server refuses everyone else.
 export function NetworkBootPage() {
   return (
     <AdministratorsOnly

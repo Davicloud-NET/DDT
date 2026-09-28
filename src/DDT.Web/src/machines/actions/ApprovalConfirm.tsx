@@ -14,9 +14,9 @@ import { ConfirmDialog } from "@/ui/ConfirmDialog";
 
 import { approvalRequested } from "./machineRequests";
 
-// Confirms an approval that runs the sequence a rule chose. Where that run writes a raw disk image that may not
-// start with Secure Boot on, it says so and offers to allow the image; the server refuses the run without it where
-// the machine said Secure Boot is on.
+// Confirms an approval that also runs the sequence a rule chose. If that run writes a raw disk image that may not
+// boot with Secure Boot on, the dialog warns and offers to allow the image. If the machine reported Secure Boot
+// on, the server refuses the run without that allowance.
 export function ApprovalConfirm({
   machine,
   actions,
@@ -26,11 +26,11 @@ export function ApprovalConfirm({
 }) {
   const [allowMismatch, setAllowMismatch] = useState(false);
   const plan = approvalRequested(actions.approveOn, machine);
-  // From the machine as the list has it now, which may have registered again since the plan was made.
+  // Uses the machine as the list has it now. It may have registered again since the plan was made.
   const risk = plan === null ? null : secureBootRisk(machine, plan.sequence);
   const label = machineLabel(machine);
 
-  // A sequence that asks something on the web asks it with the approval that runs it.
+  // If the sequence asks for inputs on the web, the approval dialog asks for them.
   if (plan !== null && plan.inputs.length > 0) {
     return (
       <InputsDialog

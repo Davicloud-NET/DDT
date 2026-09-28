@@ -24,7 +24,7 @@ import { noDeclarations } from "./ruleData";
 import type { RuleView } from "./rules";
 
 interface RuleDrawerProps {
-  // Null for a new rule, which goes to the bottom.
+  // Null for a new rule. A new rule goes to the bottom.
   rule: RuleView | null;
   // How many rules there are, to number a new one.
   count: number;
@@ -32,12 +32,12 @@ interface RuleDrawerProps {
   sequences: readonly SequenceSummary[];
   subjects: readonly Subject[];
   canEdit: boolean;
-  // A new rule saved with problems stays open as the rule it now is.
+  // A new rule saved with problems stays open, now as the saved rule.
   onSaved: (rule: RuleView) => void;
   onClose: () => void;
 }
 
-// A rule's form, beside the list. Someone who may only look reads the same form with nothing to change.
+// A rule's form, beside the list. Someone who can only view it sees the same form, read-only.
 export function RuleDrawer({
   rule,
   count,

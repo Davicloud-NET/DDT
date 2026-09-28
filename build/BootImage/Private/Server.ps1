@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Downloads the driver packages DDT flags for the boot image into Folder, one subfolder per package, and returns what
-# DDT listed, with the folder.
+# Downloads the driver packages DDT flags for the boot image into Folder, one subfolder per package. Returns what DDT
+# listed, along with the folder.
 function Save-ServerDriver {
     param(
         [Parameter(Mandatory)][string] $ServerUrl,
@@ -27,13 +27,13 @@ function Save-ServerDriver {
             $zip = Join-Path $Folder "$($driver.packageId).zip"
             [DdtBootImageServer]::Download($client, "$base/api/boot-image/drivers/$($driver.packageId)/content", $zip)
 
-            # The hash DDT listed, not one the download came with, says what the package is.
+            # The hash DDT listed decides what the package is, not a hash that came with the download.
             $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
             if ($hash -ne $driver.sha256) {
                 throw "The download of $($driver.name) has SHA-256 $hash, but DDT lists $($driver.sha256). Build again."
             }
 
-            # ExtractToDirectory refuses an entry that would land outside the folder, which DDT refused at upload already.
+            # ExtractToDirectory refuses an entry that would land outside the folder. DDT refuses those at upload too.
             [IO.Compression.ZipFile]::ExtractToDirectory($zip, (Join-Path $Folder ([string] $driver.packageId)))
             Remove-Item -LiteralPath $zip
         }
@@ -49,7 +49,7 @@ function Save-ServerDriver {
     }
 }
 
-# An HttpClient that sends the API token and trusts the pinned root alone, as the agent does.
+# An HttpClient that sends the API token and trusts only the pinned root, like the agent.
 function Connect-DdtServer {
     param(
         [Parameter(Mandatory)][byte[]] $RootCertificate,
@@ -62,7 +62,7 @@ function Connect-DdtServer {
         Add-Type -AssemblyName System.Net.Http
         $compile = @{ Path = Join-Path $PSScriptRoot 'Server.cs' }
 
-        # PowerShell 7 compiles against the whole framework already; Windows PowerShell needs to be told.
+        # PowerShell 7 already compiles against the whole framework. Windows PowerShell needs to be told.
         if ($PSVersionTable.PSEdition -eq 'Desktop') {
             $compile.ReferencedAssemblies = @([Net.Http.HttpClient].Assembly.Location)
         }

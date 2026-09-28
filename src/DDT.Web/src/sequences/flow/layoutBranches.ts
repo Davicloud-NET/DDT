@@ -106,8 +106,8 @@ function placeSide(context: LayoutContext, junction: Junction, side: Side): void
 
   side.part.place(side.left, junction.branchTop);
 
-  // The first slot sits halfway along the curve from the port; the last under the last node where the
-  // branch is shorter than the other, and halfway along the curve to the join otherwise.
+  // The first slot sits halfway along the curve from the port. The last slot sits under the last node if the
+  // branch is shorter than the other one, and otherwise halfway along the curve to the join.
   if (side.list.length > 0) {
     const count = side.list.length;
     const roomy = junction.joinStart - bottom >= GAP;

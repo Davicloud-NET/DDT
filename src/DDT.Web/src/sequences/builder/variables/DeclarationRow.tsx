@@ -34,7 +34,7 @@ interface DeclarationRowProps {
   children: ReactNode;
 }
 
-// A variable or an input, closed to its name and what uses it, open to its fields.
+// A variable or an input. Closed, it shows its name and what uses it. Open, it shows its fields.
 export function DeclarationRow({
   list,
   index,

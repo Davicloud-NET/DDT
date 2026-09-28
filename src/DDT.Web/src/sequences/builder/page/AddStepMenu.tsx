@@ -14,7 +14,7 @@ interface AddStepMenuProps {
   onAdd: (kind: StepKind) => void;
 }
 
-// The outline's key that adds a step after the chosen node, or at the end.
+// The outline's button that adds a step after the chosen node, or at the end.
 export function AddStepMenu({ selected, onAdd }: AddStepMenuProps) {
   const { t } = useLingui();
   const selectedTitle = selected === undefined ? "" : nodeTitle(selected.node);

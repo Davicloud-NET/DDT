@@ -8,8 +8,8 @@ using System.Text;
 
 namespace DDT.Core.Disks;
 
-// Reads a FAT12, FAT16 or FAT32 volume, such as a disk image's EFI system partition, as Microsoft's FAT specification
-// 1.03 lays it out. It comes from an uploaded file, so every size is capped and every cluster chain checked.
+// Reads a FAT12, FAT16 or FAT32 volume as Microsoft's FAT specification 1.03 lays it out, such as a disk image's EFI
+// system partition. The volume comes from an uploaded file, so every size is capped and every cluster chain checked.
 public sealed class FatVolume
 {
     public const int MaxFatClusters12 = 4084;
@@ -46,10 +46,11 @@ public sealed class FatVolume
 
     public int ClusterBytes { get; }
 
-    // From the root directory's volume label entry, else from the boot sector; null when the volume has none.
+    // Read from the root directory's volume label entry, or else from the boot sector. Null when the volume has none.
     public string? Label { get; private set; }
 
-    // Throws InvalidDataException when the volume at offset, length bytes long, is no FAT volume DDT can read.
+    // Opens the volume at offset, which is length bytes long. Throws InvalidDataException when it isn't a FAT volume
+    // DDT can read.
     public static FatVolume Open(Stream stream, long offset, long length)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -66,7 +67,7 @@ public sealed class FatVolume
         return volume;
     }
 
-    // The entries of the directory at path, such as "EFI\BOOT"; "" is the root.
+    // The entries of the directory at path, such as "EFI\BOOT". An empty path is the root.
     public IReadOnlyList<FatEntry> List(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -85,7 +86,7 @@ public sealed class FatVolume
             : throw new DirectoryNotFoundException($"{path} is a file.");
     }
 
-    // The entry at path, compared without regard to case; null when there is none.
+    // The entry at path, ignoring case, or null when there's none.
     public FatEntry? Find(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -147,7 +148,7 @@ public sealed class FatVolume
     private byte[] RootDirectory() =>
         Type == FatType.Fat32 ? Chain(_rootCluster, MaxDirectoryBytes) : ReadExactly(_stream, _rootOffset, _rootBytes, "root directory");
 
-    // The clusters of the chain that starts at first, up to maxBytes of them.
+    // Reads the cluster chain that starts at first, up to maxBytes.
     private byte[] Chain(uint first, int maxBytes)
     {
         using MemoryStream content = new();

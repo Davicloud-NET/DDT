@@ -8,12 +8,12 @@ namespace DDT.Core.Values;
 
 // What ValueResolver worked out. Problems keep a run from starting.
 public sealed record ValueResolution(
-    // Every value a source set, grouped by name: the one used, then those it overrode. One that could not be worked out
-    // is here as written, and not in Effective.
+    // Every value a source set, grouped by name. The one used comes first, then those it overrode. A value that
+    // couldn't be worked out is here as written, and missing from Effective.
     IReadOnlyList<ResolvedValue> Values,
     // The values used, by name ignoring case, for the run and its templates.
     IReadOnlyDictionary<string, string> Effective,
     IReadOnlyList<ValueProblem> Problems,
-    // What an input's question starts with, in the order of the inputs: the machine's, a rule's or a role's value for
-    // its name, else its own Default. Overridden marks one an answer overrides.
+    // The value each input's question starts with, in input order. That's the machine's, a rule's or a role's value
+    // for its name, or else the input's Default. Overridden marks one that an answer overrides.
     IReadOnlyList<ResolvedValue> InputDefaults);

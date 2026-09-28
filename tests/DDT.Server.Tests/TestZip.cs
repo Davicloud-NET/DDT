@@ -9,8 +9,8 @@ using System.Text;
 
 namespace DDT.Server.Tests;
 
-// Zips as packages arrive, and the lies a crafted one can tell: the central directory, which readers trust, is
-// patched after the zip is written.
+// Zips as packages arrive, and the lies a crafted one can tell.
+// The central directory, which readers trust, is patched after the zip is written.
 internal static class TestZip
 {
     private const uint CentralHeader = 0x02014b50;

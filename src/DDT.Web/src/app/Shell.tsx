@@ -17,14 +17,14 @@ import { locate } from "./navigation";
 import { SubNavigation } from "./SubNavigation";
 import { TopBar } from "./TopBar";
 
-// Until an account signed in with a password an administrator was shown sets its own, the server answers nothing but
-// its Account page, so the shell leaves out navigation, search and the live connection.
+// An account that signed in with a password an administrator was shown must set its own first. Until then, the
+// server only answers its Account page, so the shell leaves out navigation, search and the live connection.
 export function Shell() {
   const passwordFirst = useQuery(currentUserQuery).data?.mustChangePassword === true;
   const live = useLiveUpdates(!passwordFirst);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const here = passwordFirst ? null : locate(pathname);
-  // Another page fades in; the first one, and the same page with another filter, simply show.
+  // A new page fades in. The first page, and the same page with another filter, just appear.
   const replay = useReplay(pathname);
 
   return (

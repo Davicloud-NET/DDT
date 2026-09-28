@@ -12,7 +12,7 @@ import { RoleOptions } from "./RoleOptions";
 import type { AddUserState } from "./useAddUser";
 import type { UserRole } from "./users";
 
-// The add dialog's form; its id is what the dialog's submit key names.
+// The add dialog's form. The dialog's submit button points at it by its id.
 export function AddUserForm({ form }: { form: AddUserState }) {
   const { create, errors } = form;
 

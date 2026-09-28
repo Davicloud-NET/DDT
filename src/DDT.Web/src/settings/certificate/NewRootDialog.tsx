@@ -9,8 +9,8 @@ import { Dialog } from "@/ui/Dialog";
 
 import type { GuardedAction } from "../useGuardedAction";
 
-// certificate.newRoot: boot images pin DDT's root, so a pair from another root, or a new root, strands every
-// netbooting machine until its boot image is built again.
+// Confirms certificate.newRoot. Boot images pin DDT's root, so a pair from another root, or a new root,
+// strands every netbooting machine until its boot image is built again.
 export function NewRootDialog({
   action,
   generating,

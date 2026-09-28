@@ -17,7 +17,7 @@ public sealed class BcdbootWriterTests : IDisposable
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    // Drive roots such as S:\, as the partitioning hands them on.
+    // Drive roots like S:\, the way the partitioning passes them on.
     private TargetVolumes Volumes => new($@"{_root}\S\", $@"{_root}\W\", $@"{_root}\R\", []);
 
     private string Windows => Path.Combine(_root, "W", "Windows");

@@ -185,7 +185,7 @@ describe("MachinePage", () => {
     await act(() => vi.advanceTimersByTimeAsync(5_000));
     await screen.findByText("The run is done");
 
-    // The list goes on being read, as for every list while the connection is down; the ended run is not.
+    // While the connection is down, the list is still read on a timer, like every list. The ended run isn't read again.
     const [endedMachines = 0, endedShown = 0] = reads();
     await act(() => vi.advanceTimersByTimeAsync(15_000));
     expect(server.count(`GET /api/deployments/${runId}`)).toBe(endedShown);

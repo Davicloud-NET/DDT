@@ -8,8 +8,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace DDT.Server.Tests.CodeShape;
 
-// Names every limit of docs/code-style.md that no analyzer checks: class size, constructor dependencies, parameters
-// and comment blocks. MA0048 and MA0051 check one type per file and method length.
+// Finds code that breaks the limits of docs/code-style.md no analyzer checks. Those are class size, constructor
+// dependencies, parameters and comment blocks. MA0048 and MA0051 already check one type per file and method length.
 public static class CodeShapeScanner
 {
     public const int MaxClassLines = 400;
@@ -99,7 +99,7 @@ public static class CodeShapeScanner
         }
     }
 
-    // Methods and their local functions; a constructor's parameters are dependencies.
+    // Methods and their local functions. A constructor's parameters count as dependencies instead.
     private static IEnumerable<(string Name, int Parameters)> Methods(TypeDeclarationSyntax type)
     {
         foreach (MethodDeclarationSyntax method in type.Members.OfType<MethodDeclarationSyntax>())

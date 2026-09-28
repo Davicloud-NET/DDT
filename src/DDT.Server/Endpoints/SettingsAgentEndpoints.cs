@@ -15,8 +15,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// The agent netbooting machines download. Every one runs it as SYSTEM before anyone authorized it, and checks only that
-// it got what the server announced, so an upload needs a fresh proof of identity.
+// The agent that netbooting machines download. Every machine runs it as SYSTEM before anyone has authorized the
+// machine, and only checks that it got what the server announced. So an upload needs a fresh proof of identity.
 public static class SettingsAgentEndpoints
 {
     public static RouteGroupBuilder MapSettingsAgentEndpoints(this RouteGroupBuilder group)

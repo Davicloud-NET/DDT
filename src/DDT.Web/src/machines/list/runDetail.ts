@@ -45,7 +45,7 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
     }
 
     case "Failed": {
-      // A run whose check before the first step failed has no step to name.
+      // If the check before the first step failed, the run has no step to name.
       if (run.stepIndex === null) {
         return t`Failed`;
       }

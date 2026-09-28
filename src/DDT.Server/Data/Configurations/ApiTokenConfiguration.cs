@@ -23,7 +23,7 @@ internal sealed class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
         builder.HasIndex(t => t.SecretHash).IsUnique();
         builder.HasIndex(t => t.UserId);
 
-        // A token acts only for its user, so it goes with the account.
+        // A token acts only for its user, so deleting the account deletes its tokens.
         builder.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<DdtUser>().WithMany().HasForeignKey(t => t.RevokedByUserId).OnDelete(DeleteBehavior.SetNull);
     }

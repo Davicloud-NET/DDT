@@ -14,8 +14,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// Enter sends the answers from any field, since a choice's key would take Enter for itself; only the back key keeps its
-// own Enter. The focus starts on the first field the agent refused, or else the first.
+// Enter sends the answers from any field, because a choice's key would otherwise handle Enter itself. Only the back key
+// keeps its own Enter. The focus starts on the first field the agent refused, or else on the first field.
 public sealed partial class InputsView : UserControl
 {
     private InputsViewModel? _model;
@@ -84,7 +84,7 @@ public sealed partial class InputsView : UserControl
         FocusField();
     }
 
-    // After the layout, once the fields are there and enabled. A choice takes the focus without choosing anything.
+    // Runs after layout, once the fields exist and are enabled. A choice gets the focus without selecting anything.
     private void FocusField() =>
         Dispatcher.UIThread.Post(
             () =>

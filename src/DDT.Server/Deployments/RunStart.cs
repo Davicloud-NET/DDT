@@ -6,6 +6,6 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Deployments;
 
-// Error is why the run could not start, which ended it; InputsPending are asked while it waits at its start for a
-// required input. Both null: the run started.
+// Error is why the run couldn't start, which ended it. InputsPending are asked while it waits at its start for a
+// required input. If both are null, the run started.
 public sealed record RunStart(string? Error, IReadOnlyList<AgentInput>? InputsPending);

@@ -39,14 +39,14 @@ export interface UploadPanelProps<T> {
   verifyingHint: ReactNode;
   leaveWhileVerifying: (fileName: string) => string;
   describeResult: (fileName: string, outcome: UploadOutcome, library: T) => string;
-  // The library the file went into has changed, with what the server answered.
+  // Called when the file went into the library, with the server's answer.
   onAdded: (library: T) => void;
   // Choices that belong to the next file, such as the kind of a package.
   children?: ReactNode;
 }
 
 // Uploads a file in slices the server acknowledges one by one, so a dropped connection or a reload loses at most one
-// slice. The page cannot keep the file over a reload, so the unfinished uploads say which to choose again.
+// slice. The page can't keep the file across a reload, so the unfinished uploads say which file to choose again.
 export function UploadPanel<T>({
   kind,
   kinds,
@@ -64,7 +64,7 @@ export function UploadPanel<T>({
   const uploads = useQuery(uploadsQuery);
   const upload = useResumableUpload<T>({ kind, describeResult, onAdded });
   const { run } = upload;
-  // The elapsed time counts seconds while a file uploads; otherwise nothing here shows the time.
+  // The elapsed time ticks every second while a file uploads. Otherwise nothing here shows the time.
   const now = useNow(run !== null ? 1_000 : 60_000);
   const leaving = useLeaveGuard(run !== null);
   const discard = useDeletion<ImageUploadSession>(discardUpload, (id) => {

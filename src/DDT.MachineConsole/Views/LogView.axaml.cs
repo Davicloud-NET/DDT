@@ -11,8 +11,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// Follows the end while it is at the end. Scrolling up, with the wheel or Up, Page Up and Home, stops that; End or
-// scrolling back to the last line starts it again.
+// Follows new lines while the view is at the end. Scrolling up, with the wheel or Up, Page Up and Home, stops that. End
+// or scrolling back to the last line starts it again.
 public sealed partial class LogView : UserControl
 {
     private LogViewModel? _model;
@@ -100,7 +100,7 @@ public sealed partial class LogView : UserControl
             DispatcherPriority.Background);
     }
 
-    // Only a move of the view says where the person wants to be; new lines grow the log below it.
+    // Only a scroll of the view shows where the person wants to be. New lines just grow the log below it.
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
         if (_model is null)

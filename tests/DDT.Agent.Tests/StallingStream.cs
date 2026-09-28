@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Tests;
 
-// Gives its bytes, then hangs as a connection that dropped without a reset does, until the read is cancelled.
+// Returns its bytes, then hangs like a connection that dropped without a reset, until the read is cancelled.
 internal sealed class StallingStream(byte[] content) : Stream
 {
     private readonly MemoryStream _content = new(content);

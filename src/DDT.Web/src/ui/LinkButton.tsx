@@ -14,7 +14,7 @@ export interface LinkButtonProps extends Omit<AriaLinkProps, "className" | "chil
   children: ReactNode;
 }
 
-// A link that looks like a key, for actions that go to another page.
+// A link that looks like a button, for actions that go to another page.
 export function LinkButton({ variant, size, className, ...props }: LinkButtonProps) {
   return <AriaLink {...props} className={buttonClass(variant, size, className)} />;
 }

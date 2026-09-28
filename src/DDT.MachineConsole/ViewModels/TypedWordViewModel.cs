@@ -39,7 +39,7 @@ public abstract class TypedWordViewModel : QuestionViewModel
 
     public bool IsTyped => string.Equals(Typed, Word, StringComparison.Ordinal);
 
-    // Something typed that is not the word yet, such as the word in small letters.
+    // The typed text is as long as the word but doesn't match it, like the word in lower case.
     public bool ShowsWordHint => Typed.Length >= Word.Length && !IsTyped;
 
     public string WordHint => F("Type {word} in capitals, exactly as shown.", ("word", Word));

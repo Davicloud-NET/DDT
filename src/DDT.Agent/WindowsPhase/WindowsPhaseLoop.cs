@@ -9,9 +9,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The DdtSequence service in the installed Windows: goes on with the run the hand-over left in its DDT directory while
-// the server still runs it, and removes the agent once the run is over. How the run ended stays on the disk with the
-// run token until the server has it, so a stop, or a server out of reach, only puts the report off.
+// The DdtSequence service in the installed Windows. It continues the run the hand-over left in its DDT directory while
+// the server still has it running, and removes the agent once the run is over. How the run ended stays on disk with
+// the run token until the server has it, so a stop or an unreachable server only delays the report.
 public sealed class WindowsPhaseLoop
 {
     public const string StateGoneMessage = "The run's state in the installed Windows is gone, so the run cannot go on there.";
@@ -31,7 +31,7 @@ public sealed class WindowsPhaseLoop
     private readonly WindowsPhaseOptions _options;
     private readonly AgentLog _log;
 
-    // Internal, as its parts are: WindowsPhaseLoopBuilder puts it together.
+    // Internal, like its parts. WindowsPhaseLoopBuilder puts it together.
     internal WindowsPhaseLoop(
         WindowsRunCalls calls,
         SequenceRunner runner,
@@ -73,8 +73,8 @@ public sealed class WindowsPhaseLoop
             return await _exit.RemoveAsync(AgentExitCodes.Stopped, signOut: true, cancellationToken).ConfigureAwait(false);
         }
 
-        // The hand-over saves the Windows phase only once this service is registered and before Windows can start, so
-        // Windows PE hands the run over again.
+        // The hand-over only saves the Windows phase once this service is registered, before Windows can start. So
+        // without it, WinPE hands the run over again.
         if (local.State.Phase != SequencePhase.Windows)
         {
             _log.Warning($"Run {local.State.RunId} still goes on in Windows PE, which hands it over again. The agent leaves it alone.");
@@ -87,7 +87,8 @@ public sealed class WindowsPhaseLoop
         return await GoOnWithRunAsync(local.State.RunId, local.RunToken, cancellationToken).ConfigureAwait(false);
     }
 
-    // Registers with the run token until the server answers, and goes on only while it still runs that run.
+    // Registers with the run token until the server answers, and only continues while the server still has that run
+    // going.
     private async Task<int> GoOnWithRunAsync(Guid runId, string? runToken, CancellationToken cancellationToken)
     {
         NextAttempt next = new() { RunToken = runToken };
@@ -154,7 +155,8 @@ public sealed class WindowsPhaseLoop
         return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
     }
 
-    // All the server can still learn about the run is why it ended here. Null when the report did not get through.
+    // All the server can still learn about the run is why it ended here. Returns null when the report didn't get
+    // through.
     private async Task<int?> ReportLostStateAsync(WindowsRunContact contact, Guid runId, AgentRunReport? unsent, CancellationToken cancellationToken)
     {
         if (unsent is null)
@@ -172,7 +174,7 @@ public sealed class WindowsPhaseLoop
         return await _exit.EndAsync(lastReport, cancellationToken).ConfigureAwait(false);
     }
 
-    // The run is over here, and only the server does not know yet how it ended. Null when the report did not get
+    // The run is over here, and only the server doesn't know yet how it ended. Returns null when the report didn't get
     // through.
     private async Task<int?> SendFinalReportAsync(
         WindowsRunContact contact,
@@ -191,8 +193,8 @@ public sealed class WindowsPhaseLoop
         return await _exit.EndAsync(final, cancellationToken).ConfigureAwait(false);
     }
 
-    // Null when the next registration decides: the server did not get the run's last report, kept on the disk with the
-    // token, or refused the token.
+    // Returns null when the next registration decides. That's when the server didn't get the run's last report, which
+    // is kept on disk with the token, or when it refused the token.
     private async Task<int?> ExitCodeForAsync(RunResult result, CancellationToken cancellationToken) => result.Outcome switch
     {
         RunOutcome.Finished when result.UnsentReport is null => await _exit.RemoveAndRestartAsync(cancellationToken).ConfigureAwait(false),
@@ -202,8 +204,8 @@ public sealed class WindowsPhaseLoop
         _ => null,
     };
 
-    // The report the runner kept once the run was over here, until the server has it; null while the run goes on. One
-    // that cannot be read still ends the run: its steps must not run again.
+    // The report the runner kept once the run was over here, until the server has it. Null while the run continues.
+    // A report that can't be read still ends the run, because its steps must not run again.
     private async Task<AgentRunReport?> FinalReportAsync(LocalRun local, CancellationToken cancellationToken)
     {
         if (!File.Exists(local.Files.FinalReportPath))
@@ -215,7 +217,7 @@ public sealed class WindowsPhaseLoop
             ?? FailedRunReport.Of(SequencePhase.Windows, FinalReportLostMessage);
     }
 
-    // The run's state and answer file go first, token first, whatever is still there.
+    // Deletes the run's state and answer file first, token first, whatever is still there.
     private async Task<int> RunIsOverAsync(Guid runId, CancellationToken cancellationToken)
     {
         _log.Information($"The server no longer runs run {runId} on this machine.");
@@ -228,7 +230,7 @@ public sealed class WindowsPhaseLoop
         return await _exit.RemoveAsync(AgentExitCodes.Stopped, signOut: true, cancellationToken).ConfigureAwait(false);
     }
 
-    // What an attempt leaves for the next: the newest run token, and a last report the server did not get.
+    // What an attempt passes to the next: the newest run token, and a last report the server didn't get.
     private sealed class NextAttempt
     {
         public string? RunToken { get; set; }

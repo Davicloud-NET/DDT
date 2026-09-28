@@ -7,8 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The sign-in with a DDT account, one field at a time as the agent asks. The password leaves the screen once it is
-// sent, and nothing typed here is ever logged.
+// Sign-in with a DDT account, one field at a time as the agent asks for it. The password is cleared from the screen
+// once it's sent. Nothing typed here is ever logged.
 public sealed class SignInViewModel : QuestionViewModel
 {
     private SignInQuestion _question;
@@ -34,7 +34,7 @@ public sealed class SignInViewModel : QuestionViewModel
 
     public bool AsksCode => Field == SignInField.Code;
 
-    // Where the user name is known already, it shows as text above the field asked.
+    // If the user name is already known, it shows as text above the field being asked.
     public bool ShowsUserName => !AsksUserName && !string.IsNullOrEmpty(_question.UserName);
 
     public string? KeyboardLayout { get; private set; }
@@ -87,7 +87,7 @@ public sealed class SignInViewModel : QuestionViewModel
         }
     }
 
-    // The agent's words about the attempt before, such as a wrong password.
+    // The agent's error message about the previous attempt, like a wrong password.
     public string? Error => _question.Error;
 
     public bool HasError => !string.IsNullOrEmpty(_question.Error);

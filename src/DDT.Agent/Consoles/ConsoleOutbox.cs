@@ -7,7 +7,7 @@ using DDT.ConsoleProtocol;
 namespace DDT.Agent.Consoles;
 
 // What a console over a pipe gets next, under one lock and in this order: the newest state, the log lines, then the
-// question slot's messages. The state and the newest lines wait for a console that connects later.
+// question slot's messages. The state and the newest lines are kept for a console that connects later.
 internal sealed class ConsoleOutbox
 {
     // The lines kept for a console that connects late, and for one that reads slowly.
@@ -47,7 +47,7 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // True once Shut, when nothing waits here for a console any more.
+    // True once shut. Then nothing waits here for a console any more.
     public bool IsShut
     {
         get
@@ -116,7 +116,7 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // A console said hello: the state and the lines kept go out first.
+    // A console said hello. The state and the kept lines go out first.
     public void Connect()
     {
         lock (_lock)
@@ -133,7 +133,7 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // What the console has not read yet is dropped; the next console gets the state and the lines kept.
+    // Drops what the console hasn't read yet. The next console gets the state and the kept lines.
     public void Disconnect()
     {
         lock (_lock)
@@ -145,7 +145,8 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // For good. False when it was shut already; otherwise state is the last one shown, for the console that takes over.
+    // Shuts the outbox for good. Returns false if it was shut already. Otherwise state is the last one shown, for the
+    // console that takes over.
     public bool TryShut(out ConsoleState? state)
     {
         lock (_lock)
@@ -167,7 +168,8 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // The sender stops once everything left is sent. False when closing already; connected says whether a console is.
+    // The sender stops once everything left is sent. Returns false if it's closing already. connected says whether a
+    // console is connected.
     public bool TryBeginClosing(out bool connected)
     {
         lock (_lock)
@@ -186,7 +188,8 @@ internal sealed class ConsoleOutbox
         }
     }
 
-    // The messages due, in order, or none and wake to wait for; null once closing with nothing left to send.
+    // Returns the messages due, in order. If there are none, the caller waits for wake. Returns null once closing with
+    // nothing left to send.
     public List<ConsoleMessage>? Take(out Task wake)
     {
         List<ConsoleMessage> messages = [];

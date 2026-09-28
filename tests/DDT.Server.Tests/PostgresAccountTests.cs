@@ -19,8 +19,8 @@ using static DDT.Server.Tests.AccountRequests;
 
 namespace DDT.Server.Tests;
 
-// Accounts and the accounts given for a run as PostgreSQL stores them: its unique index on names, its text columns, and
-// a share fetched by a running step.
+// Stored accounts and the accounts given for a run, as PostgreSQL stores them.
+// That covers its unique index on names, its text columns, and a share fetched by a running step.
 public sealed class PostgresAccountTests
 {
     [Fact]
@@ -91,7 +91,8 @@ public sealed class PostgresAccountTests
         ],
     };
 
-    // As a technician gives it at the machine, with a NUL in the name that PostgreSQL could not store.
+    // Gives the account like a technician does at the machine.
+    // The technician's name has a NUL that PostgreSQL couldn't store.
     private static async Task GiveAsync(PostgresApplication application, Guid runId, CancellationToken cancellation)
     {
         using IServiceScope scope = application.Services.CreateScope();

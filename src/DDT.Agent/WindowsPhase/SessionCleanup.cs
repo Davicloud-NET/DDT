@@ -7,8 +7,8 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// What ending DDT's session leaves to clean up: its sign-ins, its profile, and the account setup left behind. A part
-// that fails only leaves something behind, so it is logged and never ends the run.
+// Cleans up after DDT's session ends: its sign-ins, its profile, and the account setup left behind. A part that fails
+// only leaves something behind, so it's logged and never ends the run.
 internal sealed class SessionCleanup(ISessionAccounts accounts, AgentLog log, TimeProvider timeProvider)
 {
     // False when the stop token ended the wait for someone to sign out.
@@ -61,8 +61,9 @@ internal sealed class SessionCleanup(ISessionAccounts accounts, AgentLog log, Ti
         }
     }
 
-    // Setup deletes its first user, defaultuser0, at the end of that user's part of the out-of-box experience, which the
-    // session's console keeps it from reaching, and the sign-in screen offers it. It goes here unless someone uses it.
+    // Setup deletes its first user, defaultuser0, at the end of that user's part of the out-of-box experience. The
+    // session's console keeps setup from getting there, so the sign-in screen offers the account. It's deleted here
+    // unless someone uses it.
     public async Task DeleteSetupUserAsync()
     {
         const string name = RegistrySetupProbe.SetupUser;

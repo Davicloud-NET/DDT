@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Authentication;
 
-// A fresh deployment has no UI to make the first account in, so this makes one and logs its password once. No password
-// comes from configuration: such an environment variable tends to stay set long after.
+// A fresh deployment has no UI to create the first account in, so this creates one and logs its password once. The
+// password never comes from configuration, because such an environment variable tends to stay set long after.
 public sealed partial class IdentityBootstrap(
     IServiceScopeFactory scopeFactory,
     ILogger<IdentityBootstrap> logger) : IHostedService
@@ -35,8 +35,8 @@ public sealed partial class IdentityBootstrap(
             return;
         }
 
-        // A directory account always has the directory's id. One without is single sign-on's, and a password typed for
-        // it must never reach the directory, which could take it over for a directory user of the same name.
+        // A directory account always has the directory's id. One without it belongs to single sign-on. A password typed
+        // for it must never reach the directory, or a directory user with the same name could take it over.
         await database.Users
             .Where(u => u.Source == AccountSource.Directory && u.DirectoryObjectId == null)
             .ExecuteUpdateAsync(user => user.SetProperty(u => u.Source, AccountSource.External), cancellationToken)
@@ -52,9 +52,9 @@ public sealed partial class IdentityBootstrap(
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    // Identity requires a digit, an upper and a lower case letter, which about one draw in forty lacks, and the first
-    // administrator would then silently never exist. Such a draw is thrown away rather than patched, which keeps the
-    // result uniform.
+    // Identity requires a digit, an upper case and a lower case letter. About one draw in forty lacks one of them, and
+    // then the first administrator would silently never be created. Such a draw is thrown away instead of patched,
+    // which keeps the result uniform.
     public static string GeneratePassword()
     {
         string password;
@@ -68,8 +68,8 @@ public sealed partial class IdentityBootstrap(
         return password;
     }
 
-    // Every start creates the roles that are missing, so the next one tries again. Until then no first administrator is
-    // created: it might lack its role.
+    // Every start creates the missing roles, so a failure is retried at the next start. Until then, no first
+    // administrator is created, because it might end up without its role.
     private async Task<bool> CreateRolesAsync(RoleManager<DdtRole> roles)
     {
         foreach (string role in DdtRoleNames.All)
@@ -115,7 +115,8 @@ public sealed partial class IdentityBootstrap(
 
         if (!granted.Succeeded)
         {
-            // Without its role the account administers nothing, and while it exists no later start makes one that does.
+            // Without its role, the account can't administer anything. While it exists, no later start would create one
+            // that can.
             IdentityResult deleted = await users.DeleteAsync(administrator).ConfigureAwait(false);
             LogBootstrapFailed(string.Join("; ", granted.Errors.Concat(deleted.Errors).Select(error => error.Description)));
             return;

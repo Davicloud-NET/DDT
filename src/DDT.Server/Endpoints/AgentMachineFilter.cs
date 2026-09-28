@@ -11,8 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Endpoints;
 
-// Loads the machine an agent's route names, tracked, once the token is that machine's own in its current generation:
-// 403 for another machine's token, 404 for a machine that is gone, 401 for a token from before it started over.
+// Loads the machine an agent's route names, tracked, once the token is that machine's own, in its current generation.
+// Returns 403 for another machine's token, 404 for a machine that doesn't exist, and 401 for a token from before it
+// started over.
 internal sealed class AgentMachineFilter : IEndpointFilter
 {
     private static readonly object s_machineKey = new();
@@ -32,7 +33,8 @@ internal sealed class AgentMachineFilter : IEndpointFilter
 
         HttpContext http = context.HttpContext;
 
-        // A body that failed to bind already set 400 and skips the handler; that answer stands, without a database read.
+        // A body that failed to bind already set 400 and skips the handler. That answer stands, without a database
+        // read.
         if (http.Response.StatusCode >= StatusCodes.Status400BadRequest)
         {
             return await next(context).ConfigureAwait(false);

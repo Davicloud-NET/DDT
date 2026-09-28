@@ -11,6 +11,6 @@ public sealed record CurrentUser(
     string Source,
     bool TwoFactorEnabled,
     IReadOnlyList<string> Roles,
-    // The account signed in with a password an administrator was shown, and every other request is refused until it
-    // sets its own.
+    // The user signed in with a password that an administrator was shown. Every other request is refused until they
+    // set their own.
     bool MustChangePassword);

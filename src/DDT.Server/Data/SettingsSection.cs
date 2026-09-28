@@ -19,7 +19,7 @@ public sealed class SettingsSection
     // Each secret field's ciphertext.
     public string Secrets { get; set; } = "{}";
 
-    // Checked on every save, so two saves never overwrite each other unnoticed; other processes reload when it grows.
+    // Checked on every save, so two saves never overwrite each other unnoticed. Other processes reload when it grows.
     public long Version { get; set; }
 
     public DateTimeOffset? UpdatedUtc { get; set; }

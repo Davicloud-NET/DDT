@@ -7,10 +7,10 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The machine as the console names it and as a technician finds it on the Machines page.
+// How the console names the machine, so a technician can find it on the Machines page.
 public static class MachineFacts
 {
-    // The header's name for the machine: its model, which the Machines page shows with its MAC address.
+    // The header's name for the machine. It's the model, which the Machines page shows next to the MAC address.
     public static string Label(Localizer l, ConsoleMachine? machine)
     {
         ArgumentNullException.ThrowIfNull(l);
@@ -25,7 +25,7 @@ public static class MachineFacts
         return model ?? (machine.MacAddresses.Count > 0 ? Say.Mac(machine.MacAddresses[0]) : l.T("This machine"));
     }
 
-    // What tells this machine apart on the Machines page: the MAC address first, as the page shows it.
+    // What identifies this machine on the Machines page. The MAC address comes first, like on the page.
     public static IReadOnlyList<Fact> Identity(Localizer l, ConsoleMachine machine)
     {
         ArgumentNullException.ThrowIfNull(l);
@@ -86,7 +86,7 @@ public static class MachineFacts
         return facts;
     }
 
-    // The maker and the model, such as "Dell Inc. Latitude 7450", with the maker once where the model names it too.
+    // The maker and the model, like "Dell Inc. Latitude 7450". If the model already names the maker, it appears once.
     public static string? Join(string? manufacturer, string? model)
     {
         string? maker = string.IsNullOrWhiteSpace(manufacturer) ? null : manufacturer.Trim();

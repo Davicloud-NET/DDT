@@ -9,8 +9,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
-// Hashing the agent on every check would read it every time a machine boots, so the hash is kept until the
-// file's length or write time changes, which is also how replacing the file is noticed without a restart.
+// Hashing the agent on every check would read it every time a machine boots. So the hash is kept until the file's
+// length or write time changes. That's also how a replaced file is noticed without a restart.
 public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt)
 {
     // ddt-agent.exe is about 11 MB. The limit leaves room for a debug build and keeps a stray upload from filling the store.
@@ -57,7 +57,7 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
         return release;
     }
 
-    // The agent as an administrator uploads it, hashed as it is written.
+    // Saves the agent an administrator uploads, and hashes it while writing.
     public async Task<(ReleaseUploadStatus Status, AgentRelease? Release)> SaveAsync(Stream content, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);

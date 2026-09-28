@@ -10,7 +10,7 @@ import { Autocomplete, Input, Menu, SearchField, useFilter } from "react-aria-co
 import { PaletteSection } from "./PaletteSection";
 import { usePaletteEntries } from "./usePaletteEntries";
 
-// The palette's search and its results; choosing one goes there and closes the palette.
+// The palette's search and its results. Choosing a result goes there and closes the palette.
 export function Palette({ onDone }: { onDone: () => void }) {
   const { t } = useLingui();
   const navigate = useNavigate();

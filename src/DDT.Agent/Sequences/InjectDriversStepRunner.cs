@@ -47,7 +47,7 @@ public sealed class InjectDriversStepRunner(IToolRunner tools, RunDownloads down
         string cache = Path.Combine(directory, "cache");
         string unpacked = Path.Combine(directory, "packages", step.Id.ToString("D"));
 
-        // On the target disk, as Windows PE's own scratch space holds only 512 MB.
+        // On the target disk, because WinPE's scratch space only holds 512 MB.
         string scratch = Path.Combine(directory, "scratch");
         string logs = Path.Combine(directory, "logs");
         Directory.CreateDirectory(scratch);

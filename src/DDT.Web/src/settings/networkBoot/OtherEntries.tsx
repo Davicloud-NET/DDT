@@ -6,7 +6,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 
 import { Button } from "@/ui/Button";
 
-// The listed entries that name no interface a host reported, such as an address or an adapter still to come.
+// The listed entries that don't name an interface a host reported, such as an address or a future adapter.
 export function OtherEntries({
   others,
   editable,

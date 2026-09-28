@@ -45,7 +45,7 @@ export function usePointerGestures(
 
     points.set(event.pointerId, point);
     event.currentTarget.setPointerCapture(event.pointerId);
-    // A second finger starts the gesture over, as a pinch from where both are.
+    // A second finger restarts the gesture as a pinch from where both fingers are.
     gesture.current = { view: latest.current, points, start: new Map(points) };
   };
 

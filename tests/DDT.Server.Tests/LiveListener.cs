@@ -48,8 +48,8 @@ public sealed class LiveListener : IAsyncDisposable
 
         await connection.StartAsync(TestContext.Current.CancellationToken);
 
-        // The start completes with the handshake, before the hub has put the connection in its groups. The hub answers
-        // calls only after that, so the answer to one means that events to administrators reach it too.
+        // The start completes with the handshake, before the hub has put the connection in its groups. The hub only
+        // answers calls after that. So once a call is answered, events to administrators reach the connection too.
         await connection.InvokeAsync("UnwatchMachine", Guid.Empty, TestContext.Current.CancellationToken);
 
         return new LiveListener(connection);
@@ -63,7 +63,7 @@ public sealed class LiveListener : IAsyncDisposable
         return received.Reader;
     }
 
-    // For events without a payload; each one is recorded as the time it arrived.
+    // For events without a payload. Each one is recorded as the time it arrived.
     public ChannelReader<DateTimeOffset> Listen(string liveEvent)
     {
         Channel<DateTimeOffset> received = Channel.CreateUnbounded<DateTimeOffset>();

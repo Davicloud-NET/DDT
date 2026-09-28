@@ -6,9 +6,9 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// The one question a console over a pipe has open: a new one takes its place, and it waits while no console is
-// connected. send gets the console's messages under the slot's lock, so they keep the order of the changes, and a
-// console must not call the slot while it holds a lock send takes. Answers may hold passwords, so nothing here logs.
+// The one question a console over a pipe has open. A new question replaces it, and it waits while no console is
+// connected. send gets the console's messages under the slot's lock, so they keep the order of the changes. A console
+// must not call the slot while it holds a lock that send takes. Answers may hold passwords, so nothing here logs.
 public sealed class QuestionSlot(Action<ConsoleMessage> send)
 {
     private readonly Lock _lock = new();
@@ -29,8 +29,8 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
         }
     }
 
-    // The console's answer, or none once cancelled, which withdraws the question, or once the next one takes its place.
-    // Gone once the slot has closed, so the asker can ask elsewhere.
+    // Returns the console's answer. There's no answer once cancelled, which withdraws the question, or once the next
+    // question replaces it. Gone once the slot has closed, so the asker can ask elsewhere.
     public async Task<QuestionOutcome> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
@@ -69,7 +69,7 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
         }
     }
 
-    // A console has said hello, and gets the open question, after whatever the console sends it first.
+    // A console has said hello. It gets the open question after whatever else is sent to it first.
     public void Connected()
     {
         lock (_lock)
@@ -97,8 +97,8 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
         }
     }
 
-    // The console's answer to question id. False where that is not the open question, as for an answer to one withdrawn
-    // or replaced meanwhile, which is left alone.
+    // The console's answer to question id. Returns false if that isn't the open question, for example when it was
+    // withdrawn or replaced meanwhile. Such an answer is ignored.
     public bool Answer(int id, ConsoleAnswer answer)
     {
         ArgumentNullException.ThrowIfNull(answer);
@@ -121,8 +121,8 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
         return true;
     }
 
-    // For good, as when the console is gone for the rest of the run: the open question and every one asked after this
-    // come back as Gone.
+    // Closes the slot for good, as when the console is gone for the rest of the run. The open question and every
+    // question asked after this come back as Gone.
     public void Close()
     {
         OpenQuestion? open;

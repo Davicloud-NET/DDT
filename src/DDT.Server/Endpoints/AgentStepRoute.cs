@@ -4,5 +4,5 @@
 
 namespace DDT.Server.Endpoints;
 
-// A step of a machine's run, as the agent's secret routes name it; bound with [AsParameters].
+// A step of a machine's run, as the agent's secret routes name it. Bound with [AsParameters].
 internal sealed record AgentStepRoute(Guid Id, Guid RunId, Guid StepId);

@@ -6,8 +6,8 @@ namespace DDT.Contracts.Messages;
 
 public static partial class ServerMessages
 {
-    // Accounts that steps use (Deployment > Accounts), the accounts given for one run, and the problems of a sequence that
-    // names them. Account is an account's name, input an input's name and host a share's server.
+    // Accounts that steps use (Deployment > Accounts), accounts given for one run, and the problems of sequences that
+    // name them. In the messages, account is an account's name, input an input's name and host a share's server.
 
     public static readonly MessageTemplate StepAccountNameTaken = Define(
         "stepAccount.nameTaken",

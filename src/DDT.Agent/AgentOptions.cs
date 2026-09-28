@@ -18,10 +18,10 @@ public sealed record AgentOptions(
     bool NoUpdate,
     string? KeyboardLayout)
 {
-    // Frozen: an agent from an older boot image passes this, last, to the newer agent it starts.
+    // Frozen. An agent from an older boot image passes this as the last argument to the newer agent it starts.
     public const string NoUpdateArgument = "--no-update";
 
-    // Frozen as well: an agent passes it, before NoUpdateArgument, with the console the server offers.
+    // Frozen too. An agent passes it before NoUpdateArgument, followed by the path of the console the server offers.
     public const string ConsoleArgument = "--console";
 
     public const string Usage =
@@ -123,7 +123,7 @@ public sealed record AgentOptions(
         }
     }
 
-    // Only the default agent.json may be missing; a file named on the command line must exist.
+    // Only the default agent.json may be missing. A file named on the command line must exist.
     private static bool TryApplyConfigFile(Arguments parsed, out string error)
     {
         string defaultConfigPath = Path.Combine(AppContext.BaseDirectory, "agent.json");

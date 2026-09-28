@@ -15,8 +15,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Machines;
 
-// Which machine a registration comes from, and what that does to it before its facts are copied: a new machine, one
-// that continues its run, or one that starts over. Nothing here saves.
+// Works out which machine a registration comes from, and what happens to it before its facts are copied. It's a new
+// machine, one that continues its run, or one that starts over. Nothing here saves.
 public sealed class MachineArrivals(
     DdtDbContext database,
     MachineTokenService tokens,
@@ -41,7 +41,7 @@ public sealed class MachineArrivals(
         Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active);
 
         // The service in Windows only ever continues a run. Starting over would make the machine Pending, and an
-        // approval would then hand Windows PE steps to a running Windows. It changes nothing, and removes itself.
+        // approval would then hand WinPE steps to a running Windows. So the service changes nothing and removes itself.
         if (registration.Environment == AgentEnvironment.Windows && !continuation.Resumes && continuation.Continued is null)
         {
             RegistrationLog.NothingToContinue(logger, machine?.Id, address ?? "unknown");
@@ -68,8 +68,8 @@ public sealed class MachineArrivals(
         return new Arrival(machine, active, before, continuation.Continued, tested, RegistrationRefusal.None);
     }
 
-    // Null when too many machines nobody approved are waiting. Only those count, so a fleet that was deployed and booted
-    // again never blocks a new machine.
+    // Returns null if too many machines that nobody approved are waiting. Only those count, so a fleet that was
+    // deployed and booted again never blocks a new machine.
     private async Task<Machine?> AddNewAsync(
         NormalisedRegistration registration,
         string? address,
@@ -130,9 +130,9 @@ public sealed class MachineArrivals(
         }
     }
 
-    // Anyone who reaches the server can present a machine's UUID and MAC, so without its resume token or its run's token
-    // a registration starts over: the approval is dropped, and the generation bump kills every token issued so far.
-    // Zero touch keeps the approval, and the earlier approver, for a web assignment netbooting from a listed network.
+    // Anyone who reaches the server can present a machine's UUID and MAC. So without its resume token or run token, a
+    // registration starts over. The approval is dropped, and the generation bump kills every token issued so far. Zero
+    // touch keeps the approval and the earlier approver for a web assignment that netboots from a listed network.
     private async Task StartOverAsync(Visit visit, CancellationToken cancellationToken)
     {
         (Machine machine, Deployment? active) = (visit.Machine, visit.Active);
@@ -185,7 +185,8 @@ public sealed class MachineArrivals(
         }
     }
 
-    // A resume keeps the machine's run as well, so it is answered as one: an agent told of no run takes it for over.
+    // A resume keeps the machine's run too, so it's answered as a continuation. An agent that's told of no run assumes
+    // the run is over.
     private Continuation Continues(NormalisedRegistration registration, Machine machine, Deployment? active)
     {
         bool resumes = Resumes(registration, machine);
@@ -200,8 +201,9 @@ public sealed class MachineArrivals(
         && payload.MachineId == machine.Id
         && payload.TokenGeneration == machine.TokenGeneration;
 
-    // An agent that restarted during its run, in Windows PE or as the service in Windows, continues it with the run token
-    // it kept on disk, in the generation it was issued in. It keeps the generation, so its other tokens stay valid.
+    // An agent that restarted during its run, in WinPE or as the service in Windows, continues it with the run token it
+    // kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's other
+    // tokens stay valid.
     private bool ContinuesRun(NormalisedRegistration registration, Machine machine, Deployment? active) =>
         tokens.ValidateRunToken(registration.RunToken) is { } payload
         && payload.MachineId == machine.Id
@@ -209,8 +211,9 @@ public sealed class MachineArrivals(
         && active is { State: DeploymentState.Running }
         && active.Id == payload.RunId;
 
-    // The same machine has the exact UUID string, so one without a UUID never lands on one with, and at least one of its
-    // network adapters: cloned virtual machines share a UUID, and cheap firmware reports SMBIOS's all-zeros "no UUID".
+    // The same machine has the exact UUID string, so one without a UUID never matches one with. It also shares a
+    // network adapter, because cloned virtual machines share a UUID and cheap firmware reports SMBIOS's all-zeros "no
+    // UUID".
     private async Task<Machine?> FindAsync(NormalisedRegistration registration, CancellationToken cancellationToken)
     {
         List<Machine> candidates = await database.Machines
@@ -224,7 +227,7 @@ public sealed class MachineArrivals(
             .FirstOrDefault();
     }
 
-    // ByRunToken says the run token continued the run; Continued is the run the agent goes on with.
+    // ByRunToken says the run token continued the run. Continued is the run the agent continues with.
     private sealed record Continuation(bool Resumes, bool ByRunToken, Deployment? Continued)
     {
         public static Continuation None { get; } = new(false, false, null);

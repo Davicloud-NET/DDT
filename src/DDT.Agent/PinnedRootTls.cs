@@ -7,17 +7,17 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Agent;
 
-// Trusts exactly the root the boot image pins and nothing in the machine store, and remembers how the latest handshake
-// fared, so a refused connection can say what to fix.
+// Trusts exactly the root the boot image pins, and nothing in the machine store. It remembers how the latest
+// handshake went, so a refused connection can say what to fix.
 internal sealed class PinnedRootTls(X509Certificate2 root)
 {
-    // What DDT names its roots, so a refused certificate from one can be told apart from an administrator's.
+    // How DDT names its roots, so a refused certificate from a DDT root can be told apart from an administrator's.
     private const string DdtRootSubjectPrefix = "CN=DDT root ";
 
     private int _certificateErrors;
     private string? _certificateIssuer;
 
-    // Revocation is not checked and missing intermediates are not downloaded: a provisioning network has no route to
+    // Revocation isn't checked and missing intermediates aren't downloaded. A provisioning network has no route to
     // either, and each attempt stalls the handshake past the connect timeout. The server has to send its full chain.
     public void Apply(SslClientAuthenticationOptions options)
     {

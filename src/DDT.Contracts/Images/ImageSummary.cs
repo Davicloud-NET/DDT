@@ -9,7 +9,7 @@ public sealed record ImageSummary(
     string Name,
     ImageKind Kind,
     string Sha256,
-    // For a raw disk image, the stored, compressed file.
+    // For a raw disk image, the size of the stored, compressed file.
     long SizeBytes,
     // 0 for a raw disk image.
     int WimIndex,
@@ -17,13 +17,13 @@ public sealed record ImageSummary(
     string? Architecture,
     string? Version,
     string? Language,
-    // For a raw disk image, the disk it holds.
+    // For a raw disk image, the size of the disk it holds.
     long InstalledBytes,
     string? OriginalFileName,
     DateTimeOffset UploadedUtc,
     string? UploadedBy,
-    // For raw disk images only: whether it starts with Secure Boot on, and BootDetail why.
+    // For raw disk images only. Whether the image boots with Secure Boot on, and BootDetail says why.
     ImageBootCapability? BootCapability = null,
     string? BootDetail = null,
-    // Names a raw disk image's uncompressed disk, which is the same for an upload of that disk in another format.
+    // The hash of a raw disk image's uncompressed disk. It's the same when that disk is uploaded in another format.
     string? SourceSha256 = null);

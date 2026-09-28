@@ -24,8 +24,8 @@ interface InspectorProps {
   className?: string;
 }
 
-// Beside the flow: the chosen node, the sequence's variables and inputs, every finding, and the sequence's own name
-// and description, one tab each.
+// The panel beside the flow. It has one tab each for the chosen node, the sequence's variables and inputs, all
+// findings, and the sequence's own name and description.
 export function Inspector({
   tab,
   onTab,

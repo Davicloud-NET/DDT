@@ -7,7 +7,7 @@ using Avalonia.Media;
 
 namespace DDT.MachineConsole.Controls;
 
-// Diagonal stripes as the web's repeating-linear-gradient(-45deg, ...) draws them. The widths are measured across the
+// Diagonal stripes, drawn like the web's repeating-linear-gradient(-45deg, ...). The widths are measured across the
 // stripes, and offset moves them sideways.
 public static class Stripes
 {
@@ -32,6 +32,6 @@ public static class Stripes
         };
     }
 
-    // How far the stripes move sideways in one period, which is where they look as they started.
+    // How far the stripes move sideways in one period. After that distance they look the same as at the start.
     public static double Repeat(double firstWidth, double secondWidth) => (firstWidth + secondWidth) * Math.Sqrt(2);
 }

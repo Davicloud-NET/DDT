@@ -7,8 +7,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Sequences;
 
-// Resumed is the run's state found on the disk after a restart. ConfirmedDisk is the disk the technician confirmed
-// with ERASE in this process: disk numbers can change at a restart, so a run chosen at the machine erases only that one.
+// Resumed is the run's state found on disk after a restart. ConfirmedDisk is the disk the technician confirmed with
+// ERASE in this process. Disk numbers can change at a restart, so a run chosen at the machine only erases that disk.
 public sealed record RunRequest(
     Guid MachineId,
     AgentRun Run,

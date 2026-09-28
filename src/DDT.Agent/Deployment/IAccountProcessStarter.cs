@@ -6,8 +6,8 @@ namespace DDT.Agent.Deployment;
 
 public interface IAccountProcessStarter
 {
-    // Starts fileName as the account, which is signed in already, with its environment and environment added. A tool
-    // that cannot start throws DeploymentStepException.
+    // Starts fileName as the account, which is already signed in. The process gets the account's environment plus the
+    // variables in environment. A tool that can't start throws DeploymentStepException.
     IToolProcess Start(
         IAccountSession account,
         string fileName,

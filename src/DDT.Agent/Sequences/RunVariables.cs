@@ -8,8 +8,8 @@ using DDT.Core.Disks;
 
 namespace DDT.Agent.Sequences;
 
-// The run variables the agent's steps output. They are kept in the run's state, so they survive restarts, and they
-// start with "ddt." so they never meet a name a sequence author chooses.
+// The run variables the agent's steps output. They're kept in the run's state, so they survive restarts. They start
+// with "ddt." so they never clash with a name a sequence author chooses.
 public static class RunVariables
 {
     // The unique GUIDs of the new system, Windows and recovery partitions, and those of the EFI system partitions
@@ -22,8 +22,8 @@ public static class RunVariables
     // "1" once the image is on the disk, which then has to be made bootable before the run ends.
     public const string WindowsApplied = "ddt.windows-applied";
 
-    // How often Windows PE started after the run was handed over to the installed Windows, which it then hands over
-    // again.
+    // How often WinPE started after the run was handed over to the installed Windows. Each time, WinPE hands the run
+    // over again.
     public const string WindowsPEReturns = "ddt.winpe-returns";
 
     // "1" once a raw disk image is on the disk, which then gets a boot entry for its fallback file before the run ends.
@@ -38,8 +38,8 @@ public static class RunVariables
 
     public const string Set = "1";
 
-    // Whether the name is one of these rather than a value of the run or a variable of its sequence, which no script
-    // sees and no report carries.
+    // Whether the name is one of these rather than a run value or a sequence variable. No script sees these, and no
+    // report carries them.
     public static bool IsOwn(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -60,8 +60,8 @@ public static class RunVariables
         };
     }
 
-    // What a raw disk image leaves: that it is written, its EFI system partition in the table the disk has now, and the
-    // EFI system partitions the clean erased.
+    // What a raw disk image leaves behind: that it's written, its EFI system partition in the disk's current table, and
+    // the EFI system partitions the clean erased.
     public static IReadOnlyDictionary<string, string> OfRawImage(GptLayout layout, IReadOnlyList<Guid> erased)
     {
         ArgumentNullException.ThrowIfNull(layout);
@@ -108,7 +108,7 @@ public static class RunVariables
             .Where(id => id != Guid.Empty)];
     }
 
-    // What Of wrote, or null when the variables do not hold all of it, as before Partition.
+    // What Of wrote, or null when the variables don't hold all of it, as before Partition.
     public static RunDiskIds? DiskIds(IReadOnlyDictionary<string, string> variables)
     {
         ArgumentNullException.ThrowIfNull(variables);

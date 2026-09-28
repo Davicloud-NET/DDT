@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import type { RebootStep } from "../sequences";
 import type { KindFieldsProps } from "./kindFields";
 
-// A restart has no settings; it runs in the phase of the step before it.
+// A restart has no settings. It runs in the phase of the step before it.
 export function RebootFields({ step }: KindFieldsProps<RebootStep>) {
   const name = step.name;
 

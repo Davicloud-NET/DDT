@@ -12,8 +12,8 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
 
-// The agent in Windows PE: registers the machine, polls until it may run a task sequence, and runs it. After a restart
-// it goes on with the run it finds on the disk, as long as the server still runs it.
+// The agent in WinPE. It registers the machine, polls until it may run a task sequence, and runs it. After a restart
+// it continues the run it finds on disk, as long as the server still has that run going.
 public sealed class AgentLoop
 {
     private readonly IAgentServer _server;
@@ -27,7 +27,7 @@ public sealed class AgentLoop
     private readonly ConsolePrompts _prompts;
     private readonly RunStarter _runStarter;
 
-    // The tokens every registration, poll, report and run renews; the next registration sends their resume token.
+    // The tokens that every registration, poll, report and run renews. The next registration sends their resume token.
     private DeploymentTokens? _tokens;
 
     private bool _toldNoDeployments;
@@ -48,7 +48,7 @@ public sealed class AgentLoop
         _runStarter = new RunStarter(server, runner, _runs, _prompts, _registrar, log);
     }
 
-    // Shows the logo the registration names on the graphical console; null for the text console.
+    // Shows the logo named in the registration on the graphical console. Null for the text console.
     public ConsoleLogo? Logo { get; init; }
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ public sealed class AgentLoop
     {
         _log.Information($"DDT agent {_machine.AgentVersion}");
 
-        // A start that finds a restart still due makes it first, without registering.
+        // If a restart is still due, do it first, without registering.
         if (await _runner.RestartIfDueAsync(cancellationToken).ConfigureAwait(false) is { } restarted)
         {
             return restarted == RunOutcome.Restarting ? AgentExitCodes.Restarting : AgentExitCodes.Stopped;
@@ -82,8 +82,8 @@ public sealed class AgentLoop
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            // After a refused token, never register again in a tight loop: two agents fighting over one
-            // machine would otherwise hammer the server.
+            // After a refused token, never register again in a tight loop. Two agents fighting over one machine
+            // would hammer the server otherwise.
             if (!first && !await CancellableDelay.WaitAsync(AgentLimits.MinRetryDelay, _timeProvider, cancellationToken).ConfigureAwait(false))
             {
                 return AgentExitCodes.Stopped;
@@ -104,7 +104,7 @@ public sealed class AgentLoop
                 return AgentExitCodes.Rejected;
             }
 
-            // The server sends a resume token with every token; one missing and never renewed means the next
+            // The server sends a resume token with every token. If it's missing and never renewed, the next
             // registration sends none.
             _tokens = new DeploymentTokens(token, registration.ResumeToken ?? string.Empty);
             _log.Information($"Registered as machine {registration.MachineId}, {Describe(registration.State)}");
@@ -119,7 +119,7 @@ public sealed class AgentLoop
         return AgentExitCodes.Stopped;
     }
 
-    // Null once stopped. The console takes up the language and the logo the registration names.
+    // Returns null once stopped. The console switches to the language and the logo named in the registration.
     private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
     {
         try
@@ -150,8 +150,8 @@ public sealed class AgentLoop
         return registration;
     }
 
-    // Returns null to register again, or an exit code. Requests stay on this loop, in order: only reading the
-    // keyboard runs alongside polling, and a run is awaited here, with its own heartbeat instead of polls.
+    // Returns null to register again, or an exit code. Requests stay on this loop, in order. Only reading the
+    // keyboard runs alongside polling. A run is awaited here and sends its own heartbeat instead of polls.
     private async Task<int?> PollAsync(PollState poll, CancellationToken cancellationToken)
     {
         _prompts.StartSession();
@@ -204,7 +204,7 @@ public sealed class AgentLoop
                 return PollStep.Wait;
             }
 
-            // A run that failed leaves the machine to pick again, which it asks the server about at once.
+            // After a failed run the machine may pick again, so it asks the server right away.
             return outcome == RunOutcome.TokenRejected ? PollStep.End(null)
                 : RunStarter.ExitCodeAfter(outcome) is { } exitCode ? PollStep.End(exitCode)
                 : PollStep.Now;
@@ -230,7 +230,7 @@ public sealed class AgentLoop
         }
     }
 
-    // The outcome of a run this poll ran, or null when it ran none.
+    // Returns the outcome of the run this poll ran, or null if it didn't run one.
     private async Task<RunOutcome?> PollOnceAsync(PollState poll, CancellationToken cancellationToken)
     {
         AgentNextResult next = await _server.NextAsync(poll.MachineId, poll.Tokens.Token, cancellationToken).ConfigureAwait(false);
@@ -261,7 +261,7 @@ public sealed class AgentLoop
         return null;
     }
 
-    // Takes up the server's answer, and returns the run the machine may run, if any.
+    // Applies the server's answer and returns the run the machine may run, if any.
     private AgentRun? ApplyNext(PollState poll, AgentNextResult next)
     {
         poll.Failures = 0;
@@ -295,7 +295,7 @@ public sealed class AgentLoop
         return authorized ? next.Run : null;
     }
 
-    // Stopped once cancelled; otherwise the answer typed before the next poll is due, if any.
+    // Stopped is true once cancelled. Otherwise it returns the answer typed before the next poll is due, if any.
     private async Task<(bool Stopped, ConsoleAnswer? Answer)> WaitForPollOrAnswerAsync(TimeSpan interval, CancellationToken cancellationToken)
     {
         if (_prompts.Typing is not { } typing)
@@ -338,8 +338,8 @@ public sealed class AgentLoop
         }
     }
 
-    // A failure other than a refused token leaves the lines queued for the next attempt, silently: a warning per
-    // failed flush would itself fill the queue.
+    // Any failure except a refused token keeps the lines queued for the next attempt, without a warning.
+    // A warning per failed flush would fill the queue by itself.
     private async Task FlushAsync(PollState poll, CancellationToken cancellationToken)
     {
         try
@@ -360,8 +360,8 @@ public sealed class AgentLoop
         _ => state.ToString(),
     };
 
-    // One registration's polling: the machine's tokens, its state and sign-in as the server last said, and when to
-    // poll next.
+    // The polling state of one registration. It holds the machine's tokens, its state and sign-in as the server last
+    // reported them, and when to poll next.
     private sealed class PollState(AgentRegistrationResult registration, DeploymentTokens tokens)
     {
         public Guid MachineId { get; } = registration.MachineId;
@@ -377,7 +377,8 @@ public sealed class AgentLoop
         public int Failures { get; set; }
     }
 
-    // What polling does next: waits for the next poll, polls again at once, or ends with ExitCode, null to register again.
+    // What polling does next. It waits for the next poll, polls again right away, or ends with ExitCode.
+    // A null ExitCode means register again.
     private readonly record struct PollStep(bool Ends, int? ExitCode, bool AtOnce)
     {
         public static PollStep Wait => new(false, null, false);

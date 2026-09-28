@@ -27,7 +27,7 @@ public static class QuestionScreens
             EraseQuestion erase => new EraseViewModel(l, id, erase, answer),
             SecureBootQuestion secureBoot => new SecureBootViewModel(l, id, secureBoot, state?.Machine.TrustedUefiCas, answer),
 
-            // After the pick the list of sequences is a step back; at the start of a run there is none.
+            // After a sequence is picked, Back returns to the list. At the start of a run there's no list.
             InputsQuestion inputs => new InputsViewModel(
                 l,
                 id,

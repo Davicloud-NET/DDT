@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.BootImage;
 
-// The description next to boot.wim is polled rather than watched: a network share or a container volume does not
+// Polls the description next to boot.wim instead of watching it. A network share or a container volume doesn't
 // reliably report changes. A new build is pushed, so an open page shows it.
 public sealed partial class BootImageWatcher(
     BootImageCatalog catalog,
@@ -35,7 +35,7 @@ public sealed partial class BootImageWatcher(
                 continue;
             }
 
-            // A failed look must not stop the host, which also runs the web UI and the pxe role. The next tick tries again.
+            // A failed read must not stop the host, which also runs the web UI and the pxe role. The next tick retries.
             try
             {
                 await using AsyncServiceScope scope = scopes.CreateAsyncScope();

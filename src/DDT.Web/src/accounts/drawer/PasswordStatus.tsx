@@ -17,7 +17,7 @@ interface PasswordStatusProps {
   errors: string[];
 }
 
-// Where an account's password stands while no new one is typed: stored, not set, unreadable or cleared on save.
+// The state of an account's password while no new one is typed: stored, not set, unreadable or cleared on save.
 export function PasswordStatus({
   action,
   unreadable,

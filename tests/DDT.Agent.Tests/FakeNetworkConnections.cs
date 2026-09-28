@@ -6,8 +6,8 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for mpr.dll, keeping the connections in a list and recording every call but passwords. A connection from
-// before the step, as the constructor names it, makes a first Add to the same server answer 1219 until cancelled.
+// Stands in for mpr.dll. It keeps the connections in a list and records every call except passwords. A connection from
+// before the step, passed to the constructor, makes the first Add to the same server answer 1219 until it's cancelled.
 internal sealed class FakeNetworkConnections : INetworkConnections
 {
     private readonly List<string> _existing;

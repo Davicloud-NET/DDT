@@ -121,7 +121,8 @@ describe("MachinesPage", () => {
       await act(() => vi.advanceTimersByTimeAsync(5_000));
       expect(reads()).toBe(3);
 
-      // Back up, the list is read once for what the hub sent meanwhile, and then only pushed.
+      // Once the connection is back, the list is read once to catch up on what the hub sent meanwhile. After that,
+      // changes only arrive as pushes.
       await act(async () => {
         hub?.reconnect();
         await vi.advanceTimersByTimeAsync(15_000);

@@ -11,7 +11,7 @@ import { formattingLocale } from "@/i18n/i18n";
 import { clockNote, type MachineLogEntry } from "./log";
 import { levelLabel } from "./logLabels";
 
-// A row shows one line of a message; this shows all of it with every time the server knows.
+// A row shows only the first line of a message. This shows all of it, with every timestamp the server knows.
 export function LineDetail({
   line,
   step,

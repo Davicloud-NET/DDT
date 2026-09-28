@@ -20,7 +20,8 @@ export interface RunFlowModel {
   path: RunPath;
 }
 
-// The run's own copy of its sequence, laid out as the flow builder lays it out, and the path the run took on it.
+// The run's own copy of its sequence, laid out the same way as in the flow builder, and the path the run took through
+// it.
 export function useRunFlowModel(view: DeploymentView, summary: DeploymentSummary): RunFlowModel {
   const definition = view.definition;
   const steps = useMemo(() => definition?.steps ?? [], [definition]);

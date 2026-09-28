@@ -66,7 +66,7 @@ function slotOfDrop(index: TreeIndex, key: string, position: DropPosition): Slot
       };
 }
 
-// The nodes among dragged rows; a Then or an Else stays with its IF.
+// The nodes among the dragged rows. A Then or an Else stays with its IF.
 function nodeKeys(keys: Iterable<Key>): string[] {
   return [...keys].map(String).filter((key) => !key.includes(BRANCH_SEPARATOR));
 }
@@ -93,7 +93,7 @@ export function outlineDropOperation(
   return slot === null ? "cancel" : "move";
 }
 
-// The nodes a drop moves and where, or null where the move would put a node inside itself.
+// The nodes a drop moves and where to, or null if the move would put a node inside itself.
 export function outlineMove(
   index: TreeIndex,
   keys: Iterable<Key>,

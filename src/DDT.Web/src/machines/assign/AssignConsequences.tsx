@@ -18,7 +18,7 @@ interface AssignConsequencesProps {
   erases: boolean;
   severalDisks: boolean;
   risk: SecureBootRisk | null;
-  // The id the allowance's checkbox is described by.
+  // The id of the warning that describes the allowance checkbox.
   warningId: string;
   // Undefined until the deployment settings loaded.
   options: DeploymentOptionsView | undefined;

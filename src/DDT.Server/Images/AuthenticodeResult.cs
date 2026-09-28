@@ -6,8 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Images;
 
-// Signer, for Trusted and SignedByOthers, is the signing certificate's common name, and Reason, for the others, ends a
-// sentence about the file. Anchors are the trusted certificates the valid signatures lead to.
+// For Trusted and SignedByOthers, Signer is the signing certificate's common name. For the other statuses, Reason is
+// the end of a sentence about the file. Anchors are the trusted certificates the valid signatures lead to.
 public sealed record AuthenticodeResult(
     AuthenticodeStatus Status,
     ushort? Machine,

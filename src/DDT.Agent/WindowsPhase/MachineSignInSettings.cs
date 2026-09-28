@@ -7,8 +7,8 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The machine's sign-in settings under HKEY_LOCAL_MACHINE as DDT's session changes them and puts them back. Setup signs
-// in its own first user between its restarts, so SignInAutomatically waits for setup to finish. Restore runs when a run
+// Changes the machine's sign-in settings under HKEY_LOCAL_MACHINE for DDT's session, and puts them back. Setup signs in
+// its own first user between its restarts, so SignInAutomatically waits for setup to finish. Restore runs when a run
 // ends, which can be during setup.
 internal sealed class MachineSignInSettings(RegistryKey machine)
 {
@@ -24,7 +24,7 @@ internal sealed class MachineSignInSettings(RegistryKey machine)
         policies.SetValue("EnableFirstLogonAnimation", 0, RegistryValueKind.DWord);
     }
 
-    // Auto-logon that signs in again after a sign-out, with the password as the LSA secret Winlogon reads.
+    // Turns on auto-logon that signs in again after a sign-out. The password is the LSA secret Winlogon reads.
     public void SignInAutomatically()
     {
         using RegistryKey winlogon = machine.CreateSubKey(DeploySession.WinlogonPath);
@@ -38,8 +38,8 @@ internal sealed class MachineSignInSettings(RegistryKey machine)
         winlogon.DeleteValue("AutoLogonCount", throwOnMissingValue: false);
     }
 
-    // Auto-logon off, and the values only DDT set gone. The policies go back as the file says they were, or are taken
-    // out when it never said, as after a failure before the service read them.
+    // Turns auto-logon off and removes the values only DDT set. The policies go back to what the file says they were.
+    // If the file never said, as after a failure before the service read them, they're removed.
     public void Restore(DeploySessionFile? file)
     {
         using (RegistryKey winlogon = machine.CreateSubKey(DeploySession.WinlogonPath))

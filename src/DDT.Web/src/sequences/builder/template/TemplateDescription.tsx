@@ -8,8 +8,8 @@ import { Text } from "react-aria-components";
 
 import { parseTemplate, renderTemplate } from "../../flow/templates";
 
-// What a template field says under it: a name nothing defines before the server finds it, and the template filled in
-// for a sample machine.
+// The text under a template field. It flags a name that nothing defines before the server does, and shows the
+// template filled in for a sample machine.
 export function TemplateDescription({
   value,
   hint,

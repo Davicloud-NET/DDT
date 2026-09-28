@@ -33,7 +33,8 @@ interface AccountFormOptions {
 
 export type AccountForm = ReturnType<typeof useAccountForm>;
 
-// An account's edit and its save, which the server takes only after the person entered their password again.
+// Holds the edits to an account and saves them. The server only accepts the save after the person entered their
+// password again.
 export function useAccountForm({ account, onClose }: AccountFormOptions) {
   const queryClient = useQueryClient();
   const [base, setBase] = useState<AccountView | null>(account);
@@ -41,7 +42,7 @@ export function useAccountForm({ account, onClose }: AccountFormOptions) {
   const [findings, setFindings] = useState<Findings>(noFindings);
   const [theirs, setTheirs] = useState<AccountView | null>(null);
   const [gone, setGone] = useState(false);
-  // The revision a save goes out with again once the password was entered.
+  // The revision to save with again once the password is entered.
   const [reauth, setReauth] = useState<number | null>(null);
 
   const change = (patch: Partial<AccountEdit>) => {

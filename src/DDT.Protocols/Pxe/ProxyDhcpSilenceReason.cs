@@ -4,8 +4,8 @@
 
 namespace DDT.Protocols.Pxe;
 
-// Answering the wrong client on someone else's segment is worse than not answering, so every reason to stay quiet is
-// named: without a switch port mirror, it is all that explains why firmware is ignored.
+// Answering the wrong client on someone else's segment is worse than not answering, so every reason to stay quiet has
+// a name. Without a switch port mirror, it's the only way to tell why firmware is ignored.
 public enum ProxyDhcpSilenceReason
 {
     None = 0,

@@ -17,8 +17,8 @@ const FIELDS = ["name", "role", "expiresInDays"];
 
 export type MakeTokenState = ReturnType<typeof useMakeToken>;
 
-// The make dialog's fields and the create call. The server shows the secret only in its answer, so it is kept here
-// until the dialog closes; the list gets the token without it.
+// The make dialog's fields and the create call. The server only returns the secret in this answer, so it's kept
+// here until the dialog closes. The list gets the token without it.
 export function useMakeToken(user: CurrentUser) {
   const queryClient = useQueryClient();
   const roles = rolesUpTo(highestRole(user.roles));

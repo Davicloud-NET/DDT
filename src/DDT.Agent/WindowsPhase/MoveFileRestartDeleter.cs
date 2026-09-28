@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Lists the path for the session manager, which deletes what MoveFileEx listed, in order, early in the next start of
+// Lists the path for the session manager. It deletes what MoveFileEx listed, in order, early in the next start of
 // Windows and before any service starts. Only SYSTEM or an administrator may list anything.
 public sealed class MoveFileRestartDeleter(AgentLog log) : IRestartDeleter
 {

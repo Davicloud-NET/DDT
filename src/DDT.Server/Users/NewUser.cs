@@ -11,7 +11,7 @@ namespace DDT.Server.Users;
 
 internal sealed record NewUser(string UserName, string DisplayName, string? Email, string Role)
 {
-    // Null with the problems when the request has any.
+    // Returns a null user and the problems when the request has any.
     public static (NewUser? User, FieldProblems Problems) Read(CreateUserRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

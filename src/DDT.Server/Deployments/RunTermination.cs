@@ -13,13 +13,14 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Deployments;
 
 // Ends a machine's run from outside the run: a stop, a rejection, a restart of the machine or an agent gone silent.
-// Nothing here saves; the caller saves the change with its audit rows, and Machine's concurrency tokens settle the races.
+// Nothing here saves. The caller saves the change with its audit rows, and Machine's concurrency tokens settle the
+// races.
 public sealed class RunTermination(DdtDbContext database, RunQueries queries, TimeProvider timeProvider)
 {
     private const string SomeOperator = "an operator";
 
-    // Cancels an assigned run, or stops a running one: the agent's next call is refused, and its resume token no longer
-    // matches, so the machine starts over as Pending when it registers again.
+    // Cancels an assigned run, or stops a running one. The agent's next call is refused, and its resume token no longer
+    // matches. So the machine starts over as Pending when it registers again.
     public async Task<DeploymentDecision> EndCurrentAsync(Machine machine, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -72,9 +73,10 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         machine.ActiveDeploymentId = null;
     }
 
-    // A registration that does not continue the machine's run means the agent that had it is gone, so a running run
-    // fails. A run chosen at the machine or by a rule is cancelled: the disk and the ERASE typed there, and the approval
-    // that took the rule's sequence, belonged to that boot. A web assignment stays for the next sign-in or netboot.
+    // A registration that doesn't continue the machine's run means the agent that had it is gone, so a running run
+    // fails. A run chosen at the machine or by a rule is cancelled, because the disk and the ERASE typed there, and the
+    // approval that took the rule's sequence, belonged to that boot. A web assignment stays for the next sign-in or
+    // netboot.
     public async Task EndForRestartAsync(
         Machine machine,
         Deployment? active,
@@ -99,7 +101,7 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         }
     }
 
-    // A running run whose agent has been silent for longer than a run token lasts, see AbandonedRunSweeper.
+    // For a running run whose agent has been silent for longer than a run token lasts (see AbandonedRunSweeper).
     public async Task EndForLostContactAsync(Machine machine, Deployment running, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);

@@ -7,7 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Any of a few, as a row of keys that each turn on and off. The answer names the chosen values in the order shown.
+// Any number of a few options, shown as a row of keys that each toggle on and off. The answer lists the chosen values
+// in the order shown.
 public sealed class MultiChoiceFieldViewModel : InputFieldViewModel
 {
     public MultiChoiceFieldViewModel(Localizer localizer, ConsoleInput input, Action changed)

@@ -7,7 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The Appropriate Legal Notices, which GPL section 5(d) asks an interactive user interface to display.
+// The Appropriate Legal Notices. GPL section 5(d) requires an interactive user interface to display them.
 public sealed class LicencesViewModel : OverlayViewModel
 {
     private LegalDocument _selected;
@@ -66,7 +66,7 @@ public sealed class LicencesViewModel : OverlayViewModel
         }
     }
 
-    // The selected text a paragraph at a time, so a long one scrolls without laying out all of it.
+    // The selected text, split into paragraphs, so a long text scrolls without laying out all of it.
     public IReadOnlyList<string> Lines => _lines ??= LegalTexts.Paragraphs(LegalTexts.Read(Selected.Document.File));
 
     public override void Refresh()

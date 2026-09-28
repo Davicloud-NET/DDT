@@ -13,8 +13,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The fresh proof of identity the fields that grant roles or trust need: a password, checked like a sign-in, and a
-// token bound to the account and its security stamp for 5 minutes.
+// The fresh proof of identity that fields granting roles or trust need. It takes a password, checked like a sign-in,
+// and gives a token bound to the account and its security stamp for 5 minutes.
 public sealed class ReauthenticationTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
 {
     [Fact]

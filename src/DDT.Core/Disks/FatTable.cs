@@ -6,12 +6,12 @@ using System.Buffers.Binary;
 
 namespace DDT.Core.Disks;
 
-// A file allocation table: the next cluster of every cluster, packed as FAT12, FAT16 or FAT32 packs it.
+// A file allocation table. It holds the next cluster of every cluster, packed the FAT12, FAT16 or FAT32 way.
 internal sealed class FatTable(FatType type, byte[] bytes)
 {
     public byte[] Bytes => bytes;
 
-    // What FatVolumeBuilder writes to end a chain; IsEnd also takes the reserved values just below it.
+    // What FatVolumeBuilder writes to end a chain. IsEnd also accepts the reserved values just below it.
     public uint EndMarker => type switch
     {
         FatType.Fat12 => 0xFFF,
@@ -34,7 +34,8 @@ internal sealed class FatTable(FatType type, byte[] bytes)
         _ => value >= 0x0FFFFFF8,
     };
 
-    // FAT12 packs two entries into three bytes: an even cluster in the low 12 bits of its pair, an odd one in the high.
+    // FAT12 packs two entries into three bytes. An even cluster uses the low 12 bits of its byte pair, an odd one the
+    // high 12 bits.
     public uint Get(uint cluster) => type switch
     {
         FatType.Fat12 => (cluster & 1) == 0

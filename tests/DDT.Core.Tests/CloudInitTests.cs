@@ -63,8 +63,8 @@ public sealed class CloudInitTests
         Assert.Equal(MachineVariableNames.ComputerName, CloudInitTemplate.Known("COMPUTERNAME"));
     }
 
-    // The run's values come with the machine's, and a seed may use them by name, ignoring case, filters included. A
-    // name with no value stays as it is, as cloud-init's own do.
+    // The run's values come along with the machine's, and a seed may use them by name, ignoring case, with filters. A
+    // name without a value stays as it is, just like cloud-init's own placeholders.
     [Fact]
     public void FillsInTheRunsValuesAndLeavesNamesWithoutOne()
     {

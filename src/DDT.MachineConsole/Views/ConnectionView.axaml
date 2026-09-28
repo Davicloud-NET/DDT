@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The server the boot image names, and how far a failed request got, which enters with the first failure. -->
+<!-- The server named in the boot image, and how far a failed request got. That part animates in with the first
+     failure. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

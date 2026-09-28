@@ -40,8 +40,8 @@ public static class RateLimitingExtensions
                 QueueLimit = 0,
             }));
 
-        // A site behind one address can boot a whole lab at once, so these are generous. Registration is open
-        // to anyone who reaches the server; this and the cap on waiting machines keep that from flooding it.
+        // A site behind one address can boot a whole lab at once, so these limits are generous. Registration is open
+        // to anyone who reaches the server. This limit and the cap on waiting machines keep that from flooding it.
         limiter.AddPolicy<string>(RateLimitPolicies.AgentRegistration, context => RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
@@ -60,8 +60,8 @@ public static class RateLimitingExtensions
                 QueueLimit = 0,
             }));
 
-        // Every machine of a lab downloads the agent as it boots. They are served a few at a time per address
-        // and the rest wait their turn, rather than being refused and staying on an older agent.
+        // Every machine in a lab downloads the agent as it boots. A few are served at a time per address and the rest
+        // wait their turn. Refusing them would leave them on an older agent.
         limiter.AddPolicy<string>(RateLimitPolicies.AgentDownload, context => RateLimitPartition.GetConcurrencyLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new ConcurrencyLimiterOptions

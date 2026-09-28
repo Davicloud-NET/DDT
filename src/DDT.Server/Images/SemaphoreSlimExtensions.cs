@@ -6,7 +6,7 @@ namespace DDT.Server.Images;
 
 public static class SemaphoreSlimExtensions
 {
-    // For await using, which releases the semaphore however the block ends.
+    // Use it with await using, which releases the semaphore however the block ends.
     public static async Task<SemaphoreHold> EnterAsync(this SemaphoreSlim semaphore, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(semaphore);

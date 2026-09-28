@@ -8,8 +8,8 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Core.Wim;
 
-// One wimlib operation's progress target and cancellation, and what its callback saw, reachable from the
-// callback through a GCHandle passed as wimlib's progress context.
+// Holds one wimlib operation's progress target, its cancellation and what its callback saw. The callback reaches it
+// through a GCHandle passed as wimlib's progress context.
 internal sealed unsafe class WimProgressState : IDisposable
 {
     private const int ExtractStreamsMessage = 4;
@@ -41,7 +41,7 @@ internal sealed unsafe class WimProgressState : IDisposable
 
     public void Dispose() => _handle.Dispose();
 
-    // wimlib answers an abort from the callback with error 76; this turns it back into what caused it.
+    // wimlib answers an abort from the callback with error 76. This turns it back into what caused the abort.
     public void ThrowIfAborted()
     {
         if (_failure is not null)
@@ -56,7 +56,8 @@ internal sealed unsafe class WimProgressState : IDisposable
     private static int OnProgress(int message, void* info, nint context) =>
         GCHandle<WimProgressState>.FromIntPtr(context).Target.Receive(message, info);
 
-    // An exception must not escape into wimlib, so a throwing progress handler is kept and the operation aborted.
+    // An exception mustn't escape into wimlib. So when a progress handler throws, the exception is kept and the
+    // operation is aborted.
     private int Receive(int message, void* info)
     {
         try

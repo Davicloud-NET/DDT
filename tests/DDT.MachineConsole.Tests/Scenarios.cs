@@ -41,8 +41,8 @@ internal static class Scenarios
         Step(8, "Restart", "reboot", ConsolePhase.Windows, ConsoleStepState.Pending),
     ];
 
-    // A run of a tree: an IF on the model took Then, so the standard image is off the path, and a Pause step comes after
-    // the drivers. The path has eight steps, as the flat run does.
+    // A run of a tree. An IF on the model took Then, so the standard image is off the path, and a Pause step comes
+    // after the drivers. The path has eight steps, like the flat run.
     public static readonly ConsoleStep[] TreeSteps =
     [
         Step(1, "Partition the disk", "partition", ConsolePhase.WindowsPE, ConsoleStepState.Done) with { Pass = 1 },
@@ -133,8 +133,8 @@ internal static class Scenarios
         "Check the BIOS",
         "Set the boot order to the network first and turn TPM 2.0 on, then come back to this screen.");
 
-    // What a sequence asks before it starts; refused, the agent names what was wrong under the fields, and the fields are
-    // one more, which the panel scrolls to.
+    // What a sequence asks before it starts. When refused, the agent names what was wrong under the fields. The refused
+    // version also has one more field, which the panel scrolls to.
     public static InputsQuestion Inputs(bool refused = false) => new(
         "Windows 11 24H2 with Office",
         [

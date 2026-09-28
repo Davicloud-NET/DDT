@@ -69,7 +69,7 @@ describe("moving through the flow", () => {
     expect(go("a", "down")).toBe("b");
     expect(go("b", "down")).toBe("c");
     expect(go("c", "down")).toBe("d");
-    // The last node of a branch goes on past the join.
+    // The last node of a branch continues past the join.
     expect(go("d", "down")).toBe("f");
     expect(go("e", "down")).toBe("f");
     expect(go("f", "down")).toBe("g");

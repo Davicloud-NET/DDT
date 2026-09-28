@@ -11,8 +11,8 @@ using Xunit;
 
 namespace DDT.Pxe.Tests;
 
-// The listeners follow the settings: a new version restarts them with the new setup, and one whose sockets do not bind
-// gives way to the one before. Loopback ports stand in for 67, 4011 and 69.
+// The listeners follow the settings. A new version restarts them with the new setup. A setup whose sockets don't bind
+// is replaced by the one before. Loopback ports stand in for 67, 4011 and 69.
 public sealed class PxeHostTests : IDisposable
 {
     private readonly string _boot = Directory.CreateTempSubdirectory("ddt-pxe-host-").FullName;
@@ -58,7 +58,8 @@ public sealed class PxeHostTests : IDisposable
         Assert.Null(host.Applied);
     }
 
-    // Interfaces are found anew at every apply, so a rescan, which only raises the version, picks up a changed address.
+    // Interfaces are found again at every apply. So a rescan, which only raises the version, picks up a changed
+    // address.
     [Fact]
     public async Task EveryApplyFindsTheInterfacesAgain()
     {
@@ -93,8 +94,7 @@ public sealed class PxeHostTests : IDisposable
         await host.StopAsync(TestContext.Current.CancellationToken);
     }
 
-    // With nothing that ran before, the listeners stay stopped; the host stops only when configuration named what to
-    // serve.
+    // When nothing ran before, the listeners stay stopped. The host only stops when configuration named what to serve.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

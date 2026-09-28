@@ -40,8 +40,9 @@ public sealed class ProxyDhcpHandler
             return new ProxyDhcpOutcome { Kind = ProxyDhcpOutcomeKind.Unparseable, ParseError = error };
         }
 
-        // A broadcast DISCOVER says nothing about which of our addresses the client can reach, so the interface's first
-        // answers it. A request on 4011 or from a relay was sent to one of ours, which option 54 must then carry.
+        // A broadcast DISCOVER says nothing about which of our addresses the client can reach, so the interface's
+        // first address answers it. A request on 4011 or from a relay was sent to one of our addresses, and option 54
+        // must carry that one.
         IPAddress localAddress = served.Owns(arrival.Address) ? arrival.Address : served.Address;
 
         ProxyDhcpDecision decision = ProxyDhcpResponder.Respond(

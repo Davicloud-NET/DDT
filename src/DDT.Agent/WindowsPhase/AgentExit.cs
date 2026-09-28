@@ -7,12 +7,12 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.WindowsPhase;
 
-// How the service ends: waiting for a restart of Windows, or with the agent's removal once the run is over. DDT's
-// session ends first, and nothing may stop the removal half way.
+// How the service ends: it waits for Windows to restart, or removes the agent once the run is over. DDT's session ends
+// first, and nothing may stop the removal halfway.
 internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, WindowsPhaseConsole console, AgentLog log)
 {
-    // The state already says the step before the restart is done, so nothing may go on before the restart. Null when
-    // none is due.
+    // The state already says the step before the restart is done, so nothing may continue before the restart. Returns
+    // null when none is due.
     public async Task<int?> RestartIfDueAsync(CancellationToken cancellationToken)
     {
         if (!restart.IsDue)
@@ -26,19 +26,20 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
         return await restart.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    // Before the run tells the server, so a service that stops or dies before the restart makes it at its next start.
+    // Called before the run tells the server, so a service that stops or dies before the restart does it at its next
+    // start.
     public void RecordRestart() => restart.Record();
 
     public Task<int> WaitForRestartAsync(CancellationToken cancellationToken) => restart.WaitAsync(cancellationToken);
 
-    // After the server has the run's last report: Windows restarts once more after a finished run.
+    // Called after the server has the run's last report. Windows restarts once more after a finished run.
     public Task<int> EndAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         report.State == DeploymentState.Done
             ? RemoveAndRestartAsync(cancellationToken)
             : RemoveAsync(AgentExitCodes.Stopped, signOut: false, cancellationToken);
 
-    // After a failure the session waits for someone to sign out, and a stop may end that wait: the next start finds the
-    // run over and ends what is left.
+    // After a failure the session waits for someone to sign out, and a stop may end that wait. The next start then
+    // finds the run over and ends what's left.
     public async Task<int> RemoveAsync(int exitCode, bool signOut, CancellationToken cancellationToken)
     {
         if (!await console.EndAsync(signOut, cancellationToken).ConfigureAwait(false))
@@ -53,8 +54,8 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
         return exitCode;
     }
 
-    // The agent and the log it holds open go only when Windows next starts. A service that starts once more after it
-    // finds no run and only removes itself, so this restart never leads to another.
+    // The agent and the log it holds open are only deleted when Windows next starts. A service that starts once more
+    // after that finds no run and only removes itself, so this restart never leads to another.
     public async Task<int> RemoveAndRestartAsync(CancellationToken cancellationToken)
     {
         if (!await console.EndAsync(signOut: true, cancellationToken).ConfigureAwait(false))

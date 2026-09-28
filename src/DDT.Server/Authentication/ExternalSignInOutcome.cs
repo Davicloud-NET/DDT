@@ -17,7 +17,7 @@ public enum ExternalSignInOutcome
     TwoFactor,
     LockedOut,
 
-    // The identity belongs to no account, and single sign-on makes none.
+    // The identity doesn't belong to any account, and single sign-on doesn't create one.
     Unlinked,
     NotProvisioned,
 }

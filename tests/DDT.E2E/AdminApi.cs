@@ -35,7 +35,7 @@ internal sealed class AdminApi : IDisposable
 
     public CookieContainer Cookies { get; } = new();
 
-    // Trusts DDT's root and nothing else, as the agent does.
+    // Trusts DDT's root and nothing else, like the agent.
     public static SocketsHttpHandler Handler(X509Certificate2 rootCertificate, CookieContainer? cookies)
     {
         SocketsHttpHandler handler = new()
@@ -78,7 +78,7 @@ internal sealed class AdminApi : IDisposable
             throw new InvalidOperationException($"Signing in as {userName} ended with {response.Status}.");
         }
 
-        // The token is bound to the identity, so the one from before the sign in no longer counts.
+        // The token is bound to the identity, so the token from before the sign-in is no longer valid.
         await RefreshCsrfTokenAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -116,8 +116,8 @@ internal sealed class AdminApi : IDisposable
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
-    // A write that needs the signed-in user's password entered again, such as an account's: the proof of it goes with the
-    // request, as the page sends it after its dialog.
+    // A write that needs the signed-in user's password again, such as saving an account. The proof goes with the
+    // request, the same way the page sends it after its dialog.
     public async Task<TResult> SendReauthenticatedAsync<TBody, TResult>(
         JsonRequest<TBody> request,
         string password,
@@ -143,7 +143,7 @@ internal sealed class AdminApi : IDisposable
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
-    // For a request the server is to refuse: returns the body of its answer.
+    // For a request the server should refuse. Returns the body of the response.
     public async Task<string> SendRefusedAsync<TBody>(
         JsonRequest<TBody> request,
         HttpStatusCode expected,
@@ -156,7 +156,7 @@ internal sealed class AdminApi : IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    // A rule's delete answers the rules that are left, whose places moved; everything else answers nothing.
+    // Deleting a rule returns the remaining rules, because their positions moved. Every other delete returns nothing.
     public async Task DeleteAsync(string path, HttpStatusCode expected, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Delete, new Uri(path, UriKind.Relative));

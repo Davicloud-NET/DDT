@@ -12,7 +12,7 @@ public sealed record PackageSummary(
     PackageKind Kind,
     string Sha256,
     long SizeBytes,
-    // What the files take once unpacked, checked by unpacking them on the server without writing them.
+    // The space the files need once unpacked. The server checks it by unpacking them without writing them to disk.
     long ExpandedBytes,
     int FileCount,
     IReadOnlyList<HardwareModel> Targets,

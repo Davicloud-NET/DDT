@@ -7,8 +7,8 @@ using System.Text;
 
 namespace DDT.Core.Disks;
 
-// Lays out a FAT volume in memory with its files one after another. The label goes into the boot sector and the root
-// directory, where Linux's blkid reads it.
+// Lays out a FAT volume in memory, with its files one after another. The label goes into the boot sector and into the
+// root directory, where Linux's blkid reads it.
 public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNumber, DateTime timestamp)
 {
     public const int SectorSize = 512;
@@ -16,7 +16,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
     private const int DirectoryEntryBytes = 32;
     private const int RootEntries = 512;
 
-    // Drivers disagree about volumes whose cluster count is near a type's limit, so none is made there.
+    // Drivers disagree about volumes with a cluster count near a type's limit, so the builder stays this far away.
     private const int Margin = 16;
 
     private readonly FatBuildNode _root = new("", null);
@@ -28,7 +28,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
     // The first sector of the partition the volume goes into.
     public long HiddenSectors { get; init; }
 
-    // Adds a file, and the directories on its path that are not there yet. path separates them with \ or /.
+    // Adds a file and any missing directories on its path. The path separates them with \ or /.
     public void AddFile(string path, byte[] content)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -127,7 +127,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
             ?? throw new InvalidOperationException($"A volume of {sizeBytes} bytes is too large for FAT16. Ask for FAT32.");
     }
 
-    // The smallest clusters that give a cluster count the type allows.
+    // Picks the smallest cluster size that gives a cluster count the type allows.
     private static FatBootSector? Fitting(FatType type, long totalSectors)
     {
         for (int sectorsPerCluster = 1; sectorsPerCluster <= 64; sectorsPerCluster *= 2)
@@ -164,7 +164,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
                 _ => (FatVolume.MaxFatClusters16 + 1L + Margin, 0x0FFFFFF5L),
             };
 
-            // Larger clusters only make fewer of them, which cannot help a type that needs more.
+            // Larger clusters only mean fewer of them, which can't help when the type needs more.
             if (clusters < minimum)
             {
                 return null;
@@ -217,7 +217,8 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
 
     private static int ClustersFor(long bytes, int clusterBytes) => (int)((bytes + clusterBytes - 1) / clusterBytes);
 
-    // Clusters from 2 on: the FAT32 root directory first, then each directory's children before their own children.
+    // Hands out clusters from 2 on. The FAT32 root directory goes first. Then all children of a directory get their
+    // clusters before any grandchildren do.
     private uint AllocateClusters(FatBootSector boot, int clusterBytes)
     {
         uint next = 2;
@@ -266,7 +267,8 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
         }
     }
 
-    // FAT32 adds an FSInfo sector with the free cluster count, and keeps a backup of both from sector 6.
+    // FAT32 adds an FSInfo sector with the free cluster count. It also keeps a backup of the boot sector and the
+    // FSInfo sector from sector 6.
     private static void WriteReservedSectors(byte[] volume, FatBootSector boot, uint nextFree)
     {
         boot.Write(volume.AsSpan(0, SectorSize));
@@ -289,7 +291,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
     {
         FatTable fat = new(boot.Type, new byte[boot.FatSectors * SectorSize]);
 
-        // Entry 0 holds the media byte with every other bit set; entry 1 ends a chain.
+        // Entry 0 holds the media byte with all other bits set. Entry 1 holds an end of chain marker.
         fat.Set(0, (fat.EndMarker & ~0xFFu) | FatBootSector.FixedDiskMedia);
         fat.Set(1, fat.EndMarker);
 

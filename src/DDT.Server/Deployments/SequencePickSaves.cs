@@ -13,7 +13,7 @@ namespace DDT.Server.Deployments;
 // Saves the run of a sequence picked at the machine, and hands it to the agent.
 internal sealed class SequencePickSaves(SequencePicks picks, RunQueries queries, ImageStore store, MachineChangePublisher publisher)
 {
-    // Run is null when nothing was saved, and Decision says why.
+    // Run is null if nothing was saved, and Decision says why.
     public async Task<(AgentRun? Run, DeploymentDecision Decision)> PickAsync(
         Machine machine,
         AgentRunRequest request,

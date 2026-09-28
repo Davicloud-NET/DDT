@@ -9,7 +9,7 @@ import { Panel } from "@/ui/Panel";
 import { ConfigurationOrigin } from "../ConfigurationOrigin";
 import type { ServerSetting } from "../settings";
 
-// What configuration alone decides, read-only: the server needs it before it can serve the page.
+// What only configuration decides, shown read-only. The server needs it before it can serve the page.
 export function ConfigurationPanel({ settings }: { settings: ServerSetting[] }) {
   const { t } = useLingui();
 

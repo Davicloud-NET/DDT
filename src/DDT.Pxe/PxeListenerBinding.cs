@@ -6,8 +6,8 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// Where the listeners bind and how the host finds its interfaces. Standard is the real thing: the wildcard address,
-// which leaves Kestrel alone, the PXE ports, and the host's interfaces as they are at each apply.
+// Where the listeners bind and how the host finds its interfaces. Standard is the real setup. It uses the wildcard
+// address, which leaves Kestrel alone, the PXE ports, and the host's interfaces as they are at each apply.
 public sealed record PxeListenerBinding(IPAddress Address, int DhcpPort, int BootServerPort, int TftpPort, Func<string, NetworkInterfaceMap> Interfaces)
 {
     public static PxeListenerBinding Standard { get; } = new(IPAddress.Any, 67, 4011, 69, NetworkInterfaceMap.FromHost);

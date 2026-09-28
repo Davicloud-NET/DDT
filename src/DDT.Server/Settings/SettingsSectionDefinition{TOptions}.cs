@@ -21,7 +21,7 @@ public abstract class SettingsSectionDefinition<TOptions> : SettingsSectionDefin
 
     protected abstract JsonTypeInfo<TOptions> TypeInfo { get; }
 
-    // With the concrete type at each call, because the binding generator cannot bind a type parameter.
+    // Each section binds with its concrete type, because the binding generator can't bind a type parameter.
     protected abstract TOptions? Bind(IConfigurationSection section);
 
     protected virtual JsonNode? BindCollection(IConfigurationSection section, SettingField field) =>
@@ -33,7 +33,7 @@ public abstract class SettingsSectionDefinition<TOptions> : SettingsSectionDefin
     protected virtual string? GetSecret(TOptions options, SettingField field) =>
         throw new InvalidOperationException($"{Name} has no secret {field.Name}.");
 
-    // Deserializing a collection loses the comparer its property starts with, so it is put back here.
+    // Deserializing a collection loses the comparer its property starts with, so this puts it back.
     protected virtual void Normalize(TOptions options)
     {
     }
@@ -52,7 +52,7 @@ public abstract class SettingsSectionDefinition<TOptions> : SettingsSectionDefin
         JsonObject values = Serialize(Bind(section) ?? new TOptions());
         JsonObject defaults = Defaults();
 
-        // The binder adds configured entries to a collection's defaults, so a collection is bound again on its own.
+        // The binder adds configured entries to a collection's defaults, so each collection is bound again by itself.
         foreach (SettingField field in Fields.Where(field => field.Kind == SettingFieldKind.Collection))
         {
             IConfigurationSection child = section.GetSection(field.Path);

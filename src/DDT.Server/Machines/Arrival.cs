@@ -7,8 +7,8 @@ using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
 
-// A registration as MachineArrivals recorded it. Machine is null when it was refused. Before is the active run's state
-// and Tested what the rules tested of the machine, both from before the registration.
+// A registration as MachineArrivals recorded it. Machine is null if it was refused. Before is the active run's state
+// and Tested is what the rules tested about the machine, both from before the registration.
 public sealed record Arrival(
     Machine? Machine,
     Deployment? Active,

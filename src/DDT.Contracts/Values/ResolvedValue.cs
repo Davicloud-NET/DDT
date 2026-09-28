@@ -7,12 +7,12 @@ namespace DDT.Contracts.Values;
 // A value of a run or of a preview and where it came from.
 public sealed record ResolvedValue(
     string Name,
-    // Null for a secret, which shows only that it is set.
+    // Null for a secret. The page only shows that it's set.
     string? Value,
     ValueSource Source,
-    // The rule, machine role or step that set it, where one did.
+    // The rule, machine role or step that set it, if any.
     Guid? SourceId,
     string? SourceName,
-    // A source further up the order also set it, so it is shown but not used. The order: input answers, the machine's
-    // own values, rules from the top, machine roles, the sequence's defaults, the deployment defaults.
+    // A source higher in the order also set it, so this value is shown but not used. The order is input answers, the
+    // machine's own values, rules from the top, machine roles, the sequence's defaults and the deployment defaults.
     bool Overridden);

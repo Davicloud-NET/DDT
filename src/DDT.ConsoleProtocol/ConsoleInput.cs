@@ -5,7 +5,8 @@
 namespace DDT.ConsoleProtocol;
 
 // One field of an InputsQuestion. An Account input is answered with a user name and a password, typed where nobody else
-// sees it; a MultiChoice one with its values separated by semicolons, a YesNo one with "true" or "false".
+// sees it. A MultiChoice input is answered with its values separated by semicolons, and a YesNo one with "true" or
+// "false".
 public sealed record ConsoleInput(
     string Name,
     string Label,

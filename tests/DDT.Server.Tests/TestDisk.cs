@@ -9,8 +9,8 @@ using ZstdSharp;
 
 namespace DDT.Server.Tests;
 
-// Raw disk images laid out as a distribution's cloud image is: an EFI system partition at 1 MiB with the given files,
-// and a root file system after it, of which the first mebibyte holds random bytes.
+// Raw disk images laid out like a distribution's cloud image. There's an EFI system partition at 1 MiB with the given
+// files, and a root file system after it whose first mebibyte holds random bytes.
 internal static class TestDisk
 {
     public const long Sectors = 32768;
@@ -45,7 +45,7 @@ internal static class TestDisk
         return disk;
     }
 
-    // The same disk as an image for disks with 4 KiB sectors would have its table.
+    // The same disk, with its table where an image for disks with 4 KiB sectors would have it.
     public static byte[] ForFourKilobyteSectors(byte[] disk)
     {
         ArgumentNullException.ThrowIfNull(disk);

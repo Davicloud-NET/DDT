@@ -12,8 +12,8 @@ public sealed record UserView(
     UserSource Source,
     // The account's highest role, null for none.
     string? Role,
-    // Names the groups for an account whose groups decide its role, even while they give it none; null for any other
-    // account without a role.
+    // Names the groups for an account whose groups decide its role, even while they give it no role. Null for any
+    // other account without a role.
     RoleSource? RoleFrom,
     bool Disabled,
     // Set only while a lockout lasts.

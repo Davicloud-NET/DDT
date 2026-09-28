@@ -7,8 +7,9 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
 
-// What the agent tells the server about the machine; a fact is null where the firmware or Windows does not tell.
-// TrustedUefiCas are Microsoft's third-party UEFI CAs the firmware trusts; only the console shows the IpAddresses.
+// What the agent tells the server about the machine. A fact is null when the firmware or Windows doesn't provide it.
+// TrustedUefiCas are the Microsoft third-party UEFI CAs that the firmware trusts. Only the console shows the
+// IpAddresses.
 public sealed record MachineIdentity(
     string SmbiosUuid,
     string PrimaryMac,

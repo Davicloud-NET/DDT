@@ -9,8 +9,8 @@ import { acknowledgeReplacedAnchor, serverCertificateQuery } from "@/server/serv
 import { Button } from "@/ui/Button";
 import { Notice } from "@/ui/Notice";
 
-// After DDT replaced the self-signed certificate older boot images pin, it says so until an administrator confirms
-// that every boot image was built again with its root.
+// Shown after DDT replaced the self-signed certificate that older boot images pin. It stays until an administrator
+// confirms that every boot image was built again with DDT's root.
 export function ReplacedAnchor() {
   const queryClient = useQueryClient();
   const certificate = useQuery(serverCertificateQuery).data ?? null;

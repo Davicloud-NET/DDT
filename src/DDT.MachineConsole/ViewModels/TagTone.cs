@@ -4,7 +4,8 @@
 
 namespace DDT.MachineConsole.ViewModels;
 
-// How a state tag looks: filled for what is under way or asks for someone, outlined for what rests.
+// How a state tag looks. It's filled for something under way or waiting for someone, and outlined for something at
+// rest.
 public enum TagTone
 {
     Run,

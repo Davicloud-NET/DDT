@@ -6,7 +6,7 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { ApiError, apiFetch, apiGet, apiPost } from "@/lib/api";
 
-// NoRole: the password was right, but none of the directory groups of the account maps to a role in DDT.
+// NoRole: the password was right, but none of the account's directory groups maps to a role in DDT.
 export type LoginStatus = "Succeeded" | "RequiresTwoFactor" | "LockedOut" | "Failed" | "NoRole";
 
 export interface CurrentUser {
@@ -16,7 +16,7 @@ export interface CurrentUser {
   source: string;
   twoFactorEnabled: boolean;
   roles: string[];
-  // Signed in with a password an administrator was shown: nothing but the account page answers until it is replaced.
+  // The user signed in with a password an administrator was shown. Only the account page works until they replace it.
   mustChangePassword: boolean;
 }
 
@@ -59,8 +59,8 @@ export const externalProvidersQuery = queryOptions({
   queryFn: () => apiGet<ExternalProvider[]>("/api/auth/external/providers"),
 });
 
-// Where a provider's button goes: the server sends the browser on to the provider, and back to / or to the sign-in page
-// with the reason it refused.
+// Where a provider's button goes. The server sends the browser on to the provider. It comes back to /, or to the
+// sign-in page with the reason for the refusal.
 export function externalSignInUrl(provider: ExternalProvider): string {
   return `/api/auth/external/start?${new URLSearchParams({ scheme: provider.scheme }).toString()}`;
 }

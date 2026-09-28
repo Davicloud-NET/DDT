@@ -16,7 +16,7 @@ import type { SequenceEditorState } from "../../useSequenceEditor";
 import { addLabel } from "../nodeKinds";
 import type { FlowSelection } from "./useFlowSelection";
 
-// How long a removed node can be brought back from its toast; Ctrl+Z brings it back for longer.
+// How long a removed node can be restored from its toast. Ctrl+Z can restore it for longer.
 const UNDO_MS = 10_000;
 
 interface EditContext {
@@ -26,7 +26,7 @@ interface EditContext {
   announce: (text: string) => void;
 }
 
-// The page's edits of the flow, each leaving the node it touched chosen and shown.
+// The page's edits to the flow. Each one leaves the node it touched chosen and in view.
 export function editHandlers({ editor, index, selection, announce }: EditContext) {
   const { select, show } = selection;
 

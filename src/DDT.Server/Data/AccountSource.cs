@@ -9,6 +9,7 @@ public enum AccountSource
     Local,
     Directory,
 
-    // Created by single sign-on. IdentityBootstrap turns one stored as Directory, without a DirectoryObjectId, into this.
+    // Created by single sign-on. IdentityBootstrap switches an account stored as Directory to this when it has no
+    // DirectoryObjectId.
     External,
 }

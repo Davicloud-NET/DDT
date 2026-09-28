@@ -5,7 +5,7 @@
 import type { FlowCommand } from "../../flow/flowKeyboard";
 import type { ContainerKind } from "../../sequences";
 
-// The things a node's menu does, beside the keys.
+// What a node's menu does on top of the keyboard commands.
 export type NodeAction =
   | { type: "wrap"; kind: ContainerKind }
   | { type: "unwrap" }
@@ -13,7 +13,7 @@ export type NodeAction =
   | { type: "addAfter" }
   | { type: "command"; command: FlowCommand };
 
-// The action of an item of the node's menu, by its id.
+// The action for an item of the node's menu, by its id.
 export function nodeActionOf(key: string): NodeAction | null {
   switch (key) {
     case "wrapGroup":

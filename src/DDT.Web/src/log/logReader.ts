@@ -17,22 +17,24 @@ import {
 
 export interface LogSnapshot {
   buffer: LogBuffer;
-  // The first read answered.
+  // True once the first read has answered.
   loaded: boolean;
   loadingOlder: boolean;
-  // Why the last read failed; the next one that succeeds clears it.
+  // Why the last read failed. The next successful read clears it.
   error: string | null;
 }
 
-// Reads one machine's log, or one run's, into a buffer: the newest lines first, then what arrives after them,
-// and older lines on request. Reads that catch up never overlap, and a push during one reads again after it.
+// Reads a machine's log, or one run's log, into a buffer. It reads the newest lines first, then new lines as they
+// arrive, and older lines on request. Catch-up reads never overlap, and a push during one starts another read
+// after it.
 export interface LogReader {
   snapshot: () => LogSnapshot;
   subscribe: (listener: () => void) => () => void;
   start: () => void;
   catchUp: () => void;
   loadOlder: () => void;
-  // Answers that arrive later are dropped. start opens the reader again, as React's strict mode does.
+  // Answers that arrive after close are dropped. start can open the reader again, because React's strict mode
+  // closes and restarts it.
   close: () => void;
 }
 
@@ -44,8 +46,8 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-// The reader's snapshot and its generations. Every start begins a generation, and changes from reads of an earlier
-// one, or after close, are dropped.
+// The reader's snapshot and its generation. Every start begins a new generation. Changes from reads of an earlier
+// generation, or after close, are dropped.
 function createLogStore() {
   const listeners = createListeners();
   let snapshot = initial;
@@ -81,7 +83,8 @@ function createLogStore() {
 
 type LogStore = ReturnType<typeof createLogStore>;
 
-// Reads the pages after the newest line until one comes short. False once a later start made the read stale.
+// Reads the pages after the newest line until a page comes back short. Returns false if a later start made the
+// read stale.
 async function readNewer(
   store: LogStore,
   from: number,
@@ -109,7 +112,7 @@ async function readNewer(
   return true;
 }
 
-// The read of the lines before the oldest, or null where there are none or no more fit.
+// The read for the lines before the oldest one, or null when there are none or no more fit in the buffer.
 function olderRead(snapshot: LogSnapshot): { before: number; limit: number } | null {
   const before = oldestId(snapshot.buffer);
   const room = MAX_BUFFERED_LINES - snapshot.buffer.lines.length;
@@ -127,7 +130,7 @@ export function createLogReader(
   const store = createLogStore();
   let catchingUp = false;
   let again = false;
-  // Pushes set it while a read awaits, which the compiler cannot see in a plain condition.
+  // Pushes set again while a read awaits. The compiler can't see that in a plain condition, hence the function.
   const pushedMeanwhile = () => again;
 
   const readAfter = (after: number | null) =>
@@ -138,7 +141,7 @@ export function createLogReader(
       return;
     }
 
-    // Pushed before the first read answered, or while another read catches up: read again after it.
+    // A push before the first read answered, or during another catch-up, reads again after that read.
     if (!store.snapshot().loaded || catchingUp) {
       again = true;
       return;
@@ -177,7 +180,7 @@ export function createLogReader(
         error: null,
       });
     } catch (error) {
-      // Loaded, so a push or a poll tries again with a read of the newest lines.
+      // Marked as loaded anyway, so the next push or poll tries again with a read of the newest lines.
       store.update(from, { loaded: true, error: messageOf(error) });
     }
 

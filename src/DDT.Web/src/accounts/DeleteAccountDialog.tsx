@@ -20,8 +20,8 @@ interface DeleteAccountDialogProps {
   onDeleted: () => void;
 }
 
-// Asks before deleting an account. While a sequence names it the server keeps it, so the dialog says which to change
-// instead of offering the deletion. Like every change of an account, it needs the password of the person again.
+// Asks before deleting an account. The server keeps an account while a sequence names it, so then the dialog names the
+// sequences to change instead. Like every change to an account, it needs the person's password again.
 export function DeleteAccountDialog({ account, onClose, onDeleted }: DeleteAccountDialogProps) {
   const { t } = useLingui();
   const queryClient = useQueryClient();

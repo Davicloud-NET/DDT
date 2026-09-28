@@ -6,9 +6,9 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Endpoints;
 
-// The audit log's filters, bound from the query string. Action matches from its start, so machine. finds every machine
-// action, and Actor any part of the name in any case. From includes its moment and To does not, so consecutive ranges
-// never list a row twice.
+// The audit log's filters, bound from the query string. Action matches from the start, so "machine." finds every
+// machine action. Actor matches any part of the name, in any case. From is inclusive and To is exclusive, so
+// consecutive ranges never list a row twice.
 internal sealed record AuditQuery(
     string? Action,
     string? Actor,

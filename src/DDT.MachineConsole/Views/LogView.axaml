@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The agent's log on the console well, as the web's log panel shows it: time, level and text, newest last. -->
+<!-- The agent's log in the console well, laid out like the web's log panel: time, level and text, newest last. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

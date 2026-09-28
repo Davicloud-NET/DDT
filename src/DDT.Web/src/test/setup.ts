@@ -11,7 +11,8 @@ import { afterEach } from "vitest";
 i18n.loadAndActivate({ locale: "en", messages: {} });
 
 // jsdom has no Web Animations, and React Aria's shared elements, such as the tabs' underline, call getAnimations
-// unchecked. None ever runs here, so entrances and exits end at once; a test that needs one stubs this.
+// without checking. No animation ever runs here, so entrances and exits end at once. A test that needs one stubs
+// this.
 if (typeof Element !== "undefined" && !Reflect.has(Element.prototype, "getAnimations")) {
   Element.prototype.getAnimations = () => [];
 }

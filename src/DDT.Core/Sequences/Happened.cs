@@ -4,8 +4,8 @@
 
 namespace DDT.Core.Sequences;
 
-// What a sequence does at most once in a run, and what later steps rely on. ImageEveryTime is an image applied by a
-// step without conditions of its own, which Windows needs.
+// What a sequence does at most once per run, and what later steps rely on. ImageEveryTime means an image was applied
+// by a step that has no conditions itself. Windows needs that.
 [Flags]
 internal enum Happened
 {

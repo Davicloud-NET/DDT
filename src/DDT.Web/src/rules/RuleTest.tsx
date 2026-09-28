@@ -18,8 +18,8 @@ import { sequenceResolutionQuery, type RuleView } from "./rules";
 import { machineChoice } from "./ruleTestText";
 import { RuleTestOutcome } from "./RuleTestOutcome";
 
-// Which rules match a machine and what a run of it would start with, as the server works it out now. The rules only
-// choose: someone still approves the machine or signs in at it.
+// Shows which rules match a machine and what a run on it would start with, as the server works it out now. Rules only
+// choose. Someone still has to approve the machine or sign in at it.
 export function RuleTest({ rules }: { rules: readonly RuleView[] }) {
   const { t: translate } = useLingui();
   const machines = useQuery({ ...machinesQuery, ...liveListOptions(useLiveStatus()) });

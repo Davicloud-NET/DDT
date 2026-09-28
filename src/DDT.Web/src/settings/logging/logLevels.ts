@@ -3,11 +3,11 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 export interface LoggingSettings {
-  // The level per category; Default for every category not listed.
+  // The level per category. Default applies to every category that isn't listed.
   logLevel: Record<string, string>;
 }
 
-// The levels DDT starts with, as the server's code sets them.
+// The levels DDT starts with, the same ones the server's code sets.
 export const DEFAULT_LOG_LEVELS: Record<string, string> = {
   Default: "Information",
   "Microsoft.AspNetCore": "Warning",
@@ -27,12 +27,12 @@ export const LOG_LEVELS = [
 
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-// A category's row as typed; the id keeps its place while the category changes.
+// A category's row as typed. The id keeps the row in place while the category changes.
 export interface CategoryLevel {
   id: number;
   category: string;
   level: string;
-  // The Default row stays: it is what every other category logs at.
+  // The Default row can't be removed, because every other category logs at its level.
   fixed: boolean;
 }
 
@@ -52,12 +52,12 @@ export function levelsOf(rows: CategoryLevel[]): Record<string, string> {
   );
 }
 
-// The level as the list spells it, for a level the section spells in another case.
+// Returns the list's spelling of a level that the section spells in another case.
 export function knownLevel(level: string): LogLevel | undefined {
   return LOG_LEVELS.find((known) => known.toLowerCase() === level.toLowerCase());
 }
 
-// Categories match case-insensitively, and of two rows naming one category the lower one's level applies.
+// Categories match case-insensitively. When two rows name the same category, the lower row's level applies.
 export function isListedAgain(rows: CategoryLevel[], index: number): boolean {
   const category = rows[index]?.category.trim().toLowerCase() ?? "";
 

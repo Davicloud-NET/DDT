@@ -7,7 +7,8 @@ import { queryOptions } from "@tanstack/react-query";
 import type { RailStep } from "@/ui/SequenceRail";
 import type { StateTone } from "@/ui/StateTag";
 
-// A list patched as the hub patches one, to see the flash of a changed row, a new row entering and the rail filling.
+// A list patched the way the hub patches one. It shows the flash of a changed row, a new row animating in, and the rail
+// filling up.
 export interface DemoMachine {
   id: string;
   name: string;

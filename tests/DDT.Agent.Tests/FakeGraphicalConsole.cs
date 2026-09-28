@@ -6,9 +6,9 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Tests;
 
-// ddt-console.exe as a test stands in for it, in this process: it connects to the agent's pipe with the given hello,
-// keeps every message the agent sends, and answers each question as answer says, or leaves it open where that gives
-// null. CrashAt ends it as a crash would, without a word, at the first message it holds true for.
+// A stand-in for ddt-console.exe in the test's process. It connects to the agent's pipe with the given hello, keeps
+// every message the agent sends, and answers each question with what answer returns. A null answer leaves the question
+// open. CrashAt ends it silently, like a crash, at the first message it returns true for.
 internal sealed class FakeGraphicalConsole(Func<ConsoleQuestion, ConsoleAnswer?>? answer = null)
 {
     // What a crashed .NET process ends with.
@@ -35,7 +35,7 @@ internal sealed class FakeGraphicalConsole(Func<ConsoleQuestion, ConsoleAnswer?>
         }
     }
 
-    // The exit code, once the agent closed the pipe or the console crashed.
+    // Returns the exit code once the agent closed the pipe or the console crashed.
     public async Task<int> RunAsync(string pipeName, CancellationToken killed)
     {
         ConsoleClient client;

@@ -11,8 +11,8 @@ import { ConfirmDialog } from "@/ui/ConfirmDialog";
 import { revokeToken, upsertToken, type ApiTokenView } from "./tokens";
 import { revokedCopy } from "./tokenView";
 
-// Asks before a token is revoked. The server answers with no content, so the lists take the token as the revoke leaves
-// it, and the hub's copy replaces that moments later.
+// Asks before a token is revoked. The server answers with no content, so the lists patch in the revoked token
+// themselves. The hub's copy replaces it moments later.
 export function RevokeTokenDialog({
   token,
   me,

@@ -8,12 +8,13 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The conditions of a node: the legacy list that agents of versions 1 and 2 run, and version 3's When, Test and Until
-// trees. A problem's field goes into the tree, such as when.parts[1].value, as ConditionEvaluator names a test's path.
+// Checks a node's conditions. That's the legacy list that version 1 and 2 agents run, and version 3's When, Test and
+// Until trees. A problem's field points into the tree, such as when.parts[1].value, the same way ConditionEvaluator
+// names a test's path.
 internal static class ConditionChecks
 {
-    // The operators that fit a fact of each type. Rules, machine roles and the sequence give values of no type the
-    // validator knows, so every operator fits them.
+    // The operators that fit each type of fact. The validator doesn't know the type of values from rules, machine roles
+    // and the sequence, so every operator fits them.
     private static readonly ConditionOperator[] s_text =
     [
         ConditionOperator.Equals, ConditionOperator.NotEquals, ConditionOperator.StartsWith, ConditionOperator.EndsWith,
@@ -46,8 +47,8 @@ internal static class ConditionChecks
         ConditionOperator.NotExists,
     ];
 
-    // Checks the legacy list and returns how many conditions it has. Their evaluator knows only the variables and
-    // operators of version 1, and holds nothing else, so the list takes nothing else.
+    // Checks the legacy list and returns how many conditions it has. The legacy evaluator only knows the variables and
+    // operators of version 1 and never holds for anything else. So the list accepts nothing else.
     public static int Legacy(IReadOnlyList<StepCondition?>? conditions, Action<string?, ServerMessage> add)
     {
         if (conditions is null)
@@ -197,7 +198,7 @@ internal static class ConditionChecks
         _ => s_text,
     };
 
-    // A value of the fact's type, so a test cannot quietly never hold. Text and patterns take anything.
+    // Checks that the value fits the fact's type, so a test can't silently never hold. Text and patterns take anything.
     private static void Value(FactType type, ConditionOperator op, string[] items, string field, Action<string?, ServerMessage> add)
     {
         string list = op == ConditionOperator.In ? "yes" : "no";
@@ -233,8 +234,8 @@ internal static class ConditionChecks
     private static bool IsYesNo(string value) =>
         value.ToUpperInvariant() is "TRUE" or "FALSE" or "YES" or "NO" or "1" or "0";
 
-    // Separators alone would leave nothing to compare, and StartsWith or Contains would then hold on every machine. A
-    // whole address is compared whole, so it needs all 12 digits.
+    // A value of only separators leaves nothing to compare, and StartsWith or Contains would then hold on every
+    // machine. Equals, NotEquals and In compare the whole address, so they need all 12 digits.
     private static void Mac(ConditionOperator op, string[] items, string field, Action<string?, ServerMessage> add)
     {
         bool whole = op is ConditionOperator.Equals or ConditionOperator.NotEquals or ConditionOperator.In;

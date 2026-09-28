@@ -14,7 +14,7 @@ import type { LdapTestResult } from "../signIn";
 import { RoleAtSignIn } from "./RoleAtSignIn";
 import { TestedGroups } from "./TestedGroups";
 
-// A directory test's answer. map is the tested one, which decides the role.
+// A directory test's answer. map is the map that was tested, which decides the role.
 export function TestResult({
   result,
   map,

@@ -11,9 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Imports configured values at every start, before the first publish. Only a field never written takes its configured
-// value, and code defaults are never imported, so a process that starts first cannot freeze its defaults over another
-// process's configured values. It logs under SettingsStore's category, which the logging settings may name.
+// Imports configured values at every start, before the first publish. Only a field that was never written takes its
+// configured value, and code defaults are never imported. That way a process that starts first can't freeze its
+// defaults over another process's configured values. It logs under SettingsStore's category, which the logging
+// settings may name.
 public sealed partial class SettingsImporter(
     SettingsStore store,
     SettingsKeyRing keyRing,
@@ -36,8 +37,8 @@ public sealed partial class SettingsImporter(
 
         foreach (SettingsSectionDefinition definition in SettingsDefinitions.All)
         {
-            // Two processes that create the same row conflict on its key, and two that import into it on its version.
-            // The loser reads again and imports what is still missing.
+            // Two processes that create the same row conflict on its key. Two that import into the same row conflict on
+            // its version. The loser reads again and imports what's still missing.
             for (int attempt = 1; ; attempt++)
             {
                 try
@@ -117,7 +118,7 @@ public sealed partial class SettingsImporter(
         await WriteAsync(write, cancellationToken).ConfigureAwait(false);
     }
 
-    // Null when a value cannot be converted, which stopped the start already, in the configuration check.
+    // Returns null when a value can't be converted. The configuration check already stopped the start in that case.
     private JsonObject? Configured(SettingsSectionDefinition definition)
     {
         try

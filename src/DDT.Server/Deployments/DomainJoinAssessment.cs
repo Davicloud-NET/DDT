@@ -80,8 +80,8 @@ public static class DomainJoinAssessment
     public static string NamingContextOf(string domain) =>
         string.Join(',', domain.Trim().TrimEnd('.').Split('.').Select(label => $"DC={label}"));
 
-    // Without a right of its own to create computer objects, an account may still add computers to the default container
-    // while the domain's machine account quota lasts, but never to an organizational unit.
+    // Without its own right to create computer objects, an account may still add computers to the default container
+    // while the domain's machine account quota lasts. It can never add them to an organizational unit.
     private static DomainJoinVerdict InContainer(
         string userName,
         string? organizationalUnit,

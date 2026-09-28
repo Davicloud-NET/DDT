@@ -19,8 +19,8 @@ import { nameHint } from "./assignText";
 import { SequencePicker } from "./SequencePicker";
 import type { AssignFormState } from "./useAssignForm";
 
-// The assign dialog's form: the sequence, the computer name and the answers, what the assignment does, and the
-// allowance of a raw disk image that may not start with Secure Boot on.
+// The assign dialog's form. It has the sequence, the computer name, the answers and what the assignment does.
+// It also has the checkbox that allows a raw disk image that may not boot with Secure Boot on.
 export function AssignFields({
   id,
   machine,

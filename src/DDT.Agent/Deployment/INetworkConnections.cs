@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// The connections of the logon session the calling thread acts for, as mpr.dll keeps them. Every call blocks, and an
-// error comes back with its text, read on the same thread, as the network provider keeps its text per thread.
+// The connections of the logon session the calling thread acts for, as mpr.dll keeps them. Every call blocks. An error
+// comes back with its text, read on the same thread, because the network provider keeps its text per thread.
 public interface INetworkConnections
 {
     // A temporary connection without a drive letter. Null when it worked.

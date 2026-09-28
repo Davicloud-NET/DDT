@@ -14,7 +14,7 @@ export type ImageKind = "Wim" | "RawDisk";
 // Whether a raw disk image starts on a stock PC with Secure Boot on.
 export type ImageBootCapability = "SecureBootOk" | "NotSigned" | "Unknown";
 
-// For a raw disk image, sizeBytes is the stored, compressed file, installedBytes the disk it holds, and wimIndex 0.
+// For a raw disk image, sizeBytes is the stored, compressed file, installedBytes the disk inside it, and wimIndex 0.
 export interface ImageSummary {
   id: string;
   name: string;
@@ -43,9 +43,9 @@ export type UploadKind = "Image" | "Drivers" | "Files";
 export interface CreateImageUploadRequest {
   fileName: string;
   length: number;
-  // File.lastModified. With the name, length and kind, the server recognises the same file selected again.
+  // File.lastModified. With the name, length and kind, it lets the server recognise the same file chosen again.
   lastModified: number;
-  // Image when left out.
+  // Defaults to Image.
   kind?: UploadKind;
 }
 
@@ -56,7 +56,7 @@ export interface ImageUploadSession {
   lastModified: number;
   offset: number;
   chunkBytes: number;
-  // The server always sends it; a session without one is an image's.
+  // The server always sends it. A session without it is an image upload.
   kind?: UploadKind;
 }
 
@@ -71,8 +71,8 @@ export const uploadsQuery = queryOptions({
   queryFn: () => apiGet<ImageUploadSession[]>("/api/images/uploads"),
 });
 
-// The agent runs in x64 Windows PE and applies a Windows image's own boot files, so only x64 Windows images deploy.
-// A raw disk image deploys unless its boot file is for another processor; one that could not be read may still start.
+// The agent runs in x64 WinPE and applies the Windows image's own boot files, so only x64 Windows images deploy. A raw
+// disk image deploys unless its boot file is for another processor. One with an unreadable boot file may still start.
 export function isDeployable(image: ImageSummary): boolean {
   return image.architecture === "x64" || (image.kind === "RawDisk" && image.architecture === null);
 }
@@ -81,7 +81,7 @@ export function kindLabel(kind: ImageKind): string {
   return kind === "RawDisk" ? t`Raw disk image` : t`Windows image`;
 }
 
-// What the Secure Boot column says of a raw disk image; null for a Windows image, whose boot files Microsoft signs.
+// The Secure Boot column's text for a raw disk image. Null for a Windows image, since Microsoft signs its boot files.
 export function bootCapabilityLabel(image: ImageSummary): string | null {
   switch (image.kind === "RawDisk" ? image.bootCapability : null) {
     case "SecureBootOk":
@@ -95,7 +95,7 @@ export function bootCapabilityLabel(image: ImageSummary): string | null {
   }
 }
 
-// The warning for a raw disk image that will not, or may not, start with Secure Boot on; null for every other image.
+// The warning for a raw disk image that won't, or may not, start with Secure Boot on. Null for every other image.
 export function secureBootWarning(image: ImageSummary): string | null {
   if (image.kind !== "RawDisk" || image.bootCapability === "SecureBootOk") {
     return null;

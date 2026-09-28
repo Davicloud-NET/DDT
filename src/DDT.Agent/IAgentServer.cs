@@ -27,7 +27,7 @@ public interface IAgentServer
     // One of the files the console release names.
     Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken);
 
-    // The logo the console shows, whose hash the registration names.
+    // The logo the console shows. The registration names its hash.
     Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<AgentSequenceChoice>> GetSequencesAsync(Guid machineId, string token, CancellationToken cancellationToken);
@@ -37,26 +37,26 @@ public interface IAgentServer
 
     Task<AgentRunReportResult> ReportRunAsync(Guid machineId, string token, Guid runId, AgentRunReport report, CancellationToken cancellationToken);
 
-    // The answers given at the machine to the inputs a run waits for at its start. The answer to an Account input holds
-    // a password.
+    // Sends the answers typed at the machine for the inputs a run waits for at its start. The answer to an Account
+    // input holds a password.
     Task<AgentAnswersResult> AnswerRunInputsAsync(Guid machineId, string token, Guid runId, AgentInputAnswers answers, CancellationToken cancellationToken);
 
     // The length of one of the run's images or packages, or null when the server did not say.
     Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken);
 
     // One of the run's images or packages, from offset to the end. A server that ignores the range answers from 0,
-    // which the result's Offset shows.
+    // and the result's Offset shows that.
     Task<AgentImageStream> OpenRunFileAsync(Guid machineId, string token, RunFileRange file, CancellationToken cancellationToken);
 
-    // The answer file of a WriteUnattend step, which the server renders only while the step is running. It holds
+    // The answer file of a WriteUnattend step. The server only renders it while the step is running. It holds
     // passwords.
     Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 
-    // The domain and the account that joins the machine to it, for a JoinDomain step, which the server hands out only
+    // The domain and the account that joins the machine to it, for a JoinDomain step. The server only hands them out
     // while the step is running, and only to the agent in the installed Windows. It holds the account's password.
     Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 
-    // The account a step runs as and the shares it connects, which the server hands out only while the step is running,
+    // The account a step runs as and the shares it connects. The server only hands them out while the step is running,
     // and the account only to the agent in the installed Windows. It holds passwords, which stay in memory.
     Task<AgentStepAccounts> GetRunStepAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 }

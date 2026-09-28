@@ -60,7 +60,7 @@ export function SequenceTable({
           </span>
         </TableColumn>
       </TableHeader>
-      {/* A row renders again only when its sequence changes, unless something else it shows is listed here. */}
+      {/* A row only renders again when its sequence changes. Anything else a row shows must be listed here. */}
       <TableBody
         items={shown}
         dependencies={[now, ruleList, machineList, isAdministrator, i18n.locale]}

@@ -6,8 +6,8 @@ import { ToggleButtonGroup, type Key } from "react-aria-components";
 
 import { FilterKey, filterWellClass, type FilterOption } from "./FilterKey";
 
-// The same well for filters that combine, such as the levels of a log: every key toggles on its own, and at
-// least one stays on.
+// The same well for filters that combine, such as the levels of a log. Every button toggles on its own, and
+// at least one stays on.
 export function FilterChips({
   label,
   options,

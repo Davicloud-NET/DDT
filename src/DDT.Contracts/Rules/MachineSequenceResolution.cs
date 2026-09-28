@@ -7,33 +7,34 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts.Rules;
 
-// The sequence a machine would get and why, for the page to explain. A rule only chooses: the machine still needs
-// an approval or a sign-in.
+// The sequence a machine would get and why, so the page can explain it. A rule only chooses the sequence. The
+// machine still needs an approval or a sign-in.
 public sealed record MachineSequenceResolution(
     SequenceResolutionSource Source,
     Guid? SequenceId,
     string? SequenceName,
     Guid? RuleId,
-    // Above zero, the chosen sequence cannot run until it is fixed.
+    // When above zero, the chosen sequence can't run until its problems are fixed.
     int ProblemCount,
-    // English; ExplanationCode and ExplanationArgs say the same for a client in the person's language.
+    // In English. ExplanationCode and ExplanationArgs carry the same message, so a client can show it in the person's
+    // language.
     string Explanation,
     string? ExplanationCode = null,
     IReadOnlyDictionary<string, object>? ExplanationArgs = null,
-    // From here on, a preview of what a run of that sequence would start with. The rules that match the machine, top
-    // first, whether they chose the sequence or only set values or gave machine roles.
+    // The members from here on preview what a run of that sequence would start with. MatchedRuleIds lists the rules
+    // that match the machine, top first, whether they chose the sequence or only set values or gave machine roles.
     IReadOnlyList<Guid>? MatchedRuleIds = null,
-    // The values the run would have, each with where it comes from; a running run shows the values it started with.
+    // The values the run would have, each with where it comes from. A running run shows the values it started with.
     IReadOnlyList<ResolvedValue>? Values = null,
-    // The chosen sequence's inputs, and what their questions start with.
+    // The chosen sequence's inputs, and the defaults their questions are prefilled with.
     IReadOnlyList<InputDeclaration>? Inputs = null,
     IReadOnlyList<ResolvedValue>? InputDefaults = null,
-    // What would keep the run from starting as things are now; a problem's StepId is null and its Field the value's or
-    // the input's name.
+    // What would keep the run from starting right now. A problem's StepId is null, and its Field is the name of the
+    // value or input.
     IReadOnlyList<SequenceProblem>? ValueProblems = null)
 {
-    // Equal when they say the same: the code and its values repeat Explanation, and a dictionary compares only by
-    // reference. The preview is not compared.
+    // Equal when they say the same thing. The code and its args only repeat Explanation, and a dictionary compares by
+    // reference. The preview isn't compared.
     public bool Equals(MachineSequenceResolution? other) =>
         other is not null
         && Source == other.Source

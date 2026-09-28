@@ -10,13 +10,13 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The session account's own settings, written before its first sign-in: the console as its shell, and none of what
-// Ctrl+Alt+Del offers, Task Manager, locking, changing the password and signing out.
+// The session account's settings, written before its first sign-in. The console becomes its shell, and Ctrl+Alt+Del
+// offers none of its usual choices: Task Manager, locking, changing the password and signing out.
 internal sealed class AccountHiveWriter(RegistryKey users, IToolRunner tools)
 {
     public async Task WriteAsync(SecurityIdentifier sid, string profile, string console, string pipeName, CancellationToken cancellationToken)
     {
-        // Signed in, its registry is loaded under its SID; otherwise it is loaded here for the moment.
+        // While the account is signed in, its registry is loaded under its SID. Otherwise it's loaded here for now.
         string root = sid.Value;
         bool load = false;
 

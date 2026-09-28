@@ -68,7 +68,7 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Null(next.Run);
         Assert.Equal(HttpStatusCode.OK, (await signedIn.Agent.SequencesAsync(signedIn.Id, signedIn.Token)).StatusCode);
 
-        // A waiting machine holds only a poll token, which reaches none of this.
+        // A waiting machine only holds a poll token, which can't reach any of this.
         using DeployingMachine waiting = await DeployingMachine.RegisterAsync(application);
         Assert.Equal(HttpStatusCode.Forbidden, (await waiting.Agent.SequencesAsync(waiting.Id, waiting.Token)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await PickAsync(waiting, sequence.Id)).StatusCode);
@@ -339,8 +339,8 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Equal(MachineState.Approved, (await machine.NextAsync()).State);
     }
 
-    // A rule only suggests at the console: the sequence comes first and marked, and choosing it keeps the rule on the
-    // run for the history.
+    // At the console, a rule only suggests.
+    // Its sequence comes first and is marked, and choosing it keeps the rule on the run for the history.
     [Fact]
     public async Task TheRulesSequenceIsSuggestedAtTheMachine()
     {
@@ -372,7 +372,7 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Null((await administrator.RunAsync(chosen.Id)).RuleId);
     }
 
-    // The console could not start a sequence with problems, so the rule that chooses one suggests nothing.
+    // The console couldn't start a sequence with problems, so a rule that chooses one suggests nothing.
     [Fact]
     public async Task ARulesSequenceWithProblemsIsNotSuggested()
     {

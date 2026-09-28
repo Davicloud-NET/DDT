@@ -12,12 +12,12 @@ using DDT.Server.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// Whether a run may write a raw disk image the machine will not start with Secure Boot on. The agent checks the firmware
+// Whether a run may write a raw disk image the machine won't start with Secure Boot on. The agent checks the firmware
 // again before it writes.
 internal static class SecureBootPolicy
 {
-    // Written only where someone allowed it for the run, or where the machine did not say Secure Boot is on. Allow is kept
-    // only where it matters; Problem is the refusal when Secure Boot is on and nobody allowed the image.
+    // Such an image is only written if someone allowed it for the run, or the machine didn't report Secure Boot as on.
+    // Allow is only kept where it matters. Problem is the refusal when Secure Boot is on and nobody allowed the image.
     public static (bool Allow, ServerMessage? Problem) Decide(
         Machine machine,
         SequenceDefinition definition,
@@ -61,8 +61,8 @@ internal static class SecureBootPolicy
             : $" It may write {image.Name} although it {BootCapabilities.NotStarting(image.BootCapability)} with Secure Boot on.";
     }
 
-    // An image signed for Secure Boot does not start either where the firmware does not trust Microsoft's third-party
-    // UEFI CA it is signed under.
+    // An image signed for Secure Boot also won't start if the firmware doesn't trust the Microsoft third-party UEFI CA
+    // it's signed under.
     private static bool NotStarting(Machine machine, Image image) =>
         image.BootCapability != ImageBootCapability.SecureBootOk || MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, image.SignedUnder);
 

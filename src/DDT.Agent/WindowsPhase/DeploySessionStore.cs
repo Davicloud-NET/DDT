@@ -7,7 +7,7 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// DDT's session file in the Windows at windowsRoot. One that cannot be read counts as none, and the run goes on
+// DDT's session file in the Windows at windowsRoot. A file that can't be read counts as none, and the run continues
 // without the session.
 internal sealed class DeploySessionStore(string windowsRoot, AgentLog log)
 {

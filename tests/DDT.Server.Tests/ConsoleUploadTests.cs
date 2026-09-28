@@ -17,13 +17,14 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The console the agents of netbooting machines switch to, uploaded on the settings page like the agent: only with a
-// fresh proof of identity, only a zip of the console's three files, and not while configuration names it.
+// The console that agents on netbooting machines switch to, uploaded on the settings page like the agent.
+// The upload needs a fresh proof of identity and takes only a zip of the console's three files.
+// It's refused while the configuration names the console.
 public sealed class ConsoleUploadTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private string AgentDirectory => Path.Combine(application.StorePath, "agent");
 
-    // Zipping the folder Publish-Console.ps1 writes puts the files in a folder, which the server takes as well.
+    // Zipping the folder Publish-Console.ps1 writes puts the files in a subfolder. The server accepts that too.
     [Fact]
     public async Task AnUploadReplacesTheConsoleMachinesSwitchTo()
     {

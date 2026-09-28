@@ -4,7 +4,8 @@
 
 namespace DDT.Agent;
 
-// A line typed at the text console, which TextMachineConsole asks every question with: the sign-in's and the picker's.
+// Reads a line typed at the text console. TextMachineConsole asks every question with it, the sign-in's and the
+// picker's.
 public interface ISignInPrompt
 {
     // False when nobody can type at this machine, for example when input is redirected.

@@ -18,8 +18,8 @@ import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { AccountsTable } from "./list/AccountsTable";
 import { useAccountsPage } from "./useAccountsPage";
 
-// The accounts steps use. Everyone signed in reads the list, never a password; an administrator adds and changes them,
-// with their own password entered again.
+// The accounts that steps use. Everyone signed in can read the list, but never a password. An administrator adds and
+// changes accounts after entering their own password again.
 export function AccountsPage() {
   const { accounts, list, canEdit, mark, drawer, deleting, open, close, setDeleting } =
     useAccountsPage();

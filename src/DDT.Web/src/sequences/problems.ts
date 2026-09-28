@@ -14,7 +14,7 @@ import type {
   StepKind,
 } from "./sequences";
 
-// Problems keep a sequence from running; warnings are shown the same way but do not.
+// Problems keep a sequence from running. Warnings are shown the same way but don't.
 export interface Findings {
   problems: SequenceProblem[];
   warnings: SequenceProblem[];
@@ -50,14 +50,14 @@ const kindFields: Record<StepKind, readonly string[]> = {
 
 const commonFields = ["name", "continueOnError", "rebootAfter"];
 
-// One part of a finding's field, such as parts[1] in when.parts[1].value: a member, and its index where it is a list.
+// One part of a finding's field, such as parts[1] in when.parts[1].value: a member, and its index if it's a list.
 export interface FieldSegment {
   name: string;
   index: number | null;
 }
 
-// A finding's field as its parts, such as "when.parts[1].value", "variables[2].name" or "shares[0].path"; null for
-// none or for one written some other way.
+// A finding's field split into its parts, such as "when.parts[1].value", "variables[2].name" or "shares[0].path".
+// Null for no field, or for one written some other way.
 export function parseFieldPath(field: string | null): FieldSegment[] | null {
   if (field === null || field === "") {
     return null;
@@ -154,7 +154,7 @@ export function declarationPlace(field: string | null): DeclarationPlace | null 
   return { list: first.name, index: first.index, member: second?.name ?? null };
 }
 
-// The findings of the whole sequence: no node, or a node the draft no longer has.
+// The findings about the whole sequence. They have no node, or a node the draft no longer has.
 export function sequenceFindings(findings: Findings, steps: readonly SequenceStep[]): Findings {
   const ids = new Set(walk(steps).map((entry) => entry.node.id));
   const general = (problem: SequenceProblem) => problem.stepId === null || !ids.has(problem.stepId);
@@ -172,7 +172,7 @@ export function stepFindings(findings: Findings, stepId: string): Findings {
   };
 }
 
-// Whether the node's inspector shows the field, so the finding appears there rather than above the fields.
+// Whether the node's inspector shows the field. If so, the finding appears there instead of above the fields.
 export function isShownField(step: SequenceStep, field: string | null): boolean {
   const segments = parseFieldPath(field);
   const [first, second] = segments ?? [];
@@ -224,8 +224,8 @@ export function findingText(finding: SequenceProblem): string {
   return serverText(finding.code, finding.args, finding.message);
 }
 
-// The messages of one field, such as "script" or "when.parts[1].value", kept apart: a problem marks the field
-// invalid, a warning only tells.
+// The messages for one field, such as "script" or "when.parts[1].value", split by kind. A problem marks the field
+// invalid. A warning is only information.
 export function fieldFindings(
   findings: Findings,
   field: string,
@@ -236,7 +236,7 @@ export function fieldFindings(
   return { problems: of(findings.problems), warnings: of(findings.warnings) };
 }
 
-// The findings with those of one field shown at another, such as a whole condition's at its value.
+// The findings, with one field's findings moved to another field, such as a whole condition's to its value.
 export function withFieldAt(findings: Findings, from: string, to: string): Findings {
   const moved = (problem: SequenceProblem) =>
     problem.field === from ? { ...problem, field: to } : problem;
@@ -244,9 +244,9 @@ export function withFieldAt(findings: Findings, from: string, to: string): Findi
   return { problems: findings.problems.map(moved), warnings: findings.warnings.map(moved) };
 }
 
-// The phases each node may run in, as the server worked them out for the copy it holds: from its nodePhases, or from
-// stepPhases for the steps at the top where it sends none. A node the server has not seen yet, being new, runs in the
-// phase of the node before it in the walk until the next save says otherwise.
+// The phases each node may run in, as the server worked them out for its copy. They come from nodePhases, or from
+// stepPhases for the top-level steps if the server sends no nodePhases. A new node the server hasn't seen yet gets
+// the phases of the node before it in the walk, until the next save says otherwise.
 export function nodePhasesOf(
   steps: readonly SequenceStep[],
   saved: {

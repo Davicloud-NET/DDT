@@ -9,7 +9,8 @@ namespace DDT.Core.Values;
 // Name is the value or input the problem is about.
 public sealed record ValueProblem(string Name, ServerMessage Message)
 {
-    // The same said about the same name. The code and text stand in for the values, a dictionary compared by reference.
+    // Equal when the same thing is said about the same name. It compares the code and text instead of the values,
+    // because the values are a dictionary and would compare by reference.
     public bool Equals(ValueProblem? other) =>
         other is not null && Name == other.Name && Message.Code == other.Message.Code && Message.Text == other.Message.Text;
 

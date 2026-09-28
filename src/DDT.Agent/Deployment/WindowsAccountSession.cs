@@ -10,8 +10,8 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// An account signed in for a step. An administrator gets its linked token, without User Account Control's filter, as
-// a script run from an elevated prompt would.
+// An account signed in for a step. An administrator gets its linked token without User Account Control's filter,
+// like a script run from an elevated prompt.
 [SupportedOSPlatform("windows")]
 public sealed unsafe class WindowsAccountSession : IAccountSession
 {
@@ -29,14 +29,14 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
 
     public string UserName { get; }
 
-    // The SID of this one logon, which the window station, the desktop and the step's files admit, rather than every
+    // The SID of this single logon. The window station, the desktop and the step's files admit it, rather than every
     // logon of the account.
     public SecurityIdentifier LogonSid { get; }
 
     internal SafeKernelHandle Token => _token;
 
-    // DOMAIN\user signs in to DOMAIN, a UPN as it is, and a bare name as a local account. The profile takes the name
-    // alone.
+    // DOMAIN\user signs in to DOMAIN, a UPN signs in as it is, and a bare name signs in as a local account. The
+    // profile only takes the name.
     public static (string User, string? Domain, string ProfileName) Split(string userName)
     {
         ArgumentNullException.ThrowIfNull(userName);
@@ -122,14 +122,15 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
                 }
                 finally
                 {
-                    // Should it fail, the thread ends with this call all the same, and the account with it.
+                    // If this fails, the thread still ends with this call, and the account goes with it.
                     _ = RevertToSelf();
                 }
             },
             "DDT acting as an account");
     }
 
-    // Modify with everything inside, including what is there already, which SetAccessControl hands down.
+    // Grants Modify on everything inside, including what's there already, because SetAccessControl passes the rule
+    // down.
     public void Admit(string directory)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
@@ -162,7 +163,7 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
         _token.Dispose();
     }
 
-    // The token with every right, for a token User Account Control filtered; null for any other.
+    // The token with every right, for a token that User Account Control filtered. Null for any other token.
     private static SafeKernelHandle? LinkedToken(SafeKernelHandle token)
     {
         int type;

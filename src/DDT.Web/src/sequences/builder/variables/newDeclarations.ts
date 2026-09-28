@@ -5,7 +5,7 @@
 import type { SequenceDraft } from "../../sequenceDraft";
 import type { InputDeclaration, VariableDeclaration } from "../../sequences";
 
-// Variables and inputs share one set of names, compared without case.
+// Variables and inputs share one set of names, compared ignoring case.
 function freeName(draft: SequenceDraft, stem: string): string {
   const taken = [...draft.variables, ...draft.inputs].map((item) => item.name.toLowerCase());
   let number = 1;

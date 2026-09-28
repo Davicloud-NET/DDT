@@ -11,15 +11,16 @@ export const iconKey =
   "hover:bg-hover hover:text-ink pressed:bg-key-quiet-pressed focus-visible:outline-2 focus-visible:outline-focus " +
   "disabled:cursor-not-allowed disabled:opacity-40";
 
-// An empty text is no value.
+// Empty text means no value.
 export function orNull(text: string): string | null {
   return text.trim() === "" ? null : text;
 }
 
-// What each part of an input's fields gets. chosen says a switch or a list made the change, which is saved at once.
+// The props each part of an input's fields gets. chosen means a switch or a list made the change, so it's saved at
+// once.
 export interface InputPartProps {
   input: InputDeclaration;
-  // The place of a member, as a finding names it, such as inputs[0].label.
+  // A member's field name, as a finding names it, such as inputs[0].label.
   at: (member: string) => string;
   findings: Findings;
   update: (patch: InputPatch, chosen?: boolean) => void;

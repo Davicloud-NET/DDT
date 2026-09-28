@@ -20,8 +20,8 @@ import { useRunHistory } from "./history/useRunHistory";
 import { useRunHistorySearch } from "./history/useRunHistorySearch";
 import { runFilters, type RunFilter } from "./runHistory";
 
-// Every run of every machine, newest first, a page at a time. New runs and every change of a run arrive live from the
-// hub: a new run enters at the top, and a run whose state changes flashes. The server filters, searches and counts.
+// Every run of every machine, newest first, a page at a time. New runs and run changes arrive live from the hub. A
+// new run animates in at the top, and a run whose state changes flashes. The server filters, searches and counts.
 export function RunHistoryPage() {
   const { i18n, t: translate } = useLingui();
   const { filter, query, typed, setTyped, setSearch } = useRunHistorySearch();

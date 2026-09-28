@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 
 namespace DDT.Agent.Deployment;
 
-// Starts a tool as a signed-in account with CreateProcessAsUserW: .NET's Process goes through CreateProcessWithLogonW,
+// Starts a tool as a signed-in account with CreateProcessAsUserW. .NET's Process goes through CreateProcessWithLogonW,
 // which LocalSystem, the agent's account, may not call.
 [SupportedOSPlatform("windows")]
 public sealed class AccountProcessStarter(AgentLog log) : IAccountProcessStarter

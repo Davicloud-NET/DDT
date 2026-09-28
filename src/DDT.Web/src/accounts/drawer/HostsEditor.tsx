@@ -18,7 +18,7 @@ interface HostsEditorProps {
   onChange: (rows: AccountEdit["hosts"]) => void;
 }
 
-// The servers the account may connect shares on, one per row, as share paths name them.
+// The servers the account may connect shares on, one per row. Each is written the way share paths name it.
 export function HostsEditor({ rows, findings, onChange }: HostsEditorProps) {
   const { t } = useLingui();
   const labelId = useId();

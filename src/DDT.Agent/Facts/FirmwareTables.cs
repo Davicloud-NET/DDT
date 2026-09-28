@@ -16,8 +16,8 @@ public sealed class FirmwareTables : IFirmwareTables
     public byte[]? Read(uint provider, uint id) =>
         Call(buffer => NativeMethods.GetSystemFirmwareTable(provider, id, buffer, (uint)(buffer?.Length ?? 0)));
 
-    // Both functions answer a buffer that is too small with the size they need, and a failure with zero. The size is
-    // asked again when it grew between the two calls, which Windows allows for.
+    // Both functions answer a buffer that's too small with the size they need, and a failure with zero. Windows allows
+    // the size to grow between the two calls, so it's asked again then.
     private static byte[]? Call(Func<byte[]?, uint> function)
     {
         uint size = function(null);

@@ -26,8 +26,8 @@ interface RunActivityProps {
   now: number;
 }
 
-// A running run that waits for no one: the step it is on, or what the agent does between steps and how long the
-// machine has been silent while it restarts.
+// A running run that isn't waiting for anyone. Shows the step it's on, or what the agent does between steps and
+// how long the machine has been silent while it restarts.
 export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityProps) {
   const current = path?.current ?? null;
   const running =

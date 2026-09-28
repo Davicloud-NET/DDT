@@ -4,8 +4,8 @@
 
 namespace DDT.Server.Accounts;
 
-// What a save of an account changes, as its audit row says it: never the password itself, only that it was set or
-// cleared.
+// Describes what an account save changed, for its audit row. It never includes the password, only that it was set
+// or cleared.
 internal static class AccountChanges
 {
     public static string Created(AccountFields fields, bool passwordSet)
@@ -24,8 +24,8 @@ internal static class AccountChanges
         return string.Join(", ", described);
     }
 
-    // What a kept password would reach that it was not entered for: another user name or domain, or another server.
-    // Fewer servers, or none, reach nothing new.
+    // Lists the changes that would send a kept password somewhere it wasn't entered for: another user name, domain or
+    // server. Removing servers, even all of them, doesn't count.
     public static List<string> NewDestination(Account account, AccountFields fields)
     {
         ArgumentNullException.ThrowIfNull(account);

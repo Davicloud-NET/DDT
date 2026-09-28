@@ -16,7 +16,7 @@ import { ClaimRolesGroup } from "./ClaimRolesGroup";
 import { NewAccountsGroup } from "./NewAccountsGroup";
 import { ProviderGroup } from "./ProviderGroup";
 
-// The section oidc: a button on the sign-in page that signs people in at an OpenID Connect provider. A save rebuilds
+// The oidc section: a button on the sign-in page that signs people in at an OpenID Connect provider. A save rebuilds
 // the sign-in scheme in the running server.
 export function SingleSignOnSettings() {
   const form = useSettingsForm<OidcSettings>("oidc");

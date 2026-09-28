@@ -4,7 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// A node of a run, which lists every node of its tree in pre-order, containers included.
+// A node of a run. The run lists every node of its tree in pre-order, containers included.
 public sealed record ConsoleStep(
     Guid Id,
     string Name,
@@ -13,11 +13,11 @@ public sealed record ConsoleStep(
     ConsolePhase Phase,
     ConsoleStepState State,
     string? Error,
-    // The container the node sits in, null at the top, and how many containers deep it is.
+    // The container the node sits in, or null at the top. Depth is how many containers deep it is.
     Guid? ParentId = null,
     int Depth = 0,
-    // The times the node was entered, 0 for never.
+    // How many times the node was entered. 0 means never.
     int Pass = 0,
-    // A repeat's current time through its body, from 1.
+    // A repeat's current iteration, counted from 1.
     int Iteration = 0,
     ConsoleBranch? Branch = null);

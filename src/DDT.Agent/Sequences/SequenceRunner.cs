@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs a task sequence in Windows PE, or goes on with it in the installed Windows, and resumes a run found on disk.
-// Never throws: every failure is reported, because a crashed agent is replaced by the boot image's.
+// Runs a task sequence in WinPE, or continues it in the installed Windows, and resumes a run found on disk. It never
+// throws. It reports every failure, because if the agent crashes, the one from the boot image takes over.
 public sealed class SequenceRunner
 {
     public const string NoDiskMessage =
@@ -35,7 +35,7 @@ public sealed class SequenceRunner
     private readonly SequenceRunnerOptions _options;
     private readonly AgentLog _log;
 
-    // Internal, as its parts are: SequenceRunnerBuilder puts it together.
+    // Internal, like its parts. SequenceRunnerBuilder puts it together.
     internal SequenceRunner(
         SequenceRunFactory runs,
         RunStart start,
@@ -55,12 +55,13 @@ public sealed class SequenceRunner
     public Task<RunResult> RunAsync(RunRequest request, CancellationToken cancellationToken) =>
         RunAsync(SequencePhase.WindowsPE, _ending.RecordWindowsPERestart, request, cancellationToken);
 
-    // A restart Windows PE recorded comes before anything else at the next start. How it ended, or null when none is due.
+    // If WinPE recorded a pending restart, it happens first at the next start. Returns how it ended, or null if none
+    // was due.
     public Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken) => _ending.RestartIfDueAsync(cancellationToken);
 
     // request.Resumed is the run as the hand-over left it in the running Windows. The run ends with its Done report and
-    // no restart, as the agent still has to remove itself. recordRestart keeps a due restart for a service that stops
-    // or dies before it.
+    // no restart, because the agent still has to remove itself. recordRestart keeps a due restart in case the service
+    // stops or dies before it happens.
     public Task<RunResult> GoOnInWindowsAsync(RunRequest request, Action recordRestart, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);

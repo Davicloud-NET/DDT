@@ -9,8 +9,8 @@ import { cx } from "@/ui/cx";
 import { Panel } from "@/ui/Panel";
 import type { ValueRow } from "@/values/valueRows";
 
-// The values of a run, or those a run would start with, as rows of a name in the mono face, the value, and where it
-// came from. A secret shows only that it was given.
+// The values of a run, or the values a run would start with. Each row has the name in the mono face, the value, and
+// where it came from. A secret only shows that it was given.
 export function MachineValues({
   title,
   rows,

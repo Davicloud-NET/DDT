@@ -10,8 +10,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The whole console, on the UI thread: the agent's messages as the screen of its stage or its question, with the log,
-// the machine's details and the licences over it on their keys.
+// The whole console, on the UI thread. It turns the agent's messages into the screen for its stage or question. The
+// log, the machine's details and the licences open over it on their keys.
 public sealed class MainViewModel : ObservableObject
 {
     private readonly Localizer _l;
@@ -29,8 +29,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _isDark = true;
     private bool _languageChosen;
 
-    // send takes an answer to the agent. session is the shell of DDT's session in the installed Windows: no command
-    // prompt, and only F9 closes it, once the run is over.
+    // send passes an answer to the agent. session means the console is the shell of DDT's session in the installed
+    // Windows. Then there's no command prompt, and only F9 closes it, once the run is over.
     public MainViewModel(
         Localizer localizer,
         IMachinePower power,
@@ -85,7 +85,7 @@ public sealed class MainViewModel : ObservableObject
         private set => Set(ref _screen, value);
     }
 
-    // The open question, or the one answered while the agent has not moved on yet.
+    // The open question, or the answered one while the agent hasn't moved on yet.
     public QuestionViewModel? Question => _question;
 
     public HeaderViewModel Header { get; }
@@ -141,7 +141,7 @@ public sealed class MainViewModel : ObservableObject
 
     public IReadOnlyList<Fact> FooterFacts => MachineFacts.Footer(_l, _state?.Machine);
 
-    // The keys that work everywhere, named by what they do now.
+    // The keys that work on every screen, labelled with what they do right now.
     public IReadOnlyList<KeyHint> Keys =>
     [
         new("F1", _l.T("Log"), OverlayShown == Overlay.Log, ToggleLogCommand),
@@ -163,7 +163,7 @@ public sealed class MainViewModel : ObservableObject
 
     public Command CloseOverlayCommand { get; }
 
-    // Shift+F10, shown in the machine's details and once the agent has ended: the key strip has no room for it at
+    // Shift+F10. It shows in the machine's details and once the agent has ended. The key strip has no room for it at
     // 1024 x 768 without cutting off the machine's address.
     public Command OpenPromptCommand { get; }
 
@@ -173,7 +173,7 @@ public sealed class MainViewModel : ObservableObject
 
     public bool IsSession => _session;
 
-    // A message from the agent, in the order it sent them.
+    // Handles a message from the agent. Messages arrive in the order the agent sent them.
     public void Receive(ConsoleMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -200,7 +200,7 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    // The pipe has ended: nothing more comes, and no question can be answered any more.
+    // The pipe has ended. Nothing more arrives, and no question can be answered any more.
     public void Ended(LinkEnd end)
     {
         if (End.IsEnded)
@@ -215,7 +215,7 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(Question));
     }
 
-    // In DDT's session the pipe ends whenever the agent's service stops, and the last state stays until it is back.
+    // In DDT's session the pipe ends whenever the agent's service stops. The last state stays until the agent is back.
     public void Detached()
     {
         _question = null;
@@ -233,10 +233,10 @@ public sealed class MainViewModel : ObservableObject
 
     public bool Press(Key key) => Press(key, KeyModifiers.None);
 
-    // True when the console used the key.
+    // Returns true if the console handled the key.
     public bool Press(Key key, KeyModifiers modifiers) => _keys.Press(key, modifiers);
 
-    // Alt+F4 or the window's close button: a passer-by must not take the console away while the agent works. In DDT's
+    // For Alt+F4 and the window's close button. A passer-by must not close the console while the agent works. In DDT's
     // session the console is the shell, so closing it that way would leave an empty screen.
     public bool RefuseClose()
     {
@@ -261,8 +261,8 @@ public sealed class MainViewModel : ObservableObject
     {
         _state = state;
 
-        // An answered question stays until the agent moves on: to another stage or, for a run's questions such as a
-        // Pause step's, to another activity of the run.
+        // An answered question stays until the agent moves on. That means another stage, or for a run's questions like
+        // a Pause step, another activity of the run.
         if (_question is { IsSending: true } && (_stageWhenAnswered != state.Stage || _activityWhenAnswered != state.Run?.Activity))
         {
             _question = null;
@@ -281,7 +281,7 @@ public sealed class MainViewModel : ObservableObject
         Header.ShowLogo(state.Logo);
     }
 
-    // A language chosen with F5 at the machine stands over the server's.
+    // A language picked with F5 at the machine overrides the server's.
     private void SpeakAsTheServerSays(string? language)
     {
         UiLanguage? wanted = language switch
@@ -301,7 +301,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_question is null || !_question.Accept(id, question))
         {
-            // A new question needs the person, so nothing stays over it.
+            // A new question needs the person's attention, so any open overlay closes.
             OverlayShown = Overlay.None;
             _question = QuestionScreens.Create(_l, id, question, _state, Answer);
         }

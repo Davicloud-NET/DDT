@@ -24,7 +24,7 @@ public sealed class SequenceSizesTests
         ["Drivers"] = 2 * Gigabyte,
         ["Script"] = 100 * Megabyte,
 
-        // Less than the seed's disk.
+        // Less than the disk space the seed needs.
         ["Tiny"] = 10 * Megabyte,
         ["Raw"] = 8 * Gigabyte,
     };
@@ -71,7 +71,7 @@ public sealed class SequenceSizesTests
         Assert.Equal(Partition() + (20 * Gigabyte), Required([new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" }, If([Leaf("Large image")], [])]));
     }
 
-    // A group adds its steps up; an else-if is an IF in Else; a repeat's body counts once.
+    // A group adds up its steps. An else-if is an IF in Else. A repeat's body counts once.
     [Fact]
     public void WalksNestedContainers()
     {
@@ -93,7 +93,7 @@ public sealed class SequenceSizesTests
         Assert.Equal((20 * Gigabyte) + (200 * Megabyte), required);
     }
 
-    // A path that writes the seed counts its disk, and the path that needs the most wins.
+    // A path that writes the seed counts the seed's disk space, and the path that needs the most wins.
     [Fact]
     public void CountsTheSeedOnlyOnThePathsThatWriteIt()
     {

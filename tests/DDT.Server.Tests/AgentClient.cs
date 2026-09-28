@@ -10,13 +10,13 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Tests;
 
-// Speaks to the agent endpoints the way DDT.Agent does: bearer tokens, no cookies. A remote address gives the
-// client its own rate limit partitions.
+// Talks to the agent endpoints the way DDT.Agent does, with bearer tokens and no cookies.
+// A remote address gives the client its own rate limit partitions.
 public sealed class AgentClient(HttpClient client, string? remoteAddress = null) : IDisposable
 {
     public string? RemoteAddress => remoteAddress;
 
-    // An agent that runs task sequences of the current version.
+    // The registration of an agent that runs task sequences of the current version.
     public static AgentRegistration Registration(string uuid, string mac, params string[] otherMacs) =>
         new(uuid, mac, [mac, .. otherMacs], "Microsoft Corporation", "Virtual Machine", "0000-0000", "1.0.0")
         {
@@ -61,11 +61,11 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RunFileAsync(Guid machineId, string token, Guid runId, string sha256) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null);
 
-    // As the agent asks for a file's size before it erases the disk.
+    // Asks for a file's size, like the agent does before it erases the disk.
     public Task<HttpResponseMessage> RunFileHeadAsync(Guid machineId, string token, Guid runId, string sha256) =>
         SendAsync(HttpMethod.Head, AgentRoutes.RunFile(machineId, runId, sha256), token, null);
 
-    // As the agent resumes a download.
+    // Asks for a range of a file, like the agent does to resume a download.
     public Task<HttpResponseMessage> RunFileRangeAsync(Guid machineId, string token, Guid runId, string sha256, RangeHeaderValue range) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token, null, request => request.Headers.Range = range);
 

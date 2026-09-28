@@ -8,8 +8,8 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Keeps the due restart as a volatile key under the service's own key: Windows holds it in memory only, so every start
-// of Windows begins without it, and the service's removal takes it along. A marker that fails only costs the check.
+// Keeps the due restart as a volatile key under the service's key. Windows only holds it in memory, so every start of
+// Windows begins without it, and removing the service removes it too. A marker that fails only costs the check.
 public sealed class VolatileRestartMarker(RegistryKey root, AgentLog log) : IRestartMarker
 {
     public const string KeyPath = $@"SYSTEM\CurrentControlSet\Services\{OfflineServiceRegistration.ServiceName}\RestartDue";

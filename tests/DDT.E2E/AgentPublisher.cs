@@ -7,17 +7,17 @@ using System.Diagnostics;
 namespace DDT.E2E;
 
 // Publishes the agent with build\Publish-Agent.ps1, so the tests never run an agent older than its sources.
-// Without the Visual C++ build tools, which NativeAOT links with, the tests are skipped; any other failure fails them.
+// Without the Visual C++ build tools, which NativeAOT links with, the tests are skipped. Any other failure fails them.
 internal static class AgentPublisher
 {
     public const string FileName = "ddt-agent.exe";
 
-    // What NativeAOT asks vswhere for to find its linker.
+    // The component NativeAOT asks vswhere for to find its linker.
     private const string VisualCppTools = "Microsoft.VisualStudio.Component.VC.Tools.x86.x64";
 
     private static readonly TimeSpan s_timeout = TimeSpan.FromMinutes(10);
 
-    // Why the tests are skipped, or null once the agent is in output.
+    // Returns why the tests are skipped, or null once the agent is in output.
     public static async Task<string?> PublishAsync(string output, string logPath, CancellationToken cancellationToken)
     {
         if (!await VisualCppToolsInstalledAsync(cancellationToken).ConfigureAwait(false))
@@ -36,8 +36,8 @@ internal static class AgentPublisher
             RedirectStandardError = true,
         };
 
-        // The job ends everything the publish starts, so it must start no MSBuild node or compiler server that a
-        // build outside the tests could be sharing at that moment.
+        // The job kills everything the publish starts. So the publish must not start an MSBuild node or a compiler
+        // server that a build outside the tests could share at that moment.
         start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
         start.Environment["UseSharedCompilation"] = "false";
 
@@ -61,7 +61,7 @@ internal static class AgentPublisher
         }
         finally
         {
-            // Also when the tests were cancelled: nothing may go on writing into the directory the tests delete.
+            // Also when the tests were cancelled. Nothing may keep writing into the directory the tests delete.
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);

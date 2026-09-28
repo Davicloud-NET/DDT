@@ -10,7 +10,7 @@ public interface IToolRunner
     // DeploymentStepException.
     Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
 
-    // The exit code, whatever it is, for a caller that judges it; the output goes to the log only. A tool still running
-    // at options.Timeout is killed with every process it started, and DeploymentStepException says so.
+    // Returns the exit code, whatever it is, for a caller that judges it. The output only goes to the log. A tool still
+    // running at options.Timeout is killed with every process it started, and DeploymentStepException says so.
     Task<int> RunForExitCodeAsync(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, CancellationToken cancellationToken);
 }

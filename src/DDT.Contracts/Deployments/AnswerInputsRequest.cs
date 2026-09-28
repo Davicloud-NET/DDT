@@ -6,5 +6,5 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Contracts.Deployments;
 
-// Answers given on the machine's page to a run that waits at its start for its inputs.
+// Answers given on the machine's page, for a run that waits to start until its inputs are answered.
 public sealed record AnswerInputsRequest(IReadOnlyList<InputAnswer> Answers);

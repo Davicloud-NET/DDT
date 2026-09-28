@@ -22,7 +22,7 @@ interface AccountSettingProps {
   hint?: ReactNode;
   value: AccountReference | null;
   use: AccountUse;
-  // Names the choice of no account, where the step may have none.
+  // The label for choosing no account, if the step may have none.
   noneLabel?: string;
   onChange: (value: AccountReference | null) => void;
   className?: string;

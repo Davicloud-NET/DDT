@@ -14,8 +14,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Adds each deployable index of an uploaded WIM to the library. It logs under ImageUploadCompleter's category, which the
-// logging settings may name.
+// Adds each deployable index of an uploaded WIM to the library. It logs under ImageUploadCompleter's category, because
+// the logging settings may name that category.
 public sealed partial class WimUploadCommitter(
     ImageStore store,
     UploadRefusals refusals,
@@ -73,8 +73,8 @@ public sealed partial class WimUploadCommitter(
         return new WimPart(await LibraryFiles.HashAsync(stream, cancellationToken).ConfigureAwait(false), deployable, null);
     }
 
-    // Under the library lock, so an identical upload completing at the same time and an image being deleted see
-    // the stored file and its rows change together.
+    // Runs under the library lock. That way an identical upload completing at the same time, or an image being deleted,
+    // sees the stored file and its rows change together.
     private async Task<UploadCompletion> AddAsync(
         DdtDbContext database,
         ImageUpload upload,

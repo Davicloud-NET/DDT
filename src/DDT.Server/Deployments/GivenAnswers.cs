@@ -8,7 +8,7 @@ namespace DDT.Server.Deployments;
 
 // The answers given with an assignment, an approval or a pick, and the values they make.
 public sealed record GivenAnswers(
-    // Those to keep as the run's; Account answers are left out, because RunCredentials keeps them.
+    // The answers to keep with the run. Account answers are left out, because RunCredentials keeps them.
     IReadOnlyList<RunAnswer> Answers,
     // The inputs answered, Account inputs included.
     IReadOnlyList<string> Answered,

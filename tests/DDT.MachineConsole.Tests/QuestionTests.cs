@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// What each question sends: the field it names, and Back only where the question allows it.
+// What each question sends: the field it names, and Back only if the question allows it.
 public sealed class QuestionTests
 {
     [Fact]
@@ -45,7 +45,7 @@ public sealed class QuestionTests
 
         Assert.Equal(string.Empty, signIn.Password);
 
-        // Asked again after a wrong one, the field is empty, with the agent's words about it.
+        // Asked again after a wrong password, the field is empty and shows the agent's error message.
         console.Ask(3, new SignInQuestion(SignInField.Password, "anna", "Wrong user name or password."));
 
         Assert.Equal(string.Empty, signIn.Password);
@@ -147,7 +147,7 @@ public sealed class QuestionTests
             console.Answers);
     }
 
-    // The name a rule gives the machine is in the field, so Enter keeps it; what the person types instead goes.
+    // The name a rule gives the machine is in the field, so Enter keeps it. Whatever the person types instead is sent.
     [Fact]
     public void StartsTheComputerNameWithTheOneTheMachineGetsWithoutOne()
     {
@@ -189,7 +189,7 @@ public sealed class QuestionTests
         erase.Typed = "ERASE";
         erase.SubmitCommand.Execute(null);
 
-        // The word goes only once; the field empties as it goes.
+        // The word is sent only once, and the field empties as it's sent.
         erase.SubmitCommand.Execute(null);
         Assert.Equal(string.Empty, erase.Typed);
 
@@ -227,7 +227,7 @@ public sealed class QuestionTests
         ChoiceFieldViewModel bitLocker = Assert.IsType<ChoiceFieldViewModel>(inputs.Fields[2]);
         AccountFieldViewModel account = Assert.IsType<AccountFieldViewModel>(inputs.Fields[3]);
 
-        // The choices start with their defaults; the owner and the account have none.
+        // The choices start with their defaults. The owner and the account have none.
         Assert.Equal("Standard", Assert.IsType<ChoiceFieldViewModel>(inputs.Fields[0]).Selected?.Value);
         Assert.Equal("Yes", bitLocker.Selected?.Label);
         Assert.False(inputs.SubmitCommand.CanExecute(null));
@@ -252,13 +252,13 @@ public sealed class QuestionTests
             ],
             answer.Values);
 
-        // Sent, the password leaves the screen at once.
+        // Once sent, the password is cleared from the screen right away.
         Assert.Equal(string.Empty, account.Password);
         Assert.True(inputs.IsSending);
     }
 
-    // Refused, the same page takes the agent's words under the fields: what was typed stays to be put right, but the
-    // password is typed again.
+    // When refused, the same page shows the agent's error messages under the fields. What was typed stays so it can be
+    // fixed, but the password must be typed again.
     [Fact]
     public void KeepsWhatWasTypedWhenTheAgentAsksAgainButNeverThePassword()
     {
@@ -311,7 +311,7 @@ public sealed class QuestionTests
             Assert.Single(console.Answers).Answer.Values);
     }
 
-    // After the pick the list of sequences is a step back; at the start of a run there is none to go back to.
+    // After a sequence is picked, Back returns to the list. At the start of a run there's no list to go back to.
     [Fact]
     public void GoesBackFromTheInputsOnlyAfterThePick()
     {

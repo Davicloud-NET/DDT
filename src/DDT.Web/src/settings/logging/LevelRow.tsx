@@ -43,13 +43,13 @@ export function LevelRow({ row, index, rows, form, locked, onChange }: LevelRowP
             : []),
           ...form.fieldErrors(`logLevel[${category}]`),
         ];
-  // The first row's labels head the columns; the rows below keep theirs for screen readers only.
+  // The first row's labels act as column headings. The rows below keep theirs for screen readers only.
   const shown = (label: ReactNode) =>
     index === 0 ? label : <span className="sr-only">{label}</span>;
 
   return (
     <li
-      // On a phone the category takes a line of its own, above its level.
+      // On a phone the category gets its own line, above its level.
       className="grid grid-cols-[minmax(0,1fr)_2.25rem] items-start gap-3 border-t border-line-soft pt-3 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,1fr)_minmax(9rem,13rem)_2.25rem] sm:border-t-0 sm:pt-0"
     >
       <TextField

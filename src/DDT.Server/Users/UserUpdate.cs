@@ -10,8 +10,8 @@ using DDT.Server.Endpoints;
 
 namespace DDT.Server.Users;
 
-// The values an update leaves the account with. A member the request left out keeps the account's value; Role is null
-// when the request leaves the role alone.
+// The values the account has after an update. A field the request left out keeps the account's value. Role is null
+// when the request doesn't change the role.
 internal sealed record UserUpdate(string? DisplayName, string? Email, string? Role)
 {
     public static (UserUpdate Update, FieldProblems Problems) Read(UpdateUserRequest request, DdtUser user)
@@ -41,7 +41,7 @@ internal sealed record UserUpdate(string? DisplayName, string? Email, string? Ro
 
     public static string Change(string field, string? from, string? to) => $"{field}: '{from}' to '{to}'";
 
-    // The audit's description of what changes besides the role.
+    // Describes what changes besides the role, for the audit log.
     public List<string> Changes(DdtUser user)
     {
         ArgumentNullException.ThrowIfNull(user);

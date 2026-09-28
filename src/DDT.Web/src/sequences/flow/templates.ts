@@ -4,8 +4,8 @@
 
 import { serverText, type ServerArguments } from "@/lib/serverText";
 
-// The server's ValueTemplate, mirrored for completion and the preview and held to it by template-cases.json. Text in
-// double braces that is not a name and filters, such as Jinja's {{ v1.local_hostname }}, stays as it is.
+// A mirror of the server's ValueTemplate for completion and the preview. template-cases.json keeps the two in line.
+// Text in double braces that isn't a name with filters, such as Jinja's {{ v1.local_hostname }}, stays as it is.
 
 export const TEMPLATE_FILTERS = ["upper", "lower", "trim", "alnum", "left", "right"] as const;
 
@@ -17,7 +17,7 @@ const filterList = "upper, lower, trim, alnum, left:n, right:n";
 
 export interface TemplateFilter {
   name: string;
-  // What follows the colon, such as 12 in right:12; null is no colon.
+  // What follows the colon, such as 12 in right:12. Null if there's no colon.
   argument: string | null;
 }
 
@@ -50,15 +50,15 @@ export interface ParsedTemplate {
   problems: TemplateProblem[];
 }
 
-// A name, then filters, each after a bar and holding no brace or bar.
+// A name, then filters. Each filter comes after a bar and holds no brace or bar.
 const placeholderPattern = /\{\{\s*([A-Za-z][A-Za-z0-9_]*)(\s*(?:\|[^{}|]*)*)\}\}/g;
 
 function sameName(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-// The number of characters left:n and right:n take, or null when the argument is not a whole number of 1 to
-// MAX_COUNT written in the digits 0 to 9.
+// The number of characters left:n and right:n take. Null if the argument isn't a whole number from 1 to MAX_COUNT
+// written with the digits 0 to 9.
 export function filterCount(filter: TemplateFilter): number | null {
   const digits = filter.argument;
 
@@ -71,7 +71,7 @@ export function filterCount(filter: TemplateFilter): number | null {
   return count >= 1 && count <= MAX_COUNT ? count : null;
 }
 
-// The English the server says with each problem, from the same codes, so the page says it in the person's language.
+// Builds a problem with the code and arguments the server uses, so the page can show it in the person's language.
 function problem(
   kind: TemplateProblemKind,
   placeholder: string,
@@ -144,8 +144,8 @@ export function filterProblem(
   );
 }
 
-// known says which names the caller knows, ignoring case; without it every name is known. Filter problems are always
-// reported. Each problem is reported once.
+// known says which names the caller knows, ignoring case. Without it, every name counts as known. Filter problems are
+// always reported. Each problem is reported once.
 export function parseTemplate(text: string, known?: (name: string) => boolean): ParsedTemplate {
   const placeholders = placeholdersOf(text);
   const problems: TemplateProblem[] = [];
@@ -185,7 +185,7 @@ export function parseTemplate(text: string, known?: (name: string) => boolean): 
   return { placeholders, names, problems };
 }
 
-// .NET's ToUpperInvariant and ToLowerInvariant change one character into one, where JavaScript makes ß into SS.
+// .NET's ToUpperInvariant and ToLowerInvariant map each character to exactly one, while JavaScript turns ß into SS.
 function eachChar(value: string, change: (char: string) => string): string {
   return Array.from(value, (char) => {
     const changed = change(char);
@@ -194,7 +194,7 @@ function eachChar(value: string, change: (char: string) => string): string {
   }).join("");
 }
 
-// The value with the placeholder's filters done, which must have no problems.
+// The value with the placeholder's filters applied. The filters must have no problems.
 export function applyFilters(placeholder: TemplatePlaceholder, value: string): string {
   let result = value;
 
@@ -228,8 +228,8 @@ export function applyFilters(placeholder: TemplatePlaceholder, value: string): s
 
 export type Rendered = { output: string; error: null } | { output: null; error: TemplateProblem };
 
-// The text with each placeholder's value, filtered. values gives a name's value, or null when there is none, which is
-// a problem, as a filter written wrong is; rendering stops at the first.
+// The text with each placeholder replaced by its filtered value. values gives a name's value, or null if there's
+// none. A missing value is a problem, just like a badly written filter. Rendering stops at the first problem.
 export function renderTemplate(text: string, values: (name: string) => string | null): Rendered {
   let output = "";
   let copied = 0;
@@ -270,7 +270,7 @@ export function lookup(values: Readonly<Record<string, string>>): (name: string)
 }
 
 // Where the caret is in an unfinished placeholder, such as after "PC-{{Ser": the name typed so far and where it
-// starts, so a completion can replace it. Null when the caret is not in one.
+// starts, so a completion can replace it. Null if the caret isn't in one.
 export function completionAt(text: string, caret: number): { from: number; typed: string } | null {
   const before = text.slice(0, caret);
   const match = /\{\{\s*([A-Za-z0-9_]*)$/.exec(before);
@@ -284,8 +284,8 @@ export function completionAt(text: string, caret: number): { from: number; typed
   return { from: caret - typed.length, typed };
 }
 
-// The text with the name completed at the caret, closing the placeholder unless it is closed already, and where the
-// caret goes after it.
+// The text with the name completed at the caret, and where the caret goes after it. The placeholder gets closed
+// unless it's already closed.
 export function complete(
   text: string,
   caret: number,

@@ -6,7 +6,7 @@ import { vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 
-// A request the page sent. body is the parsed JSON when the page sent JSON, else null; raw is what it sent.
+// A request the page sent. body is the parsed JSON if the page sent JSON, or else null. raw is what it sent.
 export interface Sent {
   method: string;
   path: string;

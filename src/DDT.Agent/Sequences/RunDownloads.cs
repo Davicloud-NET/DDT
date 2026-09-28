@@ -11,7 +11,8 @@ namespace DDT.Agent.Sequences;
 // long a download waits for the heartbeat's next token after a refused one.
 public sealed class RunDownloads(IAgentServer server, RunSession session, AgentLog log, TimeProvider timeProvider, TimeSpan tokenWait)
 {
-    // Into directory as <sha256><extension>, resuming a part file an earlier attempt left there. Returns the file.
+    // Downloads into directory as <sha256><extension>, resuming a part file an earlier attempt left there. Returns the
+    // file.
     public async Task<string> DownloadAsync(
         ContentFile content,
         string directory,
@@ -32,8 +33,8 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
         return file;
     }
 
-    // Into sink, which does something with the bytes as they come, such as write a raw disk image. Throws when they
-    // do not match the SHA-256 the server announced.
+    // Downloads into sink, which handles the bytes as they arrive, such as writing a raw disk image. Throws when they
+    // don't match the SHA-256 the server announced.
     public async Task DownloadToAsync(ContentFile content, IDownloadSink sink, IProgress<int> percent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The files frozen with a machine's active run, so a machine never reads the library at large.
+// The files frozen with a machine's active run. A machine can only read these, never the rest of the library.
 internal sealed class RunFiles(DdtDbContext database, ImageStore store)
 {
-    // Artifact is null when the run has no such file; Path is null when the library lost it. The stored hash, never the
-    // one asked for, names the file.
+    // Artifact is null if the run has no such file. Path is null if the library lost it. The file is named by the
+    // stored hash, never the one asked for.
     public async Task<(DeploymentArtifact? Artifact, string? Path)> FindAsync(
         Machine machine,
         Guid runId,

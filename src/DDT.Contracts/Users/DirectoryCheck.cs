@@ -4,19 +4,20 @@
 
 namespace DDT.Contracts.Users;
 
-// What a directory sign-in with this user name would give, found with the bind account and without the user's
-// password.
+// What a directory sign-in with this user name would result in. It's looked up with the bind account, without the
+// user's password.
 public sealed record DirectoryCheck(
     bool Found,
     string? DistinguishedName,
     string? DisplayName,
-    // The distinguished names of every group the user is in, nested ones included, as a sign-in reads them.
+    // The distinguished names of every group the user is in, including nested ones, as a sign-in reads them.
     IReadOnlyList<string> Groups,
     // The groups the map names, with the role each gives.
     IReadOnlyList<DirectoryGroupMatch> Matches,
-    // Null when a sign-in would give none or be refused.
+    // Null when a sign-in would give no role or be refused.
     string? Role,
-    // Why, in English; MessageCode and MessageArgs say the same for a client in the person's language.
+    // Why, in English. MessageCode and MessageArgs carry the same message, so a client can show it in the person's
+    // language.
     string Message,
     string? MessageCode = null,
     IReadOnlyDictionary<string, object>? MessageArgs = null);

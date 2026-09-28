@@ -4,7 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The answer to the input Name: Value, or UserName and Password for an Account input.
+// The answer to the input Name. It's Value, or UserName and Password for an Account input.
 public sealed record ConsoleInputValue(string Name, string? Value, string? UserName = null, string? Password = null)
 {
     // A record prints every property by default, and the password must never reach a log.

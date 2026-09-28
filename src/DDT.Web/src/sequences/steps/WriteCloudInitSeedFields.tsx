@@ -19,7 +19,7 @@ export function WriteCloudInitSeedFields({
   findings,
   onChange,
 }: KindFieldsProps<WriteCloudInitSeedStep>) {
-  // What network-config held when it was turned off, while this step is shown.
+  // What network-config held when it was turned off. It's kept while this step is shown.
   const lastNetworkConfig = useRef("version: 2\n");
   const example = 'hostname: "{{ComputerName}}"';
 

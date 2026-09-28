@@ -14,7 +14,7 @@ namespace DDT.Server.Machines;
 // Anyone who reaches the server can register machines, so an operator throws away the ones nobody vouched for.
 internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, RuleRecount recount, TimeProvider timeProvider)
 {
-    // Found is false for a machine that is gone; Refusal says why one cannot be removed.
+    // Found is false if the machine doesn't exist. Refusal says why it can't be removed.
     public async Task<(bool Found, ServerMessage? Refusal)> RemoveAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
@@ -24,7 +24,7 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
             return (false, null);
         }
 
-        // A rejected machine stays rejected however often it registers, so removing it is the only way back: it then
+        // A rejected machine stays rejected however often it registers. Removing it is the only way back, and it then
         // registers as a new machine at its next netboot.
         if (!IsStray(machine) && machine.State != MachineState.Rejected)
         {
@@ -34,7 +34,7 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
         return (true, await RemoveStraysAsync([machine], actor, cancellationToken).ConfigureAwait(false));
     }
 
-    // Every machine waiting from the address that nobody vouched for.
+    // Removes every waiting machine from the address that nobody vouched for.
     public async Task<ServerMessage?> RemoveWaitingFromAsync(string address, Actor actor, CancellationToken cancellationToken)
     {
         List<Machine> machines = await database.Machines

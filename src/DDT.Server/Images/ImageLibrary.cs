@@ -12,10 +12,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Images;
 
-// The images of the library as administrators change them.
+// Applies administrators' changes to the images in the library.
 internal sealed class ImageLibrary(DdtDbContext database, ImageStore store, LiveNotifier live, TimeProvider timeProvider)
 {
-    // Under the library lock, so an upload of the same file cannot add rows for the stored file while it goes.
+    // Runs under the library lock. That way an upload of the same file can't add rows for the stored file while it's
+    // being deleted.
     public async Task<LibraryDeletion> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         await using (await store.LibraryLock.EnterAsync(cancellationToken).ConfigureAwait(false))
@@ -48,7 +49,7 @@ internal sealed class ImageLibrary(DdtDbContext database, ImageStore store, Live
 
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            // The row is gone, so the stored file goes too unless another index of the same file still uses it.
+            // The row is gone, so delete the stored file too, unless another index of the same file still uses it.
             await store.DeleteObjectIfUnreferencedAsync(database, image.Sha256, CancellationToken.None).ConfigureAwait(false);
         }
 

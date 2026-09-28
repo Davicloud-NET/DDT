@@ -31,10 +31,10 @@ function leaveConsequence(state: AutosaveState): string {
   }
 }
 
-// Asks before the page is left with changes that cannot be saved.
+// Asks before leaving the page with changes that can't be saved.
 export function LeaveDialog({ editor }: { editor: SequenceEditorState }) {
-  // Leaving saves first and goes once that worked; it asks only when the changes cannot be saved. Choosing another
-  // node stays on the page, and signing out ends the session a save needs, so neither is held up.
+  // Leaving saves first and navigates once that worked. It only asks if the changes can't be saved. Choosing another
+  // node stays on the page, and signing out ends the session a save needs, so neither is blocked.
   const leaving = useBlocker({
     shouldBlockFn: async ({ current, next }) =>
       next.pathname !== current.pathname && next.routeId !== "/sign-in" && !(await editor.flush()),

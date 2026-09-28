@@ -6,9 +6,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Connects a step's shares as \\host\share, as Windows connects shares, not folders; temporary and without a drive letter,
-// nothing outlives the step. Windows allows one account per server in a logon session, so another account's connection
-// to the server gives way, once, unless the step made it.
+// Connects a step's shares as \\host\share, because Windows connects shares, not folders. The connections are
+// temporary and have no drive letter, so nothing outlives the step. Windows allows one account per server in a logon
+// session. So another account's connection to the server is closed, once, unless the step made it.
 public sealed class ShareConnector(INetworkConnections network, AgentLog log) : IShareConnector
 {
     // ERROR_SESSION_CREDENTIAL_CONFLICT.
@@ -119,7 +119,8 @@ public sealed class ShareConnector(INetworkConnections network, AgentLog log) : 
             log.Information($"Connected {remote} as {share.UserName}{Where}.");
         }
 
-        // In the reverse order, and a share that stays connected only warns: the step's result is already decided.
+        // Disconnects in reverse order. A share that stays connected only warns, because the step's result is already
+        // decided.
         public async ValueTask DisposeAsync()
         {
             if (_disposed)

@@ -12,7 +12,8 @@ import type { RailStep } from "@/ui/SequenceRail";
 import type { PathNode, RunPath } from "../runPath";
 import { stepDuration } from "../runs";
 
-// The rail of the leaves on the run's path, each with its short line; without a path, the rail the summary gives.
+// The rail of the leaves on the run's path, each with its short line. Without a path, it's the rail built from the
+// summary.
 export function railSteps(run: DeploymentSummary, path: RunPath | null, now: number): RailStep[] {
   const leaves = path?.leaves ?? [];
 
@@ -21,8 +22,8 @@ export function railSteps(run: DeploymentSummary, path: RunPath | null, now: num
     : railFromSummary(run);
 }
 
-// The phase of each leaf, for the labels above the rail; a leaf the server has not reported yet runs where the one
-// before it does.
+// The phase of each leaf, for the labels above the rail. A leaf the server hasn't reported yet is assumed to run
+// in the same phase as the one before it.
 export function phasesOf(
   leaves: readonly PathNode[],
 ): Pick<DeploymentStepView, "index" | "phase">[] {

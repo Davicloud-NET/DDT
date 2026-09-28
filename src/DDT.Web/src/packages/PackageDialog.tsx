@@ -58,8 +58,8 @@ export function PackageDialog({
         </>
       }
     >
-      {/* With the browser's own validation, a field the server marked invalid would block the next save until the
-          dialog closed, so the form only tells assistive technology. */}
+      {/* With the browser's own validation, a field the server marked invalid would block every save until the
+          dialog closed. So the form only reports errors to assistive technology. */}
       <Form
         id={formId}
         className="flex flex-col gap-4"

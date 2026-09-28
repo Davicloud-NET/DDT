@@ -13,7 +13,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// A run that goes on from its state on the disk after Windows PE restarted.
+// A run that continues from its state on the disk after WinPE restarted.
 public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
 {
     [Fact]
@@ -54,9 +54,9 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
         Assert.Equal([StepState.Done, StepState.Done, StepState.Done], server.RunReports[reportsBefore].Steps.Take(3).Select(step => step.State));
     }
 
-    // The steps the engine settles without running them reach the machine's log once each: the first start skips one
+    // The steps the engine settles without running them reach the machine's log once each. The first start skips one
     // and is stopped in the next, and the start after it fails that step as interrupted. With Continue on error the run
-    // goes on to its restart, and the start after that one finishes it.
+    // continues to its restart, and the start after that finishes it.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -124,8 +124,8 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
         Assert.Null(RestartDue());
     }
 
-    // Ctrl+C once the engine asked for the restart, while the heartbeat waits for a beat on its way: the run stops
-    // before it tells the server of the restart, and the restart stays due for the next start.
+    // Ctrl+C once the engine asked for the restart, while the heartbeat waits for a beat in flight. The run stops
+    // before it tells the server about the restart, and the restart stays due for the next start.
     [Fact]
     public async Task AStopRightAfterTheRestartStepKeepsTheRestartDue()
     {
@@ -140,7 +140,7 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
         Assert.Equal(RestartInto.WindowsPE, RestartDue());
     }
 
-    // The run asked for the restart, so the machine restarts all the same, and should that fail, the next start does.
+    // The run asked for the restart, so the machine restarts anyway. If that fails, the next start restarts it.
     [Fact]
     public async Task ARefusedTokenOnABeatRightAfterTheRestartStepKeepsTheRestartDue()
     {

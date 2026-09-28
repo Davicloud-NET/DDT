@@ -12,8 +12,9 @@ using DDT.Core.Templates;
 
 namespace DDT.Server.Rules;
 
-// What is wrong with a rule or a machine role. Bounds refuse a request; problems are saved with a rule and keep it from
-// matching, so autosave keeps a draft, while they refuse a role's save. Fields are paths such as "when.parts[0].value".
+// Finds what's wrong with a rule or a machine role. A request over a bound is refused. Problems are saved with a rule
+// and keep it from matching, so autosave keeps a draft. For a role, problems refuse the save. Fields are paths such as
+// "when.parts[0].value".
 public static partial class RuleChecks
 {
     public const string WhenField = ConditionEvaluator.WhenPath;
@@ -23,8 +24,8 @@ public static partial class RuleChecks
     // The run's own variables, which have no value before a run.
     private static readonly string[] s_runVariables = [MachineVariableNames.LastStepFailed, MachineVariableNames.LastExitCode];
 
-    // What a condition's test compares with a value, by the type of what it tests. Every type can be tested for being one
-    // of a list, for having a value, and for being equal. A name that is not a fact is a value, which may hold anything.
+    // The comparisons a test may use, by the type of what it tests. Every type can be tested for equality, for having a
+    // value and for being in a list. A name that isn't a fact is a value, which may hold anything.
     private static readonly ConditionOperator[] s_textual =
     [
         ConditionOperator.StartsWith,
@@ -51,7 +52,7 @@ public static partial class RuleChecks
             ? ServerMessages.RuleConditionTooLarge.With("tests", RuleLimits.MaxTests, "depth", RuleLimits.MaxConditionDepth)
             : null;
 
-    // Values too many or too long to store, and a value missing altogether.
+    // Too many values, values too long to store, or a value that's missing altogether.
     public static ServerMessage? ValuesBound(IReadOnlyList<NamedValue?>? values)
     {
         if (values is null)
@@ -74,8 +75,8 @@ public static partial class RuleChecks
             : null;
     }
 
-    // A rule's problems. KnownNames are the names rules and machine roles set, which a condition may test besides the
-    // facts; KnownRoles the machine roles there are.
+    // A rule's problems. knownNames are the names rules and machine roles set, which a condition may test besides the
+    // facts. knownRoles are the machine roles that exist.
     public static IReadOnlyList<SequenceProblem> Problems(
         ConditionNode? when,
         IReadOnlyList<NamedValue> values,
@@ -108,8 +109,8 @@ public static partial class RuleChecks
         return problems;
     }
 
-    // What is wrong with the values a rule or a machine role sets: names a template can use, that are not a fact or DDT's,
-    // each once, and templates written as DDT's are.
+    // Problems with the values a rule or a machine role sets. Each name must be usable in a template, mustn't be a fact
+    // or reserved for DDT, and must appear once. Each value must be a valid DDT template.
     public static IReadOnlyList<(string Field, ServerMessage Message)> ValueProblems(IReadOnlyList<NamedValue> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -149,12 +150,13 @@ public static partial class RuleChecks
         return problems;
     }
 
-    // A value may set ComputerName, which is where the machine's name comes from; every other fact is the machine's.
+    // A value may set ComputerName, since that's where the machine's name comes from. Every other fact is the machine's
+    // own.
     public static bool IsFact(string name) =>
         !string.Equals(name, MachineVariableNames.ComputerName, StringComparison.OrdinalIgnoreCase) && MachineVariables.Fact(name) is not null
         || s_runVariables.Contains(name, StringComparer.OrdinalIgnoreCase);
 
-    // Every name a condition tests, for knowing whether it needs the values of the rules above it.
+    // Every name a condition tests. Tells whether the condition needs the values of the rules above it.
     public static IEnumerable<string> Names(ConditionNode? node) => node switch
     {
         TestCondition { Variable: { Length: > 0 } variable } => [variable],
@@ -188,7 +190,7 @@ public static partial class RuleChecks
 
     private static void Test(TestCondition test, string path, IReadOnlySet<string> knownNames, Action<string, ServerMessage> add)
     {
-        // Not trimmed: the evaluator reads the name as it is written.
+        // Not trimmed, because the evaluator reads the name as written.
         string variable = test.Variable ?? "";
         string? fact = MachineVariables.Fact(variable);
 
@@ -271,8 +273,8 @@ public static partial class RuleChecks
         return comparison == ConditionOperator.InSubnet && type == FactType.IPv4;
     }
 
-    // The value in the form the comparison needs. Type is null for a value's name, which is typed only where the
-    // comparison says, as a number or a network.
+    // Checks that the value has the form the comparison needs. Type is null when the test names a value, not a fact. A
+    // value only has a type where the comparison implies one, as a number or a network.
     private static ServerMessage? ValueProblem(ConditionOperator comparison, FactType? type, string value)
     {
         if (comparison == ConditionOperator.InSubnet)

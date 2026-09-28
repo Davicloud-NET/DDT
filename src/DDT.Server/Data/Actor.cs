@@ -14,10 +14,10 @@ public sealed record Actor(Guid? UserId, string? Name, string? Address, Guid? Ma
 
     public static Actor Configuration { get; } = new(null, "configuration", null);
 
-    // DDT on its own, such as a run failed because its agent went silent.
+    // DDT acting on its own, such as when it fails a run because the agent went silent.
     public static Actor Nobody { get; } = new(null, null, null);
 
-    // Named by the user name alone; AuditInterceptor adds an API token's name to the audit rows.
+    // Uses the user name alone. AuditInterceptor adds an API token's name to the audit rows.
     public static Actor Of(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

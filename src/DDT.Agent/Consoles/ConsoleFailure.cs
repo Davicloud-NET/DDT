@@ -6,7 +6,7 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// Why a console over a pipe went away, as the log names it after the console.
+// Why a console over a pipe went away, worded to follow the console's name in the log.
 internal static class ConsoleFailure
 {
     public static string NotAMessage(ConsoleProtocolException exception) => $"sent something that is not a console message ({exception.Message})";

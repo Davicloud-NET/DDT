@@ -10,7 +10,7 @@ import { DropZone, FileTrigger, Text, type FileDropItem } from "react-aria-compo
 import { Button } from "./Button";
 import { cx } from "./cx";
 
-// A well to drop one file on, with a key that chooses it instead.
+// A well to drop one file on, with a button to choose it instead.
 export function FileDropZone({
   label,
   title,

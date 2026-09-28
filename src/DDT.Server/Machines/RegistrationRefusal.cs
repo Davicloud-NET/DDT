@@ -8,9 +8,9 @@ public enum RegistrationRefusal
 {
     None,
 
-    // A machine the server has not seen before, while too many nobody approved are waiting.
+    // A new machine, while too many machines nobody approved are waiting.
     TooManyWaiting,
 
-    // The service in Windows, with no run to continue: it removes itself.
+    // The service in Windows has no run to continue, so it removes itself.
     NothingToContinue,
 }

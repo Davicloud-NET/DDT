@@ -17,8 +17,8 @@ export interface NodeDetail {
   code: boolean;
 }
 
-// The one line a node's card shows on a run: how long it took or runs, why it was skipped, what it tested, the value
-// it set.
+// The single line a node's card shows on a run: how long it took or has been running, why it was skipped, what it
+// tested, or the value it set.
 export function nodeDetail(
   node: PathNode,
   subjects: readonly Subject[],

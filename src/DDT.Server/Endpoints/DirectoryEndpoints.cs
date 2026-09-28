@@ -14,8 +14,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// The directory sign-in as the Users page shows it, read with the bind account as a sign-in reads it. Nothing changes
-// here: the Sign-in page edits the group map.
+// The directory sign-in, as the Users page shows it. It reads with the bind account, just like a sign-in does. Nothing
+// is changed here. The Sign-in page edits the group map.
 public static class DirectoryEndpoints
 {
     public const int DefaultGroupLimit = 20;
@@ -33,8 +33,8 @@ public static class DirectoryEndpoints
         return group;
     }
 
-    // The names are the directory's, so a map entry for a group the directory does not have shows without one. The page
-    // still shows the map while the directory cannot be asked.
+    // The names come from the directory, so a map entry for a group the directory doesn't have is shown without a name.
+    // The page still shows the map while the directory can't be reached.
     private static async Task<Ok<DirectoryView>> ReadAsync(
         DdtSettings settings,
         DirectorySignInService directory,
@@ -128,7 +128,7 @@ public static class DirectoryEndpoints
                 : Conflict(ServerMessages.DirectoryIncomplete.With())
             : Conflict(ServerMessages.DirectoryOff.With());
 
-    // DDT stands between the page and the directory here, so a directory that does not answer is a bad gateway.
+    // DDT sits between the page and the directory here, so a directory that doesn't answer is a 502 Bad Gateway.
     private static ProblemHttpResult Unavailable(LdapUnavailableException exception) =>
         exception.Reason is { } reason
             ? ServerProblems.Problem(reason, StatusCodes.Status502BadGateway)

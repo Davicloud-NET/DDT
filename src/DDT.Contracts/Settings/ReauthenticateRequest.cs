@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// Code: the authenticator code, when the account has one.
+// Code is the authenticator code, if the account has an authenticator.
 public sealed record ReauthenticateRequest(string Password, string? Code);

@@ -5,7 +5,7 @@
 namespace DDT.Contracts.Settings;
 
 public sealed record SettingsSectionUpdate<TValues>(
-    // The one the page loaded, so a save over someone else's is refused.
+    // The version the page loaded, so a save over someone else's changes is refused.
     long Version,
     // Replaces every field that is not locked.
     TValues Values,

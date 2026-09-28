@@ -15,7 +15,7 @@ import { useGuardedAction } from "../useGuardedAction";
 import { CertificateProof } from "./CertificateProof";
 import { NewRootDialog } from "./NewRootDialog";
 
-// Issuing needs the password, and making a new root needs a confirmation as well.
+// Issuing a certificate needs the password. Making a new root also needs a confirmation.
 export function GenerateDialog({
   view,
   isOpen,

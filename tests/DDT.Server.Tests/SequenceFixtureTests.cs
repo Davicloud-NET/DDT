@@ -40,7 +40,7 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("install-windows.sequence.json", fixedIds, "the template");
     }
 
-    // Every kind of step of versions 1 and 2, a script in every phase with every interpreter.
+    // Every kind of step from versions 1 and 2, plus a script in every phase with every interpreter.
     private static List<SequenceStep> EveryKindOfStep()
     {
         List<SequenceStep> steps = WindowsSteps();
@@ -107,8 +107,8 @@ public sealed class SequenceFixtureTests
             },
         ];
 
-    // Every kind of step of versions 1 and 2, and every phase, interpreter and condition operator they have: a flat
-    // document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
+    // Every kind of step from versions 1 and 2, and every phase, interpreter and condition operator they have.
+    // It's a flat document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
     [Fact]
     public async Task TheWebFixtureHoldsEveryKindOfStep()
     {
@@ -285,8 +285,8 @@ public sealed class SequenceFixtureTests
         },
     ];
 
-    // Every operator on a machine fact of a type it takes: numbers are compared as numbers, and only an address is in a
-    // network.
+    // Every operator on a machine fact of a type it accepts.
+    // Numbers are compared as numbers, and only an address can be in a network.
     private static TestCondition Fitting(ConditionOperator op) => op switch
     {
         ConditionOperator.Greater or ConditionOperator.GreaterOrEqual or ConditionOperator.Less or ConditionOperator.LessOrEqual =>
@@ -295,7 +295,7 @@ public sealed class SequenceFixtureTests
         _ => new TestCondition(MachineVariableNames.Model, op, "Latitude 7440"),
     };
 
-    // The kinds agents of this version run, by their type's name.
+    // The step kinds that agents of this version run, by type name.
     private static string[] Kinds(int maximumVersion) =>
     [
         .. typeof(SequenceStep).GetCustomAttributes<JsonDerivedTypeAttribute>()
@@ -304,7 +304,7 @@ public sealed class SequenceFixtureTests
             .Order(StringComparer.Ordinal),
     ];
 
-    // A node's condition trees, every group and test in them.
+    // Every group and test in a node's condition trees.
     private static IEnumerable<ConditionNode> Conditions(SequenceStep node)
     {
         IEnumerable<ConditionNode?> roots = node switch
@@ -326,7 +326,7 @@ public sealed class SequenceFixtureTests
         string folder = Path.Combine(Repository.Root(), "src", "DDT.Web", "src", "test", "fixtures");
         string path = Path.Combine(folder, name);
 
-        // Indented with LF line ends; the web's .prettierignore leaves the fixtures as written here.
+        // Indented, with LF line endings. The web's .prettierignore leaves the fixtures as written here.
         JsonSerializerOptions options = new(DdtJsonContext.Default.Options)
         {
             WriteIndented = true,

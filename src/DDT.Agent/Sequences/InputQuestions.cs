@@ -15,8 +15,8 @@ public static class InputQuestions
     public const string YesAnswer = "true";
     public const string NoAnswer = "false";
 
-    // An Account input names the domain its account is for as the server gave it, or else as the sequence's declaration
-    // in definition does.
+    // An Account input names the domain its account is for. The domain comes from the server, or else from the
+    // input's declaration in definition.
     public static ConsoleInput ToConsole(AgentInput input, string? error, SequenceDefinition? definition = null)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -45,7 +45,7 @@ public static class InputQuestions
             domain);
     }
 
-    // What is wrong with each answer, by the input's name; empty when nothing is. An input the console gave no answer
+    // What's wrong with each answer, by the input's name. Empty when nothing is. An input the console gave no answer
     // for counts as unanswered.
     public static IReadOnlyDictionary<string, string> Check(IReadOnlyList<AgentInput> inputs, IReadOnlyList<ConsoleInputValue> values)
     {

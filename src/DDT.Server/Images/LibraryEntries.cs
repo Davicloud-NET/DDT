@@ -11,10 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Images;
 
-// The rows of the library that uploads add.
+// Helpers for the library rows that uploads add.
 internal static class LibraryEntries
 {
-    // The answer for an upload that completed already: the entries of its file, as they are now.
+    // Answers an upload that already completed. It returns the entries of its file as they are now.
     public static async Task<UploadCompletion> ExistingAsync(
         DdtDbContext database,
         ImageUpload upload,
@@ -34,7 +34,7 @@ internal static class LibraryEntries
             .FirstOrDefaultAsync(p => p.Sha256 == sha256 && p.Kind == kind, cancellationToken)
             .ConfigureAwait(false);
 
-        // Deleted since this upload added it.
+        // The package was deleted after this upload added it.
         return package is null
             ? new UploadCompletion(UploadCompletionStatus.NotFound, [])
             : new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(package));

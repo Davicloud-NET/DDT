@@ -4,15 +4,16 @@
 
 namespace DDT.Agent.Consoles;
 
-// Shows the logo a registration names, downloaded once into directory as console-logo-<hash>.png. In the installed
-// Windows directory is the console's folder, which DDT's session may read. A failed download only leaves no logo.
+// Shows the logo named in a registration. It's downloaded once into directory as console-logo-<hash>.png. In the
+// installed Windows, directory is the console's folder, which DDT's session may read. A failed download just means
+// no logo.
 public sealed class ConsoleLogo(IAgentServer server, ConsoleStatus status, string directory, AgentLog log)
 {
     private string? _shown;
 
     public async Task ShowAsync(string? sha256, CancellationToken cancellationToken)
     {
-        // The hash becomes part of a path, so only a hash is taken.
+        // The hash becomes part of a path, so only a real hash is accepted.
         if (sha256 is null || sha256.Length != 64 || !sha256.All(char.IsAsciiHexDigit) || !Directory.Exists(directory))
         {
             Show(null);

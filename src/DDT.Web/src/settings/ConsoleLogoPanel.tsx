@@ -14,8 +14,8 @@ import { LogoChange } from "./logo/LogoChange";
 import { LogoDetails } from "./logo/LogoDetails";
 import { LogoPreview } from "./logo/LogoPreview";
 
-// The organisation's logo in the header of the console at the machine. A change applies at once and reaches machines
-// at their next registration; operators see it, administrators change it.
+// The organisation's logo in the header of the console on the machine. A change applies at once and reaches machines at
+// their next registration. Operators can see it, and administrators can change it.
 export function ConsoleLogoPanel({ canChange }: { canChange: boolean }) {
   const logo = useQuery(consoleLogoQuery);
 

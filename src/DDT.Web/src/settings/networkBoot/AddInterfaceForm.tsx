@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { Button } from "@/ui/Button";
 import { TextField } from "@/ui/TextField";
 
-// Adds interface names or addresses no host reported; withEntries splits several at their commas.
+// Adds interface names or addresses that no host reported. withEntries splits several entries at the commas.
 export function AddInterfaceForm({
   typed,
   onType,

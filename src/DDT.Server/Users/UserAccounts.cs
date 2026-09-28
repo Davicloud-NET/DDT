@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Users;
 
-// Accounts and their roles, as administrators change them. A change stages its audit row and the rows of roles and
-// claims before the Identity call that saves the account, so one save stores all of them or none.
+// Changes accounts and their roles for administrators. A change stages its audit row and its role and claim rows before
+// the Identity call that saves the account. So one save stores all of them or none.
 internal sealed class UserAccounts(
     DdtDbContext database,
     UserManager<DdtUser> userManager,
@@ -23,8 +23,8 @@ internal sealed class UserAccounts(
     LastAdministratorGuard guard,
     TimeProvider timeProvider)
 {
-    // A password DDT makes up, which the administrator hands over and the account replaces at its first sign-in, so
-    // only its owner knows the password it then uses.
+    // DDT generates the password and the administrator hands it over. The account must replace it at its first
+    // sign-in, so only its owner knows the password it uses after that.
     public async Task<UserChange> CreateAsync(CreateUserRequest request, Actor actor, CancellationToken cancellationToken)
     {
         (NewUser? account, FieldProblems problems) = NewUser.Read(request);
@@ -82,7 +82,7 @@ internal sealed class UserAccounts(
 
         List<string> changes = update.Changes(user);
 
-        // The directory writes both again at each sign-in.
+        // The directory writes the display name and email again at each sign-in.
         if (changes.Count > 0 && user.Source == AccountSource.Directory)
         {
             return UserChange.Refused(ServerMessages.UserDirectoryProvidesNames.With("name", user.UserName ?? ""));
@@ -112,8 +112,8 @@ internal sealed class UserAccounts(
         return await SaveUpdateAsync(user, update, role, actor, cancellationToken).ConfigureAwait(false);
     }
 
-    // The new security stamp ends every session of the account at its next check, within a minute, and its live
-    // connections at once.
+    // The new security stamp ends every session of the account at its next check, within a minute. Its live
+    // connections close at once.
     public async Task<UserChange> DisableAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         if (await FindAsync(id, cancellationToken).ConfigureAwait(false) is not { } user)
@@ -249,8 +249,8 @@ internal sealed class UserAccounts(
         return UserChange.Done(await publisher.ChangedAsync(user, closeConnections: true, cancellationToken).ConfigureAwait(false));
     }
 
-    // A directory or single sign-on account comes back at its next sign-in, with the roles its groups give. Disabling
-    // is what keeps it out.
+    // A deleted directory or single sign-on account comes back at its next sign-in, with the roles its groups give.
+    // Only disabling keeps it out.
     public async Task<UserChange> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         if (await FindAsync(id, cancellationToken).ConfigureAwait(false) is not { } user)
@@ -285,7 +285,7 @@ internal sealed class UserAccounts(
         return new UserChange(UserChangeStatus.Done);
     }
 
-    // A demotion of an enabled administrator holds the guard, so it cannot take away the last one.
+    // Demoting an enabled administrator holds the guard, so it can't remove the last one.
     private async Task<UserChange> SaveUpdateAsync(
         DdtUser user,
         UserUpdate update,
@@ -334,7 +334,7 @@ internal sealed class UserAccounts(
             database.UserRoles.Add(new IdentityUserRole<Guid> { UserId = user.Id, RoleId = target.Id });
         }
 
-        // An administrator chose this role, so it no longer counts as the one DDT gave.
+        // An administrator chose this role, so it no longer counts as a role DDT gave.
         database.UserTokens.RemoveRange(await database.UserTokens
             .Where(t => t.UserId == user.Id && t.LoginProvider == UserViews.MarkerProvider && t.Name == UserViews.ProvisionedMarker)
             .ToListAsync(cancellationToken)
@@ -368,7 +368,7 @@ internal sealed class UserAccounts(
     private void Audit(string action, DdtUser user, Actor actor, string detail) =>
         database.AuditEvents.Add(AuditEvents.Create(action, user.Id.ToString("D"), actor, timeProvider.GetUtcNow(), detail));
 
-    // What this request staged for the save is thrown away with the failure.
+    // On failure, everything this request staged for the save is thrown away.
     private UserChange? NotSaved(IdentityResult result)
     {
         if (result.Succeeded)
@@ -396,6 +396,6 @@ internal sealed class UserAccounts(
     private static IdentityUserClaim<Guid> MustChangePassword(DdtUser user) =>
         new() { UserId = user.Id, ClaimType = DdtClaimTypes.MustChangePassword, ClaimValue = "true" };
 
-    // Held: the account's rows of roles, which the one target replaces.
+    // Held is the account's role rows. The target role replaces them.
     private sealed record RoleChange(string? Current, string Target, List<IdentityUserRole<Guid>> Held, bool Demotes);
 }

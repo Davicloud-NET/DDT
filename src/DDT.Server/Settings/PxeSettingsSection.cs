@@ -13,7 +13,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace DDT.Server.Settings;
 
-// HttpBootPort and BootDirectory stay in configuration, so they are no fields: what applies takes them from there.
+// HttpBootPort and BootDirectory stay in configuration, so they aren't fields. The settings in force take them from
+// there.
 public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>(
     SettingsSectionNames.Pxe,
     PxeOptions.SectionName,
@@ -46,8 +47,8 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
 
     protected override IReadOnlyList<SettingProblem> FindProblems(PxeOptions options, SettingsContext context) => PxeSetup.FindProblems(options);
 
-    // DDT serves HTTP boot files only on its boot port, below /boot/. Another server may serve the file, so this only
-    // asks.
+    // DDT only serves HTTP boot files on its boot port, below /boot/. Another server may serve the file, so this only
+    // asks for confirmation.
     protected override IReadOnlyList<SettingWarning> FindWarnings(PxeOptions options, PxeOptions? current, SettingsContext context)
     {
         List<SettingWarning> warnings = [];

@@ -16,8 +16,8 @@ public static class PxeHostingExtensions
 {
     public const string BootEndpointName = "Boot";
 
-    // Only HttpBootPort and BootDirectory are read here, because they decide what Kestrel binds and what is served to
-    // anyone; they stay in configuration. Everything else comes from the source, at each apply.
+    // Only HttpBootPort and BootDirectory are read here, because they decide what Kestrel binds and what's served to
+    // anyone. They stay in configuration. Everything else comes from the source, at each apply.
     public static PxeBootstrap AddDdtPxe(this WebApplicationBuilder builder, string storePath, Func<IServiceProvider, PxeHostSource> source)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -25,8 +25,9 @@ public static class PxeHostingExtensions
 
         PxeBootstrap bootstrap = ReadBootstrap(builder.Configuration, storePath);
 
-        // Configuration, not a Listen call, which makes Kestrel ignore every endpoint configured elsewhere. Declared
-        // even with nothing served, so the listening ports never depend on which NICs were up at startup.
+        // This uses configuration, not a Listen call, because Listen makes Kestrel ignore every endpoint configured
+        // elsewhere. It's declared even when nothing is served, so the listening ports never depend on which NICs were
+        // up at startup.
         builder.Configuration.AddInMemoryCollection(
         [
             new($"Kestrel:Endpoints:{BootEndpointName}:Url", string.Create(CultureInfo.InvariantCulture, $"http://0.0.0.0:{bootstrap.HttpBootPort}")),
@@ -44,7 +45,7 @@ public static class PxeHostingExtensions
         return bootstrap;
     }
 
-    // The configured values, checked: a boot directory that holds the store would publish it.
+    // Reads and checks the configured values. A boot directory that contains the store would publish it.
     public static PxeBootstrap ReadBootstrap(IConfiguration configuration, string storePath)
     {
         ArgumentNullException.ThrowIfNull(configuration);

@@ -9,7 +9,8 @@ import type { UnwrapKeep } from "./flowEdits";
 import { indexTree, isWithin, walk, type BodyName, type Slot, type TreeIndex } from "./flowTree";
 import { changeList, insertAt, withBody, without, withSteps } from "./treeChanges";
 
-// Siblings next to each other: where they sit, in document order. Undefined for anything else.
+// A run of siblings next to each other: where they sit, in document order. siblingRun returns undefined for anything
+// else.
 interface Run {
   parent: string | null;
   body: BodyName;

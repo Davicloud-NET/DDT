@@ -6,7 +6,8 @@ import { Trans } from "@lingui/react/macro";
 
 import { Notice } from "@/ui/Notice";
 
-// Asks a directory administrator to test their own sign-in before a save that decides whether they still can.
+// Asks an administrator who signs in through the directory to test their own sign-in first. The save decides whether
+// they still can.
 export function ProofNotice({ stale }: { stale: boolean }) {
   return (
     <Notice tone="attention">

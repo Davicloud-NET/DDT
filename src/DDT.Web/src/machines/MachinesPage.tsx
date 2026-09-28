@@ -25,8 +25,9 @@ import { MachinePanel } from "./MachinePanel";
 import { byAttention, inFilter, machineTag, matchesSearch } from "./machineView";
 import { useCanDecide } from "./useCanDecide";
 
-// Every machine that netbooted, patched in place from the hub's pushes: a machine whose state changed flashes in its
-// new state's colour, and a new one enters. The list is read on a timer only while the live connection is down.
+// Every machine that netbooted, patched in place from the hub's pushes. A machine whose state changed flashes in its
+// new state's colour, and a new machine animates in. The list is only read on a timer while the live connection is
+// down.
 export function MachinesPage() {
   const { filter, query, selectedId, setSearch } = useMachineFilters();
   const live = useLiveStatus();
@@ -39,7 +40,7 @@ export function MachinesPage() {
     queryKey: machinesQuery.queryKey,
     items: (list) => list,
     id: (machine) => machine.id,
-    // A run that comes to wait for someone flashes in the colour for that.
+    // When a run starts waiting for someone, the row flashes in the waiting colour.
     signature: (machine) => `${machine.state} ${String(isWaiting(machine.deployment))}`,
     tone: (machine) => machineTag(machine).tone,
   });

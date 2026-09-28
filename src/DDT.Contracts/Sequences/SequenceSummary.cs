@@ -6,8 +6,8 @@ using DDT.Contracts.Images;
 
 namespace DDT.Contracts.Sequences;
 
-// A sequence with ProblemCount above zero is kept as a draft and cannot run. The facts let a dialog state what running
-// it does without loading the whole document, including the raw disk image it writes, if any.
+// A sequence with ProblemCount above zero is kept as a draft and can't run. The other members let a dialog say what
+// running it does without loading the whole document, including the raw disk image it writes, if any.
 public sealed record SequenceSummary(
     Guid Id,
     string Name,

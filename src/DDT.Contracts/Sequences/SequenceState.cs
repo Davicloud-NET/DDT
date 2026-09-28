@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// The resumable state of a run, saved after every change: the blob alone is enough to resume after a restart.
+// The resumable state of a run, saved after every change. The blob alone is enough to resume after a restart.
 // Later formats only add members.
 public sealed record SequenceState(
     int Format,
@@ -19,7 +19,7 @@ public sealed record SequenceState(
     IReadOnlyList<StepRunState> Steps,
     // Run variables that steps output, such as partition ids.
     IReadOnlyDictionary<string, string> Variables,
-    // Where a Format 2 run goes on, in place of NextIndex.
+    // Where a Format 2 run continues. It replaces NextIndex.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NodeCursor? Cursor = null)
 {
     // The engine writes Format 1 while the definition's version is 1 or 2, so an older agent still resumes a flat run.

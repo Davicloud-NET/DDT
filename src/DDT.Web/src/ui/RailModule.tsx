@@ -5,8 +5,9 @@
 import { cx } from "./cx";
 import type { RailStep } from "./SequenceRail";
 
-// One fill serves the running and the done step, so a finishing step fills on and changes colour instead of
-// jumping. className sets the height, and the corners where the module sits on another part's edge.
+// One fill serves both the running and the done step, so a finishing step keeps filling and changes colour
+// instead of jumping. className sets the height, and the corners where the module sits on another part's
+// edge.
 export function RailModule({ step, className }: { step: RailStep; className: string }) {
   const percent = Math.min(100, Math.max(0, step.percent ?? 0));
   const fill =

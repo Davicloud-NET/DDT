@@ -64,12 +64,12 @@ describe("the subjects of a condition", () => {
     ]);
     expect(sections).toContain("run:LastStepFailed");
     expect(sections).toContain("values:TimeZone");
-    // A value a rule sets under the name of a fact or of the sequence's own is that one.
+    // A rule value named like a fact or a sequence variable isn't listed again. It's the same subject.
     expect(sections.filter((entry) => entry.toLowerCase().endsWith(":model"))).toEqual([
       "machine:Model",
     ]);
     expect(sections.slice(-2)).toEqual(["sequence:ComputerName2", "sequence:Office"]);
-    // An Account input sets no value.
+    // An Account input doesn't set a value.
     expect(sections).not.toContain("sequence:JoinAccount");
   });
 
@@ -104,8 +104,8 @@ describe("the subjects of a condition", () => {
     expect(operatorsFor("text")).toContain("Matches");
   });
 
-  // As the server's ConditionChecks takes them for each type of fact, so every condition it takes, such as the MAC
-  // Contains of versions 1 and 2, can be edited here.
+  // Matches what the server's ConditionChecks accepts for each fact type. That way every condition it accepts can be
+  // edited here, such as the MAC Contains of versions 1 and 2.
   it("offers every operator the server takes for the type of each fact", () => {
     const text = [
       "Equals",
@@ -165,7 +165,7 @@ describe("the subjects of a condition", () => {
       });
     }
 
-    // A choice of an input is offered as its type's text is.
+    // An input with choices gets the same operators as text.
     expect([...operatorsFor(subjectFor(subjects, "Office").kind)].sort()).toEqual([...text].sort());
   });
 
@@ -215,7 +215,7 @@ describe("values", () => {
     expect(valueProblem("mac", "Equals", "00:15:5D")).toBe(
       "Enter a MAC address such as 00:15:5D:01:02:03.",
     );
-    // A part of an address, or a pattern, is no whole one.
+    // Part of an address, or a pattern, doesn't have to be a whole address.
     expect(valueProblem("mac", "Contains", "5D:01")).toBeNull();
     expect(valueProblem("mac", "EndsWith", "02:03")).toBeNull();
     expect(valueProblem("mac", "NotContains", "5D:0")).toBe(

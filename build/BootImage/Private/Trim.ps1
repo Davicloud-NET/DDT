@@ -2,19 +2,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Removes what the trim list names from the mounted image, and stops the build when that takes a file Windows PE
-# starts with. It takes the servicing stack too, so nothing can be added to the image afterwards.
+# Removes what the trim list names from the mounted image, and stops the build if that removes a file Windows PE
+# needs to start. It removes the servicing stack too, so nothing can be added to the image afterwards.
 function Remove-TrimmedFile {
     param(
         [Parameter(Mandatory)][string] $MountDirectory,
         [Parameter(Mandatory)][string] $ListPath
     )
 
-    # A list edited too far could take what Windows PE starts with, so these must stay.
+    # A list edited too far could remove what Windows PE needs to start, so these files must stay.
     $essential = @('Windows\System32\ntoskrnl.exe', 'Windows\System32\winload.efi', 'Windows\System32\ucrtbase.dll',
                    'Windows\SysWOW64\ntdll.dll') | Where-Object { Test-Path -LiteralPath (Join-Path $MountDirectory $_) }
 
-    # Compiled rather than a script, for the privileges, the hard links and the tens of thousands of files.
+    # Compiled C# instead of a script, because of the privileges, the hard links and the tens of thousands of files.
     if (-not ('DdtBootImageTrim' -as [type])) {
         Add-Type -Path (Join-Path $PSScriptRoot 'Trim.cs')
     }

@@ -8,8 +8,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// Reads a volume's partition with PARTITION_INFORMATION_EX as winioctl.h lays it out on 64-bit Windows: the style
-// first, and for GPT the unique partition GUID at 48, which finds the partition again after a restart.
+// Reads a volume's partition with PARTITION_INFORMATION_EX as winioctl.h lays it out on 64-bit Windows. The style comes
+// first, and for GPT the unique partition GUID is at 48. That GUID finds the partition again after a restart.
 public static class PartitionReader
 {
     public const int PartitionInformationLength = 144;

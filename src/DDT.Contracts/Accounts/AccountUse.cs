@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Accounts;
 
-// Steps are the steps of the sequence that name the account, in the order of its tree.
+// Steps lists the steps of the sequence that name the account, in tree order.
 public sealed record AccountUse(Guid SequenceId, string SequenceName, IReadOnlyList<AccountStepUse>? Steps = null);

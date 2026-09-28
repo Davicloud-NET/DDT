@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import type { agentBinaryQuery, AgentBinarySource, AgentBinaryView } from "../agentBinary";
 
-// What sets the agent's panel apart from the console's: the file, where it goes, and what the page says about it.
+// What differs between the agent's panel and the console's: the file, where it's uploaded, and the page's texts.
 export interface Binary {
   query: typeof agentBinaryQuery;
   upload: (file: File) => Promise<AgentBinaryView>;

@@ -7,8 +7,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Every step on every branch of a run, and the images they apply and write: which branch a run takes it finds out
-// only as it goes, and nothing may be erased for a run that could not finish on one of them.
+// Every step on every branch of a run, and the images they apply and write. A run only finds out which branch it takes
+// as it goes, and nothing may be erased for a run that couldn't finish on one of them.
 internal sealed record RunInventory(
     IReadOnlyList<SequenceStep> Steps,
     IReadOnlyList<AgentRunImage> Images,

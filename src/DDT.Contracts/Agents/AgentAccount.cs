@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Agents;
 
-// UserName stays whole, DOMAIN\user or a UPN.
+// UserName isn't split up. It's DOMAIN\user or a UPN.
 public sealed record AgentAccount(string UserName, string Password)
 {
     // A record prints every property by default, and the password must never reach a log.

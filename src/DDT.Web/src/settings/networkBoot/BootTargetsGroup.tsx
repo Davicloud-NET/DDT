@@ -31,7 +31,7 @@ export function BootTargetsGroup({
   const lock = form.lockOf("bootTargets");
   const editable = lock === null;
   const available = architecturesWithout(keys);
-  // Held here, not in AddBootTarget, so the choice outlasts a lock that comes and goes.
+  // Kept here instead of in AddBootTarget, so the choice survives a lock that comes and goes.
   const [chosen, setChosen] = useState<string | null>(null);
   const adding = chosen !== null && available.includes(chosen) ? chosen : (available[0] ?? null);
   const errors = form.fieldErrors("bootTargets");

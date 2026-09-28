@@ -74,7 +74,7 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         Assert.Equal(HttpStatusCode.RequestedRangeNotSatisfiable, complete.StatusCode);
         Assert.Equal(content.Length, complete.Content.Headers.ContentRange?.Length);
 
-        // The URL may carry the hash in either case; the stored one names the file.
+        // The URL may carry the hash in either case. The stored hash names the file.
         Assert.Equal(HttpStatusCode.OK, (await machine.Agent.RunFileHeadAsync(machine.Id, machine.Token, run.Id, image.Sha256.ToUpperInvariant())).StatusCode);
     }
 
@@ -140,7 +140,7 @@ public sealed class RunFileTests(DdtApplication application) : IClassFixture<Ddt
         AgentRun run = await AssignAsync(machine, image.Id);
         string session = machine.Token;
 
-        // Registered again without its resume token: Pending, and every earlier token is dead.
+        // After registering again without its resume token, the machine is Pending and every earlier token is invalid.
         Assert.Equal(MachineState.Pending, (await machine.RegisterAgainAsync()).State);
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.RunFileAsync(machine.Id, session, run.Id, image.Sha256)).StatusCode);

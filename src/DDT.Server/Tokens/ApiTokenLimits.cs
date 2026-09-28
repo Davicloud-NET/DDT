@@ -12,6 +12,6 @@ public static class ApiTokenLimits
 
     public const int MaxDays = 365;
 
-    // A token used all day long is written back at most this often.
+    // A token in constant use gets its last use written back at most this often.
     public static readonly TimeSpan LastUsedInterval = TimeSpan.FromMinutes(1);
 }

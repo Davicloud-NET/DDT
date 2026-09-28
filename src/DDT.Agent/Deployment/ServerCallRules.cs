@@ -7,8 +7,8 @@ using System.Text.Json;
 
 namespace DDT.Agent.Deployment;
 
-// How a deployment treats its server calls: a 401 ends the run, any other refusal fails the step with the server's
-// reason, and whatever may pass on its own is tried again with a growing delay, a few times at most.
+// How a deployment treats its server calls. A 401 ends the run. Any other refusal fails the step with the server's
+// reason. A failure that may pass on its own is tried again a few times, with a growing delay.
 public static class ServerCallRules
 {
     public const int MaxRetries = 5;
@@ -49,8 +49,8 @@ public static class ServerCallRules
         }
     }
 
-    // A client error other than a timeout or a busy server: asking again gets the same answer. A 401 never gets
-    // here, it arrives as AgentTokenRejectedException.
+    // A client error other than a timeout or a busy server. Asking again gets the same answer. A 401 never gets here,
+    // because it arrives as AgentTokenRejectedException.
     public static bool IsRefusal(Exception exception) =>
         exception is HttpRequestException { StatusCode: { } status }
         && (int)status is >= 400 and < 500
@@ -60,7 +60,7 @@ public static class ServerCallRules
         exception is HttpRequestException or IOException or TimeoutException or JsonException
         || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested);
 
-    // The server's problem title is a sentence for the operator; without one, the status says what happened.
+    // The server's problem title is a sentence for the operator. Without one, the status says what happened.
     public static string Reason(Exception exception, string what)
     {
         ArgumentNullException.ThrowIfNull(exception);

@@ -11,8 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Settings;
 
-// The page's view of a section: the snapshot, and for a section applied by rebuilding a component, how every host
-// applied it. A change reaches other browsers through the hub with the whole view, so they patch what they show.
+// Builds the page's view of a section. It holds the snapshot and, for a section applied by rebuilding a component, how
+// every host applied it. A change reaches other browsers through the hub with the whole view, so they patch what they
+// show.
 public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, SettingsHostStates hostStates, LiveNotifier live)
 {
     public async Task<object> ViewAsync(SettingsSectionApi api, SettingsSnapshot snapshot, CancellationToken cancellationToken)
@@ -84,7 +85,7 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
         return hosts;
     }
 
-    // Administrators receive every section; operators also the two they may read.
+    // Administrators receive every section. Operators also receive the two sections they may read.
     public async Task PushAsync(string section, CancellationToken cancellationToken)
     {
         if (SettingsApi.Find(section) is not { } api)
@@ -102,7 +103,7 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
         }
     }
 
-    // This host's own state from memory, which may be newer than its row.
+    // Takes this host's own state from memory, because it may be newer than its row.
     private async Task<List<SettingsHostState>> RowsAsync(string section, CancellationToken cancellationToken)
     {
         List<SettingsHostState> rows = await database.SettingsHostStates
@@ -133,7 +134,7 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
                 row.UpdatedUtc,
                 SettingsHostStates.Text(row)))];
 
-    // An interface name that matches nothing is only logged by the host, so the page says which host did not find it.
+    // The host only logs an interface name that matches nothing, so the page says which host didn't find it.
     private static List<SettingMessage> Warnings(SettingsSectionState state, List<SettingsHostState> rows) =>
         state.Name != SettingsSectionNames.Pxe
             ? []

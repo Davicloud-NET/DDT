@@ -16,7 +16,7 @@ import { Skeleton } from "@/ui/Skeleton";
 import { valueRows } from "@/values/valueRows";
 import type { ResolvedValue } from "@/values/values";
 
-// The flow of a run comes with the flow's code, which only a run's page needs.
+// The run's flow is loaded lazily, because only a run's page needs the flow code.
 const RunFlow = lazy(() => import("@/runs/RunFlow"));
 
 interface RunDetailsProps {
@@ -30,7 +30,7 @@ interface RunDetailsProps {
   onShowLogFromFlow: (stepId: string) => void;
 }
 
-// The run the page shows, on its flow with its values, steps and timeline, and what the machine reported.
+// The run the page shows: its flow, values, steps and timeline, and what the machine reported.
 export function RunDetails({
   machine,
   summary,

@@ -16,17 +16,17 @@ internal static class PxeSocket
     // IP_UNICAST_IF is 31 in ws2ipdef.h and 50 in uapi/linux/in.h.
     private static int UnicastInterfaceOption => OperatingSystem.IsWindows() ? 31 : 50;
 
-    // One wildcard socket per port: one per interface gets no broadcasts on Linux, and mixing both needs SO_REUSEADDR,
-    // which lets another process share the port. No ExclusiveAddressUse either: it fails the bind on a Hyper-V host,
-    // where another process holds a specific address on the same port.
+    // One wildcard socket per port. A socket per interface gets no broadcasts on Linux, and mixing both needs
+    // SO_REUSEADDR, which lets another process share the port. There's no ExclusiveAddressUse either. It fails the
+    // bind on a Hyper-V host, where another process holds a specific address on the same port.
     public static Socket CreateListener(IPEndPoint endpoint)
     {
         Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
         try
         {
-            // Must precede Bind. The runtime otherwise enables IP_PKTINFO inside the first
-            // ReceiveMessageFrom call, and a datagram already queued by then reports interface 0.
+            // This must come before Bind. Otherwise the runtime enables IP_PKTINFO inside the first ReceiveMessageFrom
+            // call, and a datagram already queued by then reports interface 0.
             socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
             DisableConnectionReset(socket);
@@ -41,8 +41,8 @@ internal static class PxeSocket
         }
     }
 
-    // A fresh port connected to the client: the kernel drops other sources, and a repeated request gets a transfer the
-    // client tells apart by port instead of a second stream from port 69.
+    // A new port connected to the client. The kernel drops datagrams from other sources. A repeated request gets a
+    // transfer the client can tell apart by port, instead of a second stream from port 69.
     public static Socket CreateTransfer(IPAddress localAddress, IPEndPoint client)
     {
         Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -62,8 +62,8 @@ internal static class PxeSocket
         }
     }
 
-    // A limited broadcast has no route of its own, so without this the kernel picks one interface from
-    // the routing table and the reply leaves on the wrong segment. Zero restores ordinary routing.
+    // A limited broadcast isn't tied to a route. Without this, the kernel picks one interface from the routing table
+    // and the reply leaves on the wrong segment. Zero restores ordinary routing.
     public static void SetEgressInterface(Socket socket, int interfaceIndex) =>
         socket.SetRawSocketOption(
             IpProtocolLevel,
@@ -80,8 +80,9 @@ internal static class PxeSocket
         }
     }
 
-    // The next datagram, or null once the listener stops. A receive that fails for no known reason is logged and tried
-    // again after a pause, so a persistent error does not spin: a dead listener leaves every machine unable to boot.
+    // Returns the next datagram, or null once the listener stops. A receive that fails for an unknown reason is logged
+    // and retried after a pause, so a persistent error doesn't spin. The loop never gives up, because a dead listener
+    // leaves every machine unable to boot.
     public static async Task<SocketReceiveMessageFromResult?> ReceiveAsync(
         Socket socket,
         byte[] buffer,

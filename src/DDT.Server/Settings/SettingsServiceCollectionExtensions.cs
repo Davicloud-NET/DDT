@@ -16,8 +16,8 @@ public static class SettingsServiceCollectionExtensions
 {
     public const string OidcTestClient = "ddt.oidc-test";
 
-    // After the data services, so the settings service starts once the schema exists, and before every hosted service
-    // that reads the settings as it starts.
+    // Call this after the data services, so the settings service starts once the schema exists. Call it before every
+    // hosted service that reads the settings as it starts.
     public static IServiceCollection AddDdtSettings(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -44,14 +44,14 @@ public static class SettingsServiceCollectionExtensions
         services.TryAddSingleton<ILdapTester, LdapTester>();
         services.AddHttpClient(OidcTestClient, client => client.Timeout = TimeSpan.FromSeconds(10));
 
-        // The handler's services always exist; the scheme itself is added and removed as the oidc section changes.
+        // The handler's services always exist. The scheme itself is added and removed as the OIDC section changes.
         services.AddTransient<OpenIdConnectHandler>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<OpenIdConnectOptions>, OpenIdConnectPostConfigureOptions>());
         services.AddSingleton<OidcSchemeBridge>();
         services.AddSingleton<IConfigureOptions<OpenIdConnectOptions>>(provider => provider.GetRequiredService<OidcSchemeBridge>());
         services.AddSingleton<IOptionsChangeTokenSource<OpenIdConnectOptions>>(provider => provider.GetRequiredService<OidcSchemeBridge>());
-        // The options monitor builds the options again as soon as the settings change, whether or not the scheme is
-        // registered, so they are validated only while single sign-on is on.
+        // The options monitor rebuilds the options as soon as the settings change, whether or not the scheme is
+        // registered. So they're only validated while single sign-on is on.
         services.AddOptions<OpenIdConnectOptions>(OidcOptions.SchemeName).Validate<DdtSettings>((options, settings) =>
         {
             if (settings.Current.Oidc.Enabled)
@@ -70,7 +70,7 @@ public static class SettingsServiceCollectionExtensions
         services.AddSingleton<SettingsService>();
         services.AddHostedService(provider => provider.GetRequiredService<SettingsService>());
 
-        // After the settings service, which registers the scheme it checks.
+        // Registered after the settings service, because that registers the scheme this guard checks.
         services.AddHostedService<ExternalSignInSchemeGuard>();
         services.AddHostedService<CertificateRollbackRecorder>();
 

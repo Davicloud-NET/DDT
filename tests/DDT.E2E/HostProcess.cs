@@ -118,7 +118,8 @@ internal sealed partial class HostProcess : IAsyncDisposable
         return start;
     }
 
-    // The host is started once it listens and has logged the first administrator's password, which it returns.
+    // The host counts as started once it listens and has logged the first administrator's password. Returns that
+    // password.
     private Task<string> WaitForStartAsync(CancellationToken cancellationToken) =>
         Eventually.GetAsync(
             new Expectation("The host's start", s_startTimeout, () => Output.Tail()),
@@ -143,7 +144,7 @@ internal sealed partial class HostProcess : IAsyncDisposable
         || key.StartsWith("ASPNETCORE_", StringComparison.OrdinalIgnoreCase)
         || key.StartsWith("DOTNET_ENVIRONMENT", StringComparison.OrdinalIgnoreCase);
 
-    // Free on the loopback addresses when asked. Kestrel binds localhost to both of them.
+    // A port that's free on the loopback addresses at the time of asking. Kestrel binds localhost to both of them.
     private static int FreePort()
     {
         using TcpListener listener = new(IPAddress.Loopback, 0);

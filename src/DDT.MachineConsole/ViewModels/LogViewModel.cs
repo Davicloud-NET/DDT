@@ -11,7 +11,7 @@ namespace DDT.MachineConsole.ViewModels;
 // The agent's newest log lines. Follows keeps LogView at the end until someone scrolls up.
 public sealed class LogViewModel(Localizer localizer) : OverlayViewModel(localizer)
 {
-    // As many lines as the agent keeps for a console that reads slowly.
+    // The same number of lines the agent buffers for a console that reads slowly.
     public const int MaxLines = 5000;
 
     private bool _follows = true;
@@ -58,7 +58,7 @@ public sealed class LogViewModel(Localizer localizer) : OverlayViewModel(localiz
         }
     }
 
-    // For an agent that sends its newest lines again as it connects anew.
+    // For an agent that sends its newest lines again when it reconnects.
     public void Clear()
     {
         if (Lines.Count == 0)

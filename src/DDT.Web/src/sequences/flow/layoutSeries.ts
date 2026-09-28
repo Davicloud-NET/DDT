@@ -13,8 +13,8 @@ import {
   type Place,
 } from "./layoutParts";
 
-// A series stacks its nodes on one axis with a gap between them. bare leaves out the wire of an empty series, as the
-// top of the flow has nothing leading into it.
+// A series stacks its nodes on one axis with a gap between them. bare leaves out the wire of an empty series,
+// because nothing leads into the top of the flow.
 export function seriesPart(
   context: LayoutContext,
   list: readonly SequenceStep[],

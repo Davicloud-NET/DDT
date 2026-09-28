@@ -29,8 +29,8 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
         return Protector(purpose).ToTimeLimitedDataProtector().Protect(json, LifetimeFor(purpose));
     }
 
-    // The token the machine's state accepts, as a poll hands it out. Done accepts none: the agent reboots after reporting
-    // it, and anything still holding a token is not that agent.
+    // The token the machine's state accepts, as a poll hands it out. Done accepts none, because the agent reboots after
+    // reporting it. Anything still holding a token isn't that agent.
     public string IssueCurrent(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -52,8 +52,8 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
         return Unprotect(token, Protector(purpose).ToTimeLimitedDataProtector(), MachineTokenJsonContext.Default.MachineTokenPayload);
     }
 
-    // For one run of one machine in its current generation. It is not rotated: an agent that lost the answer to the
-    // registration that handed out a new one still holds a token that works.
+    // For one run of one machine in its current generation. It isn't rotated, so an agent that missed a registration
+    // answer with a new one still holds a token that works.
     public string IssueRunToken(Machine machine, Guid runId)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -63,7 +63,7 @@ public sealed class MachineTokenService(IDataProtectionProvider dataProtectionPr
         return Protector(MachineTokenPurpose.Run).Protect(JsonSerializer.Serialize(payload, MachineTokenJsonContext.Default.RunTokenPayload));
     }
 
-    // Null when the token is not one or has expired. Whether its run still runs is for the caller to check.
+    // Null if the token isn't valid or has expired. The caller checks whether its run is still running.
     public RunTokenPayload? ValidateRunToken(string? token)
     {
         if (string.IsNullOrWhiteSpace(token))

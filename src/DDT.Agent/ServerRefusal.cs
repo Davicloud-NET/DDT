@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace DDT.Agent;
 
-// Turns an answer other than a success into the exception the agent acts on, with the server's problem details.
+// Turns a failed answer into the exception the agent acts on, with the server's problem details.
 internal static class ServerRefusal
 {
     private const int MaxErrorDetailLength = 300;
@@ -29,8 +29,8 @@ internal static class ServerRefusal
 
         HttpStatusCode status = response.StatusCode;
 
-        // A refusal such as a validation problem would otherwise be retried forever with no reason on
-        // the console, which is all an operator standing at the machine can see.
+        // Otherwise a refusal such as a validation problem would be retried forever with no reason on the console.
+        // The console is all an operator standing at the machine can see.
         string detail = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         response.Dispose();
 
@@ -44,7 +44,7 @@ internal static class ServerRefusal
         throw new AgentRequestException($"The server answered {(int)status} {status} for {requestUri}: {detail}", title, status, fieldErrors);
     }
 
-    // The title of the server's problem details, and a validation problem's errors: the first message for each field.
+    // Reads the title of the server's problem details, and the first message for each field of a validation problem.
     private static (string? Title, IReadOnlyDictionary<string, string>? FieldErrors) Problem(string body)
     {
         if (body.Length == 0)

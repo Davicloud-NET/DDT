@@ -12,8 +12,8 @@ import { createLogReader } from "./logReader";
 // Without the live connection the log is read this often while a run is active.
 export const LOG_POLL_MS = 5_000;
 
-// A machine's log, or one run's: the newest lines on open, then every line the server says it received, and
-// what was missed while the live connection was down.
+// A machine's log, or one run's. Reads the newest lines on open, then every line the server says it
+// received, and whatever was missed while the live connection was down.
 export function useMachineLog(machineId: string, deploymentId: string | null, active: boolean) {
   const reader = useMemo(() => createLogReader(machineId, deploymentId), [machineId, deploymentId]);
   const snapshot = useSyncExternalStore(reader.subscribe, reader.snapshot);

@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/ui/ConfirmDialog";
 
 import { isStopRequested } from "./machineRequests";
 
-// Confirms stopping the run Stop was clicked for, and says what that leaves behind.
+// Asks before stopping the run that Stop was clicked for, and says what the stop leaves behind.
 export function StopConfirm({
   machine,
   actions,
@@ -43,8 +43,8 @@ export function StopConfirm({
   );
 }
 
-// A run in Windows PE may have written part of the disk. In Windows the agent runs as a service that learns of the
-// stop at its next contact with the server and removes itself, and Windows stays as far as it got.
+// A run in WinPE may have written part of the disk. In Windows, the agent runs as a service. It learns of the stop
+// at its next contact with the server and removes itself, and Windows stays as far as the run got.
 function stopConsequence(machine: MachineSummary): string {
   const label = machineLabel(machine);
 

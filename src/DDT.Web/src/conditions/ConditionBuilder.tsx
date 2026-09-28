@@ -20,22 +20,22 @@ const noFindings: Findings = { problems: [], warnings: [] };
 export interface ConditionBuilderProps {
   label: ReactNode;
   hint?: ReactNode;
-  // Where the condition is, for the sentence under it.
+  // Where the condition is used. The sentence under the builder depends on it.
   use: ConditionUse;
   value: ConditionNode | null;
   subjects: readonly Subject[];
-  // The member the condition is, for the places its controls are named by, such as "when".
+  // The member that holds the condition, such as "when". The controls are named after it.
   field?: ConditionField;
-  // The place of a part as a finding names it, where it is not field and its parts.
+  // How a finding names a part, if that isn't field plus the part's path.
   fieldOf?: (path: readonly number[]) => string;
   findings?: Findings;
   onChange: (path: readonly number[], change: ConditionChange) => void;
   isReadOnly?: boolean;
 }
 
-// A condition as nested groups of tests, read top to bottom, with the sentence it reads as under it. Every control
-// sits in an element named by its place, such as when.parts[1].value, so a finding can take the focus there. It edits
-// nothing itself: each change goes to onChange with the path of the part it changes.
+// Shows a condition as nested groups of tests, read top to bottom, with the condition as a sentence under them. Each
+// control sits in an element named by its place, such as when.parts[1].value, so a finding can move the focus there.
+// It doesn't edit anything itself. Each change goes to onChange with the path of the part it changes.
 export function ConditionBuilder({
   label,
   hint,

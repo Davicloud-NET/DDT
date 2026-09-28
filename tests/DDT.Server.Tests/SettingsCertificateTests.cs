@@ -16,7 +16,7 @@ using Xunit;
 namespace DDT.Server.Tests;
 
 // The certificate on the settings page. The test server has no TLS, so no request here was served a pair and none can
-// confirm one; ProvisionalCertificateTests does that on a real Kestrel.
+// confirm one. ProvisionalCertificateTests does that on a real Kestrel.
 public sealed class SettingsCertificateTests(SettingsCertificateTests.CertificateApplication application)
     : IClassFixture<SettingsCertificateTests.CertificateApplication>
 {
@@ -52,7 +52,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             audit => audit.Action == AuditActions.CertificateReplaced && audit.Detail!.Contains("Generated the server certificate"),
             TestContext.Current.CancellationToken)));
 
-        // No connection of the test server was served it, so none proves that a browser accepts it.
+        // No connection to the test server was served it, so none can prove that a browser accepts it.
         HttpResponseMessage confirm = await administrator.PostAsync("/api/settings/certificate/confirm");
         Assert.Equal(HttpStatusCode.Conflict, confirm.StatusCode);
         Assert.StartsWith("This connection was served the certificate before the new one", await TestDatabase.TitleAsync(confirm), StringComparison.Ordinal);

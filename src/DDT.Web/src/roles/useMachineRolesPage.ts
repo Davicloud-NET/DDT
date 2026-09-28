@@ -13,7 +13,8 @@ import { rulesQuery } from "@/rules/rules";
 
 import { machineRolesQuery, type MachineRoleView } from "./roles";
 
-// The machine roles page's lists, which the hub keeps current, and which role's drawer or deletion is open.
+// The machine roles page's state: the lists, which the hub keeps current, and which role's drawer or delete dialog
+// is open.
 export function useMachineRolesPage() {
   const freshness = liveListOptions(useLiveStatus());
   const roles = useQuery({ ...machineRolesQuery, ...freshness });
@@ -27,7 +28,7 @@ export function useMachineRolesPage() {
     tone: () => "idle",
   });
 
-  // The drawer's role, null for a new one; key opens a fresh form each time.
+  // The drawer's role, or null for a new one. A new key opens a fresh form each time.
   const [drawer, setDrawer] = useState<{ key: number; role: MachineRoleView | null } | null>(null);
   const [deleting, setDeleting] = useState<MachineRoleView | null>(null);
 

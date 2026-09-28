@@ -58,7 +58,7 @@ internal static class SettingsRequests
             await client.SaveAsync(section, current.Version, change(current.Values), extras));
     }
 
-    // Every re-authentication counts against the sign-in limit of its address, so each comes from an address of its own.
+    // Every re-authentication counts against the sign-in limit of its address, so each one comes from its own address.
     public static async Task<HttpResponseMessage> ReauthenticateAsync(this SignedInClient client, string password = DdtApplication.Password, string? code = null)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/settings/reauthenticate", UriKind.Relative))

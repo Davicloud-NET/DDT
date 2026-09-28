@@ -18,15 +18,15 @@ using Microsoft.Extensions.Hosting;
 
 namespace DDT.Server.Endpoints;
 
-// The settings page. Every section needs the Administrator role, except that operators may read deployment and machines.
-// Secrets are never sent back: only whether each is set.
+// The settings page. Every section needs the Administrator role, except that operators may read deployment and
+// machines. Secrets are never sent back, only whether each one is set.
 public static class SettingsEndpoints
 {
     public static RouteGroupBuilder MapSettingsEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        // Only a person can prove who they are; a token of a script cannot.
+        // Only a person can prove who they are. A script's token can't.
         group.MapPost("/reauthenticate", ReauthenticateAsync)
             .RequireAuthorization(DdtPolicies.Administrator)
             .RequireSession()
@@ -56,14 +56,14 @@ public static class SettingsEndpoints
         return group;
     }
 
-    // Fields names what needs the fresh proof, so the page can say what the password is for.
+    // Fields lists what needs the fresh proof, so the page can say what the password is for.
     internal static ProblemHttpResult Reauthenticate(IReadOnlyList<string> fields) =>
         ServerProblems.Problem(
             ServerMessages.SettingsEnterPasswordAgain.With("fields", string.Join(", ", fields)),
             StatusCodes.Status403Forbidden,
             new Dictionary<string, object?> { ["fields"] = fields.ToArray() });
 
-    // Settings name who changed them with the API token beside the user, such as alice (token build-server).
+    // Settings record who changed them with the API token next to the user, such as "alice (token build-server)".
     internal static Actor SettingsActor(HttpContext context) => Actor.Of(context) with { Name = Principals.ActorName(context.User) };
 
     private static void MapSection<TValues>(RouteGroupBuilder group, SettingsSectionApi<TValues> api, string? route = null, bool read = true)
@@ -152,9 +152,9 @@ public static class SettingsEndpoints
     private static ProblemHttpResult KeyRingUnreadable() =>
         ServerProblems.Problem(ServerMessages.SettingsKeyRingUnreadable.With(), StatusCodes.Status409Conflict);
 
-    // Problems by field, with their codes under errorCodes as in every validation problem. Warnings still to confirm go
-    // under confirm as "code: message", and whole in the confirm extension, for the page to ask and send the codes
-    // back.
+    // Problems by field, with their codes under errorCodes like in every validation problem. Unconfirmed warnings go
+    // under confirm as "code: message", and as a whole in the confirm extension. The page asks about them and sends the
+    // codes back.
     private static ValidationProblem Invalid(SettingsSaveResult result)
     {
         List<IGrouping<string, SettingMessage>> fields = [.. (result.Problems ?? []).GroupBy(problem => problem.Field, StringComparer.Ordinal)];
@@ -179,7 +179,7 @@ public static class SettingsEndpoints
         return TypedResults.ValidationProblem(errors, extensions: extensions);
     }
 
-    // Checked like a sign-in, lockout and second factor included, but it signs nobody in.
+    // Checked like a sign-in, including lockout and the second factor, but it doesn't sign anyone in.
     private static async Task<IResult> ReauthenticateAsync(
         ReauthenticateRequest request,
         [AsParameters] SettingsCaller caller,

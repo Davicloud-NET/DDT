@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { Button } from "@/ui/Button";
 import { TextField } from "@/ui/TextField";
 
-// The sign-in's second step: the authenticator's code, or one of the recovery codes instead.
+// The second step of the sign-in: a code from the authenticator, or a recovery code instead.
 export function TwoFactorFields({
   code,
   onCodeChange,

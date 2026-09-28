@@ -104,7 +104,7 @@ public sealed class SequenceWireFormatTests
             StepTypeInfo(context)));
     }
 
-    // Not a JsonException: whoever parses a sequence from outside has to catch both.
+    // It's not a JsonException, so whoever parses a sequence from outside has to catch both.
     [Theory]
     [MemberData(nameof(Contexts))]
     public void RefusesAStepWithoutAKind(string context)

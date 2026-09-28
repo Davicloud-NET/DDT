@@ -6,7 +6,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
 
-// The logo the console at the machine shows at the right end of its header; the values are null when there is none.
+// The logo the console on the machine shows at the right end of its header. The values are null when there's none.
 export interface ConsoleLogoView {
   sha256: string | null;
   size: number | null;
@@ -26,7 +26,7 @@ export const consoleLogoQuery = queryOptions({
   queryFn: () => apiGet<ConsoleLogoView>("/api/settings/console-logo"),
 });
 
-// The picture itself, named by its hash so a new logo is never taken from the browser's cache.
+// The image's URL. It includes the hash, so the browser never shows an old logo from its cache.
 export function consoleLogoImage(sha256: string): string {
   return `/api/settings/console-logo/image?v=${encodeURIComponent(sha256)}`;
 }

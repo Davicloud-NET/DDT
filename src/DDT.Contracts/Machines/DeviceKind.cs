@@ -4,10 +4,10 @@
 
 namespace DDT.Contracts.Machines;
 
-// What kind of computer a machine is, told from what the firmware reports, so the web UI can show a matching icon.
+// What kind of computer a machine is, based on what the firmware reports, so the web UI can show a matching icon.
 public enum DeviceKind
 {
-    // The firmware says nothing, or the agent predates reporting the chassis type.
+    // The firmware doesn't say, or the agent is too old to report the chassis type.
     Unknown,
     Laptop,
     Desktop,

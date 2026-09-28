@@ -169,8 +169,8 @@ public static class DhcpMessageParser
             return !reader.Truncated;
         }
 
-        // RFC 4578 section 2.1: the length is even and above zero. Only the first entry counts: a later one could hand
-        // the machine an image it cannot run, and a hostile client could name every architecture.
+        // RFC 4578 section 2.1: the length is even and above zero. Only the first entry counts. A later one could hand
+        // the machine an image it can't run, and a hostile client could list every architecture.
         private void ReadArchitecture(scoped ReadOnlySpan<byte> value)
         {
             if (value.Length < 2 || value.Length % 2 != 0)

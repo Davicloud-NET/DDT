@@ -8,8 +8,9 @@ using DDT.Core.Boot;
 
 namespace DDT.Agent.Sequences;
 
-// Whether a raw disk image may be written here: firmware with Secure Boot on starts no image that is unsigned, or signed
-// under a Microsoft UEFI CA it does not trust, so a machine would start nothing unless the run was allowed the mismatch.
+// Whether a raw disk image may be written here. Firmware with Secure Boot on won't start an unsigned image, or one
+// signed under a Microsoft UEFI CA it doesn't trust. The machine would start nothing, unless the run was allowed the
+// mismatch.
 public static class SecureBootGate
 {
     // Why the image must not be written, or null. trustedUefiCas says which of Microsoft's third-party UEFI CAs the
@@ -55,8 +56,8 @@ public static class SecureBootGate
         };
     }
 
-    // Where the image is signed for Secure Boot but the firmware's db does not say which CAs it trusts, what the log says,
-    // or null: DDT then cannot tell whether the machine will start it.
+    // What the log says when the image is signed for Secure Boot but the firmware's db doesn't say which CAs it trusts.
+    // DDT then can't tell whether the machine will start it. Null otherwise.
     public static string? Unknown(AgentRunImage image, bool? secureBootEnabled, UefiCa? trustedUefiCas)
     {
         ArgumentNullException.ThrowIfNull(image);

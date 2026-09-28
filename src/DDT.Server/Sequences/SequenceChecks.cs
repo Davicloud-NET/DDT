@@ -17,8 +17,8 @@ using DDT.Server.Packages;
 
 namespace DDT.Server.Sequences;
 
-// SequenceValidator's rules plus what only the server can check: the library, its settings and culture names, which the
-// agent cannot without globalization data. Every node on every branch is checked, since any may run.
+// SequenceValidator's rules, plus what only the server can check: the library, the settings and culture names. The
+// agent can't check culture names without globalization data. Every node on every branch is checked, since any may run.
 public static class SequenceChecks
 {
     // Parts of a name that say its value is a password or another secret, ignoring case.
@@ -49,8 +49,9 @@ public static class SequenceChecks
 
         problems.AddRange(SequenceAccountChecks.Check(definition, references));
 
-        // The validator leaves the names only rules and machine roles can give a value to the server, which knows them. A
-        // name nothing gives one is most likely a slip, but a rule added later may still give it one.
+        // Only rules and machine roles can give some names a value, and only the server knows those, so the validator
+        // leaves them to it. A name that nothing gives a value is most likely a typo. But a rule added later may give
+        // it one, so it's only a warning.
         warnings.AddRange(analysis.ValueNames
             .Where(name => !references.ValueNames.Contains(name))
             .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
@@ -58,7 +59,7 @@ public static class SequenceChecks
         return new SequenceValidation(problems, warnings);
     }
 
-    // A step on any branch may run, so a sequence that erases a disk on one branch erases one.
+    // A step on any branch may run, so a sequence that erases a disk on one branch counts as erasing.
     public static bool Erases(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -66,7 +67,7 @@ public static class SequenceChecks
         return SequenceTree.Nodes(definition).Any(step => step.ErasesDisk);
     }
 
-    // The phase of each step at the top, as a list of steps shows them. NodePhases has every node of the tree.
+    // The phase of each top-level step, as a step list shows them. NodePhases covers every node of the tree.
     public static IReadOnlyList<SequencePhase> Phases(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -74,14 +75,14 @@ public static class SequenceChecks
         return [.. definition.Steps.Select((_, index) => SequencePhases.Of(definition, index))];
     }
 
-    // The phases each node may run in, in the order of SequenceTree.Nodes: more than one where it depends on the path.
+    // The phases each node may run in, in SequenceTree.Nodes order. A node has more than one if it depends on the path.
     public static IReadOnlyList<NodePhase> NodePhases(SequenceDefinition definition) => SequenceValidator.Analyse(definition).NodePhases;
 
-    // Whether some path through the sequence goes on in Windows.
+    // Whether some path through the sequence continues in Windows.
     public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
 
-    // Why a sequence needs a computer name, or null: it joins the domain under it, a cloud-init seed names the machine with
-    // it, or it declares the ComputerName variable. A join or a seed on any branch counts.
+    // Why a sequence needs a computer name, or null if it doesn't. It joins the domain under that name, a cloud-init
+    // seed names the machine with it, or it declares the ComputerName variable. A join or a seed on any branch counts.
     public static ServerMessage? ComputerNameUse(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -117,7 +118,7 @@ public static class SequenceChecks
             .FirstOrDefault(image => image is { Kind: ImageKind.RawDisk });
     }
 
-    // True for an answer file that adds the local administrator.
+    // Returns true if the node is an answer file that adds the local administrator.
     private static bool CheckNode(
         SequenceStep step,
         SequenceDefinition definition,
@@ -203,8 +204,8 @@ public static class SequenceChecks
         }
     }
 
-    // Besides the machine's names, a seed may use the run's values: variables, answers, what rules and roles set, and the
-    // deployment defaults. An Account input's answer is never a value.
+    // Besides the machine's names, a seed may use the run's values. Those are variables, answers, what rules and roles
+    // set, and the deployment defaults. An Account input's answer is never a value.
     private static List<string> SeedValueNames(SequenceDefinition definition, SequenceReferences references)
     {
         IEnumerable<string?> names =
@@ -243,15 +244,16 @@ public static class SequenceChecks
         }
     }
 
-    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is no secret. Only a
-    // value written out counts: one made of other values, such as {{Token}}, holds none itself.
+    // Every signed-in user, Viewers too, can read a sequence's values, so a password written into one isn't secret.
+    // Only a literal value counts. One made of other values, such as {{Token}}, holds no secret itself.
     private static bool SecretValue(string? name, string? value) =>
         name is not null
         && s_secretNames.Any(part => name.Contains(part, StringComparison.OrdinalIgnoreCase))
         && !string.IsNullOrWhiteSpace(value)
         && ValueTemplate.Parse(value).Placeholders.Count == 0;
 
-    // The defaults of the sequence's variables and inputs. An Account input keeps its answer apart, and has no default.
+    // Checks the defaults of the sequence's variables and inputs. An Account input keeps its answer separately and has
+    // no default.
     private static void CheckDeclaredSecrets(SequenceDefinition definition, List<SequenceProblem> warnings)
     {
         void Check(string field, string? name, string? value)
@@ -280,8 +282,8 @@ public static class SequenceChecks
         }
     }
 
-    // A server named by its address gets no Kerberos ticket, so the password goes by NTLM, which a machine in the middle can
-    // relay. Only a host written out can be told; one made of values is known when the step runs.
+    // A server named by its address gets no Kerberos ticket, so the password goes over NTLM, which a machine in the
+    // middle can relay. Only a literal host can be checked here. One made of values is only known when the step runs.
     private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
     {
         IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
@@ -297,7 +299,7 @@ public static class SequenceChecks
         }
     }
 
-    // An IPv4 address, or an IPv6 address written as a name Windows takes in a share path.
+    // An IPv4 address, or an IPv6 address written as the ipv6-literal.net name Windows accepts in a share path.
     private static bool IsAddress(string host) =>
         Uri.CheckHostName(host) == UriHostNameType.IPv4 || host.EndsWith(".ipv6-literal.net", StringComparison.OrdinalIgnoreCase);
 
@@ -354,8 +356,8 @@ public static class SequenceChecks
         }
     }
 
-    // A setting as it is written, or null when it is empty or a template, whose values are checked when the run takes
-    // them, as the answer file and the join are made.
+    // The setting as written, or null if it's empty or a template. A template's values are checked when the run fills
+    // them in, while the answer file and the join are made.
     private static string? Value(string? setting) =>
         string.IsNullOrWhiteSpace(setting) || ValueTemplate.Parse(setting).Placeholders.Count > 0 ? null : setting.Trim();
 }

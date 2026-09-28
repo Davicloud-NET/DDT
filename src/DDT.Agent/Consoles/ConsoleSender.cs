@@ -12,7 +12,8 @@ internal static class ConsoleSender
     // A console that takes no message for this long has stopped reading.
     public static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(30);
 
-    // Sends what the outbox holds as it comes. Null once the outbox closes and everything is sent, otherwise why not.
+    // Sends what the outbox holds as it arrives. Returns null once the outbox closes and everything is sent, otherwise
+    // why not.
     public static async Task<string?> SendQueuedAsync(ConsoleChannel channel, ConsoleOutbox outbox, CancellationToken cancellationToken)
     {
         while (true)

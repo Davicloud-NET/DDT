@@ -39,8 +39,8 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         return false;
     }
 
-    // A running sequence reports every few seconds, and every browser redraws the machine's row for each push. What
-    // changes within a second after a push goes out as one push when the second ends, with the latest state.
+    // A running sequence reports every few seconds, and every browser redraws the machine's row for each push.
+    // Changes within a second after a push go out as one push when that second ends, with the latest state.
     [Fact]
     public async Task ChangesWithinASecondGoOutAsOnePushWithTheLatest()
     {
@@ -86,7 +86,7 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         Assert.False(await PushedWithinAsync(pushes, machine.Id, TimeSpan.FromSeconds(1)));
     }
 
-    // The run history drops the runs of a removed machine, which the run's delayed push would bring back.
+    // The run history drops a removed machine's runs. The run's delayed push would bring them back.
     [Fact]
     public async Task ARemovedMachineTakesTheDelayedPushOfItsRunWithIt()
     {
@@ -101,7 +101,7 @@ public sealed class MachinePushThrottleTests(ManualClockApplication application)
         DeploymentSummary run = await administrator.AssignedAsync(machine.Id, sequence.Id);
         Assert.Equal(DeploymentState.Assigned, (await LiveListener.NextAsync(runs, r => r.Run.Id == run.Id)).Run.State);
 
-        // The rejection cancels the run within the interval, so its push waits, and the removal comes before it.
+        // The rejection cancels the run within the interval, so its push waits. The removal comes before it.
         (await administrator.PostAsync($"/api/machines/{machine.Id}/reject")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines/{machine.Id}")).StatusCode);
         Assert.Equal([machine.Id], (await LiveListener.NextAsync(removals)).MachineIds);

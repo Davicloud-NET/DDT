@@ -15,8 +15,8 @@ import { ServerPage } from "./ServerPage";
 import type { ServerTab } from "./serverSearch";
 import type { SettingsOverview, SettingsSectionView } from "./settings";
 
-// The fake server of the Server page's tests: the overview, a section view, the certificate and the agent as the
-// settings API answers them.
+// The fake server for the Server page's tests. It answers the overview, a section view, the certificate and the
+// agent like the settings API does.
 
 export function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3_600_000).toISOString();
@@ -187,7 +187,7 @@ export function agentView(overrides: Partial<AgentBinaryView> = {}): AgentBinary
   };
 }
 
-// The Server page on one of its tabs, on a fake server that answers the overview unless a test says otherwise.
+// Renders the Server page on one of its tabs. The fake server answers the overview unless a test says otherwise.
 export function serveServer(
   handlers: Record<string, Handler>,
   { tab = "overview", user = administrator }: { tab?: ServerTab; user?: CurrentUser } = {},
@@ -205,8 +205,8 @@ export function serveServer(
   });
 }
 
-// Runs axe over the page as the shell shows it, inside main: servePage renders the page alone, and axe wants page
-// content inside a landmark. Dialogs stay where React Aria puts them.
+// Runs axe over the page inside main, like the shell shows it. servePage renders the page alone, and axe wants
+// page content inside a landmark. Dialogs stay where React Aria puts them.
 export async function expectAccessible(): Promise<void> {
   const main = document.createElement("main");
   const pages = [...document.body.children].filter(
@@ -226,7 +226,7 @@ export function sent(requests: readonly Sent[], method: string, path: string): S
   return requests.filter((request) => request.method === method && request.path === path);
 }
 
-// Answers the password dialog, which a test expects the server to have asked for.
+// Fills in the password dialog, which the test expects the server to have asked for.
 export async function typePassword(password = "secret"): Promise<void> {
   const proof = await screen.findByRole("dialog", { name: "Confirm it is you" });
 
@@ -242,7 +242,7 @@ export function proof(token: string): Response {
   return json({ token, expiresUtc: new Date(Date.now() + 300_000).toISOString() });
 }
 
-// A refusal of a request that changes something needing the password again.
+// The refusal of a change that needs the password again.
 export function passwordAgain(field: string): Response {
   return json(
     { title: `Enter your password again to change ${field}.`, status: 403, fields: [field] },

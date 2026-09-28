@@ -14,7 +14,7 @@ import type { MachineRowsProps } from "./machineRows";
 import { MachineStateTag } from "./MachineStateTag";
 import { RunCell } from "./RunCell";
 
-// The machine list on a phone: each machine a row of its own that opens the machine's page.
+// The machine list on a phone. Each machine gets its own row, which links to the machine's page.
 export function MachineCards({
   machines,
   now,

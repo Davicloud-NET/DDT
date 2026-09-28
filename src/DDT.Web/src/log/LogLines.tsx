@@ -10,7 +10,7 @@ import { Button } from "@/ui/Button";
 import { LogViewport } from "./LogViewport";
 import type { LogView } from "./useLogView";
 
-// The filtered lines, and while following is paused, a bar that counts the new ones and jumps to them.
+// The filtered lines. While following is paused, a bar counts the new lines and jumps to them.
 export function LogLines({ view }: { view: LogView }) {
   return (
     <div className="relative">

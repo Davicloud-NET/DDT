@@ -6,7 +6,7 @@ namespace DDT.Server.Settings;
 
 internal static class SettingsCollections
 {
-    // Two keys that differ only in case are one key: the one read last wins, as configuration keys do.
+    // Two keys that only differ in case count as one key. The one read last wins, just like with configuration keys.
     public static Dictionary<string, T> IgnoringCase<T>(IEnumerable<KeyValuePair<string, T>> entries)
     {
         Dictionary<string, T> result = new(StringComparer.OrdinalIgnoreCase);

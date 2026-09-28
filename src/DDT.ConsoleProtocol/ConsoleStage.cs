@@ -21,7 +21,7 @@ public enum ConsoleStage
     // Authorized, and the person at the machine can choose a sequence.
     Choosing,
 
-    // A run goes on.
+    // A run is in progress.
     Running,
 
     // The machine restarts.
@@ -33,6 +33,6 @@ public enum ConsoleStage
     // The last run failed, and the machine waits for the next one.
     Failed,
 
-    // The agent has stopped for good; nothing more comes.
+    // The agent has stopped for good. Nothing more comes.
     Stopped,
 }

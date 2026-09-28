@@ -15,7 +15,7 @@ using DDT.Server.Settings;
 namespace DDT.Server.Deployments;
 
 // A run an operator gives a machine on the web: an assignment, or an approval that takes the sequence a rule chose.
-// Nothing here saves; the caller saves the run with its audit rows.
+// Nothing here saves. The caller saves the run with its audit rows.
 public sealed class RunAssignments(
     DdtDbContext database,
     NewRuns newRuns,
@@ -73,8 +73,8 @@ public sealed class RunAssignments(
         return await CreateAsync(run, actor, cancellationToken).ConfigureAwait(false);
     }
 
-    // Approves a waiting machine to run the sequence a rule chose. The approver saw that sequence, so the rules must still
-    // choose it; the rule alone never approves a machine.
+    // Approves a waiting machine to run the sequence a rule chose. The approver saw that sequence, so the rules must
+    // still choose it. The rule alone never approves a machine.
     public async Task<DeploymentDecision> ApproveByRuleAsync(
         Machine machine,
         ApproveMachineRequest request,
@@ -142,8 +142,8 @@ public sealed class RunAssignments(
         return machine.ActiveDeploymentId is null ? null : DeploymentDecision.Conflict(ServerMessages.DeploymentAlreadyHasRun.With());
     }
 
-    // A rule's value such as PC-{{SerialNumber|alnum|right:8}} names every machine, so only a machine that nothing names
-    // needs its name given with an assignment, which an approval cannot give.
+    // A rule's value such as PC-{{SerialNumber|alnum|right:8}} names every machine. So only a machine that nothing
+    // names needs a name given with an assignment, and an approval can't give one.
     private static DeploymentDecision? ByRuleRefusal(RunRequest run, GivenAnswers given)
     {
         (Machine machine, CheckedSequence sequence) = (run.Machine, run.Sequence);
@@ -248,7 +248,7 @@ public sealed class RunAssignments(
         return DeploymentDecision.Accepted(deployment);
     }
 
-    // An assignment approves a waiting machine only where DeploymentPolicy says it authorizes one.
+    // An assignment only approves a waiting machine if DeploymentPolicy says it authorizes one.
     private void ApproveAsAssigned(Machine machine, TaskSequence sequence, Actor actor, DateTimeOffset now)
     {
         if (machine.State != MachineState.Pending)

@@ -17,7 +17,7 @@ interface RoleRowProps {
   role: MachineRoleView;
   rules: readonly RuleView[];
   canEdit: boolean;
-  // The live mark's classes.
+  // The classes that mark the row when a live change arrives.
   mark: string;
   onOpen: () => void;
   onDelete: () => void;

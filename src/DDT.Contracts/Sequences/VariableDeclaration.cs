@@ -9,12 +9,12 @@ public sealed record VariableDeclaration
 {
     public required string Name { get; init; }
 
-    // A template, the last choice when the run starts: an input's answer, the machine's own value, the rules' and the
-    // machine roles' come first.
+    // A template, used as the last resort when the run starts. An input's answer, the machine's own value, and the
+    // values of rules and machine roles all come first.
     public string? Default { get; init; }
 
     public string? Description { get; init; }
 
-    // Only then may a Set variable step or a script's output change the value while the run goes on.
+    // Only when this is set may a Set variable step or a script's output change the value during the run.
     public bool SetBySteps { get; init; }
 }

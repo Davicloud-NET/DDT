@@ -12,7 +12,7 @@ import { useGuardedAction } from "../useGuardedAction";
 
 import type { Binary } from "./binary";
 
-// A chosen file is checked and confirmed first, and askFirst asks for the password before the large body goes out.
+// A chosen file is checked and confirmed first. askFirst asks for the password before the large body is sent.
 export function useBinaryUpload(binary: Binary) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);

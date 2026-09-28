@@ -73,7 +73,7 @@ public sealed class SequencePicks(
         return await CreateAsync(run, resolution, request.DiskNumber, cancellationToken).ConfigureAwait(false);
     }
 
-    // What the list the agent showed no longer fits: the sequence was changed after it was shown.
+    // Refuses a pick if the sequence changed after the agent showed its list, so the list no longer fits.
     private static DeploymentDecision? Refusal(Machine machine, AgentRunRequest request, CheckedSequence sequence)
     {
         if (sequence.Definition.RequiredVersion() > machine.SequenceVersion)
@@ -83,8 +83,8 @@ public sealed class SequencePicks(
                 "server's agent, and choose it then.");
         }
 
-        // The agent sends a disk for every sequence it listed as erasing one, once the technician typed ERASE. It refuses a
-        // run without one itself, but only if the answer to this pick reached it and told it the run's id.
+        // The agent sends a disk for every sequence it listed as erasing one, once the technician typed ERASE. It
+        // refuses a run without one itself, but only if the answer to this pick reached it with the run's ID.
         if (SequenceChecks.Erases(sequence.Definition) && request.DiskNumber is null)
         {
             return DeploymentDecision.Conflict(

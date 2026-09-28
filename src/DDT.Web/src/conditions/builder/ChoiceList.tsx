@@ -10,7 +10,7 @@ import { Checkbox } from "@/ui/Checkbox";
 import type { Subject } from "../conditionSubjects";
 import { listOf } from "../conditionValues";
 
-// Several of a list's choices, as a test with In takes them.
+// Picks several of a list's choices, for a test with In.
 export function ChoiceList({
   label,
   field,

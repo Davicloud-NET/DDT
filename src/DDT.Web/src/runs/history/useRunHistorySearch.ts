@@ -7,7 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { RunFilter } from "../runHistory";
 
-// The run history's filter and search, kept in the address; typed is the search field's text until typing pauses.
+// The run history's filter and search, kept in the URL. typed is the search field's live text, and the search only
+// updates once typing pauses.
 export function useRunHistorySearch() {
   const search = useSearch({ from: "/shell/machines/runs" });
   const navigate = useNavigate({ from: "/machines/runs" });
@@ -15,7 +16,7 @@ export function useRunHistorySearch() {
   const [typed, setTyped] = useState(search.q ?? "");
   const query = search.q ?? "";
 
-  // Changes the view without a new history entry. Empty values and the default filter leave the address.
+  // Changes the view without adding a history entry. Empty values and the default filter are left out of the URL.
   const setSearch = useCallback(
     (next: { state?: RunFilter; q?: string }) => {
       void navigate({

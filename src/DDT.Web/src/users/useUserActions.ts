@@ -24,7 +24,7 @@ import { shownName } from "./userView";
 // The actions that ask before they run.
 export type Confirmation = "disable" | "reset-password" | "reset-two-factor" | "delete";
 
-// What an account's menu picks.
+// An action picked from an account's menu.
 export type UserAction = "change" | "enable" | Confirmation;
 
 export interface ConfirmationRequest {
@@ -34,7 +34,7 @@ export interface ConfirmationRequest {
 
 export type UserActions = ReturnType<typeof useUserActions>;
 
-// The Users page's actions and the dialogs they open. Every action patches the list with the server's answer; the hub
+// The Users page's actions and the dialogs they open. Every action patches the list with the server's answer. The hub
 // brings the same change to other pages.
 export function useUserActions() {
   const queryClient = useQueryClient();
@@ -111,7 +111,7 @@ async function runConfirmed(
     case "reset-password": {
       const reset = await resetPassword(user.id);
 
-      // The answer is only the password; the reset also ends a lockout and asks for a new password.
+      // The answer is only the password. The reset also ends a lockout and makes the account choose a new password.
       patchUser(queryClient, user.id, { mustChangePassword: true, lockedOutUntil: null });
       showPassword({ name: shownName(user), password: reset.password, reset: true });
       break;

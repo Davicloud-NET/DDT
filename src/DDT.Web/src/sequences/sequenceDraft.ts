@@ -17,7 +17,7 @@ import {
   type VariableDeclaration,
 } from "./sequences";
 
-// What the editor changes. An empty description is saved as none, and so are no variables and no inputs.
+// What the editor changes. An empty description is saved as null. Empty lists of variables and inputs are left out.
 export interface SequenceDraft {
   name: string;
   description: string;
@@ -71,7 +71,7 @@ function ownFields(node: SequenceStep): object {
   }
 }
 
-// What one copy changed against another, named as the editor shows it: "the name", "the description", the steps
+// What changed from one copy to another, named the way the editor shows it: "the name", "the description", the steps
 // by name, "the order of the steps", "the variables" and "the inputs".
 export function changedParts(from: SequenceDraft, to: SequenceDraft): string[] {
   const parts: string[] = [];

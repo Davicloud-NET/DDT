@@ -6,9 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace DDT.Pxe;
 
-// Resolves a client's name to a file in the boot directory, or refuses. TFTP and HTTP boot share it, so neither serves
-// what the other refuses. Each segment must equal an entry the directory holds, so "..", an 8.3 name, a stream or a
-// device name can never alias a file or leave the root.
+// Resolves the name a client asks for to a file in the boot directory, or refuses. TFTP and HTTP boot share it, so
+// neither serves what the other refuses. Each segment must match an entry in the directory, so "..", an 8.3 name, a
+// stream or a device name can never alias a file or leave the root.
 public sealed class BootFileResolver
 {
     private const int MaxRequestLength = 512;
@@ -85,8 +85,8 @@ public sealed class BootFileResolver
         return false;
     }
 
-    // An exact match wins, else a single case insensitive one: firmware written for Windows servers asks for
-    // "\Boot\BCD" whatever the file on a Linux host is called. Two names differing only in case are refused.
+    // An exact match wins, or else a single case insensitive one. Firmware written for Windows servers asks for
+    // "\Boot\BCD", whatever the file on a Linux host is called. Two names that differ only in case are refused.
     private static FileSystemInfo? FindEntry(DirectoryInfo directory, string name)
     {
         if (name.Length == 0 || name is "." or "..")

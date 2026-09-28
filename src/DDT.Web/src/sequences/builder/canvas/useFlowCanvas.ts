@@ -32,7 +32,8 @@ interface FlowCanvasInput {
   onCommand: (command: FlowCommand, id: string) => void;
 }
 
-// The canvas beside its layout: the elements of its nodes and slots, its menus, the roving focus and the node keys.
+// The canvas's state besides its layout: the elements of its nodes and slots, its menus, the roving focus and the
+// node keys.
 export function useFlowCanvas(input: FlowCanvasInput) {
   const { steps, index, selectedId, collapsed, locked, onSelect, onCommand } = input;
   const layout = input.layout ?? layoutFlow(steps, { collapsed });
@@ -61,7 +62,7 @@ export function useFlowCanvas(input: FlowCanvasInput) {
     if (command.type === "move") {
       const target = flowTarget(index, id, command.move, collapsed);
 
-      // Escape at the top leaves the key to the page.
+      // Escape at the top level has nowhere to go, so the key is left to the page.
       if (target === null && command.move === "parent") {
         return;
       }

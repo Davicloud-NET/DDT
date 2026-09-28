@@ -80,7 +80,7 @@ public sealed class ConditionTreeTests
         Assert.Equal(holds, Holds(MachineVariableNames.Model, @operator, value));
     }
 
-    // Firmware writes model names with stray spaces, so the tree compares them cleaned, as model rules and driver
+    // Firmware writes model names with stray spaces, so the tree compares them cleaned, like model rules and driver
     // packages do.
     [Theory]
     [InlineData(MachineVariableNames.Model, "  LATITUDE   5440 ")]
@@ -213,7 +213,7 @@ public sealed class ConditionTreeTests
         Assert.True(Holds(MachineVariableNames.Phase, ConditionOperator.Equals, "WindowsPE"));
     }
 
-    // Lenovo's model is a type number such as 21HD; the name people know is its system version.
+    // Lenovo's model is a type number such as 21HD. The name people know is its system version.
     [Fact]
     public void KnowsALenovoByItsSystemVersion()
     {
@@ -239,7 +239,7 @@ public sealed class ConditionTreeTests
         Assert.True(Holds("lastexitcode", ConditionOperator.Greater, "0"));
     }
 
-    // A name without a value meets only the operators that say it is not something.
+    // A name without a value only meets the negative operators.
     [Theory]
     [InlineData(ConditionOperator.Equals, false)]
     [InlineData(ConditionOperator.NotEquals, true)]
@@ -284,7 +284,7 @@ public sealed class ConditionTreeTests
         Assert.Equal("PC-0042", s_machine.Value(MachineVariableNames.ComputerName));
     }
 
-    // Facts are the machine's: a run variable of the same name does not change them.
+    // Facts come from the machine. A run variable with the same name doesn't change them.
     [Fact]
     public void KeepsTheFactsWhateverTheVariablesSay()
     {
@@ -320,7 +320,7 @@ public sealed class ConditionTreeTests
         Assert.False(ConditionEvaluator.Holds(All(Any(None(dell)), memory), s_machine));
     }
 
-    // The validator refuses a part that is null; one that slips through does not hold.
+    // The validator refuses a null part. If one slips through anyway, it doesn't hold.
     [Fact]
     public void TakesAPartThatIsNullAsOneThatDoesNotHold()
     {
@@ -402,7 +402,7 @@ public sealed class ConditionTreeTests
         Assert.True(ConditionEvaluator.Evaluate(new RebootStep { Id = Guid.NewGuid(), Name = "Plain" }, s_machine) is { Held: true, Evaluations: [] });
     }
 
-    // The legacy conditions keep their own rules: an agent of version 1 or 2 runs them without cleaning.
+    // The legacy conditions keep their old rules. A version 1 or 2 agent runs them without cleaning.
     [Fact]
     public void KeepsTheLegacyRulesForConditions()
     {

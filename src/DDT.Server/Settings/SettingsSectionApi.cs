@@ -14,7 +14,7 @@ public abstract class SettingsSectionApi
 
     public string Name => Definition.Name;
 
-    // Operators may read these, and nothing else of the page: what an assignment will do depends on them.
+    // Operators may read these sections and nothing else on the page. What an assignment will do depends on them.
     public bool OperatorsMayRead => Name is SettingsSectionNames.Deployment or SettingsSectionNames.Machines;
 
     public abstract object View(

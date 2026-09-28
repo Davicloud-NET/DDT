@@ -4,8 +4,8 @@
 
 import type { SequencePhase, SequenceStep } from "../../sequences";
 
-// The top list's first node that runs only after the hand-over, where the flow draws the line between Windows PE and
-// the installed Windows; null where no such line runs across the whole flow.
+// The first top-level node that runs only after the hand-over. The flow draws the line between WinPE and the
+// installed Windows there. Null if no such line runs across the whole flow.
 export function handover(
   steps: readonly SequenceStep[],
   phases: ReadonlyMap<string, readonly SequencePhase[]>,

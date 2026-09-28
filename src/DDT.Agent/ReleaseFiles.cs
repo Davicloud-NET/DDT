@@ -21,8 +21,8 @@ internal static class ReleaseFiles
         && new FileInfo(path).Length == size
         && string.Equals(await Sha256Async(path, cancellationToken).ConfigureAwait(false), sha256, StringComparison.OrdinalIgnoreCase);
 
-    // Downloads into path.part first: a truncated download or a file replaced on the server in between must never be
-    // started.
+    // Downloads into path.part first. A truncated download, or a file replaced on the server in the meantime, must
+    // never be started.
     public static async Task FetchAsync(
         string path,
         string sha256,

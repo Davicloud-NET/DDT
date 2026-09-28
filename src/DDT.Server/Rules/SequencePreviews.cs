@@ -19,8 +19,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// The sequence a machine gets, with a preview of the values a run would start with: of the run the machine has, or else
-// of the sequence the rules choose, or of none, where only the machine, the rules, its roles and the defaults give values.
+// The sequence a machine gets, with a preview of the values a run would start with. The preview uses the machine's
+// current run, or else the sequence the rules choose. With neither, only the machine, the rules, its roles and the
+// defaults give values.
 internal sealed class SequencePreviews(DdtDbContext database, SequenceResolver resolver, SequenceCatalog catalog, DdtSettings settings)
 {
     // Null for a machine that is gone.
@@ -60,7 +61,7 @@ internal sealed class SequencePreviews(DdtDbContext database, SequenceResolver r
             valueProblems);
     }
 
-    // The machine's run was given the definition frozen with it; otherwise the sequence the rules choose.
+    // If the machine has a run, this is the definition frozen with it. Otherwise it's the sequence the rules choose.
     private async Task<SequenceDefinition?> DefinitionAsync(SequenceResolution resolution, CancellationToken cancellationToken)
     {
         SequenceDefinition? definition = resolution.Sequence is { } chosen ? SequenceDocuments.Read(chosen.Definition) : null;

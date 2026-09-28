@@ -10,7 +10,7 @@ public enum LoginStatus
     RequiresTwoFactor,
     LockedOut,
     Failed,
-    // The password was right, but the account is in none of the groups the directory map gives a role. The page says
-    // so, since the password is not what to fix.
+    // The password was right, but the account isn't in any group that the directory map gives a role. The page says
+    // so, because the password isn't the problem.
     NoRole,
 }

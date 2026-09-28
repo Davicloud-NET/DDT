@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Settings;
 
 // Reads and writes ddt."SettingsSections". A save writes the row and its audit rows in one SaveChanges and then
-// publishes, so this process applies it at once; other processes read it at their next poll.
+// publishes. This process applies it right away, and other processes read it at their next poll.
 public sealed class SettingsStore(
     DdtDbContext database,
     SettingsProtector protector,
@@ -23,7 +23,7 @@ public sealed class SettingsStore(
     DdtSettings settings,
     TimeProvider timeProvider)
 {
-    // The shape of Values. A newer one comes with an upgrade step that runs on load, so a rename happens in code.
+    // The shape of Values. A newer shape comes with an upgrade step that runs on load, so a rename happens in code.
     public const int SchemaVersion = 1;
 
     public async Task<IReadOnlyList<StoredSettingsSection>> LoadAsync(CancellationToken cancellationToken)
@@ -93,7 +93,7 @@ public sealed class SettingsStore(
 
         List<string> changes = [.. SettingsAudit.Changes(definition, before.StoredValues, save.After.StoredValues), .. changedSecrets];
 
-        // A save of what is stored already changes nothing and records nothing.
+        // Saving what's already stored changes nothing and records nothing.
         if (changes.Count == 0)
         {
             return new(SettingsSaveOutcome.Saved, settings.Current);
@@ -103,8 +103,8 @@ public sealed class SettingsStore(
             .ConfigureAwait(false);
     }
 
-    // The section as it is, with a new version, so that every process applies it again: for pxe, it scans its
-    // interfaces anew.
+    // Writes the section unchanged with a new version, so every process applies it again. For PXE, that means each host
+    // rescans its interfaces.
     public async Task<SettingsSaveResult> TouchAsync(SettingsSectionDefinition definition, Actor actor, string reason, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -120,8 +120,9 @@ public sealed class SettingsStore(
             .ConfigureAwait(false);
     }
 
-    // For the console: every field takes its code default and every secret is cleared. Written, so a configured value
-    // is not imported again at the next start, but not published: the servers read it at their next poll.
+    // Used by the settings console. Every field takes its code default and every secret is cleared. The reset is
+    // written, so a configured value isn't imported again at the next start. It isn't published, so the servers read
+    // it at their next poll.
     public async Task ResetAsync(SettingsSectionDefinition definition, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -151,7 +152,7 @@ public sealed class SettingsStore(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The row is tracked, for WriteAsync to update; null when the section was never written.
+    // The row is tracked so WriteAsync can update it. It's null when the section was never written.
     internal async Task<(SettingsSection? Row, StoredSettingsSection Current)> ReadRowAsync(SettingsSectionDefinition definition, CancellationToken cancellationToken)
     {
         SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
@@ -159,7 +160,7 @@ public sealed class SettingsStore(
         return (row, row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row));
     }
 
-    // Conflict when another process wrote the row since it was read, with what this save staged thrown away.
+    // Returns Conflict when another process wrote the row since it was read. What this save staged is thrown away.
     internal async Task<SettingsSaveResult> WriteAsync(SettingsWrite write, CancellationToken cancellationToken)
     {
         SettingsSection row = write.Row ?? new SettingsSection { Section = write.Definition.Name };
@@ -201,7 +202,7 @@ public sealed class SettingsStore(
         return new(SettingsSaveOutcome.Saved, write.Publish ? settings.Publish([saved]) : null);
     }
 
-    // A locked field keeps its stored value: configuration decides it, and the page's value applies again once the key
+    // A locked field keeps its stored value. Configuration decides it, and the page's value applies again once the key
     // is gone.
     private static JsonObject EditableValues(
         SettingsSectionDefinition definition,
@@ -219,8 +220,8 @@ public sealed class SettingsStore(
         return values;
     }
 
-    // A stored secret goes only to the server it was entered for, or an administrator could have it sent to their own.
-    // The attempt is audited.
+    // A stored secret only goes to the server it was entered for. Otherwise an administrator could have it sent to
+    // their own server. The attempt is audited.
     private async Task<SettingsSaveResult> RefuseMovedSecretsAsync(
         SettingsSectionDefinition definition,
         List<SettingProblem> moved,
@@ -238,8 +239,8 @@ public sealed class SettingsStore(
         return new(SettingsSaveOutcome.Invalid, Problems: Messages(definition, moved));
     }
 
-    // The save's problems, the warnings it raises and nobody confirmed, and the fields that need a fresh proof of
-    // identity, in that order. Null when none of them stops the save.
+    // Checks, in this order, the save's problems, the warnings it raises that nobody confirmed, and the fields that
+    // need a fresh proof of identity. Returns null when none of them stops the save.
     private async Task<SettingsSaveResult?> GateAsync(
         PendingSave save,
         List<SettingProblem> secretProblems,
@@ -277,8 +278,8 @@ public sealed class SettingsStore(
             : null;
     }
 
-    // A warning needs a confirmation when the save raises it: it did not hold before, or it is about the change itself.
-    // One about the accounts, not the values, holds at every save while it holds at all.
+    // A warning needs a confirmation when the save raises it. That means it didn't hold before, or it's about the
+    // change itself. A warning about the accounts, not the values, is raised at every save while it holds.
     private static IEnumerable<SettingWarning> Raised(PendingSave save, SettingsSaveCheck check)
     {
         SettingsContext context = new()
@@ -301,7 +302,7 @@ public sealed class SettingsStore(
     private static List<SettingMessage> Messages(SettingsSectionDefinition definition, IEnumerable<SettingProblem> problems) =>
         [.. problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null, problem.Text))];
 
-    // A save between reading the section and writing it: After is the section as the save would leave it.
+    // A save between reading the section and writing it. After is the section as the save would leave it.
     private sealed record PendingSave(
         SettingsSectionDefinition Definition,
         SettingsUpdate Update,

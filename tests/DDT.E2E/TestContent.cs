@@ -10,15 +10,15 @@ using DDT.Core.Disks;
 
 namespace DDT.E2E;
 
-// What the tests upload. Random bytes make every file new to the library, and their size decides how long an agent
-// takes to download one, which is how long a test has to act while a step runs.
+// What the tests upload. Random bytes make every file new to the library. Their size decides how long an agent takes
+// to download a file, which is how long a test has to act while a step runs.
 internal static class TestContent
 {
     private const int WimHeaderLength = 208;
     private const int Megabyte = 1024 * 1024;
 
-    // As much of a WIM as the server and a dry run read: the header, stand-in data, and an image list naming one x64
-    // image, in UTF-16 LE with a byte order mark. A dry run applies nothing, so no real image is needed.
+    // Only as much of a WIM as the server and a dry run read. That's the header, filler data, and an image list naming
+    // one x64 image, in UTF-16 LE with a byte order mark. A dry run applies nothing, so no real image is needed.
     public static void WriteWim(string path, int dataMegabytes, string imageName = "DDT E2E Windows")
     {
         byte[] list =
@@ -53,8 +53,9 @@ internal static class TestContent
         file.Write(list);
     }
 
-    // Laid out and gzipped as distributions publish cloud images: an EFI system partition at 1 MiB with an unsigned x64
-    // \EFI\BOOT\BOOTX64.EFI, a root partition of rootMegabytes of random bytes, and the backup table at the end.
+    // Laid out and gzipped the way distributions publish cloud images. It has an EFI system partition at 1 MiB with an
+    // unsigned x64 \EFI\BOOT\BOOTX64.EFI, a root partition of rootMegabytes of random bytes, and the backup table at
+    // the end.
     public static void WriteRawImage(string path, int rootMegabytes)
     {
         const long espFirst = 2048;
@@ -107,7 +108,7 @@ internal static class TestContent
         }
     }
 
-    // The smallest PE32+ file for x64 the server reads: headers in the first 512 bytes, then one section of 512 bytes,
+    // The smallest x64 PE32+ file the server reads. It has headers in the first 512 bytes, then one 512-byte section,
     // and no certificate table.
     private static byte[] UnsignedEfiProgram()
     {

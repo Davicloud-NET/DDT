@@ -22,7 +22,7 @@ interface RolesPickerProps {
   onChange: (roleIds: string[]) => void;
 }
 
-// The machine roles a rule gives, as tags that can be taken out, and a menu of the others to add.
+// The machine roles a rule gives, as tags that can be removed, and a menu to add the others.
 export function RolesPicker({ roleIds, roles, findings, onChange }: RolesPickerProps) {
   const { t } = useLingui();
   const locked = useContext(EditorLock);

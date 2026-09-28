@@ -34,8 +34,8 @@ public sealed partial class DatabaseInitializer(
 
         LogCreatingDevelopmentSchema();
 
-        // EnsureCreated leaves an existing file alone, which then lacks new tables and fails far from the cause. A
-        // fingerprint of the schema in SQLite's user_version, which EnsureCreated never touches, catches every change.
+        // EnsureCreated leaves an existing file alone. That file then lacks new tables and fails far from the cause. A
+        // schema fingerprint in SQLite's user_version catches every change, and EnsureCreated never touches it.
         int fingerprint = SchemaFingerprint(context);
 
         if (await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false))
@@ -73,7 +73,7 @@ public sealed partial class DatabaseInitializer(
         return value == 0 ? 1 : value;
     }
 
-    // Only for the message: names the tables and columns an operator will recognise.
+    // Only used for the error message. It names the tables and columns an operator will recognise.
     private static async Task<List<string>> FindMissingAsync(DdtDbContext context, CancellationToken cancellationToken)
     {
         List<string> missing = [];

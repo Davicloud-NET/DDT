@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.BootImage;
 
-// A driver package that the last build put into the boot image, as it was then.
+// A driver package that the last build put into the boot image, as it was at build time.
 public sealed record BootImageBuildDriver(Guid PackageId, string Name, string Sha256);

@@ -11,8 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Authentication;
 
-// Finishes a sign-in through the OpenID Connect provider. It logs under ExternalLoginEndpoints' category, which the
-// logging settings may name.
+// Finishes a sign-in through the OpenID Connect provider. It logs under the ExternalLoginEndpoints category, because
+// the logging settings may name that category.
 internal sealed class ExternalSignIn(
     SignInManager<DdtUser> signInManager,
     UserManager<DdtUser> userManager,
@@ -36,14 +36,15 @@ internal sealed class ExternalSignIn(
         GroupRoles mapped = GroupRoles.From(SingleSignOnGroups.Read(info.Principal, oidc.GroupsClaim), oidc.GroupRoleMap);
         DdtUser? existing = await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey).ConfigureAwait(false);
 
-        // Identity does not know DDT's disabled flag, so this checks it as the password sign-in does.
+        // Identity doesn't know DDT's disabled flag, so it's checked here. The password sign-in does the same.
         if (existing is { IsDisabled: true })
         {
             return ExternalSignInOutcome.NotAllowed;
         }
 
-        // As with the directory, the groups decide the role of an account single sign-on made, at each sign-in and before
-        // the cookie is issued. A local account linked to the identity keeps the role an administrator gave it.
+        // Like with the directory, the groups set the role of an account that single sign-on created. That happens at
+        // each sign-in, before the cookie is issued. A local account linked to the identity keeps the role an
+        // administrator gave it.
         if (mapped.Decides && existing is { Source: AccountSource.External }
             && await ApplyGroupRoleAsync(existing, info.LoginProvider, mapped, cancellationToken).ConfigureAwait(false) is { } refused)
         {
@@ -104,7 +105,7 @@ internal sealed class ExternalSignIn(
         return null;
     }
 
-    // The groups come before AutoProvisionRole, and no account is made for an identity they give no role.
+    // The groups win over AutoProvisionRole. No account is created for an identity that the groups give no role.
     private async Task<ExternalSignInOutcome> ProvisionAsync(ExternalLoginInfo info, OidcOptions oidc, GroupRoles mapped, CancellationToken cancellationToken)
     {
         if (mapped.Decides && mapped.Role is null)

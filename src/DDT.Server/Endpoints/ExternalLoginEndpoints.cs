@@ -34,8 +34,8 @@ public static class ExternalLoginEndpoints
         return group;
     }
 
-    // Not found while single sign-on is off or its values do not start the handler: the scheme is then not registered,
-    // and a challenge to it would fail on the server.
+    // Returns 404 while single sign-on is off or its settings can't start the handler. The scheme isn't registered
+    // then, and a challenge to it would fail on the server.
     private static async Task<Results<ChallengeHttpResult, NotFound>> StartAsync(SignInManager<DdtUser> signInManager, IAuthenticationSchemeProvider schemes)
     {
         if (await schemes.GetSchemeAsync(OidcOptions.SchemeName).ConfigureAwait(false) is null)
@@ -62,8 +62,8 @@ public static class ExternalLoginEndpoints
             _ => "/sign-in?error=external",
         });
 
-    // For the sign-in page, which offers a button for each. Only a provider whose scheme this server registered, so a
-    // button never leads to a sign-in that cannot start.
+    // For the sign-in page, which shows a button for each provider. It only lists a provider whose scheme this server
+    // registered, so a button never leads to a sign-in that can't start.
     private static async Task<Ok<IReadOnlyList<ExternalProvider>>> ListProvidersAsync(DdtSettings settings, IAuthenticationSchemeProvider schemes)
     {
         OidcOptions oidc = settings.Current.Oidc;

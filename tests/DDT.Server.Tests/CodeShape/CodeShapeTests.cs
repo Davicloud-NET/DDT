@@ -6,13 +6,13 @@ using Xunit;
 
 namespace DDT.Server.Tests.CodeShape;
 
-// Holds the code to the limits of docs/code-style.md that no analyzer checks.
+// Keeps the code within the limits of docs/code-style.md that no analyzer checks.
 public sealed class CodeShapeTests
 {
-    // Each one argued where it is declared.
+    // Each exception has a comment above it that says why.
     private static readonly HashSet<string> s_exceptions = new(StringComparer.Ordinal)
     {
-        // Name and value pairs read like the message's text; three pairs are six parameters.
+        // Name and value pairs read like the message's text. Three pairs make six parameters.
         "src/DDT.Contracts/Messages/MessageTemplate.cs: MessageTemplate.With: over 5 parameters",
     };
 

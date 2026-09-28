@@ -9,7 +9,8 @@ import { leafNumbers } from "@/runs/runPath";
 
 import type { AgentLogLevel } from "./log";
 
-// A step by its number as the flow and the rail give it; a container, which has none, by its name.
+// A step's label: its number, as the flow and the rail show it, and its name. A container has no number, so it only
+// gets its name.
 export function stepLabel(
   steps: readonly DeploymentStepView[],
   stepId: string | null,

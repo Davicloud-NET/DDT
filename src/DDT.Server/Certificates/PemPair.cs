@@ -4,7 +4,7 @@
 
 namespace DDT.Server.Certificates;
 
-// A certificate and its private key as the two files hold them.
+// A certificate and its private key, each as the PEM text of its file.
 public sealed record PemPair(string CertificatePem, string KeyPem)
 {
     // The generated ToString would print the private key into any log or assertion message that shows a pair.

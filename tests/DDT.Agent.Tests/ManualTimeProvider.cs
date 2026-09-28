@@ -87,7 +87,7 @@ internal sealed class ManualTimeProvider : TimeProvider
     }
 
     // Advances in steps until the condition holds, giving the code under test a moment on the thread pool
-    // between steps. Fails the test instead of waiting for ever.
+    // between steps. Fails the test instead of waiting forever.
     public async Task AdvanceUntilAsync(TimeSpan step, Func<bool> condition)
     {
         for (int attempt = 0; attempt < 1000; attempt++)

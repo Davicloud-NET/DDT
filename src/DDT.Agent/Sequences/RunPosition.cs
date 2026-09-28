@@ -11,7 +11,7 @@ namespace DDT.Agent.Sequences;
 
 // Where a run stands, which the heartbeat reports and the console shows: its state, the running step and its percent,
 // what the run is doing, and a pause's message. A change of state or activity completes NextChange, which a beat waits
-// for; a new percent waits for the next beat.
+// for. A new percent waits for the next beat.
 internal sealed class RunPosition
 {
     private readonly Lock _lock = new();
@@ -82,7 +82,7 @@ internal sealed class RunPosition
         }
     }
 
-    // In a tree the groups, IFs and repeats around the running step are Running too; the current step is the leaf.
+    // In a tree the groups, IFs and repeats around the running step are Running too. The current step is the leaf.
     public void Update(SequenceState state)
     {
         TaskCompletionSource changed;
@@ -107,8 +107,8 @@ internal sealed class RunPosition
         Changed?.Invoke();
     }
 
-    // Only a new percent counts as a change, as a download reports far more often than its percent moves. It waits for
-    // the next beat.
+    // Only a new percent counts as a change, because a download reports far more often than its percent moves. It
+    // waits for the next beat.
     public void Report(StepPercent value)
     {
         bool changed = false;
@@ -151,7 +151,7 @@ internal sealed class RunPosition
         }
     }
 
-    // Before a beat takes its snapshot, so a change in between beats once more rather than never.
+    // Called before a beat takes its snapshot, so a change in between causes one more beat rather than none.
     public void RenewChange()
     {
         lock (_lock)
@@ -192,8 +192,8 @@ internal sealed class RunPosition
         }
     }
 
-    // In order of their names, never the agent's own, and cut to what a report may hold, so a sequence that sets many
-    // long ones cannot make it too large.
+    // Sorted by name, without the agent's own variables, and cut to what a report may hold. So a sequence that sets
+    // many long ones can't make it too large.
     private static IReadOnlyDictionary<string, string> ReportedVariables(SequenceState? state)
     {
         Dictionary<string, string> variables = new(StringComparer.Ordinal);
@@ -213,7 +213,7 @@ internal sealed class RunPosition
         first.Count == second.Count
         && first.All(pair => second.TryGetValue(pair.Key, out string? value) && string.Equals(value, pair.Value, StringComparison.Ordinal));
 
-    // Under the lock. The definition of a run never changes, so its containers are worked out once.
+    // Called under the lock. A run's definition never changes, so its containers are only worked out once.
     private HashSet<Guid> ContainersOf(SequenceDefinition definition)
     {
         if (!ReferenceEquals(definition, _definition))

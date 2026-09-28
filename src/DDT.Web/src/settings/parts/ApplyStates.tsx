@@ -34,7 +34,7 @@ export function ApplyStates({
                   : translate`Applied`}
             </StateTag>
             <span className="type-data text-ink">{host}</span>
-            {/* A failure's reason can be long, so it reads as a line of its own. */}
+            {/* A failure's reason can be long, so it gets its own line. */}
             {state.message !== null ? (
               <span
                 className={`min-w-0 break-words text-ink-2 ${state.state === "Failed" ? "basis-full" : ""}`}

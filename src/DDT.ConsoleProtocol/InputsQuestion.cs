@@ -4,6 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The sequence's inputs, all on one page, after the pick or while a run waits at its start. Answer with Values, or Back
-// after the pick. Error is about the answers as a whole, such as the server refusing them. Answers are never logged.
+// The sequence's inputs, all on one page. It's asked after the sequence is picked, or while a run waits at its start.
+// Answer with Values, or with Back after a pick. Error is about the answers as a whole, such as the server refusing
+// them. Answers are never logged.
 public sealed record InputsQuestion(string SequenceName, IReadOnlyList<ConsoleInput> Inputs, string? Error) : ConsoleQuestion;

@@ -21,8 +21,8 @@ using Xunit;
 
 namespace DDT.E2E;
 
-// Dry runs of what version 3 of a sequence adds: IFs, repeats, pauses, variables, inputs and a stored account's shares,
-// and of the values rules give a run, flat or not.
+// Dry runs of what version 3 sequences add: IFs, repeats, pauses, variables, inputs and a stored account's shares.
+// They also cover the values rules give a run, flat or not.
 [Trait("Category", "E2E")]
 [Collection(DryRunCollection.Name)]
 public sealed class TreeDryRunTests(DryRunLab lab)
@@ -52,7 +52,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
         string labName = $"LAB-{agent.SerialNumber[^5..]}";
 
-        // The run waits at the pause in Windows with its message worked out, and nothing after it runs meanwhile.
+        // The run waits at the pause in Windows with its message filled in, and nothing after it runs in the meantime.
         DeploymentView paused = await WaitForRunAsync(
             agent,
             runId,
@@ -89,15 +89,15 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             ("The run's log", string.Join(Environment.NewLine, log.Lines.Select(line => line.Message))));
     }
 
-    // A rule for the dry run's network gives a flat sequence's run a time zone, a site and a computer name made from the
-    // site, which the run keeps with where each came from, and the answer file the agent fetched holds them.
+    // A rule for the dry run's network gives a flat sequence's run a time zone, a site and a computer name built from
+    // the site. The run keeps each value with where it came from, and the answer file the agent fetched holds them.
     [Fact(Timeout = 600_000)]
     public async Task ARuleForTheMachinesNetworkGivesItsRunValuesThatTheAnswerFileHolds()
     {
         lab.SkipWhenUnavailable();
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
 
-        // A list of steps without anything of version 3, which older agents run as well.
+        // A flat list of steps without version 3 features, which older agents can run too.
         SequenceView sequence = await lab.CreateSequenceAsync(
             "Values from a rule",
             [
@@ -149,8 +149,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         }
     }
 
-    // A raw disk image's cloud-init seed names the machine as a rule's computer name pattern does, for a run assigned
-    // without a name.
+    // For a run assigned without a name, a raw disk image's cloud-init seed names the machine with a rule's computer
+    // name pattern.
     [Fact(Timeout = 600_000)]
     public async Task ARawDiskImagesSeedNamesTheMachineAsARulesPatternDoes()
     {
@@ -204,8 +204,9 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         }
     }
 
-    // An input asked on the web, answered with the assignment, and a required one the machine asks: nobody can answer at
-    // the dry run's machine, so the run waits at its start until the machine's page answers it, then starts with both.
+    // One input is asked on the web and answered with the assignment. A required one is asked at the machine. Nobody
+    // can answer at the dry run's machine, so the run waits to start until the machine's page answers it. Then it
+    // starts with both answers.
     [Fact(Timeout = 600_000)]
     public async Task ARunWaitsAtItsStartForAnInputTheMachineAsksUntilTheWebAnswersIt()
     {
@@ -216,7 +217,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         InputDeclaration room = new() { Name = "Room", Label = "Room", Required = true, AskAt = InputAsk.Machine };
         SetVariableStep label = new() { Id = Guid.CreateVersion7(), Name = "Label the PC", Variable = "Label", Value = "{{Owner}}, room {{Room}}" };
 
-        // Before a partition, Windows PE cannot restart, so the script cannot ask for it.
+        // WinPE can't restart before a partition step, so the script can't ask for a restart.
         RunScriptStep inRoom = DryRunTests.Script("Only in room B12", SequencePhase.WindowsPE, "echo %DDT_VAR_Room%") with
         {
             RebootExitCodes = [],
@@ -252,7 +253,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count("The run waits for answers to Room, at this machine or on the machine's page."));
         Assert.Equal(1, agent.Output.Count("The inputs were answered on the web, and the run starts."));
 
-        // Both answers are the run's values, and its steps worked with them.
+        // Both answers are among the run's values, and its steps used them.
         DeploymentView run = await lab.RunAsync(runId, cancellationToken);
         Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
         Assert.Equal([(label.Id, StepState.Done), (inRoom.Id, StepState.Done)], run.Steps.Select(step => (step.StepId, step.State)));
@@ -267,8 +268,9 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 
-    // A row per node in the tree's order, with the latest visit of each: the branch the IF took and the one it skipped,
-    // the repeat's second time through, whose first try and restart were skipped, and the steps after it.
+    // One row per node in tree order, with each node's latest visit. That covers the branch the IF took and the one it
+    // skipped, the repeat's second time through (where the first try and the restart were skipped), and the steps
+    // after it.
     private void AssertTheTreeWasWalkedAsExpected(DeploymentView run, TreeSequence tree, Guid machineId)
     {
         Assert.Equal(
@@ -301,8 +303,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.All(run.Steps, step => Assert.Contains(lab.Live.StepPushes(machineId), pushed => (pushed.StepId, pushed.State, pushed.Pass) == (step.StepId, step.State, step.Pass)));
     }
 
-    // The first try failed, the repeat went through its steps again after it, and the second try ended it. Only the
-    // image of the branch the IF took was applied.
+    // The first try failed, the repeat ran its steps again, and the second try ended it. Only the image of the branch
+    // the IF took was applied.
     private void AssertOnlyTheBranchTakenAndTheSecondTryRan(AgentProcess agent, TreeSequence tree)
     {
         Assert.Equal(1, agent.Output.Count($"Step {tree.FirstTry.Name} failed after"));
@@ -312,8 +314,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.Equal(0, agent.Output.Count(lab.OtherImage.Name));
     }
 
-    // The name the IF's branch set went into the answer file and the pause's message, and it and the count of tries
-    // reached the run and the page that watched the machine; the values the run started with stay as they were.
+    // The name set in the IF's branch went into the answer file and the pause's message. The name and the count of
+    // tries reached the run and the page that watched the machine. The values the run started with stay as they were.
     private void AssertTheBranchesNameReachedTheRun(DeploymentView run, AgentProcess agent, string labName, Guid machineId)
     {
         Assert.Equal((labName, "0+1+1"), (run.Variables![MachineVariableNames.ComputerName], run.Variables[TreeSequence.Tries]));
@@ -324,7 +326,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count($"Wrote the answer file: computer name {labName}, time zone W. Europe Standard Time, "));
     }
 
-    // With its share, which the dry run only names, from what the server handed out for the step while it ran.
+    // The script ran as the stored account, with its share. The dry run only names the share. Both come from what the
+    // server handed out for the step while it ran.
     private static void AssertTheScriptRanAsTheStoredAccount(AgentProcess agent)
     {
         Assert.Equal(1, agent.Output.Count($"Dry run: {TreeSequence.ShareUser} is not signed in."));
@@ -332,8 +335,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count($"Dry run: not run as {TreeSequence.ShareUser} "));
     }
 
-    // Restarted once in Windows PE and handed over once; the answer file and the step's account were read once for
-    // what each was for, and the pause was continued by the administrator.
+    // The run restarted once in WinPE and was handed over once. The answer file was read once, and the step's account
+    // once for each use. The administrator continued the pause.
     private async Task<IReadOnlyList<AuditEvent>> AssertTheAuditOfTheTreeAsync(
         Guid runId,
         SequenceView sequence,
@@ -353,8 +356,8 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         return audit;
     }
 
-    // Approved and assigned on the web, with the answers to the inputs asked there, the machine watched first so no push
-    // about its run is missed.
+    // Approves and assigns on the web, with the answers to the inputs asked there. The test watches the machine first,
+    // so no push about its run is missed.
     private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(
         AgentProcess agent,
         SequenceView sequence,
@@ -370,7 +373,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         return (machine.Id, assigned.Deployment!.Id);
     }
 
-    // Until the run is as wanted, failing at once should it end otherwise.
+    // Waits until the run is as wanted, and fails at once if it ends some other way.
     private Task<DeploymentView> WaitForRunAsync(
         AgentProcess agent,
         Guid runId,
@@ -395,7 +398,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             },
             cancellationToken);
 
-    // A rule for the dry runs' network, which every dry run's machine is on, that gives these values and chooses no
+    // A rule for the dry runs' network, which every dry run's machine is on. It gives these values and chooses no
     // sequence. The test deletes it.
     private async Task<RuleView> CreateNetworkRuleAsync(IReadOnlyList<NamedValue> values, CancellationToken cancellationToken)
     {

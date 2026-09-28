@@ -8,14 +8,15 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Images;
 
-// The files of the library, each stored once by its hash, and the part files uploads arrive in.
+// Handles the library's files and the part files that uploads arrive in. Each library file is stored once, under its
+// hash.
 internal static class LibraryFiles
 {
     private const int HashBufferBytes = 1024 * 1024;
 
-    // Puts source, the part file or a disk image's compressed copy, into the library and saves its rows. The file
-    // decides, not its rows: a stored file whose rows were lost is used again, and one missing under its rows is put
-    // back. Call with LibraryLock held.
+    // Moves source into the library and saves its rows. Source is the part file or a disk image's compressed copy. The
+    // file on disk decides, not the rows. A stored file whose rows were lost is used again, and a file missing under
+    // existing rows is put back. Call with LibraryLock held.
     public static async Task SaveWithFileAsync(ImageStore store, DdtDbContext database, string source, string sha256)
     {
         string target = store.ObjectPath(sha256);
@@ -29,12 +30,12 @@ internal static class LibraryFiles
 
         try
         {
-            // The file is in the library by now, so its rows are saved even while the server stops.
+            // The file is in the library now, so save its rows even if the server is stopping.
             await database.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
         }
         catch when (moved)
         {
-            // Completing again, as the failure's answer asks, starts from the part file.
+            // The failure's answer asks the client to complete again. That starts from the part file, so move it back.
             File.Move(target, source, overwrite: false);
 
             throw;
@@ -68,8 +69,8 @@ internal static class LibraryFiles
         return Convert.ToHexStringLower(hash.GetHashAndReset());
     }
 
-    // A WIM starts with its magic, a pipable one with its own, which the WIM reader refuses by name. Any other image
-    // upload is a disk image, or refused as neither.
+    // A WIM starts with its magic. A pipable WIM has a magic of its own, and the WIM reader refuses it by name. Any
+    // other image upload is a disk image, or is refused as neither.
     public static async Task<bool> IsWimAsync(string part, CancellationToken cancellationToken)
     {
         byte[] magic = new byte[8];

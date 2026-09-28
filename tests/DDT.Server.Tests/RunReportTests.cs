@@ -23,8 +23,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 {
     private static readonly AgentLogBatch s_oneLine = new([new AgentLogLine(DateTimeOffset.UtcNow, AgentLogLevel.Information, "x")]);
 
-    // A machine with the Minimal sequence and the steps after it assigned on the web, as its agent finds it at its next
-    // poll.
+    // Assigns the Minimal sequence plus the given steps to a machine on the web.
+    // Returns the run as the agent gets it at its next poll.
     private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync(params SequenceStep[] after)
     {
         SignedInClient administrator = await application.AdministratorAsync();
@@ -69,7 +69,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Empty(run.Packages);
         Assert.Null(run.DiskNumber);
 
-        // A lost answer loses nothing: the next poll carries the same run.
+        // A lost answer loses nothing. The next poll carries the same run.
         AgentRun again = (await machine.NextAsync()).Run!;
 
         Assert.Equal(run.Id, again.Id);
@@ -103,7 +103,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         AgentRunReport applying = Report(DeploymentState.Running, [Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Running)]) with { Percent = 50 };
         await machine.ReportOkAsync(run.Id, applying);
 
-        // The response was lost and the agent sends the same again: nothing changes.
+        // The response was lost and the agent sends the same report again. Nothing changes.
         DeploymentView before = await ViewAsync(run.Id);
         await machine.ReportOkAsync(run.Id, applying);
         DeploymentView view = await ViewAsync(run.Id);
@@ -202,7 +202,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         Assert.Equal(StepState.Done, (await ViewAsync(run.Id)).Steps[0].State);
 
-        // The endpoint decides the older report again from what is stored now, and refuses it.
+        // The endpoint checks the older report again against what's stored now, and refuses it.
         Assert.Equal(HttpStatusCode.Conflict, (await machine.ReportAsync(run.Id, Running(Step(Partition(run), StepState.Running)))).StatusCode);
     }
 
@@ -241,8 +241,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentState.Done, (await StoredAsync(run.Id)).State);
     }
 
-    // Steps a report skips over, such as one the heartbeat missed or one skipped by its conditions, are taken as they
-    // are reported.
+    // Steps a report skips over are taken as reported.
+    // That covers a step the heartbeat missed or one its conditions skipped.
     [Fact]
     public async Task AStepCanGoStraightFromPendingToItsEnd()
     {
@@ -276,7 +276,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(MachineState.Failed, (await application.MachineAsync(machine.Id)).State);
         Assert.Contains($"{AuditActions.DeploymentFailed} {failed.Title} on machine {machine.Id:D}: The disk is too small for the image.", await AuditAsync(run.Id));
 
-        // A failed machine still holds its session token, to be given another run.
+        // A failed machine still holds its session token, so it can be given another run.
         Assert.Equal(HttpStatusCode.NoContent, (await machine.Agent.LogAsync(machine.Id, machine.Token, s_oneLine)).StatusCode);
     }
 
@@ -288,7 +288,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Done), Step(Apply(run), StepState.Running)));
 
-        // Whatever the report says about steps that do not fit, the failure ends the run.
+        // The failure ends the run, whatever the report says about steps that don't fit.
         await machine.ReportOkAsync(
             run.Id,
             Report(DeploymentState.Failed, [Step(Partition(run), StepState.Pending), new StepRunState(Guid.NewGuid(), StepState.Done, null)]) with { Error = "wimlib error 59" });
@@ -302,7 +302,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal("wimlib error 59", view.Steps[1].Error);
         Assert.Contains($"{AuditActions.DeploymentFailed} {view.Summary.Title} on machine {machine.Id:D} at Apply: wimlib error 59", await AuditAsync(run.Id));
 
-        // Sent again, because the answer was lost: answered like the first.
+        // Sent again because the answer was lost. It's answered like the first.
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = "wimlib error 59" });
     }
 
@@ -342,7 +342,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(StepState.Done, (await ViewAsync(run.Id)).Steps[0].State);
     }
 
-    // PostgreSQL text cannot hold a NUL and refuses a value longer than its column, and the agent would resend forever.
+    // PostgreSQL text can't hold a NUL and refuses a value longer than its column. The agent would then resend forever.
     [Fact]
     public async Task BoundsWhatTheAgentReports()
     {
@@ -396,7 +396,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await stopped.ReportAsync(running.Id, Running(Step(Partition(running), StepState.Done)))).StatusCode);
 
-        // The step that ran when the run was stopped ended with it.
+        // The step that was running when the run was stopped ended with it.
         DeploymentStepView partition = (await ViewAsync(running.Id)).Steps[0];
         Assert.Equal(StepState.Failed, partition.State);
         Assert.StartsWith("Stopped by administrator-", partition.Error, StringComparison.Ordinal);
@@ -414,7 +414,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentState.Assigned, (await StoredAsync(run.Id)).State);
     }
 
-    // An agent throws on a step kind it does not know, so one too old for the sequence never gets the run.
+    // An agent throws on a step kind it doesn't know. So an agent too old for the sequence never gets the run.
     [Fact]
     public async Task AnAgentTooOldForTheSequenceIsNotGivenTheRun()
     {
@@ -431,7 +431,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(run.Id, (await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
-    // The service in Windows continues a run that the agent in Windows PE started, and never starts one.
+    // The service in Windows continues a run that the agent in Windows PE started. It never starts one itself.
     [Fact]
     public async Task TheServiceInWindowsIsGivenOnlyARunThatRuns()
     {
@@ -453,8 +453,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, again.Token!))).Run?.Id);
     }
 
-    // An interrupted hand-over, or firmware that starts from the network first, brings Windows PE back after it: the
-    // agent there continues with its run token and hands over again, as SequenceRunner reports it.
+    // An interrupted hand-over, or firmware that boots from the network first, brings Windows PE back afterwards.
+    // The agent there continues with its run token and hands over again, as SequenceRunner reports it.
     [Fact]
     public async Task ARunHandedOverAgainGoesBackToWindowsPEAndOnToWindows()
     {
@@ -475,7 +475,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(run.Id, continued.RunId);
         Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, continued.Token!))).Run?.Id);
 
-        // The first beat can still carry the state as the agent found it on the disk.
+        // The first heartbeat can still carry the state as the agent found it on the disk.
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Phase = SequencePhase.Windows });
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE));
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, inWindowsPE) with { Activity = RunActivity.HandingOver });
@@ -491,7 +491,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal([StepState.Done, StepState.Done, StepState.Done, StepState.Pending], handedOver.Steps.Select(s => s.State));
         Assert.Equal(MachineState.Deploying, (await application.MachineAsync(machine.Id)).State);
 
-        // The service in Windows goes on with the run.
+        // The service in Windows continues the run.
         AgentRegistrationResult service = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
 
@@ -503,8 +503,8 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentState.Done, (await StoredAsync(run.Id)).State);
     }
 
-    // Windows PE registers before it takes the run back to its phase. The machine can start it at any restart in the
-    // Windows phase, so a Windows step that is done already does not keep it out.
+    // Windows PE registers before it takes the run back to its phase. The machine can boot into it at any restart in
+    // the Windows phase. So a Windows step that's already done doesn't keep it out.
     [Fact]
     public async Task TheServiceInWindowsCannotTakeTheRunBackToWindowsPE()
     {
@@ -537,7 +537,7 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
 
         Assert.Equal(SequencePhase.WindowsPE, (await ViewAsync(run.Id)).Summary.Phase);
 
-        // A failure ends the run whatever phase it names: the agent has stopped anyway.
+        // A failure ends the run, whatever phase it names. The agent has stopped anyway.
         await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }));
         await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, inWindows) with { Error = "The service could not read the run's state." });
@@ -545,9 +545,9 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(DeploymentState.Failed, (await StoredAsync(run.Id)).State);
     }
 
-    // The settings the run needs went away with a restart of the server between the assignment and the start. The run
-    // fails at once instead of when the agent asks for them, halfway through. This server has neither setting, so the
-    // step that needs one is added to what the run froze.
+    // The settings the run needs disappeared when the server restarted between the assignment and the start.
+    // The run fails at once, not halfway through when the agent asks for them.
+    // This server has neither setting, so the step that needs one is added to what the run froze.
     [Theory]
     [InlineData(false, "The sequence adds the local administrator, but DDT:Deployment:LocalAdministrator has no password")]
     [InlineData(true, "The sequence joins the domain, but DDT:Deployment:Domain no longer names a domain")]

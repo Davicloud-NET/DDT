@@ -29,6 +29,6 @@ public abstract class ObservableObject : INotifyPropertyChanged
 
     protected void Raise([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    // Every property, as after the language changed.
+    // Raises a change for every property, like after the language changed.
     protected void RaiseAll() => PropertyChanged?.Invoke(this, s_everything);
 }

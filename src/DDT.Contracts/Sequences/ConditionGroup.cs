@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Sequences;
 
-// An empty group: all and none hold, any does not.
+// An empty all or none group holds, and an empty any group doesn't.
 public abstract record ConditionGroup : ConditionNode
 {
     public IReadOnlyList<ConditionNode> Parts { get; init; } = [];

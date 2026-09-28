@@ -8,7 +8,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// The report of a run that failed where the agent knows none of its steps: before it ran, or once its state is gone.
+// The report of a run that failed when the agent knows none of its steps, either before it ran or once its state is
+// gone.
 public static class FailedRunReport
 {
     public static AgentRunReport Of(SequencePhase phase, string error) =>

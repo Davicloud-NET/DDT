@@ -11,8 +11,9 @@ import { Dialog } from "@/ui/Dialog";
 import { AssignFields } from "./assign/AssignFields";
 import { useAssignForm } from "./assign/useAssignForm";
 
-// Assigns a task sequence and says first what that does to this machine: whether its disk is erased, and for a
-// waiting machine whether the assignment also authorizes it. The passwords typed are forgotten once it closes.
+// Assigns a task sequence. It first says what that does to the machine: whether its disk is erased and, for a
+// waiting machine, whether the assignment also authorizes it. Typed passwords are forgotten when the dialog
+// closes.
 export function AssignDialog({
   machine,
   onClose,

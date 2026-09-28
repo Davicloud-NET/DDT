@@ -8,14 +8,15 @@ import { Fragment } from "react";
 
 import type { AccountStepUse, AccountUse, AccountView } from "../accounts";
 
-// A sequence's steps that name the account, each once though it may name it twice, to run as and for a share.
+// A sequence's steps that name the account. Each step is listed once, even if it names the account twice, to run as
+// and for a share.
 function stepsOf(use: AccountUse): AccountStepUse[] {
   return (use.steps ?? []).filter(
     (step, index, all) => all.findIndex((other) => other.stepId === step.stepId) === index,
   );
 }
 
-// The sequences that name the account, each with the steps that do, which open the sequence at that step.
+// The sequences that name the account, each with the steps that name it. Each step links to the sequence at that step.
 export function UsedBy({ account }: { account: AccountView }) {
   if (account.usedBy.length === 0) {
     return (

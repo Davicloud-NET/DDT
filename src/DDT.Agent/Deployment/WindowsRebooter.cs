@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Deployment;
 
-// Restarts the installed Windows for the run with shutdown.exe, as a planned restart for maintenance, with a reason
+// Restarts the installed Windows for the run with shutdown.exe. It's a planned restart for maintenance, with a reason
 // that says why in the event log. The restart stops the service on its way.
 public sealed class WindowsRebooter(IToolRunner tools) : IRebooter
 {

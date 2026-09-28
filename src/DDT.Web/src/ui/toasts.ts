@@ -11,12 +11,13 @@ export interface ToastMessage {
   title: ReactNode;
   description?: ReactNode;
   tone?: "ok" | "fail" | "info";
-  // A key that answers the news, such as Undo after a removal; pressing it closes the toast.
+  // A button that answers the news, such as Undo after a removal. Pressing it closes the toast.
   action?: { label: ReactNode; onAction: () => void };
 }
 
-// React Aria removes a closed toast at once. This queue keeps a shown one on screen while it leaves: closing it, by
-// its key or its timeout, only marks it as leaving, and the toast finishes the close once its exit has run.
+// React Aria removes a closed toast at once. This queue keeps a shown toast on screen while it leaves. Closing it
+// any way (a button, its timeout or code) only marks it as leaving. The toast finishes the close once its exit
+// animation has run.
 export class LeavingToastQueue<T> extends ToastQueue<T> {
   #leaving: ReadonlySet<string> = new Set();
   readonly #listeners = new Set<() => void>();

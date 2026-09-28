@@ -9,16 +9,16 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Deployments;
 
-// Moves a run's rows as a report says. Each visit of a node in a repeat has a higher pass, which starts it anew; within a
-// pass a node only moves forward. Only the latest visit is kept, the earlier ones are in the log.
+// Moves a run's rows as a report says. Each visit of a node in a repeat has a higher pass, which starts it over. Within
+// a pass, a node only moves forward. Only the latest visit is kept. The earlier ones are in the log.
 internal static class RunProgress
 {
     public const string AskAgain = "Ask the server for the current run.";
 
-    // A test's field within its step, such as test.parts[3].parts[1]: four levels of groups at most.
+    // A test's field within its step, such as test.parts[3].parts[1], with four levels of groups at most.
     private const int MaxEvaluationPathLength = 256;
 
-    // Null when the report fits the run. Lenient leaves a step that cannot move as reported where it is.
+    // Null if the report fits the run. With lenient, a step that can't move as reported stays where it is.
     public static DeploymentDecision? Apply(ReceivedReport received, bool lenient)
     {
         (Deployment run, AgentRunReport report) = (received.Run, received.Report);
@@ -67,7 +67,7 @@ internal static class RunProgress
     }
 
     // A run is done when no node runs, every node the run reached ran or was skipped, and every failure was allowed by
-    // ContinueOnError on the node or a container it is in. A node was not reached when a container it is in was skipped
+    // ContinueOnError on the node or one of its containers. A node wasn't reached if one of its containers was skipped
     // or failed, or an IF above it took the other branch.
     public static DeploymentDecision? NotDone(SequenceDefinition definition, List<DeploymentStep> steps)
     {
@@ -105,7 +105,7 @@ internal static class RunProgress
     public static string Word<T>(T value)
         where T : struct, Enum => value.ToString().ToLowerInvariant();
 
-    // Null when the step moved, or when lenient left it where it is.
+    // Null if the step moved, or lenient left it where it is.
     private static DeploymentDecision? Move(DeploymentStep? step, StepRunState reported, SequencePhase phase, DateTimeOffset now, bool lenient)
     {
         if (step is null)
@@ -148,7 +148,7 @@ internal static class RunProgress
             step.StartedUtc = now;
         }
 
-        // Where a node runs can depend on the path, so it runs in the phase the agent is in when it starts it.
+        // The phase a node runs in can depend on the path. So it's the phase the agent is in when it starts the node.
         if (reported.State == StepState.Running)
         {
             step.Phase = phase;
@@ -163,8 +163,8 @@ internal static class RunProgress
         return null;
     }
 
-    // The Pause step the run waits at is its current step, running, with the message the agent worked out. A continue
-    // someone gave is kept until the visit it continued is over, since the agent honours it with any report's answer.
+    // The Pause step the run waits at is its current, running step, with the message the agent worked out. A continue
+    // someone gave is kept until the visit it continued is over, because the agent honours it in any report's answer.
     private static void Waits(Deployment run, Dictionary<Guid, DeploymentStep> byId, DeploymentStep? current, AgentRunReport report)
     {
         DeploymentStep? pause = report.Activity == RunActivity.Paused && current is { State: StepState.Running } && current.Kind == RunSnapshots.PauseKind
@@ -205,8 +205,8 @@ internal static class RunProgress
         Decided(step, reported);
     }
 
-    // What the visit decided so far: a repeat's time through its body, an IF's branch and the tests behind either. The
-    // tests come from outside, so they are held to the bounds the engine keeps.
+    // What the visit decided so far: a repeat's iteration, an IF's branch and the tests behind either. The tests come
+    // from the agent, so they're held to the same bounds the engine keeps.
     private static void Decided(DeploymentStep step, StepRunState reported)
     {
         step.Iteration = Math.Max(step.Iteration, reported.Iteration);
@@ -229,7 +229,7 @@ internal static class RunProgress
 
     private static string BodyOf(IfBranch branch) => branch == IfBranch.Then ? StepBody.ThenName : StepBody.ElseName;
 
-    // Without a NUL, which PostgreSQL text cannot hold, and cut rather than refused, like an error.
+    // Removes any NUL, which PostgreSQL text can't hold, and cuts the text instead of refusing it, like an error.
     private static string Cut(string text, int maxLength)
     {
         string kept = text.Replace("\0", string.Empty, StringComparison.Ordinal);

@@ -7,7 +7,7 @@ import { Link } from "@tanstack/react-router";
 import type { MachineSummary } from "@/machines/machines";
 import { displayName, hardwareLine } from "@/machines/machineView";
 
-// The machine's name as the link to its page, over the hardware the name leaves out.
+// The machine's name, linked to its page. Below it is the hardware that the name leaves out.
 export function MachineName({
   machine,
   className,

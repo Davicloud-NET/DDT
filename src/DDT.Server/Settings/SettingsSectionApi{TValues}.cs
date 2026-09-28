@@ -17,7 +17,7 @@ public sealed class SettingsSectionApi<TValues>(
 
     public TValues Values(object options) => toValues(options);
 
-    // The whole section as its option class serializes it. A field configuration locks is ignored by the save.
+    // The whole section as its option class serializes it. The save ignores fields that configuration locks.
     public JsonObject Document(TValues values) => definition.Write(toOptions(values));
 
     public object Options(TValues values) => toOptions(values);

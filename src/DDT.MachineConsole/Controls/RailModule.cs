@@ -12,8 +12,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Controls;
 
-// One step's module of the sequence rail. The running step's stripes are the one thing on the screen that moves by
-// itself, and a step that waits for someone stands still, as nothing runs.
+// The module of one step on the sequence rail. The running step's stripes are the only thing on screen that moves by
+// itself. A step that waits for someone stands still, because nothing runs.
 public sealed class RailModule : Control
 {
     public static readonly StyledProperty<ConsoleStepState> StateProperty =
@@ -42,14 +42,14 @@ public sealed class RailModule : Control
     // The step is current but waits for someone to act, so it is not drawn as running.
     public static readonly StyledProperty<bool> AwaitsSomeoneProperty = AvaloniaProperty.Register<RailModule, bool>(nameof(AwaitsSomeone));
 
-    // The percent the running fill shows, which follows Percent over slow.
+    // The percent the running fill shows. It follows Percent over the Slow duration.
     public static readonly StyledProperty<double> FillProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Fill));
 
-    // How far the change from the state before has come, from 0 to 1.
+    // How far the fade from the previous state has come, from 0 to 1.
     public static readonly StyledProperty<double> ChangeProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Change), 1);
 
-    // How often the stripes of a running step move, in frames per second: enough to read as motion, little enough for
-    // software rendering while an image is applied.
+    // How often a running step's stripes move, in frames per second. It's enough to read as motion, and light enough
+    // for software rendering while an image is applied.
     private const double FramesPerSecond = 30;
 
     private const double StripeWidth = 6;
@@ -173,7 +173,7 @@ public sealed class RailModule : Control
         private set => SetValue(ChangeProperty, value);
     }
 
-    // Tests draw the stripes where they start.
+    // Tests turn this off, so the stripes are drawn at their starting position.
     public static bool Animates { get; set; } = true;
 
     public override void Render(DrawingContext context)
@@ -263,7 +263,7 @@ public sealed class RailModule : Control
         }
     }
 
-    // The new state fades in over the one before, where the module is on the screen already.
+    // If the module is already on screen, the new state fades in over the previous one.
     private void ChangeFrom(ConsoleStepState before)
     {
         _changing?.Cancel();
@@ -296,7 +296,7 @@ public sealed class RailModule : Control
         _ = fade.RunAsync(this, _changing.Token);
     }
 
-    // Only what runs moves.
+    // Only a running step moves.
     public bool IsMoving => State == ConsoleStepState.Running && !AwaitsSomeone;
 
     private Look Now => new(State, Fill, Percent is null, AwaitsSomeone);
@@ -334,6 +334,6 @@ public sealed class RailModule : Control
         top.RequestAnimationFrame(Frame);
     }
 
-    // Soft is a running step that gives no percent, which fills a paler blue; Awaits one that waits for someone.
+    // Soft is a running step without a percent, which fills a paler blue. Awaits is a step that waits for someone.
     private readonly record struct Look(ConsoleStepState State, double Fill, bool Soft, bool Awaits);
 }

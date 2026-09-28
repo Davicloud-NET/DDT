@@ -4,8 +4,8 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The first message of each side; the agent accepts only its own Version. It never changes, so two versions can always
-// tell each other apart. Program names the sender for the log, such as "DDT agent 1.4.0".
+// The first message from each side. The agent only accepts its own Version. This message never changes, so two versions
+// can always tell each other apart. Program names the sender for the log, such as "DDT agent 1.4.0".
 public sealed record HelloMessage(int Version, string Program) : ConsoleMessage
 {
     public const int CurrentVersion = 3;

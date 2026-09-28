@@ -10,7 +10,7 @@ using DDT.Server.Certificates;
 
 namespace DDT.Server.Tests;
 
-// A certificate DDT did not issue, as an administrator brings one from their own CA or makes one by hand.
+// Certificates DDT didn't issue, like the ones an administrator brings from their own CA or makes by hand.
 internal static class AdministratorCertificate
 {
     public static PemPair Create(string subject, string dnsName, DateTimeOffset notBefore, DateTimeOffset notAfter)
@@ -35,7 +35,8 @@ internal static class AdministratorCertificate
 
     static AdministratorCertificate() => AppDomain.CurrentDomain.ProcessExit += (_, _) => ForgetAuthorities();
 
-    // The root of an administrator's CA, or with an issuer, an intermediate CA below it.
+    // Creates the root of an administrator's CA.
+    // With an issuer, it creates an intermediate CA below that issuer instead.
     public static PemPair CreateAuthority(string subject, PemPair? issuer, DateTimeOffset notBefore, DateTimeOffset notAfter)
     {
         using RSA key = RSA.Create(2048);
@@ -76,7 +77,7 @@ internal static class AdministratorCertificate
         }
         catch (CryptographicException)
         {
-            // A store that cannot be opened keeps what it has; the tests passed or failed on their own already.
+            // If the store can't be opened, the CAs stay in it. The tests already passed or failed by then.
         }
     }
 

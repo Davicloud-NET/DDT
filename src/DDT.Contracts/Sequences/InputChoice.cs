@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Label is what the person sees, Value what the answer sets; a null label shows the value.
+// Label is what the person sees, and Value is what the answer sets. A null label shows the value.
 public sealed record InputChoice(string Value, string? Label = null);

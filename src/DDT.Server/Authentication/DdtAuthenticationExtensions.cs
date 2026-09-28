@@ -79,15 +79,15 @@ public static class DdtAuthenticationExtensions
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
-        // OWASP recommends 210,000 iterations for PBKDF2-HMAC-SHA512, against the framework's 100,000. Identity rehashes
-        // at the next successful sign-in.
+        // OWASP recommends 210,000 iterations for PBKDF2-HMAC-SHA512, and the framework uses 100,000. Identity rehashes
+        // the password at the next successful sign-in.
         services.Configure<PasswordHasherOptions>(hasher => hasher.IterationCount = 210_000);
     }
 
     private static void AddSchemes(IServiceCollection services)
     {
-        // AddIdentityCookies before the cookie is configured, never a bare AddCookie for the scheme: that silently drops
-        // SecurityStampValidator, which makes disabling an account take effect.
+        // Call AddIdentityCookies before the cookie is configured, never a bare AddCookie for the scheme. A bare
+        // AddCookie silently drops SecurityStampValidator, and that's what makes disabling an account take effect.
         AuthenticationBuilder authentication = services.AddAuthentication(IdentityConstants.ApplicationScheme);
         authentication.AddIdentityCookies();
         authentication.AddScheme<AuthenticationSchemeOptions, MachineAuthenticationHandler>(
@@ -97,8 +97,8 @@ public static class DdtAuthenticationExtensions
             DdtAuthenticationSchemes.ApiToken,
             configureOptions: null);
 
-        // Any bearer token goes to the API token scheme, which ignores a machine token, so a request that carries one is
-        // never taken for the browser session whose cookie it may also carry.
+        // Any bearer token goes to the API token scheme, which ignores machine tokens. So a request with a bearer token
+        // is never treated as the browser session, even if it also carries the session cookie.
         authentication.AddPolicyScheme(DdtAuthenticationSchemes.User, displayName: null, user =>
             user.ForwardDefaultSelector = context =>
                 context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
@@ -112,8 +112,9 @@ public static class DdtAuthenticationExtensions
             cookie.Cookie.Name = options.RequireHttps ? "__Host-ddt-auth" : "ddt-auth";
             cookie.Cookie.HttpOnly = true;
 
-            // Lax even while single sign-on is off, as cookie options change only at a restart, and Strict would drop the
-            // session the provider's redirect back starts. The same-origin and antiforgery filters refuse cross-site changes.
+            // Lax even while single sign-on is off, because cookie options only change at a restart. Strict would drop
+            // the session that starts with the provider's redirect back. The same-origin and antiforgery filters refuse
+            // cross-site changes.
             cookie.Cookie.SameSite = SameSiteMode.Lax;
             cookie.Cookie.SecurePolicy = options.RequireHttps
                 ? CookieSecurePolicy.Always

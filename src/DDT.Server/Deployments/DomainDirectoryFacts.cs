@@ -9,11 +9,11 @@ public sealed record DomainDirectoryFacts(
     string Connection,
     // The domain the controller serves, as a distinguished name.
     string NamingContext,
-    // The organizational unit, or the default Computers container; null when it does not exist.
+    // The organizational unit, or the default Computers container. Null if it doesn't exist.
     string? Container,
-    // The account may create computer objects there by a right of its own, without the quota.
+    // The account has its own right to create computer objects there, without the quota.
     bool CanCreateComputers,
-    // ms-DS-MachineAccountQuota of the domain; null when it could not be read.
+    // The domain's ms-DS-MachineAccountQuota. Null if it couldn't be read.
     int? MachineAccountQuota,
     // The computer accounts the join account created within that quota.
     int ComputersCreated);

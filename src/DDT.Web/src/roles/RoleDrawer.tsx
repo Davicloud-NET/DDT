@@ -29,7 +29,7 @@ interface RoleDrawerProps {
   onClose: () => void;
 }
 
-// A machine role's form. Someone who may only look reads the same form with nothing to change.
+// A machine role's form. Someone who can only view it sees the same form, read-only.
 export function RoleDrawer({ role, rules, canEdit, onClose }: RoleDrawerProps) {
   const { t } = useLingui();
   const builder = useBuilderData(noDeclarations);

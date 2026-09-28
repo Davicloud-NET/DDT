@@ -73,7 +73,8 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Contains("10.10.0.5", names);
     }
 
-    // Windows PE reads a firmware clock that holds local time as Pacific time, so machines west of that run behind.
+    // Windows PE reads a firmware clock that holds local time as if it were Pacific time.
+    // So machines west of Pacific time run behind.
     [Fact]
     public async Task AMachineWhoseClockRunsHoursBehindStillAcceptsANewCertificate()
     {
@@ -144,7 +145,7 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Equal("not a key", File.ReadAllText(_folder.Files.PreviousKeyPath));
     }
 
-    // Half way through moving a store DDT looked after to a certificate of one's own: the new certificate next to DDT's
+    // Halfway through moving a store that DDT managed to your own certificate, the new certificate sits next to DDT's
     // old key. Nothing is issued over it, neither while DDT runs nor at the next start.
     [Fact]
     public async Task AnAdministratorsCertificateNextToDdtsOldKeyIsLeftAlone()
@@ -245,8 +246,8 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Equal(oldKey, File.ReadAllText(_folder.Files.PreviousKeyPath));
     }
 
-    // A store whose server was off for months: the certificate expired by the machine's clock, yet it came from the
-    // root, so it is renewed rather than served as someone else's.
+    // A store whose server was off for months. The certificate expired by the machine's clock, but it came from the
+    // root. So it's renewed instead of served as someone else's.
     [Fact]
     public async Task AnExpiredCertificateFromTheRootIsRenewed()
     {
@@ -352,7 +353,7 @@ public sealed class ServerCertificateTests : IDisposable
         ServerCertificates certificates = Certificates(string.Empty);
         await CheckAsync(certificates);
 
-        // Half way through replacing the pair: the new certificate, the old key.
+        // Halfway through replacing the pair, with the new certificate and the old key.
         File.WriteAllText(_folder.Files.CertificatePath, second.CertificatePem);
         CertificateCheck check = await CheckAsync(certificates);
 
@@ -377,7 +378,8 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.False(Directory.Exists(_folder.Path));
     }
 
-    // Such as a read-only mount, where compose puts anything outside the store volume, or a folder another user owns.
+    // A folder DDT can't write to. For example a read-only mount, where compose puts anything outside the store volume,
+    // or a folder another user owns.
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -425,7 +427,8 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Equal(root, File.ReadAllText(_folder.Files.RootPath));
     }
 
-    // Boot images built before pin the old certificate, which is no CA, so they need one rebuild; everything else carries on.
+    // Boot images built before pin the old certificate, which isn't a CA.
+    // So they need one rebuild, and everything else carries on.
     [Fact]
     public async Task TheSelfSignedCertificateFromBeforeTheRootIsReplacedByOneFromANewRoot()
     {
@@ -467,7 +470,7 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Equal(legacy.CertificatePem, File.ReadAllText(_folder.Files.CertificatePath));
     }
 
-    // Only what DDT generated itself is replaced: a certificate from an administrator's CA stays, whatever its name.
+    // Only what DDT generated itself is replaced. A certificate from an administrator's CA stays, whatever its name.
     [Fact]
     public async Task ACertificateNamedLikeDdtsButIssuedByAnotherCaIsNotReplaced()
     {
@@ -523,7 +526,8 @@ public sealed class ServerCertificateTests : IDisposable
         Assert.Null(certificates.RootCertificatePem);
     }
 
-    // Again and again: the first check picks up a pair another process wrote, a later one renews.
+    // The renewer checks again and again.
+    // The first check picks up a pair another process wrote, and a later one renews.
     [Fact]
     public async Task TheRenewerChecksEveryFiveMinutes()
     {
@@ -598,7 +602,7 @@ public sealed class ServerCertificateTests : IDisposable
     private static Task<CertificateCheck> CheckAsync(ServerCertificates certificates) =>
         certificates.CheckAsync(TestContext.Current.CancellationToken);
 
-    // The renewer checks on a thread of its own, so a check that never comes fails the test instead of hanging it.
+    // The renewer checks on its own thread, so a check that never comes fails the test instead of hanging it.
     private static async Task UntilAsync(Func<bool> condition, string failure, CancellationToken cancellationToken)
     {
         long start = Stopwatch.GetTimestamp();

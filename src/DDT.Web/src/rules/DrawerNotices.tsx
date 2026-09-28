@@ -9,22 +9,22 @@ import { Notice } from "@/ui/Notice";
 import { SavedMeanwhile } from "./SavedMeanwhile";
 
 interface DrawerNoticesProps {
-  // The title of the notice that someone saved the thing meanwhile; null while nobody did.
+  // The title of the notice that someone else saved the item in the meantime. Null if nobody did.
   savedMeanwhile: string | null;
-  // Says that someone deleted the thing meanwhile; null while nobody did.
+  // Says that someone deleted the item in the meantime. Null if nobody did.
   gone: ReactElement | null;
-  // Refused fields, and for rules saved findings, that the form does not show.
+  // Refused fields that the form doesn't show. For rules, also the saved findings it doesn't show.
   loose: readonly string[];
   // A refusal that names no field.
   refused: string | null;
   isBusy: boolean;
   onTakeTheirs: () => void;
   onKeepMine: () => void;
-  // Notices of the thing itself, such as a rule's problems, which go before the refusals.
+  // Notices about the item itself, such as a rule's problems. They go before the refusals.
   children?: ReactNode;
 }
 
-// The notices over the form of a rule's, a machine role's or an account's drawer.
+// The notices above the form in a rule's, machine role's or account's drawer.
 export function DrawerNotices({
   savedMeanwhile,
   gone,

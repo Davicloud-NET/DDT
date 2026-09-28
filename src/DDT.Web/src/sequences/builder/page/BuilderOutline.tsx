@@ -7,7 +7,7 @@ import { useLingui } from "@lingui/react/macro";
 import { FlowOutline } from "../FlowOutline";
 import type { FlowBuilderModel } from "./useFlowBuilder";
 
-// The page's outline; on a phone, choosing a row opens its fields in the drawer.
+// The page's outline. On a phone, choosing a row opens its fields in the drawer.
 export function BuilderOutline({ model, name }: { model: FlowBuilderModel; name: string }) {
   const { t } = useLingui();
   const { editor, selection } = model;

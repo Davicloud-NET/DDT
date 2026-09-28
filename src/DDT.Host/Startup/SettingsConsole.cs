@@ -11,15 +11,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Host.Startup;
 
-// The recovery for what the settings page cannot fix, such as a section that locks everyone out. It needs only the
-// database and the key ring, as in docker exec ddt ./DDT.Host settings reset ldap, next to the running servers.
+// Recovery for problems the settings page can't fix, such as a section that locks everyone out. It only needs the
+// database and the key ring, so it can run next to the running servers, for example with
+// docker exec ddt ./DDT.Host settings reset ldap.
 public static class SettingsConsole
 {
     private const string AdministratorUserName = "admin";
 
     public static bool Handles(string[] args) => args is ["settings", ..];
 
-    // Settings are configuration for tests, which run the verbs against a store of their own.
+    // Tests pass configuration in settings, so they can run the verbs against their own store.
     public static async Task<int> RunAsync(string[] args, TextWriter output, IEnumerable<KeyValuePair<string, string?>>? settings = null)
     {
         ArgumentNullException.ThrowIfNull(args);
@@ -70,7 +71,7 @@ public static class SettingsConsole
         }
     }
 
-    // The services a server has, but no listener: the schema is brought up to date, as a start would.
+    // Builds the services a server has, but without a listener. It brings the schema up to date, like a normal start.
     private static async Task<WebApplication> StartAsync(IEnumerable<KeyValuePair<string, string?>>? settings)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = [] });
@@ -104,8 +105,8 @@ public static class SettingsConsole
         await scope.ServiceProvider.GetRequiredService<SettingsStore>().ResetAsync(definition, Actor.Console, CancellationToken.None).ConfigureAwait(false);
     }
 
-    // A new local administrator, or the existing one enabled again, unlocked, with a new password and no second factor:
-    // whoever runs this has the database and the key ring, which is more than any account grants.
+    // Creates a local administrator, or enables and unlocks the existing one with a new password and no second factor.
+    // Whoever runs this already has the database and the key ring, which is more than any account grants.
     private static async Task<(string? Password, string? Problem)> CreateAdministratorAsync(WebApplication app, string userName)
     {
         using IServiceScope scope = app.Services.CreateScope();

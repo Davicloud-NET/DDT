@@ -12,7 +12,8 @@ import { settingsOverviewQuery } from "../settings";
 
 import type { Binary } from "./binary";
 
-// The keys are kept for development, and the page cannot replace a file configuration names.
+// Shown when configuration names the file. Those keys exist for development, and the page can't replace a file that
+// configuration names.
 export function UploadsOff({ binary }: { binary: Binary }) {
   const overview = useQuery(settingsOverviewQuery);
   const setting = overview.data?.server.find((entry) => entry.key === binary.configurationKey);

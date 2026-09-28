@@ -8,8 +8,9 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { BinaryPanel } from "./agent/BinaryPanel";
 import { consoleBinaryQuery, maxConsoleBytes, uploadConsole } from "./agentBinary";
 
-// The console netbooting machines show, in Windows PE and as the shell of DDT's session in the installed Windows.
-// The agent downloads it like itself, so a console for a newer agent's protocol needs no new boot image either.
+// The console that netbooting machines show, both in WinPE and as the shell of DDT's session in the installed
+// Windows. The agent downloads it the same way it downloads itself. So a console for a newer agent protocol
+// doesn't need a new boot image either.
 export function ConsolePanel() {
   const { t: translate } = useLingui();
 

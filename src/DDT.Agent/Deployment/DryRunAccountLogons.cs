@@ -6,7 +6,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Signs nobody in: a dry run only names the account, and DryRunToolRunner runs nothing as it.
+// Signs nobody in. A dry run only names the account, and DryRunToolRunner runs nothing as it.
 public sealed class DryRunAccountLogons(AgentLog log) : IAccountLogons
 {
     public Task<IAccountSession> LogOnAsync(AgentAccount account, CancellationToken cancellationToken)

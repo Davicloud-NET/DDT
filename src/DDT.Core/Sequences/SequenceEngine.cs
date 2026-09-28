@@ -7,14 +7,14 @@ using DDT.Core.Templates;
 
 namespace DDT.Core.Sequences;
 
-// Runs a run's tree from its cursor on, within the phase the run is in. A leaf's Running mark is saved before it runs,
-// so a leaf found Running after a restart failed and never runs again, unless it is Resumable. Containers have no side
-// effects, so entering and leaving them waits for the next save, and a resume repeats those moves the same way.
+// Runs a run's tree from its cursor on, in the run's current phase. A leaf's Running mark is saved before it runs. So a
+// leaf still marked Running after a restart has failed and doesn't run again, unless it's Resumable. Containers have
+// no side effects, so entering and leaving them waits for the next save. A resume repeats those moves the same way.
 public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store, IProgress<StepPercent> progress)
 {
     public const string InterruptedError = "The machine restarted or the agent stopped while this step ran.";
 
-    // What LastStepFailed holds once a step ran.
+    // What LastStepFailed holds after a step has run.
     public const string StepFailed = "Yes";
     public const string StepSucceeded = "No";
 
@@ -51,7 +51,7 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
             }
         }
 
-        // Leaving the last containers is not saved yet.
+        // Leaving the last containers hasn't been saved yet.
         if (walk.Changed && await SaveOrFailAsync(walk).ConfigureAwait(false) is { } failed)
         {
             return failed;
@@ -60,15 +60,16 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         return walk.Result(SequenceOutcome.Completed);
     }
 
-    // Null when the run goes on after the leaf.
+    // Null when the run continues after the leaf.
     private async Task<SequenceRunResult?> RunLeafAsync(
         SequenceWalk walk,
         SequenceStep step,
         MachineVariables machine,
         CancellationToken cancellationToken)
     {
-        // A step without a phase of its own, such as a restart, runs in the phase the run is in. One of the other phase
-        // ends this part of the run: the host hands it over and calls the engine again in that phase, at this step.
+        // A step that doesn't ask for a phase, such as a restart, runs in the current phase. A step for the other
+        // phase ends this part of the run. The host hands the run over and calls the engine again in that phase, at
+        // this step.
         SequencePhase phase = step.RequiredPhase ?? walk.Phase;
 
         if (phase != walk.Phase)
@@ -85,7 +86,8 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
             return await RecordAsync(walk, step, order, StepResult.Failed(InterruptedError)).ConfigureAwait(false);
         }
 
-        // A resumable step found Running goes on with the visit its mark was saved for.
+        // A resumable step still marked Running continues the visit its mark was saved for. Its conditions aren't
+        // checked again.
         if (!found)
         {
             ConditionResult conditions = ConditionEvaluator.Evaluate(step, inPhase);
@@ -108,8 +110,9 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
             ? SetVariable(set, walk.Definition, inPhase)
             : await RunStepAsync(step, context, cancellationToken).ConfigureAwait(false);
 
-        // A step that fails once a stop is requested counts as stopped, however it failed. Its Running mark stays
-        // saved, so a resumed run fails it as interrupted instead of going on past it, or runs a resumable one again.
+        // A step that fails after a stop is requested counts as stopped, however it failed. Its Running mark stays
+        // saved. A resumed run then fails it as interrupted instead of moving past it, or runs it again if it's
+        // resumable.
         if (result.Outcome == StepOutcome.Failed && cancellationToken.IsCancellationRequested)
         {
             return new SequenceRunResult(SequenceOutcome.Stopped, walk.Saved, null);
@@ -118,7 +121,7 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         return await RecordAsync(walk, step, order, result).ConfigureAwait(false);
     }
 
-    // Saves the Running mark before the leaf runs. A save that fails fails the leaf and the run.
+    // Saves the Running mark before the leaf runs. If the save fails, the leaf and the run fail.
     private async Task<SequenceRunResult?> BeginAsync(SequenceWalk walk, int order, IReadOnlyList<TestEvaluation> evaluations)
     {
         walk.Begin(order, evaluations);
@@ -133,7 +136,7 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         return walk.Failed(error);
     }
 
-    // Null when the run goes on after the leaf.
+    // Null when the run continues after the leaf.
     private async Task<SequenceRunResult?> RecordAsync(SequenceWalk walk, SequenceStep step, int order, StepResult result)
     {
         walk.Record(result);
@@ -153,7 +156,8 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
             return failed;
         }
 
-        // The state saved names the step after this one, so a restart goes on there, inside a repeat or an IF too.
+        // The saved state points at the step after this one, so a restart continues there, even inside a repeat or
+        // an IF.
         return result.Outcome == StepOutcome.RebootRequired || step.RebootAfter ? walk.Result(SequenceOutcome.RebootRequired) : null;
     }
 
@@ -169,8 +173,8 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         }
     }
 
-    // Needs nothing of the agent: a template over the run's values, the variables steps set and the machine's facts,
-    // put into a variable the sequence lets steps set, under the name it declares.
+    // Needs nothing from the agent. It renders a template over the run's values, the variables steps set and the
+    // machine's facts. The result goes into a variable the sequence lets steps set, under the declared name.
     private static StepResult SetVariable(SetVariableStep step, SequenceDefinition definition, MachineVariables machine)
     {
         VariableDeclaration? declared = definition.Variables?.FirstOrDefault(variable =>
@@ -190,12 +194,12 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         return StepResult.Done(new Dictionary<string, string>(StringComparer.Ordinal) { [declared.Name] = value });
     }
 
-    // A save that fails fails the run with the save's error.
+    // If the save fails, the run fails with the save's error.
     private async Task<SequenceRunResult?> SaveOrFailAsync(SequenceWalk walk) =>
         await SaveAsync(walk).ConfigureAwait(false) is { } error ? walk.Failed(error) : null;
 
-    // Saves never take the stop token: a stop must not lose a finished step, and a step must not start before its
-    // Running mark is saved.
+    // Saves never take the stop token. A stop mustn't lose a finished step, and a step mustn't start before its Running
+    // mark is saved.
     private async Task<string?> SaveAsync(SequenceWalk walk)
     {
         SequenceState state = walk.Snapshot();

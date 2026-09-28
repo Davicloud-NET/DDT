@@ -9,7 +9,7 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Controls;
 
-// A state tag, whose tone comes as a class that Surfaces.axaml styles.
+// A state tag. Its tone is set as a class, which Surfaces.axaml styles.
 public sealed class StateTag : Border
 {
     public static readonly StyledProperty<Tag?> ValueProperty = AvaloniaProperty.Register<StateTag, Tag?>(nameof(Value));

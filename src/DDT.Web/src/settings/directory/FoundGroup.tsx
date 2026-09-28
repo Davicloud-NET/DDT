@@ -10,7 +10,7 @@ import { roleLabel } from "@/users/userView";
 
 import { entryOf } from "../signIn";
 
-// A group the search found, with the role the map gives it or a key that adds it.
+// A group the search found, with the role the map gives it, or a button that adds it to the map.
 export function FoundGroup({
   group,
   map,

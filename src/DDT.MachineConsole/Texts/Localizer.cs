@@ -7,8 +7,8 @@ using System.Text;
 
 namespace DDT.MachineConsole.Texts;
 
-// Translates the console's own texts; what the agent sends is shown as sent. Messages are English literals passed to T
-// or F, which CatalogTests reads from the code.
+// Translates the console's own texts. Text from the agent is shown unchanged. Messages are English literals passed to
+// T or F, and CatalogTests reads them from the code.
 public sealed class Localizer
 {
     private readonly Dictionary<UiLanguage, PoCatalog> _catalogs;
@@ -25,7 +25,7 @@ public sealed class Localizer
 
     public event EventHandler? Changed;
 
-    // With the catalogs the console carries.
+    // Uses the catalogs embedded in the console.
     public static Localizer Embedded(UiLanguage language) =>
         new(language, new Dictionary<UiLanguage, PoCatalog>
         {

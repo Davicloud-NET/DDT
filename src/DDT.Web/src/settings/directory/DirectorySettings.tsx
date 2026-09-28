@@ -23,7 +23,7 @@ import { useDirectoryGroupNames } from "./useDirectoryGroupNames";
 import { useDirectoryProof } from "./useDirectoryProof";
 import { UsersGroup } from "./UsersGroup";
 
-// The section ldap: people sign in with their directory user name and password, and the group map decides their
+// The ldap section. People sign in with their directory user name and password, and the group map decides their
 // role.
 export function DirectorySettings({ me }: { me: CurrentUser }) {
   const proof = useDirectoryProof();

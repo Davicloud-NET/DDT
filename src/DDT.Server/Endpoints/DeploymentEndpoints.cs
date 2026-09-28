@@ -29,10 +29,10 @@ public static class DeploymentEndpoints
         // machine. The settings stay on the server, since they hold the deployment passwords.
         group.MapGet("/options", ReadOptions).RequireAuthorization(DdtPolicies.Viewer);
 
-        // Signs in to the domain with the join account's password, so only those who manage sequences may.
+        // This signs in to the domain with the join account's password, so only those who manage sequences may call it.
         group.MapPost("/domain-check", CheckDomainJoinAsync).RequireAuthorization(DdtPolicies.Administrator);
 
-        // Viewers read the definition a run was given, scripts included, as they read the sequences.
+        // Viewers can read the definition a run was given, scripts included, just as they can read the sequences.
         group.MapGet("/{id:guid}", ReadAsync).RequireAuthorization(DdtPolicies.Viewer);
 
         return group;
@@ -46,7 +46,7 @@ public static class DeploymentEndpoints
             ? TypedResults.Ok(page)
             : ServerProblems.Validation("before", ServerMessages.DeploymentHistoryCursor.With());
 
-    // Three booleans and the time, from one snapshot, and nothing else of the settings: Viewers read this.
+    // Three booleans and the time, from one snapshot, and nothing else from the settings, because Viewers read this.
     private static Ok<DeploymentOptionsView> ReadOptions(DdtSettings settings, TimeProvider timeProvider)
     {
         SettingsSnapshot snapshot = settings.Current;

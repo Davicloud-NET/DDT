@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Sequences;
 
-// Finds a run's state after Windows PE restarted, on whatever letter Windows PE gave the Windows volume this time:
-// the newest DDT\run\state.json in roots, which are the fixed drives that are ready, other than Windows PE's own X:.
+// Finds a run's state after WinPE restarted, on whatever letter WinPE gave the Windows volume this time. It takes the
+// newest DDT\run\state.json in roots. Those are the fixed drives that are ready, except WinPE's X:.
 public sealed class LocalRunLocator(IEnumerable<string> roots)
 {
     // Listed again at every Find, so a Windows volume that got its letter after the agent started is found too.
@@ -44,7 +44,7 @@ public sealed class LocalRunLocator(IEnumerable<string> roots)
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                // A drive that cannot be read holds no run this agent can go on with.
+                // A drive that can't be read holds no run this agent can continue.
             }
         }
 

@@ -11,7 +11,8 @@ public readonly record struct TftpLimits(
     TimeSpan DefaultTimeout,
     TimeSpan MaxRetransmitDelay)
 {
-    // A 1380-octet block plus 32 octets of headers fits WireGuard's 1420 MTU, and 1412 over PPPoE; 16 blocks a window
-    // measured reliable. Three doubling retries capped at 4 s drop a silent client after 11 s, before EDK2's 15 s.
+    // A 1380-octet block plus 32 octets of headers fits WireGuard's 1420 MTU, and 1412 over PPPoE. A window of 16
+    // blocks measured reliable. Three doubling retries capped at 4 s drop a silent client after 11 s, before EDK2
+    // gives up at 15 s.
     public static TftpLimits Default => new(1380, 16, 3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(4));
 }

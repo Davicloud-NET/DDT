@@ -42,11 +42,11 @@ export interface CreateUserRequest {
 
 export interface CreatedUser {
   user: UserView;
-  // Shown once; the account has to replace it at its first sign-in.
+  // Shown once. The account must replace it at its first sign-in.
   password: string;
 }
 
-// A null field stays as it is; an empty text clears the name or the address.
+// A null field stays as it is. An empty text clears the name or the address.
 export interface UpdateUserRequest {
   displayName?: string | null;
   email?: string | null;
@@ -105,7 +105,7 @@ export function removeUsers(queryClient: QueryClient, userIds: readonly string[]
   queryClient.setQueryData(usersQuery.queryKey, (list) => removeByIds(list, userIds));
 }
 
-// The directory as configuration sets it up, with each mapped group's name as the directory has it.
+// The directory as configuration sets it up, with the directory's name for each mapped group.
 export interface DirectoryView {
   enabled: boolean;
   host: string | null;
@@ -120,8 +120,8 @@ export interface DirectoryGroup {
   description: string | null;
 }
 
-// What a sign-in of the user would give, found without their password. message is the server's English, which
-// directoryCheckText says in the person's language.
+// What the user would get at sign-in, found without their password. message is the server's English, and
+// directoryCheckText translates it into the user's language.
 export interface DirectoryCheck {
   found: boolean;
   distinguishedName: string | null;

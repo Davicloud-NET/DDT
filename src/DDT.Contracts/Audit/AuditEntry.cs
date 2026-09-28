@@ -10,11 +10,11 @@ public sealed record AuditEntry(
     DateTimeOffset OccurredUtc,
     string Action,
     AuditActorKind ActorKind,
-    // A copy taken when it happened, so it outlives a renamed or deleted account.
+    // Copied when the action happened, so it survives a renamed or deleted account.
     string? ActorName,
     Guid? ActorUserId,
     Guid? ActorMachineId,
-    // The id of what the action was done to, such as a machine, a run or a package, or a domain's name.
+    // The id of what the action was done to, such as a machine, a run or a package. For a domain it's the name.
     string? SubjectId,
     string? SourceAddress,
     string? Detail);

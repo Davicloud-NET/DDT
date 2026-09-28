@@ -9,9 +9,10 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Images;
 
-// Checks an EFI program's Authenticode signatures as Secure Boot firmware does: each on its own, over the file's hash,
-// up to a certificate in trusted, which is an anchor whether or not it signed itself. Like firmware it ignores validity
-// periods and key usages; unlike firmware it reads neither dbx nor SBAT, so a revoked file counts as trusted.
+// Checks an EFI program's Authenticode signatures the way Secure Boot firmware does. Each signature is checked on its
+// own against the file's hash and must chain to a certificate in trusted. A trusted certificate is an anchor even if it
+// isn't self-signed. Like firmware, it ignores validity periods and key usages. Unlike firmware, it doesn't read dbx or
+// SBAT, so a revoked file still counts as trusted.
 public static class Authenticode
 {
     private const string IndirectDataContentType = "1.3.6.1.4.1.311.2.1.4";
@@ -65,7 +66,7 @@ public static class Authenticode
                 tally.Unreadable ? "carries a signature DDT cannot read" : "carries no signature");
     }
 
-    // Every signature counts: a shim signed under both of Microsoft's CAs starts where either is trusted.
+    // Every signature counts. A shim signed under both of Microsoft's CAs starts on a PC that trusts either one.
     private static void Count(byte[] signature, PeImage image, IReadOnlyCollection<X509Certificate2> trusted, Tally tally)
     {
         SignedCms cms = new();
@@ -136,7 +137,7 @@ public static class Authenticode
         }
     }
 
-    // SpcIndirectDataContent: the data it describes, then a DigestInfo with the file's hash.
+    // SpcIndirectDataContent holds the data it describes, then a DigestInfo with the file's hash.
     private static (HashAlgorithmName, byte[])? ReadIndirectData(byte[] content)
     {
         AsnReader indirect = new AsnReader(content, AsnEncodingRules.BER).ReadSequence();
@@ -155,7 +156,7 @@ public static class Authenticode
         };
     }
 
-    // The trusted certificate the signer's chain leads to, or null.
+    // Returns the trusted certificate the signer's chain leads to, or null.
     private static X509Certificate2? ChainsTo(X509Certificate2 signer, X509Certificate2Collection carried, IReadOnlyCollection<X509Certificate2> trusted)
     {
         X509Certificate2 current = signer;
@@ -226,7 +227,8 @@ public static class Authenticode
         }
     }
 
-    // What the signatures of one file came to, each hash computed once for all the signatures that use it.
+    // Collects the results for all signatures of one file. Each hash is computed once and shared by the signatures that
+    // use it.
     private sealed class Tally
     {
         public Dictionary<HashAlgorithmName, byte[]> Hashes { get; } = [];

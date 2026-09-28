@@ -15,8 +15,8 @@ import { AuthenticatorPanel } from "./AuthenticatorPanel";
 import { PasswordPanel } from "./PasswordPanel";
 import { ProfilePanel } from "./ProfilePanel";
 
-// The signed-in person's own account, password, authenticator and API tokens. An account that must replace a password
-// it was given sees only this page: the server answers nothing else, and the shell keeps it here.
+// The signed-in user's own account, password, authenticator and API tokens. An account that must replace the password
+// it was given only sees this page. The server refuses everything else, and the shell keeps the user here.
 export function AccountPage() {
   const user = useQuery(currentUserQuery).data ?? null;
 

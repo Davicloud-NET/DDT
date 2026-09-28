@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// The interfaces a host that runs the pxe role found when it last applied the section. Unmatched lists the entries of
-// interfaces that name nothing on that host.
+// The interfaces that a host running the pxe role found when it last applied the section. Unmatched lists the entries
+// of the interfaces setting that match nothing on that host.
 public sealed record PxeHostInterfaces(string Host, DateTimeOffset? UpdatedUtc, IReadOnlyList<PxeInterface> Interfaces, IReadOnlyList<string> Unmatched);

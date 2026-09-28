@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react";
 
-// A drawer's title: what the thing is, small, over its name.
+// A drawer's title: the kind of item in small text, above its name.
 export function DrawerTitle({ over, children }: { over: ReactNode; children: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-col gap-1">

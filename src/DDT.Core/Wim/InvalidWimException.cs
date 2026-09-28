@@ -35,6 +35,6 @@ public sealed class InvalidWimException : Exception
         Reason = reason;
     }
 
-    // The message as a code, for the web to say in the person's language.
+    // The message as a code, so the web client can show it in the user's language.
     public ServerMessage? Reason { get; }
 }

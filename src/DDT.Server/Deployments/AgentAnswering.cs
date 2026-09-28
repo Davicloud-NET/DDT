@@ -6,6 +6,6 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Deployments;
 
-// What answers given at the machine came to: the agent's answer, or why they were refused. NoSuchRun: the machine has no
-// such run.
+// The result of answers given at the machine: the agent's answer, or why they were refused. NoSuchRun means the machine
+// has no such run.
 internal sealed record AgentAnswering(AgentAnswersResult? Result, string? Refusal, bool NoSuchRun = false);

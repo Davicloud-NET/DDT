@@ -65,8 +65,8 @@ public static class AuthEndpoints
         ILogger logger = services.LoggerFactory.CreateLogger(typeof(AuthEndpoints));
         string address = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        // A code belongs to the account Identity keeps in its two-factor cookie, which a success clears. After an
-        // OpenID Connect sign-in the request names no account at all.
+        // A code belongs to the account that Identity keeps in its two-factor cookie, which a success clears. After an
+        // OpenID Connect sign-in, the request doesn't name an account at all.
         DdtUser? codeAccount = request.RecoveryCode is { Length: > 0 } || request.TwoFactorCode is { Length: > 0 }
             ? await services.SignInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false)
             : null;
@@ -180,8 +180,8 @@ public static class AuthEndpoints
     {
         await signInManager.SignOutAsync().ConfigureAwait(false);
 
-        // SignOutAsync clears the cookie but leaves HttpContext.User set for this request, and a token minted now would
-        // be bound to the identity signed out, failing the next request.
+        // SignOutAsync clears the cookie but leaves HttpContext.User set for this request. A token minted now would be
+        // bound to the signed-out identity and fail the next request.
         context.User = new ClaimsPrincipal(new ClaimsIdentity());
         RefreshAntiforgeryToken(context, antiforgery);
 
@@ -248,7 +248,7 @@ public static class AuthEndpoints
             return result.ToValidationProblem();
         }
 
-        // The new password is one nobody else was shown, so the account reaches everything its role allows again. The
+        // Nobody else has seen the new password, so the account can reach everything its role allows again. The
         // refreshed cookie no longer carries the claim.
         Claim[] mustChange = [.. (await userManager.GetClaimsAsync(user).ConfigureAwait(false)).Where(claim => claim.Type == DdtClaimTypes.MustChangePassword)];
 
@@ -268,7 +268,8 @@ public static class AuthEndpoints
         return TypedResults.Ok();
     }
 
-    // Identity's refusals by the field each is about, Identity's code unless field says otherwise.
+    // Lists Identity's errors by the field each one is about. That's Identity's error code unless field says
+    // otherwise.
     internal static ValidationProblem ToValidationProblem(this IdentityResult result, Func<IdentityError, string>? field = null)
     {
         FieldProblems problems = new();
@@ -281,7 +282,7 @@ public static class AuthEndpoints
         return problems.ToResult();
     }
 
-    // An error DdtIdentityErrorDescriber did not make says its English as it is.
+    // An error that DdtIdentityErrorDescriber didn't create keeps its English text as it is.
     internal static ServerMessage MessageOf(IdentityError error) =>
         DdtIdentityErrorDescriber.MessageOf(error) ?? ServerMessages.IdentityOther.With("description", error.Description);
 

@@ -10,9 +10,9 @@ namespace DDT.Server.Authentication;
 
 public static class ExternalAccounts
 {
-    // All of it or nothing: without its link the account would be made again at the next sign-in, and without its role
-    // it reaches nothing. The link also fails for an identity whose account stopped short, at its second factor say,
-    // and a new account would skip that factor.
+    // All or nothing. Without the login link, the account would be created again at the next sign-in, and without its
+    // role it can't reach anything. Linking also fails for an identity that already has an account whose sign-in
+    // stopped short, for example at its second factor. A new account would skip that factor.
     public static async Task<IdentityResult> ProvisionAsync(UserManager<DdtUser> users, DdtUser user, ExternalLoginInfo info, string role)
     {
         ArgumentNullException.ThrowIfNull(users);
@@ -33,7 +33,7 @@ public static class ExternalAccounts
             result = await users.AddToRoleAsync(user, role).ConfigureAwait(false);
         }
 
-        // The Users page tells a role DDT gave from one an administrator chose.
+        // This marker lets the Users page tell a role DDT gave apart from one an administrator chose.
         if (result.Succeeded)
         {
             result = await users.SetAuthenticationTokenAsync(user, UserViews.MarkerProvider, UserViews.ProvisionedMarker, "true").ConfigureAwait(false);

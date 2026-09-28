@@ -16,8 +16,8 @@ import {
   type InputAnswer,
 } from "./inputs";
 
-// The answers of a form while they are edited: what each field holds, starting from the defaults the server worked out
-// for the machine, and what keeps them from being sent.
+// A form's answers while they're edited. Each field starts from the default the server worked out for the machine. It
+// also tracks what blocks sending them.
 export function useAnswers(inputs: readonly AskedInput[], defaults: readonly ResolvedValue[] = []) {
   const [edits, setEdits] = useState<AnswerDrafts>({});
   const [missing, setMissing] = useState<Record<string, string>>({});
@@ -32,7 +32,7 @@ export function useAnswers(inputs: readonly AskedInput[], defaults: readonly Res
         Object.fromEntries(Object.entries(previous).filter(([key]) => key !== name)),
       );
     },
-    // The answers to send, or null where a required one is missing, which its field then says.
+    // The answers to send, or null if a required one is missing. The field then says so.
     collect: (): InputAnswer[] | null => {
       const problems = missingAnswers(inputs, drafts);
 
@@ -40,7 +40,7 @@ export function useAnswers(inputs: readonly AskedInput[], defaults: readonly Res
 
       return Object.keys(problems).length > 0 ? null : answersOf(inputs, drafts);
     },
-    // Forgets the passwords typed, as after the answers were sent or the form closed.
+    // Forgets the typed passwords, for example after the answers were sent or the form closed.
     forgetPasswords: () => {
       setEdits((previous) =>
         Object.fromEntries(

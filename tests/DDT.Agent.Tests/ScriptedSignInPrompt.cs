@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Tests;
 
-// Answers each read with the next typed line at once. Once the lines run out it waits, as a technician who
-// has walked away does, until the read is cancelled.
+// Answers each read right away with the next typed line. Once the lines run out it waits, like a technician who
+// walked away, until the read is cancelled.
 internal sealed class ScriptedSignInPrompt(params string[] lines) : ISignInPrompt
 {
     private readonly Queue<string> _lines = new(lines);

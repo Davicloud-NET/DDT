@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 namespace DDT.Server.Machines;
 
 // The console is kept as one zip, so an upload replaces it with a single rename and a machine never sees half of one.
-// Its files are hashed once and kept until the zip's length or write time changes, as AgentReleaseStore does.
+// Like AgentReleaseStore, it hashes the files once and keeps the hashes until the zip's length or write time changes.
 public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt)
 {
     // The console's three files are about 29 MB, and zipped about 12 MB. The agent's limit holds for the zip and for what
@@ -25,8 +25,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         ? Path.Combine(ddt.Value.StorePath, "agent", "ddt-console.zip")
         : options.Value.ConsolePath);
 
-    // Null when there is no console, or when the zip is not one, which leaves machines with the console of their boot
-    // image.
+    // Null if there's no console, or the zip isn't a valid one. Machines then keep the console from their boot image.
     public async Task<ConsoleRelease?> CurrentAsync(CancellationToken cancellationToken)
     {
         FileInfo file = new(PackagePath);
@@ -59,8 +58,8 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         return release;
     }
 
-    // Writes one of the console's files as the zip holds it now. An upload in between shows as a download that does not
-    // match the release, which the agent refuses.
+    // Writes one of the console's files as the zip holds it now. If an upload happens in between, the download won't
+    // match the release, and the agent refuses it.
     public async Task CopyFileAsync(string name, Stream destination, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -111,7 +110,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         }
     }
 
-    // Taken whether the files are at the zip's root or in one folder, as zipping the folder makes it, and stored with
+    // Accepts the files at the zip's root or in one folder, which is what zipping the folder gives. It's stored with
     // exactly the console's files at the root.
     public async Task<(ReleaseUploadStatus Status, ConsoleRelease? Release)> SaveAsync(Stream content, CancellationToken cancellationToken)
     {
@@ -188,7 +187,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         }
     }
 
-    // What the files unpack to counts against MaxBytes together.
+    // The unpacked size of all files together counts against MaxBytes.
     private static async Task<ReleaseUploadStatus> CopyExecutablesAsync(
         Dictionary<string, ZipArchiveEntry> files,
         ZipArchive output,
@@ -233,8 +232,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         return ReleaseUploadStatus.Saved;
     }
 
-    // The console's files by name, whether at the root or all in one folder, or null when the zip holds anything else or
-    // misses one.
+    // The console's files by name, at the root or all in one folder. Null if the zip holds anything else or misses one.
     private static Dictionary<string, ZipArchiveEntry>? ConsoleFiles(ZipArchive archive)
     {
         Dictionary<string, ZipArchiveEntry> files = new(StringComparer.OrdinalIgnoreCase);
@@ -244,7 +242,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         {
             string path = entry.FullName.Replace('\\', '/');
 
-            // Folders are entries of their own, ending in a slash.
+            // Folders have their own entries, ending in a slash.
             if (path.EndsWith('/'))
             {
                 continue;
@@ -287,7 +285,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         return size;
     }
 
-    // Shared for deletion, so an upload can rename the new zip over one that is being read.
+    // Opened with FileShare.Delete, so an upload can rename the new zip over one that's being read.
     private static FileStream Open(string path) =>
         new(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, useAsync: true);
 }

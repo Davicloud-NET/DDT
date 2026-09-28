@@ -9,7 +9,7 @@ using DDT.Core.Sequences;
 namespace DDT.Core.Tests.Sequences;
 
 // A tree with a group, IFs on the model and on a variable a step sets, a retry that restarts and works the second time,
-// a repeat that goes on at its limit, a group that catches a failure, and a hand-over to Windows on one branch.
+// a repeat that continues at its limit, a group that catches a failure, and a hand-over to Windows on one branch.
 internal sealed class TreeFixture
 {
     public const string Office = "Office";

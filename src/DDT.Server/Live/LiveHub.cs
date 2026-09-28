@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
 
-// Pushes what changed for clients to patch in (see LiveEvents). A page watches the machine it shows, again after a
-// reconnect, since groups do not survive one; an API token receives what its role may read.
+// Pushes changes for clients to patch in (see LiveEvents). A page watches the machine it shows, and watches it again
+// after a reconnect, because groups don't survive one. An API token gets what its role may read.
 public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, LiveConnections connections) : Hub
 {
     // A connection is one browser tab, which shows a machine or a few.
@@ -19,9 +19,9 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
 
     private const string WatchedKey = "ddt.watched";
 
-    // The cookie's roles and security stamp can be a minute old, so the account is read as it is now: a disabled, deleted
-    // or signed-out one gets no connection. The token handler settled a token's role already. A role changed while the
-    // connection is open counts when it connects again, which the Users API forces by closing it.
+    // The cookie's roles and security stamp can be a minute old, so the account is read fresh. A disabled, deleted or
+    // signed-out account gets no connection. The token handler already checked a token's role. A role change takes
+    // effect on the next connect, and the Users API forces one by closing the connection.
     public override async Task OnConnectedAsync()
     {
         Guid? userId;
@@ -101,7 +101,7 @@ public sealed class LiveHub(SignInManager<DdtUser> signInManager, UserManager<Dd
         Watched().Remove(machineId);
     }
 
-    // The hub itself lives for one call, so what a connection watches is kept with the connection.
+    // A hub instance only lives for one call, so the watched machines are kept on the connection.
     private HashSet<Guid> Watched()
     {
         if (Context.Items.TryGetValue(WatchedKey, out object? value) && value is HashSet<Guid> watched)

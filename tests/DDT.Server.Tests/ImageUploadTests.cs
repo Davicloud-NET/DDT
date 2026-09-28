@@ -80,7 +80,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateUploadAsync(new string('a', 257), 10)).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateUploadAsync("in\0stall.wim", 10)).StatusCode);
 
-        // It fits on the volume, but not beside everything else on it and the margin kept free.
+        // It would fit on the volume, but not next to everything else on it plus the margin kept free.
         HttpResponseMessage full = await administrator.CreateUploadAsync("install.wim", capacity);
         Assert.Equal(HttpStatusCode.InsufficientStorage, full.StatusCode);
         Assert.StartsWith("The image store needs", await TitleAsync(full), StringComparison.Ordinal);
@@ -235,7 +235,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
             Assert.Equal(subjects.Order(), audited.Order());
         }
 
-        // A lost answer: completing again gives the same result, and the finished upload takes no more chunks.
+        // If the answer was lost, completing again gives the same result. The finished upload takes no more chunks.
         HttpResponseMessage repeated = await administrator.CompleteUploadAsync(session.Id);
         Assert.Equal(HttpStatusCode.OK, repeated.StatusCode);
         Assert.Equal(added.OrderBy(i => i.WimIndex), await ReadAsync<IReadOnlyList<ImageSummary>>(repeated));
@@ -271,7 +271,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
         IReadOnlyList<ImageSummary> library = await ReadAsync<IReadOnlyList<ImageSummary>>(await administrator.GetAsync("/api/images"));
         Assert.Equal(2, library.Count(i => i.Sha256 == sha256));
 
-        // The upload added nothing but is recorded once, under the entry of the first index.
+        // The upload added nothing, but it's recorded once, under the entry of the first index.
         using IServiceScope scope = application.Services.CreateScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
         string subject = added.Single(i => i.WimIndex == 1).Id.ToString("D");
@@ -293,7 +293,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
         ImageUploadSession session = await administrator.UploadAsync(file);
         ImageUploadCompleter completer = application.Services.GetRequiredService<ImageUploadCompleter>();
 
-        // An uploader with no user row breaks the entries' foreign key, as a user deleted during the upload does.
+        // An uploader without a user row breaks the entries' foreign key, like a user deleted during the upload would.
         UploadCompletion failed = await completer.CompleteAsync(session.Id, new Actor(Guid.NewGuid(), "gone", null), cancellationToken);
 
         Assert.Equal(UploadCompletionStatus.Failed, failed.Status);
@@ -301,7 +301,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
         Assert.False(File.Exists(Store.ObjectPath(sha256)));
         Assert.Null((await FindUploadAsync(session.Id))!.CompletedSha256);
 
-        // Completing again, as the answer to the failure asks, needs no chunk sent again.
+        // Completing again, as the failure's answer asks, doesn't need any chunk sent again.
         Assert.Equal(HttpStatusCode.Created, (await administrator.CompleteUploadAsync(session.Id)).StatusCode);
         Assert.Equal(file, await File.ReadAllBytesAsync(Store.ObjectPath(sha256), cancellationToken));
         Assert.False(File.Exists(Store.PartPath(session.Id)));
@@ -434,11 +434,11 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
             Task<HttpResponseMessage> one = administrator.CompleteUploadOrGiveUpAsync(session.Id, first.Token);
             Task<HttpResponseMessage> two = administrator.CompleteUploadOrGiveUpAsync(session.Id, second.Token);
 
-            // One request runs the completion; the other finds the session busy.
+            // One request runs the completion, and the other finds the session busy.
             Task<HttpResponseMessage> answered = await Task.WhenAny(one, two).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
             AssertRetryLater(await answered);
 
-            // The request running it gives up, as a browser behind a proxy's read timeout does.
+            // The request running it gives up, like a browser behind a proxy's read timeout does.
             await (answered == one ? second : first).CancelAsync();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => answered == one ? two : one);
 
@@ -449,7 +449,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
             Store.LibraryLock.Release();
         }
 
-        // The completion went on without its request, and its stored result answers the next attempt.
+        // The completion continued without its request. Its stored result answers the next attempt.
         HttpResponseMessage result = await administrator.CompleteUploadAsync(session.Id);
 
         for (int attempt = 0; attempt < 200 && result.StatusCode == HttpStatusCode.Conflict; attempt++)

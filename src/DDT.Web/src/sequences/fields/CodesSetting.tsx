@@ -12,8 +12,8 @@ import { parseCodes } from "../steps";
 import type { FieldBase } from "./fieldBase";
 import { findingProps } from "./findingProps";
 
-// Exit codes as a list such as "0, 3010". What was typed stays while the field is typed in, even when it is no list
-// yet; the step keeps the last list that was one.
+// Exit codes as a list such as "0, 3010". The typed text stays while someone types in the field, even if it isn't a
+// valid list yet. The step keeps the last valid list.
 export function CodesSetting({
   label,
   field,

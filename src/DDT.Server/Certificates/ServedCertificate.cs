@@ -7,21 +7,21 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Certificates;
 
-// The pair Kestrel serves, held in memory so a new pair reaches the next connection without a restart.
+// Holds the pair Kestrel serves in memory, so a new pair reaches the next connection without a restart.
 internal sealed class ServedCertificate
 {
     private SslStreamCertificateContext? _context;
     private string? _rootPem;
     private string? _warnedThumbprint;
 
-    // Read on every TLS handshake. The context it replaces is left to the garbage collector rather than disposed, because
-    // a handshake that already picked it may still be using it.
+    // Read on every TLS handshake. A replaced context isn't disposed. It's left to the garbage collector, because a
+    // handshake that already picked it may still be using it.
     public SslStreamCertificateContext? Context => Volatile.Read(ref _context);
 
-    // DDT's root while the served certificate comes from it, and null for an administrator's certificate.
+    // Holds DDT's root while the served certificate comes from it. It's null for an administrator's certificate.
     public string? RootPem => Volatile.Read(ref _rootPem);
 
-    // The files as last loaded, or as they were when their load last failed.
+    // The stamp of the files as last loaded, or as they were when loading them last failed.
     public FileStamp? Stamp { get; set; }
 
     public CertificateCheck Serve(SslStreamCertificateContext context, FileStamp stamp, string? rootPem, CertificateAction action, DateTimeOffset now)

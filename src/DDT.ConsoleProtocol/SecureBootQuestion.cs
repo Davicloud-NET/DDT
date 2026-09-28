@@ -4,8 +4,9 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Asked last, before the sequence writes a disk image this machine's Secure Boot would not start. As for EraseQuestion,
-// the console sends what was typed as Text, and anything but Word erases nothing. SignedUnder is for UntrustedCa.
+// Asked last, before the sequence writes a disk image that this machine's Secure Boot wouldn't start. Like with
+// EraseQuestion, the console sends what was typed as Text, and anything but Word erases nothing. SignedUnder is set
+// for UntrustedCa.
 public sealed record SecureBootQuestion(
     string SequenceName,
     string? ImageName,

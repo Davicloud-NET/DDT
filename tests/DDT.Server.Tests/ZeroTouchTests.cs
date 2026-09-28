@@ -20,7 +20,7 @@ namespace DDT.Server.Tests;
 
 public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFixture<ZeroTouchApplication>
 {
-    // Assigned on the web while the machine was not at its prompt, so the assignment waits for its next netboot.
+    // Assigned on the web while the machine wasn't at its prompt, so the assignment waits for its next netboot.
     internal static async Task<Guid> AssignWhileAwayAsync(DdtApplication application, DeployingMachine machine)
     {
         SignedInClient administrator = await application.AdministratorAsync();
@@ -58,7 +58,8 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
 
         Assert.Equal(MachineState.Approved, registered.State);
 
-        // A poll token from before the netboot, whoever registered for it, is dead although Approved accepts poll tokens.
+        // A poll token from before the netboot is invalid, whoever registered for it.
+        // That's true even though Approved accepts poll tokens.
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.NextAsync(machine.Id, before)).StatusCode);
 
         AgentNextResult next = await machine.NextAsync();
@@ -133,7 +134,7 @@ public sealed class ZeroTouchTests(ZeroTouchApplication application) : IClassFix
         await machine.NextAsync();
         await application.MoveRunAsync(machine.Id, DeploymentState.Running);
 
-        // Resuming with the resume token is the same agent after an outage: nothing changes.
+        // Resuming with the resume token means it's the same agent after an outage, so nothing changes.
         AgentRegistrationResult resumed = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await machine.Agent.RegisterAsync(machine.Registration with { ResumeToken = machine.ResumeToken }));
 

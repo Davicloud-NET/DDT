@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Users;
 
-// The password is shown this once, and the account must change it at its first sign-in.
+// The password is only shown this once, and the user must change it at the first sign-in.
 public sealed record CreatedUser(UserView User, string Password);

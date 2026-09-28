@@ -11,8 +11,8 @@ using static DDT.Core.Tests.Sequences.TreeFixture;
 
 namespace DDT.Core.Tests.Sequences;
 
-// The engine on trees. Every run goes through the JSON the agent writes, and the driver resumes after each restart and
-// hand-over from the blob alone, in a fresh engine, as the agent does.
+// Tests the engine on trees. Every run goes through the JSON the agent writes. After each restart and hand-over, the
+// driver resumes from the blob alone in a fresh engine, like the agent does.
 public sealed class TreeEngineTests
 {
     private static readonly MachineVariables s_machine = new(
@@ -27,7 +27,7 @@ public sealed class TreeEngineTests
         Variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Site"] = "Vienna" },
     };
 
-    // Every step is done, and a restart asks for the restart.
+    // Every step succeeds, and a restart step asks for a restart.
     private static readonly Dictionary<Guid, Func<StepContext, StepResult>> s_noBehaviours = [];
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -81,8 +81,8 @@ public sealed class TreeEngineTests
         Assert.Null(run.Result.State.Cursor);
     }
 
-    // The run variables hold what steps set, and a step without a phase of its own runs in the phase the branch taken
-    // led to, where conditions read the variables steps set on top of the run's values.
+    // The run variables hold what steps set. A step that doesn't ask for a phase runs in the phase its branch led to.
+    // There, conditions read the variables steps set on top of the run's values.
     [Fact]
     public async Task KeepsWhatStepsSetAndRunsEachStepInThePhaseItsBranchLedTo()
     {
@@ -106,8 +106,8 @@ public sealed class TreeEngineTests
         Assert.Equal("Vienna", run.Runner.Runs.Single(ran => ran.StepId == tree.Elsewhere.Id).Context.Machine.Value("site"));
     }
 
-    // Whatever save the machine stopped after, a fresh engine resumes from the blob alone and does what the run did. A
-    // blob saved while a step that cannot run twice was running fails that step as interrupted first.
+    // Whichever save the machine stopped after, a fresh engine resumes from the blob alone and does what the run did.
+    // If the blob was saved while a step that can't run twice was running, that step first fails as interrupted.
     [Fact]
     public async Task ResumesFromEverySavedStateInAFreshEngine()
     {
@@ -139,7 +139,7 @@ public sealed class TreeEngineTests
             Assert.Equal(finished, Json(run.Result.State));
             Assert.Equal(reference.Runner.Runs.Where(ran => ran.Mark >= blob).Select(ran => ran.StepId), run.Runner.Ran);
 
-            // A blob saved for the hand-over is saved once more when the run resumes in the phase it left.
+            // Resuming a hand-over blob in the phase it was leaving saves that same blob once more.
             IEnumerable<string> blobs = run.Store.Blobs.Count > 0 && run.Store.Blobs[0] == reference.Store.Blobs[blob]
                 ? run.Store.Blobs.Skip(1)
                 : run.Store.Blobs;
@@ -151,7 +151,8 @@ public sealed class TreeEngineTests
         Assert.True(resumed >= 15, $"Only {resumed} of {reference.Store.Blobs.Count} blobs were resumed.");
     }
 
-    // The IF records the test that chose its branch, a skipped step the test that skipped it, and a repeat its Until.
+    // The IF records the test that chose its branch. A skipped step records the test that skipped it, and a repeat
+    // records its Until.
     [Fact]
     public async Task RecordsTheTestsThatDecidedOnSkippedStepsIfsAndRepeats()
     {
@@ -213,8 +214,9 @@ public sealed class TreeEngineTests
         Assert.Equal(["Choice Done 1 Then", "Otherwise Skipped 1", "Empty Done 1"], Lines(run.Result.State));
     }
 
-    // Taking Else, which has no step in Windows, the run stays in Windows PE, and the restart after the IF runs there.
-    // Taking Then, the run is handed over at its step in Windows, with the IF's branch saved for the other phase.
+    // When the run takes Else, which has no step in Windows, it stays in Windows PE and the restart after the IF runs
+    // there. When it takes Then, the run is handed over at its step in Windows, with the IF's branch saved for the
+    // other phase.
     [Fact]
     public async Task ChangesThePhaseOnTheBranchThatNeedsItOnly()
     {
@@ -284,7 +286,8 @@ public sealed class TreeEngineTests
         Assert.Equal(["Wait for the network Failed 1 x1", "Body Done 1", "After Done 1"], Lines(once.Result.State));
     }
 
-    // Do ... until: the body runs before Until is tested, and a failing script that goes on lets LastStepFailed decide.
+    // Do ... until. The body runs before Until is tested, and a failing script with ContinueOnError lets LastStepFailed
+    // decide.
     [Fact]
     public async Task RetriesUntilTheLastStepDidNotFail()
     {
@@ -359,7 +362,7 @@ public sealed class TreeEngineTests
             step => Assert.Equal(SequenceEngine.InterruptedError, step.Error));
         Assert.Equal("Yes", BlobStore.Load(run.Store.Blobs[0]).Variables[MachineVariableNames.LastStepFailed]);
 
-        // Without an ancestor that goes on, the run fails as a flat one does, and the rest stays Pending.
+        // Without an ancestor that continues on error, the run fails like a flat run, and the rest stays Pending.
         SequenceState unguarded = SequenceStates.Start(Guid.NewGuid(), Tree(guarded with { ContinueOnError = false }, after));
         Driven failed = await DriveAsync(BlobStore.Load(await BlobWhileRunningAsync(interrupted, unguarded)), s_noBehaviours);
 
@@ -371,7 +374,7 @@ public sealed class TreeEngineTests
             Lines(BlobStore.Load(failed.Store.Latest)));
     }
 
-    // Running twice does a Set variable or a Pause no harm, so either goes on with the visit it was saved in.
+    // Running a Set variable or a Pause twice does no harm, so either one continues the visit it was saved in.
     [Fact]
     public async Task RunsAResumableStepFoundRunningAgain()
     {
@@ -430,8 +433,8 @@ public sealed class TreeEngineTests
         Assert.Equal("Yes", run.Result.State.Variables[MachineVariableNames.LastStepFailed]);
     }
 
-    // A stop in the second time through a repeat keeps the Running mark and the iteration, and the resumed run fails
-    // the step as interrupted.
+    // A stop during a repeat's second iteration keeps the Running mark and the iteration. The resumed run fails the
+    // step as interrupted.
     [Fact]
     public async Task StopsInsideARepeatAndKeepsTheRunningMark()
     {
@@ -473,8 +476,7 @@ public sealed class TreeEngineTests
         Assert.Equal(["Repeat Failed 1 x2", "Body Failed 2"], Lines(resumed.State));
     }
 
-    // A failure goes up through the containers to the nearest one that lets the run go on, and the run goes on after
-    // it.
+    // A failure goes up through the containers to the nearest one with ContinueOnError. The run continues after it.
     [Fact]
     public async Task GoesOnAfterTheNearestAncestorThatAllowsAFailure()
     {
@@ -503,8 +505,8 @@ public sealed class TreeEngineTests
         Assert.Equal("diskpart.exe is missing.", run.Result.State.Steps[1].Error);
     }
 
-    // A file an agent of version 1 or 2 wrote: the run goes on at NextIndex and saves Format 1 again, changing only
-    // what the engine of version 2 changed, without a member of a tree and without the run variables of version 3.
+    // A file written by a version 1 or 2 agent. The run continues at NextIndex and saves Format 1 again. It only
+    // changes what the version 2 engine changed, without any tree members or version 3's run variables.
     [Fact]
     public async Task ResumesAFormat1FileAsBefore()
     {
@@ -552,8 +554,9 @@ public sealed class TreeEngineTests
         Assert.Equal(store.Latest, Json(result.State));
     }
 
-    // The engine runs a step without a phase of its own in the phase the run is in, which for a flat document is the
-    // phase SequencePhases gives it, even after a skipped step of the other phase, since the phase is checked first.
+    // The engine runs a step that doesn't ask for a phase in the run's current phase. For a flat document that's the
+    // phase SequencePhases gives it. That holds even after a skipped step of the other phase, because the phase is
+    // checked first.
     [Fact]
     public async Task RunsAFlatDocumentInThePhasesSequencePhasesGives()
     {
@@ -604,7 +607,8 @@ public sealed class TreeEngineTests
         return blob ?? throw new InvalidOperationException("The step did not run.");
     }
 
-    // Runs as the agent does: after a restart from the latest blob, after a hand-over from it in the other phase.
+    // Runs the way the agent does. After a restart it resumes from the latest blob, and after a hand-over from that
+    // blob in the other phase.
     private static async Task<Driven> DriveAsync(SequenceState state, IReadOnlyDictionary<Guid, Func<StepContext, StepResult>> behaviours)
     {
         BlobStore store = new();

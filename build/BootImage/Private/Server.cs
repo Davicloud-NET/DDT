@@ -9,8 +9,8 @@ using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
-// DDT's API for the boot image build, trusting the pinned root and no other. C# 5 and the .NET Framework's X509Chain,
-// so Windows PowerShell 5.1 compiles and runs it too.
+// Calls DDT's API for the boot image build and trusts only the pinned root. Written in C# 5 against the .NET
+// Framework's X509Chain, so Windows PowerShell 5.1 can compile and run it too.
 public static class DdtBootImageServer
 {
     public static HttpClient Connect(byte[] rootCertificate, string token)
@@ -54,8 +54,8 @@ public static class DdtBootImageServer
         }
     }
 
-    // The chain the server presented only lends its intermediates. The chain is built again with the pinned root as
-    // the one root there is, and its top must be that root.
+    // Only the intermediates are taken from the chain the server presented. The chain is built again with the pinned
+    // root as the only root, and its top must be that root.
     private static bool IsPinned(X509Certificate2 root, X509Certificate2 certificate, X509Chain presented, SslPolicyErrors errors)
     {
         SslPolicyErrors refused = SslPolicyErrors.RemoteCertificateNameMismatch | SslPolicyErrors.RemoteCertificateNotAvailable;

@@ -4,6 +4,6 @@
 
 namespace DDT.Server.Accounts;
 
-// What the checks of a sequence need of a stored account: where it may go, and whether it has a password this server
-// can read. Never the password.
+// What the sequence checks need to know about a stored account: where it may be used, and whether it has a password
+// this server can read. It never holds the password itself.
 public sealed record AccountFacts(string Name, string? Domain, IReadOnlyList<string> Hosts, bool RunAs, bool PasswordSet, bool PasswordReadable);

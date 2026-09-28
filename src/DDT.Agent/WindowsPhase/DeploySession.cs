@@ -9,8 +9,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.WindowsPhase;
 
-// DDT's session in the installed Windows: Windows signs in by itself as DDTDeploy, a standard account only the run uses,
-// whose shell is DDT's console, so the machine shows the run. The steps still run in the service as SYSTEM.
+// DDT's session in the installed Windows. Windows signs in by itself as DDTDeploy, a standard account only the run
+// uses. Its shell is DDT's console, so the machine shows the run. The steps still run in the service as SYSTEM.
 public sealed class DeploySession(
     string windowsRoot,
     ISessionAccounts accounts,
@@ -53,9 +53,9 @@ public sealed class DeploySession(
     public static string ConsolePathIn(string windowsRoot) =>
         Path.Combine(windowsRoot, "DDT", WindowsHandOver.ConsoleDirectory, ConsolePipe.FileName);
 
-    // In Windows PE, once the console is staged: setup signs in as DDTDeploy once, at the end of the out-of-box
-    // experience, through the answer file's AutoLogon. False without an answer file, as when someone at the machine is to
-    // finish setup; then the run shows only on the server.
+    // Called in WinPE once the console is staged. Setup signs in as DDTDeploy once, at the end of the out-of-box
+    // experience, through the answer file's AutoLogon. Returns false without an answer file, as when someone at the
+    // machine finishes setup. Then the run only shows on the server.
     public static async Task<bool> PlanAsync(string windowsRoot, AgentLog log, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(log);
@@ -75,8 +75,8 @@ public sealed class DeploySession(
         return true;
     }
 
-    // At every start of the service, from the first one during setup. The profile comes before the first sign-in, so
-    // its own settings can name the console as its shell.
+    // Called at every start of the service, from the first one during setup. The profile is created before the first
+    // sign-in, so its settings can name the console as its shell.
     public async Task PrepareAsync(CancellationToken cancellationToken)
     {
         string console = ConsolePathIn(windowsRoot);
@@ -111,7 +111,7 @@ public sealed class DeploySession(
         }
     }
 
-    // Takes over the sign-in settings for the restarts the run still has; until setup has finished they are setup's.
+    // Takes over the sign-in settings for the restarts the run still has. Until setup has finished, setup owns them.
     public void SetupFinished()
     {
         try
@@ -123,8 +123,8 @@ public sealed class DeploySession(
                     return;
                 }
 
-                // The account still has the password it was made with until the session is up, and the LSA secret
-                // must hold it before the key stops holding one.
+                // The account keeps the password it was created with until the session is up. The LSA secret must
+                // hold that password before the Winlogon key stops holding one.
                 if (file.Password is { } password)
                 {
                     accounts.SetAutoLogonPassword(password);
@@ -145,8 +145,8 @@ public sealed class DeploySession(
         }
     }
 
-    // Once per start of the service, when the session's console connects: Windows has signed in with the password, so
-    // the next start of Windows gets another.
+    // Called once per start of the service, when the session's console connects. Windows has signed in with the
+    // password, so the next start of Windows gets a new one.
     public void SessionIsUp()
     {
         try
@@ -170,7 +170,8 @@ public sealed class DeploySession(
         }
     }
 
-    // The machine's settings go back before the account is disabled, its sessions end, and it goes with its profile.
+    // The machine's settings are restored first. Then the account is disabled, its sessions end, and it's deleted with
+    // its profile.
     public async Task<bool> EndAsync(bool signOut, CancellationToken cancellationToken)
     {
         DeploySessionFile? file = await _store.LoadAsync(cancellationToken).ConfigureAwait(false);
@@ -205,8 +206,8 @@ public sealed class DeploySession(
         return true;
     }
 
-    // With the password the answer file signs in with, or, once that was replaced, with another that SetupFinished
-    // makes the auto-logon password.
+    // Creates the account with the password the answer file signs in with. If that was already replaced, it uses a new
+    // one, which SetupFinished makes the auto-logon password.
     private async Task<DeploySessionFile> CreateAccountAsync(DeploySessionFile file, CancellationToken cancellationToken)
     {
         string password = file.Password ?? SessionPassword.New();
@@ -223,7 +224,7 @@ public sealed class DeploySession(
         return file;
     }
 
-    // A new password for the account and the LSA secret, in that order, which the file no longer needs to know.
+    // Sets a new password for the account and the LSA secret, in that order. The file no longer needs to know it.
     private void Renew(DeploySessionFile file)
     {
         string password = SessionPassword.New();

@@ -20,7 +20,7 @@ export function useRunHistory(filter: RunFilter, query: string) {
     signature: (item) => item.run.state,
     tone: (item) => runStateTone[item.run.state],
   });
-  // The counts cover every state, so they come from the first page of the unfiltered state.
+  // The counts cover every state, so they come from the first page of the unfiltered history.
   const counts = useInfiniteQuery({
     ...runHistoryQuery({ states: [], query }),
     enabled: filter !== "all",

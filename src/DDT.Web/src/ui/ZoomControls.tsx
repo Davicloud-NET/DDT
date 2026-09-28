@@ -17,7 +17,7 @@ const controlClass =
   "hover:bg-hover pressed:bg-key-quiet-pressed focus-visible:outline-2 focus-visible:-outline-offset-2 " +
   "focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-45";
 
-// The zoom keys in a canvas's corner, with the scale between them and the page's own keys after them.
+// The zoom buttons in a canvas's corner, with the scale between them and the page's own buttons after them.
 export function ZoomControls({
   scale,
   onZoom,

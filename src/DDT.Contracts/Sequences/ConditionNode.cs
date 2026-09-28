@@ -6,8 +6,9 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// A condition as a tree: groups of parts that must all, any or none hold, and tests at the leaves. A step's When, an
-// IF's Test, a Repeat's Until and a rule's When are one. The discriminator values are stored, so they never change.
+// A condition as a tree. Groups hold parts that must all, any or none hold, and tests sit at the leaves. A step's
+// When, an IF's Test, a Repeat's Until and a rule's When are all conditions. The discriminator values are stored, so
+// they never change.
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(AllCondition), "all")]
 [JsonDerivedType(typeof(AnyCondition), "any")]

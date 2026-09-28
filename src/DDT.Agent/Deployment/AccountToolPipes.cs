@@ -9,7 +9,7 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// The two output pipes of a tool started as an account and NUL as its input: the only handles it inherits.
+// The two output pipes of a tool started as an account, and NUL as its input. These are the only handles it inherits.
 [SupportedOSPlatform("windows")]
 internal sealed unsafe class AccountToolPipes : IDisposable
 {
@@ -39,7 +39,8 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         return new AccountToolPipes(outputRead, outputWrite, errorRead, errorWrite, input);
     }
 
-    // The child's ends, and the attribute list that lets it inherit those alone, whatever else the agent holds open.
+    // Sets up the child's ends, and the attribute list that lets it inherit only those, whatever else the agent holds
+    // open.
     public StartupInfoEx StartupInfo(char* desktop)
     {
         _handleList = HandleList(_outputWrite, _errorWrite, _input);
@@ -66,7 +67,8 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         }
     }
 
-    // Closes the parent's copies of the child's ends, so a read ends when the child alone still holds the write end.
+    // Closes the parent's copies of the child's ends. Then only the child holds the write ends, and a read ends once
+    // the child closes them.
     public (FileStream Output, FileStream Error) TakeReadEnds()
     {
         _outputWrite.Dispose();
@@ -76,7 +78,7 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         return (new FileStream(_outputRead, FileAccess.Read), new FileStream(_errorRead, FileAccess.Read));
     }
 
-    // For a start that failed; after TakeReadEnds the streams own the read ends.
+    // For a start that failed. After TakeReadEnds the streams own the read ends.
     public void Dispose()
     {
         _outputWrite.Dispose();

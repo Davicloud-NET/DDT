@@ -19,8 +19,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Other tests in the class write audit rows of their own, so each test finds its rows by an action or a subject only it
-// uses.
+// Other tests in the class write their own audit rows.
+// So each test finds its rows by an action or a subject that only it uses.
 public sealed class AuditLogTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private const string Audit = "/api/audit";
@@ -173,7 +173,8 @@ public sealed class AuditLogTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(AuditActorKind.User, uploaded.ActorKind);
         Assert.Equal(uploaded, Assert.Single((await PageAsync($"subject={package.Id:D}")).Items));
 
-        // Something the operator does hear, pushed after the upload's rows, so the rows would have arrived by then.
+        // Waits for something the operator does hear, which is pushed after the upload's rows.
+        // So the rows would have arrived by then.
         using DeployingMachine machine = await DeployingMachine.RegisterAsync(application);
         await LiveListener.NextAsync(operatorMachines, m => m.Id == machine.Id);
         await LiveListener.NextAsync(pushed, rows => rows.Any(r => r.SubjectId == machine.Id.ToString("D")));
@@ -181,7 +182,8 @@ public sealed class AuditLogTests(DdtApplication application) : IClassFixture<Dd
         Assert.False(overheard.TryRead(out _));
     }
 
-    // A save in a transaction that rolls back stored nothing, and one that commits is pushed with the commit.
+    // A save in a transaction that rolls back stores nothing, so nothing is pushed.
+    // A save in one that commits is pushed with the commit.
     [Fact]
     public async Task PushesTheRowsOfATransactionWhenItCommits()
     {

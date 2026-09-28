@@ -8,12 +8,12 @@ using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace DDT.Server.Authentication;
 
-// The groups an identity from the provider is in, as the values of its groups claim. The map only compares strings, so
-// names, paths and object ids all work.
+// Reads the groups of an identity from the provider, as the values of its groups claim. The map only compares strings,
+// so names, paths and object ids all work.
 public static class SingleSignOnGroups
 {
-    // One claim per group, as the token handler makes of a JSON array, or one claim that holds the array itself. The
-    // handler may have renamed the claim through its inbound map, so that name counts too.
+    // Accepts one claim per group, which is what the token handler makes of a JSON array, or one claim that holds the
+    // array itself. The handler may have renamed the claim through its inbound map, so that name counts too.
     public static IReadOnlyList<string> Read(ClaimsPrincipal principal, string claimType)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -40,8 +40,8 @@ public static class SingleSignOnGroups
         return [.. groups.Distinct(StringComparer.Ordinal)];
     }
 
-    // The OpenID Connect handler keeps only the members of the userinfo response it maps, and the groups are not among
-    // them, while some providers send them only there.
+    // The OpenID Connect handler only keeps the userinfo members it maps, and the groups aren't among them. Some
+    // providers only send the groups there.
     public static void CopyFromUserInformation(JsonElement userInformation, ClaimsIdentity identity, string claimType, string issuer)
     {
         ArgumentNullException.ThrowIfNull(identity);

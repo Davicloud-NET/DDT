@@ -22,7 +22,7 @@ export function ApplyImageFields({
 }: KindFieldsProps<ApplyImageStep>) {
   const windowsImages = catalog.images.filter((image) => image.kind === "Wim");
   const listed = windowsImages.some((image) => image.id === step.imageId);
-  // An image this step cannot install, such as a raw disk image chosen in an imported sequence, or one deleted.
+  // An image this step can't install, such as a raw disk image chosen in an imported sequence, or a deleted one.
   const other = catalog.images.find((image) => image.id === step.imageId);
   const otherName = other?.name ?? "";
   const choices: Choice[] = [

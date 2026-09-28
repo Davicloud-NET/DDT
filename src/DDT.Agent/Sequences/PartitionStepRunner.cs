@@ -8,7 +8,7 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Erases the run's disk and partitions it; the new partitions' ids find them again after a restart. From here on the
+// Erases the run's disk and partitions it. The new partitions' ids find them again after a restart. From here on the
 // store writes the run's state and token into the run's directory on the Windows volume.
 public sealed class PartitionStepRunner(IDiskPartitioner partitioner, RunSession session, FileRunStateStore store, AgentLog log, bool dryRun)
     : IStepKindRunner<PartitionStep>
@@ -28,7 +28,7 @@ public sealed class PartitionStepRunner(IDiskPartitioner partitioner, RunSession
         session.Volumes = volumes;
         string directory = session.RunDirectory!;
 
-        // Closed to all but SYSTEM, it would lock the person running a dry run out of their own folder.
+        // If only SYSTEM could open it, the person running a dry run would be locked out of their own folder.
         if (dryRun)
         {
             Directory.CreateDirectory(directory);
@@ -39,8 +39,8 @@ public sealed class PartitionStepRunner(IDiskPartitioner partitioner, RunSession
             SystemOnlyDirectory.Create(directory);
         }
 
-        // Before the step ends, whose Done is the first state that has to survive a restart. Like the engine's saves,
-        // without the stop token: a stop must not leave the disk erased and the run without its files.
+        // Before the step ends, because its Done is the first state that has to survive a restart. Like the engine's
+        // saves, this runs without the stop token. A stop must not leave the disk erased and the run without its files.
         await store.AttachAsync(new RunFiles(directory, log), CancellationToken.None).ConfigureAwait(false);
         context.Progress.Report(100);
 

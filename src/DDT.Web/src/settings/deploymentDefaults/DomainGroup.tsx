@@ -13,7 +13,7 @@ import { valueAt } from "../valuePath";
 
 import type { DeploymentForm, DeploymentSettings } from "./deploymentSettings";
 
-// The domain a Join the domain step joins. The server checks with the saved settings, so the check names the saved
+// The domain a Join the domain step joins. The server's check uses the saved settings, so it names the saved
 // organizational unit, not the one being typed.
 export function DomainGroup({
   form,

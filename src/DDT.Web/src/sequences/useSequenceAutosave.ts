@@ -12,7 +12,7 @@ import { draftOf, sameDraft, saveRequestOf, type SequenceDraft } from "./sequenc
 import { upsertSummary } from "./sequenceList";
 import { saveSequence, sequenceQuery, type SequenceView } from "./sequences";
 
-// A 409 answers with the copy the server holds, so the page need not read it again.
+// A 409 comes with the server's copy, so the page doesn't have to fetch it again.
 function isView(body: unknown): body is SequenceView {
   return (
     typeof body === "object" &&
@@ -23,8 +23,8 @@ function isView(body: unknown): body is SequenceView {
   );
 }
 
-// Saves a sequence's draft in place, and puts each saved copy into the cache. ownRevisions are the revisions this
-// page's own saves made, so a copy the hub brings in is told apart from someone else's.
+// Saves a sequence's draft in place and puts each saved copy into the cache. ownRevisions are the revisions this
+// page's own saves made. They tell a copy the hub brings in apart from someone else's.
 export function useSequenceAutosave(initial: SequenceView, onTakenIn: () => void) {
   const queryClient = useQueryClient();
   const id = initial.id;
@@ -36,7 +36,7 @@ export function useSequenceAutosave(initial: SequenceView, onTakenIn: () => void
       try {
         return await saveSequence(id, saveRequestOf(draft, revision), keepalive);
       } catch (error) {
-        // Someone else saved first. Their copy comes with the refusal; only without it is it read.
+        // Someone else saved first. Their copy comes with the refusal. It's only fetched if the refusal lacks it.
         if (error instanceof ApiError && error.status === 409) {
           if (isView(error.problem)) {
             queryClient.setQueryData(sequenceQuery(id).queryKey, error.problem);

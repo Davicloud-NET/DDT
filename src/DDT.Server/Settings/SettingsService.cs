@@ -11,8 +11,8 @@ using Microsoft.Extensions.Logging;
 namespace DDT.Server.Settings;
 
 // Registered after DatabaseInitializer, so the schema exists. It imports and loads the store as it starts, before the
-// server binds its listeners, so the first request sees the stored settings; then it polls every 15 seconds for other
-// processes' saves and applies.
+// server binds its listeners, so the first request sees the stored settings. After that it polls every 15 seconds for
+// other processes' saves and applies.
 public sealed partial class SettingsService(
     IServiceScopeFactory scopes,
     DdtSettings settings,
@@ -48,8 +48,8 @@ public sealed partial class SettingsService(
         base.Dispose();
     }
 
-    // Reads what changed since the last look without waiting for the timer. A failed look must not stop the host; the
-    // snapshot loaded before stays in force.
+    // Reads what changed since the last check, without waiting for the timer. A failed check must not stop the host.
+    // The snapshot loaded before stays in force.
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
         await _refresh.WaitAsync(cancellationToken).ConfigureAwait(false);

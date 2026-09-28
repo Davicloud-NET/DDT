@@ -14,7 +14,7 @@ export type SaveFailure =
   | { kind: "refused"; message: string; problem: ApiProblem | null }
   | { kind: "retry"; message: string };
 
-// What becomes of a copy read from the server: theirs keeps it beside a conflict, adopt shows it in place of the
+// What happens to a copy read from the server. theirs keeps it next to a conflict, adopt shows it in place of the
 // page's copy, and conflict stops saving until the page chooses.
 export type Reconciliation = "ignore" | "theirs" | "adopt" | "conflict";
 
@@ -45,7 +45,7 @@ function stoppedMessage(status: number, fallback: string): string {
   }
 }
 
-// conflicts: whether a 409 says that someone else saved a newer revision, rather than refusing this value.
+// conflicts says whether a 409 means someone else saved a newer revision, rather than a refusal of this value.
 export function classifyFailure(error: unknown, conflicts: boolean): SaveFailure {
   if (error instanceof ApiError && error.status === 409 && conflicts) {
     return { kind: "conflict" };
@@ -104,8 +104,8 @@ export function dueIn(
   return Math.max(0, Math.min(lastEditAt + debounce, (firstEditAt ?? now) + maxWait) - now);
 }
 
-// What a flush waiting for everything to be saved learns: true once nothing is unsaved, false once saving failed or
-// cannot go on, and null while a save is due or on its way.
+// What a flush that waits for everything to be saved learns. True once nothing is unsaved, false once saving failed
+// or can't continue, and null while a save is due or on its way.
 export function flushOutcome(dirty: boolean, state: AutosaveState["kind"]): boolean | null {
   if (!dirty) {
     return true;

@@ -144,8 +144,8 @@ function EditorStub() {
   return <p>{`Editing ${sequenceId ?? ""}`}</p>;
 }
 
-// Answers "METHOD path" from the handlers, the current user and the CSRF token. Lists nobody set are empty, and
-// everything else is a 404.
+// Answers "METHOD path" from the handlers, the current user and the CSRF token. Lists without a handler are empty,
+// and everything else is a 404.
 function serve(user: CurrentUser, handlers: Record<string, Handler>) {
   const requests: Sent[] = [];
   const empty = ["GET /api/rules", "GET /api/machines"];
@@ -222,7 +222,7 @@ function serve(user: CurrentUser, handlers: Record<string, Handler>) {
   return { requests, queryClient };
 }
 
-// The key in the page's header; an empty list has a second one.
+// The button in the page's header. An empty list has a second one.
 async function openNewSequence() {
   const [key] = await screen.findAllByRole("button", { name: "New task sequence" });
 
@@ -366,7 +366,7 @@ describe("SequencesPage", () => {
     expect(request?.description).toBe(template.description);
     expect(request?.definition.steps.map((step) => step.name)).toEqual(["Partition the disk"]);
     expect(request?.definition.steps[0]?.id).not.toBe(template.definition.steps[0]?.id);
-    // The answer is the list's entry and the editor's first copy.
+    // The server's answer becomes the list entry and the editor's first copy.
     expect(
       queryClient.getQueryData<SequenceSummary[]>(["sequences"])?.map((entry) => entry.name),
     ).toEqual(["Install Windows", "Install Windows 2"]);

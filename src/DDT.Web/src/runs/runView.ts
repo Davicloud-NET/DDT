@@ -52,8 +52,8 @@ export const stepStateLabel: Record<StepState, MessageDescriptor> = {
   Skipped: msg`Skipped`,
 };
 
-// A node of a run's path: its state as its step has it, paused where a Pause step holds the run, and not taken in a
-// branch the run did not go along.
+// A node on a run's path has its step's state. It's paused where a Pause step holds the run, and not taken in a
+// branch the run didn't go down.
 export const pathStateTone: Record<PathState, StateTone> = {
   waiting: "idle",
   running: "run",

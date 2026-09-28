@@ -23,8 +23,8 @@ interface PasswordSettingProps {
   onChange: (action: SecretAction) => void;
 }
 
-// The password, which the page never sees: it says whether one is set, and a new one is typed only to be sent. It is
-// kept as it is, replaced or cleared on save.
+// The password field. The page never sees the password. It only shows whether one is set, and a new one is typed only
+// to be sent. On save the password is kept, replaced or cleared.
 export function PasswordSetting({
   state,
   action,

@@ -28,7 +28,7 @@ public sealed class DeploymentArtifact
 
     public long SizeBytes { get; set; }
 
-    // Unpacked or applied, the bytes it takes on the machine's disk.
+    // The bytes it takes on the machine's disk once unpacked or applied.
     public long ExpandedBytes { get; set; }
 
     public int? WimIndex { get; set; }

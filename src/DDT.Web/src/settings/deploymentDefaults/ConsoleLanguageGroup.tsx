@@ -10,7 +10,7 @@ import { SettingsGroup } from "../parts/SettingsGroup";
 
 import type { DeploymentForm } from "./deploymentSettings";
 
-// The language names stay untranslated, as each language calls itself.
+// The language names stay untranslated, since each language is named in its own language.
 export function ConsoleLanguageGroup({
   form,
   canChange,

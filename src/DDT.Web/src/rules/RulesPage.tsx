@@ -28,8 +28,8 @@ import { RuleTest } from "./RuleTest";
 import { useRuleDrawer } from "./useRuleDrawer";
 import { useRuleSubjects } from "./useRuleSubjects";
 
-// The rules, one ordered list checked from the top: the first rule that chooses a sequence or sets a value wins it,
-// and every rule that matches gives its machine roles.
+// The rules, as one ordered list that's checked from the top. The first rule that chooses a sequence or sets a value
+// wins it. Every rule that matches gives its machine roles.
 export function RulesPage() {
   const freshness = liveListOptions(useLiveStatus());
   const rules = useQuery({ ...rulesQuery, ...freshness });

@@ -6,11 +6,11 @@ using System.Text.Json.Nodes;
 
 namespace DDT.Server.Settings;
 
-// One row of ddt."SettingsSections" as read, its secrets decrypted.
+// One row of ddt."SettingsSections" as read, with its secrets decrypted.
 public sealed record StoredSettingsSection(
     string Section,
     int SchemaVersion,
-    // Only the fields ever written; an absent one takes its configured value or its default.
+    // Only the fields that were ever written. An absent field takes its configured value or its default.
     JsonObject Values,
     IReadOnlyDictionary<string, StoredSecret> Secrets,
     long Version,

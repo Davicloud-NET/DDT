@@ -9,8 +9,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The service's calls to the server: the registration with the run token, the question whether the run goes on, and
-// the run's last report. The network may still be coming up while Windows starts, so each tries again.
+// The service's calls to the server: the registration with the run token, the question whether the run continues, and
+// the run's last report. The network may still be coming up while Windows starts, so each call retries.
 internal sealed class WindowsRunCalls(
     IAgentServer server,
     IMachineIdentityReader identityReader,
@@ -19,7 +19,8 @@ internal sealed class WindowsRunCalls(
     AgentLog log,
     TimeProvider timeProvider)
 {
-    // Every attempt but the first waits a little first. Null when the server no longer runs the run on this machine.
+    // Every attempt but the first waits a little first. Returns null when the server no longer has the run going on
+    // this machine.
     public async Task<WindowsRunContact?> RegisterAsync(string? runToken, Guid runId, int attempt, CancellationToken cancellationToken)
     {
         if (attempt > 0)
@@ -39,7 +40,7 @@ internal sealed class WindowsRunCalls(
         return new WindowsRunContact(registration.MachineId, new DeploymentTokens(token, resumeToken, registration.RunToken ?? runToken), identity);
     }
 
-    // Null when the server could not be asked, which the next registration sorts out.
+    // Returns null when the server couldn't be asked. The next registration sorts that out.
     public async Task<AgentNextResult?> AskAsync(WindowsRunContact contact, CancellationToken cancellationToken)
     {
         try
@@ -80,7 +81,7 @@ internal sealed class WindowsRunCalls(
         }
     }
 
-    // With the identity it registered with. Null when the server has nothing for this service.
+    // Returns the registration with the identity it used. Null when the server has nothing for this service.
     private async Task<(AgentRegistrationResult Registration, MachineIdentity Identity)?> RegisterUntilAnsweredAsync(
         string? runToken,
         CancellationToken cancellationToken)

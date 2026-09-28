@@ -14,7 +14,7 @@ internal sealed record SettingsCaller(HttpContext Context, ReauthenticationToken
 {
     public Actor Actor => SettingsEndpoints.SettingsActor(Context);
 
-    // Whether the request carries a fresh proof of identity, which a change that grants roles or trust, or runs as
-    // SYSTEM on machines, needs.
+    // Whether the request carries a fresh proof of identity. A change needs one if it grants roles or trust, or if it
+    // runs as SYSTEM on machines.
     public Task<bool> ReauthenticatedAsync() => Reauthentication.ValidAsync(Context, Context.User, Users);
 }

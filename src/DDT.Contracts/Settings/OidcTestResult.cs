@@ -6,6 +6,7 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Contracts.Settings;
 
-// Reached: the provider's discovery document was read. RedirectUri is the address to register at the provider. Message
-// is English; Text is the same sentence as a code with its values, for a client in the person's language.
+// Reached means the provider's discovery document was read. RedirectUri is the address to register at the provider.
+// Message is in English. Text holds the same sentence as a code with its values, so a client can show it in the
+// person's language.
 public sealed record OidcTestResult(bool Reached, string? Issuer, string RedirectUri, string Message, ServerMessage? Text = null);

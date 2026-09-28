@@ -30,7 +30,7 @@ public sealed class OidcSettingsSection() : SettingsSectionDefinition<OidcOption
         new("GroupRoleMap", SettingFieldKind.Collection, reauthenticate: true),
     ])
 {
-    // Where the client secret goes: a stored secret is kept only while this stays as it is.
+    // The field that decides where the client secret goes. A stored secret is only kept while it stays the same.
     public static IReadOnlyList<string> Destination { get; } = ["Authority"];
 
     protected override JsonTypeInfo<OidcOptions> TypeInfo => SettingsJsonContext.Default.OidcOptions;

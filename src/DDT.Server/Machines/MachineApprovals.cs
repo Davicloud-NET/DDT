@@ -14,7 +14,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Machines;
 
-// An approval on the Machines page. With the sequence the page showed a rule choosing, the approval also runs it.
+// An approval on the Machines page. If the request names the sequence the page showed a rule choosing, the approval
+// runs it too.
 internal sealed class MachineApprovals(
     DdtDbContext database,
     MachineTransitions transitions,

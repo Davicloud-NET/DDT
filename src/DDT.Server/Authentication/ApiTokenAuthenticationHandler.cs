@@ -14,8 +14,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Authentication;
 
-// Checks a token on every request, so it stops at once when it is revoked or expires, or its user is disabled or locked
-// out. Its role is the lower of its own and its user's highest now.
+// Checks the token on every request, so it stops working at once when it's revoked or expires, or when its user is
+// disabled or locked out. The token gets the lower of its own role and its user's current highest role.
 public sealed class ApiTokenAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory loggerFactory,
@@ -86,8 +86,8 @@ public sealed class ApiTokenAuthenticationHandler(
             return $"The account of the API token {token.Name} is disabled or locked out.";
         }
 
-        // An account that still has to replace a password an administrator was shown reaches nothing but its Account
-        // page with its session, so its tokens reach nothing either.
+        // An account that still has to replace a password an administrator has seen can only reach its Account page
+        // with its session. So its tokens can't reach anything either.
         bool mustChangePassword = await database.UserClaims
             .AnyAsync(claim => claim.UserId == user.Id && claim.ClaimType == DdtClaimTypes.MustChangePassword, Context.RequestAborted)
             .ConfigureAwait(false);
@@ -121,8 +121,8 @@ public sealed class ApiTokenAuthenticationHandler(
             DdtAuthenticationSchemes.ApiToken);
     }
 
-    // A script may call many times a second. Written directly rather than through a save, which would reach the audit
-    // interceptor for nothing, and only once a minute.
+    // A script may call many times a second, so the last use is only recorded once a minute. It's written directly
+    // instead of through SaveChanges, which would run the audit interceptor for nothing.
     private async Task RecordUseAsync(ApiToken token, DdtUser user, DateTimeOffset now)
     {
         if (token.LastUsedUtc is { } last && now - last < ApiTokenLimits.LastUsedInterval)

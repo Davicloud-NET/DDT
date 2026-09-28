@@ -9,7 +9,7 @@ using DDT.Server.Certificates;
 
 namespace DDT.Server.Tests;
 
-// A certs folder of its own, laid out as build/compose.yaml configures the store.
+// A separate certs folder, laid out the way build/compose.yaml configures the store.
 public sealed class CertificateFolder : IDisposable
 {
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ddt-certs-" + Guid.NewGuid().ToString("N"));
@@ -20,7 +20,7 @@ public sealed class CertificateFolder : IDisposable
 
     public X509Certificate2 Certificate() => X509Certificate2.CreateFromPemFile(Files.CertificatePath, Files.KeyPath);
 
-    // Puts a pair where the configuration points, as an administrator or an older DDT left it.
+    // Puts a pair where the configuration points, as an administrator or an older DDT version would have left it.
     public static void Write(CertificateFiles files, PemPair pair)
     {
         ArgumentNullException.ThrowIfNull(files);

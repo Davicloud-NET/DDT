@@ -11,8 +11,9 @@ import { liveListOptions, POLL_MS } from "@/live/freshness";
 import { useMachineWatch } from "@/live/useMachineWatch";
 import { machinesQuery } from "@/machines/machines";
 
-// One machine and the run its page shows: the pinned run, else the machine's current or latest run. Changes
-// arrive live: the machine list follows the machine and its current run, and step changes patch the run.
+// One machine and the run its page shows: the pinned run, or else the machine's current or latest run.
+// Changes arrive live. The machine list tracks the machine and its current run, and step changes patch the
+// run.
 export function useRunDetail(machineId: string, pinnedRunId: string | null) {
   const queryClient = useQueryClient();
 
@@ -32,7 +33,7 @@ export function useRunDetail(machineId: string, pinnedRunId: string | null) {
       void queryClient.invalidateQueries({
         queryKey: machineDeploymentsQuery(machineId).queryKey,
       });
-      // Every run read so far, of which only the shown one is read again.
+      // Marks every run read so far as stale. Only the shown one is read again.
       void queryClient.invalidateQueries({ queryKey: ["deployment"] });
     },
   });

@@ -11,7 +11,7 @@ namespace DDT.MachineConsole.Agent;
 // IAgentConnection over the protocol's ConsoleClient.
 public sealed class ClientConnection(ConsoleClient client) : IAgentConnection
 {
-    // How long the agent's pipe may take to appear and say hello, as the agent waits for the console.
+    // How long the agent's pipe may take to appear and say hello. The agent waits just as long for the console.
     public static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(30);
 
     // Throws ConsoleProtocolException when the agent refuses this console, and TimeoutException or IOException when
@@ -19,8 +19,8 @@ public sealed class ClientConnection(ConsoleClient client) : IAgentConnection
     public static async Task<ClientConnection> ConnectAsync(string pipeName, string program, CancellationToken cancellationToken) =>
         new(await ConsoleClient.ConnectAsync(pipeName, program, ConnectTimeout, cancellationToken).ConfigureAwait(false));
 
-    // In DDT's session the agent runs as SYSTEM, and a pipe SYSTEM owns is one no program of the session can have made.
-    // Throws UnauthorizedAccessException for any other pipe.
+    // In DDT's session the agent runs as SYSTEM. No program in the session can create a pipe that SYSTEM owns, so only
+    // such a pipe is trusted. Throws UnauthorizedAccessException for any other pipe.
     public static async Task<ClientConnection> ConnectToSessionAgentAsync(
         string pipeName,
         string program,

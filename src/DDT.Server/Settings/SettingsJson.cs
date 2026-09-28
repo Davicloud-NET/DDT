@@ -6,7 +6,8 @@ using System.Text.Json.Nodes;
 
 namespace DDT.Server.Settings;
 
-// A field's place in a document of options, by its segments: absent, present with a value, or present as null.
+// Finds a field in a document of options by its segments. The field can be absent, present with a value, or present as
+// null.
 internal static class SettingsJson
 {
     public static bool Has(JsonObject document, SettingField field) => TryGet(document, field.Segments, out _);

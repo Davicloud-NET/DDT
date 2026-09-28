@@ -12,12 +12,12 @@ internal static class FatNames
 {
     public const int ShortNameLength = 11;
 
-    // Characters of a long name held by one long name entry.
+    // How many characters of a long name fit in one long name entry.
     public const int LongNameCharacters = 13;
 
     private const string ShortNameSymbols = "$%'-_@~`!(){}^#&";
 
-    // The checksum a long name entry carries of the short entry it belongs to.
+    // The checksum of a short entry. Its long name entries carry it.
     public static byte Checksum(ReadOnlySpan<byte> shortName)
     {
         byte sum = 0;
@@ -32,7 +32,8 @@ internal static class FatNames
 
     public static int LongNameEntries(string name) => (name.Length + LongNameCharacters - 1) / LongNameCharacters;
 
-    // Where the character at index sits in a long name entry: five from byte 1, six from byte 14 and two from byte 28.
+    // The byte offset of a long name character in its entry. An entry holds five characters from byte 1, six from
+    // byte 14 and two from byte 28.
     public static int LongNameCharacterOffset(int index) => index switch
     {
         < 5 => 1 + (index * 2),
@@ -40,8 +41,8 @@ internal static class FatNames
         _ => 28 + ((index - 11) * 2),
     };
 
-    // The name as the 11 bytes of a short entry, or null when it needs a long name: lower case letters, more than
-    // 8 and 3 characters, or characters an 8.3 name cannot have.
+    // The name as the 11 bytes of a short entry. Returns null when it needs a long name, because it has lower case
+    // letters, more than 8 and 3 characters, or characters an 8.3 name can't have.
     public static byte[]? AsShortName(string name)
     {
         if (name is "." or "..")
@@ -61,8 +62,8 @@ internal static class FatNames
         return Encoding.ASCII.GetBytes(basis.PadRight(8) + extension.PadRight(3));
     }
 
-    // A short name for a name that needs a long one, unique among taken: the first six usable characters, ~ and a
-    // number, and the first three of the extension.
+    // Makes a short name for a name that needs a long one, unique among taken. It's the first six usable characters,
+    // ~ and a number, plus the first three characters of the extension.
     public static byte[] Generate(string name, ISet<string> taken)
     {
         int dot = name.LastIndexOf('.');
@@ -90,8 +91,8 @@ internal static class FatNames
         throw new InvalidOperationException($"No short name is left for {name}.");
     }
 
-    // How a short entry reads: the parts without their padding, lower case where the entry says so, as Windows NT
-    // marks names such as grubx64.efi that fit 8.3 in lower case.
+    // Reads a short entry's name without the padding. A part is lower case when the entry's flags say so. Windows NT
+    // sets those flags for lower case names that fit 8.3, such as grubx64.efi.
     public static string Read(ReadOnlySpan<byte> entry)
     {
         char[] bytes = new char[ShortNameLength];

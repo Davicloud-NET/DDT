@@ -22,8 +22,8 @@ export interface BootImageBuild {
   agentVersion: string | null;
 }
 
-// The driver packages flagged for Windows PE, and the last build. stale says that the build's drivers differ from
-// the flagged ones, or that drivers are flagged and nothing was built yet.
+// The driver packages flagged for WinPE, and the last build. stale is true when the build's drivers differ from the
+// flagged ones, or when drivers are flagged and nothing was built yet.
 export interface BootImageView {
   drivers: (BootImageDriver & { sizeBytes: number })[];
   driverSetHash: string | null;
@@ -36,8 +36,8 @@ export const bootImageQuery = queryOptions({
   queryFn: () => apiGet<BootImageView>("/api/boot-image"),
 });
 
-// Build-BootImage.ps1 with this server's address. An API token lets the script download the flagged drivers; the root
-// certificate is the one the agent pins.
+// The Build-BootImage.ps1 command line for this server. An API token lets the script download the flagged drivers. The
+// root certificate is the one the agent pins.
 export function buildCommand(serverUrl: string, withDrivers: boolean): string {
   return [
     ".\\build\\Build-BootImage.ps1",

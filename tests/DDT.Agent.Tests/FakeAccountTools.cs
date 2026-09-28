@@ -6,8 +6,9 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// Signs accounts in and connects their shares without a real logon or server, in one journal, so a test sees the shares
-// connect before a step and go after it, even when it fails, and the account sign out. Passwords are recorded nowhere.
+// Signs accounts in and connects their shares without a real logon or server, all in one journal. A test sees the
+// shares connect before a step and disconnect after it, even when it fails, and the account sign out. Passwords are
+// never recorded.
 internal sealed class FakeAccountTools
 {
     private readonly List<string> _events = [];

@@ -4,8 +4,8 @@
 
 namespace DDT.Core.Disks;
 
-// A raw disk image's partition table, its EFI system partition and the files there that firmware starts. BootProblem
-// says why boot files could not be read; UnreadableBootFiles names those that are there but unreadable.
+// A raw disk image's partition table, its EFI system partition and the boot files there that firmware starts.
+// BootProblem says why boot files couldn't be read. UnreadableBootFiles names the ones that exist but can't be read.
 public sealed record RawImageInfo(
     long SizeBytes,
     GptLayout Table,
@@ -14,8 +14,8 @@ public sealed record RawImageInfo(
     string? BootProblem,
     IReadOnlyList<string>? UnreadableBootFiles = null)
 {
-    // The smallest disk the image can be written to: all of it, in whole sectors, and after its last partition room
-    // for the backup table DDT writes at the disk's end.
+    // The smallest disk the image fits on. It needs the whole image in whole sectors, and room after the last
+    // partition for the backup table DDT writes at the disk's end.
     public long MinimumDiskBytes =>
         Math.Max(
             (SizeBytes + GptLayout.SectorSize - 1) / GptLayout.SectorSize * GptLayout.SectorSize,

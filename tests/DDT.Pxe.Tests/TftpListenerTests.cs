@@ -21,7 +21,7 @@ public sealed class TftpListenerTests : IDisposable
 
     public TftpListenerTests()
     {
-        // Two windows of four at the 1380 octet cap, the last block short, which ends the transfer.
+        // Two windows of four blocks at the 1380 octet cap. The last block is short, which ends the transfer.
         _content = new byte[8000];
         Random.Shared.NextBytes(_content);
 

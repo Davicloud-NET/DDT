@@ -8,7 +8,7 @@ import { Button as AriaButton } from "react-aria-components";
 
 import { buttonClass } from "@/ui/buttonClass";
 
-// The keys that wrap the node in a group, unwrap a container and remove the node.
+// The buttons that wrap the node in a group, unwrap a container and remove the node.
 export function NodeKeys({
   name,
   container,

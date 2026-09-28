@@ -7,8 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// After an answer the question stays, its keys off, until the agent asks again or moves on, since the agent checks
-// every answer itself.
+// After an answer the question stays, with its keys off, until the agent asks again or moves on. The agent checks every
+// answer itself.
 public abstract class QuestionViewModel : ScreenViewModel
 {
     private readonly Action<int, ConsoleAnswer> _answer;
@@ -51,10 +51,11 @@ public abstract class QuestionViewModel : ScreenViewModel
 
     public virtual bool CanGoBack => false;
 
-    // Takes the next question of the same kind in place, keeping what was typed; false where it needs a new screen.
+    // Takes the next question of the same kind in place and keeps what was typed. Returns false if it needs a new
+    // screen.
     public virtual bool Accept(int id, ConsoleQuestion question) => false;
 
-    // Each state of the agent while the question is on the screen, for a question that shows some of it.
+    // Gets each state of the agent while the question is on screen, for questions that show part of it.
     public virtual void Update(ConsoleState state)
     {
     }
@@ -64,7 +65,7 @@ public abstract class QuestionViewModel : ScreenViewModel
 
     protected virtual ConsoleAnswer? BackAnswer() => new(Back: true);
 
-    // After sending: what was typed and must not stay on the screen, such as a password, goes.
+    // After sending, clears what was typed and must not stay on the screen, like a password.
     protected virtual void Sent()
     {
     }

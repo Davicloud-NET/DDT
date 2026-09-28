@@ -11,7 +11,7 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.Sequences;
 
 // How a run's phase ends: done, restarting, refused or failed. The order of the last log lines, the reports, the boot
-// order and the restart marker keeps a machine from starting what the run did not finish, so it must not change.
+// order and the restart marker keeps a machine from starting what the run didn't finish. So that order must not change.
 internal sealed class RunEnding(
     RunBootOrder bootOrder,
     IRebooter rebooter,
@@ -23,11 +23,11 @@ internal sealed class RunEnding(
     private const int MaxFinalFlushes = 20;
     private const int MaxFinalFlushFailures = 3;
 
-    // Recorded as soon as the engine asks for a restart, whose step the state already has as done.
+    // Recorded as soon as the engine asks for a restart. The state already has that step as done.
     public void RecordWindowsPERestart() => restartMarker.Set(RestartInto.WindowsPE);
 
-    // A restart Windows PE recorded that never happened, as the agent was stopped or wpeutil failed, comes before
-    // anything else. Null when none is due; a start that is stopped already leaves it due.
+    // If WinPE recorded a restart that never happened, because the agent was stopped or wpeutil failed, it happens
+    // first. Returns null when none is due. A start that is already stopped leaves it due.
     public async Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken)
     {
         if (restartMarker.Due is not { } into)
@@ -50,9 +50,9 @@ internal sealed class RunEnding(
         return result.Outcome;
     }
 
-    // The log goes while the machine may still send it, and the Done report is the last call the server gets. In
-    // Windows there is no restart here: the agent removes itself first, and the Done report waits on the disk with the
-    // token until the server has it.
+    // The log is sent while the machine still may, and the Done report is the last call the server gets. In Windows
+    // there's no restart here. The agent removes itself first, and the Done report waits on disk with the token until
+    // the server has it.
     public async Task<RunResult> FinishAsync(SequenceRun run, CancellationToken cancellationToken)
     {
         log.Information(run.InWindows ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
@@ -86,8 +86,8 @@ internal sealed class RunEnding(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The state and token are on the disk for the next start. After the hand-over the installed Windows would go on
-    // with the run and use its answer file, so there a refused token keeps it from starting.
+    // The state and token are on disk for the next start. After the hand-over the installed Windows would continue the
+    // run and use its answer file. So for a hand-over, a refused token keeps it from starting.
     public async Task<RunResult> RestartAsync(SequenceRun run, RestartInto into, CancellationToken cancellationToken)
     {
         bool handingOver = !run.InWindows && into == RestartInto.Windows;
@@ -133,8 +133,8 @@ internal sealed class RunEnding(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The state and answer file stay for the registration with the run token to decide on; until then the machine
-    // starts from the network.
+    // The state and answer file stay, and the registration with the run token decides what happens to them. Until then
+    // the machine starts from the network.
     public async Task<RunResult> TokenRejectedAsync(SequenceRun run)
     {
         await bootOrder.RestoreAsync(run).ConfigureAwait(false);
@@ -170,7 +170,7 @@ internal sealed class RunEnding(
         return new RunResult(outcome);
     }
 
-    // The run is over: nothing of it may start Windows or resume it.
+    // The run is over. Nothing left of it may start Windows or resume it.
     public async Task<RunResult> FailAsync(SequenceRun run, string error, CancellationToken cancellationToken)
     {
         log.Error($"The run failed: {error}");
@@ -183,7 +183,7 @@ internal sealed class RunEnding(
         return await ReportFailedAsync(run, run.Store.Files, report, cancellationToken).ConfigureAwait(false);
     }
 
-    // A failure the server was not told of goes back to the loop, which reports it once it can.
+    // A failure the server wasn't told about goes back to the loop, which reports it once it can.
     public async Task<RunResult> ReportFailedAsync(SequenceRun run, RunFiles? files, AgentRunReport report, CancellationToken cancellationToken)
     {
         try
@@ -217,8 +217,9 @@ internal sealed class RunEnding(
         }
     }
 
-    // In Windows PE the run's files go at once, token first. In Windows the token stays with the report until the server
-    // has it, as only the next start could tell the server after a stop; if the report cannot be kept, the files go too.
+    // In WinPE the run's files are deleted right away, token first. In Windows the token stays with the report until
+    // the server has it, because after a stop only the next start could tell the server. If the report can't be kept,
+    // the files are deleted too.
     public async Task EndRunAsync(SequenceRun run, RunFiles? files, AgentRunReport report)
     {
         if (files is null)
@@ -243,7 +244,7 @@ internal sealed class RunEnding(
         files.Discard();
     }
 
-    // Null once the server has the Done report or cannot be told; otherwise how the run ends instead.
+    // Returns null once the server has the Done report or can't be told. Otherwise returns how the run ends instead.
     private async Task<RunResult?> SendDoneAsync(SequenceRun run, AgentRunReport done, CancellationToken cancellationToken)
     {
         try
@@ -298,8 +299,8 @@ internal sealed class RunEnding(
         }
     }
 
-    // The answer file holds passwords, and a machine whose run did not finish must start from the network until it runs
-    // again, not into a Windows without its answer file. A restart into Windows PE the run asked for is not due either.
+    // The answer file holds passwords. A machine whose run didn't finish must start from the network until it runs
+    // again, not into a Windows without its answer file. A restart into WinPE that the run asked for isn't due either.
     private async Task UndoAsync(SequenceRun run)
     {
         if (run.Session.Volumes is { } volumes)
@@ -315,8 +316,8 @@ internal sealed class RunEnding(
         await bootOrder.RestoreAsync(run).ConfigureAwait(false);
     }
 
-    // Until the queue is empty, but never for long: the lines are worth less than the restart that follows. False when
-    // the server refused the token.
+    // Flushes until the queue is empty, but never for long, because the lines are worth less than the restart that
+    // follows. Returns false when the server refused the token.
     private async Task<bool> FlushAllAsync(RunHeartbeat heartbeat, CancellationToken cancellationToken)
     {
         int failures = 0;

@@ -8,7 +8,7 @@ import { resumableUpload } from "./resumableUpload";
 
 const sessionId = "0193a4b2-0000-7000-8000-0000000000u3";
 
-// The protocol itself is tested through uploadImage in images/upload.test.ts; this covers what a kind changes.
+// The protocol itself is tested through uploadImage in images/upload.test.ts. This file covers what the kind changes.
 function serve(completion: unknown) {
   const bodies: unknown[] = [];
 

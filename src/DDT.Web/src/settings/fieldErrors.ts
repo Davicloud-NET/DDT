@@ -4,8 +4,8 @@
 
 import { settingsText, type SaveRefusal, type SettingsFinding } from "./settings";
 
-// The last save's refusal and the stored section's problems for one field, in the person's language: apiErrorFrom
-// says the refusal's already.
+// The last save's refusal and the stored section's problems for one field, in the user's language. apiErrorFrom
+// already translated the refusal's messages.
 export function fieldErrors(
   refusal: SaveRefusal | null,
   problems: readonly SettingsFinding[],

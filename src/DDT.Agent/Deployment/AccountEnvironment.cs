@@ -8,8 +8,8 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// The environment block of a tool started as an account: the account's own environment, then DDT's variables over it,
-// sorted and double-null-terminated as CreateProcessAsUserW takes it.
+// The environment block of a tool started as an account. It's the account's environment with DDT's variables on top,
+// sorted and double-null-terminated the way CreateProcessAsUserW takes it.
 [SupportedOSPlatform("windows")]
 internal static unsafe class AccountEnvironment
 {
@@ -53,7 +53,8 @@ internal static unsafe class AccountEnvironment
             cursor += entry.Length + 1;
             int equals = entry.IndexOf('=');
 
-            // A name that starts with '=' is a drive's current directory, such as "=C:"; its '=' is not the split.
+            // A name that starts with '=' is a drive's current directory, such as "=C:". That first '=' isn't the
+            // separator.
             if (equals > 0)
             {
                 variables[entry[..equals].ToString()] = entry[(equals + 1)..].ToString();

@@ -6,7 +6,7 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Ldap;
 
-// UserFound and PasswordAccepted are null when no user, or no password, was named. Text is what the directory answered.
+// UserFound and PasswordAccepted are null when no user or no password was given. Text is what the directory answered.
 public sealed record LdapTestOutcome(bool Bound, bool? UserFound, bool? PasswordAccepted, IReadOnlyList<string> Groups, ServerMessage Text)
 {
     public string Message => Text.Text;

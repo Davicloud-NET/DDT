@@ -27,7 +27,7 @@ public sealed class MachineSettingsSection() : SettingsSectionDefinition<Machine
 
     protected override MachineOptions? Bind(IConfigurationSection section) => section.Get<MachineOptions>();
 
-    // The overlap with the proxies belongs to this section at load, so that it turns zero touch off rather than trust.
+    // At load, an overlap with the proxies is this section's problem, so it turns off zero touch, not proxy trust.
     protected override IReadOnlyList<SettingProblem> FindProblems(MachineOptions options, SettingsContext context)
     {
         List<SettingProblem> problems = [];

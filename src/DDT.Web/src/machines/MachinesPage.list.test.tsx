@@ -254,7 +254,7 @@ describe("MachinesPage", () => {
         within(row("PC-SETUP")).getByText("Waiting for Windows setup, last contact 12 minutes ago"),
       ).toBeInTheDocument();
 
-      // No step failed where none ran.
+      // No step ran, so none failed.
       const failed = within(row("PC-FAILED"));
       expect(failed.getAllByText("Failed")).toHaveLength(2);
       expect(failed.queryByText(/Step \d+ failed/)).not.toBeInTheDocument();

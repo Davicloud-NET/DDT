@@ -21,10 +21,10 @@ public sealed class SettingsSectionState
 
     public string? UpdatedBy { get; init; }
 
-    // What applies, secrets left out.
+    // What applies, without secrets.
     public required JsonObject Values { get; init; }
 
-    // What the page saved, over the defaults; it applies again once configuration stops setting a field.
+    // What the page saved, on top of the defaults. It applies again once configuration stops setting a field.
     public required JsonObject StoredValues { get; init; }
 
     public required object Options { get; init; }

@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Tests;
 
-// A slow connection: gives its first part at once and every later part only when the test releases it, so the test
-// can move the clock while a read waits. Each part must fit one read.
+// A slow connection. It returns its first part right away and every later part only when the test releases it, so the
+// test can move the clock while a read waits. Each part must fit in one read.
 internal sealed class PacedStream(params byte[][] parts) : Stream
 {
     private readonly Queue<byte[]> _parts = new(parts);

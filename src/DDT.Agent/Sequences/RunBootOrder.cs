@@ -7,15 +7,16 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// The firmware's boot order as a run changes it. Until the last change a restart starts the machine from the network,
-// not into a system that is not ready, and a restart into the installed system is due from then on.
+// Changes the firmware's boot order for a run. Until the last change, a restart starts the machine from the network
+// rather than a system that isn't ready. From then on a restart into the installed system is due.
 internal sealed class RunBootOrder(IBcdWriter bcdWriter, WindowsPERestartMarker restartMarker, AgentLog log)
 {
     // Firmware setup screens show a line of this much.
     private const int MaxBootEntryName = 64;
 
-    // As in Microsoft's sequence after applying: bcdboot with the recovery environment, then Windows Boot Manager first.
-    // handOverRun comes before bcdboot, which may put its entry first itself, so a failed hand-over has nothing to undo.
+    // Follows Microsoft's steps after applying: bcdboot with the recovery environment, then Windows Boot Manager first.
+    // handOverRun comes before bcdboot, because bcdboot may put its entry first itself. That way a failed hand-over has
+    // nothing to undo.
     public async Task MakeBootableAsync(SequenceRun run, TargetVolumes volumes, Func<Task>? handOverRun, CancellationToken cancellationToken)
     {
         if (handOverRun is not null)
@@ -55,7 +56,7 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, WindowsPERestartMarker 
         restartMarker.Set(RestartInto.Windows);
     }
 
-    // With the boot order back, a restart starts the network, so no restart into the installed system is due.
+    // With the boot order restored, a restart starts from the network, so no restart into the installed system is due.
     public async Task RestoreAsync(SequenceRun run)
     {
         if (run.WindowsFirst)

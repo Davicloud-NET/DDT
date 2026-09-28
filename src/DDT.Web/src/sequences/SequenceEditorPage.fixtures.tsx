@@ -74,7 +74,7 @@ export const account: AccountView = {
   updatedBy: "admin",
 };
 
-// A flat sequence of version 1: partition, apply, a script with a condition of version 1.
+// A flat version 1 sequence: partition, apply, and a script with a version 1 condition.
 const flatSteps: SequenceStep[] = [
   newStep("partition", "p"),
   { ...newStep("applyImage", "i"), imageId: windowsImageId } as SequenceStep,
@@ -102,7 +102,7 @@ export function view(overrides: Partial<SequenceView> = {}): SequenceView {
   };
 }
 
-// The design's flow: an IF, a group, a repeat, variables and an Account input.
+// The example flow from the M7 design canvas: an IF, a group, a repeat, variables and an Account input.
 export const treeView = (overrides: Partial<SequenceView> = {}) =>
   view({
     definition: flowDefinition,
@@ -124,7 +124,7 @@ interface ServeOptions {
   accounts?: AccountView[];
 }
 
-// jsdom has no scrollTo or matchMedia; a narrow window matches the phone's max-width queries.
+// jsdom has no scrollTo or matchMedia. A narrow window matches the phone's max-width queries.
 function stubWindow(narrow: boolean) {
   vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal(
@@ -142,8 +142,8 @@ function stubWindow(narrow: boolean) {
   );
 }
 
-// The server holds one sequence. Saves answer as the given function says; by default they are stored with the
-// next revision, as the server does. Facts, rules and machine roles are not served, as by a server before them.
+// The server holds one sequence. Saves answer the way the given function says. By default they're stored with the
+// next revision, like on the real server. Facts, rules and machine roles aren't served, like on an older server.
 function stubServer(
   user: CurrentUser,
   initial: SequenceView,
@@ -276,14 +276,14 @@ export function serve(
   return { saves, reads, queryClient, router, remove };
 }
 
-// The debounce of typing is 700 ms.
+// Typing is debounced for 700 ms.
 export const saveWait = { timeout: 3_000 };
 
 export async function opened(name = "Lab PCs") {
   return screen.findByRole("heading", { level: 1, name });
 }
 
-// A node of the flow, by the start of what a screen reader hears for it.
+// Finds a node of the flow by the start of its screen reader label.
 export function node(label: string | RegExp): HTMLElement {
   const flow = screen.getByRole("group", { name: /^Flow of / });
 
@@ -296,7 +296,7 @@ function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// The element that holds a field of the node shown, by the name the server's findings give it.
+// Finds the element that holds a field of the shown node, by the name the server's findings use for it.
 export function field(name: string): HTMLElement {
   const slot = document.querySelector<HTMLElement>(`[data-field="${name}"]`);
 

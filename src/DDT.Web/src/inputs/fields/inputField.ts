@@ -4,18 +4,18 @@
 
 import type { AnswerDraft, AskedInput } from "@/inputs/inputs";
 
-// What the field of one input gets, whatever its kind.
+// The props every input field gets, whatever its kind.
 export interface InputFieldProps {
   input: AskedInput;
   draft: AnswerDraft;
   // The input's help, and where its first value came from.
   hint: string | null;
-  // What the page or the server refused.
+  // Why the page or the server refused the answer.
   error: string | null;
   onChange: (draft: AnswerDraft) => void;
 }
 
-// A choice's answers as its keys and list show them.
+// A choice's answers as its buttons and its list show them.
 export function choicesOf(input: AskedInput): { value: string; label: string }[] {
   return input.choices.map((choice) => ({
     value: choice.value,

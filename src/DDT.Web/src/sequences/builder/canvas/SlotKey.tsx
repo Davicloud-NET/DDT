@@ -30,7 +30,7 @@ interface SlotKeyProps {
   onMove: (ids: string[], slot: Slot) => void;
 }
 
-// The "+" on a gap of a wire: it opens the kinds to add, and takes a kind or a node dropped on it.
+// The "+" in a gap of a wire. It opens the kinds to add, and accepts a kind or a node dropped on it.
 export function SlotKey({
   slot,
   x,

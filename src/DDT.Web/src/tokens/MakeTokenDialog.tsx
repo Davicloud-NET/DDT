@@ -12,7 +12,7 @@ import { MakeTokenForm } from "./MakeTokenForm";
 import { TokenSecret } from "./TokenSecret";
 import { useMakeToken } from "./useMakeToken";
 
-// Makes an API token for the signed-in person, with at most their own role, and shows its secret until it closes.
+// Makes an API token for the signed-in user, with at most their own role. Shows the secret until the dialog closes.
 export function MakeTokenDialog({ user, onClose }: { user: CurrentUser; onClose: () => void }) {
   const form = useMakeToken(user);
   const { created, make } = form;

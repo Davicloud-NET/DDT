@@ -15,8 +15,8 @@ interface SavedMeanwhileProps {
   isBusy: boolean;
 }
 
-// Someone saved the thing while it was being edited here. Nothing is saved until one copy is chosen: theirs, which
-// throws the edits here away, or this one, saved over theirs.
+// Someone else saved the item while it was being edited here. Nothing is saved until one copy is chosen. Taking theirs
+// throws away the edits here. Keeping this one saves it over theirs.
 export function SavedMeanwhile({ title, onTakeTheirs, onKeepMine, isBusy }: SavedMeanwhileProps) {
   return (
     <Notice

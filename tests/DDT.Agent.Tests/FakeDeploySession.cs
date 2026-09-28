@@ -6,8 +6,8 @@ using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;
 
-// Notes what the loop asks of DDT's session among the tools' calls. ends says whether an end completes, as a stop may
-// end the wait for a sign-out.
+// Records what the loop asks of DDT's session among the tools' calls. ends says whether an end completes, because a
+// stop may end the wait for a sign-out.
 internal sealed class FakeDeploySession(FakeDeploymentTools tools, bool ends = true) : IDeploySession
 {
     public Task PrepareAsync(CancellationToken cancellationToken)

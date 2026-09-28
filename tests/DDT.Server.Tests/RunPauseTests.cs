@@ -21,8 +21,8 @@ using static DDT.Server.Tests.TreeSequences;
 
 namespace DDT.Server.Tests;
 
-// A Pause step waits until someone continues the run at the machine or on its page, and the variables steps set are
-// reported, kept and pushed to whoever watches the machine.
+// A Pause step waits until someone continues the run at the machine or on its page.
+// The variables that steps set are reported, kept and pushed to whoever watches the machine.
 public sealed class RunPauseTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -113,7 +113,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         using DeployingMachine machine = paused.Machine;
         await ReportedAsync(machine, paused.Run.Id, PausedAt(paused));
 
-        // A click meant for another visit, or another step, continues nothing, and is answered with the run as it is.
+        // A click meant for another visit or another step continues nothing. The answer has the run as it is.
         HttpResponseMessage later = await ContinueAsync(administrator, machine.Id, paused.Pause.Id, 2);
         Assert.Equal(HttpStatusCode.Conflict, later.StatusCode);
         Assert.Equal(1, (await later.Content.ReadFromJsonAsync<DeploymentView>(TestJson.Options, Cancellation))!.Pause!.Pass);
@@ -151,7 +151,8 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(((Guid?)null, (int?)null, (string?)null, (Guid?)null), (stored.PauseStepId, stored.PausePass, stored.PauseMessage, stored.ContinueStepId));
     }
 
-    // Only the current step, a Pause step that runs, makes a report paused, and the message is held to its column.
+    // A report only counts as paused when its current step is a running Pause step.
+    // The message is cut to the length of its column.
     [Fact]
     public async Task APauseIsTheCurrentPauseStepThatRuns()
     {
@@ -172,7 +173,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(DeploymentLimits.MaxPauseMessageLength, waiting.PauseMessage!.Length);
         Assert.StartsWith("A NUL x", waiting.PauseMessage, StringComparison.Ordinal);
 
-        // A run stopped at its pause waits for nobody.
+        // A run stopped at its pause isn't waiting for anyone anymore.
         MachineSummary stopped = await RegisteredMachine.ReadAsync<MachineSummary>(await (await application.AdministratorAsync()).EndCurrentAsync(machine.Id));
         Assert.Equal((DeploymentState.Failed, false, (string?)null), (stopped.Deployment!.State, stopped.Deployment.Waiting, stopped.Deployment.PauseMessage));
     }
@@ -209,7 +210,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(RunVariables.MaxValueLength, pushed.Variables["Long"].Length);
         Assert.StartsWith("A NULy", pushed.Variables["Long"], StringComparison.Ordinal);
 
-        // A report without them leaves them as they were; one with a change merges it in.
+        // A report without them leaves them as they were. A report with a change merges it in.
         await machine.ReportOkAsync(paused.Run.Id, Running(Visit(paused.Before, StepState.Done), Visit(paused.Pause, StepState.Running)));
         await machine.ReportOkAsync(
             paused.Run.Id,
@@ -221,7 +222,7 @@ public sealed class RunPauseTests(DdtApplication application) : IClassFixture<Dd
         DeploymentView view = await administrator.RunAsync(paused.Run.Id);
         Assert.Equal(pushed.Variables.OrderBy(v => v.Key), view.Variables!.OrderBy(v => v.Key));
 
-        // More than the agent keeps is refused as it is.
+        // A report with more variables than the agent keeps is refused, not trimmed.
         HttpResponseMessage many = await machine.ReportAsync(
             paused.Run.Id,
             Running(Visit(paused.Before, StepState.Done)) with

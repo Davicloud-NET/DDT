@@ -11,8 +11,8 @@ using DDT.Server.Images;
 
 namespace DDT.Server.Certificates;
 
-// The certificate Kestrel serves: DDT's own, from the root boot images pin, so it can change without a new boot image,
-// or an administrator's, loaded again when its files change and never replaced.
+// The certificate Kestrel serves. DDT's own is issued from the root that boot images pin, so it can change without a
+// new boot image. An administrator's is reloaded when its files change and is never replaced.
 public sealed class ServerCertificates
 {
     public static readonly TimeSpan RenewBefore = TimeSpan.FromDays(30);
@@ -27,7 +27,8 @@ public sealed class ServerCertificates
     private readonly ServedCertificate _served = new();
     private readonly ProvisionalPairs _provisional;
 
-    // Generate: DDT may create a root and issue from it. Without it, DDT only serves the files as they are.
+    // With generate set, DDT may create a root and issue certificates from it. Without it, DDT only serves the files as
+    // they are.
     public ServerCertificates(CertificateFiles files, IReadOnlyList<string> names, bool generate, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(files);
@@ -43,7 +44,7 @@ public sealed class ServerCertificates
         _provisional = new ProvisionalPairs(files, _served, _root, _fileLock, timeProvider, thumbprint => RollBackAsync(thumbprint, CancellationToken.None));
     }
 
-    // Raised after a provisional pair went back to the pair before it.
+    // Raised after a provisional pair was rolled back to the pair before it.
     public event EventHandler<CertificateRolledBackEventArgs>? RolledBack;
 
     public CertificateFiles Files { get; }
@@ -52,21 +53,21 @@ public sealed class ServerCertificates
 
     public X509Certificate2? Current => Context?.TargetCertificate;
 
-    // The certificate with the intermediates its file holds, which clients such as the agent do not download.
+    // The certificate plus the intermediates from its file. Clients such as the agent don't download intermediates.
     public SslStreamCertificateContext? Context => _served.Context;
 
-    // DDT's root while the served certificate comes from it, and null for an administrator's certificate.
+    // Holds DDT's root while the served certificate comes from it. It's null for an administrator's certificate.
     public string? RootCertificatePem => _served.RootPem;
 
     // Null while nothing waits for a confirmation.
     public ProvisionalCertificate? Provisional => _provisional.Current;
 
-    // DDT can make or has a root to issue from.
+    // True when DDT may issue certificates, from its existing root or from a new one it creates.
     public bool CanGenerate => _generate;
 
     public bool HasRoot => _root.Exists;
 
-    // Throws when there is nothing to serve at all, which at startup stops the host with the reason.
+    // Throws when there's nothing to serve at all. At startup that stops the host and shows the reason.
     public async Task<CertificateCheck> CheckAsync(CancellationToken cancellationToken)
     {
         await using (await _gate.EnterAsync(cancellationToken).ConfigureAwait(false))
@@ -74,8 +75,8 @@ public sealed class ServerCertificates
             await _provisional.ResumeAsync(cancellationToken).ConfigureAwait(false);
             await _provisional.RecoverPreviousAsync(cancellationToken).ConfigureAwait(false);
 
-            // An administrator's certificate may sit where DDT cannot write, such as a read-only mount, so the lock is
-            // taken only in a folder that holds DDT's root, or once a check finds something to write.
+            // An administrator's certificate may sit where DDT can't write, such as a read-only mount. So DDT only
+            // takes the lock in a folder that holds its root, or once a check finds something to write.
             if ((!_generate || !File.Exists(Files.RootPath)) && Check(_timeProvider.GetUtcNow(), locked: false) is { } check)
             {
                 return check;
@@ -114,7 +115,7 @@ public sealed class ServerCertificates
             anchor.Exists ? new DateTimeOffset(anchor.LastWriteTimeUtc) : null);
     }
 
-    // The SHA-256 of the certificate older boot images pin, or null once no boot image is waiting for a rebuild.
+    // Returns the SHA-256 of the certificate older boot images pin, or null once no boot image waits for a rebuild.
     public string? ReplacedAnchorSha256()
     {
         if (!File.Exists(Files.ReplacedAnchorPath))
@@ -129,7 +130,7 @@ public sealed class ServerCertificates
 
     public void ForgetReplacedAnchor() => File.Delete(Files.ReplacedAnchorPath);
 
-    // Whether the certificate comes from DDT's root, which boot images pin, so they accept it with no rebuild.
+    // True when DDT's root issued the certificate. Boot images pin that root, so they accept it without a rebuild.
     public bool ChainsToRoot(X509Certificate2 certificate)
     {
         ArgumentNullException.ThrowIfNull(certificate);
@@ -137,7 +138,7 @@ public sealed class ServerCertificates
         return _root.Issued(certificate);
     }
 
-    // An administrator's pair, checked by the caller, served at once and provisionally.
+    // Serves an administrator's pair at once, but only provisionally. The caller has already checked the pair.
     public async Task<CertificateCheck> InstallAsync(PemPair pair, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pair);
@@ -152,7 +153,8 @@ public sealed class ServerCertificates
         }
     }
 
-    // A pair from DDT's root for the names given, the root made first when there is none yet, served provisionally.
+    // Issues a pair from DDT's root for the given names and serves it provisionally. The root is created first if
+    // there's none yet.
     public async Task<CertificateCheck> GenerateAsync(IEnumerable<string> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
@@ -175,7 +177,8 @@ public sealed class ServerCertificates
         }
     }
 
-    // Only from a connection that was served the provisional pair: its browser accepted it.
+    // Confirms the provisional pair only from a connection that was served it, which proves its browser accepted it.
+    // Any other connection gets NotServedTheNewPair.
     public async Task<CertificateConfirmation> ConfirmAsync(string? servedThumbprint, CancellationToken cancellationToken)
     {
         await using (await _gate.EnterAsync(cancellationToken).ConfigureAwait(false))
@@ -184,14 +187,14 @@ public sealed class ServerCertificates
         }
     }
 
-    // The pair before the provisional one goes back into place, as its files and in memory.
+    // Puts the pair before the provisional one back in place, both on disk and in memory.
     public async Task<CertificateCheck?> RollBackAsync(string thumbprint, CancellationToken cancellationToken)
     {
         CertificateCheck? check;
 
         await using (await _gate.EnterAsync(cancellationToken).ConfigureAwait(false))
         {
-            // Confirmed, or replaced by another pair, in the meantime.
+            // The pair was confirmed or replaced in the meantime.
             if (_provisional.Current?.Thumbprint != thumbprint)
             {
                 return null;
@@ -211,7 +214,7 @@ public sealed class ServerCertificates
         return check;
     }
 
-    // Null when something is due to be written but the files are not locked, to be checked again under the lock.
+    // Returns null when something needs writing but the files aren't locked. The caller checks again under the lock.
     private CertificateCheck? Check(DateTimeOffset now, bool locked)
     {
         PemPair? root = _generate ? _root.Read() : null;
@@ -225,8 +228,8 @@ public sealed class ServerCertificates
             return locked ? Replace(_root.Create(now), null, CertificateAction.Created, now) : null;
         }
 
-        // Its only names are its subject alternative names, which the new certificate keeps. The break for boot images
-        // that pin it cannot be avoided: it is no CA, so nothing new can chain to it.
+        // The legacy certificate's only names are its subject alternative names, and the new certificate keeps them.
+        // Boot images that pin it break, and that can't be avoided. It isn't a CA, so nothing new can chain to it.
         if (_generate && root is null && loaded is not null && CertificateChains.IsLegacy(loaded.TargetCertificate))
         {
             return locked ? Migrate(loaded.TargetCertificate, now) : null;
@@ -236,8 +239,8 @@ public sealed class ServerCertificates
         {
             using X509Certificate2 rootCertificate = X509Certificate2.CreateFromPem(root.CertificatePem);
 
-            // Only DDT's own pair is issued again when it does not load. An administrator's half copied pair, or one
-            // whose key needs a password, stays as it is.
+            // DDT only reissues its own pair when it doesn't load. An administrator's half-copied pair, or one whose
+            // key needs a password, stays as it is.
             bool fromRoot = loaded is null
                 ? !stamp.AnyExists || CertificateFileChainsTo(rootCertificate)
                 : CertificateChains.ChainsTo(loaded.TargetCertificate, rootCertificate);
@@ -260,7 +263,7 @@ public sealed class ServerCertificates
 
         X509Certificate2 pair = context.TargetCertificate;
 
-        // Unless the root itself ends first, when renewing would only issue the same end date again.
+        // Don't renew if the root expires first. Renewing would only issue the same end date again.
         if (now >= CertificateChains.Utc(pair.NotAfter) - RenewBefore && rootCertificate.NotAfter > pair.NotAfter)
         {
             return locked ? Replace(root, pair, CertificateAction.Renewed, now) : null;
@@ -274,7 +277,7 @@ public sealed class ServerCertificates
         return _served.Serve(context, loaded.Stamp, root.CertificatePem, LoadAction(loaded.Changed), now);
     }
 
-    // The certificate served before stays, and the files are not tried again until they change once more.
+    // The certificate served before stays in service. DDT doesn't try the files again until they change once more.
     private CertificateCheck LoadFailed(FileStamp stamp, string? problem)
     {
         if (_served.Context is not { } context)
@@ -303,8 +306,8 @@ public sealed class ServerCertificates
     private CertificateAction LoadAction(bool changed) =>
         !changed ? CertificateAction.Unchanged : _served.Context is null ? CertificateAction.Loaded : CertificateAction.Reloaded;
 
-    // Names in the replaced certificate stay, so a renewal never takes away a name something still uses. Addresses are
-    // the host's current ones.
+    // The new certificate keeps the names of the one it replaces, so a renewal never removes a name something still
+    // uses. Addresses are the host's current ones.
     private CertificateCheck Replace(PemPair root, X509Certificate2? replaced, CertificateAction action, DateTimeOffset now)
     {
         IEnumerable<string> names = replaced is null
@@ -327,7 +330,7 @@ public sealed class ServerCertificates
         return _served.Serve(context, FileStamp.Of(Files), root.CertificatePem, action, now);
     }
 
-    // The certificate file on its own, without the key it does not load with.
+    // Checks only the certificate file, because it doesn't load together with its key.
     private bool CertificateFileChainsTo(X509Certificate2 root)
     {
         try
@@ -342,6 +345,6 @@ public sealed class ServerCertificates
         }
     }
 
-    // Changed: the files differ from those the served pair came from, or nothing is served yet.
+    // Changed is true when the files differ from the ones the served pair came from, or when nothing is served yet.
     private sealed record LoadedPair(SslStreamCertificateContext? Context, FileStamp Stamp, bool Changed);
 }

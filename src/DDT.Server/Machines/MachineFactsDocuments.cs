@@ -8,12 +8,12 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Server.Machines;
 
-// The stored form of a machine's facts is the contract record as DdtJsonContext writes it.
+// A machine's facts are stored as the contract record written by DdtJsonContext.
 public static class MachineFactsDocuments
 {
     public static string Write(MachineFacts facts) => JsonSerializer.Serialize(facts, DdtJsonContext.Default.MachineFacts);
 
-    // Facts another build wrote that no longer parse read as none: the next registration writes them again.
+    // Facts written by another build that no longer parse read as none. The next registration writes them again.
     public static MachineFacts? Read(string? facts)
     {
         if (facts is null)

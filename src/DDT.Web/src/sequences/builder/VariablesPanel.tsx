@@ -19,16 +19,16 @@ export type { OpenRow } from "./variables/declarationRows";
 
 interface VariablesPanelProps {
   draft: SequenceDraft;
-  // The findings of the sequence's own, such as variables[1].name.
+  // The sequence's own findings, such as variables[1].name.
   findings: Findings;
-  // A row a finding points at, which opens.
+  // The row a finding points at, which the panel opens.
   open: OpenRow | null;
   onEdit: (edit: FlowEdit) => void;
   onGoToNode: (id: string) => void;
 }
 
-// The sequence's variables and inputs in one list, as the document holds them. Each says which nodes use it; a
-// rename changes every one of them.
+// The sequence's variables and inputs in one list, as the document holds them. Each shows which nodes use it. A
+// rename changes all of those nodes.
 export function VariablesPanel({ draft, findings, open, onEdit, onGoToNode }: VariablesPanelProps) {
   const locked = useContext(EditorLock);
   const rows = useOpenRows(open);

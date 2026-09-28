@@ -100,8 +100,8 @@ public sealed class LdapAuthenticator(LdapOptions options, ILogger<LdapAuthentic
         }));
     }
 
-    // A search for the text anywhere in a name cannot use the directory's indexes and stops at the size limit, so the
-    // names that start with it, which are what someone typing a name is after, are searched for first.
+    // A search for the text anywhere in a name can't use the directory's indexes and stops at the size limit. So this
+    // first searches for names that start with the text, since that's usually what someone typing a name wants.
     public Task<IReadOnlyList<LdapGroup>> SearchGroupsAsync(string text, int limit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -149,8 +149,8 @@ public sealed class LdapAuthenticator(LdapOptions options, ILogger<LdapAuthentic
         }));
     }
 
-    // Signed in as the bind account, as a sign-in searches. Whatever keeps the directory from answering becomes one
-    // exception with a message for an administrator.
+    // Binds as the bind account, just like a sign-in does before it searches. Anything that keeps the directory from
+    // answering becomes one exception with a message for an administrator.
     private T Ask<T>(Func<LdapConnection, T> question)
     {
         string server = $"{_options.Host}:{_options.Port.ToString(CultureInfo.InvariantCulture)}";

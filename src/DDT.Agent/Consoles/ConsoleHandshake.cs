@@ -6,12 +6,13 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// The hello both sides say first, which only a console of this agent's version of the protocol gets back.
+// The hello both sides send first. Only a console that speaks this agent's version of the protocol gets one back.
 internal static class ConsoleHandshake
 {
     public static readonly TimeSpan HelloTimeout = TimeSpan.FromSeconds(10);
 
-    // The console's program once both sides said hello; otherwise why it is refused, and whether it was told so.
+    // Returns the console's program once both sides said hello. Otherwise returns why it's refused, and whether the
+    // console was told.
     public static async Task<(string? Program, string? Refusal, bool Told)> GreetAsync(
         ConsoleChannel channel,
         string agentVersion,

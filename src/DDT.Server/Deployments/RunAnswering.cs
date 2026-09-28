@@ -6,14 +6,14 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Deployments;
 
-// What answers to a waiting run came to.
+// The result of answers to a waiting run.
 public sealed record RunAnswering(
-    // The run's answers as they were, which RunAnswerSaves compares so that whoever answered first wins.
+    // The run's answers before these. RunAnswerSaves compares them, so whoever answered first wins.
     string? Before,
     // What the machine asked before these answers.
     IReadOnlyList<AgentInput> Asked,
     IReadOnlyList<AnswerProblem> Problems,
-    // The run's values with these answers; null when refused or when there are problems.
+    // The run's values with these answers. Null if refused or if there are problems.
     RunValueCheck? Check,
-    // The run waits for no answers.
+    // The run doesn't wait for answers.
     bool Refused);

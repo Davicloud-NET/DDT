@@ -17,6 +17,6 @@ public sealed record SequenceView(
     IReadOnlyList<SequenceProblem> Warnings,
     DateTimeOffset UpdatedUtc,
     string? UpdatedBy,
-    // The phases each node may run in, in the order of SequenceTree.Nodes: more than one where it depends on the path
-    // an IF takes.
+    // The phases each node may run in, in the order of SequenceTree.Nodes. A node has more than one when it depends on
+    // the path an IF takes.
     IReadOnlyList<NodePhase>? NodePhases = null);

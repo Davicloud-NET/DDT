@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section pxe.
+// The pxe section.
 public sealed record PxeSettings(
     IReadOnlyList<string> Interfaces,
     bool EnableProxyDhcp,

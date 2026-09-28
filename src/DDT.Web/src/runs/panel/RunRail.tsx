@@ -19,8 +19,8 @@ interface RunRailProps {
   now: number;
 }
 
-// The rail of the steps on the run's path, with the phases they run in; a run of a tree leaves out the steps of the
-// branches it did not take.
+// The rail of the steps on the run's path, with the phases they run in. For a tree, the steps of branches the run
+// didn't take are left out.
 export function RunRail({ run, view, path, now }: RunRailProps) {
   const leaves = path?.leaves ?? [];
   const rail = railSteps(run, path, now);

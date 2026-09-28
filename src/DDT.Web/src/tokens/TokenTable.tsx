@@ -13,8 +13,8 @@ import type { ApiTokenView } from "./tokens";
 import { TokenStateCell } from "./TokenStateCell";
 import { tokenState } from "./tokenView";
 
-// API tokens as the Account page lists a person's own and Administration lists everyone's. Only the last four
-// characters of a secret are known; a token that still works can be revoked.
+// A table of API tokens. The Account page lists the user's own, and Administration lists everyone's. Only the
+// last four characters of a secret are known. A token that still works can be revoked.
 export function TokenTable({
   tokens,
   now,

@@ -4,23 +4,23 @@
 
 namespace DDT.Server.Deployments;
 
-// What every deployed machine's answer file carries: the deployment section of the settings page, which configuration
-// can override, checked by DeploymentOptionsValidation.
+// What every deployed machine's answer file carries. It's the deployment section of the settings page, which
+// configuration can override. DeploymentOptionsValidation checks it.
 public sealed class DeploymentOptions
 {
     public const string SectionName = "DDT:Deployment";
 
-    // A Windows id such as W. Europe Standard Time. Unset, Windows picks the zone that matches the locale.
+    // A Windows time zone ID such as W. Europe Standard Time. If unset, Windows picks the zone that matches the locale.
     public string? TimeZone { get; set; }
 
-    // A culture name such as de-DE. Unset, the image's own language.
+    // A culture name such as de-DE. If unset, the image's own language is used.
     public string? Locale { get; set; }
 
-    // An input locale such as 0407:00000407 or de-DE. Unset, the locale.
+    // An input locale such as 0407:00000407 or de-DE. If unset, the locale is used.
     public string? Keyboard { get; set; }
 
-    // The language the console at the machine starts in, en or de; the person there can still switch with F5. Unset,
-    // the language of Windows PE, which is English in the image copype makes. It is not in the answer file.
+    // The language the console at the machine starts in, en or de. The person there can still switch with F5. If unset,
+    // it's WinPE's language, which is English in the image copype makes. It isn't in the answer file.
     public string? ConsoleLanguage { get; set; }
 
     public LocalAdministratorOptions LocalAdministrator { get; set; } = new();

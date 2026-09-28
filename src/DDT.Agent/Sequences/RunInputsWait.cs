@@ -10,8 +10,8 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Sequences;
 
 // A run waits at its start for the answers to its inputs, given at the machine or on the machine's page. Either way
-// its values come from the server once nothing is pending. No answer is ever logged, and an Account input's goes to
-// the server alone.
+// its values come from the server once nothing is pending. No answer is ever logged, and an Account input's answer
+// only goes to the server.
 internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? console, AgentLog log, TimeProvider timeProvider)
 {
     public async Task<IReadOnlyDictionary<string, string>> WaitAsync(RunSession session, RunHeartbeat heartbeat, CancellationToken cancellationToken)
@@ -19,7 +19,7 @@ internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? consol
         AgentRun run = session.Run;
         Pending pending = new([.. run.PendingInputs ?? []]);
 
-        // A report's answer brings the values when the web answered, and takes the question here away.
+        // When the web answered, a report's answer brings the values and takes the question here away.
         Task<IReadOnlyDictionary<string, string>> fromWeb = heartbeat.WaitForValuesAsync(cancellationToken);
 
         log.Information($"The run waits for answers to {string.Join(", ", pending.Inputs.Select(input => input.Label))}, at this machine or on the machine's page.");
@@ -58,7 +58,7 @@ internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? consol
         return values;
     }
 
-    // Null once the web answered first, or nobody can answer here after all: then the web decides.
+    // Returns null once the web answered first, or when nobody can answer here after all. Then the web decides.
     private static async Task<ConsoleAnswer?> AskAsync(
         IMachineConsole console,
         AgentRun run,
@@ -84,7 +84,8 @@ internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? consol
         return await asked.ConfigureAwait(false);
     }
 
-    // The run's values once the server took the answers; otherwise null, with what it did not take to ask again.
+    // Returns the run's values once the server took the answers. Otherwise returns null, and pending holds what the
+    // server didn't take, to ask again.
     private async Task<IReadOnlyDictionary<string, string>?> SendAsync(
         RunSession session,
         RunHeartbeat heartbeat,
@@ -125,7 +126,7 @@ internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? consol
         }
         catch (DeploymentStepException exception) when (!cancellationToken.IsCancellationRequested)
         {
-            // A refusal names the answers it did not take where it can; either way the question comes again.
+            // A refusal names the answers it didn't take where it can. Either way the question is asked again.
             pending.Error = exception.Message;
             pending.Errors = InputQuestions.FieldErrors(pending.Inputs, (exception.InnerException as AgentRequestException)?.FieldErrors) ?? new Dictionary<string, string>();
             log.Warning($"The answers were not taken: {exception.Message}");

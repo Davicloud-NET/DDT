@@ -7,8 +7,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// Where the checks of one node report, under the node's id. Silent while SequencePaths walks a repeat's body only to
-// find the states a time round starts with.
+// Collects the problems and warnings of one node, under the node's id. It stays silent while SequencePaths walks a
+// repeat's body just to find the state an iteration starts with.
 internal sealed class StepProblems(Guid? stepId, List<SequenceProblem> problems, List<SequenceProblem> warnings, bool silent)
 {
     public void Add(string? field, ServerMessage message)

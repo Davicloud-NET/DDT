@@ -13,8 +13,8 @@ export type NodeFocus = ReturnType<typeof useNodeFocus>;
 
 export type NodeHandlers = ReturnType<NodeFocus["handlers"]>;
 
-// The node chosen on the run's flow, the roving tab stop, and the keys that follow the flow; the node the run is at
-// is chosen until the person picks another.
+// The chosen node on the run's flow, the roving tab stop, and the keyboard moves along the flow. The node the run
+// is at stays chosen until the person picks another.
 export function useNodeFocus(
   layout: FlowLayout,
   index: TreeIndex,
@@ -23,7 +23,8 @@ export function useNodeFocus(
 ) {
   const [picked, setPicked] = useState<string | null>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
-  // A node the pointer chose is on the screen already, so only a node the keys went to is brought into view.
+  // A node picked with the pointer is already on screen. Only a node reached with the keyboard is scrolled into
+  // view.
   const pointing = useRef(false);
   const selectedId = picked ?? currentId;
   const tabbableId =

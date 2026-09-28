@@ -7,7 +7,7 @@ using System.Net.Sockets;
 
 namespace DDT.E2E;
 
-// Passes connections on 127.0.0.1 to the host and throttles its answers, so a stop reaches the agent mid-download.
+// Relays connections on 127.0.0.1 to the host and throttles its responses, so a stop reaches the agent mid-download.
 // The traffic stays encrypted, so the host's certificate has to name 127.0.0.1.
 internal sealed class SlowRelay : IAsyncDisposable
 {
@@ -60,7 +60,7 @@ internal sealed class SlowRelay : IAsyncDisposable
         await Task.WhenAll(connections).ConfigureAwait(false);
     }
 
-    // Until either side closes the connection, or the relay stops, which closes both.
+    // Relays until either side closes the connection, or until the relay stops, which closes both.
     private async Task RelayAsync(TcpClient agent)
     {
         using (agent)
@@ -82,7 +82,7 @@ internal sealed class SlowRelay : IAsyncDisposable
         }
     }
 
-    // Returns when from ends. The pace never saves up: a connection that was idle is no faster afterwards.
+    // Returns when from ends. The pace never builds up credit, so a connection that was idle isn't faster afterwards.
     private static async Task PassAsync(NetworkStream from, NetworkStream to, int? bytesPerSecond, CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[ChunkBytes];

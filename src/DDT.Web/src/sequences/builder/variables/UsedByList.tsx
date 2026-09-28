@@ -9,7 +9,7 @@ import { nodeTitle } from "../../flow/flowLabels";
 import { findNode } from "../../flow/flowTree";
 import type { SequenceDraft } from "../../sequenceDraft";
 
-// The nodes that use a variable or an input, each a key that goes to it.
+// The nodes that use a variable or an input. Each is a button that goes to the node.
 export function UsedByList({
   users,
   draft,

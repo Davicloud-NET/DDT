@@ -4,6 +4,6 @@
 
 namespace DDT.Agent.Sequences;
 
-// WorkDirectory keeps the run's files until Partition gives it a directory on the disk; in a dry run it is under the
-// dry run's root. SystemDirectory is where Windows PE keeps DISM and PowerShell.
+// WorkDirectory keeps the run's files until Partition gives the run a directory on disk. In a dry run it's under the
+// dry run's root. SystemDirectory is where WinPE keeps DISM and PowerShell.
 public sealed record SequenceRunnerOptions(TimeSpan HeartbeatInterval, string WorkDirectory, string SystemDirectory, bool DryRun);

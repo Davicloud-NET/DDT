@@ -14,7 +14,7 @@ import type { TokenRole } from "./tokens";
 import { TOKEN_DAYS } from "./tokenView";
 import type { MakeTokenState } from "./useMakeToken";
 
-// The make dialog's form; its id is what the dialog's submit key names.
+// The make dialog's form. The dialog's submit button points at it by its id.
 export function MakeTokenForm({ form }: { form: MakeTokenState }) {
   const { make, errors, days, expires } = form;
 

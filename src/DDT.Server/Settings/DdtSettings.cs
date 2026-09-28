@@ -10,9 +10,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// Holds the snapshot every consumer reads, from configuration and the code defaults until the store is loaded, so
-// logging has its levels at once. Publish keeps the newest version of each section and rebuilds under one lock, so
-// saves of two sections cannot drop each other's change.
+// Holds the snapshot every consumer reads. Until the store is loaded, it's built from configuration and the code
+// defaults, so logging has its levels right away. Publish keeps the newest version of each section and rebuilds under
+// one lock. That way saves of two sections can't drop each other's change.
 public sealed partial class DdtSettings
 {
     private readonly Lock _lock = new();
@@ -23,8 +23,8 @@ public sealed partial class DdtSettings
     private CancellationTokenSource _changed = new();
     private volatile bool _keyRingReadable = true;
 
-    // The logger is taken from the services only when a change fails, because the logger factory itself reads the
-    // settings, and taking a logger here would make each wait for the other.
+    // The logger is only taken from the services when a change fails. The logger factory itself reads the settings, so
+    // taking a logger here would make each wait for the other.
     public DdtSettings(IConfiguration configuration, IServiceProvider? services = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -43,7 +43,7 @@ public sealed partial class DdtSettings
         internal set => _keyRingReadable = value;
     }
 
-    // Fires once, at the next publish. Framework options that read the snapshot drop their cached value on it.
+    // Fires once, at the next publish. Framework options that read the snapshot drop their cached value when it fires.
     public IChangeToken GetChangeToken() => new CancellationChangeToken(Volatile.Read(ref _changed).Token);
 
     public SettingsSnapshot Publish(IEnumerable<StoredSettingsSection> sections)
@@ -57,7 +57,7 @@ public sealed partial class DdtSettings
         {
             ImmutableDictionary<string, StoredSettingsSection>.Builder stored = _stored.ToBuilder();
 
-            // A poll that read a row before a save of this process finished must not bring the older version back.
+            // A poll that read a row before this process finished a save must not bring the older version back.
             foreach (StoredSettingsSection section in sections)
             {
                 if (!stored.TryGetValue(section.Section, out StoredSettingsSection? held) || held.Version <= section.Version)
@@ -73,8 +73,9 @@ public sealed partial class DdtSettings
             _changed = new CancellationTokenSource();
         }
 
-        // Outside the lock: the callbacks read Current, and one may publish again. A callback that fails as the
-        // framework rebuilds options must not undo a save written already; whoever uses those options reports it.
+        // This runs outside the lock because the callbacks read Current, and one may publish again. A callback that
+        // fails while the framework rebuilds options must not undo a save that's already written. Whoever uses those
+        // options reports the failure.
         try
         {
             changed.Cancel();
@@ -90,8 +91,8 @@ public sealed partial class DdtSettings
         return snapshot;
     }
 
-    // What the snapshot would be with one section replaced, for a save to check before it writes. Saving names the
-    // section for the rules checked only on a save.
+    // Builds the snapshot as it would be with one section replaced, so a save can check it before writing. Saving names
+    // the section being saved, for the rules that are only checked on a save.
     public SettingsSnapshot Preview(StoredSettingsSection section, string? saving)
     {
         ArgumentNullException.ThrowIfNull(section);

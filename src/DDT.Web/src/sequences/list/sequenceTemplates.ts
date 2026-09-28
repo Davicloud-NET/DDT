@@ -6,10 +6,10 @@ import { serverText } from "@/lib/serverText";
 
 import type { SequenceTemplate } from "../sequences";
 
-// The choice of an empty sequence; template keys are words such as "install-windows".
+// The key for an empty sequence. Template keys are words such as "install-windows".
 export const EMPTY_CHOICE = "empty";
 
-// The server's templates, their name and description in the person's language; a new sequence takes both.
+// The server's templates, with their name and description in the person's language. A new sequence takes both.
 export function templatesInLanguage(templates: readonly SequenceTemplate[]): SequenceTemplate[] {
   return templates.map((candidate) => ({
     ...candidate,

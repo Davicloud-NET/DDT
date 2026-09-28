@@ -10,8 +10,8 @@ using Xunit;
 namespace DDT.Agent.Tests;
 
 // A tree with a little of everything, for the engine to walk without the agent's steps: an IF on the model, a repeat
-// that tries a tool until it works, one that stops at its limit and lets the run go on, a group that lets the run go on
-// after a failure inside it, and a step whose own condition does not hold on a Latitude.
+// that tries a tool until it works, one that stops at its limit and lets the run continue, a group that lets the run
+// continue after a failure inside it, and a step whose own condition doesn't hold on a Latitude.
 internal static class TestTree
 {
     public static RunScriptStep OnLatitude { get; } = Script(1, "Latitude image");

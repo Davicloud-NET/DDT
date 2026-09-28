@@ -4,7 +4,7 @@
 
 namespace DDT.Core.Disks;
 
-// Number is the entry's place in the table, from 1, which is how Windows and Linux number the partition.
+// Number is the entry's position in the table, counted from 1. Windows and Linux number the partition the same way.
 public sealed record GptPartition(int Number, Guid Type, Guid Id, long FirstLba, long LastLba, ulong Attributes, string Name)
 {
     public long Sectors => LastLba - FirstLba + 1;

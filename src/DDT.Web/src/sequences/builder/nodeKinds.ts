@@ -7,8 +7,8 @@ import { t } from "@lingui/core/macro";
 import type { StepKind } from "../sequences";
 import { stepKindLabel } from "../steps";
 
-// What the flow adds: the nodes that shape it, and the steps that do the work, in the order a sequence usually has
-// them.
+// What can be added to the flow: the nodes that shape it and the steps that do the work, in the order a sequence
+// usually has them.
 export const flowKinds: readonly StepKind[] = ["if", "repeat", "group", "setVariable", "pause"];
 
 export const workKinds: readonly StepKind[] = [
@@ -23,7 +23,7 @@ export const workKinds: readonly StepKind[] = [
   "writeCloudInitSeed",
 ];
 
-// A kind as the palette and the menus offer it.
+// A kind's label, as the palette and the menus offer it.
 export function addLabel(kind: StepKind): string {
   return kind === "setVariable" ? t`Set a variable` : stepKindLabel(kind);
 }

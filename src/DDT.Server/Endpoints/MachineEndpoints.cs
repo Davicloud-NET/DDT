@@ -36,8 +36,8 @@ public static class MachineEndpoints
         group.MapPost("/{id:guid}/deployments", AssignAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapDelete("/{id:guid}/deployments/current", EndCurrentAsync).RequireAuthorization(DdtPolicies.Operator);
 
-        // An operator answers what the run waits for at its start. Like the questions at the machine, it needs no new
-        // sign-in: whoever may assign the run may answer it.
+        // An operator answers what the run waits for at its start. Like the questions at the machine, this needs no new
+        // sign-in, because whoever may assign the run may answer it.
         group.MapPost("/{id:guid}/deployments/current/answers", AnswerAsync).RequireAuthorization(DdtPolicies.Operator);
         group.MapPost("/{id:guid}/deployments/current/continue", ContinueAsync).RequireAuthorization(DdtPolicies.Operator);
 
@@ -49,8 +49,8 @@ public static class MachineEndpoints
         return group;
     }
 
-    // SQLite cannot order by DateTimeOffset, and a fleet this size sorts in memory for nothing. The order must not depend
-    // on anything a poll changes, or rows move under an operator's pointer.
+    // SQLite can't order by DateTimeOffset, and sorting a fleet this size in memory costs next to nothing. The order
+    // mustn't depend on anything a poll changes, or rows move under an operator's pointer.
     private static async Task<Ok<IReadOnlyList<MachineSummary>>> ListAsync(
         DdtDbContext database,
         RunQueries runs,
@@ -166,8 +166,8 @@ public static class MachineEndpoints
         CancellationToken cancellationToken) =>
         Answer(await runs.EndCurrentAsync(id, Actor.Of(context), cancellationToken).ConfigureAwait(false));
 
-    // Answers the inputs the run waits for at its start. While it waits for nothing, or when the machine answered
-    // first, the answer is the run as it is with 409.
+    // Answers the inputs the run waits for at its start. If it waits for nothing, or the machine answered first, the
+    // response is the current run with 409.
     private static async Task<Results<Ok<DeploymentView>, Conflict<DeploymentView>, NotFound, ValidationProblem>> AnswerAsync(
         Guid id,
         AnswerInputsRequest request,
@@ -176,7 +176,8 @@ public static class MachineEndpoints
         CancellationToken cancellationToken) =>
         Answer(await saves.AnswerAsync(id, request, Actor.Of(context), cancellationToken).ConfigureAwait(false));
 
-    // Continues the pause the run waits at. When it no longer waits at that pause, the answer is the run as it is with 409.
+    // Continues the pause the run waits at. If it no longer waits at that pause, the response is the current run with
+    // 409.
     private static async Task<Results<Ok<DeploymentView>, Conflict<DeploymentView>, NotFound, ValidationProblem>> ContinueAsync(
         Guid id,
         ContinueRunRequest request,

@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The server's clock stands still here, so the look at the boot directory happens when the test advances it.
+// The server's clock stands still here. The server only looks at the boot directory when the test advances the clock.
 public sealed class BootImageWatcherTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
 {
     [Fact]

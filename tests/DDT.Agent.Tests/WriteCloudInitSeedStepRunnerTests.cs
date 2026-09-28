@@ -90,8 +90,8 @@ public sealed class WriteCloudInitSeedStepRunnerTests : IDisposable
         Assert.Equal(WriteCloudInitSeedStepRunner.NoImageMessage, refusal.Message);
     }
 
-    // A seed may use the run's values, such as an input's answer or a value a rule sets, by name. A name the run has no
-    // value for stays as it is, as cloud-init's own templates do.
+    // A seed may use the run's values by name, like an input's answer or a value a rule sets. A name the run has no
+    // value for stays as it is, the same as in cloud-init's own templates.
     [Fact]
     public async Task FillsInTheRunsValuesAndLeavesOtherNames()
     {
@@ -125,7 +125,7 @@ public sealed class WriteCloudInitSeedStepRunnerTests : IDisposable
         Assert.StartsWith("The machine has no value for {{ComputerName}}.", refusal.Message, StringComparison.Ordinal);
     }
 
-    // The run's computer name is the one its values give, such as a rule's pattern, or a step set, rather than only a name
+    // The run's computer name comes from its values, like a rule's pattern or what a step set, not only from a name
     // given when it was assigned.
     [Fact]
     public async Task NamesTheMachineAsTheRunsValuesDo()

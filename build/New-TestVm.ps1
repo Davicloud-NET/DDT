@@ -11,21 +11,21 @@
 Creates or removes the Hyper-V Generation 2 machine used to test DDT netboot with Secure Boot on.
 
 .DESCRIPTION
-Builds a Generation 2 virtual machine with Secure Boot enabled, a virtual TPM, a 64 GB disk to deploy
-Windows onto, and the network adapter first in the boot order. Safe to run repeatedly: existing state
-is reconciled, not recreated, and a Windows Boot Manager entry a deployment added stays in the boot
-order.
+Builds a Generation 2 virtual machine with Secure Boot on, a virtual TPM, a 64 GB disk to deploy
+Windows onto, and the network adapter first in the boot order. It's safe to run again and again. The
+script updates what exists instead of recreating it, and a Windows Boot Manager entry that a
+deployment added stays in the boot order.
 
 The disk is created in the host's virtual hard disk folder as <name>.vhdx and is reused when it already
 exists. -Remove leaves it in place and prints where it is.
 
-By default the machine joins the Hyper-V Default Switch, which already runs a DHCP server. That is
-the shape DDT is built for: someone else hands out addresses and DDT answers only as ProxyDHCP.
+By default the machine joins the Hyper-V Default Switch, which already runs a DHCP server. That's
+the setup DDT is built for. Something else hands out addresses, and DDT only answers as ProxyDHCP.
 Point DDT at it with DDT__Pxe__Interfaces="vEthernet (Default Switch)".
 
 Pass -SwitchName with any other name to create an Internal switch instead, with a static host
 address. An Internal switch has no DHCP server of its own, so the guest gets no address until you
-provide one. Never use a Private switch: it gives the host no adapter on the segment, and DDT runs
+provide one. Never use a Private switch. It gives the host no adapter on the segment, and DDT runs
 on the host.
 
 -WhatIf names the virtual machine it would create, or the machine and folder it would remove, and changes
@@ -43,10 +43,10 @@ nothing.
 .EXAMPLE
 .\build\New-TestVm.ps1 -Name DDT-Linux -MacAddress 02155D0D0D02 -NoTpm -SecureBootOff
 
-A second machine for raw disk images. Hyper-V's Secure Boot templates trust either Microsoft's Windows
-CA, which signs the boot manager DDT serves, or its third-party UEFI CA, which signs the distributions'
-shim, never both. This one netboots with Secure Boot off, and without a virtual TPM its template can
-change afterwards, to start the written image with Secure Boot on.
+A second machine for raw disk images. Each Hyper-V Secure Boot template trusts either Microsoft's
+Windows CA, which signs the boot manager DDT serves, or its third-party UEFI CA, which signs the
+distributions' shim. No template trusts both. This machine netboots with Secure Boot off. Without a
+virtual TPM, its template can change afterwards, so the written image can start with Secure Boot on.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Create', SupportsShouldProcess)]
 param(
@@ -79,11 +79,11 @@ param(
     [ValidateNotNullOrEmpty()]
     [string] $SecureBootTemplate = 'MicrosoftWindows',
 
-    # Leaves Secure Boot off. The template is set all the same, for when it is turned on.
+    # Leaves Secure Boot off. The template is still set, for when Secure Boot is turned on.
     [Parameter(ParameterSetName = 'Create')]
     [switch] $SecureBootOff,
 
-    # Adds no virtual TPM, which would freeze the Secure Boot template. An existing one stays.
+    # Doesn't add a virtual TPM, which would freeze the Secure Boot template. An existing TPM stays.
     [Parameter(ParameterSetName = 'Create')]
     [switch] $NoTpm,
 
@@ -175,7 +175,7 @@ function Initialize-TestVm {
         Stop-VM -VM $vm -TurnOff -Force
     }
 
-    # Static memory: the RAM disk needs the whole image resident before any balloon driver runs.
+    # Static memory, because the RAM disk needs the whole image in memory before any balloon driver runs.
     Set-VM -VM $vm -StaticMemory -MemoryStartupBytes $MemoryBytes `
         -AutomaticCheckpointsEnabled $false -CheckpointType Disabled `
         -AutomaticStartAction Nothing -AutomaticStopAction TurnOff
@@ -214,7 +214,7 @@ function Assert-SecureBootTemplate {
     return $template
 }
 
-# Leaves the machine one network adapter, on the switch and with the fixed MAC address, and returns it.
+# Leaves the machine with one network adapter, on the switch and with the fixed MAC address, and returns it.
 function Set-TestVmAdapter {
     param(
         [Parameter(Mandatory)] $Vm,
@@ -289,8 +289,8 @@ function Set-TestVmSecureBoot {
     }
 }
 
-# A local key protector is enough for a test machine, and Windows expects a TPM once deployed. It comes after the
-# Secure Boot template, which the TPM freezes.
+# A local key protector is enough for a test machine, and the deployed Windows expects a TPM. This runs after the
+# Secure Boot template is set, because the TPM freezes the template.
 function Enable-TestVmTpm {
     param([Parameter(Mandatory)] $Vm)
 
@@ -301,7 +301,7 @@ function Enable-TestVmTpm {
 }
 
 # BootOrder replaces the whole list, so the adapter goes first and nothing else is dropped. File entries are the
-# Windows Boot Manager a deployment added; the list would lose them if rebuilt from devices alone.
+# Windows Boot Manager entries a deployment added. The list would lose them if it were rebuilt from devices alone.
 function Set-TestVmBootOrder {
     param(
         [Parameter(Mandatory)] $Vm,

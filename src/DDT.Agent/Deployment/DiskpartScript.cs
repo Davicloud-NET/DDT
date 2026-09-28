@@ -7,7 +7,8 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition right after Windows, so Windows can grow it.
+// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition right after Windows, so Windows can
+// grow it.
 public static class DiskpartScript
 {
     // 300 MB covers 4K native disks too, and 1 GB leaves WinRE its 250 MB free. A Partition step can change both.
@@ -65,8 +66,8 @@ public static class DiskpartScript
         return Script([string.Create(CultureInfo.InvariantCulture, $"select disk {diskNumber}"), "clean", "exit"]);
     }
 
-    // Gives the system and recovery partitions of a run letters again after a restart. The recovery partition keeps
-    // its attributes: they only keep Windows from giving it a letter by itself.
+    // Gives a run's system and recovery partitions their letters again after a restart. The recovery partition keeps
+    // its attributes. They only stop Windows from giving it a letter by itself.
     public static string AssignLetters(int diskNumber, uint systemPartition, char system, uint recoveryPartition, char recovery)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);

@@ -83,8 +83,9 @@ public sealed class MachineAuthenticationHandler(
         return (purpose, payload);
     }
 
-    // A poll token only lets a waiting machine learn that it was approved. Content needs a session token, which exists
-    // only while an approval stands: a failed deployment keeps it, so the machine can report and be given another image.
+    // A poll token only lets a waiting machine learn that it was approved. Content needs a session token, which works
+    // as long as the approval stands. That includes a failed deployment, so the machine can report and get another
+    // image.
     private static string? Refusal(Machine machine, MachineTokenPayload payload, MachineTokenPurpose purpose)
     {
         bool allowed = purpose == MachineTokenPurpose.Session
@@ -96,7 +97,8 @@ public sealed class MachineAuthenticationHandler(
             return $"Machine {machine.Id} is {machine.State} and holds no grants for a {purpose} token.";
         }
 
-        // Binding detects mistakes and casual replay. It is not device identity: an attacker can set both values freely.
+        // The binding catches mistakes and casual replay. It isn't device identity, because an attacker can set both
+        // values freely.
         return string.Equals(machine.SmbiosUuid, payload.SmbiosUuid, StringComparison.OrdinalIgnoreCase)
             && string.Equals(machine.PrimaryMac, payload.PrimaryMac, StringComparison.OrdinalIgnoreCase)
                 ? null

@@ -6,8 +6,8 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts.Rules;
 
-// A machine role, such as "Kiosk" or "Finance laptop": values that rules give machines together. Not a user role, which
-// says what a person may do.
+// A machine role, such as "Kiosk" or "Finance laptop". It's a set of values that rules give machines together. It
+// isn't a user role, which says what a person may do.
 public sealed record MachineRoleView(
     Guid Id,
     string Name,

@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Machines;
 
-// A model the registered machines report, with how many report it, for the pickers of rules and package targets.
+// A model that registered machines report, and how many report it. The pickers for rules and package targets use it.
 public sealed record HardwareModelCount(string? Manufacturer, string Model, int Machines);

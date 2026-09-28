@@ -23,8 +23,8 @@ public static class MachineLogLimits
     // bounding what one stolen token can make the server write.
     public const int MaxAgentRequestsPerMinute = 60;
 
-    // A poll only records that the machine was seen, and a write plus a push per machine every ten
-    // seconds buys nothing an operator can see.
+    // A poll only records that the machine was seen. A write and a push per machine every ten seconds would show an
+    // operator nothing new.
     public static readonly TimeSpan LastSeenResolution = TimeSpan.FromSeconds(30);
 
     public static readonly TimeSpan WaitingMachineLifetime = TimeSpan.FromDays(1);

@@ -12,8 +12,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Settings;
 
-// The agent and the console that netbooting machines get, as the settings page shows and replaces them. Who uploaded
-// one and when come from the audit row of its latest upload.
+// The agent and console builds that netbooting machines get. The settings page shows and replaces them. Who uploaded
+// one and when comes from the audit row of its latest upload.
 internal sealed class ReleaseUploads(
     AgentReleaseStore releases,
     ConsoleReleaseStore consoles,
@@ -22,7 +22,7 @@ internal sealed class ReleaseUploads(
     TimeProvider timeProvider,
     LiveNotifier live)
 {
-    // Configuration names a file of its own, which an upload would not replace.
+    // True when configuration names its own file. An upload wouldn't replace that file.
     public bool AgentConfigured => !string.IsNullOrWhiteSpace(options.Value.BinaryPath);
 
     public bool ConsoleConfigured => !string.IsNullOrWhiteSpace(options.Value.ConsolePath);
@@ -57,7 +57,8 @@ internal sealed class ReleaseUploads(
             ConsoleConfigured ? AgentBinarySource.Configuration : release is null ? AgentBinarySource.None : AgentBinarySource.Uploaded);
     }
 
-    // The view is the one GET /api/settings/agent reads from now on, which other administrators' pages take from the hub.
+    // The returned view is what GET /api/settings/agent reads from now on. Other administrators' pages get it from the
+    // hub.
     public async Task<(ReleaseUploadStatus Status, AgentBinaryView? View)> UploadAgentAsync(Stream content, Actor actor, CancellationToken cancellationToken)
     {
         (ReleaseUploadStatus status, AgentRelease? release) = await releases.SaveAsync(content, cancellationToken).ConfigureAwait(false);

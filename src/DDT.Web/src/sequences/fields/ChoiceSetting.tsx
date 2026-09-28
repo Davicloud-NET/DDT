@@ -11,7 +11,7 @@ import { EditorLock } from "../editorLock";
 import type { Choice, FieldBase } from "./fieldBase";
 import { findingProps } from "./findingProps";
 
-// Read only, the choice shows as text, since a disabled list is hard to read.
+// When read-only, the choice shows as text, because a disabled list is hard to read.
 export function ChoiceSetting({
   label,
   field,

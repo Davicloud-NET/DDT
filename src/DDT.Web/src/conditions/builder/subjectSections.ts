@@ -4,8 +4,8 @@
 
 import type { Subject, SubjectSection } from "../conditionSubjects";
 
-// The picker's sections in order, the empty ones left out. A subject no list has, such as a variable removed since,
-// is still offered, so the picker can show what the test names.
+// The picker's sections in order, without the empty ones. A subject that's in no list, such as a variable that was
+// removed, is still offered so the picker can show what the test names.
 export function subjectSections(
   subject: Subject,
   subjects: readonly Subject[],

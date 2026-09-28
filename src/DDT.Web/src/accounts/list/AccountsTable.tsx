@@ -17,7 +17,7 @@ interface AccountsTableProps {
   onDelete: (account: AccountView) => void;
 }
 
-// The accounts. Only someone who may change them opens one, since the account's drawer has no read-only form.
+// The accounts table. Only someone who may change accounts can open one, because the drawer has no read-only form.
 export function AccountsTable({ list, canEdit, mark, onOpen, onDelete }: AccountsTableProps) {
   const { t } = useLingui();
 

@@ -6,8 +6,8 @@ using System.Buffers.Binary;
 
 namespace DDT.Core.Disks;
 
-// Collects the long name entries in front of a short entry. A long name counts only when every part is there and their
-// checksum names the short entry that follows.
+// Collects the long name entries in front of a short entry. A long name only counts when every part is there and
+// their checksum matches the short entry that follows.
 internal sealed class FatLongNameParts
 {
     private char[]? _name;
@@ -16,7 +16,7 @@ internal sealed class FatLongNameParts
 
     public void Clear() => _name = null;
 
-    // The last part comes first, marked with 0x40, and the parts count down to 1.
+    // The last part comes first and is marked with 0x40. The parts then count down to 1.
     public void Add(ReadOnlySpan<byte> entry)
     {
         int order = entry[0] & 0x1F;
@@ -45,7 +45,7 @@ internal sealed class FatLongNameParts
         _expected--;
     }
 
-    // The parts are used up either way.
+    // Clears the parts, whether they matched or not.
     public string? TakeFor(ReadOnlySpan<byte> shortEntry)
     {
         string? name = _name is not null && _expected == 0 && FatNames.Checksum(shortEntry) == _checksum ? LongName(_name) : null;

@@ -6,7 +6,7 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// Address answers a request that does not say which address the client used, such as a broadcast DISCOVER. Addresses
+// Address answers a request that doesn't say which address the client used, such as a broadcast DISCOVER. Addresses
 // holds every IPv4 address, because a site's option 66 or an HTTP boot URL may name a secondary one.
 public sealed record ServedInterface(int Index, string Name, IReadOnlyList<IPAddress> Addresses)
 {

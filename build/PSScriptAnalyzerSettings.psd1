@@ -9,8 +9,8 @@
         # The scripts report progress to the person running them. Write-Output would mix it into what they return.
         'PSAvoidUsingWriteHost'
 
-        # The functions are steps of one run rather than commands of their own. A script that removes what someone
-        # may want to keep, like New-TestVm.ps1 -Remove, takes -WhatIf itself.
+        # The functions are steps of one run, not commands on their own. A script that removes something someone may
+        # want to keep, like New-TestVm.ps1 -Remove, takes -WhatIf itself.
         'PSUseShouldProcessForStateChangingFunctions'
     )
 
@@ -21,7 +21,7 @@
             TargetVersions = @('5.1')
         }
 
-        # Invoke-Native passes a native command line on, which is positional by nature.
+        # Invoke-Native passes a native command line along, and that's positional by nature.
         PSAvoidUsingPositionalParameters = @{
             CommandAllowList = @('Invoke-Native')
         }

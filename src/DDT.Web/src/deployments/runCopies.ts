@@ -14,8 +14,8 @@ const stepOrder: Record<StepState, number> = {
   Failed: 2,
 };
 
-// Whether a pushed step is at least as new as the page's copy. A higher pass is a new visit of a node in a repeat;
-// within a visit a step only moves forward, and a repeat only on to later times through its body.
+// Whether a pushed step is at least as new as the page's copy. A higher pass is a new visit of a node in a repeat.
+// Within a visit, a step only moves forward, and a repeat only moves on to later iterations.
 export function isNewerStep(known: DeploymentStepView, step: DeploymentStepView): boolean {
   const knownPass = known.pass ?? 0;
   const pass = step.pass ?? 0;

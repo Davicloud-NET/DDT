@@ -19,7 +19,7 @@ interface HardwareModelsFieldProps {
   targets: TargetRows;
   // The rows as a save sends them.
   cleaned: readonly HardwareModel[];
-  // What registered machines reported, to offer and to count matches.
+  // The models registered machines reported, for the suggestions and the match count.
   models: readonly HardwareModelCount[];
   errors: readonly string[];
 }

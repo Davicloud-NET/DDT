@@ -11,9 +11,9 @@ import type { LdapSettings } from "../signIn";
 
 import { describeGroup } from "./groupDescription";
 
-// The names the directory has for the groups of the saved map, and for the groups added from the search since.
+// The directory's names for the groups in the saved map, and for groups added from the search since then.
 export function useDirectoryGroupNames(stored: LdapSettings | null) {
-  // The server searches the directory as it is saved, so only a saved server and search base can be searched.
+  // The server searches the directory with the saved settings, so only a saved server and search base can be searched.
   const storedReady =
     stored !== null &&
     stored.enabled &&

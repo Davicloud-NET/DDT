@@ -7,8 +7,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Signs an account in interactively, as a domain account needs for its own network access, with its profile loaded.
-// The sign-in may wait for a domain controller, so it runs on a thread of its own.
+// Signs an account in interactively, with its profile loaded. A domain account needs that for its own network access.
+// The sign-in may wait for a domain controller, so it runs on a separate thread.
 [SupportedOSPlatform("windows")]
 public sealed class WindowsAccountLogons(AgentLog log) : IAccountLogons
 {

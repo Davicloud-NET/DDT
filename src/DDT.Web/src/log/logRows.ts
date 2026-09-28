@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Rows never wrap, so every row has this height, which LogRow's h-5 sets.
+// Rows never wrap, so every row is this tall. LogRow's h-5 sets it.
 export const ROW_HEIGHT = 20;
 
 // Rows rendered above and below the visible ones, so fast scrolling shows no gap.

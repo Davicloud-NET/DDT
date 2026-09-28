@@ -9,7 +9,7 @@ import { StateTag } from "@/ui/StateTag";
 
 import { isListed, withInterface, type PxeHostInterfaces } from "../networkBoot";
 
-// One host's interfaces, with a checkbox that lists or takes out each.
+// One host's interfaces, each with a checkbox that adds it to the list or removes it.
 export function HostInterfaces({
   host,
   entries,

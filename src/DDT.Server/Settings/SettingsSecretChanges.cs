@@ -8,10 +8,10 @@ using DDT.Core.Configuration;
 
 namespace DDT.Server.Settings;
 
-// What a save does to a section's secrets. A secret configuration locks is left alone.
+// Works out what a save does to a section's secrets. A secret that configuration locks is left alone.
 public sealed class SettingsSecretChanges(SettingsProtector protector)
 {
-    // Kept lists the stored secrets the save keeps, which may go only where they went before.
+    // Kept lists the stored secrets the save keeps. They may only go where they went before.
     public (Dictionary<string, StoredSecret> Secrets, List<string> Changes, List<SettingProblem> Problems, List<SettingField> Kept) Apply(
         SettingsSectionDefinition definition,
         SettingsSectionState before,
@@ -67,7 +67,7 @@ public sealed class SettingsSecretChanges(SettingsProtector protector)
         return (secrets, changes, problems, kept);
     }
 
-    // The kept secrets whose destination the save changes, as problems of their fields.
+    // Returns a problem for each kept secret whose destination the save changes, on that secret's field.
     public static List<SettingProblem> Moved(
         SettingsSectionDefinition definition,
         IEnumerable<SettingField> kept,

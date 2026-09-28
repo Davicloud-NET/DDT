@@ -30,7 +30,7 @@ export function Toast({ toast }: { toast: QueuedToast<ToastMessage> }) {
   const key = toast.key;
   const leaving = useSyncExternalStore(toasts.subscribeLeaving, () => toasts.isLeaving(key));
 
-  // The close ends once the exit has run, or at once where nothing runs: with "reduce motion", or in tests.
+  // The close finishes once the exit animation has run, or at once if nothing runs: with "reduce motion", or in tests.
   useLayoutEffect(() => {
     if (!leaving) {
       return;

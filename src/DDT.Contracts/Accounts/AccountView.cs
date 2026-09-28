@@ -6,13 +6,13 @@ using DDT.Contracts.Settings;
 
 namespace DDT.Contracts.Accounts;
 
-// An account steps use, stored with its password encrypted; the password never leaves the server except to the step
-// that uses it, while it runs. The account is bound to its destinations.
+// An account that steps use. Its password is stored encrypted and only leaves the server for the step that uses it,
+// while that step runs. The account is bound to its destinations.
 public sealed record AccountView(
     Guid Id,
     string Name,
     string UserName,
-    // The domain a join with it may join.
+    // The domain this account may join machines to.
     string? Domain,
     // The share hosts it may connect to.
     IReadOnlyList<string> Hosts,

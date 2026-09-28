@@ -4,7 +4,7 @@
 
 import { Trans } from "@lingui/react/macro";
 
-// The line between Windows PE and the installed Windows, above the node whose top edge is at top.
+// The line between WinPE and the installed Windows. It's drawn above the node whose top edge is at top.
 export function HandoverLine({ top, width }: { top: number; width: number }) {
   return (
     <div aria-hidden="true">

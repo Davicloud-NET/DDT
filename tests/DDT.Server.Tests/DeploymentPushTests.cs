@@ -67,7 +67,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         (await administrator.AssignAsync(machine.Id, sequence.Id)).EnsureSuccessStatusCode();
         Guid deployment = (await PushedAsync(pushes.Reader, machine.Id, m => m.Deployment?.State == DeploymentState.Assigned)).Deployment!.Id;
 
-        // A poll after a while records last seen and pushes: the run stays in the row.
+        // A poll after a while records last seen and pushes the row. The run stays in it.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved)).Deployment?.Id);
@@ -78,7 +78,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(sequence.Name, cancelled.Deployment?.Title);
         Assert.Equal(1, cancelled.Deployment?.StepCount);
 
-        // Nothing is active any more: every later push carries the one that ended last.
+        // Nothing is active anymore. Every later push carries the run that ended last.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved && m.Deployment?.State == DeploymentState.Cancelled)).Deployment?.Id);
@@ -94,7 +94,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Rejected)).Deployment?.Id);
     }
 
-    // A running run's row shows its step, and every push carries the latest of it.
+    // The row of a running run shows its step, and every push carries the latest one.
     [Fact]
     public async Task APushCarriesTheStepTheRunIsAt()
     {

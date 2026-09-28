@@ -19,8 +19,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The step a run waits at for someone is current but not running: yellow says someone has to act, and only what runs
-// moves, so its module is filled with the attention colour without stripes, and its number is not the run's blue.
+// The step where a run waits for someone is current but not running. Yellow says someone has to act, and only a running
+// step moves. So its module is filled with the attention colour without stripes, and its number isn't the run's blue.
 public sealed class RailTests
 {
     [Fact]
@@ -34,7 +34,7 @@ public sealed class RailTests
         Assert.False(paused.IsRunning);
         Assert.Equal("Step 4, Check the BIOS: Paused", paused.Description);
 
-        // Once the run goes on, the step runs again as any step does.
+        // Once the run continues, the step runs again like any other step.
         console.Show(Scenarios.Paused with { Run = Scenarios.Paused.Run! with { Activity = ConsoleActivity.Step } });
         RailStep running = Assert.IsType<RunViewModel>(console.Model.Screen).Steps[3];
 
@@ -65,7 +65,7 @@ public sealed class RailTests
             Assert.Equal(Resource(window, "SgAttentionTextColor", theme), Assert.IsAssignableFrom<ISolidColorBrush>(number.Foreground).Color);
             Assert.DoesNotContain("running", number.Classes);
 
-            // Across the whole module, away from its rounded corners: the one colour, no stripe anywhere.
+            // Across the whole module, away from its rounded corners, there's one colour and no stripe anywhere.
             using WriteableBitmap frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("Nothing was drawn.");
             Point origin = module.TranslatePoint(default, window) ?? throw new InvalidOperationException("The module is not on the window.");
             int y = (int)(origin.Y + module.Bounds.Height / 2);

@@ -11,7 +11,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import type { SequenceEditorState } from "../../useSequenceEditor";
 
-// The Undo and Redo buttons; Ctrl+Z and Ctrl+Y work anywhere but in a text field, which keeps its own undo.
+// The Undo and Redo buttons. Ctrl+Z and Ctrl+Y work anywhere except in a text field, which has its own undo.
 export function UndoRedo({ editor }: { editor: SequenceEditorState }) {
   const { t } = useLingui();
 

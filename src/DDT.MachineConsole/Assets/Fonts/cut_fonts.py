@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Cuts a static face of Archivo and Martian Mono for each weight and width tokens.json uses, since the console cannot
-# vary a font's axes. Faces are named as Tokens.axaml asks for them, such as "Archivo 750 62", with tabular digits.
-# Needs fonttools (pip install fonttools), and rewrites the .ttf files next to it.
+# Cuts a static font of Archivo and Martian Mono for each weight and width that tokens.json uses, because the console
+# can't vary a font's axes. Each font gets the name Tokens.axaml uses, like "Archivo 750 62", and tabular digits.
+# Needs fonttools (pip install fonttools) and rewrites the .ttf files next to this script.
 
 import hashlib
 import io
@@ -71,7 +71,7 @@ def source(family):
 
 
 def tabular_digits(font):
-    # The digits of the cmap become the glyphs the tnum feature substitutes for them.
+    # Points the cmap's digits at the glyphs the tnum feature substitutes for them.
     gsub = font["GSUB"].table
     mapping = {}
 

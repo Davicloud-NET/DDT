@@ -7,9 +7,9 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// Registers the DdtSequence service straight into the installed Windows' SYSTEM hive from Windows PE, so it starts
-// whatever the image does with SetupComplete.cmd or its OEM keys. The hive is unloaded whatever happens: loaded, it stays
-// locked.
+// Registers the DdtSequence service straight into the installed Windows' SYSTEM hive from WinPE, so it starts whatever
+// the image does with SetupComplete.cmd or its OEM keys. The hive is unloaded whatever happens, because a loaded hive
+// stays locked.
 public sealed class OfflineServiceRegistration(IToolRunner tools, AgentLog log, bool dryRun)
 {
     public const string ServiceName = "DdtSequence";

@@ -4,5 +4,5 @@
 
 namespace DDT.Pxe;
 
-// What configuration alone decides for netboot: the port of HTTP boot, and the folder served from.
+// What only configuration decides for netboot. That's the HTTP boot port and the folder files are served from.
 public sealed record PxeBootstrap(int HttpBootPort, BootFileResolver Files);

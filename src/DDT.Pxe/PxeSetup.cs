@@ -256,8 +256,8 @@ public sealed class PxeSetup
             problems.Add(new($"{field}:Method", ServerMessages.SettingsPxeMethodInvalid.With()));
         }
 
-        // The architecture already says which one the firmware speaks: a PXE client never accepts a
-        // URL and an HTTP Boot client never accepts a TFTP path.
+        // The architecture already says which one the firmware speaks. A PXE client never accepts a URL, and an HTTP
+        // Boot client never accepts a TFTP path.
         bool httpArchitecture = architecture.EndsWith("Http", StringComparison.Ordinal);
 
         if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
@@ -307,8 +307,8 @@ public sealed class PxeSetup
         return serverAddress;
     }
 
-    // Kestrel loads a PFX from Path alone, and a PEM key is kept next to its certificate, so every certificate file
-    // counts: under Kestrel:Certificates, and under each endpoint and its SNI entries.
+    // Kestrel loads a PFX from Path alone, and a PEM key sits next to its certificate, so every certificate file
+    // counts. That includes the ones under Kestrel:Certificates, and under each endpoint and its SNI entries.
     private static IEnumerable<string> CertificateFilesIn(IConfiguration configuration) =>
         configuration.GetSection("Kestrel").AsEnumerable()
             .Where(setting => !string.IsNullOrWhiteSpace(setting.Value)
@@ -316,7 +316,7 @@ public sealed class PxeSetup
                     || setting.Key.EndsWith(":KeyPath", StringComparison.OrdinalIgnoreCase)))
             .Select(setting => setting.Value!);
 
-    // Without regard to case, which on a case sensitive filesystem refuses slightly more than it has to.
+    // Ignores case. On a case sensitive filesystem, that refuses slightly more than it has to.
     private static bool IsSameOrInside(string path, string directory) =>
         string.Equals(path, directory, StringComparison.OrdinalIgnoreCase)
         || path.StartsWith(

@@ -14,7 +14,7 @@ interface ReauthForAccountsProps {
   confirmLabel?: ReactNode;
 }
 
-// Changing an account needs the password of the person who changes it, as the server asks.
+// The server only accepts a change to an account after the person making it enters their password again.
 export function ReauthForAccounts({
   isOpen,
   onAccepted,

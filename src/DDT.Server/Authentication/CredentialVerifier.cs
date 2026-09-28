@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Authentication;
 
-// Checks credentials with the same accounts, lockout and directory as the web sign in, but signs nobody in:
-// the person typing them is at a machine, not the client of this request.
+// Checks credentials against the same accounts, lockout and directory as the web sign-in, but doesn't sign anyone in.
+// The person typing them sits at a machine and isn't the client of this request.
 public sealed class CredentialVerifier(
     UserManager<DdtUser> userManager,
     SignInManager<DdtUser> signInManager,
@@ -31,8 +31,8 @@ public sealed class CredentialVerifier(
             return await directory.AuthenticateAsync(userName, password, cancellationToken).ConfigureAwait(false);
         }
 
-        // An unknown user and a wrong password must be indistinguishable in both body and timing. An account of single
-        // sign-on has no password to check, and a guess must not lock it out.
+        // An unknown user and a wrong password must look the same, both in the response and in timing. A single sign-on
+        // account has no password to check, and a guess must not lock it out.
         if (user is null or { Source: AccountSource.External })
         {
             _ = userManager.PasswordHasher.HashPassword(new DdtUser { UserName = userName }, password);

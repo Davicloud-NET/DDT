@@ -7,8 +7,8 @@ using System.Globalization;
 
 namespace DDT.E2E;
 
-// The published agent in a dry run as machine DRYRUN-<id>, whose disk it keeps under Root.
-// Its input is redirected, so nobody can type at it: machines are authorized on the web.
+// The published agent in a dry run as machine DRYRUN-<id>. It keeps the machine's disk under Root.
+// Its input is redirected, so nobody can type at it. That's why machines are authorized on the web.
 internal sealed class AgentProcess : IAsyncDisposable
 {
     private readonly Process _process;
@@ -26,7 +26,7 @@ internal sealed class AgentProcess : IAsyncDisposable
 
     public string SerialNumber => $"DRYRUN-{DryRunId}";
 
-    // The dry run's disk, which outlasts the process: an agent started again with the same id goes on with its run.
+    // The dry run's disk. It outlasts the process, so an agent started again with the same id continues its run.
     public string Root => RootOf(DryRunId);
 
     // Where a sequence that writes a raw disk image writes the dry run's disk. It outlasts the root.
@@ -71,8 +71,8 @@ internal sealed class AgentProcess : IAsyncDisposable
         return new AgentProcess(process, output, agent.DryRunId);
     }
 
-    // Returns while the file with this hash downloads into the run's cache, in either phase: the step that downloads it
-    // runs until the download is done. Polled often, so that even a quick download is seen.
+    // Returns while the file with this hash is downloading into the run's cache, in either phase. The step that
+    // downloads it runs until the download is done. Polled often, so even a quick download is seen.
     public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken)
     {
         string part = Path.Combine(Root, "W", "DDT", "cache", $"{sha256}.part");
@@ -111,7 +111,7 @@ internal sealed class AgentProcess : IAsyncDisposable
         return _process.ExitCode;
     }
 
-    // As a power loss would: nothing of the agent gets to run after this.
+    // Kills the agent like a power loss would. None of the agent's code gets to run after this.
     public async Task KillAsync()
     {
         if (!_process.HasExited)

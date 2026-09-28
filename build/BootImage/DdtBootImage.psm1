@@ -4,7 +4,7 @@
 
 # Builds DDT's Windows PE boot image with the Windows ADK. Build-BootImage.ps1 is its command line.
 
-# A module keeps neither of these from the script that imports it.
+# A module doesn't inherit these two from the script that imports it.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -38,7 +38,7 @@ function New-DdtBootImage {
     )
 
     # Resolved against the PowerShell location. [IO.Path]::GetFullPath uses the process directory, which Set-Location
-    # does not change, and the work directory is deleted recursively.
+    # doesn't change. That matters because the work directory is deleted recursively.
     $Destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination)
     $WorkDirectory = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($WorkDirectory)
 
@@ -47,11 +47,11 @@ function New-DdtBootImage {
         -KeyboardLayout $KeyboardLayout -ApiToken $ApiToken -DriverPath $DriverPath -ConsolePath $ConsolePath `
         -ExtraPath $ExtraPath -TrimListPath $TrimListPath -SkipTrim:$SkipTrim -WimLibraryPath $WimLibraryPath
 
-    # Checked before anything is built, so a missing package does not cost a copype run first.
+    # Checked before anything is built, so a missing package doesn't waste a copype run.
     $packages = @(if (-not $SkipPowerShell) { Get-PowerShellComponentPackage -ComponentDirectory $adk.Components })
 
-    # Beside the work directory rather than in it, because copype refuses a directory that exists. Downloaded before
-    # copype runs too, so a refused token or an unreachable server costs no build.
+    # Next to the work directory instead of in it, because copype refuses a directory that already exists. The drivers
+    # are downloaded before copype runs too, so a refused token or an unreachable server doesn't waste a build.
     $downloads = "$WorkDirectory-drivers"
     Remove-BuildFolder -Path $downloads
     $serverDrivers = $null

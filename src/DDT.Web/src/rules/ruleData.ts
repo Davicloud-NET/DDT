@@ -4,7 +4,7 @@
 
 import type { InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
 
-// Rules and machine roles belong to no sequence: they declare no variables and ask nothing.
+// Rules and machine roles don't belong to a sequence. They don't declare variables or ask for inputs.
 export const noDeclarations: {
   variables: readonly VariableDeclaration[];
   inputs: readonly InputDeclaration[];

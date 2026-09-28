@@ -11,13 +11,13 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Endpoints;
 
-// Who may change the accounts, bound with [AsParameters]: a person signed in on the web who entered their password again
-// in the last five minutes. A token of a script proves nobody is there.
+// Who may change the accounts, bound with [AsParameters]. It's a person signed in on the web who entered their password
+// again in the last five minutes. A script's API token doesn't prove anyone is there.
 internal sealed record AccountWriteAccess(HttpContext Context, ReauthenticationTokens Reauthentication, UserManager<DdtUser> Users)
 {
     public Actor Actor => Actor.Of(Context);
 
-    // Null when the request may write.
+    // Null if the request may write.
     public async Task<ProblemHttpResult?> RefusedAsync()
     {
         if (Principals.ApiTokenId(Context.User) is not null)
@@ -27,7 +27,8 @@ internal sealed record AccountWriteAccess(HttpContext Context, ReauthenticationT
 
         if (!await Reauthentication.ValidAsync(Context, Context.User, Users).ConfigureAwait(false))
         {
-            // Fields as the settings name what needs the proof, so a page asks for the password the same way.
+            // Fields names what needs the proof, like on the settings endpoints, so a page asks for the password the
+            // same way.
             return ServerProblems.Problem(
                 ServerMessages.StepAccountReauthenticate.With(),
                 StatusCodes.Status403Forbidden,

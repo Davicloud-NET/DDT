@@ -10,7 +10,7 @@ import { FieldLabel } from "./FieldLabel";
 import { choicesOf, type InputFieldProps } from "./inputField";
 import { KeyChoice } from "./KeyChoice";
 
-// A choice of up to this many answers is a row of keys; a longer one is a list to open.
+// A choice with up to this many answers shows as a row of buttons. A longer one shows as a list to open.
 const KEYS_AT_MOST = 4;
 
 export function ChoiceField({ input, draft, hint, error, onChange }: InputFieldProps) {

@@ -14,9 +14,9 @@ import { inFilter, sequenceFilters, type SequenceFilter } from "../sequenceList"
 import type { SequenceSummary } from "../sequences";
 
 interface SequencesHeaderProps {
-  // Whether there is any sequence; an empty list offers no filter and no search.
+  // Whether there are any sequences. An empty list has no filter and no search.
   hasSequences: boolean;
-  // The sequences the search leaves, which the filter counts.
+  // The sequences that match the search. The filter counts them.
   matching: readonly SequenceSummary[];
   filter: SequenceFilter;
   query: string;

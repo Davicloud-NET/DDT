@@ -11,12 +11,12 @@ using DDT.Server.Machines;
 
 namespace DDT.Server.Rules;
 
-// The values a run on a machine works with, from the sources in the order ValueSources lets them win: the answers, the
-// machine's own values, the matching rules from the top, their machine roles, the sequence's defaults and the deployment
-// defaults. The rules are walked again each time, so a rule changed after an assignment counts when the run starts.
+// The values a run on a machine works with. The sources win in the order ValueSources gives: the answers, the machine's
+// own values, the matching rules from the top, their machine roles, the sequence's defaults and the deployment
+// defaults. The rules are walked again every time, so a rule changed after an assignment counts when the run starts.
 public sealed class MachineValues(SequenceResolver resolver)
 {
-    // The names the deployment defaults give their values, as RunInputs takes them from the Deployment defaults page.
+    // The value names of the deployment defaults, which RunInputs takes from the Deployment defaults page.
     public const string TimeZone = "TimeZone";
     public const string Locale = "Locale";
     public const string Keyboard = "Keyboard";
@@ -48,7 +48,7 @@ public sealed class MachineValues(SequenceResolver resolver)
         return Sources(machine, resolution, sequence, answers, deployment);
     }
 
-    // For a caller that walked the rules already.
+    // For a caller that already walked the rules.
     public static ValueSources Sources(
         Machine machine,
         SequenceResolution resolution,
@@ -72,7 +72,7 @@ public sealed class MachineValues(SequenceResolver resolver)
         };
     }
 
-    // The machine's own values: the name an operator or the technician gave it is its ComputerName.
+    // The machine's own values. The name an operator or the technician gave it becomes its ComputerName.
     public static IReadOnlyList<NamedValue> Own(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -82,7 +82,8 @@ public sealed class MachineValues(SequenceResolver resolver)
             : [new NamedValue(MachineVariableNames.ComputerName, machine.AssignedName.Trim())];
     }
 
-    // What the Deployment defaults page sets, taken as RunInputs.Capture takes it; what is not set gives no value.
+    // What the Deployment defaults page sets, read the same way RunInputs.Capture reads it. An empty setting gives no
+    // value.
     public static IReadOnlyList<NamedValue> DeploymentDefaults(DeploymentOptions deployment)
     {
         ArgumentNullException.ThrowIfNull(deployment);
@@ -114,7 +115,7 @@ public sealed class MachineValues(SequenceResolver resolver)
         return byName;
     }
 
-    // The problems that keep a run from starting, as a page shows them: a problem's Field is the value's or input's name.
+    // The problems that keep a run from starting, as a page shows them. Field is the name of the value or input.
     public static IReadOnlyList<SequenceProblem> ProblemsOf(ValueResolution resolution)
     {
         ArgumentNullException.ThrowIfNull(resolution);

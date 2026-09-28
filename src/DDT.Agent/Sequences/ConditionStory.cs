@@ -8,8 +8,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Says in the log's words why a node of a tree went the way it did, from the tests the engine kept in its Evaluation:
-// the values they read are gone by then, so nothing is tested again. Only the tests that decided a condition are named.
+// Explains in the log why a node of a tree went the way it did. It uses the tests the engine kept in its Evaluation,
+// because the values they read are gone by then, so nothing is tested again. Only the tests that decided a condition
+// are named.
 internal static class ConditionStory
 {
     private static readonly Dictionary<string, string> s_labels = new(StringComparer.Ordinal)
@@ -23,7 +24,7 @@ internal static class ConditionStory
         [MachineVariableNames.Phase] = "Phase",
     };
 
-    // The tests of the node's own conditions that did not hold, which is why it was skipped.
+    // The tests of the node's conditions that didn't hold, which is why it was skipped.
     public static IReadOnlyList<string> Unmet(SequenceStep node, IReadOnlyList<TestEvaluation> evaluations)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -51,8 +52,8 @@ internal static class ConditionStory
         return unmet;
     }
 
-    // Whether the condition held as the tests at path say, and the tests that decided it; Held is null when a test it
-    // needed was not kept, as happens past TestEvaluation.MaxPerNode.
+    // Whether the condition held as the tests at path say, and the tests that decided it. Held is null when a test it
+    // needed wasn't kept, which happens past TestEvaluation.MaxPerNode.
     public static (bool? Held, IReadOnlyList<string> Tests) Decided(ConditionNode? condition, string path, IReadOnlyList<TestEvaluation> evaluations)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -61,8 +62,8 @@ internal static class ConditionStory
         return Decide(condition, path, ByPath(evaluations)) is { } decided ? (decided.Held, decided.Tests) : (null, []);
     }
 
-    // "Model starts with "OptiPlex", and the machine reports "Latitude 5440"", as the web says it. actual is what the test
-    // was checked against, left out when there was none.
+    // Describes a test the way the web does: Model starts with "OptiPlex", and the machine reports "Latitude 5440".
+    // actual is what the test was checked against, and is left out when there was none.
     public static string Describe(string variable, ConditionOperator op, string? value, string? actual)
     {
         ArgumentNullException.ThrowIfNull(variable);
@@ -85,7 +86,8 @@ internal static class ConditionStory
         return $"{described}, and {whose} \"{Shown(variable, actual)}\"";
     }
 
-    // One sentence's end for a list of tests: "this condition did not hold: x." or "these conditions did not hold: x; y."
+    // The end of a sentence for a list of tests, such as "this condition did not hold: x." or "these conditions did
+    // not hold: x; y."
     public static string Sentence(IReadOnlyList<string> tests, string one, string several, string none) => tests.Count switch
     {
         0 => none,
@@ -105,8 +107,8 @@ internal static class ConditionStory
         return byPath;
     }
 
-    // Null when the condition is not there or a test it needed was not kept. The paths are the evaluator's: a group's
-    // parts are path.parts[i].
+    // Null when the condition isn't there or a test it needed wasn't kept. The paths are the evaluator's, where a
+    // group's parts are path.parts[i].
     private static Decision? Decide(ConditionNode? node, string path, Dictionary<string, TestEvaluation> evaluations)
     {
         switch (node)
@@ -137,8 +139,9 @@ internal static class ConditionStory
                     _ => false,
                 };
 
-                // The parts that made it come out as it did: an all that holds needs every part, one that does not the
-                // parts that failed it; an any is the other way round, and a none is an any that must not hold.
+                // The parts that decided the result. An all that holds needs every part, and one that doesn't is
+                // decided by the parts that failed. An any is the other way round, and a none is an any that must
+                // not hold.
                 bool? deciding = group switch
                 {
                     AllCondition => held ? null : false,
@@ -172,7 +175,7 @@ internal static class ConditionStory
         _ => "is tested against",
     };
 
-    // A MAC address as the web writes it, its bytes apart with colons, and the phase in words.
+    // A MAC address as the web writes it, with colons between its bytes, and the phase in words.
     private static string Shown(string variable, string actual)
     {
         if (string.Equals(variable, MachineVariableNames.Phase, StringComparison.OrdinalIgnoreCase))

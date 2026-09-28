@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Adds an uploaded zip to the library as a package. It logs under ImageUploadCompleter's category, which the logging
-// settings may name.
+// Adds an uploaded zip to the library as a package. It logs under ImageUploadCompleter's category, because the logging
+// settings may name that category.
 public sealed partial class PackageUploadCommitter(
     ImageStore store,
     UploadRefusals refusals,
@@ -49,7 +49,7 @@ public sealed partial class PackageUploadCommitter(
             database.Packages.Add(package);
         }
 
-        // An upload that adds nothing is still recorded, under the package its file already is.
+        // An upload that adds nothing is still recorded, under the package that already has its file.
         database.AuditEvents.Add(AuditEvents.Create(
             AuditActions.PackageUploaded,
             package.Id.ToString("D"),

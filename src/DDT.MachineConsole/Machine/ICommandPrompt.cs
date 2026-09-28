@@ -4,7 +4,7 @@
 
 namespace DDT.MachineConsole.Machine;
 
-// The command prompt a technician opens with Shift+F10 while the console runs, as in Windows Setup.
+// The command prompt a technician opens with Shift+F10 while the console runs, like in Windows Setup.
 public interface ICommandPrompt
 {
     void Open();

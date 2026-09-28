@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// KeyRingReadable: false when this server cannot read the key ring the stored secrets were encrypted with, and then it
-// saves no settings at all. Server lists what configuration alone decides, read-only.
+// KeyRingReadable is false when this server can't read the key ring the stored secrets were encrypted with. Then it
+// saves no settings at all. Server lists the read-only settings that only configuration decides.
 public sealed record SettingsOverview(IReadOnlyList<SettingsSectionSummary> Sections, IReadOnlyList<ServerSetting> Server, bool KeyRingReadable);

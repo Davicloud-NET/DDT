@@ -36,8 +36,8 @@ interface FlowOutlineProps {
   className?: string;
 }
 
-// The flow as a tree of rows: the accessible way through it, and the flow on a phone. Rows move by drag and drop, with
-// the pointer or the keyboard.
+// The flow as a tree of rows. It's the accessible way through the flow, and the view on a phone. Rows move by drag
+// and drop, with the pointer or the keyboard.
 export function FlowOutline({
   label,
   steps,
@@ -51,7 +51,7 @@ export function FlowOutline({
 }: FlowOutlineProps) {
   const { t } = useLingui();
   const rows = rowsOf(steps, "");
-  // Containers start open; the ones closed here stay closed while the page is open.
+  // Containers start open. The ones closed here stay closed while the page is open.
   const [closed, setClosed] = useState<ReadonlySet<Key>>(new Set());
   const expandable = expandableKeys(rows);
   const expanded = new Set(expandable.filter((key) => !closed.has(key)));

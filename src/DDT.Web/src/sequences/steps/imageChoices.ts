@@ -37,7 +37,7 @@ export function rawImageChoice(image: ImageSummary): Choice {
   };
 }
 
-// What an image that may not start with Secure Boot on means for the machines, or null for one that does.
+// What it means for the machines if an image may not start with Secure Boot on. Null for an image that does.
 export function secureBootWarning(image: ImageSummary): string | null {
   switch (image.bootCapability) {
     case "NotSigned":

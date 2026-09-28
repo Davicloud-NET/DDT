@@ -9,8 +9,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// Writes each line to the console at once, as in Windows PE it is all an operator has, and queues it for the server.
-// The text console gets every line even under the graphical one, which may go away. Times are UTC; dated lines suit a file.
+// Writes each line to the console right away and queues it for the server. In WinPE the console is all an operator
+// has. The text console gets every line even when the graphical one runs, because that one may go away.
+// Times are UTC. Dated lines are meant for a file.
 public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool datedLines = false)
 {
     private const int MaxQueuedLines = 2000;
@@ -26,7 +27,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
     private Guid? _stepId;
     private IMachineConsole? _machineConsole;
 
-    // A console that shows the log itself, such as the graphical one, which gets every line from now on, in order.
+    // A console that shows the log itself, such as the graphical one. It gets every line from now on, in order.
     public IMachineConsole? MachineConsole
     {
         get
@@ -52,8 +53,8 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
 
     public void Error(string message) => Write(AgentLogLevel.Error, message);
 
-    // While someone types at a prompt, lines are kept off the console so they do not split the typed line, and
-    // they appear once the prompt is done.
+    // While someone types at a prompt, new lines are held back so they don't split the typed line. They appear once
+    // the prompt is done.
     public void HoldConsole(string prompt)
     {
         lock (_lock)
@@ -78,8 +79,8 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
         }
     }
 
-    // The run's step that is running, which every line written meanwhile names, so the server can show a step's
-    // lines. Null between steps.
+    // The step that is running now. Every line written meanwhile names it, so the server can show each step's lines.
+    // Null between steps.
     public Guid? StepId
     {
         get
@@ -122,8 +123,8 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
         {
             dropped = _dropped;
 
-            // The count of lost lines travels in the batch rather than the queue, so it cannot itself be
-            // evicted, and it is only cleared once a batch carrying it has been accepted.
+            // The count of dropped lines travels in the batch, not in the queue, so it can't be evicted itself.
+            // It's only cleared once the server has accepted a batch that carries it.
             if (dropped > 0)
             {
                 batch.Add(new AgentLogLine(
@@ -145,8 +146,8 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
         // The server corrects the lines' times by how far this clock is from its own when the batch arrives.
         await server.SendLogAsync(machineId, token, new AgentLogBatch(batch, timeProvider.GetUtcNow()), cancellationToken).ConfigureAwait(false);
 
-        // Removed by sequence, not position: lines evicted while the batch was on its way have shifted the
-        // queue, and must not take unsent lines with them.
+        // Remove by sequence, not by position. Lines evicted while the batch was on its way have shifted the queue,
+        // and unsent lines must not be removed with them.
         lock (_lock)
         {
             _pending.RemoveAll(entry => entry.Sequence <= lastSequence);

@@ -10,7 +10,7 @@ public enum ConsoleStepState
     Running,
     Done,
 
-    // Its conditions did not hold.
+    // Its conditions didn't hold.
     Skipped,
     Failed,
 }

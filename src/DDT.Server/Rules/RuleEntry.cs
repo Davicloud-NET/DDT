@@ -16,7 +16,7 @@ public sealed record RuleEntry(
     IReadOnlyList<Guid> RoleIds,
     IReadOnlyList<SequenceProblem> Problems)
 {
-    // The condition tests a value rather than a machine fact; ComputerName counts, since a value may set it.
+    // Whether the condition tests a value rather than a machine fact. ComputerName counts, since a value may set it.
     public bool TestsValues { get; } = RuleChecks.Names(When).Any(name =>
         MachineVariables.Fact(name) is null or MachineVariableNames.ComputerName);
 }

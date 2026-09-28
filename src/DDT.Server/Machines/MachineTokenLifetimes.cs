@@ -6,8 +6,8 @@ namespace DDT.Server.Machines;
 
 public static class MachineTokenLifetimes
 {
-    // Short enough that a stolen token is worth little, long enough that a multi gigabyte image
-    // copy never depends on one token surviving: the agent refreshes instead.
+    // Short enough that a stolen token is worth little. A multi gigabyte image copy doesn't need one token to last that
+    // long, because the agent refreshes it.
     public static readonly TimeSpan Session = TimeSpan.FromMinutes(15);
     public static readonly TimeSpan Poll = TimeSpan.FromMinutes(60);
 

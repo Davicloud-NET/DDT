@@ -20,7 +20,7 @@ internal sealed class MachineTransitions(
     MachineChangePublisher publisher,
     TimeProvider timeProvider)
 {
-    // Refusal says why the machine cannot be approved in its state, null when it can.
+    // Refusal says why the machine can't be approved in its state, or returns null if it can.
     public Task<MachineOutcome> ApproveAsync(Guid id, Func<Machine, ServerMessage?> refusal, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -47,8 +47,8 @@ internal sealed class MachineTransitions(
                     : ServerMessages.MachineInState.With("state", StateName(machine.State)),
                 (machine, active, _) =>
                 {
-                    // The generation bump kills every token already issued, so a rejected machine stops mid request
-                    // rather than at its next token refresh, a running deployment included.
+                    // The generation bump kills every token already issued. So a rejected machine stops right away, not
+                    // at its next token refresh, even during a running deployment.
                     machine.State = MachineState.Rejected;
                     machine.TokenGeneration++;
                     machine.ApprovedByUserId = null;
@@ -110,6 +110,6 @@ internal sealed class MachineTransitions(
             : MachineOutcome.Refused(DeploymentDecision.Conflict(ServerMessages.MachineChangedWhileDeciding.With()));
     }
 
-    // Action is the audit's; Apply changes the machine and its active run, given the time of the change.
+    // Action is the audit action. Apply changes the machine and its active run, given the time of the change.
     private sealed record Transition(string Action, Func<Machine, ServerMessage?> Refusal, Func<Machine, Deployment?, DateTimeOffset, Task> Apply);
 }

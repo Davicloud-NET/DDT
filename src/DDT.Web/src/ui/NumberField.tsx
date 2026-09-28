@@ -19,7 +19,8 @@ import {
 import { cx } from "./cx";
 import { fieldClass } from "./TextField";
 
-// A whole number with a unit, for sizes, timeouts and exit codes. Keys step it; typing checks it on leaving.
+// A whole number with a unit, for sizes, timeouts and exit codes. Its stepper buttons step it, and a typed value is
+// checked when the field loses focus.
 export function NumberField({
   label,
   hint,

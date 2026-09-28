@@ -7,7 +7,7 @@ using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;
 
-// What a test changes of the service WindowsPhaseLoopTestBase runs; null keeps the fake's.
+// What a test changes about the service WindowsPhaseLoopTestBase runs. Null keeps the fake's default.
 internal sealed record ServiceRunOptions
 {
     public TimeProvider? Time { get; init; }

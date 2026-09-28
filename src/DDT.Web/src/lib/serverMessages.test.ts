@@ -16,7 +16,8 @@ import {
 } from "../../scripts/server-messages.mjs";
 
 describe("the server's messages", () => {
-  // The server's test TheWebCatalogIsCurrent keeps server-messages.json the server's catalog.
+  // The server's test TheWebCatalogIsCurrent keeps server-messages.json in sync with the server's
+  // catalog.
   it("are what serverMessages.ts was written from", () => {
     const written = readFileSync(webCatalogPath, "utf8").replace(/\r\n/g, "\n");
 

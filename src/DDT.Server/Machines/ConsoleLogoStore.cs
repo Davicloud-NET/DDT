@@ -73,8 +73,8 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
 
     public void Delete() => File.Delete(Path);
 
-    // Null unless the bytes are a PNG: the signature, IHDR first with at least one pixel, whole chunks, IEND last. Only
-    // the structure is checked; the console's decoder reads the pixels.
+    // Null unless the bytes are a PNG: the signature, IHDR first with at least one pixel, whole chunks, and IEND last.
+    // Only the structure is checked. The console's decoder reads the pixels.
     public static ConsoleLogoFile? Describe(ReadOnlySpan<byte> png)
     {
         if (!png.StartsWith(Signature))

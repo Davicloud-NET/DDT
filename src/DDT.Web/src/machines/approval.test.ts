@@ -139,7 +139,8 @@ describe("approvalPlan", () => {
     expect(approvalPlan(machine, { ...chosen, problemCount: 1 }, [linux])?.sequence).toBeNull();
   });
 
-  // A rule's name pattern names every machine it matches, so the approval runs the sequence and says the name.
+  // A rule's name pattern gives every matching machine a name. So the approval runs the sequence and says which name
+  // the machine gets.
   it("runs a sequence that needs a computer name when the machine's values give one", () => {
     const unnamed = { ...machine, assignedName: null };
     const joins = { ...installWindows, needsComputerName: true };
@@ -164,7 +165,7 @@ describe("approvalPlan", () => {
       "Approving Latitude 7440 (00:15:5D:01:02:03) also runs Install Windows on it, which a rule for its MAC address chose. It is named PC-00042. Its disk is not erased.",
     );
 
-    // A name Windows would refuse is none.
+    // A name Windows would refuse counts as no name.
     const refused = approvalPlan(
       unnamed,
       {

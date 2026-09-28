@@ -9,7 +9,7 @@ namespace DDT.Agent.Consoles;
 // Reads a console's answers into the question slot until the pipe closes.
 internal static class ConsoleAnswers
 {
-    // Why it stopped. An answer to a question no longer open is left to the slot, which ignores it.
+    // Returns why it stopped. An answer to a question that's no longer open still goes to the slot, which ignores it.
     public static async Task<string?> ReadAsync(ConsoleChannel channel, QuestionSlot questions, CancellationToken cancellationToken)
     {
         try

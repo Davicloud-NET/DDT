@@ -12,6 +12,6 @@ public enum AgentBinarySource
     // Uploaded on the settings page.
     Uploaded,
 
-    // DDT:Agent:BinaryPath names the file, which the page then cannot replace.
+    // DDT:Agent:BinaryPath names the file, so the page can't replace it.
     Configuration,
 }

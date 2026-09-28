@@ -4,8 +4,8 @@
 
 namespace DDT.Agent;
 
-// The agent reaches machines alone, in a boot image or as an update, so it carries the legal texts that concern
-// it. The start-up lines are the GPL's Appropriate Legal Notices; the LGPL asks for wimlib's copyright among them.
+// The agent reaches machines on its own, in a boot image or as an update, so it carries the legal texts that apply
+// to it. The start-up lines are the GPL's Appropriate Legal Notices. The LGPL wants wimlib's copyright among them.
 public static class AgentLegalNotices
 {
     public const string LicensesArgument = "--licenses";

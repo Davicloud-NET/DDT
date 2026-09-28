@@ -50,12 +50,12 @@ public abstract class SequenceRunnerTestBase : IDisposable
 
     private protected AgentRun InstallWindows(int? diskNumber = null) => TestRuns.Run(TestRuns.InstallWindows, _image, diskNumber: diskNumber);
 
-    // Goes on in Windows after the answer file.
+    // Continues in Windows after the answer file.
     private protected AgentRun InWindows() => TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image);
 
-    // The first beat stays on its way until the engine has asked for the restart and the runner recorded it, then runs
-    // act, which may also refuse the beat. The partitioning waits until that beat has reached the server, however late
-    // it comes: otherwise quick steps can be over before it, and the first report after them is the restart's own.
+    // The first beat is held back until the engine has asked for the restart and the runner recorded it. Then it runs
+    // act, which may also refuse the beat. The partitioning waits until that beat reaches the server, however late.
+    // Otherwise quick steps can finish before it, and the first report after them is the restart's.
     private protected void OnFirstBeatOnceTheRestartIsDue(ScriptedAgentServer server, Action act)
     {
         string marker = TestAgents.RestartMarker(_tools, Log()).FilePath;

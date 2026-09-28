@@ -8,8 +8,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The text console asks a sequence's inputs one prompt at a time, and a Pause step with Enter, as Windows PE shows them
-// when the graphical console is not there. What is typed never reaches the log.
+// The text console asks a sequence's inputs one prompt at a time, and a Pause step with Enter. That's how WinPE shows
+// them when the graphical console isn't there. What's typed never reaches the log.
 public sealed class TextMachineConsoleTests : IDisposable
 {
     private const string Password = "Tr0ub4dor&3-join";
@@ -110,7 +110,7 @@ public sealed class TextMachineConsoleTests : IDisposable
         Assert.Contains("WARN  Type y or n.", log, StringComparison.Ordinal);
     }
 
-    // As at the sign-in, an empty password goes back to the user name.
+    // Like at the sign-in, an empty password goes back to the user name.
     [Fact]
     public async Task GoesBackToTheUserNameOnAnEmptyPassword()
     {
@@ -157,7 +157,7 @@ public sealed class TextMachineConsoleTests : IDisposable
         Assert.Contains("INFO  Then come back here.", log, StringComparison.Ordinal);
     }
 
-    // Continued on the web meanwhile: the agent withdraws the prompt, and nothing is answered.
+    // Continued on the web in the meantime. The agent withdraws the prompt, and nothing is answered.
     [Fact]
     public async Task GivesUpAPauseTheAgentWithdraws()
     {

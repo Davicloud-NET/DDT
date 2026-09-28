@@ -8,7 +8,7 @@ namespace DDT.Server.Deployments;
 public sealed record RunAccount(
     string InputName,
     string UserName,
-    // Null when it no longer decrypts with this server's key ring.
+    // Null if it no longer decrypts with this server's key ring.
     string? Password,
     // Domain, Hosts and RunAs are the destination as the input declared it when the account was given.
     string? Domain,

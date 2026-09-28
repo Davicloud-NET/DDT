@@ -90,8 +90,8 @@ public sealed class SettingsFrameworkTests
         Assert.False(services.GetRequiredService<ILoggerFactory>().CreateLogger("Other").IsEnabled(LogLevel.Information));
     }
 
-    // ForwardedHeadersMiddleware.ApplyForwarders is public, so the proxies can change while the server runs: a proxy
-    // saved on the page is believed from the next request on, and one removed is not.
+    // ForwardedHeadersMiddleware.ApplyForwarders is public, so the proxies can change while the server runs.
+    // A proxy saved on the page is believed from the next request on, and a removed one isn't.
     [Fact]
     public async Task AProxySavedOnThePageIsBelievedFromTheNextRequest()
     {

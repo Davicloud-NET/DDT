@@ -16,8 +16,8 @@ import type { SecretAction, SecretState } from "../settings";
 import { FieldFrame } from "./FieldFrame";
 import type { SettingFieldProps } from "./fieldProps";
 
-// A secret the server never sends back: it says only whether one is set. Typing a new one replaces it on save;
-// clearing removes it.
+// A secret the server never sends back. It only says whether one is set. Typing a new one replaces it on save,
+// and clearing removes it.
 export function SettingSecret<T>({ form, field, label, hint, canChange }: SettingFieldProps<T>) {
   const { t: translate } = useLingui();
   const state = form.view?.secrets[field] ?? null;

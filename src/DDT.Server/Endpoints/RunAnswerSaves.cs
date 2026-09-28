@@ -10,11 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DDT.Server.Endpoints;
 
-// The machine's page and the machine can answer at the same moment, and nothing else on the run's row tells them apart,
-// so the answers are compared and replaced in one statement first: whoever answered in the meantime wins.
+// The machine's page and the machine can answer at the same moment, and nothing else on the run's row tells the two
+// apart. So the answers are first compared and replaced in one statement, and whoever answered in the meantime wins.
 public static class RunAnswerSaves
 {
-    // True when saved, with everything else the request changed. The changes are accepted only once the transaction
+    // True if saved, along with everything else the request changed. The changes are only accepted once the transaction
     // commits, so the execution strategy can run it again.
     public static async Task<bool> SaveAsync(DdtDbContext database, Deployment run, string? before, CancellationToken cancellationToken)
     {

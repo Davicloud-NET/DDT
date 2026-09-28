@@ -7,8 +7,8 @@ import { isContainer } from "../steps";
 import type { FlowEdit } from "./flowEdits";
 import { bodiesOf, type Slot, type TreeEntry, type TreeIndex } from "./flowTree";
 
-// The keys of the flow canvas, from the tree alone: one Tab stop, Up and Down the way the flow runs, Left and Right
-// across an IF's branches, Home and End to the ends, and Escape out to the container around.
+// The flow canvas's keys, worked out from the tree alone. The canvas is one Tab stop. Up and Down follow the flow,
+// Left and Right cross an IF's branches, Home and End go to the ends, and Escape goes out to the container around.
 
 export type FlowMove = "up" | "down" | "left" | "right" | "home" | "end" | "parent";
 
@@ -21,7 +21,7 @@ export type FlowCommand =
   | { type: "cut" }
   | { type: "paste" }
   | { type: "duplicate" }
-  // Alt with Up or Down: the node trades places with the one before or after it.
+  // Alt+Up or Alt+Down: the node swaps places with the one before or after it.
   | { type: "shift"; by: -1 | 1 }
   // Shift+F10 or the menu key: the node's menu.
   | { type: "menu" };
@@ -34,8 +34,8 @@ interface KeyInput {
   altKey: boolean;
 }
 
-// The command a key gives on a node of the canvas, or null for a key the canvas leaves alone, such as Ctrl+Z, which
-// the page's history takes, and the zoom keys, which the canvas's viewport takes.
+// The command a key gives on a canvas node, or null for a key the canvas ignores. Ctrl+Z is one, because the page's
+// history handles it. The zoom keys are others, because the canvas's viewport handles them.
 export function flowCommand(event: KeyInput): FlowCommand | null {
   const command = event.ctrlKey || event.metaKey;
 
@@ -106,8 +106,8 @@ function listOf(index: TreeIndex, entry: TreeEntry): TreeEntry[] {
   );
 }
 
-// The first node inside a container the flow goes into, or null where it goes past: a leaf, a collapsed container,
-// or one with nothing inside.
+// The first node inside a container that the flow goes into. Null if the flow goes past it: for a leaf, a collapsed
+// container, or an empty one.
 function firstInside(node: SequenceStep, collapsed: ReadonlySet<string>): string | null {
   if (!isContainer(node) || collapsed.has(node.id)) {
     return null;
@@ -154,7 +154,7 @@ function after(index: TreeIndex, entry: TreeEntry): string | null {
   return parent === undefined ? null : after(index, parent);
 }
 
-// The nearest node, the node itself or a container around it, that sits in a branch of an IF.
+// The nearest node that sits in a branch of an IF: the node itself or a container around it.
 function inBranch(index: TreeIndex, entry: TreeEntry, branch: "then" | "else"): TreeEntry | null {
   let current: TreeEntry | undefined = entry;
 
@@ -169,7 +169,7 @@ function inBranch(index: TreeIndex, entry: TreeEntry, branch: "then" | "else"): 
   return null;
 }
 
-// The node a move goes to from id, or null where there is none and the focus stays.
+// The node a move from id goes to. Null if there's none, and then the focus stays.
 export function flowTarget(
   index: TreeIndex,
   id: string,
@@ -213,7 +213,7 @@ export function flowTarget(
   }
 }
 
-// Alt with Up or Down: the node trades places with its neighbour in its list; null at the end of it.
+// Alt+Up or Alt+Down: the node swaps places with its neighbour in its list. Null at the end of the list.
 export function shiftEdit(index: TreeIndex, id: string, by: -1 | 1): FlowEdit | null {
   const entry = index.byId.get(id);
 
@@ -235,7 +235,7 @@ export function shiftEdit(index: TreeIndex, id: string, by: -1 | 1): FlowEdit | 
   };
 }
 
-// The gap right after a node, where a paste or a copy goes; the end of the top list without one.
+// The gap right after a node, where a paste or a copy goes. Without a node, it's the end of the top-level list.
 export function slotAfter(index: TreeIndex, id: string | null): Slot {
   const entry = id === null ? undefined : index.byId.get(id);
 

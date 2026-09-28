@@ -17,7 +17,7 @@ interface CanvasBackdropProps {
   phases: ReadonlyMap<string, readonly SequencePhase[]>;
 }
 
-// What the canvas draws under the cards: the containers' frames, the line of the hand-over and the wires.
+// What the canvas draws under the cards: the containers' frames, the hand-over line and the wires.
 export function CanvasBackdrop({ layout, steps, phases }: CanvasBackdropProps) {
   const hand = handover(steps, phases);
   const handBox = hand === null ? undefined : layout.boxes.find((box) => box.id === hand);

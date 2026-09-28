@@ -81,7 +81,7 @@ public sealed class OfflineServiceRegistrationTests
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(
             () => new OfflineServiceRegistration(_tools, _log, dryRun: false).RegisterAsync(Windows, TestContext.Current.CancellationToken));
 
-        // The first failure is the one reported; the unload's only warns.
+        // The first failure is the one reported. The unload's failure only logs a warning.
         Assert.Equal("reg.exe failed with exit code 0x00000001.", exception.Message);
         Assert.Equal(Reg("unload", @"HKLM\DDT_OFFLINE"), _tools.Calls[^1]);
         Assert.Contains("could not be unloaded (reg.exe failed with exit code 0x00000005.)", _console.ToString(), StringComparison.Ordinal);

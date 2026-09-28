@@ -13,7 +13,8 @@ import { StopConfirm } from "./actions/StopConfirm";
 import { AssignDialog } from "./AssignDialog";
 import type { StrayOffer } from "./list/strays";
 
-// The server refuses an assignment while the machine deploys, and for good in these states.
+// Only these states take an assignment. The server refuses one while the machine deploys, and for good once it's
+// rejected or retired.
 const assignableStates: readonly MachineState[] = ["Pending", "Approved", "Done", "Failed"];
 
 export interface MachineActionsProps {
@@ -21,12 +22,12 @@ export interface MachineActionsProps {
   actions: MachineActionState;
   // Offers to remove every stray that registered from this address at once.
   strays?: StrayOffer | null;
-  // A row shows one key and a menu; the detail panel shows its keys and a menu without Stop.
+  // A row shows one button and a menu. The detail panel shows its buttons, and a menu without Stop.
   layout?: "row" | "panel";
 }
 
-// What an operator can do to one machine, and the dialogs those open. The key that matters most for the machine's
-// state is shown; everything else is in the menu beside it.
+// What an operator can do to one machine, and the dialogs those actions open. The main button for the machine's
+// state is shown, and everything else is in the menu next to it.
 export function MachineActions({
   machine,
   actions,

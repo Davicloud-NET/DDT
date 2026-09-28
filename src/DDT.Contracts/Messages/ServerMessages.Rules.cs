@@ -6,7 +6,7 @@ namespace DDT.Contracts.Messages;
 
 public static partial class ServerMessages
 {
-    // Assignment rules and the models they, and driver packages, match.
+    // Assignment rules, and the models that rules and driver packages match.
 
     public static readonly MessageTemplate RuleChooseKind = Define("rule.chooseKind", "Choose a rule by MAC address or by model.");
 
@@ -18,8 +18,8 @@ public static partial class ServerMessages
         "rule.exists",
         "There is a rule for {rule} already. It chooses {sequence}; change that rule instead.");
 
-    // The ordered rules, the machine roles and the values both set. A rule is saved with its problems, which keep it from
-    // matching until they are fixed; a machine role with a problem is refused.
+    // The ordered rules, the machine roles, and the values both of them set. A rule is saved with its problems, which
+    // keep it from matching until they're fixed. A machine role with a problem is refused.
 
     public static readonly MessageTemplate RuleTooMany = Define(
         "rule.tooMany",

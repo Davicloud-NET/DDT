@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { continuesText, unansweredText, type WaitState } from "./waitState";
 
-// What the run waits for, that the person at the machine can do the same, and why letting it go on failed.
+// Says what the run waits for, that the person at the machine can do the same, and why continuing it failed.
 export function WaitingText({ wait, error }: { wait: WaitState; error: string | null }) {
   const { paused, message, pausedAt, continues, inputs } = wait;
 

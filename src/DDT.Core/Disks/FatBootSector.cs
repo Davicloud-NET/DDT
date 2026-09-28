@@ -7,7 +7,7 @@ using System.Text;
 
 namespace DDT.Core.Disks;
 
-// The BIOS parameter block of a FAT boot sector, as FatVolume reads it and FatVolumeBuilder writes it.
+// The BIOS parameter block of a FAT boot sector. FatVolume reads it and FatVolumeBuilder writes it.
 internal sealed record FatBootSector(
     FatType Type,
     int BytesPerSector,
@@ -25,14 +25,14 @@ internal sealed record FatBootSector(
     private const int MaxFatBytes = 16 * 1024 * 1024;
     private const byte ExtendedSignature = 0x29;
 
-    // FAT32 only: FAT12 and FAT16 keep the root directory in its own sectors.
+    // Only FAT32 has one. FAT12 and FAT16 keep the root directory in a fixed area after the FATs.
     public uint RootCluster { get; init; }
 
     public long HiddenSectors { get; init; }
 
     public uint SerialNumber { get; init; }
 
-    // Without padding; "" when the sector has no extended signature.
+    // Without the padding. Empty when the sector has no extended signature.
     public string Label { get; init; } = "";
 
     public int RootSectors => ((RootEntries * DirectoryEntryBytes) + BytesPerSector - 1) / BytesPerSector;
@@ -53,7 +53,7 @@ internal sealed record FatBootSector(
             throw new InvalidDataException("The partition holds no FAT file system.");
         }
 
-        // The type follows from the other fields, so it is settled once they are checked.
+        // The type depends on the other fields, so it's decided after they're checked.
         ushort fatSectors16 = BinaryPrimitives.ReadUInt16LittleEndian(boot[22..]);
         FatBootSector fields = new(
             FatType.Fat12,
@@ -67,8 +67,8 @@ internal sealed record FatBootSector(
 
         long clusters = fields.CheckGeometry(length);
 
-        // As Linux and EDK2 do: a volume without a 16-bit FAT size is FAT32 whatever its cluster count, as mkfs.fat -F
-        // 32 makes on a small partition. Otherwise the cluster count decides between FAT12 and FAT16.
+        // A volume without a 16-bit FAT size is FAT32, whatever its cluster count. Linux and EDK2 do the same, and
+        // mkfs.fat -F 32 makes such volumes on small partitions. Otherwise the cluster count picks FAT12 or FAT16.
         FatBootSector sector = fields with
         {
             Type = fatSectors16 == 0 ? FatType.Fat32 : clusters <= FatVolume.MaxFatClusters12 ? FatType.Fat12 : FatType.Fat16,
@@ -87,7 +87,7 @@ internal sealed record FatBootSector(
         };
     }
 
-    // Writes the first sector; the FAT32 FSInfo sector and backup boot sector are FatVolumeBuilder's.
+    // Writes the first sector. FatVolumeBuilder writes the FAT32 FSInfo sector and the backup boot sector.
     public void Write(Span<byte> boot)
     {
         bool fat32 = Type == FatType.Fat32;
@@ -138,7 +138,7 @@ internal sealed record FatBootSector(
         boot[511] = 0xAA;
     }
 
-    // Returns the cluster count once it is known to fit a uint with room for the two reserved entries.
+    // Returns the cluster count after checking that it fits a uint, with room for the two reserved entries.
     private long CheckGeometry(long length)
     {
         if (BytesPerSector is not (512 or 1024 or 2048 or 4096)

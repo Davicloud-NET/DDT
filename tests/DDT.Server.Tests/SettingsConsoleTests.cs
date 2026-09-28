@@ -16,8 +16,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The recovery that needs no page: the verbs run next to the running server, against its store, and the server applies
-// what they wrote at its next poll.
+// Recovery without the page.
+// The verbs run next to the running server, against its store, and the server applies what they wrote at its next poll.
 public sealed class SettingsConsoleTests
 {
     [Fact]

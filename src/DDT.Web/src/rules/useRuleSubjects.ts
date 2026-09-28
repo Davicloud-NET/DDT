@@ -9,8 +9,8 @@ import { useConditionData } from "@/conditions/subjects";
 
 import { noDeclarations } from "./ruleData";
 
-// What a rule's condition can test: the machine's facts and the values rules and machine roles set. What a run sets,
-// such as whether its last step failed, has no value when the rules are checked, so the server refuses it.
+// What a rule's condition can test: the machine's facts and the values that rules and machine roles set. Values a run
+// sets, such as whether its last step failed, don't exist yet when the rules are checked, so the server refuses them.
 export function useRuleSubjects(): Subject[] {
   const { subjects } = useConditionData(noDeclarations);
 

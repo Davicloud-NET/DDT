@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Accounts;
 
-// Accounts as the Accounts page and the sequence checks see them: never the password, only whether it is set and this
-// server can read it. Uses are worked out from the stored sequences each time, which a small library allows.
+// Accounts as the Accounts page and the sequence checks see them. They never hold the password, only whether it's set
+// and this server can read it. Uses are worked out from the stored sequences every time. A small library allows that.
 public sealed class AccountViews(DdtDbContext database, AccountProtector protector)
 {
     public async Task<IReadOnlyList<AccountView>> ListAsync(CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
             account.UpdatedByName);
     }
 
-    // As for a setting's secret: one that no longer decrypts is not set, and says so.
+    // Works like a secret setting. A password that no longer decrypts counts as not set, and the state says so.
     public SecretState Password(Account account)
     {
         ArgumentNullException.ThrowIfNull(account);
@@ -64,7 +64,7 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
         return account.ProtectedPassword is { } stored && protector.Unprotect(account.Id, stored) is not null;
     }
 
-    // For the checks of sequences, by id.
+    // The facts the sequence checks need, by account ID.
     public async Task<IReadOnlyDictionary<Guid, AccountFacts>> FactsAsync(CancellationToken cancellationToken)
     {
         List<Account> accounts = await database.Accounts.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -80,8 +80,8 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
                 Readable(account)));
     }
 
-    // The sequences that name each stored account, by the account's id, with the steps that name it, walked through the
-    // whole tree of every stored sequence. Sequences in the order the Sequences page lists them.
+    // For each stored account ID, the sequences and steps that use it. This walks the whole tree of every stored
+    // sequence. The sequences are in the same order as on the Sequences page.
     public async Task<Dictionary<Guid, List<AccountUse>>> UsesAsync(CancellationToken cancellationToken)
     {
         List<TaskSequence> sequences = await database.TaskSequences.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -110,8 +110,8 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
         return uses;
     }
 
-    // The stored accounts whose uses a save of a sequence changed; a null definition is a sequence that does not exist yet
-    // or any more. An autosave that changes nothing about accounts pushes nothing.
+    // The stored accounts whose uses changed with a sequence save. A null definition means the sequence doesn't exist
+    // yet, or no longer does. An autosave that doesn't touch accounts pushes nothing.
     public static IReadOnlyList<Guid> UsesChanged(string? before, string? beforeName, string? after, string? afterName)
     {
         Dictionary<Guid, string> was = Uses(before, beforeName);
@@ -120,7 +120,7 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
         return [.. was.Keys.Union(now.Keys).Where(id => was.GetValueOrDefault(id) != now.GetValueOrDefault(id))];
     }
 
-    // For each account the sequence names, how it names it, as one text to compare.
+    // For each account the sequence uses, one text that says how it's used, so two versions can be compared.
     private static Dictionary<Guid, string> Uses(string? definition, string? name) =>
         definition is null
             ? []
@@ -131,7 +131,7 @@ public sealed class AccountViews(DdtDbContext database, AccountProtector protect
                     account => account.Key,
                     account => string.Join('\n', [name, .. account.Select(site => $"{site.Step.Id:D} {site.Field} {site.Step.Name}")]));
 
-    // A sequence that starts or stops naming an account, or is renamed, changes what its page says it is used by.
+    // A sequence that starts or stops using an account, or is renamed, changes the uses the Accounts page shows.
     public async Task PushUsesAsync(LiveNotifier live, IEnumerable<Guid> accountIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(live);

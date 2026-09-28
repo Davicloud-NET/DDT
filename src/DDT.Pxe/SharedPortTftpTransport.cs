@@ -8,8 +8,8 @@ using System.Threading.Channels;
 
 namespace DDT.Pxe;
 
-// Single port mode: replies leave from port 69, which a stateful firewall on a site tunnel let the request through to.
-// The kernel no longer filters by client, so the listener hands this transfer its client's datagrams.
+// Single port mode. Replies leave from port 69, the port a stateful firewall on a site tunnel let the request through
+// to. The kernel no longer filters by client, so the listener passes this transfer its client's datagrams.
 internal sealed class SharedPortTftpTransport : ITftpTransport
 {
     // A client sends one acknowledgement per window, so a short queue is plenty. A datagram that does

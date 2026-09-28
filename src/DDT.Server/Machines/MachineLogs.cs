@@ -10,11 +10,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Machines;
 
-// A machine's log: what its agent sends, and the pages the machine's page reads.
+// A machine's log. Stores what its agent sends, and reads it back a page at a time for the machine's page.
 internal sealed class MachineLogs(DdtDbContext database, LiveNotifier live, TimeProvider timeProvider)
 {
-    // Each line is tagged with the run that is active when it arrives. The agent sends what it logged before a report
-    // that ends the run ahead of that report.
+    // Each line is tagged with the run that's active when it arrives. Before a report that ends the run, the agent
+    // sends what it logged so far, so those lines still get the run.
     public async Task AppendAsync(Guid machineId, AgentLogBatch batch, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(batch);

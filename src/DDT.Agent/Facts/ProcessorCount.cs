@@ -8,17 +8,17 @@ using System.Numerics;
 namespace DDT.Agent.Facts;
 
 // The machine's cores and logical processors, from GetLogicalProcessorInformationEx's entry per core and its affinity
-// masks, which see every processor group, where Environment.ProcessorCount sees only the agent's own affinity.
+// masks. Those see every processor group, while Environment.ProcessorCount only sees the agent's affinity.
 public sealed record ProcessorCount(int Cores, int LogicalProcessors)
 {
-    // Relationship and Size, then PROCESSOR_RELATIONSHIP at 8: Flags, EfficiencyClass and 20 reserved bytes, GroupCount at
-    // 30 and the GROUP_AFFINITY array at 32, each a 64-bit mask, the group and three reserved words.
+    // Relationship and Size, then PROCESSOR_RELATIONSHIP at 8: Flags, EfficiencyClass and 20 reserved bytes, GroupCount
+    // at 30, and the GROUP_AFFINITY array at 32. Each entry is a 64-bit mask, the group and three reserved words.
     private const int HeaderLength = 8;
     private const int GroupCountOffset = 30;
     private const int GroupMaskOffset = 32;
     private const int GroupAffinityLength = 16;
 
-    // Null for no cores, and for records that are not well formed, which count nothing safely.
+    // Null for no cores, and for malformed records, because nothing can be counted safely from them.
     public static ProcessorCount? From(ReadOnlySpan<byte> records)
     {
         int cores = 0;

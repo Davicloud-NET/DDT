@@ -4,7 +4,7 @@
 
 import type { Subject, ValueKind } from "../conditionSubjects";
 
-// An example of what a test of the kind takes, as a list where In takes several.
+// An example value for a test of this kind. For In, which takes several values, it's a list.
 export function placeholderOf(kind: ValueKind, list: boolean): string | undefined {
   const example = {
     text: "Latitude",
@@ -20,14 +20,14 @@ export function placeholderOf(kind: ValueKind, list: boolean): string | undefine
   return example === undefined ? undefined : list ? `${example}; …` : example;
 }
 
-// A no may be spelt false, no or 0; anything else shows as yes.
+// No can be written as false, no or 0. Anything else shows as yes.
 export function yesNoOf(value: string): "true" | "false" {
   const lower = value.trim().toLowerCase();
 
   return ["false", "no", "0"].includes(lower) ? "false" : "true";
 }
 
-// A value the list does not have, such as one typed before, stays among the choices so it still shows.
+// A value that isn't in the list, such as one typed earlier, stays among the choices so it still shows.
 export function choicesOf(subject: Subject, value: string): { id: string; label: string }[] {
   const known = subject.choices.some((choice) => choice.value === value);
 

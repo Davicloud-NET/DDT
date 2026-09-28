@@ -30,7 +30,7 @@ public static class AuditEndpoints
         return group;
     }
 
-    // Newest first by id, the order the rows were stored in, which also makes the id the cursor.
+    // Sorted newest first by id, which is the order the rows were stored in. That also lets the id work as the cursor.
     private static async Task<Results<Ok<AuditPage>, ValidationProblem>> ListAsync(
         [AsParameters] AuditQuery query,
         DdtDbContext database,

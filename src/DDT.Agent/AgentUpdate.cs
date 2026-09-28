@@ -9,8 +9,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// Switches to the agent and the graphical console the server offers, so a DDT update never needs a new boot image. Only
-// before the first registration: the new agent starts without this one's resume token, which would cost an approval.
+// Switches to the agent and the graphical console the server offers, so a DDT update never needs a new boot image.
+// It only runs before the first registration. The new agent doesn't get this agent's resume token, so switching later
+// would cost an approval.
 public sealed class AgentUpdate(
     IAgentServer server,
     IAgentRelauncher relauncher,
@@ -22,8 +23,8 @@ public sealed class AgentUpdate(
     // Six retries wait 90 seconds in all, longer than the server's one minute window.
     private const int MaxRefusals = 6;
 
-    // The exit code to end with when the new agent ran, or null to carry on as this agent. Nothing that goes
-    // wrong here may stop the machine: the agent and the console from the boot image still work.
+    // Returns the exit code to end with when the new agent ran, or null to carry on as this agent. Nothing that goes
+    // wrong here may stop the machine, because the agent and the console from the boot image still work.
     public async Task<int?> RunAsync(CancellationToken cancellationToken)
     {
         string? newAgent;
@@ -61,8 +62,8 @@ public sealed class AgentUpdate(
                 newAgent ?? agent.ExecutablePath ?? Environment.ProcessPath!,
                 [.. agent.Arguments, .. consoleArguments, AgentOptions.NoUpdateArgument]).ConfigureAwait(false);
 
-            // Codes the agent never returns mean the new one could not even start: a missing runtime or DLL, a
-            // crash, or an option it does not know.
+            // A code the agent never returns means the new one couldn't even start. The cause is a missing runtime or
+            // DLL, a crash, or an option it doesn't know.
             if (exitCode is AgentExitCodes.ConfigurationError or < 0 or > AgentExitCodes.HighestAgentCode)
             {
                 log.Warning(newAgent is null
@@ -84,8 +85,8 @@ public sealed class AgentUpdate(
         }
     }
 
-    // Waits for the server like registration does. Any answer settles it, except a few refusals from a busy
-    // server; a server that cannot say what the current agent is means carrying on with this one.
+    // Waits for the server the way registration does. Any answer settles it, except a few refusals from a busy
+    // server. If the server can't say what the current agent is, this agent carries on.
     private async Task<AgentRelease?> CheckAsync(CancellationToken cancellationToken)
     {
         int failures = 0;

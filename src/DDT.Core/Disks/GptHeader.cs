@@ -7,7 +7,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
-// The GPT header (UEFI 2.10, section 5.3.2) as GptLayout reads it from an image and writes it at LBA 1 and at the end.
+// The GPT header (UEFI 2.10, section 5.3.2). GptLayout reads it from an image and writes it at LBA 1 and at the end
+// of the disk.
 internal static class GptHeader
 {
     public const int MinEntrySize = 128;
@@ -18,8 +19,8 @@ internal static class GptHeader
     private const int Size = 92;
     private const int MaxEntrySize = 4096;
 
-    // Real tables put 16 KiB of entries at LBA 2. The caps keep a table within the first mebibyte, which an agent holds
-    // back while it writes an image, and stop a forged header from asking for gigabytes.
+    // Real tables put 16 KiB of entries at LBA 2. The caps keep a table within the first mebibyte, which the agent
+    // holds back while it writes an image. They also stop a forged header from asking for gigabytes.
     private const long MaxEntriesLba = GptLayout.AlignmentSectors / 2;
     private const long MaxEntryBytes = GptLayout.AlignmentSectors / 2 * GptLayout.SectorSize;
 
@@ -59,13 +60,13 @@ internal static class GptHeader
         }
     }
 
-    // After Check, which bounds the entry array.
+    // Call Check first. It bounds the entry array.
     public static (long Lba, int Count, int Size) EntryArray(ReadOnlySpan<byte> header) => (
         checked((long)BinaryPrimitives.ReadUInt64LittleEndian(header[72..])),
         (int)BinaryPrimitives.ReadUInt32LittleEndian(header[80..]),
         (int)BinaryPrimitives.ReadUInt32LittleEndian(header[84..]));
 
-    // After Check.
+    // Call Check first.
     public static GptHeaderFields Read(ReadOnlySpan<byte> header)
     {
         (long entriesLba, int count, int size) = EntryArray(header);

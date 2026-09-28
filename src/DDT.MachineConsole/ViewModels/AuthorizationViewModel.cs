@@ -7,7 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Registered but not authorized: an approval on the Machines page, or the sign-in here while the agent asks for it.
+// The machine is registered but not authorized. An approval on the Machines page authorizes it, or a sign-in here while
+// the agent asks for one.
 public sealed class AuthorizationViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private ConsoleState? _state;

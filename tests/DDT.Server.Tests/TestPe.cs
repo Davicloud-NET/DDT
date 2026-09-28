@@ -58,8 +58,8 @@ internal static class TestPe
         return file;
     }
 
-    // Appends a WIN_CERTIFICATE with an Authenticode signature by signer, which carries the certificates in chain,
-    // over the file's SHA-256 hash, and points the certificate table at all the entries.
+    // Appends a WIN_CERTIFICATE with signer's Authenticode signature over the file's SHA-256 hash, carrying the
+    // certificates in chain. Then it points the certificate table at all the entries.
     public static byte[] Sign(byte[] file, X509Certificate2 signer, params X509Certificate2[] chain)
     {
         PeImage image = PeImage.Read(file) ?? throw new ArgumentException("Not a PE file.", nameof(file));

@@ -33,7 +33,8 @@ interface RoleFormOptions {
 
 export type RoleForm = ReturnType<typeof useRoleForm>;
 
-// A machine role's edit and its save. The server refuses values a run could not use, and says so at each value.
+// Holds the edits to a machine role and saves them. The server refuses values a run couldn't use and says why at
+// each value.
 export function useRoleForm({ role, onClose }: RoleFormOptions) {
   const queryClient = useQueryClient();
   const [base, setBase] = useState<MachineRoleView | null>(role);

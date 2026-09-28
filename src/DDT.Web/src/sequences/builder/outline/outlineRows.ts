@@ -7,8 +7,8 @@ import type { Key } from "react-aria-components";
 import type { SequenceStep } from "../../sequences";
 import { isContainer } from "../../steps";
 
-// A row of the outline: a node, or the Then or the Else of an IF, which hold its branches. path numbers each row by
-// where it is, such as 2.1.3 for the third node of the Then of the second node.
+// A row of the outline: a node, or the Then or Else of an IF, which hold its branches. path numbers each row by its
+// place, such as 2.1.3 for the third node in the Then of the second node.
 export interface OutlineRow {
   id: string;
   kind: "node" | "branch";

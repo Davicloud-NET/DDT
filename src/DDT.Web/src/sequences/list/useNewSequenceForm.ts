@@ -19,8 +19,8 @@ import {
 } from "../sequences";
 import { EMPTY_CHOICE, templatesInLanguage } from "./sequenceTemplates";
 
-// The new sequence's template and name, and its creation. The server's answer goes into the list and becomes the
-// editor's first copy, so nothing is read again.
+// The new sequence's template and name, and creating it. The server's answer goes into the list and becomes the
+// editor's first copy, so nothing has to be fetched again.
 export function useNewSequenceForm(taken: readonly string[], onClose: () => void) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
@@ -28,7 +28,7 @@ export function useNewSequenceForm(taken: readonly string[], onClose: () => void
   const templates = useQuery(templatesQuery);
 
   const [choice, setChoice] = useState<string | null>(null);
-  // What was typed, once something was; until then the name follows the choice.
+  // What was typed, once something was. Until then the name follows the chosen template.
   const [typedName, setTypedName] = useState<string | null>(null);
 
   const create = useMutation({

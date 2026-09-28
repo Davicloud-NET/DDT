@@ -19,7 +19,8 @@ interface NodeKindsMenuProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-// The menu of kinds to add, for any key that opens it: in a MenuTrigger, or from triggerRef while isOpen.
+// The menu of kinds to add. It works with any button that opens it, either in a MenuTrigger or from triggerRef while
+// isOpen.
 export function NodeKindsMenu({
   onAdd,
   placement = "bottom start",

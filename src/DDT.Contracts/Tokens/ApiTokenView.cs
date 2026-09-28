@@ -8,7 +8,7 @@ namespace DDT.Contracts.Tokens;
 public sealed record ApiTokenView(
     Guid Id,
     string Name,
-    // The most the token may do; it never does more than its user may at the time.
+    // The most the token may do. It never does more than its user is allowed to at that moment.
     string Role,
     Guid UserId,
     string UserName,

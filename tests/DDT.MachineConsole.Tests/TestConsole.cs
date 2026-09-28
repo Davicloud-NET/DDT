@@ -8,11 +8,11 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's model with what it sends and does recorded instead: answers, closing, restarts, command prompts. No test
-// ever starts cmd.exe or restarts anything.
+// The console's model, with what it sends and does recorded instead of done: answers, closing, restarts, command
+// prompts. No test ever starts cmd.exe or restarts anything.
 internal sealed class TestConsole
 {
-    // session is the console as the shell of DDT's session in the installed Windows, where closing signs out.
+    // session makes the console the shell of DDT's session in the installed Windows, where closing signs out.
     public TestConsole(UiLanguage language = UiLanguage.English, bool canRestart = false, bool session = false)
     {
         Power = new FakePower(canRestart);

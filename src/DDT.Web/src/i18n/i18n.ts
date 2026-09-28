@@ -4,7 +4,7 @@
 
 import { i18n, type Messages } from "@lingui/core";
 
-// The languages a person can choose, each named in itself. "pseudo" is for development only: stretched,
+// The languages a user can pick, each named in its own language. "pseudo" is for development only: stretched,
 // accented English that shows text nobody marked for translation and layouts too tight for German.
 export const LANGUAGES = { en: "English", de: "Deutsch" } as const;
 
@@ -30,7 +30,7 @@ function stored(): string | null {
   }
 }
 
-// The person's choice, else the first browser language DDT has, else English.
+// The user's choice, else the first browser language DDT has, else English.
 export function preferredLanguage(): Language {
   const choice = stored();
 

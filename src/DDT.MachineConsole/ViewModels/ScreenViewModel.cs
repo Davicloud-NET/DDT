@@ -11,7 +11,7 @@ public abstract class ScreenViewModel(Localizer localizer) : ObservableObject
 {
     protected Localizer L => localizer;
 
-    // Everything the screen says, again, in the language now chosen.
+    // Refreshes everything the screen says in the newly chosen language.
     public virtual void Refresh() => RaiseAll();
 
     protected string T(string message) => localizer.T(message);

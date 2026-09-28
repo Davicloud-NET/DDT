@@ -8,7 +8,7 @@ using DDT.Contracts.Settings;
 
 namespace DDT.Server.Settings;
 
-// Reads the provider's discovery document, as the handler will at its first sign-in.
+// Reads the provider's discovery document. The handler reads the same document at its first sign-in.
 internal sealed class OidcSettingsTest(IHttpClientFactory clients)
 {
     public async Task<OidcTestResult> TestAsync(Uri authority, string redirectUri, CancellationToken cancellationToken)

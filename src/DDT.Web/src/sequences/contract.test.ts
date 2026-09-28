@@ -32,10 +32,10 @@ import {
   stepKinds,
 } from "./steps";
 
-// The server writes the fixtures (SequenceFixtureTests), so a field, kind or value renamed on one side only fails
-// here. The version 3 one runs, and a run installs Windows or writes a raw disk image, so version 2's has the raw
-// image's steps. The mirror's defaults, from newStep and newCondition, stand for its types; null stands for a text or
-// a number that may be missing.
+// The server writes the fixtures (SequenceFixtureTests), so a field, kind or value renamed on only one side fails
+// here. The version 3 fixture is a sequence that can run, and a run either installs Windows or writes a raw disk
+// image. So the raw image's steps are in the version 2 fixture. The defaults from newStep and newCondition stand for
+// the mirror's types. null stands for a text or a number that may be missing.
 function sameShape(value: unknown, mirror: unknown): boolean {
   if (mirror === null) {
     return value === null || typeof value === "string" || typeof value === "number";
@@ -65,7 +65,7 @@ function expectMirrored(kind: string, sent: object, mirror: object) {
   }
 }
 
-// Every phase, kind of input and place to ask, so one the server adds fails to compile here.
+// Every phase, kind of input and place to ask. If the server adds one, this fails to compile.
 const phases = { WindowsPE: true, Windows: true } satisfies Record<SequencePhase, true>;
 const inputKinds = {
   Text: true,
@@ -76,7 +76,7 @@ const inputKinds = {
 } satisfies Record<InputKind, true>;
 const inputAsks = { Both: true, Web: true, Machine: true } satisfies Record<InputAsk, true>;
 
-// The members of version 3 the server leaves out while they are unset: on every kind, and on some.
+// The version 3 members the server leaves out while they're unset, on every kind and on some kinds.
 const optionalOnEvery = ["when", "shares"];
 const optionalOn: Partial<Record<string, readonly string[]>> = {
   runScript: ["runAs"],
@@ -246,7 +246,7 @@ describe("the sequence mirror", () => {
       required: false,
       maxLength: null,
       askAt: "Both",
-      // An object, which null is to typeof as well.
+      // An object. typeof null is "object" too, so a null account matches as well.
       account: { domain: null, hosts: [], runAs: false },
     };
     const variables = everyNode.variables ?? [];

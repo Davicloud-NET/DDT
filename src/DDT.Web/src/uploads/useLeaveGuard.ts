@@ -13,7 +13,7 @@ const leavesWithoutSigningOut: ShouldBlockFn = ({ next }) => next.routeId !== "/
 
 // Holds up leaving the page while a file uploads, since unmounting the upload panel stops the upload.
 export function useLeaveGuard(uploading: boolean) {
-  // Reloads and closing the tab are asked about by the beforeunload listener below.
+  // The beforeunload listener below asks about reloads and closing the tab.
   const leaving = useBlocker({
     shouldBlockFn: leavesWithoutSigningOut,
     enableBeforeUnload: false,
@@ -21,7 +21,8 @@ export function useLeaveGuard(uploading: boolean) {
     withResolver: true,
   });
 
-  // An upload that ends while the question is open leaves nothing to lose, and staying shows its result.
+  // If the upload ends while the question is open, there's nothing left to lose. Staying on the page shows
+  // its result.
   useEffect(() => {
     if (!uploading && leaving.status === "blocked") {
       leaving.reset();

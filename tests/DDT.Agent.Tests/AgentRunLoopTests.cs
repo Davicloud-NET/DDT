@@ -44,7 +44,7 @@ public sealed class AgentRunLoopTests : IDisposable
     private AgentRun InstallWindows(DeploymentState state = DeploymentState.Assigned, int? diskNumber = null) =>
         TestRuns.Run(TestRuns.InstallWindows, _image, state, diskNumber);
 
-    // Goes on in Windows after the answer file.
+    // Continues in Windows after the answer file.
     private AgentRun InWindows(DeploymentState state) =>
         TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image, state);
 
@@ -219,7 +219,7 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal([new AgentRunRequest(inventory.Id, null, "PC-7")], server.RunRequests);
         Assert.Equal(["Sequence number", "Computer name"], prompt.Labels);
 
-        // Nothing erases a disk, so none was read for the picker: only for the registration.
+        // Nothing erases a disk, so no disks were read for the picker, only for the registration.
         Assert.Equal(["list"], _tools.Calls);
     }
 
@@ -295,7 +295,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
         await CreateLoop(server, new ScriptedSignInPrompt { IsAvailable = false }).RunAsync(server.Stop.Token);
 
-        // Every attempt, the run's and then the loop's, carries the run's own failure.
+        // Every attempt, first the run's and then the loop's, carries the run's failure.
         List<AgentRunReport> failed = [.. server.RunReports.Where(report => report.State == DeploymentState.Failed)];
         Assert.Equal(tokenRefused ? 2 : ServerCallRules.MaxRetries + 2, failed.Count);
         Assert.All(failed, report => Assert.Equal("The scripted step failed.", report.Error));
@@ -317,7 +317,7 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal(["list", "list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
         RestartHappened();
 
-        // A new agent after the restart: it presents the run token it finds on the disk, and the server resumes the run.
+        // A new agent after the restart presents the run token it finds on the disk, and the server resumes the run.
         server.OnRegister(registration => Registered(MachineState.Deploying) with { RunId = run.Id, RunToken = registration.RunToken })
             .OnNext(_ => Next(MachineState.Deploying, "session-3", run with { State = DeploymentState.Running }));
 
@@ -331,8 +331,8 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Single(_tools.Calls, call => call.StartsWith("partition", StringComparison.Ordinal));
     }
 
-    // Ctrl+C right after the restart step, and the agent started again by hand in the same Windows PE. The run's state
-    // already goes on after the step, so the agent restarts first, and the run goes on only after the restart.
+    // Ctrl+C right after the restart step, and the agent started again by hand in the same WinPE. The run's state
+    // already points past the step, so the agent restarts first. The run continues only after the restart.
     [Fact]
     public async Task AStopRightAfterARestartStepRestartsAtTheNextStartInsteadOfGoingOn()
     {
@@ -384,8 +384,8 @@ public sealed class AgentRunLoopTests : IDisposable
             _tools.Calls[6..]);
     }
 
-    // However the restart came to be due, a start that finds it makes it the same way and says so once: back into
-    // Windows PE from the boot entry this start came from, or into the installed Windows by the boot order the run left.
+    // However the restart became due, a start that finds it restarts the same way and says so once. It goes back into
+    // WinPE from the boot entry this start came from, or into the installed Windows by the boot order the run left.
     [Theory]
     [InlineData(RestartInto.WindowsPE)]
     [InlineData(RestartInto.Windows)]
@@ -539,7 +539,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
 
-    // As an earlier start of the agent leaves it: the steps in Windows PE done, the answer file written, and the run
+    // The disk as an earlier start of the agent leaves it: the WinPE steps done, the answer file written, and the run
     // token.
     private async Task LeaveRunOnDiskAsync(SequencePhase phase, CancellationToken cancellationToken)
     {
@@ -563,7 +563,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
     private RestartInto? RestartDue() => TestAgents.RestartMarker(_tools, Log()).Due;
 
-    // The restart that was due happened: it built Windows PE's RAM disk anew, without the marker.
+    // The due restart happened. It rebuilt WinPE's RAM disk, without the marker.
     private void RestartHappened()
     {
         Assert.NotNull(RestartDue());

@@ -32,7 +32,8 @@ export function SequenceChoice({
       return {
         id: sequence.id,
         label: sequence.name,
-        // One with problems cannot run, so it cannot be chosen; a rule that chose it keeps it until another is.
+        // A sequence with problems can't run, so it can't be chosen. A rule that already chose it keeps it until
+        // another one is chosen.
         isDisabled: !canRun(sequence) && sequence.id !== edit.sequenceId,
         ...(canRun(sequence) ? {} : { description: t`${problems}, cannot run` }),
       };

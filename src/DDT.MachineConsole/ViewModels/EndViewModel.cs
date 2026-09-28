@@ -9,8 +9,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The way on once the agent has ended or, in DDT's session, once the run is over: closing, and restarting after a
-// confirmation.
+// What comes next once the agent has ended, or in DDT's session once the run is over. The person can close, or restart
+// after a confirmation.
 public sealed class EndViewModel : ObservableObject
 {
     private readonly Localizer _l;
@@ -36,7 +36,7 @@ public sealed class EndViewModel : ObservableObject
         CloseCommand = new Command(close, () => CanClose);
     }
 
-    // Once the pipe has ended.
+    // True once the pipe has ended.
     public bool IsEnded => _ended is not null;
 
     // In DDT's session: the run is over, and the agent waits for someone to sign out.

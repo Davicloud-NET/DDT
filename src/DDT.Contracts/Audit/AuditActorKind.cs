@@ -4,8 +4,8 @@
 
 namespace DDT.Contracts.Audit;
 
-// Who did what an audit entry records. A user signed in at a machine is a User, and a user's API token is a Token.
-// System is DDT itself, such as the sweeper that ends a run whose machine went silent.
+// Who did the action an audit entry records. A user who signs in at a machine is a User, and a user's API token is
+// a Token. System is DDT itself, such as the sweeper that ends a run when its machine goes silent.
 public enum AuditActorKind
 {
     User,

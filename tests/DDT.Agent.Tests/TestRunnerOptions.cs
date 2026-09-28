@@ -7,8 +7,8 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// What a test changes of the runner TestAgents.Runner builds; null keeps the fake's. Without a heartbeat interval,
-// beats happen only when the run changes, so a run stays sequential on ImmediateTimeProvider.
+// What a test changes about the runner TestAgents.Runner builds. Null keeps the fake's default. Without a heartbeat
+// interval, beats only happen when the run changes, so a run stays sequential on ImmediateTimeProvider.
 internal sealed record TestRunnerOptions
 {
     public TimeSpan? HeartbeatInterval { get; init; }

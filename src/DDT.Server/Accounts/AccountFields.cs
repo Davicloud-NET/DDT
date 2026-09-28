@@ -4,5 +4,5 @@
 
 namespace DDT.Server.Accounts;
 
-// An account's fields as a save request gives them, checked and trimmed.
+// An account's fields from a save request, checked and trimmed.
 internal sealed record AccountFields(string Name, string UserName, string? Domain, IReadOnlyList<string> Hosts, bool RunAs);

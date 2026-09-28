@@ -9,8 +9,8 @@ namespace DDT.Protocols.Pxe;
 
 public static class ProxyDhcpResponder
 {
-    // PXE 2.1 section 2.5.1.1: a redirection service offers no address, so yiaddr stays zero and the reply cannot be
-    // unicast to it. That justifies forcing the broadcast flag, against the default of RFC 1542 section 5.4.
+    // PXE 2.1 section 2.5.1.1: a redirection service offers no address, so yiaddr stays zero and the reply can't be
+    // unicast to it. That's why the broadcast flag is forced, against the default of RFC 1542 section 5.4.
     private const ushort BroadcastFlag = 0x8000;
 
     // Option 43 sub-option 6 (PXE_DISCOVERY_CONTROL) with bit 3 set tells the client to skip

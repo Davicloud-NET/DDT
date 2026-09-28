@@ -19,7 +19,7 @@ import { sequencesQuery } from "@/sequences/sequences";
 
 import type { ApprovalRequest } from "./machineRequests";
 
-// Approving and rejecting machines, with the confirmation of an approval that runs a rule's sequence.
+// Approves and rejects machines. An approval that also runs a rule's sequence is confirmed first.
 export function useApprovalActions(queryClient: QueryClient, refresh: () => void) {
   const [approveOn, setApproveOn] = useState<ApprovalRequest | null>(null);
 
@@ -49,7 +49,7 @@ export function useApprovalActions(queryClient: QueryClient, refresh: () => void
       upsertMachine(queryClient, machine);
       setApproveOn(null);
     },
-    // A refused answer is the operator's to correct; anything else may be someone else deciding first.
+    // If the server refused an answer, the operator corrects it. Any other error may mean someone else decided first.
     onError: (error) => {
       if (!hasAnswerErrors(error instanceof ApiError ? error : null)) {
         refresh();
@@ -57,7 +57,7 @@ export function useApprovalActions(queryClient: QueryClient, refresh: () => void
     },
   });
 
-  // Reads fresh what the rules choose before an approval, because the approval runs that sequence.
+  // Reads the rules' current choice before an approval, because the approval runs that sequence.
   const prepareApproval = useMutation({
     mutationFn: async (machine: MachineSummary) => {
       if (machine.signedInBy !== null) {

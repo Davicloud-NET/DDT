@@ -47,7 +47,7 @@ export interface PageOptions {
   live?: boolean;
   // A phone's width, where the machine pages lay out differently.
   narrow?: boolean;
-  // Puts the command palette's key in the frame, as the shell does.
+  // Puts the command palette's button in the frame, as the shell does.
   palette?: boolean;
 }
 
@@ -59,8 +59,8 @@ export interface RenderedPage {
   hub: TestHub | null;
 }
 
-// A page as the application shows it: in the router, under a frame with a link away and the live connection. The
-// routes have the ids of the application's, which the pages read their parameters from.
+// A page as the app shows it: in the router, under a frame with a link away, and with the live connection. The
+// routes use the app's route ids, because the pages read their parameters by them.
 function testRouter(path: string, hub: TestHub | null, palette: boolean) {
   const rootRoute = createRootRoute({ component: RootLayout });
   const shellRoute = createRoute({

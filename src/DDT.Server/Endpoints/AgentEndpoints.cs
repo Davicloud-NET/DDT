@@ -34,8 +34,8 @@ public static class AgentEndpoints
             .RequireAuthorization(DdtPolicies.MachineAgent)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
-        // A session token, so only an approved machine writes to the log. Anyone can get a poll token by
-        // registering, and would otherwise be able to fill the database.
+        // Needs a session token, so only an approved machine writes to the log. Anyone can get a poll token by
+        // registering, and could otherwise fill the database.
         group.MapPost("/{id:guid}/log", AppendLogAsync)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
@@ -58,7 +58,7 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
-        // The graphical console those agents show, as anonymous as the agent and for the same reason.
+        // The graphical console those agents show. It's anonymous like the agent, for the same reason.
         group.MapGet("/release/console", GetConsoleReleaseAsync)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRelease);
@@ -67,7 +67,7 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
-        // The logo that console shows, whose hash every registration names.
+        // The logo that console shows. Every registration answer names its hash.
         group.MapGet("/console/logo", GetConsoleLogo)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRelease);
@@ -75,7 +75,7 @@ public static class AgentEndpoints
         return group;
     }
 
-    // Boot images built before registration was opened still send their enrollment token; it is ignored.
+    // Boot images built before registration was opened still send their enrollment token. It's ignored.
     private static async Task<Results<Ok<AgentRegistrationResult>, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         AgentRegistration registration,
         HttpContext context,

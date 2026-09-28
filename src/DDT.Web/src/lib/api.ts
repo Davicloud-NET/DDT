@@ -135,9 +135,9 @@ export function apiPatch(
   return apiFetch(path, { method: "PATCH", headers, body, signal: init.signal ?? null });
 }
 
-// The server's problem details. errors keys a validation failure's messages by field, such as "mac"; code, args and
-// errorCodes are the title and those messages as codes, which apiErrorFrom says in the person's language, so a page
-// shows title and errors as they are.
+// The server's problem details. errors holds a validation failure's messages by field, such as "mac". code, args
+// and errorCodes are the title and those messages as codes. apiErrorFrom translates them, so a page can show title
+// and errors as they are.
 export interface ApiProblem {
   title?: string;
   errors?: Record<string, string[]>;
@@ -164,7 +164,7 @@ export async function apiErrorFrom(response: Response): Promise<ApiError> {
   return new ApiError(response.status, errorMessage(response, problem), problem);
 }
 
-// The title and the field errors in the person's language where the server sent their codes; the rest as sent.
+// Translates the title and the field errors if the server sent their codes. Everything else stays as sent.
 function translated(problem: ApiProblem | null): ApiProblem | null {
   if (problem === null) {
     return null;

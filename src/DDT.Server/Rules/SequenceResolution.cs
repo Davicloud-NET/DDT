@@ -10,8 +10,9 @@ using DDT.Server.Sequences;
 
 namespace DDT.Server.Rules;
 
-// Deployment is the active one for Assigned and Console; Rule and Sequence are a rule's. Match is what the rules say
-// whatever chose the sequence, since they set values and give roles for every run, and Machine what they tested.
+// Deployment is the active run for Assigned and Console. Rule and Sequence are set when a rule chose. Match is what the
+// rules say, whatever chose the sequence, because they set values and give roles for every run. Machine is what they
+// tested.
 public sealed record SequenceResolution(
     SequenceResolutionSource Source,
     TaskSequence? Sequence,

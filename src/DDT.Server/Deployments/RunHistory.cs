@@ -9,15 +9,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The runs of every machine, newest first, a page at a time. Run ids are version 7 GUIDs minted from the time the run was
-// created, so their order is the order of creation and a stable cursor; SQLite cannot order by the DateTimeOffset itself.
+// The runs of every machine, newest first, a page at a time. Run IDs are version 7 GUIDs made from the run's creation
+// time, so their order is the creation order and a stable cursor. SQLite can't order by the DateTimeOffset itself.
 internal sealed class RunHistory(DdtDbContext database)
 {
     public const int DefaultPage = 50;
 
     public const int MaxPage = 200;
 
-    // Null for a cursor that is none.
+    // Null if the cursor isn't valid.
     public async Task<RunHistoryPage?> PageAsync(RunHistoryQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -37,7 +37,8 @@ internal sealed class RunHistory(DdtDbContext database)
         int take = Math.Clamp(query.Limit ?? DefaultPage, 1, MaxPage);
         IQueryable<HistoryRow> rows = Rows(query);
 
-        // The counts feed the state tabs above the list, so they leave the state out, and a page further down needs none.
+        // The counts feed the state tabs above the list, so they ignore the state filter. A page further down doesn't
+        // need them.
         RunStateCounts? counts = cursor is null ? await CountAsync(rows, cancellationToken).ConfigureAwait(false) : null;
 
         if (query.State is { Length: > 0 } state)
@@ -80,8 +81,8 @@ internal sealed class RunHistory(DdtDbContext database)
             Count(DeploymentState.Cancelled));
     }
 
-    // Case-insensitive, in the machine's name, model and serial number and in the run's title. A MAC address is stored as
-    // twelve upper case hex digits, so one typed with separators, or part of one, is compared without them.
+    // Searches the machine's name, model and serial number and the run's title, ignoring case. A MAC address is stored
+    // as twelve upper case hex digits, so a typed one, or part of one, is compared without separators.
     private static IQueryable<HistoryRow> Matching(IQueryable<HistoryRow> rows, string query)
     {
         string text = query.ToLowerInvariant();

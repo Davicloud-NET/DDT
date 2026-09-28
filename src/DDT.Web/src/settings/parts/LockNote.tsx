@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import type { SettingsLock } from "../settings";
 
-// Says that configuration sets the field, so the page cannot, and how to take it out of configuration.
+// Says that configuration sets the field, so the page can't, and how to remove it from configuration.
 export function LockNote({ lock }: { lock: SettingsLock }) {
   const key = lock.configurationKey;
   const variable = lock.environmentVariable;

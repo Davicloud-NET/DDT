@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Ldap;
 
-// Each step on its own, for the settings page: the bind as the bind account, the search for the user, their password,
-// and their groups. The directory's own message is passed on, because only it says what is wrong.
+// Tests each step separately, for the settings page. That's the bind as the bind account, the search for the user,
+// their password and their groups. The directory's own message is passed on, because only it says what's wrong.
 public sealed class LdapTester(ILoggerFactory loggerFactory) : ILdapTester
 {
     public Task<LdapTestOutcome> TestAsync(LdapOptions options, string? userName, string? password, CancellationToken cancellationToken)

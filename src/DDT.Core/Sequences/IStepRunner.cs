@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// One runner for every leaf kind, so a new kind needs no change to the engine; containers and Set variable never reach
-// it. An exception fails the step, and once a stop is requested any failure counts as the stop.
+// One runner handles every leaf kind, so a new kind needs no change to the engine. Containers and Set variable never
+// reach it. An exception fails the step. Once a stop is requested, any failure counts as the stop.
 public interface IStepRunner
 {
     Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken);

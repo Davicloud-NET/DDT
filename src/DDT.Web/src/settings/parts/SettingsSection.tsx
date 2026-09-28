@@ -93,7 +93,7 @@ export function SettingsSection<T>({
   );
 }
 
-// Another administrator's save took the section's place, and the person may take theirs instead of their draft.
+// Another administrator saved the section meanwhile. The user can drop their draft and show that save instead.
 function ShowTheirs<T>({ form, children }: { form: SettingsForm<T>; children: ReactNode }) {
   return (
     <Notice tone="attention">

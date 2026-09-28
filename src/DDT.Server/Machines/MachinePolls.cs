@@ -23,7 +23,7 @@ internal sealed class MachinePolls(
     LiveNotifier live,
     DdtSettings settings)
 {
-    // Null when the machine started over since the token was checked.
+    // Null if the machine started over after the token was checked.
     public async Task<AgentNextResult?> NextAsync(Machine machine, ClaimsPrincipal user, DateTimeOffset now, string? address, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -33,8 +33,8 @@ internal sealed class MachinePolls(
             return null;
         }
 
-        // A waiting machine learns nothing about what it will be given: anyone can register as it. An agent from before
-        // task sequences is never given an image deployment: this server creates none.
+        // A waiting machine learns nothing about what it will get, because anyone can register as it. An agent from
+        // before task sequences never gets an image deployment, because this server doesn't create them.
         bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
         Deployment? active = authorized ? await queries.ActiveAsync(machine, cancellationToken).ConfigureAwait(false) : null;
         AgentRun? run = active is null ? null : await queries.HandOverAsync(machine, active, cancellationToken).ConfigureAwait(false);
@@ -55,8 +55,8 @@ internal sealed class MachinePolls(
             SuggestedSequenceId: canPick ? await choices.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null);
     }
 
-    // False when the save lost to an approval, a rejection, an assignment or a registration and the machine started over.
-    // Last seen can wait for the next poll; the answer has to say what is stored now.
+    // Returns false if the save lost to an approval, a rejection, an assignment or a registration, and the machine
+    // started over. Last seen can wait for the next poll, but the answer has to reflect what's stored now.
     private async Task<bool> SaveSeenAsync(Machine machine, ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         try

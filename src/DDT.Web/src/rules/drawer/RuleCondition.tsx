@@ -12,8 +12,8 @@ import { changedCondition } from "@/sequences/flow/conditionTree";
 
 import type { RuleForm } from "./useRuleForm";
 
-// The condition a rule applies when, with how many known machines it matches. The server counts them for the saved
-// condition only.
+// The condition for when a rule applies, with how many known machines it matches. The server only counts them for the
+// saved condition.
 export function RuleCondition({
   form,
   subjects,

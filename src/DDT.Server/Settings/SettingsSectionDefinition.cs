@@ -60,7 +60,7 @@ public abstract class SettingsSectionDefinition
         return configuration.GetSection(ConfigurationKey(field)).Exists();
     }
 
-    // Configuration sets the field, and it is not one that configuration only seeds, so the page cannot change it.
+    // True when configuration sets the field and doesn't only seed it. The page can't change a locked field.
     public bool IsLocked(IConfiguration configuration, SettingField field)
     {
         ArgumentNullException.ThrowIfNull(field);
@@ -68,7 +68,7 @@ public abstract class SettingsSectionDefinition
         return !field.Seeds && IsConfigured(configuration, field);
     }
 
-    // The longest field a problem's path starts with: BootTargets:X64Uefi:Method belongs to BootTargets.
+    // Finds the longest field that a problem's path starts with. BootTargets:X64Uefi:Method belongs to BootTargets.
     public SettingField? FieldOf(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -79,7 +79,7 @@ public abstract class SettingsSectionDefinition
             .MaxBy(field => field.Path.Length);
     }
 
-    // A map entry's key is free text, so the page names it in brackets: BootTargets:X64Uefi:Method becomes
+    // A map entry's key is free text, so the page names it in brackets. BootTargets:X64Uefi:Method becomes
     // bootTargets[X64Uefi].method. A key may hold colons, such as urn:example:admins, so only an entry member ends it.
     public string PageName(string path)
     {
@@ -116,14 +116,14 @@ public abstract class SettingsSectionDefinition
             : $"{field.Name}[{rest}]";
     }
 
-    // The code defaults, secrets left out.
+    // The code defaults, without secrets.
     public abstract JsonObject Defaults();
 
-    // The section as configuration alone sets it over the code defaults, secrets left out. A collection holds only its
-    // configured entries. Throws InvalidOperationException for a value that cannot be converted.
+    // The section as configuration alone sets it on top of the code defaults, without secrets. A collection holds only
+    // its configured entries. Throws InvalidOperationException for a value that can't be converted.
     public abstract JsonObject Configured(IConfiguration configuration);
 
-    // The options that values and secrets describe; secrets are keyed by field name.
+    // Builds the options from values and secrets. Secrets are keyed by field name.
     public abstract object Read(JsonObject values, IReadOnlyDictionary<string, string?> secrets);
 
     public abstract JsonObject Write(object options);
@@ -132,6 +132,6 @@ public abstract class SettingsSectionDefinition
 
     public abstract IReadOnlyList<SettingProblem> FindProblems(object options, SettingsContext context);
 
-    // Current is what applies before a save, for the warnings about a change; null outside a save.
+    // Current is what applies before a save, for warnings about the change. It's null outside a save.
     public abstract IReadOnlyList<SettingWarning> FindWarnings(object options, object? current, SettingsContext context);
 }

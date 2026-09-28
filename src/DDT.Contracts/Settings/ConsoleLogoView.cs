@@ -4,8 +4,8 @@
 
 namespace DDT.Contracts.Settings;
 
-// The logo the console at the machine shows at the right end of its top bar. Null values when there is none. An upload
-// answers with it as well.
+// The logo the console at the machine shows at the right end of its top bar. The values are null when there's none.
+// An upload returns it too.
 public sealed record ConsoleLogoView(
     string? Sha256,
     long? Size,

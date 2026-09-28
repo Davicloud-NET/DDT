@@ -10,8 +10,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Controls;
 
-// A question's list, chosen from with the arrow keys. Enter submits the question, since a ListBoxItem takes Enter for
-// itself.
+// The list of a question, picked with the arrow keys. Enter is caught on the way down and submits the question, because
+// a ListBoxItem would handle Enter itself.
 internal static class ChoiceList
 {
     public static void Attach(ListBox list)

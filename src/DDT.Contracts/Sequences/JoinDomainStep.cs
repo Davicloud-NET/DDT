@@ -6,14 +6,14 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// No domain field: the join password is bound to its domain, the configured one or the account's, and a domain named
-// in a sequence could send the join account to a foreign domain controller.
+// There's no domain field on purpose. The join password is bound to its domain, the configured one or the account's.
+// A domain named in a sequence could send the join account to a foreign domain controller.
 public sealed record JoinDomainStep : SequenceStep
 {
-    // Null takes the configured default. From version 3 it is a template.
+    // Null uses the configured default. From version 3 on it's a template.
     public string? OrganizationalUnit { get; init; }
 
-    // Version 3: the account that joins, which also names the domain. Null takes the configured join account.
+    // Version 3. The account that joins, which also decides the domain. Null uses the configured join account.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AccountReference? Account { get; init; }
 

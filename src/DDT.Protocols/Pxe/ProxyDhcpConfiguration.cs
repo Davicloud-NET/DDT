@@ -16,7 +16,7 @@ public sealed record ProxyDhcpConfiguration
     // Used to recognise a request that already names another server in option 54.
     public ImmutableArray<IPAddress> LocalAddresses { get; init; } = [];
 
-    // Relayed requests arrive from a subnet DDT was never told about, and answering one means
-    // serving a remote segment a boot target chosen with no site context. Empty means refuse.
+    // Relayed requests come from a subnet DDT was never told about. Answering one means serving a remote segment a
+    // boot target chosen without any site context. Empty means refuse them all.
     public ImmutableArray<IPAddress> AuthorisedRelayAgents { get; init; } = [];
 }

@@ -8,7 +8,7 @@ import { ListBoxItem } from "@/ui/Select";
 
 import type { AccountItem } from "./useAccountChoices";
 
-// A section of the account list, left out while it has nothing to offer.
+// A section of the account list. It's left out while it's empty.
 export function AccountSection({ title, items }: { title: string; items: readonly AccountItem[] }) {
   return items.length > 0 ? (
     <ListBoxSection>

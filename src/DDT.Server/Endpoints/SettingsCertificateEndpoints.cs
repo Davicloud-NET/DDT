@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// The server certificate on the settings page. These act on the process that serves the page.
+// The server certificate on the settings page. These endpoints act on the process that serves the page.
 public static class SettingsCertificateEndpoints
 {
     public static RouteGroupBuilder MapSettingsCertificateEndpoints(this RouteGroupBuilder group)
@@ -112,7 +112,8 @@ public static class SettingsCertificateEndpoints
     private static ProblemHttpResult NotManageable() =>
         ServerProblems.Problem(ServerMessages.SettingsCertificateNotManageable.With(), StatusCodes.Status409Conflict);
 
-    // As a save's warning to confirm: under confirm as "code: message", and whole in the confirm extension.
+    // Answers like a save's warning that needs confirming. It goes under confirm as "code: message", and as a whole in
+    // the confirm extension.
     private static ValidationProblem NewRoot(ServerMessage message) =>
         TypedResults.ValidationProblem(
             new Dictionary<string, string[]> { ["confirm"] = [$"{SettingWarningCodes.CertificateNewRoot}: {message.Text}"] },

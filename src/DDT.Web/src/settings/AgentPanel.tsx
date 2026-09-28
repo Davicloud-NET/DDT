@@ -8,8 +8,9 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { BinaryPanel } from "./agent/BinaryPanel";
 import { agentBinaryQuery, maxAgentBytes, uploadAgent } from "./agentBinary";
 
-// The agent netbooting machines switch to: the boot image's agent downloads it at each boot when it differs and runs
-// it instead, so an upload needs no new boot image. It runs as SYSTEM everywhere, so it needs the password again.
+// The agent that netbooting machines switch to. At each boot, the boot image's agent downloads it if it differs and
+// runs it instead, so an upload doesn't need a new boot image. It runs as SYSTEM everywhere, so an upload needs the
+// password again.
 export function AgentPanel() {
   const { t: translate } = useLingui();
 

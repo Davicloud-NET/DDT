@@ -4,8 +4,8 @@
 
 import { cx } from "./cx";
 
-// Primary is the one next step on a page. Danger is an outline, because a filled red key would read as the safe
-// choice; destructive work asks first, in a ConfirmDialog.
+// Primary is the single next step on a page. Danger is an outline, because a filled red button would read as
+// the safe choice. Destructive work asks first, in a ConfirmDialog.
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 export type ButtonSize = "md" | "sm";
 

@@ -15,7 +15,7 @@ import type { MachinesSearchChange } from "./useMachineFilters";
 interface MachineListHeaderProps {
   filter: MachineFilter;
   query: string;
-  // The machines the search leaves, which each filter counts.
+  // The machines that match the search. Each filter shows how many of them it contains.
   matching: readonly MachineSummary[];
   onChange: (next: MachinesSearchChange) => void;
 }

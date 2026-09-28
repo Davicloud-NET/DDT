@@ -16,8 +16,8 @@ import {
 import type { InputAnswer } from "@/inputs/inputs";
 import { showToast } from "@/ui/toasts";
 
-// Letting a waiting run go on and giving its answers. The server's answer is the run as it is then, which goes into
-// the cache as it is; one that came too late says so.
+// Continues a waiting run or gives its answers. The server answers with the run as it is now, which goes into the
+// cache unchanged. If the action came too late, the answer says so.
 export function useRunWaitingActions(machineId: string) {
   const queryClient = useQueryClient();
   const [asking, setAsking] = useState(false);

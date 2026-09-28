@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import type { AuditEntry } from "./audit";
 import { actionLabel, actorKindLabel } from "./auditView";
 
-// mark gives a row's classes when the hub brought it (useLiveMarks), so it goes into the rows' dependencies.
+// mark returns the classes of a row the hub brought in (see useLiveMarks), so the rows list it in their dependencies.
 export function AuditTable({
   entries,
   mark,

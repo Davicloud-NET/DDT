@@ -42,13 +42,13 @@ interface FlowCanvasProps {
   onAction: (action: NodeAction, id: string) => void;
   onAdd: (slot: Slot, kind: StepKind) => void;
   onMove: (ids: string[], slot: Slot) => void;
-  // A node whose gap after it should open its menu of kinds, as its own menu asks.
+  // A node whose next gap should open its menu of kinds, because the node's own menu asked for it.
   addAfter: string | null;
   onAddAfterDone: () => void;
   className?: string;
 }
 
-// The flow as cards on a canvas that pans and zooms: one Tab stop, with a roving focus that follows the flow.
+// The flow as cards on a canvas that pans and zooms. It's one Tab stop, with a roving focus that follows the flow.
 export function FlowCanvas(props: FlowCanvasProps) {
   const { steps, index, selectedId, findings, locked, drag, onSelect, onAdd, className } = props;
   const { layout, menus, ...canvas } = useFlowCanvas(props);

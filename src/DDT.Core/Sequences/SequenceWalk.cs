@@ -7,8 +7,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The run as the engine walks it, in the shape of Format 2 whatever its format: one state per node in pre-order, the
-// cursor, the phase and the run variables. Snapshot gives it in the run's own format.
+// The run as the engine walks it, always in the Format 2 shape. It holds one state per node in pre-order, the cursor,
+// the phase and the run variables. Snapshot returns it in the run's original format.
 internal sealed class SequenceWalk
 {
     private readonly SequenceState _given;
@@ -24,8 +24,8 @@ internal sealed class SequenceWalk
         _nodes = SequenceTree.Nodes(state.Definition);
         _index = SequenceTree.Index(state.Definition);
 
-        // A state of Format 1 holds a flat list, one step after the other. One of Format 2 names each node, since
-        // its cursor finds them by id.
+        // A Format 1 state holds a flat list, one step after the other. A Format 2 state names each node, because its
+        // cursor finds nodes by id.
         bool fits = _flat
             ? state.NextIndex >= 0 && _nodes.Count == (state.Definition.Steps?.Count ?? 0) && !_nodes.Any(node => node.IsContainer)
             : state.Steps is not null && state.Steps.Select(step => step.StepId).SequenceEqual(_nodes.Select(node => node.Id));
@@ -52,7 +52,7 @@ internal sealed class SequenceWalk
 
     public NodeCursor? Cursor { get; private set; }
 
-    // The engine never changes the phase: the host does, when it hands the run over.
+    // The engine never changes the phase. The host does, when it hands the run over.
     public SequencePhase Phase => _given.Phase;
 
     public IReadOnlyDictionary<string, string> Variables { get; private set; }
@@ -73,8 +73,8 @@ internal sealed class SequenceWalk
 
     public int OrderOf(SequenceStep node) => _index[node.Id].Order;
 
-    // What conditions and templates read in the phase: in a tree's run the run's values with the variables steps set on
-    // top, LastStepFailed and LastExitCode among them; in a flat run the machine alone.
+    // What conditions and templates read in the phase. In a tree's run, that's the run's values with the variables
+    // steps set on top, including LastStepFailed and LastExitCode. In a flat run it's the machine alone.
     public MachineVariables Machine(MachineVariables machine, SequencePhase phase)
     {
         if (_flat)
@@ -97,7 +97,7 @@ internal sealed class SequenceWalk
         return machine with { Phase = phase, Variables = values };
     }
 
-    // Format 1 keeps NextIndex and none of the members of a tree, so an older agent resumes it.
+    // Format 1 keeps NextIndex and leaves out the tree members, so an older agent can resume it.
     public SequenceState Snapshot() => _flat
         ? _given with
         {
@@ -118,7 +118,7 @@ internal sealed class SequenceWalk
 
     public SequenceRunResult Failed(string error) => new(SequenceOutcome.Failed, Snapshot(), error);
 
-    // The leaf's conditions do not hold: it is skipped, with the tests that decided it.
+    // The leaf's conditions don't hold. It's skipped and keeps the tests that decided it.
     public void Skip(int order, IReadOnlyList<TestEvaluation> evaluations)
     {
         _steps[order] = Visit(_steps[order], StepState.Skipped, evaluations);
@@ -138,8 +138,8 @@ internal sealed class SequenceWalk
         Changed = true;
     }
 
-    // A leaf ran: its outputs join the run variables, and in a tree's run LastStepFailed and LastExitCode say how it
-    // went, for the conditions after it.
+    // Records a leaf that ran. Its outputs join the run variables. In a tree's run, LastStepFailed and LastExitCode say
+    // how it went, for the conditions after it.
     public void Record(StepResult result)
     {
         Dictionary<string, string>? variables = null;
@@ -175,8 +175,9 @@ internal sealed class SequenceWalk
         Changed = true;
     }
 
-    // Fails the node and its containers up to the nearest with ContinueOnError, the node itself first, and goes on
-    // after it, skipping what did not run. Returns false when none caught the failure, which fails the run.
+    // Fails the node and its containers up to the nearest one with ContinueOnError, starting with the node itself. The
+    // run continues after that one and skips what didn't run. Returns false when nothing caught the failure, which
+    // fails the run.
     public bool Fail(int order, string error)
     {
         NodePosition position = _index[_nodes[order].Id];
@@ -212,8 +213,8 @@ internal sealed class SequenceWalk
         }
     }
 
-    // A container whose own conditions do not hold is skipped with everything in it. An IF keeps the branch it took and
-    // skips the other, which the server needs to see the run complete.
+    // A container whose conditions don't hold is skipped with everything in it. An IF records the branch it took and
+    // skips the other one. The server needs that to see the run complete.
     public void Enter(SequenceStep container, MachineVariables machine)
     {
         int order = OrderOf(container);
@@ -260,8 +261,8 @@ internal sealed class SequenceWalk
         }
     }
 
-    // Leaving a container once its steps are done. A repeat tests Until after each time through them, do ... until,
-    // and goes through them again while it may. Returns the error when the run fails with it.
+    // Leaves a container once its steps are done. A repeat tests Until after each iteration, like do ... until, and
+    // goes again while it's allowed to. Returns the error when the run fails.
     public string? Leave(SequenceStep container, MachineVariables machine)
     {
         int order = OrderOf(container);
@@ -277,7 +278,7 @@ internal sealed class SequenceWalk
             };
             _steps[order] = run;
 
-            // A document from outside may leave MaxTimes out, which reads as 0; the validator refuses it.
+            // A document from outside may leave out MaxTimes, which then reads as 0. The validator refuses that.
             int times = Math.Max(repeat.MaxTimes, 1);
 
             if (!until.Held && run.Iteration < times)
@@ -304,7 +305,7 @@ internal sealed class SequenceWalk
         return null;
     }
 
-    // A new visit of a node: its pass goes up, and nothing an earlier visit left stays.
+    // Starts a new visit of a node. Its pass goes up, and nothing from an earlier visit stays.
     private static StepRunState Visit(StepRunState step, StepState state, IReadOnlyList<TestEvaluation>? evaluations) =>
         step with
         {
@@ -322,13 +323,13 @@ internal sealed class SequenceWalk
     private static bool IsUntil(TestEvaluation test) =>
         test.Path.StartsWith(ConditionEvaluator.UntilPath, StringComparison.Ordinal);
 
-    // The node and every node inside it, as the pre-order walk counts them.
+    // Counts the node and every node inside it, the same way the pre-order walk does.
     private static int Size(SequenceStep node) => 1 + node.Bodies.Sum(BodySize);
 
     private static int BodySize(StepBody body) =>
         ((IReadOnlyList<SequenceStep?>)body.Steps).Sum(node => node is null ? 0 : Size(node));
 
-    // Where the run goes into a container: its first node, or, with nothing in it, straight out again.
+    // Where the run enters a container. That's its first node, or straight out again when it's empty.
     private static NodeCursor First(SequenceStep container, IReadOnlyList<SequenceStep?> nodes) =>
         nodes.FirstOrDefault(node => node is not null) is { } first
             ? new NodeCursor(first.Id, false)
@@ -336,7 +337,7 @@ internal sealed class SequenceWalk
 
     private NodeCursor? Successor(int order) => SequenceTree.Successor(Definition, _index, _nodes[order].Id);
 
-    // The order of a body's first node: the nodes of the bodies before it come first.
+    // The order of a body's first node. The nodes of the earlier bodies come before it.
     private int BodyStart(int order, int body) => order + 1 + _nodes[order].Bodies.Take(body).Sum(BodySize);
 
     // Skipping counts as a visit, so the pass of each node goes up as if it had been entered.
@@ -348,7 +349,7 @@ internal sealed class SequenceWalk
         }
     }
 
-    // Every node inside a repeat is Pending again for its next time through, and keeps its pass.
+    // Every node inside a repeat goes back to Pending for the next iteration, and keeps its pass.
     private void ResetBody(int order)
     {
         for (int inside = order + 1; inside < order + _sizes[order]; inside++)

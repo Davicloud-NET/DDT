@@ -8,7 +8,7 @@ using DDT.Server.Live;
 
 namespace DDT.Server.Settings;
 
-// A save of a section from the settings page. It answers with the section as it applies after the save, and every other
+// Saves a section from the settings page. It answers with the section as it applies after the save, and every other
 // browser receives the same view through the hub.
 internal sealed class SettingsSaves(
     SettingsStore store,
@@ -35,7 +35,7 @@ internal sealed class SettingsSaves(
         return new(result, await SavedAsync(api, change.Version, result, cancellationToken).ConfigureAwait(false));
     }
 
-    // The section as it is, with a new version, so every pxe host applies it again and scans its interfaces anew.
+    // Saves the section unchanged with a new version, so every PXE host applies it again and rescans its interfaces.
     public async Task<SettingsSaved<PxeSettings>> RescanAsync(Actor actor, CancellationToken cancellationToken)
     {
         SettingsSectionApi<PxeSettings> api = SettingsApi.Pxe;

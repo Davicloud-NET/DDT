@@ -6,8 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
-// Reads what DDT needs from a raw disk image before storing it. A missing or damaged GUID partition table refuses the
-// image; an unreadable EFI system partition does not, since the image may still start, and BootProblem says why.
+// Reads what DDT needs from a raw disk image before storing it. A missing or damaged GUID partition table gets the
+// image refused. An unreadable EFI system partition doesn't, since the image may still start. BootProblem says why.
 public static class RawImageInspector
 {
     public const string BootDirectory = @"\EFI\BOOT";
@@ -17,7 +17,7 @@ public static class RawImageInspector
 
     private const int MaxBootFiles = 16;
 
-    // Throws InvalidGptException, whose message says why the image is refused.
+    // Throws InvalidGptException when the image is refused. Its message says why.
     public static RawImageInfo Inspect(Stream image)
     {
         ArgumentNullException.ThrowIfNull(image);
@@ -85,8 +85,8 @@ public static class RawImageInspector
         return new RawImageInfo(length, table, system, files, problem, unreadable);
     }
 
-    // BOOT*.EFI in \EFI\BOOT, which firmware starts from a disk without a boot entry, then the shim*.efi beside each
-    // distribution's own boot loader, such as \EFI\ubuntu\shimx64.efi.
+    // First BOOT*.EFI in \EFI\BOOT, which firmware starts from a disk without a boot entry. Then the shim*.efi next to
+    // each distribution's boot loader, such as \EFI\ubuntu\shimx64.efi.
     private static IEnumerable<(string Path, FatEntry Entry)> BootFileEntries(FatVolume volume)
     {
         if (volume.Find("EFI") is not { IsDirectory: true })

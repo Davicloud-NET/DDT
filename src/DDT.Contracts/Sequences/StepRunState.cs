@@ -11,9 +11,10 @@ public sealed record StepRunState(
     Guid StepId,
     StepState State,
     string? Error,
-    // The times the node was entered, so a node inside a repeat starts a new visit with a higher pass; 0 is never.
+    // How many times the node was entered, so a node inside a repeat starts each new visit with a higher pass. 0 means
+    // never.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int Pass = 0,
-    // A repeat's current time through its body, from 1.
+    // Which time through its body a repeat is on, counting from 1.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int Iteration = 0,
     // The path an IF took.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IfBranch? Branch = null,

@@ -10,7 +10,7 @@ namespace DDT.MachineConsole.ViewModels;
 // Reads the organisation's logo for the right end of the header.
 public static class LogoLoader
 {
-    // Taller than the header ever draws it; the smaller copy also bounds what a large picture costs.
+    // Taller than the header ever draws it. The smaller copy also limits what a large picture costs.
     private const int MaxHeight = 128;
 
     public static Bitmap? Read(string path)
@@ -34,7 +34,7 @@ public static class LogoLoader
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            // Not a picture, or gone: the header shows none, and the run goes on.
+            // The file isn't a picture or is gone. The header shows no logo, and the run continues.
             return null;
         }
     }

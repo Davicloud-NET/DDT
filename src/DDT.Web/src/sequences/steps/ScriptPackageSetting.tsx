@@ -11,7 +11,7 @@ import type { Choice } from "../fields/fieldBase";
 import type { RunScriptStep } from "../sequences";
 import type { KindFieldsProps } from "./kindFields";
 
-// The Select needs a key for "no package"; a package id is a GUID, so this never is one.
+// The Select needs a key for "no package". A package id is a GUID, so it can never be this.
 const NO_PACKAGE = "none";
 
 // The Files package a script runs in, from the library's Files packages.

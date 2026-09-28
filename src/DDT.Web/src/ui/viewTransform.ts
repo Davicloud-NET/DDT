@@ -53,7 +53,7 @@ export function panBy(view: ViewTransform, dx: number, dy: number): ViewTransfor
   return { ...view, x: view.x + dx, y: view.y + dy };
 }
 
-// Scales to scale, keeping the content under anchor, a point on the screen, where it is.
+// Zooms to scale while the content under anchor, a point on the screen, stays where it is.
 export function zoomAt(view: ViewTransform, scale: number, anchor: ViewPoint): ViewTransform {
   const next = clampScale(scale);
   const fixed = toContent(view, anchor);
@@ -87,8 +87,8 @@ export function fitTransform(
   };
 }
 
-// The top of the content at a size that reads, for a flow taller than the canvas: as wide as the canvas allows up to
-// 100 %, but not below least, centred across and with the margin above it.
+// Shows the top of the content at a readable size, for a flow taller than the canvas. It's as wide as the canvas
+// allows, up to 100 % but not below least, centred across, with the margin above it.
 export function topTransform(
   content: ViewSize,
   canvas: ViewSize,
@@ -101,8 +101,8 @@ export function topTransform(
   return { scale, x: (canvas.width - content.width * scale) / 2, y: margin };
 }
 
-// Moves the view back so at least KEEP_IN_VIEW pixels of the content, or all of it where it is smaller, stay on the
-// canvas.
+// Moves the view back so at least KEEP_IN_VIEW pixels of the content stay on the canvas, or all of it if it's
+// smaller.
 export function clampPan(view: ViewTransform, content: ViewSize, canvas: ViewSize): ViewTransform {
   const clampAxis = (offset: number, length: number, room: number) => {
     const keep = Math.min(KEEP_IN_VIEW, length);
@@ -169,8 +169,8 @@ export interface WheelInput {
   shiftKey: boolean;
 }
 
-// A wheel moves the view; with Ctrl, which browsers also report for a pinch on a touchpad, it zooms at the pointer.
-// Shift turns a wheel that only goes up and down sideways.
+// A wheel moves the view. With Ctrl, which browsers also report for a touchpad pinch, it zooms at the pointer. Shift
+// turns a vertical-only wheel into a sideways one.
 export function wheelChange(
   view: ViewTransform,
   wheel: WheelInput,

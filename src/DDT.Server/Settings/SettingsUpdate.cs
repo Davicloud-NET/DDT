@@ -12,7 +12,7 @@ public sealed class SettingsUpdate
 {
     public required long Version { get; init; }
 
-    // The whole section as its option class serializes it; a field configuration locks is not written.
+    // The whole section as its option class serializes it. Fields that configuration locks aren't written.
     public required JsonObject Values { get; init; }
 
     // A secret missing here is kept.

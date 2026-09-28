@@ -151,7 +151,7 @@ describe("AgentPanel", () => {
       within(await screen.findByRole("dialog")).getByRole("button", { name: "Upload agent" }),
     );
 
-    // The proof of the first test is still held; without it, the password comes first.
+    // The first test's proof may still be held. If it isn't, the password dialog comes first.
     if (screen.queryByRole("dialog", { name: "Confirm it is you" }) !== null) {
       await typePassword();
     }
@@ -220,7 +220,7 @@ describe("ConsolePanel", () => {
       ).getByRole("button", { name: "Upload console" }),
     );
 
-    // A proof an earlier test left is still held; without it, the password comes first.
+    // An earlier test's proof may still be held. If it isn't, the password dialog comes first.
     if (screen.queryByRole("dialog", { name: "Confirm it is you" }) !== null) {
       await typePassword();
     }

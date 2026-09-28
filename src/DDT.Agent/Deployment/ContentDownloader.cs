@@ -16,11 +16,11 @@ public sealed class ContentDownloader(
     TimeProvider timeProvider,
     TimeSpan tokenWait)
 {
-    // A connection that drops without a reset, as a VPN can, would otherwise wait for ever.
+    // Otherwise a connection that drops without a reset, which a VPN can do, would wait forever.
     public static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
-    // As long as a server outage may last. While the progress reports get through, the tokens stay valid, so a
-    // failure of the transfer alone would otherwise be retried for ever.
+    // About as long as a server outage may last. While the progress reports get through, the tokens stay valid. So
+    // without this limit, a transfer that keeps failing on its own would be retried forever.
     public static readonly TimeSpan GiveUpAfter = TimeSpan.FromMinutes(15);
 
     private const int BufferSize = 1024 * 1024;
@@ -28,7 +28,7 @@ public sealed class ContentDownloader(
     public static DeploymentStepException Mismatch(string name) => new(
         $"The download of {name} does not match the SHA-256 the server announced. Start again; if it fails again, upload {name} again.");
 
-    // The part file keeps what arrived across restarts of the agent, and gets finalPath only once it matches.
+    // The part file keeps what arrived across restarts of the agent. It's moved to finalPath only once it matches.
     public async Task DownloadAsync(ContentFile file, string partPath, string finalPath, IProgress<int> percent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -51,8 +51,8 @@ public sealed class ContentDownloader(
         File.Move(partPath, finalPath, overwrite: true);
     }
 
-    // True when all of the file arrived and matches its SHA-256. The sink's length is the one record of progress: every
-    // byte it holds has been hashed, whatever interrupted the transfer.
+    // True when the whole file arrived and matches its SHA-256. The sink's length is the only record of progress.
+    // Every byte it holds has been hashed, whatever interrupted the transfer.
     public async Task<bool> DownloadAsync(ContentFile file, IDownloadSink sink, IProgress<int> percent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -94,7 +94,7 @@ public sealed class ContentDownloader(
             && string.Equals(Convert.ToHexStringLower(hash.GetHashAndReset()), file.Sha256, StringComparison.OrdinalIgnoreCase);
     }
 
-    // What interrupted the transfer, or null when it completed or starts over.
+    // Returns what interrupted the transfer, or null when it completed or starts over.
     private async Task<string?> TryReceiveAsync(ContentFile file, Transfer transfer, CancellationToken cancellationToken)
     {
         string token = tokens.Token;
@@ -156,7 +156,8 @@ public sealed class ContentDownloader(
         await Task.Delay(delay, timeProvider, cancellationToken).ConfigureAwait(false);
     }
 
-    // One request, appending what arrives to the sink, which may be less than the rest when the connection ends early.
+    // Sends one request and appends what arrives to the sink. That may be less than the rest of the file when the
+    // connection ends early.
     private async Task ReceiveAsync(ContentFile file, string token, Transfer transfer, CancellationToken cancellationToken)
     {
         using StallGuard stall = new(timeProvider, cancellationToken);
@@ -181,7 +182,7 @@ public sealed class ContentDownloader(
                 }
                 catch (IOException exception)
                 {
-                    // Only a failed receive is worth resuming; a failed write to the disk is not.
+                    // Only a failed receive is worth resuming. A failed write to the disk isn't.
                     throw new HttpRequestException(exception.Message, exception);
                 }
 
@@ -202,7 +203,7 @@ public sealed class ContentDownloader(
         }
     }
 
-    // The offset the content starts at, after checking it is the part asked for.
+    // Returns the offset the content starts at, after checking it's the part that was asked for.
     private long CheckStart(ContentFile file, AgentImageStream content, long offset, Transfer transfer)
     {
         // A server may ignore the range and send everything, which RFC 9110 allows.
@@ -228,7 +229,7 @@ public sealed class ContentDownloader(
         return offset;
     }
 
-    // One download's sink, the hash of what it holds, and how its attempts fared since it last made progress.
+    // One download's sink, the hash of what it holds, and how its attempts went since it last made progress.
     private sealed class Transfer(IDownloadSink sink, IncrementalHash hash, ByteProgress progress, long progressed)
     {
         public IDownloadSink Sink => sink;

@@ -7,7 +7,7 @@ using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
 
-// What a decision about a machine came to: its row once saved, or the refusal. Neither when the machine is gone.
+// The result of a decision about a machine: its saved row, or the refusal. Neither if the machine doesn't exist.
 internal sealed record MachineOutcome(MachineSummary? Summary, DeploymentDecision? Refusal)
 {
     public static MachineOutcome NotFound { get; } = new(null, null);

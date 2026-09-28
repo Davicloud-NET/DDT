@@ -12,8 +12,8 @@ import { useChangeUser } from "./useChangeUser";
 import type { UserView } from "./users";
 import { shownName } from "./userView";
 
-// Changes an account's name, email address and role. What the directory or groups decide is locked, with the reason,
-// and so is the own role, since the server refuses to take the Administrator role from the one asking.
+// Changes an account's name, email address and role. Whatever the directory or groups decide is locked, with the
+// reason. So is your own role, because the server refuses to take the Administrator role from the person asking.
 export function ChangeUserDialog({
   user,
   isSelf,

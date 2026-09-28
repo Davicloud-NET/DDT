@@ -9,7 +9,8 @@ namespace DDT.Server.Deployments;
 
 internal static class RunAnswerAudits
 {
-    // Names only: an answer can be anything a person typed, and an Account input's is a password. Null for no answers.
+    // Only the input names, because an answer can be anything a person typed, and an Account input's answer is a
+    // password. Null for no answers.
     public static AuditEvent? Of(Deployment run, IReadOnlyList<string> answered, bool atMachine, DateTimeOffset now, Actor actor) =>
         answered.Count == 0
             ? null

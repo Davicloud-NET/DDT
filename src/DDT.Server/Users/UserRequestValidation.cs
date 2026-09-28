@@ -15,7 +15,7 @@ internal static class UserRequestValidation
     public static string? Clean(string? value) =>
         value?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim() is { Length: > 0 } text ? text : null;
 
-    // An empty address clears it. A display name part, as in "Jane <jane@corp.example>", is refused rather than kept.
+    // An empty address clears it. An address with a display name, as in "Jane <jane@corp.example>", is refused.
     public static (string? Email, ServerMessage? Problem) Email(string? value)
     {
         string? email = Clean(value);

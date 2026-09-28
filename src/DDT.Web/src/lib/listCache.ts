@@ -5,8 +5,8 @@
 // Updaters of a cached list of items with ids, for setQueryData. A list never read stays undefined, so a page that
 // needs it reads it whole.
 
-// The list with item in place of its older copy, or added, sorted by compare. item goes first, so it leads the items
-// compare finds equal to it.
+// The list with item replacing its older copy, or added, sorted by compare. item goes first, so it comes before the
+// items compare finds equal to it.
 export function upsertById<T extends { id: string }>(
   list: readonly T[] | undefined,
   item: T,

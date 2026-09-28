@@ -20,8 +20,9 @@ public sealed class WaitingRuns(
     DdtSettings settings,
     TimeProvider timeProvider)
 {
-    // Answers while an assigned run lacks a required one; the machine answers only what it asks, and the agent starts the
-    // run once none is missing. The caller saves over Before, so answers given elsewhere in the meantime win.
+    // Takes answers while an assigned run lacks a required one. The machine only answers what it asks, and the agent
+    // starts the run once none is missing. The caller saves over Before, so answers given elsewhere in the meantime
+    // win.
     public async Task<RunAnswering> AnswerAsync(Machine machine, Deployment run, AnswersGiven given, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -80,8 +81,8 @@ public sealed class WaitingRuns(
         return new RunAnswering(before, waiting.AskedAtMachine, [], check, Refused: false);
     }
 
-    // Continues the pause the run waits at, the visit the page showed, so a click that comes late continues no later one.
-    // The agent learns it with the answer to its next report, which comes within seconds while it waits.
+    // Continues the pause the run waits at, in the visit the page showed, so a late click doesn't continue a later
+    // visit. The agent learns it from the answer to its next report, which comes within seconds while it waits.
     public async Task<DeploymentDecision> ContinueAsync(
         Machine machine,
         ContinueRunRequest request,
@@ -124,7 +125,8 @@ public sealed class WaitingRuns(
         return DeploymentDecision.Accepted(run);
     }
 
-    // Adds the answers to the run's, and keeps the Account answers. The first account that cannot be kept refuses them.
+    // Adds the answers to the run's, and keeps the Account answers. The first account that can't be kept refuses them
+    // all.
     private async Task<AnswerProblem?> MergeAsync(
         Deployment run,
         SequenceDefinition definition,

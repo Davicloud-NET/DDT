@@ -9,8 +9,9 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
-// A GUID partition table (UEFI 2.10, section 5.3) of 512-byte sectors, read from an image and written for a disk of
-// another size. The entries stay byte for byte, so fields DDT does not know survive; headers and MBR are written anew.
+// A GUID partition table (UEFI 2.10, section 5.3) with 512-byte sectors. It's read from an image and written for a
+// disk of another size. The entries are kept byte for byte, so fields DDT doesn't know survive. The headers and the
+// MBR are written from scratch.
 public sealed class GptLayout
 {
     public const int SectorSize = 512;
@@ -46,7 +47,7 @@ public sealed class GptLayout
 
     public long LastUsableLba => _fields.LastUsableLba;
 
-    // Where the backup header is, which is the disk's last sector once the table is written for the disk.
+    // Where the backup header is. Once the table is written for a disk, that's the disk's last sector.
     public long BackupLba => _fields.BackupLba;
 
     public long EntriesLba => _fields.EntriesLba;
@@ -61,7 +62,7 @@ public sealed class GptLayout
 
     public long BackupEntriesLba => BackupLba - EntrySectors;
 
-    // The disk the table was written for: through the backup header.
+    // The size of the disk the table was written for. The disk ends with the backup header.
     public long DiskSectors => BackupLba + 1;
 
     public long LastUsedLba => Partitions.Count == 0 ? FirstUsableLba - 1 : Partitions.Max(partition => partition.LastLba);
@@ -89,8 +90,8 @@ public sealed class GptLayout
             new byte[entrySectors * SectorSize]);
     }
 
-    // The sector size a disk image was made for, from where its primary header is: 512, 4096, or 0 when head, the
-    // image's first bytes, holds no GUID partition table at either place.
+    // The sector size a disk image was made for, found by where its primary header is. head is the image's first
+    // bytes. Returns 512, 4096, or 0 when there's no GUID partition table at either place.
     public static int SectorSizeOf(ReadOnlySpan<byte> head)
     {
         if (GptHeader.HasSignatureAt(head, SectorSize))
@@ -101,7 +102,7 @@ public sealed class GptLayout
         return GptHeader.HasSignatureAt(head, 4096) ? 4096 : 0;
     }
 
-    // Checks the primary header in the first two sectors and says how many bytes from the start of the disk Read needs.
+    // Checks the primary header in the first two sectors. Returns how many bytes from the start of the disk Read needs.
     public static long HeadBytesFor(ReadOnlySpan<byte> firstSectors)
     {
         if (firstSectors.Length < 2 * SectorSize || !GptHeader.HasSignatureAt(firstSectors, SectorSize))
@@ -173,7 +174,7 @@ public sealed class GptLayout
         return Read(head);
     }
 
-    // The table written for a disk of diskSectors: the backup at its end, and the usable range up to the backup.
+    // The table for a disk of diskSectors. The backup goes at the disk's end, and the usable range reaches up to it.
     public GptLayout ForDisk(long diskSectors)
     {
         long lastUsable = diskSectors - EntrySectors - 2;
@@ -236,7 +237,7 @@ public sealed class GptLayout
         return new GptLayout(_fields, entries);
     }
 
-    // Adds a partition of sectors at the end of the usable range, starting on a 1 MiB boundary.
+    // Adds a partition with the given number of sectors at the end of the usable range. It starts on a 1 MiB boundary.
     public GptLayout WithPartitionAtEnd(Guid type, Guid id, string name, long sectors)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(sectors, 1);
@@ -253,8 +254,8 @@ public sealed class GptLayout
         return WithPartition(type, id, name, first, first + sectors - 1);
     }
 
-    // LBA 0 for this disk, keeping the boot code and disk signature of original, the image's own sector 0, so the disk
-    // still starts in firmware that boots it the legacy way.
+    // The protective MBR at LBA 0 for this disk. It keeps the boot code and disk signature from original, which is the
+    // image's own sector 0. That way the disk still starts on firmware that boots it the legacy way.
     public byte[] ProtectiveMbr(ReadOnlySpan<byte> original)
     {
         byte[] mbr = new byte[SectorSize];

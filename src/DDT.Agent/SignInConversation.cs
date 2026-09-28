@@ -9,8 +9,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// The sign-in typed at the machine. A wrong password or code asks again for that alone, as the web sign-in does. Typed
-// user names never reach the log, as a password typed into the wrong field would be uploaded with them.
+// The sign-in typed at the machine. Like the web sign-in, a wrong password or code only asks for that field again.
+// Typed user names never go to the log, because a password typed into the wrong field would be uploaded with them.
 public sealed class SignInConversation(IMachineConsole console, AgentLog log)
 {
     private string? _userName;

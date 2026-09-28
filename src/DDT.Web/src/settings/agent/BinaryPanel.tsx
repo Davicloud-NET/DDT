@@ -12,7 +12,7 @@ import { BinaryUpload } from "./BinaryUpload";
 import { CurrentBinary } from "./CurrentBinary";
 import { UploadsOff } from "./UploadsOff";
 
-// The file machines take at their next netboot, and its upload unless configuration names it.
+// The file machines get at their next netboot, and its upload, unless configuration names the file.
 export function BinaryPanel({ binary }: { binary: Binary }) {
   const current = useQuery(binary.query);
 

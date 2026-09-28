@@ -7,8 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The screen for each stage of the agent. One of the same kind is kept and updated, so what it shows moves rather than
-// being built again.
+// The screen for each stage of the agent. A screen of the same kind is kept and updated, so its content changes in
+// place instead of being built again.
 public sealed class StageScreens
 {
     private readonly Localizer _l;
@@ -22,7 +22,7 @@ public sealed class StageScreens
         _current = new ConnectionViewModel(localizer);
     }
 
-    // The stage screen kept last, or the start before the agent has said anything. A question may cover it.
+    // The last stage screen kept, or the starting screen before the agent has said anything. A question may cover it.
     public StageViewModel Current => _current;
 
     public StageViewModel For(ConsoleState? state) => (state?.Stage ?? ConsoleStage.Starting) switch
@@ -33,7 +33,7 @@ public sealed class StageScreens
         _ => Kept(state, () => new RunViewModel(_l)),
     };
 
-    // Also the screen the sign-in shows on, whatever the stage.
+    // The sign-in also shows on this screen, whatever the stage.
     public AuthorizationViewModel Authorization(ConsoleState? state) => Kept(state, () => new AuthorizationViewModel(_l));
 
     private TScreen Kept<TScreen>(ConsoleState? state, Func<TScreen> create)

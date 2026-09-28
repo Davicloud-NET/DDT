@@ -20,15 +20,15 @@ import { Skeleton } from "@/ui/Skeleton";
 import { FlowBuilder } from "./builder/FlowBuilder";
 import { sequenceQuery } from "./sequences";
 
-// One task sequence, edited in place as a flow by administrators and read by everyone else. The route loads it on its
-// own, with the flow builder.
+// One task sequence. Administrators edit it in place as a flow, and everyone else can read it. The route lazy-loads
+// this page together with the flow builder.
 export function SequenceEditorPage() {
   const { sequenceId } = useParams({ from: "/shell/deployment/sequences/$sequenceId" });
   const sequence = useQuery({ ...sequenceQuery(sequenceId), ...liveListOptions(useLiveStatus()) });
   const user = useQuery(currentUserQuery).data ?? null;
 
   const isAdministrator = useIsAdministrator();
-  // The editor keeps its copy once open, and says itself when the sequence goes away.
+  // Once open, the editor keeps its own copy and shows by itself when the sequence is deleted.
   const missing =
     sequence.data === undefined &&
     sequence.error instanceof ApiError &&

@@ -13,7 +13,7 @@ import type { TargetRow } from "./packageTargets";
 
 interface HardwareModelRowProps {
   row: TargetRow;
-  // Counts from 1, for the remove key's name.
+  // Counts from 1, for the remove button's aria-label.
   position: number;
   manufacturers: readonly string[];
   // The reported models of the row's manufacturer.
@@ -22,7 +22,7 @@ interface HardwareModelRowProps {
   onRemove: () => void;
 }
 
-// One hardware model a driver package is for. Both fields take any text, and offer what machines reported.
+// One hardware model a driver package is for. Both fields take any text and suggest what machines reported.
 export function HardwareModelRow(props: HardwareModelRowProps) {
   const { row, position, manufacturers, models, onChange, onRemove } = props;
   const { t } = useLingui();

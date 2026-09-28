@@ -10,8 +10,8 @@ namespace DDT.Server.Settings;
 
 internal static class ConfigurationSources
 {
-    // Where a key, or a section below it, comes from: the last source that sets it wins, as it does for the value. Null
-    // when no source sets it.
+    // Says where a key, or a section below it, comes from. The last source that sets it wins, just like for the value.
+    // Returns null when no source sets it.
     public static string? Describe(IConfiguration configuration, string key)
     {
         if (configuration is not IConfigurationRoot root)

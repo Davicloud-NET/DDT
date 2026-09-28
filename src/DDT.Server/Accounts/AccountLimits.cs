@@ -11,12 +11,12 @@ public static class AccountLimits
     // A user principal name, or a domain and a user name.
     public const int MaxUserNameLength = 256;
 
-    // A DNS name's longest.
+    // The longest a DNS name can be.
     public const int MaxDomainLength = 253;
 
     // Active Directory takes passwords of up to 256 characters.
     public const int MaxPasswordLength = 256;
 
-    // The share servers one account may connect to; an account for many servers is one to split.
+    // The most share servers one account may connect to. An account that needs more should be split.
     public const int MaxHosts = 32;
 }

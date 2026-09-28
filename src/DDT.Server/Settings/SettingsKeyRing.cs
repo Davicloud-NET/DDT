@@ -13,7 +13,7 @@ public sealed class SettingsKeyRing(DdtDbContext database, SettingsProtector pro
 {
     private const int MaxAttempts = 5;
 
-    // Sets DdtSettings.KeyRingReadable, which saves check.
+    // Sets DdtSettings.KeyRingReadable. Saves check that flag.
     public async Task<bool> CheckAsync(CancellationToken cancellationToken)
     {
         bool readable = await ReadsCanaryAsync(cancellationToken).ConfigureAwait(false);

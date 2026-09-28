@@ -7,54 +7,54 @@
 
 <#
 .SYNOPSIS
-Builds the DDT Windows PE boot files and lays them out as the pxe role serves them.
+Builds the DDT Windows PE boot files and lays them out the way the pxe role serves them.
 
 .DESCRIPTION
-Runs copype from the Windows ADK WinPE add-on, injects DDT.Agent, its graphical console where one is
-given, and startnet.cmd into boot.wim, writes a BCD that boots boot.wim from a RAM disk over TFTP,
-and publishes both Microsoft signed boot managers. Nothing here is signed by DDT: Secure Boot sees
-only Microsoft's binaries.
+Runs copype from the Windows ADK WinPE add-on and adds DDT.Agent, its graphical console if you pass
+one, and startnet.cmd to boot.wim. Then it writes a BCD that boots boot.wim from a RAM disk over
+TFTP, and publishes both Microsoft signed boot managers. DDT signs nothing here, so Secure Boot only
+sees Microsoft's binaries.
 
-It also adds the Windows PE optional components PowerShell needs, WinPE-WMI, WinPE-NetFx,
-WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets, WinPE-StorageWMI and WinPE-SecureBootCmdlets,
-with their en-us language packages, so task sequences can run PowerShell scripts in Windows PE.
-Components cannot be added to a running Windows PE, so they have to be in the image. -SkipPowerShell
-leaves them out.
+It also adds the Windows PE optional components that PowerShell needs, with their en-us language
+packages: WinPE-WMI, WinPE-NetFx, WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets,
+WinPE-StorageWMI and WinPE-SecureBootCmdlets. That way task sequences can run PowerShell scripts in
+Windows PE. Components can't be added to a running Windows PE, so they have to be in the image.
+-SkipPowerShell leaves them out.
 
-Then it removes what DDT's Windows PE never uses, by the list in boot-image-trim.txt next to this
-script, which says for each group why it can go. boot.wim is what a PXE netboot fetches over TFTP, so
-this is time saved at every netboot. The trim runs last, as it removes the servicing stack, so nothing
-can be added to the image afterwards. -SkipTrim keeps everything, and -TrimListPath takes a list of
-your own.
+Then it removes what DDT's Windows PE never uses, following the list in boot-image-trim.txt next to
+this script. The list says for each group why it can go. A PXE netboot fetches boot.wim over TFTP, so
+a smaller image saves time at every netboot. The trim runs last because it removes the servicing
+stack, and nothing can be added to the image after that. -SkipTrim keeps everything, and
+-TrimListPath uses a list of your own.
 
-Either way boot.wim is exported at the end, which drops what servicing and the trim left behind in
-it, and its size is printed, in megabytes of 1,048,576 bytes.
+Either way, boot.wim is exported at the end, which drops what servicing and the trim left behind in
+it. The script then prints its size in megabytes of 1,048,576 bytes.
 
-Output layout, relative to -Destination, which is what DDT:Pxe:BootDirectory should contain:
+The output layout, relative to -Destination. DDT:Pxe:BootDirectory on the server must hold the same layout.
 
   x64/bootmgfw.efi      boot manager signed by Microsoft Windows Production PCA 2011 (the default)
   x64/bootmgfw_ex.efi   boot manager signed by Windows UEFI CA 2023
   Boot/BCD
   Boot/boot.sdi
   Boot/boot.wim
-  Boot/ddt-boot-image.json        what the build holds, for DDT's boot image page
+  Boot/ddt-boot-image.json        what the build contains, for DDT's boot image page
   EFI/Microsoft/Boot/boot.stl     Secure Boot revocation list the boot manager checks
   EFI/Microsoft/Boot/Fonts/       fonts the boot manager draws its screens with
 
-The two boot manager paths are stable. A site DHCP server that points option 67 at DDT chooses the
-Secure Boot variant by naming one of them. Neither file is dual signed: a machine whose firmware db
-holds only the 2011 certificate needs the first, one that has revoked it needs the second.
+The two boot manager paths are stable. A site DHCP server that points option 67 at DDT picks the
+Secure Boot variant by naming one of them. Neither file is dual signed. A machine whose firmware db
+only holds the 2011 certificate needs the first, and one that has revoked it needs the second.
 
 Drivers for a network or storage controller that Windows PE has no driver for can go into boot.wim
-from a folder, -DriverPath, and from DDT itself: with -ServerUrl and -ApiToken the script asks DDT
-which driver packages are flagged for the boot image, downloads each, checks its SHA-256, and adds
-the drivers it holds. DISM refuses a driver that is not signed, which Windows PE could not load with
-Secure Boot on anyway.
+from a folder (-DriverPath) and from DDT itself. With -ServerUrl and -ApiToken, the script asks DDT
+which driver packages are flagged for the boot image. It downloads each one, checks its SHA-256, and
+adds the drivers in it. DISM refuses an unsigned driver, which Windows PE couldn't load with Secure
+Boot on anyway.
 
 Boot/ddt-boot-image.json says when the image was built, which DDT driver packages it holds, and the
 versions of the ADK, the boot managers and the agent. DDT reads it to tell whether the boot image
-still carries the drivers that are flagged. It holds no secret: like everything in the boot
-directory, anyone who can netboot can read it.
+still has the flagged drivers. It holds no secrets, because anyone who can netboot can read it, like
+everything in the boot directory.
 
 DISM and bcdedit both require elevation, even to read.
 
@@ -63,18 +63,18 @@ The published agent, ddt-agent.exe from Publish-Agent.ps1. Without it the image 
 prompt, which is enough to test the netboot chain.
 
 .PARAMETER ServerUrl
-The https URL the agent registers with, and the one the drivers are downloaded from with -ApiToken.
+The https URL the agent registers with. With -ApiToken, the drivers are downloaded from it too.
 Every name in it must be in DDT's TLS certificate.
 
 .PARAMETER RootCertificatePath
-The PEM root the agent trusts for the server. For DDT's own certificate this is ddt-root.pem, next to
-the server certificate: /var/lib/ddt/certs/ddt-root.pem in the container. The boot image pins the
-root, so it keeps working when DDT renews its certificate or adds a name. For a certificate of your
-own, pass the root of its CA. Required with -AgentPath, even for a certificate from a public CA:
-Windows PE carries only a handful of Microsoft roots, not the public web ones, and the agent also
-fetches its own updates over this connection. The server must send its full chain, because the agent
-does not download intermediates. Required with -ApiToken too: the script trusts this root, and only
-it, for the download, the way the agent does.
+The PEM root certificate the agent trusts for the server. For DDT's own certificate this is
+ddt-root.pem, next to the server certificate. In the container that's
+/var/lib/ddt/certs/ddt-root.pem. The boot image pins the root, so it keeps working when DDT renews
+its certificate or adds a name. For your own certificate, pass the root of its CA. Required with
+-AgentPath, even for a certificate from a public CA. Windows PE only carries a handful of Microsoft
+roots, not the public web ones, and the agent also fetches its own updates over this connection. The
+server must send its full chain, because the agent doesn't download intermediates. Also required
+with -ApiToken, because the script trusts only this root for the download, just like the agent.
 
 .PARAMETER KeyboardLayout
 The keyboard layout set in boot.wim, as input locale and layout identifiers, for example
@@ -85,44 +85,45 @@ US English. The default is this computer's first keyboard layout.
 Where the boot files go, in the layout above. The default is artifacts\boot in the repository.
 
 .PARAMETER WorkDirectory
-Where copype works, by default artifacts\winpe in the repository. Every build deletes it first, and
-the downloaded drivers go to a folder next to it, named after it with -drivers.
+The folder copype works in, by default artifacts\winpe in the repository. Every build deletes it
+first. The downloaded drivers go to a folder next to it, with the same name plus -drivers.
 
 .PARAMETER TftpBlockSize
 Written to the BCD as ramdisktftpblocksize, the block size bootmgr requests for boot.wim. DDT
 never serves more than its own cap of 1380, which fits a WireGuard tunnel.
 
 .PARAMETER TftpWindowSize
-Written to the BCD as ramdisktftpwindowsize, the window bootmgr asks for. Microsoft documents only 4;
-16 is faster. DDT caps the window at DDT:Pxe:TftpMaxWindowSize, 16 by default, so a site that needs
-a smaller window lowers that instead of building again.
+Written to the BCD as ramdisktftpwindowsize, the window size bootmgr asks for. Microsoft only
+documents 4, but 16 is faster. DDT caps the window at DDT:Pxe:TftpMaxWindowSize, 16 by default. So a
+site that needs a smaller window lowers that setting instead of rebuilding the image.
 
 .PARAMETER WimLibraryPath
-A libwim-15.dll of your own, for example one built from modified wimlib source, as wimlib's licence,
-the GNU LGPL, provides for. It is copied to X:\DDT\libwim-15.dll, next to the agent, which then uses
-it instead of the copy it carries and logs both SHA-256 values. Needs -AgentPath.
+Your own libwim-15.dll, for example one built from modified wimlib source, as wimlib's licence (the
+GNU LGPL) allows. It's copied to X:\DDT\libwim-15.dll, next to the agent. The agent then uses it
+instead of its built-in copy and logs both SHA-256 values. Needs -AgentPath.
 
 .PARAMETER ConsolePath
-The folder Publish-Console.ps1 wrote, with ddt-console.exe, the graphical console, and the two
-libraries it draws with, libSkiaSharp.dll and libHarfBuzzSharp.dll. The three are copied to X:\DDT,
-next to the agent, which starts the console and shows the run on it rather than on the text console
-alone. The console speaks one version of the console protocol, and an agent that updates itself to
-one speaking another falls back to the text console until the boot image is built again. Needs
--AgentPath.
+The folder Publish-Console.ps1 wrote. It holds ddt-console.exe, the graphical console, and the two
+libraries it draws with, libSkiaSharp.dll and libHarfBuzzSharp.dll. The three files are copied to
+X:\DDT, next to the agent. The agent starts the console and shows the run there, not only on the
+text console. The console speaks one version of the console protocol. If the agent updates itself to
+a version that speaks another, it falls back to the text console until the boot image is rebuilt.
+Needs -AgentPath.
 
 .PARAMETER ExtraPath
-For development: a folder copied as it is, without .pdb files, to X:\Extra, to try a program in
-Windows PE, such as a candidate for the console. Nothing starts it; run it from the prompt.
+For development. A folder that's copied as is, without .pdb files, to X:\Extra, so you can try a
+program in Windows PE, such as a candidate for the console. Nothing starts it, so run it from the
+prompt.
 
 .PARAMETER DriverPath
 A folder of drivers to add to boot.wim. DISM adds every .inf below it, with the files each names.
 
 .PARAMETER ApiToken
-An API token of an administrator, ddt_ and 43 letters and digits, made on the Account page or with
-POST /api/tokens. With -ServerUrl and -RootCertificatePath the script downloads the driver packages
-flagged for the boot image with it and adds their drivers. The token only authorizes the download:
-it is not put into the image or the description of the build. A token that expires within a day is
-enough, and revoking it afterwards costs nothing.
+An administrator's API token, ddt_ followed by 43 letters and digits. Create one on the Account
+page or with POST /api/tokens. With -ServerUrl and -RootCertificatePath, the script uses it to
+download the driver packages flagged for the boot image and adds their drivers. The token only
+authorizes the download. It isn't put into the image or the build description. A token that expires
+within a day is enough, and revoking it afterwards costs nothing.
 
 .PARAMETER SkipPowerShell
 Builds the lean image without the PowerShell components, for sites where netboot time matters more.
@@ -134,7 +135,7 @@ first lines explain the format. The build stops when a list removes a file Windo
 start, such as ntoskrnl.exe.
 
 .PARAMETER SkipTrim
-Keeps every file of Windows PE, for example to find out whether the trim is behind a problem.
+Keeps every Windows PE file, for example to find out whether the trim causes a problem.
 
 .EXAMPLE
 .\build\Build-BootImage.ps1 -AgentPath .\artifacts\agent\ddt-agent.exe -ServerUrl https://ddt.example:8443 -RootCertificatePath .\ddt-root.pem
@@ -189,7 +190,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Defaults are resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty
+# Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Destination) { $Destination = Join-Path $PSScriptRoot '..\artifacts\boot' }
 if (-not $WorkDirectory) { $WorkDirectory = Join-Path $PSScriptRoot '..\artifacts\winpe' }
@@ -216,5 +217,5 @@ $build = @{
     SkipTrim            = $SkipTrim
 }
 
-# A module sees none of the preferences set for this script, so the two its commands act on are passed on.
+# A module doesn't see the preferences set for this script, so the two that its commands use are passed along.
 New-DdtBootImage @build -WarningAction $WarningPreference -Verbose:($VerbosePreference -ne 'SilentlyContinue')

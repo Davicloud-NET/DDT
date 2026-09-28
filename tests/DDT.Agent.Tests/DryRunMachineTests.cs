@@ -15,8 +15,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// A dry run as the agent runs it with --dry-run: the whole run in one process, from Windows PE through the hand-over
-// into the installed Windows and to the agent's removal, against a scripted server.
+// A dry run like the agent runs it with --dry-run: the whole run in one process, from WinPE through the hand-over into
+// the installed Windows and on to the agent's removal, against a scripted server.
 public sealed class DryRunMachineTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
@@ -111,8 +111,8 @@ public sealed class DryRunMachineTests : IDisposable
         Assert.All(server.RunReports, report => Assert.DoesNotContain(password, report.Error ?? string.Empty, StringComparison.Ordinal));
     }
 
-    // As when the dry run's process ended and it is started again with the same dry run id: a new machine on the same
-    // root goes on in the phase the run's state names, with the server the staged agent.json names.
+    // Like when the dry run's process ended and is started again with the same dry run id. A new machine on the same
+    // root continues in the phase the run's state names, with the server the staged agent.json names.
     [Fact]
     public async Task ADryRunStartedAgainGoesOnInWindowsWhereItStopped()
     {
@@ -148,7 +148,7 @@ public sealed class DryRunMachineTests : IDisposable
 
     private string StagedConfiguration => Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory, WindowsHandOver.ConfigurationFileName);
 
-    // Runs a sequence with a step in Windows until the service registers, which the server does not answer. Returns the
+    // Runs a sequence with a step in Windows until the service registers. The server doesn't answer that. Returns the
     // run.
     private async Task<AgentRun> StopInWindowsAsync()
     {
@@ -166,8 +166,8 @@ public sealed class DryRunMachineTests : IDisposable
         return assigned;
     }
 
-    // Windows PE starts twice, around the restart step, and Windows three times: after the hand-over, after the restart
-    // step and after the join.
+    // WinPE starts twice, around the restart step, and Windows three times: after the hand-over, after the restart step
+    // and after the join.
     private static ScriptedAgentServer ServerForTheWholeRun(TestImage image, AgentRun assigned)
     {
         AgentRun running = assigned with { State = DeploymentState.Running };
@@ -186,7 +186,7 @@ public sealed class DryRunMachineTests : IDisposable
         return server;
     }
 
-    // What the console says of the whole run, among its other lines.
+    // What the console says about the whole run, among its other lines.
     private string[] LinesOfTheWholeRun(RunScriptStep inWindowsPE, RunScriptStep inWindows)
     {
         string scripts = Path.Combine(Windows, "DDT", "scripts");

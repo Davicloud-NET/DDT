@@ -41,8 +41,8 @@ public sealed class AgentLegalNoticesTests
         Assert.Contains($"- {AgentLegalNotices.WimlibCopyright}, https://wimlib.net.", notices, StringComparison.Ordinal);
     }
 
-    // The notices give the source of the libwim the agent carries by the DLL's hash. A new ManagedWimLib brings a
-    // new DLL, and with it a new source to name.
+    // The notices name the source of the agent's libwim by the DLL's hash. A new ManagedWimLib brings a new DLL, and
+    // with it a new source to name.
     [Fact]
     public void NamesTheSourceOfTheLibwimItCarries()
     {
@@ -97,8 +97,8 @@ public sealed class AgentLegalNoticesTests
             StringComparison.Ordinal);
     }
 
-    // Redirected output must keep characters the console's code page lacks, such as the copyright signs in the .NET
-    // notices, so it has to match what WriteLicenses writes, character for character.
+    // Redirected output must keep characters the console's code page lacks, like the copyright signs in the .NET
+    // notices. So it has to match what WriteLicenses writes, character for character.
     [Fact]
     public async Task LicensesPrintsTheTextsAndExitsWithoutAServer()
     {
@@ -125,8 +125,8 @@ public sealed class AgentLegalNoticesTests
         Assert.StartsWith("An https server URL is required.", error, StringComparison.Ordinal);
     }
 
-    // The build puts the agent next to the tests. Without agent.json there, it has no server to contact. A console
-    // of its own has the system's OEM code page, as in Windows PE, whatever console runs the tests.
+    // The build puts the agent next to the tests. Without agent.json there, it has no server to contact. A separate
+    // console gets the system's OEM code page, like in WinPE, whatever console runs the tests.
     private static async Task<(int ExitCode, string Output, string Error)> RunAgentAsync(params string[] arguments)
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;

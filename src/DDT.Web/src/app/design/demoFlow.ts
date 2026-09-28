@@ -6,7 +6,7 @@ import type { SequenceStep } from "@/sequences/sequences";
 import { newStep } from "@/sequences/steps";
 import type { FlowNodeState } from "@/ui/FlowNode";
 
-// A node of the design page's flow, with what it shows while edited and on a run.
+// A node of the design page's flow, with what it shows in the editor and on a run.
 export interface DemoNode {
   kind: SequenceStep["kind"];
   name: string;
@@ -130,7 +130,7 @@ export const demoFlow: DemoNode[] = [
   },
 ];
 
-// The demo as a sequence's steps, with ids from their places, and each node's demo by id.
+// The demo as a sequence's steps, with ids built from their positions, and each node's demo data by id.
 export function demoSequence(
   nodes: DemoNode[],
   prefix: string,

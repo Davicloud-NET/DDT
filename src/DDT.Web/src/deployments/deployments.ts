@@ -47,7 +47,8 @@ export interface DeploymentSummary {
   source: DeploymentSource;
   requestedBy: string | null;
   stepCount: number;
-  // From 0. With stepName, percent and phase, the step the agent reported last, which a failed run keeps.
+  // Counts from 0. Together with stepName, percent and phase, it's the step the agent reported last. A failed run
+  // keeps it.
   stepIndex: number | null;
   stepName: string | null;
   percent: number;
@@ -70,7 +71,7 @@ export interface DeploymentStepView {
   // The node's place in pre-order.
   index: number;
   name: string;
-  // As the sequence document names the step's kind.
+  // The step's kind, as the sequence document names it.
   kind: string;
   phase: SequencePhase;
   state: StepState;
@@ -79,11 +80,11 @@ export interface DeploymentStepView {
   startedUtc: string | null;
   finishedUtc: string | null;
   error: string | null;
-  // The container the node sits in, null at the top; depth counts containers from 0.
+  // The container the node sits in, or null at the top level. depth counts containers from 0.
   parentId?: string | null;
   depth?: number;
-  // The node's latest visit: the times it was entered, a repeat's time through its body, the path an IF took, and
-  // its tests as they were decided.
+  // The node's latest visit: how many times it was entered, a repeat's iteration, the branch an IF took, and its
+  // tests as they were decided.
   pass?: number;
   iteration?: number;
   branch?: IfBranch | null;
@@ -104,16 +105,16 @@ export interface DeploymentArtifactView {
   sizeBytes: number;
 }
 
-// An input of a run and whether it has its answer; the answer itself is among the run's values, and an Account
-// input's never leaves the server. answeredBy is who gave it, a user's name or the machine.
+// An input of a run and whether it's been answered. The answer itself is among the run's values, and an Account
+// input's answer never leaves the server. answeredBy is who gave it: a user's name or the machine.
 export interface RunInputView {
   input: AgentInput;
   answered: boolean;
   answeredBy: string | null;
 }
 
-// The Pause step a run waits at, and its visit, which continuing names. message is worked out by the agent;
-// continuesUtc is when the pause goes on by itself, null when it waits for someone.
+// The Pause step a run waits at, and its visit. A continue request names both. The agent works out message.
+// continuesUtc is when the pause continues by itself, or null if it waits for someone.
 export interface RunPauseView {
   stepId: string;
   pass: number;
@@ -134,15 +135,16 @@ export interface DeploymentView {
   artifacts: DeploymentArtifactView[];
   // Whoever started the run let it write a raw disk image that is not signed for Secure Boot.
   allowSecureBootMismatch: boolean;
-  // Servers before version 3 sequences leave out the rest. values are as worked out when the run started, variables
-  // as the agent last reported them, inputs the sequence's inputs and whether they're answered, pause where it waits.
+  // Servers before version 3 sequences leave out the rest. values are worked out when the run started, and variables
+  // are as the agent last reported them. inputs are the sequence's inputs and whether they're answered, and pause is
+  // where the run waits.
   values?: ResolvedValue[] | null;
   variables?: Record<string, string> | null;
   inputs?: RunInputView[] | null;
   pause?: RunPauseView | null;
 }
 
-// answers are the answers to the sequence's inputs asked on the web; the server names a refused one's field
+// answers are the answers to the sequence's inputs asked on the web. The server names a refused answer's field
 // "answers.<name>".
 export interface AssignSequenceRequest {
   sequenceId: string;
@@ -154,7 +156,7 @@ export interface AssignSequenceRequest {
 
 export interface DeploymentOptionsView {
   domainConfigured: boolean;
-  // DDT:Machines:RequireWebApproval. On, a sign-in at a machine only records who is there.
+  // DDT:Machines:RequireWebApproval. When it's on, a sign-in at a machine only records who is there.
   requireWebApproval: boolean;
   // True when DDT:Machines:ZeroTouchNetworks lists a network and web approval is off.
   zeroTouchEnabled: boolean;
@@ -202,7 +204,7 @@ export function assignedBy(deployment: DeploymentSummary): string {
   }
 }
 
-// Null while a step runs, which the step itself describes.
+// Null while a step runs, because the step describes itself.
 export function activityLabel(activity: RunActivity | null): string | null {
   switch (activity) {
     case "Preparing":
@@ -227,8 +229,8 @@ export function activityLabel(activity: RunActivity | null): string | null {
   }
 }
 
-// While the machine restarts or Windows sets itself up, the agent does not report, so the last contact is what
-// tells a slow setup from a machine that is gone.
+// The agent doesn't report while the machine restarts or Windows sets itself up. So the last contact is what tells a
+// slow setup from a machine that's gone.
 export function isSilentActivity(activity: RunActivity | null): boolean {
   return (
     activity === "Restarting" || activity === "HandingOver" || activity === "WaitingForWindowsSetup"
@@ -286,8 +288,8 @@ export function isWaiting(run: DeploymentSummary | null): boolean {
   );
 }
 
-// Puts a run the server answered with into the cache: the run itself, and the machine's copy of its summary where the
-// machine list has it. The hub pushes the same for everyone else looking.
+// Puts a run from a server answer into the cache: the run itself, and the machine's copy of its summary if the
+// machine list has it. The hub pushes the same to everyone else watching.
 export function putRun(queryClient: QueryClient, view: DeploymentView): void {
   queryClient.setQueryData(deploymentQuery(view.summary.id).queryKey, view);
   queryClient.setQueryData<MachineSummary[]>(["machines"], (machines) =>

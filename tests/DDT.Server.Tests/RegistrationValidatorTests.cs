@@ -154,8 +154,8 @@ public sealed class RegistrationValidatorTests
         Assert.Equal(facts, WithFacts(facts).Facts);
     }
 
-    // Whoever booted boot.wim can send anything, and a fact that cannot be right reads as unknown rather than refusing
-    // the machine.
+    // Whoever booted boot.wim can send anything.
+    // A fact that can't be right reads as unknown instead of refusing the machine.
     [Fact]
     public void BoundsAndCleansTheFacts()
     {
@@ -193,8 +193,9 @@ public sealed class RegistrationValidatorTests
         Assert.Null(normalised.BiosDate);
     }
 
-    // A Gigabyte Z790 board leaves the system's version and SKU and the enclosure's asset tag as "Default string", and
-    // AMI firmware fills others with "To be filled by O.E.M.": none of them may match a condition as the machine's.
+    // A Gigabyte Z790 board leaves the system's version and SKU and the enclosure's asset tag as "Default string".
+    // AMI firmware fills others with "To be filled by O.E.M.".
+    // None of them may match a condition as if it were the machine's own value.
     [Fact]
     public void DropsThePlaceholdersABoardMakerLeftInTheFacts()
     {

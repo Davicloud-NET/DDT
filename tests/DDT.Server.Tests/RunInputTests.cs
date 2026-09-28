@@ -26,8 +26,8 @@ using static DDT.Server.Tests.TestReports;
 
 namespace DDT.Server.Tests;
 
-// A run's values are worked out when it starts, from the answers to its inputs, the rules and the defaults; answers come
-// with an assignment or an approval, at the machine after the pick, or while the run waits at its start for them.
+// A run's values are worked out when it starts, from the answers to its inputs, the rules and the defaults. Answers
+// come with an assignment or an approval, at the machine after the pick, or while the run waits for them at its start.
 public sealed class RunInputTests(DomainDeploymentApplication application) : IClassFixture<DomainDeploymentApplication>
 {
     private const string AccountPassword = "Given <for> one run 9";
@@ -94,7 +94,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         return machine.LastReported!;
     }
 
-    // A machine whose MAC address a rule sets these values for.
+    // A machine with a rule that sets these values for its MAC address.
     private async Task<DeployingMachine> MachineWithValuesAsync(params NamedValue[] values)
     {
         SignedInClient administrator = await application.AdministratorAsync();
@@ -121,7 +121,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Guid runId = (await administrator.AssignedAsync(machine.Id, sequence.Id)).Id;
         AgentRun assigned = (await machine.NextAsync()).Run!;
 
-        // Nothing is worked out before the run starts, and the machine asks nothing: Office has a default.
+        // Nothing is worked out before the run starts. The machine asks nothing, because Office has a default.
         Assert.Null(assigned.Values);
         Assert.Null(assigned.PendingInputs);
         Assert.Null((await StoredAsync(runId)).Values);
@@ -147,20 +147,22 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         RunInputs inputs = RunInputs.Read((await StoredAsync(runId)).Inputs!);
         Assert.Equal((name, "W. Europe Standard Time", "OU=Workstations,DC=corp,DC=example"), (inputs.ComputerName, inputs.TimeZone, inputs.DomainOrganizationalUnit));
 
-        // The values stay as they started, whatever the rule says now; a report before the steps begin gets them again.
+        // The values stay as they were at the start, whatever the rule says now.
+        // A report before the steps begin gets them again.
         await administrator.PutAsync($"{RuleRequests.Rules}/{rule.Id}", RuleRequests.Save(rule, save => save with { Values = [new NamedValue("Site", "Graz")] }));
         AgentRunReportResult again = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.Preparing });
         Assert.Equal("Vienna", again.Values!["Site"]);
         Assert.Null((await ReportedAsync(machine, runId, Running(Step(assigned.Sequence.Steps[0], StepState.Running)))).Values);
 
-        // A resumed agent is handed them with the run.
+        // A resumed agent gets them with the run.
         AgentRegistrationResult resumed = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await machine.Agent.RegisterAsync(machine.Registration with { RunToken = machine.RunToken }));
         AgentRun handed = (await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, resumed.Token!))).Run!;
         Assert.Equal("Vienna", handed.Values!["Site"]);
     }
 
-    // A value that cannot be worked out keeps the run from starting at all: the agent is refused before it touches a disk.
+    // A value that can't be worked out keeps the run from starting at all.
+    // The agent is refused before it touches a disk.
     [Fact]
     public async Task AValueThatCannotBeWorkedOutEndsTheRunBeforeItStarts()
     {
@@ -217,7 +219,8 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
             new AssignSequenceRequest(sequence.Id, null, Answers: [Given("Owner", " Anna "), Given("office", "proplus"), new InputAnswer("JoinAccount", null, @"CORP\joiner", AccountPassword)])));
         Guid runId = assigned.Deployment!.Id;
 
-        // The answers are kept as the inputs spell them, the account apart from them, and the audit names only the inputs.
+        // The answers are kept as the inputs spell them, and the account is kept separately.
+        // The audit only names the inputs.
         Deployment stored = await StoredAsync(runId);
         Assert.Equal(
             [("Owner", "Anna", false), ("Office", "ProPlus", false)],
@@ -227,7 +230,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Assert.Equal(("JoinAccount", @"CORP\joiner", "corp.example", false), (credential.InputName, credential.UserName, credential.Domain, credential.ProvidedAtMachine));
         Assert.Contains($"{AuditActions.DeploymentInputsAnswered} Owner, Office, JoinAccount of {sequence.Name} on machine {machine.Id:D}, answered on the web.", await AuditAsync(runId));
 
-        // The machine is asked for the room, which only it asks.
+        // The machine is asked for the room, because only the machine asks for it.
         AgentRun handed = (await machine.NextAsync()).Run!;
         Assert.Equal(["Room"], handed.PendingInputs!.Select(input => input.Name));
 
@@ -250,7 +253,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
             view.Inputs!.Select(input => (input.Input.Name, input.Answered)));
         Assert.Equal("corp.example", Assert.Single(view.Inputs!, input => input.Input.Name == "JoinAccount").Input.Domain);
 
-        // The password is nowhere but in the credential, encrypted: not in the run, its view, its audit or the log.
+        // The password is only in the credential, encrypted. It isn't in the run, its view, its audit or the log.
         stored = await StoredAsync(runId);
         Assert.All(
             [stored.Answers, stored.Values, stored.Inputs, stored.Variables, JsonSerializer.Serialize(view, DdtJsonContext.Default.DeploymentView), .. await AuditAsync(runId)],
@@ -279,8 +282,8 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Assert.Equal("Ben", Assert.Single(RunAnswer.Read((await StoredAsync(approved.Deployment!.Id)).Answers)).Value);
     }
 
-    // A zero touch or rule's run whose machine asks a required input waits at its start, still assigned, until the
-    // machine or the machine's page answers; whoever answers second is refused.
+    // A zero touch run or a rule's run whose machine asks for a required input waits at its start, still assigned.
+    // It waits until the machine or the machine's page answers. Whoever answers second is refused.
     [Fact]
     public async Task ARunWaitsForWhatTheMachineAsksUntilThePageAnswersIt()
     {
@@ -294,7 +297,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         Assert.Equal(["Room", "Office"], run.PendingInputs!.Select(input => input.Name));
         Assert.Equal("Standard", run.PendingInputs![1].Default);
 
-        // The page cannot answer before the machine says it waits.
+        // The page can't answer before the machine says it's waiting.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, Given("Room", "A 1"))).StatusCode);
 
         AgentRunReportResult waiting = await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
@@ -311,7 +314,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         // Nothing can have run before the run has its values.
         Assert.Equal(HttpStatusCode.Conflict, (await machine.ReportAsync(runId, Running(Step(run.Sequence.Steps[0], StepState.Running)))).StatusCode);
 
-        // Only operators answer, and only what the sequence asks, as it takes it.
+        // Only operators can answer, and only what the sequence asks, in the form it accepts.
         using (SignedInClient viewer = await application.SignInAsync(DdtRoleNames.Viewer))
         {
             Assert.Equal(HttpStatusCode.Forbidden, (await viewer.AnswerAsync(machine.Id, Given("Room", "A 1"))).StatusCode);
@@ -372,14 +375,14 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         RunAnswer room = Assert.Single(RunAnswer.Read(started.Answers), answer => answer.Name == "Room");
         Assert.True(room.AtMachine);
 
-        // The run started, so the page has nothing to answer, and nor has the machine.
+        // The run started, so neither the page nor the machine has anything left to answer.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, Given("Room", "C 3"))).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await machine.Agent.RunAnswersAsync(machine.Id, machine.Token, runId, Given("Room", "C 3"))).StatusCode);
         Assert.Equal("B 12", (await ReportedAsync(machine, runId, Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput })).Values!["Room"]);
     }
 
-    // The page and the machine answer at the same moment: the answers are saved over those they were given to, so the
-    // second save finds them changed and is refused.
+    // The page and the machine answer at the same moment.
+    // Each save replaces the answers it started from, so the second save finds them changed and is refused.
     [Fact]
     public async Task OfTwoAnswersAtTheSameMomentTheSecondIsRefused()
     {
@@ -435,7 +438,7 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
             machine.Token,
             new AgentRunRequest(sequence.Id, null, null, Answers: [Given("Room", "C 7"), Given("Office", "ProPlus")])));
 
-        // Only the web asks the owner, so the run fails at its start rather than wait for the page.
+        // Only the web asks for the owner, so the run fails at its start instead of waiting for the page.
         Assert.Null(picked.PendingInputs);
         Assert.Equal(
             [("Room", "C 7", true, operatorName), ("Office", "ProPlus", true, operatorName)],
@@ -488,8 +491,8 @@ public sealed class RunInputTests(DomainDeploymentApplication application) : ICl
         (await administrator.AssignAsync(assigned.Id, sequence.Id)).EnsureSuccessStatusCode();
     }
 
-    // The console asks for the name all the same, starting with the one the rule gives, and a pick without a name typed
-    // takes that one: the machine gets no name of its own.
+    // The console still asks for the name and starts with the one the rule gives.
+    // A pick without a typed name takes that name, and the machine isn't given a separate one.
     [Fact]
     public async Task TheConsoleStartsTheComputerNameWithTheOneARuleGives()
     {

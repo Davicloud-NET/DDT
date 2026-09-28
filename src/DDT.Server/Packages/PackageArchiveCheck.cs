@@ -10,8 +10,9 @@ using DDT.Core;
 
 namespace DDT.Server.Packages;
 
-// Every agent unpacks a package as SYSTEM, so a zip is checked before any machine gets it: its names have to stay
-// inside the folder they are unpacked to, and inflating every entry into nothing proves its sizes and checksums.
+// Every agent unpacks a package as SYSTEM, so a zip is checked before any machine gets it. Its names have to stay
+// inside the folder they're unpacked to. Inflating every entry and throwing the data away proves its sizes and
+// checksums.
 public static class PackageArchiveCheck
 {
     private const int BufferBytes = 1024 * 1024;
@@ -93,7 +94,7 @@ public static class PackageArchiveCheck
         return Inflate(files, declared, cancellationToken);
     }
 
-    // Names takes each entry's path, so a second entry of the same path is refused.
+    // Each entry's path is added to names, so a second entry with the same path is refused.
     private static ServerMessage? EntryProblem(ZipArchiveEntry entry, HashSet<string> names)
     {
         string name = entry.FullName;
@@ -116,7 +117,7 @@ public static class PackageArchiveCheck
         return names.Add(PathOf(name)) ? null : ServerMessages.PackageEntryTwice.With("entry", Shown(name));
     }
 
-    // A file whose path is also a folder of another file.
+    // Finds a file whose path is also a folder of another file.
     private static ServerMessage? FileAndFolder(HashSet<string> filePaths)
     {
         foreach (string path in filePaths)
@@ -133,9 +134,9 @@ public static class PackageArchiveCheck
         return null;
     }
 
-    // The zip's sizes are the uploader's word, which inflating proves, so the agent can check its disk space and stop
-    // unpacking at them. A reader stops at the stated size without an error, so only the checksum shows an entry that
-    // holds more.
+    // The zip's sizes are only the uploader's word. Inflating proves them, so the agent can check its disk space and
+    // stop unpacking at those sizes. A reader stops at the stated size without an error, so only the checksum shows an
+    // entry that holds more.
     private static PackageInspection Inflate(List<ZipArchiveEntry> files, long declared, CancellationToken cancellationToken)
     {
         byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferBytes);
@@ -188,7 +189,8 @@ public static class PackageArchiveCheck
         return new PackageInspection(files.Count, declared, null);
     }
 
-    // Each part of the name has to be one Windows can create, inside the folder the package is unpacked to.
+    // Each part of the name has to be a name Windows can create, and the path has to stay inside the folder the
+    // package is unpacked to.
     private static ServerMessage? NameProblem(string name)
     {
         string entry = Shown(name);

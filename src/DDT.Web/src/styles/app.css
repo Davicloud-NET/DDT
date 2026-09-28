@@ -10,7 +10,7 @@
 /* Adds React Aria's states as variants, such as pressed:, selected: and focus-visible:. */
 @plugin "tailwindcss-react-aria-components";
 
-/* The theme switches by a class on <html>; the tokens change under it, so components rarely need dark:. */
+/* The theme switches with a class on <html>. The tokens change with it, so components rarely need dark:. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -39,7 +39,7 @@
     color: var(--color-placeholder);
   }
 
-  /* A link changes colour on hover in fast; its underline comes at once. */
+  /* On hover a link changes colour over the fast duration. Its underline appears at once. */
   a {
     transition-property: color, text-decoration-color;
     transition-duration: var(--duration-fast);
@@ -83,7 +83,7 @@
   animation: rail-live 1.1s linear infinite;
 }
 
-/* Colour changes, such as a hover, in fast. The outline is left out, so a focus ring appears at once. */
+/* Colour changes, such as a hover, take the fast duration. The outline isn't animated, so focus rings show at once. */
 @utility motion-colors {
   transition-property:
     color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow;
@@ -91,8 +91,8 @@
   transition-timing-function: var(--ease-standard);
 }
 
-/* A key answers hover with colour in fast. Pressed, it goes down in press time: it sinks by a pixel and darkens (the
-   darker colour comes from its variant), and comes back up as quickly. */
+/* A key changes colour on hover over the fast duration. When pressed, it sinks by a pixel and darkens over the press
+   duration, and comes back up just as quickly. The darker colour comes from its variant. */
 @utility key-motion {
   transition-property: color, background-color, box-shadow, translate;
   transition-duration:
@@ -105,8 +105,8 @@
   }
 }
 
-/* A highlight that follows the pointer or the keyboard through a list, such as a menu's, arrives at once and fades
-   when it moves on, so fast arrowing never lags behind. */
+/* A highlight that follows the pointer or the keyboard through a list, such as a menu, appears at once and fades
+   when it moves on. So fast arrowing never lags behind. */
 @utility motion-highlight {
   transition-property: color, background-color;
   transition-duration: var(--duration-fast);
@@ -118,8 +118,8 @@
   }
 }
 
-/* A fill whose width is its value, such as a progress bar or a step of the sequence rail, moves to a new value in
-   slow instead of jumping. */
+/* A fill whose width shows its value, such as a progress bar or a step of the sequence rail, moves to a new value
+   over the slow duration instead of jumping. */
 @utility motion-fill {
   transition-property: width, background-color;
   transition-duration: var(--duration-slow);
@@ -151,25 +151,25 @@
   );
 }
 
-/* Motion that answers an action, after the motion tokens (src/DDT.Design/README.md): what appears enters in normal,
-   decelerating, and leaves in fast, accelerating, back the way it came. Overlays fade and travel the motion distance;
-   the drawer slides from the edge it belongs to. A page or tab that is changed to fades in. */
+/* Motion that answers an action, following the motion tokens (src/DDT.Design/README.md). Things enter over the
+   normal duration, decelerating, and leave over the fast duration, accelerating, back the way they came. Overlays
+   fade and travel the motion distance. The drawer slides in from its own edge. A newly shown page or tab fades in. */
 @theme {
   --animate-overlay-in: fade-in var(--duration-normal) var(--ease-enter);
   --animate-overlay-out: fade-out var(--duration-fast) var(--ease-exit);
   --animate-pop-in: pop-in var(--duration-normal) var(--ease-enter);
   --animate-pop-out: pop-out var(--duration-fast) var(--ease-exit);
   --animate-drawer-in: drawer-in var(--duration-slow) var(--ease-enter);
-  /* As fast as the dimming it sits in, which fades it along. */
+  /* As fast as the dimmed overlay it sits in, which fades out with it. */
   --animate-drawer-out: drawer-out var(--duration-fast) var(--ease-exit);
   --animate-panel-in: panel-in var(--duration-normal) var(--ease-enter);
   --animate-page-in: fade-in var(--duration-normal) var(--ease-enter);
-  /* The same again under another name, so that changing between the two starts it over. */
+  /* The same animation under another name. Switching between the two names restarts it. */
   --animate-page-in-again: fade-in-again var(--duration-normal) var(--ease-enter);
   /* A skeleton stands for work in progress, so it may move on its own, if barely. */
   --animate-skeleton: skeleton 1.4s ease-in-out infinite alternate;
 
-  /* A pressed key darkens, as a key in shadow does. */
+  /* A pressed key darkens, like a key in shadow. */
   --color-key-primary-pressed: color-mix(in srgb, var(--color-key-primary), black 12%);
   --color-key-secondary-pressed: color-mix(in srgb, var(--color-key-secondary), black 10%);
   --color-key-quiet-pressed: color-mix(in srgb, var(--color-hover), black 8%);
@@ -193,7 +193,7 @@
     }
   }
 
-  /* Dialogs and toasts rise into place; popovers set where they come from with their placement. */
+  /* Dialogs and toasts rise into place. A popover's placement decides which side it comes from. */
   @keyframes pop-in {
     from {
       opacity: 0;
@@ -235,10 +235,10 @@
   }
 }
 
-/* A value the hub or an action changed while it is on screen flashes its row in its state's colour at low strength,
-   fading over the flash duration, so an operator sees what just changed; a row that was not there before also enters.
-   useLiveMarks in src/live puts these classes on, never for what a page merely read. Two names for the same flash let
-   a second change start it over. */
+/* When the hub or an action changes a value on screen, its row flashes in its state's colour at low strength and
+   fades over the flash duration, so an operator sees what changed. A new row also animates in. useLiveMarks in
+   src/live adds these classes, never for data a page only read. Two names for the same flash let a second change
+   restart it. */
 @keyframes live-flash-0 {
   from {
     background-color: var(--live-tone);
@@ -303,8 +303,8 @@
   }
 }
 
-/* With "reduce motion", only colour changes remain: nothing travels, fades or runs on its own, and a flash is the
-   one animation kept, since it changes nothing but a colour. */
+/* With "reduce motion", only colour changes remain. Nothing travels, fades or runs on its own. The flash is the only
+   animation kept, since it changes nothing but a colour. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -10,8 +10,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Checks a fresh run, or finds a resumed run's volumes again, and has the server take a fresh run as running before
-// anything is changed on any disk. A run that goes on is running already, and its first beat says where it is.
+// Checks a fresh run, or finds a resumed run's volumes again. A fresh run is reported to the server as running before
+// anything changes on any disk. A resumed run is running already, and its first beat says where it is.
 internal sealed class RunStart(
     RunPreflight preflight,
     IDiskPartitioner partitioner,
@@ -20,7 +20,7 @@ internal sealed class RunStart(
     AgentLog log,
     TimeProvider timeProvider)
 {
-    // Null once the run may go on with its steps; otherwise how it ended before them.
+    // Returns null once the run may continue with its steps. Otherwise returns how it ended before them.
     public async Task<RunResult?> StartAsync(SequenceRun run, CancellationToken cancellationToken)
     {
         // A tree counts the steps on all its branches, as they are before the run takes any of them.
@@ -96,9 +96,9 @@ internal sealed class RunStart(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // Windows PE lettered the Windows volume as it chose and the other partitions not at all, so they are found by their
-    // ids; before Partition finished there are none, and the engine fails the interrupted Partition. The installed
-    // Windows runs from the run's Windows volume, and its steps need no other.
+    // WinPE picked a letter for the Windows volume and gave the other partitions none, so they're found by their ids.
+    // Before Partition finished there are no ids, and the engine fails the interrupted Partition. The installed Windows
+    // runs from the run's Windows volume, and its steps need no other volume.
     private async Task ResumeAsync(SequenceRun run, LocalRun resumed, CancellationToken cancellationToken)
     {
         if (run.InWindows)

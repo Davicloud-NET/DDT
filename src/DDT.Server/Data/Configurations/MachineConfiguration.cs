@@ -27,8 +27,8 @@ internal sealed class MachineConfiguration : IEntityTypeConfiguration<Machine>
         builder.Property(m => m.AgentEnvironment).HasConversion<string>().HasMaxLength(16).HasDefaultValue(AgentEnvironment.WindowsPE);
         builder.Property(m => m.TrustedUefiCas).HasConversion<string>().HasMaxLength(32);
 
-        // State and generation are checked on save, so an approval, a rejection and a registration that
-        // starts over cannot silently overwrite one another: the loser retries or reports a conflict.
+        // State and generation are checked on save, so an approval, a rejection and a registration that starts over
+        // can't silently overwrite one another. The loser retries or reports a conflict.
         builder.Property(m => m.State).IsConcurrencyToken();
         builder.Property(m => m.TokenGeneration).IsConcurrencyToken();
         builder.Property(m => m.ActiveDeploymentId).IsConcurrencyToken();

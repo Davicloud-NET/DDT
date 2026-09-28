@@ -9,7 +9,7 @@ using DDT.Core.Disks;
 
 namespace DDT.Agent.Sequences;
 
-// The disk a fresh run erases, checked against the run before anything on it is.
+// Picks the disk a fresh run erases, and checks it against the run before anything on it is erased.
 internal sealed class RunDiskChoice(IDiskPartitioner partitioner, IRawDisks rawDisks)
 {
     public async Task<LocalDisk> ChooseAsync(AgentRun run, LocalDisk? confirmedDisk, RunInventory inventory, CancellationToken cancellationToken)
@@ -45,8 +45,8 @@ internal sealed class RunDiskChoice(IDiskPartitioner partitioner, IRawDisks rawD
         return disk;
     }
 
-    // Disk numbers can change when the machine starts again, so a disk chosen at the machine counts only while it is the
-    // very disk confirmed in this process.
+    // Disk numbers can change when the machine starts again. So a disk chosen at the machine only counts while it's the
+    // exact disk confirmed in this process.
     private static LocalDisk Select(int? diskNumber, LocalDisk? confirmedDisk, IReadOnlyList<LocalDisk> disks)
     {
         if (diskNumber is { } number)

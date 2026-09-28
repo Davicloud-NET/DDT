@@ -41,8 +41,8 @@ public sealed class WindowsPhaseLoopReportTests : WindowsPhaseLoopTestBase
         Assert.Equal("remove", _tools.Calls[^1]);
     }
 
-    // The server was out of reach for longer than the runner tries: the Done report goes out once it is back, and the
-    // agent removes itself only then.
+    // The server was out of reach for longer than the runner retries. The Done report goes out once it's back, and only
+    // then does the agent remove itself.
     [Fact]
     public async Task ADoneReportTheServerDidNotGetGoesOutAfterRegisteringAgain()
     {
@@ -78,8 +78,8 @@ public sealed class WindowsPhaseLoopReportTests : WindowsPhaseLoopTestBase
         Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
     }
 
-    // Windows may restart, or the service stop, while the Done report is on its way: the next start sends it, as the
-    // run token that can is still there.
+    // Windows may restart, or the service stop, while the Done report is on its way. The next start sends it, because
+    // the run token that can send it is still there.
     [Fact]
     public async Task ADoneReportAStopInterruptedGoesOutAtTheNextStart()
     {

@@ -9,8 +9,8 @@ using DDT.Server.Rules;
 
 namespace DDT.Server.Deployments;
 
-// The answer file of a Write answer file step: the settings taken when the run started, the step's own overrides, and
-// the local administrator's password as the settings hold it now, which the caller reads.
+// The answer file of a Write answer file step. It holds the settings taken when the run started, the step's own
+// overrides, and the local administrator's current password from the settings, which the caller reads.
 public sealed class UnattendRenderer
 {
     // Only x64 images can be deployed, so every component is the amd64 one.
@@ -38,7 +38,7 @@ public sealed class UnattendRenderer
     }
 
     // The computer name and the settings the run started with are taken from the values too, so a step that changed one
-    // counts. What comes out is checked as a sequence's settings are, since a value can hold anything.
+    // counts. The result is checked like a sequence's settings, because a value can hold anything.
     public (UnattendSettings? Settings, string? Problem) Settings(
         RunInputs inputs,
         WriteUnattendStep step,
@@ -87,7 +87,7 @@ public sealed class UnattendRenderer
             step.LocalAdministrator && !string.IsNullOrEmpty(password) ? new LocalAdministrator(inputs.AdministratorName, password) : null);
     }
 
-    // The step's settings worked out from the values, or the problem of the first that cannot be.
+    // The step's settings worked out from the values, or the problem with the first one that can't be.
     private static (WriteUnattendStep? Step, string? Problem) Worked(WriteUnattendStep step, Func<string, string?> values)
     {
         string? problem = null;

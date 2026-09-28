@@ -20,8 +20,8 @@ import { useSettingsForm } from "./useSettingsForm";
 
 export type { DeploymentSettings } from "./deploymentDefaults/deploymentSettings";
 
-// The defaults every run starts from; a run keeps the values it started with. Operators read them; administrators
-// change them.
+// The defaults every run starts from. A run keeps the values it started with. Operators can read them, and
+// administrators can change them.
 export function DeploymentDefaultsPage() {
   const form = useSettingsForm<DeploymentSettings>("deployment");
   const canChange = useIsAdministrator();

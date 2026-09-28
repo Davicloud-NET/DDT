@@ -10,8 +10,8 @@ using DDT.Core.Configuration;
 
 namespace DDT.Server.Certificates;
 
-// A pair the settings page uploads, as a PEM chain with its key or a PFX with its password, read into the pair of PEM
-// files DDT keeps.
+// Reads a pair uploaded from the settings page into the two PEM files DDT keeps. The upload is either a PEM chain with
+// its key or a PFX with its password.
 internal static class CertificateUploads
 {
     // Problem says what is wrong when Pair is null.

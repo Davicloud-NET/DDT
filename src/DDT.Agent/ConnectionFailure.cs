@@ -8,11 +8,12 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
-// Why the agent could not connect to the server, in words for an administrator rather than a socket error's, with the
-// address it tried, as a mistyped one is the likeliest cause. HttpAgentServer throws them as the failure's message.
+// Explains why the agent couldn't connect to the server, in words for an administrator instead of a socket error.
+// It names the address it tried, because a typo there is the likeliest cause. HttpAgentServer throws the text as the
+// failure's message.
 public static class ConnectionFailure
 {
-    // Null for a failure these words do not cover, whose own message stands.
+    // Returns null for a failure these texts don't cover. That failure keeps its own message.
     public static string? Describe(HttpRequestException exception, Uri server)
     {
         ArgumentNullException.ThrowIfNull(exception);
@@ -32,8 +33,8 @@ public static class ConnectionFailure
         };
     }
 
-    // How far a failed call to the server got, for the console at the machine, or null for a failure that says nothing
-    // about the connection.
+    // How far a failed call to the server got, shown on the console at the machine. Null for a failure that says
+    // nothing about the connection.
     public static ConnectionStage? StageOf(Exception exception) => exception switch
     {
         ServerTimeoutException timeout => timeout.Stage,

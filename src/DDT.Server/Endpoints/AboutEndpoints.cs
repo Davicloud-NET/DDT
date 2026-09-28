@@ -24,7 +24,8 @@ public static class AboutEndpoints
         group.MapGet("/", GetAbout).AllowAnonymous();
         group.MapGet("/legal/{**path}", GetLegalDocument).AllowAnonymous();
 
-        // Anonymous, so a browser can fetch the root to trust before anyone can sign in over a connection it trusts.
+        // Anonymous, so people can download the root to trust before they can sign in over a connection their browser
+        // trusts.
         group.MapGet("/root-certificate", GetRootCertificate).AllowAnonymous();
 
         return group;
@@ -37,7 +38,7 @@ public static class AboutEndpoints
             ? TypedResults.PhysicalFile(file, "text/plain; charset=utf-8")
             : TypedResults.NotFound();
 
-    // Not found while the served certificate is an administrator's rather than one from DDT's root.
+    // Returns 404 while the served certificate is an administrator's instead of one from DDT's root.
     private static Results<FileContentHttpResult, NotFound> GetRootCertificate([FromServices] ServerCertificates? certificates) =>
         certificates?.RootCertificatePem is { } pem
             ? TypedResults.File(Encoding.ASCII.GetBytes(pem), "application/x-pem-file", "ddt-root.pem")

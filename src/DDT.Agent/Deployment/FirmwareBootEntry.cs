@@ -8,19 +8,20 @@ using System.Globalization;
 namespace DDT.Agent.Deployment;
 
 // Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder. An entry is recognised by
-// the partition and file it starts, never by its description, which an earlier installation's dead entry shares.
+// the partition and file it starts, never by its description. A dead entry from an earlier installation has the same
+// description.
 public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
 {
     public const string WindowsDescription = "Windows Boot Manager";
     public const string WindowsLoaderPath = @"\EFI\Microsoft\Boot\bootmgfw.efi";
 
-    // What firmware starts from a disk without an entry of its own, and what a raw disk image is started from.
+    // What firmware starts from a disk that has no boot entry, and what a raw disk image is started from.
     public const string FallbackLoaderPath = @"\EFI\BOOT\BOOTX64.EFI";
 
     private const string BootOrder = "BootOrder";
 
-    // diskpart gives every new partition a new GUID, so an entry for an EFI system partition the deployment erased is
-    // reused rather than left behind, dead.
+    // diskpart gives every new partition a new GUID. So an entry for an EFI system partition the deployment erased is
+    // reused rather than left behind as a dead entry.
     public void MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
     {
         ArgumentNullException.ThrowIfNull(esp);
@@ -126,7 +127,7 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
 
     private static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");
 
-    // An array of UINT16; a stray last byte is ignored.
+    // An array of UINT16. A stray last byte is ignored.
     private static List<ushort> ReadOrder(byte[]? value)
     {
         List<ushort> order = [];

@@ -13,12 +13,12 @@ interface SequencePickerProps {
   sequences: readonly SequenceSummary[];
   sequence: SequenceSummary | null;
   isDisabled: boolean;
-  // Why the rules choose a sequence for this machine, where they do.
+  // Why the rules choose a sequence for this machine, or null if they don't.
   hint: string | null;
   onChange: (id: string | null) => void;
 }
 
-// Every sequence, those with problems listed but not offered.
+// Lists every sequence. Those with problems are shown but can't be picked.
 export function SequencePicker({
   sequences,
   sequence,

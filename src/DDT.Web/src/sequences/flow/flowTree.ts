@@ -6,10 +6,10 @@ import type { ConditionOperator, StepCondition } from "../sequenceConditions";
 import type { InputDeclaration, SequenceStep, VariableDeclaration } from "../sequences";
 import { conditionOperators, isContainer, machineVariables } from "../steps";
 
-// A sequence's steps as the tree they are, as the server's SequenceTree walks them: in pre-order, a node and then
-// its bodies in order, Then before Else.
+// A sequence's steps as a tree, walked the same way as the server's SequenceTree: in pre-order, a node and then its
+// bodies in order, Then before Else.
 
-// The list a node sits in: its container's member, as the server's StepBody names it, and "steps" at the top.
+// The list a node sits in. That's its container's member, named like the server's StepBody, or "steps" at the top.
 export type BodyName = "steps" | "then" | "else";
 
 export interface Body {
@@ -17,8 +17,8 @@ export interface Body {
   steps: SequenceStep[];
 }
 
-// A gap on a wire, where nodes can go: before the node at index of the list, or at its end when index is its length.
-// An empty body has one slot, at 0. parent is null at the top.
+// A gap on a wire where nodes can go. It's before the node at index in the list, or at the end if index is the
+// list's length. An empty body has one slot, at 0. parent is null at the top.
 export interface Slot {
   parent: string | null;
   body: BodyName;
@@ -27,20 +27,20 @@ export interface Slot {
 
 export interface TreeEntry {
   node: SequenceStep;
-  // The container the node sits in, null at the top, and the body of it.
+  // The container the node sits in (null at the top), and which of its bodies.
   parent: string | null;
   body: BodyName;
   // Within its list, and within the walk, both from 0. depth is 0 at the top.
   index: number;
   order: number;
   depth: number;
-  // Leaves are numbered from 1 in document order, as the flow and the rail show them; containers have none.
+  // Leaves are numbered from 1 in document order, as the flow and the rail show them. Containers have no number.
   number: number | null;
 }
 
 export interface TreeIndex {
   entries: TreeEntry[];
-  // Where an id repeats, the first node with it, as the server's index keeps it; the validator reports the repeat.
+  // If an id repeats, this holds the first node with it, like the server's index. The validator reports the repeat.
   byId: ReadonlyMap<string, TreeEntry>;
 }
 
@@ -193,9 +193,9 @@ export function sameSlot(a: Slot, b: Slot): boolean {
   return a.parent === b.parent && a.body === b.body && a.index === b.index;
 }
 
-// The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. 2 for a raw
-// image or cloud-init seed; 3 for tree parts (containers, Set variable, Pause, when, shares, runAs, a join's account,
-// variables, inputs, operators after Contains) and for condition names an older agent would take as false.
+// The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. It's 2
+// for a raw image or cloud-init seed. It's 3 for tree parts (containers, Set variable, Pause, when, shares, runAs, a
+// join's account, variables, inputs, operators after Contains), and for condition names an older agent reads as false.
 export function requiredVersion(definition: {
   steps: readonly SequenceStep[];
   variables?: readonly VariableDeclaration[] | null;

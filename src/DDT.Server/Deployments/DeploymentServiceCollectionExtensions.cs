@@ -39,7 +39,7 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<RunFiles>();
         services.AddScoped<RunHistory>();
 
-        // The passwords of stored accounts and of accounts given for one run, which reach only the steps of runs.
+        // The passwords of stored accounts and of accounts given for one run. They only reach the steps of runs.
         services.AddSingleton<AccountProtector>();
         services.AddSingleton<RunCredentialProtector>();
         services.AddScoped<AccountViews>();

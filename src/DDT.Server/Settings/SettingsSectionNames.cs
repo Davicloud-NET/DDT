@@ -4,8 +4,8 @@
 
 namespace DDT.Server.Settings;
 
-// The rows of ddt."SettingsSections". Certificate is reserved for the server names of the certificate section, and
-// keyring holds the value that tells whether this process reads the key ring the stored secrets were encrypted with.
+// The rows of ddt."SettingsSections". Certificate is reserved for the server names of the certificate section. Keyring
+// holds a known value that tells whether this process can read the key ring that encrypted the stored secrets.
 public static class SettingsSectionNames
 {
     public const string Deployment = "deployment";

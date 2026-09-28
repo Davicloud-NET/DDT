@@ -41,8 +41,8 @@ export function useResumableUpload<T>({
   const [outcome, setOutcome] = useState<UploadNotice | null>(null);
   const controller = useRef<AbortController | null>(null);
 
-  // Leaving the page, once confirmed, stops the transfer. The server keeps what it has for the next selection of
-  // the file.
+  // Leaving the page, once confirmed, stops the transfer. The server keeps what it has for when the file is
+  // chosen again.
   useEffect(() => {
     return () => {
       controller.current?.abort();
@@ -95,7 +95,7 @@ export function useResumableUpload<T>({
         }
 
         setRun(null);
-        // The session list is the server's; the one this upload used is gone or finished now.
+        // The session list comes from the server. The session this upload used is now gone or finished.
         void queryClient.invalidateQueries({ queryKey: uploadsQuery.queryKey });
       });
   }

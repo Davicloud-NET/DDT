@@ -7,7 +7,7 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Texts;
 
-// The protocol's values in the console's words, and numbers and identifiers formatted as the web formats them.
+// Turns the protocol's values into the console's words, and formats numbers and identifiers the way the web does.
 public static class Say
 {
     private static readonly string[] s_units = ["KB", "MB", "GB", "TB"];
@@ -51,7 +51,7 @@ public static class Say
         _ => l.T("Answer"),
     };
 
-    // What to look at when a request failed at stage.
+    // What to check when a request failed at that stage.
     public static string ConnectionAdvice(Localizer l, ConnectionStage stage) => stage switch
     {
         ConsoleProtocol.ConnectionStage.NameLookup => l.T(
@@ -91,7 +91,8 @@ public static class Say
         _ => l.T("The machine was to restart before and did not, so it restarts before anything else."),
     };
 
-    // The run screen's heading for a kind of step; null for an unknown kind, which shows the step's name instead.
+    // The run screen's heading for a kind of step. Returns null for an unknown kind, and the screen shows the step's
+    // name instead.
     public static string? StepAction(Localizer l, string kind) => kind switch
     {
         "partition" => l.T("Partitioning the disk"),
@@ -166,7 +167,7 @@ public static class Say
         _ => l.T("Not reported"),
     };
 
-    // Binary multiples with the labels Windows shows, one decimal at most, as the web writes them.
+    // Binary multiples with the labels Windows shows and at most one decimal, like the web writes them.
     public static string Bytes(Localizer l, long bytes)
     {
         if (bytes < 1024)
@@ -193,7 +194,7 @@ public static class Say
         _ => l.F("{count} partitions", ("count", l.Number(count))),
     };
 
-    // How the disk is attached, as the agent names StorageBusType, in the words storage tools use.
+    // How the disk is attached. Turns the agent's StorageBusType name into the words storage tools use.
     public static string Bus(Localizer l, string bus) => bus switch
     {
         "Nvme" => "NVMe",
@@ -222,7 +223,7 @@ public static class Say
 
     public static string DiskModel(Localizer l, string? model) => string.IsNullOrWhiteSpace(model) ? l.T("Unknown model") : model;
 
-    // 12 hexadecimal digits as the web writes a MAC address: 3C:52:82:6A:1F:0B.
+    // Formats 12 hex digits the way the web writes a MAC address: 3C:52:82:6A:1F:0B.
     public static string Mac(string mac)
     {
         ArgumentNullException.ThrowIfNull(mac);
@@ -243,7 +244,7 @@ public static class Say
         return Uri.TryCreate(address, UriKind.Absolute, out Uri? uri) ? uri.IsDefaultPort ? uri.Host : $"{uri.Host}:{uri.Port}" : address;
     }
 
-    // Capitals, as tags are set; the invariant culture keeps German letters such as ä as they are, capitalized.
+    // Tags are set in capitals. The invariant culture capitalizes German letters like ä and keeps their umlaut.
     public static string Tag(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

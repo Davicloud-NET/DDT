@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Images;
 
-// Hands an upload whose bytes all arrived to the committer of its kind, once its part file is checked. Call with the
-// upload's lock held.
+// Checks the part file of an upload whose bytes have all arrived. Then it hands the upload to the committer for its
+// kind. Call with the upload's lock held.
 public sealed class UploadCommitter(
     ImageStore store,
     UploadRefusals refusals,
@@ -31,7 +31,7 @@ public sealed class UploadCommitter(
             return refusals.Missing(uploadId);
         }
 
-        // Finished by the run that held the lock just before this one.
+        // The run that held the lock just before this one already finished it.
         if (upload.CompletedSha256 is { } completed)
         {
             return await LibraryEntries.ExistingAsync(database, upload, completed, cancellationToken).ConfigureAwait(false);

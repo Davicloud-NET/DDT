@@ -6,5 +6,5 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// A step the machine's active run is running, as frozen with the run. Step is null when the run's tree has no such node.
+// A step the machine's active run is running, as frozen with the run. Step is null if the run's tree has no such node.
 public sealed record RunningStep(Deployment Run, SequenceStep? Step, RunInputs Inputs, SequenceDefinition Definition);

@@ -10,7 +10,7 @@ import { formatMac, type MachineSummary } from "@/machines/machines";
 import { secureBootFact } from "@/machines/secureBoot";
 import { Facts } from "@/ui/Facts";
 
-// The plate of what identifies the machine, under its name.
+// The plate under the machine's name that shows what identifies the machine.
 export function MachinePlate({ machine, now }: { machine: MachineSummary; now: number }) {
   const seen = relativeTime(machine.lastSeenUtc, now);
   const from = machine.lastSeenAddress;

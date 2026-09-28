@@ -9,7 +9,7 @@ function Invoke-Native {
         [Parameter(ValueFromRemainingArguments)][string[]] $Arguments
     )
 
-    # Standard error is left on the console: redirecting it in Windows PowerShell turns every line into
+    # Standard error is left on the console. Redirecting it in Windows PowerShell turns every line into
     # a terminating error under ErrorActionPreference Stop.
     $output = & $FilePath @Arguments
     if ($LASTEXITCODE -ne 0) {

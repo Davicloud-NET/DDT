@@ -12,8 +12,8 @@ import { ConfirmDialog } from "@/ui/ConfirmDialog";
 import { rescanPxe, type PxeForm } from "../networkBoot";
 import { putSection } from "../settings";
 
-// Every host scans its interfaces and applies the section again, which restarts the listeners, so it asks first.
-// The answer is the section with the new apply states.
+// Every host scans its interfaces and applies the section again. That restarts the listeners, so the button asks
+// first. The answer is the section with the new apply states.
 export function RescanButton({ form }: { form: PxeForm }) {
   const queryClient = useQueryClient();
   const [asking, setAsking] = useState(false);

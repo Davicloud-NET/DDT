@@ -6,7 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace DDT.ConsoleProtocol;
 
-// Source-generated, as both ends are NativeAOT. The derived messages and questions come with their base types.
+// Source-generated, because both ends are NativeAOT. The derived messages and questions are included through their
+// base types.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     UseStringEnumConverter = true,

@@ -11,7 +11,7 @@ namespace DDT.Server.Tests;
 
 public sealed class AgentReleaseTests(AgentReleaseApplication application) : IClassFixture<AgentReleaseApplication>
 {
-    // Literal paths and property names on purpose: agents in boot images built long ago ask exactly these.
+    // The paths and property names are literal on purpose. Agents in boot images built long ago ask for exactly these.
     private const string Release = "api/agents/release";
     private const string ReleaseBinary = "api/agents/release/binary";
     private const string ConsoleRelease = "api/agents/release/console";
@@ -46,7 +46,8 @@ public sealed class AgentReleaseTests(AgentReleaseApplication application) : ICl
         await AssertReleaseAsync(agent, third);
     }
 
-    // A zip that is not a console leaves machines with the console of their boot image, as no zip does.
+    // A zip that isn't a complete console is treated like no zip at all.
+    // Machines keep the console from their boot image.
     [Fact]
     public async Task ServesTheConfiguredConsoleFileByFile()
     {

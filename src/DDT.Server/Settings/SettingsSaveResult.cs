@@ -9,7 +9,7 @@ namespace DDT.Server.Settings;
 public sealed record SettingsSaveResult(
     SettingsSaveOutcome Outcome,
     SettingsSnapshot? Snapshot = null,
-    // Problems and Unconfirmed name their fields as the page does.
+    // Problems and Unconfirmed name their fields the way the page does.
     IReadOnlyList<SettingMessage>? Problems = null,
     IReadOnlyList<SettingMessage>? Unconfirmed = null,
     IReadOnlyList<string>? Fields = null);

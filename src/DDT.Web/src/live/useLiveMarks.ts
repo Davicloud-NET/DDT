@@ -18,9 +18,9 @@ import type { StateTone } from "@/ui/StateTag";
 
 // What a change did to one item of a list, for as long as its flash lasts.
 export interface LiveMark {
-  // The item was not in the list before, so it enters.
+  // The item wasn't in the list before, so it animates in.
   isNew: boolean;
-  // The colour it flashes in; null for an item that enters without a flash.
+  // The colour it flashes in. Null for an item that animates in without a flash.
   tone: StateTone | null;
   // Alternates with each mark of the same item, so a second change starts the flash over.
   cycle: 0 | 1;
@@ -35,7 +35,7 @@ export interface LiveMarkOptions<TKey extends QueryKey, TItem> {
   // What the list shows of an item that a change should point out, such as its state. An item whose signature
   // changes flashes; one that changes otherwise, such as a running step's percentage, does not.
   signature: (item: TItem) => string;
-  // The colour of the item's state, or null where a change of it needs no flash.
+  // The colour of the item's state, or null if a change of it needs no flash.
   tone: (item: TItem) => StateTone | null;
 }
 
@@ -44,9 +44,9 @@ interface Seen {
   tone: StateTone | null;
 }
 
-// Marks the items a change put on the screen: a changed signature flashes in its tone, and a new item enters. Only
-// data from setQueryData counts, as pushes and action answers arrive that way; a read, such as a first load, never
-// flashes. The returned function changes with the marks, so it goes into a React Aria collection's dependencies.
+// Marks the items a change put on screen: a changed signature flashes in its tone, and a new item animates in.
+// Only setQueryData counts, since pushes and action answers arrive that way, so a read such as a first load never
+// flashes. The returned function changes with the marks, so put it in a React Aria collection's dependencies.
 export function useLiveMarks<TKey extends QueryKey, TItem>(
   options: LiveMarkOptions<TKey, TItem>,
 ): (id: string) => string {

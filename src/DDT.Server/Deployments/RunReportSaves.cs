@@ -40,7 +40,7 @@ internal sealed class RunReportSaves(
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxAttempts)
             {
-                // Decide again from what is stored now. A stop or a new registration bumped the generation, and the next
+                // Decide again from what's stored now. If a stop or a new registration bumped the generation, the next
                 // attempt answers 401.
                 database.ChangeTracker.Clear();
             }
@@ -56,7 +56,8 @@ internal sealed class RunReportSaves(
             return ReportOutcome.NotFound;
         }
 
-        // Stopped, rejected or registered again since the token was checked: the run is over for this agent.
+        // If the machine was stopped, rejected or registered again after the token was checked, the run is over for
+        // this agent.
         if (!Principals.HoldsCurrentGeneration(reported.User, machine))
         {
             return new ReportOutcome(null, null, Unauthorized: true);
@@ -103,8 +104,8 @@ internal sealed class RunReportSaves(
             tokens.Issue(machine, MachineTokenPurpose.Resume),
             run.State == DeploymentState.Running ? tokens.IssueRunToken(machine, run.Id) : null);
 
-    // The values go with the report that started the run, and with every report before the agent has begun, since the
-    // answer that started it can be lost. A pause someone continued goes with every answer until its visit is over.
+    // The values go with the report that started the run, and with every report before the agent has begun, because the
+    // answer that started it can get lost. A pause someone continued is sent with every answer until its visit is over.
     private static AgentRunReportResult Answer(AgentRunReportResult tokens, Deployment run, AgentRunReport report, DeploymentDecision decision) =>
         tokens with
         {

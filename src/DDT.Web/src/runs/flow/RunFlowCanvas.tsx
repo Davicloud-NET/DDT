@@ -23,7 +23,7 @@ interface RunFlowCanvasProps {
   model: RunFlowModel;
   follow: RunFollow;
   focus: NodeFocus;
-  // A run that ended no longer moves, so only one still going and at a node offers "Follow the run".
+  // A run that ended no longer moves. So only a run that's still going, and at a node, offers "Follow the run".
   canFollow: boolean;
   variables: Record<string, string>;
   now: number;

@@ -12,9 +12,9 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Tests;
 
-// Stands in for the OpenID Connect handler and its provider: a challenge signs the subject the query names into the
-// external cookie and redirects where the challenge says, as the real callback does. The query's groups become groups
-// claims, one each or one JSON array.
+// Stands in for the OpenID Connect handler and its provider. A challenge signs the subject named in the query into the
+// external cookie. Then it redirects where the challenge says, like the real callback does. The query's groups become
+// groups claims, one claim each or one JSON array.
 public sealed class FakeOidcHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory loggerFactory,

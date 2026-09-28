@@ -6,9 +6,9 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { ApiError, apiDelete, apiGet } from "@/lib/api";
 
-// managedByDdt: issued from DDT's root and renewed by DDT; otherwise an administrator's certificate, and the root
-// fields and renewsUtc are null. anchorReplacedUtc: when DDT replaced the self-signed certificate that older boot
-// images pin, until an administrator confirms every boot image was built again with the root.
+// managedByDdt: issued from DDT's root and renewed by DDT. Otherwise it's an administrator's certificate, and the
+// root fields and renewsUtc are null. anchorReplacedUtc: when DDT replaced the self-signed certificate that older
+// boot images pin. It stays set until an administrator confirms every boot image was built again with the root.
 export interface ServerCertificateView {
   managedByDdt: boolean;
   subject: string;
@@ -22,7 +22,7 @@ export interface ServerCertificateView {
   anchorReplacedUtc: string | null;
 }
 
-// Null when Kestrel loads the certificate on its own, or TLS ends at a proxy: DDT then knows nothing about it.
+// Null when Kestrel loads the certificate on its own, or TLS ends at a proxy. DDT knows nothing about it then.
 export const serverCertificateQuery = queryOptions({
   queryKey: ["server-certificate"],
   queryFn: async (): Promise<ServerCertificateView | null> => {

@@ -8,8 +8,8 @@ import { formatMac, type MachineSummary } from "@/machines/machines";
 
 import { resolutionText, type MachineSequenceResolution, type RuleView } from "./rules";
 
-// A machine's name as the rule test's picker shows it: the name it was given and its hardware, such as "PC-042, LENOVO
-// ThinkPad T14 Gen 4", or the hardware and its MAC address before it has a name.
+// A machine's name as the rule test's picker shows it: its given name and its hardware, such as "PC-042, LENOVO
+// ThinkPad T14 Gen 4". Before it has a name, the hardware and its MAC address.
 export function machineChoice(machine: MachineSummary): string {
   const name = machine.assignedName;
   const hardware = [machine.manufacturer, machine.model]

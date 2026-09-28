@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Nobody confirmed a pair the page installed, so DDT went back to the pair before it. That is audited as the page's
-// other certificate changes are, with DDT as the actor, and pushed to the administrators' pages.
+// Records when nobody confirmed a pair the page installed and DDT went back to the previous pair. It's audited like the
+// page's other certificate changes, with DDT as the actor, and pushed to the administrators' pages.
 public sealed partial class CertificateRollbackRecorder(
     IServiceProvider services,
     IServiceScopeFactory scopes,

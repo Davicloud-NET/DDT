@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Deployments;
 
 // Applies an agent's report to its run. A report names every step that has left Pending, so a report sent again changes
-// nothing. The server stamps the times, since the Windows PE clock can be hours off. Nothing here saves.
+// nothing. The server stamps the times, because the WinPE clock can be hours off. Nothing here saves.
 public sealed class RunReports(DdtDbContext database, RunQueries queries, RunStarts starts, TimeProvider timeProvider)
 {
     public async Task<DeploymentDecision> ApplyAsync(
@@ -40,7 +40,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // A tree's path depends on its IFs, which only the definition says how to follow.
+        // A tree's path depends on its IFs, and only the definition says how to follow them.
         SequenceDefinition? tree = steps.Any(RunSnapshots.IsContainer) ? await queries.DefinitionAsync(run, cancellationToken).ConfigureAwait(false) : null;
         ReceivedReport received = new(machine, run, report, steps, tree, address, timeProvider.GetUtcNow());
 
@@ -50,7 +50,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             (DeploymentState.Running, DeploymentState.Running) => await ProgressedAsync(received, cancellationToken).ConfigureAwait(false),
             (DeploymentState.Running, DeploymentState.Done) => await DoneAsync(received, cancellationToken).ConfigureAwait(false),
 
-            // A failure always ends the run, even when the steps it reports do not fit: the agent has stopped anyway.
+            // A failure always ends the run, even if the steps it reports don't fit. The agent has stopped anyway.
             (DeploymentState.Assigned or DeploymentState.Running, DeploymentState.Failed) => await FailedAsync(received, cancellationToken).ConfigureAwait(false),
             _ => DeploymentDecision.Conflict(
                 $"A run that is {RunProgress.Word(run.State)} cannot be reported as {RunProgress.Word(report.State)}. {RunProgress.AskAgain}"),
@@ -70,7 +70,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
         }
     }
 
-    // The steps a change that is about to be saved moves on. The save forgets which they were.
+    // The steps the unsaved changes move on. Read them before saving, because the save forgets which ones they were.
     public static IReadOnlyList<DeploymentStep> ChangedSteps(DdtDbContext database)
     {
         ArgumentNullException.ThrowIfNull(database);
@@ -78,7 +78,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
         return [.. database.ChangeTracker.Entries<DeploymentStep>().Where(e => e.State == EntityState.Modified).Select(e => e.Entity)];
     }
 
-    // Whether the report changed the variables of the run, which a save is about to store. The save forgets it.
+    // Whether the report changed the run's variables. Read it before saving, because the save forgets it.
     public static bool VariablesChanged(DdtDbContext database, Deployment run)
     {
         ArgumentNullException.ThrowIfNull(database);
@@ -87,7 +87,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
         return database.Entry(run).Property(d => d.Variables).IsModified;
     }
 
-    // The run the report may change, or why it may not. Null for both: the machine has no such run.
+    // The run the report may change, or why it may not. If both are null, the machine has no such run.
     private async Task<(Deployment? Run, DeploymentDecision? Refusal)> GuardAsync(
         Machine machine,
         Guid runId,
@@ -117,8 +117,8 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             return (null, DeploymentDecision.Conflict($"The run is {RunProgress.Word(run.State)} and takes no further reports. {RunProgress.AskAgain}"));
         }
 
-        // The service in Windows cannot take the run back to the Windows PE phase: Windows PE registers again before it
-        // does, as when the machine started it instead of the installed Windows. A failure ends the run in any phase.
+        // The service in Windows can't take the run back to the WinPE phase. WinPE registers again before it reports,
+        // for example when the machine booted it instead of the installed Windows. A failure ends the run in any phase.
         return report.State != DeploymentState.Failed
             && report.Phase == SequencePhase.WindowsPE
             && machine.AgentEnvironment == AgentEnvironment.Windows
@@ -261,8 +261,8 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
         return DeploymentDecision.Accepted(run);
     }
 
-    // The variables the agent sends when they changed, merged into those the run has; an Account input's name is never
-    // among them. A report without them leaves them as they are.
+    // Merges the variables the agent sends when they changed into those the run has. An Account input's name is never
+    // among them. A report without variables leaves them as they are.
     private async Task KeepVariablesAsync(Deployment run, AgentRunReport report, CancellationToken cancellationToken)
     {
         if (report.Variables is null)

@@ -15,8 +15,8 @@ import {
   type LdapSettings,
 } from "../signIn";
 
-// The user a directory test signs in, and the test. A proof in its answer goes to onProof with the values it was
-// given for.
+// The user a directory test signs in, and the test itself. A proof in the answer goes to onProof, together with
+// the values it was given for.
 export function useDirectoryTest(me: CurrentUser, onProof: (proof: DirectoryProof) => void) {
   const [userName, setUserName] = useState(me.source === "Directory" ? me.userName : "");
   const [password, setPassword] = useState("");

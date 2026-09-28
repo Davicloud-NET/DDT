@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Sequences;
 
-// Reads stored sequences with their problems, which depend on the library and the settings of the moment.
+// Reads stored sequences with their problems. The problems depend on the current library and settings.
 public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings, AccountViews accounts)
 {
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
         List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        // A disabled rule counts: it names a value on purpose, and may be enabled again.
+        // A disabled rule counts too. It names the value on purpose, and it may be enabled again.
         HashSet<string> valueNames = new(
             [.. ruleValues.Concat(roleValues).SelectMany(RuleDocuments.ReadValues).Select(value => value.Name), .. MachineValues.DeploymentDefaultNames],
             StringComparer.OrdinalIgnoreCase);

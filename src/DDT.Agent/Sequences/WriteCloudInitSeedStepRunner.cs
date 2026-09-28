@@ -63,8 +63,8 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         }));
     }
 
-    // The seed's files with the machine's values filled in. The run renders them too before its first step, so a value the
-    // machine lacks stops the run before the disk is erased.
+    // The seed's files with the machine's values filled in. The run renders them before its first step too, so a value
+    // the machine lacks stops the run before the disk is erased.
     public static (string MetaData, string UserData, string? NetworkConfig) Render(
         WriteCloudInitSeedStep step,
         string? computerName,
@@ -73,8 +73,8 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(machine);
 
-        // The run's values too, the variables its steps set among them, but only by a name the run has a value for, so
-        // cloud-init's own templates stay as they are. The machine's own names come after them and win.
+        // The run's values go in too, including the variables its steps set. Only names the run has a value for are
+        // filled in, so cloud-init's own templates stay as they are. The machine's names come after them and win.
         Dictionary<string, string?> values = new(StringComparer.OrdinalIgnoreCase);
 
         foreach ((string name, string value) in machine.Variables ?? new Dictionary<string, string>())

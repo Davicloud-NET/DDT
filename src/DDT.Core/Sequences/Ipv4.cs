@@ -6,8 +6,8 @@ using System.Globalization;
 
 namespace DDT.Core.Sequences;
 
-// IPv4 addresses as conditions write them: four decimal numbers of 0 to 255, nothing shorter. IPAddress.Parse would
-// also take 10.1 or 0x0A000001, which a person reading the condition would not expect to match.
+// IPv4 addresses the way conditions write them. That's four decimal numbers from 0 to 255, nothing shorter.
+// IPAddress.Parse also accepts 10.1 or 0x0A000001, and someone reading the condition wouldn't expect those to match.
 public static class Ipv4
 {
     public static bool TryParse(string? text, out uint address)
@@ -37,7 +37,7 @@ public static class Ipv4
         return true;
     }
 
-    // A network written as 10.0.0.0/24; the address need not be the network's first.
+    // A network written as 10.0.0.0/24. The address doesn't have to be the network's first one.
     public static bool TryParseNetwork(string? text, out uint network, out uint mask)
     {
         network = 0;

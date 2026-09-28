@@ -11,8 +11,8 @@ import { isInt32 } from "../steps";
 import type { FieldBase } from "./fieldBase";
 import { findingProps } from "./findingProps";
 
-// A whole number the server can store. The keys step it, and a number past the bounds is brought within them when
-// the field is left.
+// A whole number the server can store. The stepper buttons step it. A number out of bounds is clamped when the field
+// loses focus.
 export function NumberSetting({
   label,
   field,

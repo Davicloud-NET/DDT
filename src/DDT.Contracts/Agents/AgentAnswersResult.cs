@@ -4,10 +4,10 @@
 
 namespace DDT.Contracts.Agents;
 
-// What the server made of AgentInputAnswers.
+// The server's response to AgentInputAnswers.
 public sealed record AgentAnswersResult(
     // The run's values once nothing is pending, null until then.
     IReadOnlyDictionary<string, string>? Values,
     IReadOnlyList<AgentInput> InputsPending,
-    // What was wrong with the answers given; the console shows each at its field.
+    // What was wrong with the answers. The console shows each problem next to its field.
     IReadOnlyList<InputProblem> Problems);

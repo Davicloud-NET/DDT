@@ -7,25 +7,27 @@ import { walk, type TreeEntry } from "@/sequences/flow/flowTree";
 import type { IfBranch, SequenceDefinition, SequenceStep } from "@/sequences/sequences";
 import { isContainer } from "@/sequences/steps";
 
-// The path a run took through its tree, from the tree it was given and the latest visit of each node the server keeps.
-// A node in a branch an IF did not take, or in a skipped container, is not taken; an undecided IF keeps both ahead.
+// The path a run took through its tree. It's built from the tree the run was given and the latest visit of each node
+// that the server keeps. A node in a branch an IF didn't take, or in a skipped container, is not taken. An IF that
+// hasn't decided yet keeps both branches ahead.
 
 export type PathState =
   "done" | "running" | "failed" | "skipped" | "paused" | "waiting" | "notTaken";
 
 export interface PathNode {
   node: SequenceStep;
-  // Where the node sits in the tree, and its leaf number, null for a container.
+  // Where the node sits in the tree, and its leaf number. The number is null for a container.
   entry: TreeEntry;
-  // The run's step of the node; null where the server has none, as for a node it has not reported yet.
+  // The run's step for the node. Null if the server has none, for example for a node it hasn't reported yet.
   step: DeploymentStepView | null;
   state: PathState;
   // The containers around the node, outermost first, with the branch of an IF the node sits in.
   ancestors: { node: SequenceStep; branch: "then" | "else" | null }[];
 }
 
-// What a wire of the flow connects, as the flow's layout names it: from the node before it to the node after it, null
-// at a port, a join or a frame's edge; branch on the wires of an IF's branch that no node of the branch decides.
+// What a wire of the flow connects, as the flow's layout names it. from is the node before the wire and to the node
+// after it. Either is null at a port, a join or a frame's edge. branch is set on the wires of an IF's branch that no
+// node in the branch decides.
 export interface PathRoute {
   from: string | null;
   to: string | null;
@@ -41,8 +43,8 @@ export interface RunPath {
   byId: ReadonlyMap<string, PathNode>;
   // The leaves on the path, in order: those done, running or paused, and those still ahead.
   leaves: PathNode[];
-  // The node the run is at: the one paused or running, the innermost where containers run around it; else the
-  // leaf that failed. Null when it is at none.
+  // The node the run is at: the paused or running one, the innermost if containers run around it. Otherwise it's the
+  // leaf that failed. Null if the run is at no node.
   current: PathNode | null;
   // Whether the tree has containers, so that its path can differ from its list of steps.
   isTree: boolean;
@@ -70,8 +72,8 @@ function stateOf(step: DeploymentStepView | null, node: SequenceStep, run: PathR
     case "Pending":
       return "waiting";
     case "Running": {
-      // What the agent does now decides whether the run is paused, where the page knows it; the pause the run was read
-      // with names the step and its visit.
+      // If the page knows what the agent is doing now, that decides whether the run is paused. The pause the run was
+      // read with names the step and its visit.
       const pause = run.pause ?? null;
       const holds =
         run.activity === undefined || run.activity === null
@@ -94,7 +96,7 @@ function stateOf(step: DeploymentStepView | null, node: SequenceStep, run: PathR
   }
 }
 
-// A run whose definition the page does not have is a list of its steps.
+// If the page doesn't have the run's definition, the run's steps are treated as a flat list.
 function stepsAsTree(steps: readonly DeploymentStepView[]): SequenceStep[] {
   return [...steps]
     .sort((a, b) => a.index - b.index)
@@ -128,7 +130,7 @@ function stepsAsTree(steps: readonly DeploymentStepView[]): SequenceStep[] {
             goOnAtLimit: false,
           };
         default:
-          // Only its kind and name are read, as a leaf.
+          // It's a leaf, so only its kind and name are read.
           return { ...common, kind: step.kind } as unknown as SequenceStep;
       }
     });
@@ -151,8 +153,8 @@ export function runPath(
     const step = stepsById.get(entry.node.id) ?? null;
     const branch = entry.body === "then" || entry.body === "else" ? entry.body : null;
     const ancestors = parent === null ? [] : [...parent.ancestors, { node: parent.node, branch }];
-    // A node is not taken where its container was not: an IF that took the other branch, a container that was
-    // skipped, or one that was not taken itself.
+    // A node is not taken if its container wasn't: an IF took the other branch, the container was skipped, or the
+    // container itself wasn't taken.
     const taken = branchName(parent?.step?.branch);
     const excluded =
       parent !== null &&
@@ -244,8 +246,8 @@ export function runPath(
   };
 }
 
-// The steps of a run numbered as the flow and the rail number them: leaves from 1 in the order of the tree, which is
-// the order of the steps; containers have no number. For a run without containers it is the step's place.
+// Numbers a run's steps the way the flow and the rail do. Leaves count from 1 in tree order, which is the order of the
+// steps. Containers get no number. Without containers, a step's number is its position.
 export function leafNumbers(steps: readonly DeploymentStepView[]): Map<string, number | null> {
   const containers = steps
     .filter((step) => step.kind === "group" || step.kind === "if" || step.kind === "repeat")

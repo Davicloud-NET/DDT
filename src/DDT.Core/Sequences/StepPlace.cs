@@ -6,14 +6,16 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// Where SequencePaths meets a step: the paths that reach it, the phase it asks for and the phases it runs in. A rule
-// that needs something done first asks whether every path did it; a rule that allows something once, whether any did.
+// What SequencePaths knows at a step. That's the paths that reach it, the phase it asks for and the phases it runs in.
+// A rule that needs something done first asks whether every path did it. A rule that allows something only once asks
+// whether any path did.
 internal readonly record struct StepPlace(PathState Before, SequencePhase? Required, PhaseSet RunsIn, bool InRepeat)
 {
     public bool InWindowsPE => (RunsIn & PhaseSet.WindowsPE) != 0;
 
     public bool Partitioned => Before.MustHave(Happened.Partitioned);
 
-    // Inside a repeat, what a run does once is refused as such; that a later time round does it again goes unsaid.
+    // Inside a repeat, a step that runs only once is already refused by SequenceOnceInRepeat. So this doesn't also
+    // report that a later iteration does it again.
     public bool Again(Happened happened) => !InRepeat && Before.MayHave(happened);
 }

@@ -123,7 +123,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate UploadInUse = Define("upload.inUse", "This upload is in use. Try again in a few seconds.");
 
-    // Why an uploaded file cannot go into the library: WIM images, disk images and zip packages.
+    // Why an uploaded WIM image, disk image or zip package can't go into the library.
 
     public static readonly MessageTemplate WimNotAWim = Define("wim.notAWim", "This file is not a WIM image.");
 

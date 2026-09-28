@@ -8,8 +8,8 @@ import { useState } from "react";
 import { changePassword } from "@/auth/account";
 import { currentUserQuery, type CurrentUser } from "@/auth/auth";
 
-// The password form's fields and the change. The server drops the demand for an own password with the change, and
-// the cached account follows, which opens the rest of DDT again.
+// The password form's fields and the change. A successful change clears mustChangePassword on the server. The
+// cached account is patched to match, which unlocks the rest of DDT.
 export function usePasswordChange(user: CurrentUser) {
   const queryClient = useQueryClient();
   const [current, setCurrent] = useState("");

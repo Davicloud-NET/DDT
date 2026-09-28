@@ -4,8 +4,8 @@
 
 namespace DDT.Agent;
 
-// The body of a download, such as an image or a package, starting at Offset, of a file TotalLength bytes long.
-// Disposing it ends the response and frees its connection.
+// The body of a download, such as an image or a package. It starts at Offset in a file that is TotalLength bytes
+// long. Disposing it ends the response and frees the connection.
 public sealed class AgentImageStream(Stream content, long offset, long totalLength, IDisposable? response = null) : IAsyncDisposable
 {
     public Stream Content { get; } = content;

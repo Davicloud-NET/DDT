@@ -7,8 +7,8 @@ using System.Net.Http.Json;
 
 namespace DDT.Server.Tests;
 
-// Carries the session cookie and the antiforgery token the way the SPA does: a token comes back on
-// GET /api/auth/session and on every response that changes the identity.
+// Carries the session cookie and the antiforgery token the way the SPA does.
+// A token comes back on GET /api/auth/session and on every response that changes the identity.
 public sealed class SignedInClient(HttpClient client, CookieContainer cookies) : IDisposable
 {
     private const string CsrfHeader = "X-CSRF-TOKEN";
@@ -27,7 +27,7 @@ public sealed class SignedInClient(HttpClient client, CookieContainer cookies) :
 
     public Task<HttpResponseMessage> DeleteAsync(string path) => SendAsync(HttpMethod.Delete, path, null);
 
-    // Any request with its own content and headers, such as an upload chunk; the antiforgery token is added here.
+    // Sends any request with its own content and headers, such as an upload chunk. The antiforgery token is added here.
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

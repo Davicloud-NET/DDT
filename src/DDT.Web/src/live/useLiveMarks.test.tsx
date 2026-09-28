@@ -23,8 +23,8 @@ function stepsQuery(run: string) {
   });
 }
 
-// A list that shows the steps of a run, marked as a page marks them: a step that finishes flashes, one that starts
-// or only counts on does not.
+// A list of a run's steps, marked the way a page marks them. A step that finishes flashes. One that starts, or
+// only changes its progress, doesn't.
 function Steps({ run, ids }: { run: string; ids: string[] }) {
   const mark = useLiveMarks({
     queryKey: stepsQuery(run).queryKey,
@@ -176,7 +176,7 @@ describe("marking what the hub changed", () => {
     push([{ ...running, state: "Failed" }, waiting]);
     expect(screen.getByTestId("s1")).toHaveClass("live-flash");
 
-    // Another run's list, which the page shows from what its query holds, marks nothing of the last one's.
+    // Another run's list starts from what its query holds. It marks nothing from the previous run's list.
     view.rerender(
       <QueryClientProvider client={queryClient}>
         <Steps run="r2" ids={["s1", "s2"]} />

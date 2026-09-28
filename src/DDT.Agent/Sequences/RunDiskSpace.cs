@@ -51,9 +51,9 @@ internal static class RunDiskSpace
             $"{string.Join(", ", parts)} and {ByteSize.Format(SpareBytes)} to spare. Run it on a larger disk.");
     }
 
-    // The path through the tree that needs the most, as SequenceSizes works it out, with a list's rules for each step.
-    // A raw disk image is written as it downloads, so it needs its disk and nothing to spare. A package the server sent
-    // for no step of the tree counts on every path.
+    // Checks the path through the tree that needs the most, as SequenceSizes works it out, with a list's rules for each
+    // step. A raw disk image is written as it downloads, so it only needs its disk and nothing to spare. A package the
+    // server sent for no step in the tree counts on every path.
     public static void CheckTree(AgentRun run, LocalDisk disk, bool raw)
     {
         HashSet<Guid> nodes = [.. SequenceTree.Nodes(run.Sequence).Select(node => node.Id)];
@@ -81,7 +81,8 @@ internal static class RunDiskSpace
             $"path through it that needs the most{(raw ? "" : $", {ByteSize.Format(SpareBytes)} to spare included")}. Run it on a larger disk.");
     }
 
-    // A raw disk image is written as it downloads, so the disk needs room for the disk it holds and the seed, no more.
+    // A raw disk image is written as it downloads, so the disk only needs room for the disk the image holds and the
+    // seed.
     public static void CheckRaw(AgentRun run, LocalDisk disk, AgentRunImage image, bool seed)
     {
         long required = image.InstalledBytes + (seed ? CloudInitSeed.DiskBytes : 0);

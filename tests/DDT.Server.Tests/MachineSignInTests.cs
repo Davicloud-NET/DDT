@@ -164,7 +164,7 @@ public sealed class MachineSignInTests(DdtApplication application) : IClassFixtu
         Assert.Null(again.SignedInBy);
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.SignInAsync(machine.Id, machine.PollToken, new AgentSignInRequest(operatorName, DdtApplication.Password, null))).StatusCode);
 
-        // Waiting again, but vouched for once: its log must survive, so nothing may remove it.
+        // It's waiting again, but someone vouched for it once. Its log must survive, so nothing may remove it.
         SignedInClient administrator = await application.AdministratorAsync();
         IReadOnlyList<MachineSummary> machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(
             await administrator.GetAsync("/api/machines"));

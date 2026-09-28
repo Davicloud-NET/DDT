@@ -15,22 +15,23 @@ public sealed record CertificateFiles(string CertificatePath, string KeyPath)
 
     public string RootKeyPath => Path.Combine(Folder, "ddt-root-key.pem");
 
-    // ddt.pem becomes ddt.previous.pem: the pair a renewal replaced, kept to go back to by hand.
+    // ddt.pem becomes ddt.previous.pem. It keeps the pair a renewal replaced, so an admin can go back to it by hand.
     public string PreviousCertificatePath => Previous(CertificatePath);
 
     public string PreviousKeyPath => Previous(KeyPath);
 
-    // The self-signed certificate older boot images pin, kept until an administrator confirms that every boot image was
-    // built again with the root.
+    // Holds the self-signed certificate that older boot images pin. It's kept until an administrator confirms that
+    // every boot image was built again with the root.
     public string ReplacedAnchorPath => Path.Combine(Folder, "ddt-anchor.replaced.pem");
 
-    // Holds when a pair the settings page installed goes back to the one before it, unless it is confirmed first.
+    // Holds the deadline for a pair installed from the settings page. If the pair isn't confirmed by then, the pair
+    // before it is restored.
     public string ProvisionalPath => Path.Combine(Folder, "ddt.provisional");
 
-    // Taken by every DDT process that writes these files, or may have to, so two of them never renew at once.
+    // Every DDT process that writes these files, or may have to, takes this lock, so two processes never renew at once.
     public string LockPath => Path.Combine(Folder, ".lock");
 
-    // A PFX, or a key under a password, stays managed by hand, so DDT takes over only two plain PEM files.
+    // DDT only takes over two plain PEM files. A PFX, or a key with a password, stays managed by hand.
     public static CertificateFiles? FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DDT.Server.Endpoints;
 
-// The messages of a validation problem, by the camelCase name of the field each is about.
+// Collects the messages of a validation problem, keyed by the camelCase name of the field each one is about.
 public sealed class FieldProblems
 {
     private readonly Dictionary<string, List<ServerMessage>> _fields = new(StringComparer.Ordinal);

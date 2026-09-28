@@ -2,8 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- What only the console has beside the generated Tokens.axaml: the sizes of large text read from across a room,
-     and the rows facts are shown in. -->
+<!-- Console-only resources next to the generated Tokens.axaml: the sizes of large text that's read from across a
+     room, and the rows that show facts. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:vm="using:DDT.MachineConsole.ViewModels">
@@ -17,10 +17,10 @@
   <x:Double x:Key="ConsoleKeyHeight">40</x:Double>
   <x:Double x:Key="ConsoleFieldHeight">44</x:Double>
 
-  <!-- What a pressed key, and a key cap whose key is down, darken by, in both themes. -->
+  <!-- How much a pressed key, and a key cap whose key is down, darken in both themes. -->
   <SolidColorBrush x:Key="ConsolePressShade" Color="#26000000" />
 
-  <!-- A fact: its label above, its value below, in the mono face where it is an identifier. -->
+  <!-- A fact: its label above and its value below. Identifiers use the mono font. -->
   <DataTemplate x:Key="FactRow" x:DataType="vm:Fact">
     <StackPanel Spacing="2" Margin="0,0,0,10">
       <TextBlock Classes="small muted" Text="{Binding Label}" />

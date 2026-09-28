@@ -17,8 +17,8 @@ using static DDT.Agent.Tests.ScriptedMachineConsole;
 
 namespace DDT.Agent.Tests;
 
-// The agent's flows as a console other than the text one sees them: questions with their facts and the last error,
-// answers that name a choice, questions withdrawn when the web answered first, and the state as it changes.
+// The agent's flows as a console other than the text console sees them: questions with their facts and the last error,
+// answers that name a choice, questions withdrawn when the web answered first, and the changing state.
 public sealed class ConsoleSeamTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
@@ -107,7 +107,7 @@ public sealed class ConsoleSeamTests : IDisposable
             ],
             server.SignIns);
 
-        // The warning is logged all the same, for the machine's log.
+        // The warning is still logged, for the machine's log.
         Assert.Contains(console.Lines, line => line is { Level: ConsoleLogLevel.Warning, Text: "Wrong user name or password." });
     }
 
@@ -429,7 +429,7 @@ public sealed class ConsoleSeamTests : IDisposable
         }
     }
 
-    // The console says what the agent does between steps, so every activity has one of the same name.
+    // The console says what the agent does between steps, so every activity has a console activity of the same name.
     [Fact]
     public void GivesEveryActivityOfARunItsConsoleActivity()
     {

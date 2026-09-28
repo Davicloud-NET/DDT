@@ -35,8 +35,8 @@ public sealed class ServiceLifetime(Action<ServiceStatus> report)
     private uint _checkPoint;
     private int _exitCode;
 
-    // What RunAsync returns, set before Stopped is reported: from then on the dispatcher may return on another thread,
-    // which reads it here, and the process may end at any time.
+    // What RunAsync returns. It's set before Stopped is reported, because from then on the dispatcher may return on
+    // another thread, which reads it here, and the process may end at any time.
     public int ExitCode
     {
         get
@@ -48,8 +48,8 @@ public sealed class ServiceLifetime(Action<ServiceStatus> report)
         }
     }
 
-    // Runs body until it returns. An exception it throws ends the service as failed, as it must never reach the
-    // control manager's thread; the body logs it, as nothing here can.
+    // Runs body until it returns. An exception it throws ends the service as failed, because it must never reach the
+    // control manager's thread. The body logs it, because nothing here can.
     public async Task<int> RunAsync(Func<CancellationToken, Task<int>> body)
     {
         ArgumentNullException.ThrowIfNull(body);

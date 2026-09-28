@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Adds an uploaded disk image to the library, compressed. It logs under ImageUploadCompleter's category, which the
-// logging settings may name.
+// Adds an uploaded disk image to the library, compressed. It logs under ImageUploadCompleter's category, because the
+// logging settings may name that category.
 public sealed partial class RawUploadCommitter(
     RawImageImporter importer,
     ImageStore store,
@@ -22,8 +22,8 @@ public sealed partial class RawUploadCommitter(
     TimeProvider timeProvider,
     ILogger<ImageUploadCompleter> logger)
 {
-    // The conversion runs before the library lock is taken: it takes minutes for a large image, and nothing it makes is
-    // in the library yet. The same disk uploaded again, in whatever format, adds nothing.
+    // The conversion runs before taking the library lock. It takes minutes for a large image, and nothing it makes is
+    // in the library yet. The same disk uploaded again, in any format, adds nothing.
     public async Task<UploadCompletion> CommitAsync(DdtDbContext database, ImageUpload upload, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(database);
@@ -98,7 +98,7 @@ public sealed partial class RawUploadCommitter(
         return await refusals.RefuseAsync(database, upload, refusal, cancellationToken).ConfigureAwait(false);
     }
 
-    // The disk is in the library already as same, so nothing is added, but the upload puts the file back if it went
+    // The disk is already in the library as same, so nothing is added. But the upload puts the file back if it went
     // missing.
     private async Task<UploadCompletion> AddAgainAsync(DdtDbContext database, ImageUpload upload, RawImport import, Image same, DateTimeOffset now)
     {
@@ -113,7 +113,7 @@ public sealed partial class RawUploadCommitter(
         }
         else
         {
-            // A copy compressed differently, as by another version of DDT, becomes the image's file.
+            // A copy that was compressed differently, for example by another version of DDT, becomes the image's file.
             if (import.Sha256 != same.Sha256)
             {
                 stored = await database.Images.FirstAsync(i => i.Id == same.Id, CancellationToken.None).ConfigureAwait(false);
@@ -127,7 +127,7 @@ public sealed partial class RawUploadCommitter(
 
         File.Delete(store.PartPath(upload.Id));
 
-        // The image's file is another one now, which the library shows.
+        // The image has a different file now, and the library shows that.
         if (stored is not null)
         {
             live.ImageChanged(ImageSummaries.From(stored));
@@ -138,7 +138,7 @@ public sealed partial class RawUploadCommitter(
             await LibraryEntries.ImagesOfAsync(database, upload.CompletedSha256, CancellationToken.None).ConfigureAwait(false));
     }
 
-    // Named after the file without the extensions of its formats, such as noble-server-cloudimg-amd64 for
+    // The name is the file name without its format extensions, such as noble-server-cloudimg-amd64 for
     // noble-server-cloudimg-amd64.img.zst.
     private static Image NewRawImage(ImageUpload upload, RawImport import, BootAssessment boot, DateTimeOffset now, Actor actor)
     {

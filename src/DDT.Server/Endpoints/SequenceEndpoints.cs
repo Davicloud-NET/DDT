@@ -40,7 +40,7 @@ public static class SequenceEndpoints
         return group;
     }
 
-    // SQLite cannot order by DateTimeOffset, and a library of sequences is small, so the order is made here.
+    // Sorted here by name, ignoring case, so SQLite and PostgreSQL give the same order. The list is small.
     private static async Task<Ok<IReadOnlyList<SequenceSummary>>> ListAsync(
         DdtDbContext database,
         SequenceCatalog catalog,
@@ -101,7 +101,7 @@ public static class SequenceEndpoints
 
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Checked as it would be stored, with the lowest version its kinds need.
+        // Checked as it would be stored, with the lowest version its step kinds need.
         return TypedResults.Ok(SequenceChecks.Check(definition!.Normalised(), references));
     }
 
@@ -131,7 +131,7 @@ public static class SequenceEndpoints
             : (outcome.Problems ?? new FieldProblems()).ToResult();
     }
 
-    // The client decides what to do with a newer save: take it, or save its own edits over it knowingly.
+    // The client decides what to do with a newer save: take it, or knowingly save its own edits over it.
     private static async Task<Results<Ok<SequenceView>, Conflict<SequenceView>, NotFound, ValidationProblem, ProblemHttpResult>> SaveAsync(
         Guid id,
         HttpContext context,

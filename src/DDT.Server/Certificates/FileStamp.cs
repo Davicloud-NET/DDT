@@ -6,8 +6,9 @@ using System.Security.Cryptography;
 
 namespace DDT.Server.Certificates;
 
-// Tells whether the pair was replaced, without importing it. By content, as a copy that keeps the times, or two writes
-// within one tick of the file system clock, leave the write time alone. Null: the file is missing.
+// Tells whether the pair was replaced, without importing it. It hashes the content because the write time can stay the
+// same. A copy can keep the old times, and two writes can land within one tick of the file system clock. A null hash
+// means the file is missing.
 internal sealed record FileStamp(string? CertificateSha256, string? KeySha256)
 {
     public bool AnyExists => CertificateSha256 is not null || KeySha256 is not null;

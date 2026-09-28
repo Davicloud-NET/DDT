@@ -4,8 +4,9 @@
 
 namespace DDT.Server.Authentication;
 
-// What a group map makes of an account's groups, for LDAP and OIDC alike. Decides: the map has entries, so the groups
-// set the role at each sign-in and an account in none of them is refused. Role is the highest of Matches.
+// The result of applying a group map to an account's groups, for both LDAP and OIDC. Decides is true when the map has
+// entries. Then the groups set the role at each sign-in, and an account in none of them is refused. Role is the highest
+// role in Matches.
 public sealed record GroupRoles(bool Decides, IReadOnlyList<GroupRole> Matches, string? Role)
 {
     // The map's own comparer decides how groups match.

@@ -11,7 +11,7 @@ import { TextField } from "@/ui/TextField";
 import { HostsEditor } from "./HostsEditor";
 import type { AccountForm } from "./useAccountForm";
 
-// An account's name, its user name and where it may be used; the password has a field of its own.
+// An account's name, its user name and where it may be used. The password has a separate field.
 export function AccountFields({ form }: { form: AccountForm }) {
   const { edit, findings, change } = form;
   const errors = (field: string) => fieldFindings(findings, field).problems;

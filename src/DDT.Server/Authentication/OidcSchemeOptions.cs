@@ -11,8 +11,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace DDT.Server.Authentication;
 
-// The OpenID Connect handler's options from the oidc section. The scheme DDT registers and the candidate a save checks
-// both come from here, so the check tests what would run.
+// Builds the OpenID Connect handler's options from the oidc section. The scheme DDT registers and the candidate a save
+// checks both come from here, so the check tests what would actually run.
 public static class OidcSchemeOptions
 {
     public const string CallbackPath = "/api/auth/external/callback";

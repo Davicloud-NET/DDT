@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Contracts.Deployments;
 
-// One step of a run as the agent last reported it; a run of a tree has one per node, containers included. The times
-// are the server's, taken when a report showed the step start and end.
+// One step of a run, as the agent last reported it. A run of a tree has one per node, including containers. The
+// times are the server's, taken from the reports that showed the step start and end.
 public sealed record DeploymentStepView(
     Guid StepId,
     // The node's place in pre-order.
@@ -23,9 +23,9 @@ public sealed record DeploymentStepView(
     string? Error,
     // The container the step sits in, null at the top.
     Guid? ParentId = null,
-    // Counts containers from 0.
+    // The nesting depth, counting containers from 0.
     int Depth = 0,
-    // Pass, Iteration, Branch and Evaluation are the node's latest visit as StepRunState has them; earlier visits are
+    // Pass, Iteration, Branch and Evaluation describe the node's latest visit, as in StepRunState. Earlier visits are
     // in the log.
     int Pass = 0,
     int Iteration = 0,

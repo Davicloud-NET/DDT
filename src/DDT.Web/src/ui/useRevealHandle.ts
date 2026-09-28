@@ -20,7 +20,7 @@ export function useRevealHandle(
   latest: RefObject<ViewTransform>,
   change: (next: ViewTransform) => void,
 ) {
-  // A part asked for before the canvas knows its size is shown once it does.
+  // A part requested before the canvas knows its size is shown once the size is known.
   const pending = useRef<{ rect: ViewRect; center: boolean } | null>(null);
 
   const show = (rect: ViewRect, center: boolean, canvas: ViewSize) => {
@@ -48,7 +48,7 @@ export function useRevealHandle(
       pending.current = null;
       show(asked.rect, asked.center, size);
     }
-    // Only a size, once known, shows what was asked for before it.
+    // Runs only when the size changes, to show what was asked for before the size was known.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size]);
 }

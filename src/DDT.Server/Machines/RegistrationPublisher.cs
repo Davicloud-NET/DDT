@@ -37,7 +37,8 @@ public sealed class RegistrationPublisher(
         live.RunStepsChanged(machine.Id, changedSteps);
         live.MachineChanged(machine, await queries.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
 
-        // A rule counts the machines it matches, which a new machine, or one that reports otherwise now, may change.
+        // Each rule counts the machines it matches. A new machine, or one that now reports other facts, can change the
+        // count.
         if (arrival.Tested != RuleRecount.Tested(machine))
         {
             recount.MachinesChanged();

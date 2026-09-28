@@ -12,7 +12,7 @@ public sealed class LocalAdministratorOptions
 {
     public string Name { get; set; } = "Admin";
 
-    // Secret: stored encrypted, never in the section's values.
+    // A secret. It's stored encrypted, never in the section's values.
     [JsonIgnore]
     public string? Password { get; set; }
 }

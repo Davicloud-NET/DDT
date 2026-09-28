@@ -14,13 +14,14 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Whether this host applied the sections it rebuilds a component for: pxe, oidc and proxies. Kept in memory for this
-// process's page and in ddt."SettingsHostStates" for the others', and only this process writes this host's rows.
+// Tracks whether this host applied the sections it rebuilds a component for. Those are PXE, OIDC and proxies. The state
+// is kept in memory for this process's page and in ddt."SettingsHostStates" for the other processes. Only this process
+// writes this host's rows.
 public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, TimeProvider timeProvider, ILogger<SettingsHostStates> logger)
 {
     public static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(5);
 
-    // A host that has not refreshed its rows for this long is gone, and its rows with it.
+    // A host that hasn't refreshed its rows for this long counts as gone, and its rows are removed.
     public static readonly TimeSpan Stale = TimeSpan.FromDays(1);
 
     private const string TextMember = "text";
@@ -43,8 +44,8 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    // The text goes into the detail under "text", so the pages other processes serve can say it in the person's language
-    // too.
+    // The text goes into the detail under "text", so pages served by other processes can show it in the person's
+    // language too.
     public void Record(SettingsApplyReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
@@ -76,8 +77,8 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         _ = PersistAsync(row);
     }
 
-    // For a save that answers with the state of its own host: a subsystem this process rebuilds is quick, so the answer
-    // waits for it a moment rather than show Pending.
+    // Used by a save that answers with the state of its own host. A subsystem this process rebuilds is quick, so the
+    // answer waits a moment for it rather than showing Pending.
     public async Task WaitAsync(string section, long version, TimeSpan timeout, CancellationToken cancellationToken)
     {
         TaskCompletionSource done = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -105,7 +106,7 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    // Keeps this host's rows from counting as gone, and removes those of hosts that have not been seen for a day.
+    // Keeps this host's rows from counting as gone, and removes the rows of hosts that haven't been seen for a day.
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
         List<SettingsHostState> local;
@@ -127,7 +128,7 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
         DateTimeOffset cutoff = now - Stale;
 
-        // Compared in memory: SQLite cannot compare DateTimeOffset values in a query.
+        // Compared in memory, because SQLite can't compare DateTimeOffset values in a query.
         List<SettingsHostState> stale = [.. (await database.SettingsHostStates.ToListAsync(cancellationToken).ConfigureAwait(false))
             .Where(row => row.UpdatedUtc < cutoff)];
 
@@ -138,7 +139,7 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    // An apply is audited once per host and version. A restart that applies the same version again only refreshes the row.
+    // An apply is audited once per host and version. Reapplying that version after a restart only refreshes the row.
     private async Task PersistAsync(SettingsHostState row)
     {
         await _writes.WaitAsync().ConfigureAwait(false);
@@ -196,7 +197,8 @@ public sealed partial class SettingsHostStates(IServiceScopeFactory scopes, Time
         }
     }
 
-    // The message a host recorded as a code, or null for none, or for a detail this build cannot read.
+    // Returns the message a host recorded as a code. It's null when there's none, or when this build can't read the
+    // detail.
     public static ServerMessage? Text(SettingsHostState row)
     {
         ArgumentNullException.ThrowIfNull(row);

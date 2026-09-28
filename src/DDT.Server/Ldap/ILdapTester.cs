@@ -4,7 +4,7 @@
 
 namespace DDT.Server.Ldap;
 
-// Tries values not yet saved against the directory, for the settings page.
+// Tests unsaved values against the directory, for the settings page.
 public interface ILdapTester
 {
     Task<LdapTestOutcome> TestAsync(LdapOptions options, string? userName, string? password, CancellationToken cancellationToken);

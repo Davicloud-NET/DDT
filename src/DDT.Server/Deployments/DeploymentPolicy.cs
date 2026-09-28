@@ -32,8 +32,8 @@ public static class DeploymentPolicy
     public static bool CountsAsWebApproval(Deployment? active) =>
         active is { State: DeploymentState.Assigned, Source: DeploymentSource.Web };
 
-    // Zero touch keeps a web assignment's approval only on a netboot from a listed network. A request still at a listed
-    // proxy's address carried no client address, so it proves nothing about the network.
+    // Zero touch only keeps a web assignment's approval on a netboot from a listed network. A request that still shows
+    // a listed proxy's address carried no client address, so it proves nothing about the network.
     public static bool KeepsApprovalOnNetboot(SettingsSnapshot snapshot, Deployment? active, IPAddress? remoteAddress)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -44,8 +44,9 @@ public static class DeploymentPolicy
             && !ListedProxies.Contains(snapshot, remoteAddress);
     }
 
-    // Off: only a machine seen moments ago is at the prompt now, whoever holds the tokens of one seen earlier may not be.
-    // On: the sign-in at the machine happened already, and the assignment is the web approval.
+    // With RequireWebApproval off, only a machine seen moments ago is still at the prompt. Whoever holds the tokens of
+    // one seen earlier may not be. With it on, the sign-in at the machine already happened, and the assignment is the
+    // web approval.
     public static bool AuthorizesWaitingMachine(SettingsSnapshot snapshot, Machine machine, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -56,8 +57,8 @@ public static class DeploymentPolicy
             : now - machine.LastSeenUtc <= DeploymentLimits.WaitingAtPrompt;
     }
 
-    // A raw disk image whose boot file DDT could not read may still start, so only a known other processor keeps it
-    // from being written.
+    // A raw disk image whose boot file DDT couldn't read may still start. So only a known, different processor
+    // architecture keeps it from being written.
     internal static ServerMessage? NotDeployable(Image image) => (image.Kind, image.Architecture) switch
     {
         (_, DeployableArchitecture) => null,
@@ -68,8 +69,8 @@ public static class DeploymentPolicy
         (_, string architecture) => ServerMessages.ImageOtherArchitecture.With("image", image.Name, "architecture", architecture),
     };
 
-    // While the stored deployment settings have problems no run starts, since every run would carry values nobody checked.
-    // Runs that started already keep the values they started with.
+    // While the stored deployment settings have problems, no run starts, because every run would carry values nobody
+    // checked. Runs that already started keep the values they started with.
     public static ServerMessage? SettingsProblem(SettingsSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);

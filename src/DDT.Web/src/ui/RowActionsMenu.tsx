@@ -9,7 +9,7 @@ import { Button as AriaButton, MenuTrigger, type Key } from "react-aria-componen
 import { cx } from "./cx";
 import { Menu } from "./Menu";
 
-// The "…" key of a list's row, which opens the row's actions.
+// The "…" button of a list's row, which opens the row's actions.
 export function RowActionsMenu({
   label,
   triggerLabel = label,
@@ -19,13 +19,13 @@ export function RowActionsMenu({
   className,
   children,
 }: {
-  // Names the menu, and the key unless triggerLabel names it.
+  // Names the menu, and the button unless triggerLabel names it.
   label: string;
   triggerLabel?: string;
   isDisabled?: boolean;
   disabledKeys?: Iterable<Key>;
   onAction: (key: Key) => void;
-  // The key's size or its place in the row's grid.
+  // The button's size or its place in the row's grid.
   className?: string;
   children: ReactNode;
 }) {

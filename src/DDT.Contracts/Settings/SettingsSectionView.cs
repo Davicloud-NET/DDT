@@ -10,16 +10,16 @@ public sealed record SettingsSectionView<TValues>(
     long Version,
     DateTimeOffset? UpdatedUtc,
     string? UpdatedBy,
-    // What applies: a configured value where one is set.
+    // The values that apply. A configured value wins where one is set.
     TValues Values,
     // Only whether each secret is set, never its value.
     IReadOnlyDictionary<string, SecretState> Secrets,
-    // Fields configuration sets, which a save leaves alone.
+    // Fields that configuration sets. A save leaves them alone.
     IReadOnlyList<SettingLock> Locked,
-    // Problems keep the section closed until they are fixed; warnings do not.
+    // Problems make the section fail closed until they're fixed. Warnings don't.
     IReadOnlyList<SettingMessage> Problems,
     IReadOnlyList<SettingMessage> Warnings,
-    // Null for a section that applies live; otherwise whether each host applied this version.
+    // Null for a section that applies live. Otherwise it says whether each host applied this version.
     IReadOnlyList<SettingApplyState>? Apply,
     // Fields a save may change only with a token from POST /api/settings/reauthenticate.
     IReadOnlyList<string> Reauthenticate);

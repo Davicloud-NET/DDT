@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
-// Keeps API tokens off what changes the account itself, such as its password, second factor or tokens, so a leaked
-// token can neither lock its owner out nor mint itself a successor.
+// Keeps API tokens away from endpoints that change the account itself, such as its password, second factor or tokens.
+// That way a leaked token can't lock its owner out or mint itself a successor.
 public sealed class SessionOnlyEndpointFilter : IEndpointFilter
 {
     public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

@@ -6,8 +6,8 @@ using System.Text;
 
 namespace DDT.Protocols.Tftp;
 
-// Request fields are NUL terminated ASCII without a length prefix, so stopping at the datagram's end is all that keeps
-// a short packet from a read past the buffer.
+// Request fields are NUL terminated ASCII without a length prefix. Stopping at the datagram's end is the only thing
+// that keeps a short packet from causing a read past the buffer.
 public ref struct TftpStringReader(ReadOnlySpan<byte> source)
 {
     private ReadOnlySpan<byte> _remaining = source;

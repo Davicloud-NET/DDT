@@ -4,5 +4,5 @@
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A fact about the machine, such as its MAC address. Mono sets it in the face for identifiers.
+// A fact about the machine, like its MAC address. Mono sets it in the monospace font used for identifiers.
 public sealed record Fact(string Label, string Value, bool Mono = false);

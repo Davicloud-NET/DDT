@@ -35,19 +35,19 @@ public abstract class InputFieldViewModel : ObservableObject
 
     public bool HasHelp => Help is not null;
 
-    // The agent's words about the answer before.
+    // The agent's error message about the previous answer.
     public string? Error => Input.Error;
 
     public bool HasError => !string.IsNullOrEmpty(Input.Error);
 
-    // True where the field may be sent as it is: it has an answer, or it may stay empty.
+    // True if the field can be sent as it is, because it has an answer or it may stay empty.
     public abstract bool IsAnswered { get; }
 
     protected Localizer L { get; }
 
     public abstract ConsoleInputValue Value();
 
-    // Whether this field can show the input asked again and keep what was typed: the same kind, with the same choices.
+    // Whether this field can show the input asked again and keep what was typed. That needs the same kind and choices.
     public bool Takes(ConsoleInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -56,7 +56,7 @@ public abstract class InputFieldViewModel : ObservableObject
             && input.Choices.Select(choice => choice.Value).SequenceEqual(Input.Choices.Select(choice => choice.Value), StringComparer.Ordinal);
     }
 
-    // The input asked again, with what was wrong with it. A password is typed again in any case.
+    // Shows the input asked again, with what was wrong with it. A password always has to be typed again.
     public InputFieldViewModel Asked(ConsoleInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -68,7 +68,7 @@ public abstract class InputFieldViewModel : ObservableObject
         return this;
     }
 
-    // Once the answers are sent, what must not stay on the screen goes.
+    // Once the answers are sent, anything that must not stay on the screen is cleared.
     public virtual void ForgetSecrets()
     {
     }

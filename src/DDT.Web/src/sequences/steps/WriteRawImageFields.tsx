@@ -25,7 +25,7 @@ export function WriteRawImageFields({
   const rawImages = catalog.images.filter((image) => image.kind === "RawDisk");
   const chosen = rawImages.find((image) => image.id === step.imageId);
   const warning = chosen === undefined ? null : secureBootWarning(chosen);
-  // An image this step cannot write, such as a Windows image chosen in an imported sequence, or one deleted.
+  // An image this step can't write, such as a Windows image chosen in an imported sequence, or a deleted one.
   const other =
     chosen === undefined ? catalog.images.find((image) => image.id === step.imageId) : undefined;
   const otherName = other?.name ?? "";

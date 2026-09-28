@@ -26,7 +26,7 @@ export function SignInPage() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
-  // Single sign-on, when it is on: a button per provider. The code step after it needs none.
+  // One button per single sign-on provider, while single sign-on is on. The code step doesn't show them.
   const providers = useQuery(externalProvidersQuery).data ?? [];
 
   return (
@@ -106,7 +106,7 @@ function ExternalSignIn({ providers }: { providers: ExternalProvider[] }) {
         <Trans>or</Trans>
         <span className="h-px flex-1 bg-line-soft" />
       </div>
-      {/* A plain link: the browser leaves for the provider, which the application's router cannot do. */}
+      {/* A plain link, because the browser leaves for the provider and the app's router can't do that. */}
       {providers.map((provider) => {
         const name = provider.displayName;
 

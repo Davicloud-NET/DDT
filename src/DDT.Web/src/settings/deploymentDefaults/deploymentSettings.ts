@@ -4,7 +4,7 @@
 
 import type { SettingsForm } from "../useSettingsForm";
 
-// The section deployment. The passwords of the local administrator and the join account are secrets.
+// The deployment section. The passwords of the local administrator and the join account are secrets.
 export interface DeploymentSettings {
   timeZone: string | null;
   locale: string | null;

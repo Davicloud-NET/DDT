@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Deployments;
 
-// How many runs each state has among those a history query matches, whatever states it asked for.
+// How many of the runs a history query matches are in each state, regardless of the states it filtered for.
 public sealed record RunStateCounts(int Assigned, int Running, int Done, int Failed, int Cancelled);

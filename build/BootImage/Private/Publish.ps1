@@ -25,8 +25,8 @@ function Publish-BootFile {
     Copy-Item -Path (Join-Path $media 'EFI\Microsoft\Boot\Fonts\*') -Destination $fonts.FullName -Force
 }
 
-# Writes ddt-boot-image.json, which tells DDT's boot image page what the build holds. It goes after boot.wim, so that a
-# boot directory that has it has the image it describes.
+# Writes ddt-boot-image.json, which tells DDT's boot image page what the build contains. It's written after boot.wim,
+# so a boot directory that has this file also has the image it describes.
 function Write-BootManifest {
     param(
         [Parameter(Mandatory)][string] $Path,

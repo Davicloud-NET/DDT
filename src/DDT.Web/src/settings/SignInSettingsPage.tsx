@@ -12,8 +12,8 @@ import { PageHeader } from "@/ui/PageHeader";
 import { DirectorySettings } from "./directory/DirectorySettings";
 import { SingleSignOnSettings } from "./signIn/SingleSignOnSettings";
 
-// Administration > Sign-in: who besides the local accounts signs in, and which role they get. Every field decides who
-// reaches DDT, so only administrators read and change them; for anyone else the page asks the server nothing.
+// Administration > Sign-in: who signs in besides the local accounts, and which role they get. Every field decides who
+// reaches DDT, so only administrators can read and change them. For others the page asks the server nothing.
 export function SignInSettingsPage() {
   return (
     <AdministratorsOnly

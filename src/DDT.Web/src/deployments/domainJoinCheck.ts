@@ -7,7 +7,7 @@ import { serverText, type ServerArguments } from "@/lib/serverText";
 
 export type DomainJoinFindingLevel = "Passed" | "Warning" | "Problem";
 
-// text is the server's English, which domainFindingText says in the person's language.
+// text is the server's English. domainFindingText translates it into the person's language.
 export interface DomainJoinFinding {
   level: DomainJoinFindingLevel;
   text: string;
@@ -20,7 +20,7 @@ export function domainFindingText(finding: DomainJoinFinding): string {
 }
 
 // What the domain said about the join account, in the order it was asked. Container is the organizational unit or
-// the default Computers container, null when the check stopped before it.
+// the default Computers container. It's null if the check stopped before it got there.
 export interface DomainJoinCheckView {
   canJoin: boolean;
   domain: string | null;
@@ -31,7 +31,8 @@ export interface DomainJoinCheckView {
   checkedUtc: string;
 }
 
-// Signs in to the domain as the join account, so only administrators may. Null takes the configured default unit.
+// Signs in to the domain as the join account, so only administrators may call it. A null unit uses the configured
+// default.
 export function checkDomainJoin(organizationalUnit: string | null): Promise<DomainJoinCheckView> {
   return apiPost<DomainJoinCheckView>("/api/deployments/domain-check", { organizationalUnit });
 }

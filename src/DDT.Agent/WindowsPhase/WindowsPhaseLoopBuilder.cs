@@ -38,7 +38,7 @@ public sealed class WindowsPhaseLoopBuilder
 
     public required bool DryRun { get; init; }
 
-    // DDT's session, where Windows shows the run on the console; Status is what that console shows.
+    // DDT's session, where Windows shows the run on the console. Status is what that console shows.
     public IDeploySession? Session { get; init; }
 
     public ConsoleStatus? Status { get; init; }

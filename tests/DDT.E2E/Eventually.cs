@@ -4,7 +4,7 @@
 
 namespace DDT.E2E;
 
-// Polls until something holds, and otherwise fails after a bound with what was awaited and what was seen.
+// Polls until something holds. Otherwise it fails after the timeout, saying what it waited for and what it saw.
 internal static class Eventually
 {
     public static async Task<T> GetAsync<T>(

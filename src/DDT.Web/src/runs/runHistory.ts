@@ -29,7 +29,7 @@ export interface RunStateCounts {
   cancelled: number;
 }
 
-// next is the cursor of the following page; counts come with the first page only, over the same filters but
+// next is the cursor for the following page. Only the first page has counts. They use the same filters but cover
 // every state.
 export interface RunHistoryPage {
   items: RunHistoryItem[];
@@ -118,8 +118,8 @@ function matches(filter: readonly unknown[], item: RunHistoryItem): boolean {
   );
 }
 
-// The hub's runChanged: the run replaces its copy in every history read so far, or, when it is new, goes to the top
-// of the histories whose filter it passes. The counts of the first page follow the change of state.
+// Handles the hub's runChanged. The run replaces its copy in every history read so far. A new run goes to the top
+// of each history whose filter it passes. The first page's counts follow the change of state.
 export function upsertRun(queryClient: QueryClient, item: RunHistoryItem): void {
   for (const [key, data] of queryClient.getQueriesData<InfiniteData<RunHistoryPage>>({
     queryKey: runHistoryKey,

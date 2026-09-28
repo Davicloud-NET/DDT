@@ -36,7 +36,7 @@ export function useChangeUser({
   const directory = user.source === "Directory";
   const roleLocked = groupsDecideRole(user) || isSelf;
 
-  // Only what changed is sent: an empty text clears the name or the address, a field left out stays as it is.
+  // Only what changed is sent. An empty text clears the name or the address, and a field left out stays as it is.
   const request: UpdateUserRequest = {
     ...(!directory && displayName.trim() !== (user.displayName ?? "")
       ? { displayName: displayName.trim() }

@@ -13,8 +13,8 @@ interface AssignBlockersProps {
   noneRunnable: boolean;
 }
 
-// Why the dialog cannot offer an assignment: a list or the settings that could not be read, or no sequence that can
-// run.
+// Says why the dialog can't offer an assignment: the sequence list or the settings couldn't be loaded, or no
+// sequence can run.
 export function AssignBlockers({
   sequencesFailed,
   optionsFailed,

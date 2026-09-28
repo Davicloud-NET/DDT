@@ -11,7 +11,7 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The name the field starts with is selected, so typing replaces it. The error enters again with each refusal.
+// The prefilled name is selected, so typing replaces it. The error animates in again with each refusal.
 public sealed partial class ComputerNameView : UserControl
 {
     private ComputerNameViewModel? _model;

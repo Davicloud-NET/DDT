@@ -4,8 +4,8 @@
 
 import type { FactView } from "@/sequences/sequenceConditions";
 
-// The server's MachineVariableNames.Catalogue, as GET /api/sequences/facts lists it, for a server that does not list it
-// yet. In the order a page lists them.
+// A copy of the server's MachineVariableNames.Catalogue, as GET /api/sequences/facts lists it. It's used for a server
+// that doesn't list the facts yet. The order is the one a page lists them in.
 export const factCatalogue: readonly FactView[] = (
   [
     ["Manufacturer", "Text"],

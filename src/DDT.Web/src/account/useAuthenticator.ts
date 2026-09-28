@@ -14,8 +14,8 @@ import {
 } from "@/auth/account";
 import { currentUserQuery } from "@/auth/auth";
 
-// Turns the second factor on with a QR code or the key, off with a code, and makes new recovery codes. Each change
-// patches the signed-in user in the cache with what the server now says.
+// Turns the second factor on (with a QR code or the key) and off (with a code), and makes new recovery codes. Each
+// change patches the signed-in user in the cache with the server's answer.
 export function useAuthenticator() {
   const queryClient = useQueryClient();
   const [enrollment, setEnrollment] = useState<TwoFactorEnrollment | null>(null);

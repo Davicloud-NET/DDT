@@ -7,7 +7,7 @@ using Microsoft.Win32;
 
 namespace DDT.MachineConsole.Machine;
 
-// Windows PE only when every sign of it is there: SystemDrive X:, the MiniNT key and wpeutil.exe. A development
+// Counts as WinPE only when every sign of it is there: SystemDrive X:, the MiniNT key and wpeutil.exe. A development
 // computer has none of them, so a console started there never restarts it.
 public sealed class WindowsPEPower : IMachinePower
 {

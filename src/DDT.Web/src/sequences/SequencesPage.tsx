@@ -19,7 +19,7 @@ import { NewSequenceDialog } from "./NewSequenceDialog";
 import { activeRunsOf, rulesChoosing } from "./sequenceList";
 
 // Every task sequence, with what it does to a machine, whether it can run, and what uses it. Administrators create
-// and delete sequences here; everyone else looks.
+// and delete sequences here. Everyone else can only look.
 export function SequencesPage() {
   const page = useSequencesPage();
   const { all, ruleList, machineList, deleting, isAdministrator } = page;

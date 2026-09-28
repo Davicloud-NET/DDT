@@ -88,7 +88,7 @@ public sealed class PostgresMigrationTests
         Assert.Null(deployments[seeded.Finished].Error);
         Assert.Equal("Windows 10 Pro", deployments[seeded.Older].Title);
 
-        // The image column became the sequence column, and no image id may be taken for a sequence's.
+        // The image column became the sequence column. No image ID may end up as a sequence ID.
         Assert.All(deployments.Values, deployment => Assert.Null(deployment.TaskSequenceId));
         Assert.Equal(2, await database.Images.CountAsync(i => i.Id == seeded.Windows11 || i.Id == seeded.Windows10, cancellationToken));
 
@@ -96,14 +96,14 @@ public sealed class PostgresMigrationTests
         Assert.Equal((MachineState.Pending, 2, (Guid?)null, (Guid?)seeded.Assigned), Facts(machines[seeded.Waiting]));
         Assert.Equal((MachineState.Done, 2, (Guid?)null, (Guid?)seeded.Finished), Facts(machines[seeded.Done]));
 
-        // Lines from before kept only the agent's time, uncorrected.
+        // Lines from before the migration only kept the agent's time, uncorrected.
         MachineLogLine line = await database.MachineLogLines.AsNoTracking().SingleAsync(l => l.MachineId == seeded.Deploying, cancellationToken);
         Assert.Equal(seeded.Earlier, line.AgentTimestampUtc);
         Assert.Equal(seeded.Earlier, line.TimestampUtc);
         Assert.Null(line.DeploymentId);
     }
 
-    // Raw disk images only add columns: what a database held before keeps its values, and the new ones say nothing.
+    // Raw disk images only add columns. What a database held before keeps its values, and the new columns stay empty.
     [Fact]
     public async Task KeepsWhatATaskSequenceDatabaseHeldWhenItAddsRawDiskImages()
     {
@@ -130,7 +130,7 @@ public sealed class PostgresMigrationTests
         DeploymentArtifact artifact = await database.DeploymentArtifacts.AsNoTracking().SingleAsync(a => a.DeploymentId == seeded.Run, cancellationToken);
         Assert.Equal((seeded.Image, (ImageBootCapability?)null), (artifact.SourceId, artifact.BootCapability));
 
-        // A raw disk image is found by the SHA-256 of its disk, as a second upload of that disk is.
+        // The server finds a raw disk image by its disk's SHA-256, like it does for a second upload of that disk.
         database.Images.Add(new Image
         {
             Id = Guid.NewGuid(),
@@ -151,8 +151,8 @@ public sealed class PostgresMigrationTests
         Assert.Equal((ImageKind.RawDisk, ImageBootCapability.NotSigned), (raw.Kind, raw.BootCapability));
     }
 
-    // The assignment rules become the top of the ordered list in the order the server tried them, each with a condition
-    // that matches the machines it matched, and a run from before trees reads as it did.
+    // The assignment rules become the top of the ordered list, in the order the server tried them.
+    // Each gets a condition that matches the machines it matched. A run from before trees still reads the same.
     [Fact]
     public async Task CopiesTheAssignmentRulesToTheTopOfTheRulesInTheOrderTheyWereTried()
     {
@@ -214,7 +214,7 @@ public sealed class PostgresMigrationTests
             """,
             cancellationToken);
 
-        // Every image deployment named its image, and the library keeps the images.
+        // Every image deployment named its image, and the images are still in the library.
         await database.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO ddt."Images" ("Id", "Name", "Kind", "Sha256", "SizeBytes", "WimIndex", "InstalledBytes", "UploadedUtc")
@@ -363,7 +363,7 @@ public sealed class PostgresMigrationTests
             (views[seeded.TieLow].SequenceId, views[seeded.TieLow].Description, views[seeded.TieLow].UpdatedBy));
     }
 
-    // Walked from the top, the copies choose for each machine the rule the assignment rules chose.
+    // Walked from the top, the copied rules choose the same rule for each machine as the assignment rules did.
     private static void AssertChoices(List<Rule> rules, LegacyRules seeded)
     {
         RuleBook book = RuleBook.From(rules, []);
@@ -375,7 +375,8 @@ public sealed class PostgresMigrationTests
         Assert.Equal(seeded.MacLow, Chosen("Dell Inc.", "Latitude 5440", "00155D010203"));
         Assert.Equal(seeded.DellExact, Chosen("DELL INC.", "latitude  5440"));
 
-        // Only where rules name two addresses of one machine, the higher rule now wins over the one for its primary address.
+        // The only change is where rules name two addresses of one machine.
+        // There the higher rule now wins over the one for its primary address.
         Assert.Equal(seeded.MacLow, Chosen("Dell Inc.", "Latitude 5440", "00155D0102FF", "00155D010203"));
         Assert.Equal(seeded.AnyExact, Chosen("HP", "Latitude 5440"));
         Assert.Equal(seeded.DellPrefix, Chosen("Dell Inc.", "Latitude 7440"));
@@ -422,13 +423,14 @@ public sealed class PostgresMigrationTests
 
     private static AllCondition All(params ConditionNode[] parts) => new() { Parts = parts };
 
-    // Records compare their lists by reference, so conditions are compared as the contracts write them.
+    // Records compare their lists by reference, so conditions are compared as the JSON the contracts write.
     private static string Json(ConditionNode? node) => JsonSerializer.Serialize(node, DdtJsonContext.Default.ConditionNode);
 
     private static (MachineState, int, Guid?, Guid?) Facts(Machine machine) =>
         (machine.State, machine.TokenGeneration, machine.ActiveDeploymentId, machine.LastDeploymentId);
 
-    // Three machines of an image library, deploying, waiting and done, with a run each and an older run of the one done.
+    // Three machines from an image library, one deploying, one waiting and one done.
+    // Each has a run, and the done one has an older run too.
     private sealed record ImageRuns
     {
         public Guid Deploying { get; } = Guid.NewGuid();
@@ -468,9 +470,9 @@ public sealed class PostgresMigrationTests
         public DateTimeOffset Now { get; } = new(2026, 9, 24, 8, 0, 0, TimeSpan.Zero);
     }
 
-    // Each rule's id is lower than those of the rules it has to come after, so only the ordering can put it there. The
-    // OptiPlex rules tie on everything but their ids, which differ in the first byte only: a signed comparison would put
-    // 80... first, and .NET and PostgreSQL both put 10... first.
+    // Each rule's ID is lower than the IDs of the rules it has to come after, so only the ordering can put it there.
+    // The OptiPlex rules tie on everything but their IDs, which only differ in the first byte.
+    // A signed comparison would put 80... first, but .NET and PostgreSQL both put 10... first.
     private sealed record LegacyRules
     {
         public Guid Windows { get; } = Guid.NewGuid();

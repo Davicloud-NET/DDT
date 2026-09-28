@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Sequences;
 
-// What kind of value a fact holds, which decides the operators that fit it. A YesNo value is "true" or "false"; a
+// What kind of value a fact holds. It decides which operators fit. A YesNo value is "true" or "false", and a
 // Number is written with the invariant culture.
 public enum FactType
 {

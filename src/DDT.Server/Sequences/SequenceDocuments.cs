@@ -9,8 +9,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Sequences;
 
-// The stored form of a definition is exactly the contract document, written by DdtJsonContext, with the lowest version
-// its kinds need, so agents that do not know newer kinds still get it.
+// A definition is stored exactly as the contract document, written by DdtJsonContext. It gets the lowest version its
+// step kinds need, so agents that don't know newer kinds can still read it.
 public static class SequenceDocuments
 {
     public static string Write(SequenceDefinition definition) =>
@@ -45,7 +45,7 @@ public static class SequenceDocuments
             : null;
     }
 
-    // Whether no list of the tree has an empty place, counting the nodes on the way.
+    // Whether no list in the tree has a null entry. Counts the nodes along the way.
     private static bool Whole(IReadOnlyList<SequenceStep?> steps, ref int nodes)
     {
         foreach (SequenceStep? step in steps)

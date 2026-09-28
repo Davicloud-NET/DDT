@@ -22,7 +22,7 @@ public sealed record BootTarget
 
     public string? ServerHostName { get; init; }
 
-    // Emits option 43 with PXE_DISCOVERY_CONTROL. Only ever useful for legacy BIOS clients: UEFI
-    // firmware classifies an offer carrying option 43 differently and can refuse it.
+    // Emits option 43 with PXE_DISCOVERY_CONTROL. It's only useful for legacy BIOS clients. UEFI firmware classifies
+    // an offer with option 43 differently and can refuse it.
     public bool AdvertiseBootServerDiscovery { get; init; }
 }

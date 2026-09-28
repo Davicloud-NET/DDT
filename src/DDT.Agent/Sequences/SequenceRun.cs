@@ -8,15 +8,15 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// One run of a sequence in one phase, which the runner's parts share and which ends with it.
+// One run of a sequence in one phase, shared by the runner's parts. It ends with that phase.
 internal sealed class SequenceRun
 {
     public required RunRequest Request { get; init; }
 
-    // Where the run goes on: in Windows PE, or in the installed Windows.
+    // Where the run continues: in WinPE, or in the installed Windows.
     public required SequencePhase Phase { get; init; }
 
-    // Called as soon as a restart back to where the run is now is due, before the server hears of it.
+    // Called as soon as a restart back into the current phase is due, before the server hears about it.
     public required Action RecordRestart { get; init; }
 
     public required RunSession Session { get; init; }
@@ -29,16 +29,16 @@ internal sealed class SequenceRun
 
     public required MachineVariables Machine { get; set; }
 
-    // Whether this run put a boot entry of its own first, which a run that does not finish puts back.
+    // Whether this run put its boot entry first. A run that doesn't finish puts the old boot order back.
     public bool WindowsFirst { get; set; }
 
     public LocalRun? Resumed => Request.Resumed;
 
     public bool InWindows => Phase == SequencePhase.Windows;
 
-    // A restart the run asks for leads back to where it runs now.
+    // A restart the run asks for leads back into the current phase.
     public RestartInto SamePhase => InWindows ? RestartInto.Windows : RestartInto.WindowsPE;
 
-    // Only a fresh run waits for its inputs: one that goes on after a restart got its values before.
+    // Only a fresh run waits for its inputs. A run that continues after a restart already got its values.
     public bool WaitsForInputs => Resumed is null && Session.Run.PendingInputs is { Count: > 0 };
 }

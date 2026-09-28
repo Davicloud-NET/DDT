@@ -108,7 +108,8 @@ public static class ProxyDhcpReplyWriter
         }
 
         // The boot file goes in the fixed field as well as option 67, because firmware disagrees about which it reads.
-        // One too long for the field is left out rather than truncated: a truncated path chains to a missing file.
+        // A path too long for the field is left out instead of truncated, because a truncated path chains to a missing
+        // file.
         Span<byte> bootFileField = destination.Slice(BootFileOffset, BootFileLength);
 
         if (!TryWriteNullTerminated(reply.BootFileName, bootFileField))

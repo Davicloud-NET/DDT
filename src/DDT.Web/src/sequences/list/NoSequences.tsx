@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { Button } from "@/ui/Button";
 import { EmptyState } from "@/ui/EmptyState";
 
-// An empty list: administrators start from a template, everyone else waits for one.
+// What an empty list shows. Administrators start from a template. Everyone else waits for one.
 export function NoSequences({
   isAdministrator,
   onCreate,

@@ -49,7 +49,7 @@ public sealed partial class ServerMessagesTests
         Assert.All(fields, field => Assert.Contains(field, ServerMessages.All));
     }
 
-    // Every template has an English text, and one with values can be said with them.
+    // Every template has an English text, and a template with values can be formatted with them.
     [Fact]
     public void EveryCodeHasATemplateThatFormats()
     {
@@ -97,7 +97,8 @@ public sealed partial class ServerMessagesTests
         Assert.Equal("The sequence cannot skip writing.", MessageFormat.Format(Template, Values("activity", "rawImage")));
     }
 
-    // As ICU and Lingui read them: '' is one apostrophe, one before a brace quotes, any other stays.
+    // Reads apostrophes like ICU and Lingui do.
+    // '' is one apostrophe, one before a brace starts quoting, and any other stays as it is.
     [Fact]
     public void ReadsApostrophesAsIcuDoes()
     {
@@ -119,7 +120,7 @@ public sealed partial class ServerMessagesTests
         Assert.Same(rule, explanation.Args["rule"]);
     }
 
-    // A message read back from JSON says the same, its values and nested messages being JsonElement.
+    // A message read back from JSON says the same thing. Its values and nested messages are JsonElement by then.
     [Fact]
     public void SaysAMessageReadFromJson()
     {
@@ -162,7 +163,7 @@ public sealed partial class ServerMessagesTests
     public void RefusesATemplateTheWebWouldReadDifferently(string template) =>
         Assert.Throws<FormatException>(() => MessageFormat.Arguments(template));
 
-    // The describer says Identity's own English, so only the codes are new.
+    // The describer returns Identity's own English text, so only the codes are new.
     [Fact]
     public void TheIdentityDescriberSaysWhatIdentitySays()
     {
@@ -192,8 +193,8 @@ public sealed partial class ServerMessagesTests
         }
     }
 
-    // src/DDT.Web/scripts/server-messages.json is what `npm run messages` writes the web's catalog from, and a web test
-    // fails while the catalog differs from it. Like the fixtures, this writes the file again when it differs, and fails.
+    // `npm run messages` writes the web's catalog from src/DDT.Web/scripts/server-messages.json, and a web test fails
+    // while the catalog differs from it. Like the fixtures, this test writes the file again when it differs, and fails.
     [Fact]
     public async Task TheWebCatalogIsCurrent()
     {

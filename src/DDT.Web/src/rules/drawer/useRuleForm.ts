@@ -13,7 +13,7 @@ import { conflictOf, noFindings, otherRefusal, refusalFindings, unplaced } from 
 import { editOf, emptyEdit, requestOf, type RuleEdit } from "../ruleEdit";
 import { createRule, putRule, sequenceResolutionsKey, updateRule, type RuleView } from "../rules";
 
-// The fields the drawer shows a finding at; the rest go in a notice at its top.
+// The fields the drawer shows findings at. The rest go in a notice at the top.
 function isShown(field: string): boolean {
   return /^(name|description|sequenceId|enabled|when|values|roleIds)(\.|\[|$)/.test(field);
 }
@@ -21,18 +21,18 @@ function isShown(field: string): boolean {
 interface RuleFormOptions {
   // Null for a new rule.
   rule: RuleView | null;
-  // A new rule saved with problems stays open as the rule it now is.
+  // A new rule saved with problems stays open, now as the saved rule.
   onSaved: (rule: RuleView) => void;
   onClose: () => void;
 }
 
 export type RuleForm = ReturnType<typeof useRuleForm>;
 
-// A rule's edit and its save. The server saves a rule even with problems, which keep it from matching until they are
-// fixed, so the drawer then stays open with each problem at its field.
+// Holds the edits to a rule and saves them. The server saves a rule even with problems, but the rule doesn't match
+// until they're fixed. So the drawer then stays open with each problem at its field.
 export function useRuleForm({ rule, onSaved, onClose }: RuleFormOptions) {
   const queryClient = useQueryClient();
-  // The rule as last read or saved here, whose revision a save names.
+  // The rule as last read or saved here. A save sends its revision.
   const [base, setBase] = useState<RuleView | null>(rule);
   const [edit, setEdit] = useState<RuleEdit>(() => (rule === null ? emptyEdit() : editOf(rule)));
   const [findings, setFindings] = useState<Findings>(() =>
@@ -52,7 +52,7 @@ export function useRuleForm({ rule, onSaved, onClose }: RuleFormOptions) {
         : updateRule(base.id, requestOf(revision, edit)),
     onSuccess: (saved) => {
       putRule(queryClient, saved);
-      // What each machine would get is the server's answer to the rules, so it is asked again.
+      // What each machine would get depends on the rules, so the server is asked again.
       void queryClient.invalidateQueries({ queryKey: sequenceResolutionsKey });
       setTheirs(null);
 

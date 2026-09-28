@@ -16,8 +16,8 @@ import { addKey } from "./conditionKeys";
 import type { RowContext } from "./rowContext";
 import { TestRow } from "./TestRow";
 
-// A group's choice of all, at least one or none, its rows, and the keys that add to it. virtual is a single test
-// shown as a group of one: choosing another kind puts it into a group of that kind.
+// A group with its choice of all, at least one or none, its rows, and the buttons that add to it. virtual means a single
+// test shown as a group of one. Choosing another kind puts the test into a group of that kind.
 export function GroupRows({
   group,
   path,

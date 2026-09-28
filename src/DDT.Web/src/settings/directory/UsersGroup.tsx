@@ -8,7 +8,7 @@ import { SettingsGroup } from "../parts/SettingsGroup";
 import { SettingText } from "../parts/SettingText";
 import type { LdapForm } from "../signIn";
 
-// Braces in a message are its arguments, so the user filter's placeholder goes into the texts as a value.
+// Braces in a Lingui message mark its arguments, so the user filter's {0} placeholder goes into the text as a value.
 const USER_TOKEN = "{0}";
 
 export function UsersGroup({ form }: { form: LdapForm }) {

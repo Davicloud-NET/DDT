@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- A Pause step over the run's panel as the run screen shows it, with a pause sign where the percent would be. -->
+<!-- A Pause step on top of the run's panel, like the run screen shows it, with a pause sign where the percent would
+     be. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

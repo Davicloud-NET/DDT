@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 import type { Slot, TreeIndex } from "../../flow/flowTree";
 import { canMoveTo, type FlowDrag } from "../flowDrag";
 
-// Whether the node being dragged may go to a slot; the slots ask while the drag goes on.
+// Whether the dragged node may go to a slot. The slots ask during the drag.
 export function useDraggedNode(drag: FlowDrag, index: TreeIndex): (slot: Slot) => boolean {
   const dragged = useRef<string | null>(null);
 

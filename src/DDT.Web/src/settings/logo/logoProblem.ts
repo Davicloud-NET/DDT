@@ -8,7 +8,7 @@ import { formatBytes } from "@/lib/format";
 
 import { maxLogoBytes } from "../consoleLogo";
 
-// Why the server would refuse a file as the logo, said before anything is sent; null for a file it may take.
+// Why the server would refuse a file as the logo, checked before anything is sent. Null for a file the server accepts.
 export function logoProblem(file: File): string | null {
   const name = file.name;
   const limit = formatBytes(maxLogoBytes);

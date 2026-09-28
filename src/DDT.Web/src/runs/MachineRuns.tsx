@@ -17,8 +17,8 @@ import { StateTag } from "@/ui/StateTag";
 
 import { runSourceLabel, runStateLabel, runStateTone } from "./runView";
 
-// Every run of one machine, newest first, the shown one marked. The current run comes from the machine list, so a run
-// that starts enters and one whose state changes flashes.
+// Every run of one machine, newest first, with the shown one marked. The current run comes from the machine list. So
+// a run that starts animates in, and one whose state changes flashes.
 export function MachineRuns({
   machineId,
   runs,

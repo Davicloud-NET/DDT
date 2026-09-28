@@ -24,15 +24,15 @@ interface NodeDetailsProps {
   onShowLog: (stepId: string) => void;
 }
 
-// The chosen node: what it is and how it stands, when it ran, why it failed, what it decided and with which values,
-// and a way to its lines in the log.
+// Details of the chosen node: what it is and its state, when it ran, why it failed, what it decided and with which
+// values. It also links to the node's lines in the log.
 export function NodeDetails({ node, run, subjects, now, onShowLog }: NodeDetailsProps) {
   const { i18n, t: translate } = useLingui();
   const step = node.step;
   const title = nodeTitle({ ...node.node, name: step?.name ?? node.node.name });
   const decision = node.state === "notTaken" ? null : decisionTitle(node.node, step);
   const outcomes = node.state === "notTaken" ? [] : decisionOutcomes(node.node, step);
-  // Only for a node inside a container; the flow shows a leaf's number beside its name.
+  // Only for a node inside a container. The flow already shows a leaf's number next to its name.
   const place = node.ancestors.length === 0 ? null : crumbText(node.ancestors);
 
   return (

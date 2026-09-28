@@ -7,8 +7,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.WindowsPhase;
 
-// DDT's session and the console in it, where the machine shows the run while the service goes on with it. A dry run
-// has neither, and without an answer file to sign in with there is no session.
+// DDT's session and the console in it, where the machine shows the run while the service continues it. A dry run has
+// neither, and without an answer file to sign in with there's no session.
 internal sealed class WindowsPhaseConsole(IDeploySession? session, ConsoleStatus? status, ConsoleLogo? logo)
 {
     public ConsoleStatus? Status => status;
@@ -26,7 +26,7 @@ internal sealed class WindowsPhaseConsole(IDeploySession? session, ConsoleStatus
         }
     }
 
-    // Only once setup has finished: until then the machine's sign-in settings are setup's.
+    // Only once setup has finished. Until then setup owns the machine's sign-in settings.
     public void SetupFinished() => session?.SetupFinished();
 
     // False when the stop token ended the wait for someone to sign out.

@@ -7,7 +7,7 @@ using DDT.Contracts.Values;
 
 namespace DDT.Contracts.Deployments;
 
-// A run with the definition it was given, frozen when it was assigned, its steps and its files.
+// A run with its steps, its files and the definition it was given, frozen at assignment.
 public sealed record DeploymentView(
     DeploymentSummary Summary,
     Guid MachineId,
@@ -17,12 +17,12 @@ public sealed record DeploymentView(
     SequenceDefinition? Definition,
     IReadOnlyList<DeploymentStepView> Steps,
     IReadOnlyList<DeploymentArtifactView> Artifacts,
-    // Whoever started the run let an image not signed for Secure Boot be written although Secure Boot is on.
+    // Whoever started the run allowed writing an image that isn't signed for Secure Boot, even with Secure Boot on.
     bool AllowSecureBootMismatch = false,
-    // As worked out when the run started, each with where it came from; a secret shows only that it is set.
+    // The values as worked out when the run started, each with where it came from. A secret only shows that it's set.
     IReadOnlyList<ResolvedValue>? Values = null,
     // The sequence's variables as the agent last reported them.
     IReadOnlyDictionary<string, string>? Variables = null,
-    // The sequence's inputs and whether they are answered. This and Pause are null where the run has none.
+    // The sequence's inputs and whether they're answered. This and Pause are null when the run has none.
     IReadOnlyList<RunInputView>? Inputs = null,
     RunPauseView? Pause = null);

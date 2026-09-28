@@ -7,7 +7,7 @@ using DDT.Core.Sequences;
 
 namespace DDT.Core.Tests.Sequences;
 
-// Keeps the saved states as they are, for step kinds the JSON contexts do not know.
+// Keeps the saved states as they are, for step kinds the JSON contexts don't know.
 public sealed class MemoryStateStore : ISequenceStateStore
 {
     private readonly List<SequenceState> _states = [];

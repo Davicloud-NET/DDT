@@ -35,7 +35,7 @@ export function Minimap({
   items: readonly MinimapItem[];
   // The part the canvas shows, in the content's pixels.
   visible: ViewRect;
-  // Asks for the canvas to show point of the content in its middle.
+  // Asks the canvas to put this point of the content in its middle.
   onNavigate: (point: ViewPoint) => void;
   maxWidth?: number;
   maxHeight?: number;
@@ -43,7 +43,7 @@ export function Minimap({
 }) {
   const scale = width > 0 && height > 0 ? Math.min(maxWidth / width, maxHeight / height) : 1;
   const shown = { width: Math.max(1, width * scale), height: Math.max(1, height * scale) };
-  // The outline stays within the minimap, where the canvas shows more than the content.
+  // The outline stays inside the minimap when the canvas shows more than the content.
   const left = Math.max(0, visible.x);
   const top = Math.max(0, visible.y);
   const outline = {

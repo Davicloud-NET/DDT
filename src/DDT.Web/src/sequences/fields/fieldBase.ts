@@ -6,10 +6,10 @@ import type { ReactNode } from "react";
 
 import type { Findings } from "../problems";
 
-// Each setting sits in an element named by its field, so the list of findings can take the focus there.
+// Each setting sits in an element named by its field, so the list of findings can move the focus there.
 export interface FieldBase {
   label: ReactNode;
-  // The field in the step, such as "script" or "conditions[1].value", which the server's findings name.
+  // The field in the step, such as "script" or "conditions[1].value", as the server's findings name it.
   field: string;
   findings: Findings;
   hint?: ReactNode;

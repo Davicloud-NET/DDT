@@ -14,8 +14,8 @@ import { ServedCertificate } from "./certificate/ServedCertificate";
 import { ServerNames } from "./certificate/ServerNames";
 import { settingsOverviewQuery } from "./settings";
 
-// The served certificate, the names it has to carry, and Generate and Upload to replace it. A new pair is on trial:
-// unless a connection that was served it confirms it in time, DDT goes back to the pair before, so nobody is locked
+// The served certificate, the names it must carry, and Generate and Upload to replace it. A new pair is on trial. If no
+// connection that was served the new pair confirms it in time, DDT goes back to the previous pair, so nobody is locked
 // out.
 export function CertificatePanel() {
   const certificate = useQuery(certificateQuery);

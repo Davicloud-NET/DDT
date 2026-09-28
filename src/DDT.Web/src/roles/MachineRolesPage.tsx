@@ -18,8 +18,8 @@ import { RolesTable } from "./list/RolesTable";
 import { RoleDrawer } from "./RoleDrawer";
 import { useMachineRolesPage } from "./useMachineRolesPage";
 
-// Machine roles, such as "Kiosk": values that rules give machines together, so one rule can say "these are kiosks"
-// and the role says what a kiosk gets. Not the roles of users.
+// Machine roles, such as "Kiosk". A role is a set of values that rules give machines together. One rule can say
+// "these are kiosks", and the role says what a kiosk gets. These aren't user roles.
 export function MachineRolesPage() {
   const { roles, list, ruleList, canEdit, mark, drawer, deleting, open, close, setDeleting } =
     useMachineRolesPage();

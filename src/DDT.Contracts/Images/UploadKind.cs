@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Images;
 
-// What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files.
+// What a completed upload becomes. A WIM becomes images, and a zip of drivers or files becomes a package.
 public enum UploadKind
 {
     Image,

@@ -33,7 +33,7 @@ public sealed class LdapSettingsSection() : SettingsSectionDefinition<LdapOption
         new("Timeout"),
     ])
 {
-    // Where the bind password goes: a stored password is kept only while these stay as they are.
+    // The fields that decide where the bind password goes. A stored password is only kept while these stay the same.
     public static IReadOnlyList<string> Destination { get; } = ["Host", "Port", "Transport"];
 
     protected override JsonTypeInfo<LdapOptions> TypeInfo => SettingsJsonContext.Default.LdapOptions;

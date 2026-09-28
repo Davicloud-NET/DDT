@@ -11,7 +11,7 @@ import type { SectionSummary } from "../settings";
 
 import { SectionRow } from "./SectionRow";
 
-// Every settings section, with how it stands and a link to the page that edits it.
+// Every settings section, with its state and a link to the page that edits it.
 export function SectionsPanel({ sections }: { sections: SectionSummary[] }) {
   const { t } = useLingui();
   const now = useNow(30_000);

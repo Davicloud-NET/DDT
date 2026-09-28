@@ -82,7 +82,7 @@ public sealed class PostgresDeploymentTests
         await AbandonedAsync(application, administrator, sequence);
     }
 
-    // Assigned, with its rows and its machine's row as PostgreSQL stored them.
+    // Assigns the sequence and checks the run's rows and its machine's row as PostgreSQL stored them.
     private static async Task<DeploymentSummary> AssignedAsync(SignedInClient administrator, DeployingMachine machine, SequenceView sequence, Image image)
     {
         DeploymentSummary run = await administrator.AssignedAsync(machine.Id, sequence.Id, "PC-0006");
@@ -105,7 +105,7 @@ public sealed class PostgresDeploymentTests
         return run;
     }
 
-    // A run whose agent is gone for good fails, and an account stored for it goes at the next start.
+    // A run whose agent is gone for good fails. An account stored for it is deleted at the next start.
     private static async Task AbandonedAsync(PostgresApplication application, SignedInClient administrator, SequenceView sequence)
     {
         using DeployingMachine silent = await DeployingMachine.ApprovedAsync(application, administrator);
@@ -117,7 +117,7 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(1, await application.Services.GetRequiredService<AbandonedRunSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
         Assert.Equal(DeploymentState.Failed, (await administrator.RunAsync(abandoned.Id)).Summary.State);
 
-        // An account stored for a run that is over, as a change by hand would leave it, goes at the next start.
+        // An account stored for a run that's over, as a change by hand could leave it, is deleted at the next start.
         await application.QueryAsync(database =>
         {
             database.RunCredentials.Add(Credential(abandoned.Id));
@@ -129,8 +129,8 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(0, await CredentialsAsync(application, abandoned.Id));
     }
 
-    // A tree's rows, the answers the run waits for, compared and replaced in one statement, its values and variables as
-    // JSON, and a pause, each with a NUL where the agent or a person could put one.
+    // Covers a tree's rows, the answers the run waits for (compared and replaced in one statement), its values and
+    // variables as JSON, and a pause. Each has a NUL wherever the agent or a person could put one.
     [Fact]
     public async Task RunsATreeThatWaitsForAnswersAndPauses()
     {
@@ -236,7 +236,7 @@ public sealed class PostgresDeploymentTests
         Assert.Contains(new ResolvedValue("ComputerName", "PC-00000000", ValueSource.Rule, rule.Id, rule.Name, false), resolution.Values!);
         Assert.Contains(new ResolvedValue("Office", "Vienna", ValueSource.Role, role.Id, role.Name, false), resolution.Values!);
 
-        // The places are unique, so a reorder and a delete move rules through places no rule has, in one transaction.
+        // Places are unique. So a reorder and a delete move rules through places no rule has, in one transaction.
         IReadOnlyList<RuleView> rules = await administrator.RulesAsync();
         IReadOnlyList<RuleView> reordered = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(
             await administrator.ReorderAsync([.. rules.Select(r => r.Id).Reverse()]));
@@ -251,7 +251,8 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{saved.Id}")).StatusCode);
     }
 
-    // Created, then saved under a new name with a new step, and refused where a name is taken or a save is late.
+    // Creates a sequence, then saves it under a new name with a new step.
+    // Saves with a taken name or a stale revision are refused.
     private static async Task<SequenceView> SavedSequenceAsync(SignedInClient administrator, Image image)
     {
         SequenceView created = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.PostAsync(
@@ -271,7 +272,7 @@ public sealed class PostgresDeploymentTests
         return saved;
     }
 
-    // A driver package for a model, which a run it is frozen with keeps from being deleted.
+    // A driver package for a model. A run it's frozen into keeps it from being deleted.
     private static async Task TargetedPackageAsync(PostgresApplication application, SignedInClient administrator)
     {
         PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);

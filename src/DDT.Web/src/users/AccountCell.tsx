@@ -23,7 +23,7 @@ export function AccountCell({ user, isSelf }: { user: UserView; isSelf: boolean 
   );
 }
 
-// Under the shown name: the user name, when the name is not already it, and the email address.
+// Under the shown name: the user name, if the shown name isn't already the user name, and the email address.
 function AccountLine({ user }: { user: UserView }) {
   const named = shownName(user) !== user.userName;
 

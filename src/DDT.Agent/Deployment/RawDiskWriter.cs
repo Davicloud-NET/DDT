@@ -6,8 +6,8 @@ using DDT.Core.Disks;
 
 namespace DDT.Agent.Deployment;
 
-// Writes a raw disk image as it arrives but holds back the first mebibyte, the partition table, until Finish writes it
-// last: a run that stops leaves a disk that starts nothing rather than half an image that seems whole.
+// Writes a raw disk image as it arrives, but holds back the first mebibyte with the partition table until Finish writes
+// it last. A run that stops then leaves a disk that starts nothing, rather than half an image that seems whole.
 public sealed class RawDiskWriter(IRawDisk disk, AgentLog log)
 {
     public const int HeadBytes = GptLayout.MaxHeadBytes;
@@ -57,7 +57,7 @@ public sealed class RawDiskWriter(IRawDisk disk, AgentLog log)
         }
     }
 
-    // Back to the first byte of the image, whose bytes are written again over what is there.
+    // Goes back to the first byte of the image. The bytes are written again over what's there.
     public void Restart()
     {
         Written = 0;
@@ -99,7 +99,7 @@ public sealed class RawDiskWriter(IRawDisk disk, AgentLog log)
         disk.Write(layout.BackupEntriesLba * SectorSize, layout.EntryArray());
         disk.Write(layout.BackupLba * SectorSize, layout.BackupHeader());
 
-        // The image's own backup header, now in the middle of the disk, would only mislead a tool that searches for one.
+        // The image's backup header, now in the middle of the disk, would only mislead a tool that searches for one.
         if (image.BackupLba > layout.LastUsedLba && image.BackupLba < layout.BackupEntriesLba && image.BackupLba * SectorSize < Written)
         {
             disk.Write(image.BackupLba * SectorSize, new byte[SectorSize]);

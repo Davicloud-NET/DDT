@@ -7,7 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import type { ConfirmationRequest } from "./useUserActions";
 import { shownName, userDeletionConsequence } from "./userView";
 
-// What an action that asks first does to the account, in its confirmation.
+// What an action that needs confirmation does to the account, shown in the confirmation.
 export function UserActionConsequence({ kind, user }: ConfirmationRequest) {
   const name = shownName(user);
 

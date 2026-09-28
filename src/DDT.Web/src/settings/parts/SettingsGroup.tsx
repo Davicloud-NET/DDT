@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react";
 
-// A group of fields inside a section, under a heading of its own.
+// A group of fields inside a section, with its own heading.
 export function SettingsGroup({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3 border-t border-line-soft pt-4 first:border-t-0 first:pt-0">

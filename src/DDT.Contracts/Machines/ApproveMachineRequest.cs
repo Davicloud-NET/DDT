@@ -7,9 +7,9 @@ using DDT.Contracts.Agents;
 namespace DDT.Contracts.Machines;
 
 public sealed record ApproveMachineRequest(
-    // The sequence the page showed an assignment rule choosing for the machine. The approval then runs it, and is
-    // refused when the rules choose otherwise by now. Without it an approval runs nothing.
+    // The sequence the page showed as chosen by an assignment rule for this machine. The approval then runs it, and
+    // is refused if the rules now choose something else. Without it, an approval runs nothing.
     Guid? ExpectedSequenceId,
-    // This and Answers are as for an assignment, for the run of that sequence.
+    // This and Answers work as for an assignment, and apply to the run of that sequence.
     bool AllowSecureBootMismatch = false,
     IReadOnlyList<InputAnswer>? Answers = null);

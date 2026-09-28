@@ -12,11 +12,11 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DDT.Server.Settings;
 
-// The checks of a save that need more than the values: the accounts, the framework's own checks of the sign-in scheme,
-// and a directory administrator's proof that the new directory values keep them an administrator.
+// Save checks that need more than the values. They look at the accounts, run the framework's own checks of the sign-in
+// scheme, and need a directory administrator's proof that they stay an administrator with the new directory values.
 public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtectionProvider dataProtection, DirectoryProofs proofs)
 {
-    // What decides whether a directory account still signs in, and with which roles.
+    // The fields that decide whether a directory account still signs in, and with which roles.
     private static readonly string[] s_directoryFields =
         ["Host", "Port", "Transport", "BaseDn", "BindDn", "UserFilter", "ImmutableIdAttribute", "ResolveNestedGroups", "GroupRoleMap"];
 

@@ -11,7 +11,7 @@ import { machineSummary } from "@/test/builders";
 import { cacheEventHandlers } from "./cacheEvents";
 import type { EventHandler } from "./liveConnection";
 
-// The handlers over a bare cache; emit hands one the payload as the hub would.
+// The handlers over a bare cache. emit hands a handler its payload the way the hub would.
 function events() {
   const queryClient = new QueryClient();
   const handlers: Record<string, EventHandler> = cacheEventHandlers(queryClient);

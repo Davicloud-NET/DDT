@@ -7,7 +7,7 @@ import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@/ui/Button";
 
-// The rules page's title, how the rules are checked, and the key that adds one.
+// The rules page's title, how the rules are checked, and the button that adds one.
 export function RulesHeader({ canEdit, onAdd }: { canEdit: boolean; onAdd: () => void }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">

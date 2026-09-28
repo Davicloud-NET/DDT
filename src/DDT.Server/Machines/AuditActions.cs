@@ -41,7 +41,7 @@ public static class AuditActions
     public const string RuleDeleted = "rule.deleted";
     public const string RuleReordered = "rule.reordered";
 
-    // Machine roles, which rules give machines; not the roles of users.
+    // Machine roles, which rules give machines. Not user roles.
     public const string RoleCreated = "role.created";
     public const string RoleChanged = "role.changed";
     public const string RoleDeleted = "role.deleted";

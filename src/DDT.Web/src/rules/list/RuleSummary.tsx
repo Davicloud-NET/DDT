@@ -14,7 +14,7 @@ interface RuleSummaryProps {
   rule: RuleView;
   // The condition as a sentence.
   sentence: string;
-  // What the rule does, a few words each.
+  // What the rule does, a few words per effect.
   effects: readonly string[];
   canEdit: boolean;
 }

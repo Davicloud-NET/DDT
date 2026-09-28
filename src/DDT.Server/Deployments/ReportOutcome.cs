@@ -6,8 +6,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Deployments;
 
-// What an agent's report came to: the agent's answer, or the refusal. Unauthorized: the machine started over since the
-// token was checked. None of them: the machine is gone.
+// The result of an agent's report: the agent's answer, or the refusal. Unauthorized means the machine started over
+// after the token was checked. With none of them set, the machine doesn't exist.
 internal sealed record ReportOutcome(AgentRunReportResult? Result, DeploymentDecision? Refusal, bool Unauthorized = false)
 {
     public static ReportOutcome NotFound { get; } = new(null, null);

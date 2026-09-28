@@ -138,7 +138,7 @@ describe("SequenceEditorPage", () => {
     }, saveWait);
   });
 
-  // Only an input asked at the machine can hold a run at its start: one only the web asks has to be answered there.
+  // Only an input asked at the machine can hold a run at its start. One that only the web asks must be answered there.
   it("says what a required input without an answer does, by where it is asked", async () => {
     serve(administrator, treeView(), { step: "p" });
 

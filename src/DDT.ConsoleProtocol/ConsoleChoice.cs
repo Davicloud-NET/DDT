@@ -4,5 +4,5 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Label is what the person sees, Value what the answer sends; a null label shows the value.
+// Label is what the person sees, and Value is what the answer sends. A null label shows the value.
 public sealed record ConsoleChoice(string Value, string? Label);

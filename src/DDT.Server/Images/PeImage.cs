@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 
 namespace DDT.Server.Images;
 
-// The headers of a PE file, such as an EFI program, as far as Authenticode needs them (Microsoft's PE format
-// specification). The file comes from an uploaded image, so every offset is checked against its length.
+// Reads the headers of a PE file, such as an EFI program, as far as Authenticode needs them. The layout follows
+// Microsoft's PE format specification. The file comes from an uploaded image, so every offset is checked against its
+// length.
 public sealed class PeImage
 {
     public const ushort MachineAmd64 = 0x8664;
@@ -36,7 +37,7 @@ public sealed class PeImage
 
     public int CertificateTableLength => _headers.CertificateTableLength;
 
-    // Null when the file is no PE file DDT can read.
+    // Returns null when the file isn't a PE file DDT can read.
     public static PeImage? Read(byte[] file)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -106,7 +107,7 @@ public sealed class PeImage
         return new Headers(machine, optional + 64, certificateEntry, sizeOfHeaders, sectionTable, sectionCount, table.Offset, table.Length);
     }
 
-    // Zero for a file without the table's entry, and null for a table that does not lie within the file.
+    // Returns zeros for a file without the table's entry, and null for a table that doesn't lie within the file.
     private static (int Offset, int Length)? CertificateTable(ReadOnlySpan<byte> span, int entry, bool present)
     {
         if (!present)
@@ -142,8 +143,8 @@ public sealed class PeImage
             sections.Add((offset, length));
         }
 
-        // The sections of a real program lie side by side. Ones that overlap would make the hash read the file many
-        // times over, which a hostile image could use to keep the server busy for hours.
+        // The sections of a real program sit side by side. Overlapping ones would make the hash read the file many
+        // times over. A hostile image could use that to keep the server busy for hours.
         if (sections.Sum(section => (long)section.Length) > span.Length)
         {
             return null;
@@ -154,9 +155,9 @@ public sealed class PeImage
         return sections;
     }
 
-    // The Authenticode hash as UEFI firmware computes it (EDK2's DxeImageVerificationLib): the headers without the
-    // checksum and the certificate table entry, the sections in file order, then what follows them up to the
-    // certificate table, which has to be the file's end.
+    // Computes the Authenticode hash the way UEFI firmware does, following EDK2's DxeImageVerificationLib. It hashes
+    // the headers without the checksum and the certificate table entry, then the sections in file order. Last comes
+    // everything after them up to the certificate table, which has to be at the end of the file.
     public byte[] Hash(HashAlgorithmName algorithm)
     {
         using IncrementalHash hash = IncrementalHash.CreateHash(algorithm);
@@ -184,8 +185,8 @@ public sealed class PeImage
         return hash.GetHashAndReset();
     }
 
-    // The PKCS #7 blobs of the WIN_CERTIFICATE entries of type PKCS_SIGNED_DATA, each 8-byte aligned. Null when the
-    // table is damaged.
+    // Returns the PKCS #7 blobs of the WIN_CERTIFICATE entries of type PKCS_SIGNED_DATA. Each entry is 8-byte aligned.
+    // Returns null when the table is damaged.
     public IReadOnlyList<byte[]>? Signatures()
     {
         List<byte[]> signatures = [];
@@ -214,7 +215,7 @@ public sealed class PeImage
         return signatures;
     }
 
-    // Where the parts Authenticode needs lie in the file, every one within its length.
+    // The offsets of the parts Authenticode needs. Each one lies within the file's length.
     private sealed record Headers(
         ushort Machine,
         int ChecksumOffset,

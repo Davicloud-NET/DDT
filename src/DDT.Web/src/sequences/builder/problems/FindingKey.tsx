@@ -8,7 +8,7 @@ import { cx } from "@/ui/cx";
 
 import type { FindingTone } from "./problemList";
 
-// A finding in the problems list, a key that takes the focus to its field where it has one.
+// A finding in the problems list. It's a button that moves the focus to its field, if it has one.
 export function FindingKey({
   message,
   tone,

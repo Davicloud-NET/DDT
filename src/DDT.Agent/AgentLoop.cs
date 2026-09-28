@@ -207,7 +207,7 @@ public sealed class AgentLoop(
                         ? local
                         : null;
 
-                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && run.Sequence.Steps.Any(step => step.ErasesDisk))
+                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && SequenceTree.Nodes(run.Sequence).Any(step => step.ErasesDisk))
                     {
                         // The picker said why when the server answered the choice.
                         AgentRunReportResult reported = await server

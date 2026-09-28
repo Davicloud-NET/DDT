@@ -7,6 +7,7 @@ using DDT.Agent.Deployment;
 using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Images;
+using DDT.Contracts.Sequences;
 using DDT.Core.Boot;
 using DDT.Core.Unattend;
 
@@ -201,7 +202,7 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        if (_disk is null && run.Sequence.Steps.Any(step => step.ErasesDisk))
+        if (_disk is null && SequenceTree.Nodes(run.Sequence).Any(step => step.ErasesDisk))
         {
             log.Warning(ChangedAfterChoiceMessage);
         }

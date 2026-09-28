@@ -184,15 +184,7 @@ public sealed class SequenceRunner(
             TrustedUefiCas = identity.TrustedUefiCas,
         };
         SequenceState state = resumed?.State ?? SequenceStates.Start(run.Id, run.Sequence);
-
-        MachineVariables machine = new(
-            identity.Manufacturer,
-            identity.Model,
-            identity.SerialNumber,
-            identity.SmbiosUuid,
-            identity.MacAddresses,
-            run.ComputerName,
-            SequencePhase.WindowsPE);
+        MachineVariables machine = RunMachine.Of(identity, run);
 
         FileRunStateStore? store = null;
         RunHeartbeat heartbeat = new(
@@ -244,7 +236,9 @@ public sealed class SequenceRunner(
         CancellationToken cancellationToken)
     {
         AgentRun run = session.Run;
-        int count = run.Sequence.Steps.Count;
+
+        // A tree counts the steps on all its branches, as they are before the run takes any of them.
+        int count = SequenceTree.Leaves(run.Sequence).Count;
 
         try
         {
@@ -255,7 +249,7 @@ public sealed class SequenceRunner(
             }
             else
             {
-                log.Information($"The run of {run.SequenceName} goes on at step {Math.Min(state.NextIndex + 1, count)} of {count}.");
+                log.Information($"The run of {run.SequenceName} goes on {WhereItGoesOn(state, count)}.");
                 await ResumeAsync(session, resumed, store, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -482,7 +476,9 @@ public sealed class SequenceRunner(
             throw new DeploymentStepException($"{run.SequenceName} cannot run: {problem.Message} Correct the sequence and assign it again.");
         }
 
-        IReadOnlyList<SequenceStep> steps = run.Sequence.Steps;
+        // Every step on every branch: which branches the run takes, it finds out as it goes, and nothing may be erased for
+        // a run that could not finish on one of them.
+        IReadOnlyList<SequenceStep> steps = SequenceTree.Nodes(run.Sequence);
         List<AgentRunImage> images = [];
 
         foreach (ApplyImageStep step in steps.OfType<ApplyImageStep>())
@@ -491,9 +487,9 @@ public sealed class SequenceRunner(
                 ?? throw new DeploymentStepException($"The server sent no image for step {step.Name}. Assign the sequence again."));
         }
 
-        AgentRunImage? rawImage = steps.OfType<WriteRawImageStep>().Select(step => WriteRawImageStepRunner.ImageOf(run, step)).FirstOrDefault();
+        List<AgentRunImage> rawImages = [.. steps.OfType<WriteRawImageStep>().Select(step => WriteRawImageStepRunner.ImageOf(run, step))];
 
-        if (rawImage is not null)
+        foreach (AgentRunImage rawImage in rawImages.DistinctBy(image => image.Sha256))
         {
             if (SecureBootGate.Refusal(rawImage, run.AllowSecureBootMismatch, session.SecureBootEnabled, session.TrustedUefiCas) is { } refusal)
             {
@@ -509,10 +505,14 @@ public sealed class SequenceRunner(
             {
                 log.Warning(unknown);
             }
+        }
 
+        if (rawImages.Count > 0)
+        {
             // A seed step that runs whatever happens has to have every value it uses, which is known now. One with
-            // conditions, or that lets the run go on when it fails, is left to its step.
-            foreach (WriteCloudInitSeedStep seed in steps.OfType<WriteCloudInitSeedStep>().Where(seed => seed.Conditions.Count == 0 && !seed.ContinueOnError))
+            // conditions, inside a group, IF or repeat, or that lets the run go on when it fails, is left to its step.
+            foreach (WriteCloudInitSeedStep seed in run.Sequence.Steps.OfType<WriteCloudInitSeedStep>()
+                .Where(seed => seed.Conditions.Count == 0 && seed.When is null && !seed.ContinueOnError))
             {
                 WriteCloudInitSeedStepRunner.Render(seed, run.ComputerName, machine);
             }
@@ -534,14 +534,21 @@ public sealed class SequenceRunner(
             IReadOnlyList<LocalDisk> disks = await partitioner.ListDisksAsync(cancellationToken).ConfigureAwait(false);
             LocalDisk disk = SelectDisk(run.DiskNumber, confirmedDisk, disks);
 
-            if (rawImage is null)
+            if (steps.Any(step => step.IsContainer))
+            {
+                CheckTreeSize(run, disk, rawImages.Count > 0);
+            }
+            else if (rawImages.Count == 0)
             {
                 CheckSize(run, disk, images, steps.OfType<PartitionStep>().FirstOrDefault());
             }
             else
             {
-                CheckRawSize(run, disk, rawImage, steps.Any(step => step is WriteCloudInitSeedStep));
+                CheckRawSize(run, disk, rawImages[0], steps.Any(step => step is WriteCloudInitSeedStep));
+            }
 
+            if (rawImages.Count > 0)
+            {
                 using IRawDisk raw = rawDisks.Open(disk);
 
                 if (raw.SectorSize != GptLayout.SectorSize)
@@ -558,7 +565,7 @@ public sealed class SequenceRunner(
             applier.Prepare();
         }
 
-        foreach (AgentRunImage image in rawImage is null ? images : [.. images, rawImage])
+        foreach (AgentRunImage image in images.Concat(rawImages).DistinctBy(image => image.Sha256))
         {
             long? length = await ServerCallRules.CallAsync(
                 call => server.HeadRunFileAsync(session.MachineId, session.Tokens.Token, run.Id, image.Sha256, call),
@@ -614,6 +621,50 @@ public sealed class SequenceRunner(
         throw new DeploymentStepException(
             $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)}: " +
             $"{string.Join(", ", parts)} and {ByteSize.Format(SpareBytes)} to spare. Run it on a larger disk.");
+    }
+
+    // A tree needs what the path through it that needs the most does, as SequenceSizes works it out: an IF takes the
+    // branch that needs more. The rules for each step are those of a list: an image's download and installed files, a
+    // package with room to unpack it, some to spare, and a raw disk image's disk with nothing to spare, since it is
+    // written as it downloads. A package the server sent for no step of the tree counts on every path, as in a list.
+    private static void CheckTreeSize(AgentRun run, LocalDisk disk, bool raw)
+    {
+        HashSet<Guid> nodes = [.. SequenceTree.Nodes(run.Sequence).Select(node => node.Id)];
+
+        long Packages(Func<AgentRunPackage, bool> which) => raw ? 0 : 2 * run.Packages.Where(which).Sum(package => package.SizeBytes);
+
+        long FileBytes(SequenceStep step) => step switch
+        {
+            ApplyImageStep apply when !raw => run.Images.FirstOrDefault(image => image.ImageId == apply.ImageId) is { } image
+                ? image.SizeBytes + image.InstalledBytes
+                : 0,
+            WriteRawImageStep write => WriteRawImageStepRunner.ImageOf(run, write).InstalledBytes,
+            _ => Packages(package => package.StepId == step.Id),
+        };
+
+        long required = SequenceSizes.RequiredBytes(run.Sequence, FileBytes) + Packages(package => !nodes.Contains(package.StepId)) + (raw ? 0 : SpareBytes);
+
+        if (disk.SizeBytes >= required)
+        {
+            return;
+        }
+
+        throw new DeploymentStepException(
+            $"Disk {disk.Number} holds {ByteSize.Format(disk.SizeBytes)}, but {run.SequenceName} needs {ByteSize.Format(required)} on the " +
+            $"path through it that needs the most{(raw ? "" : $", {ByteSize.Format(SpareBytes)} to spare included")}. Run it on a larger disk.");
+    }
+
+    // Where a run goes on after a restart: at the step its state names, by number in a list and by name in a tree.
+    private static string WhereItGoesOn(SequenceState state, int count)
+    {
+        if (state.Format < SequenceState.TreeFormat)
+        {
+            return $"at step {Math.Min(state.NextIndex + 1, count)} of {count}";
+        }
+
+        return state.Cursor is { } cursor && SequenceTree.Index(state.Definition).TryGetValue(cursor.NodeId, out NodePosition? position)
+            ? cursor.Leaving ? $"after the steps of {position.Step.Name}" : $"at step {position.Step.Name}"
+            : "at its end";
     }
 
     // A raw disk image is written as it downloads, so the disk needs room for the disk it holds and the seed, and no more.
@@ -738,7 +789,11 @@ public sealed class SequenceRunner(
             return;
         }
 
-        string? name = session.Run.Sequence.Steps.OfType<WriteRawImageStep>()
+        // In a tree, the image of the branch the run took: the one whose step is done.
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
+        HashSet<Guid> done = [.. state.Steps.Where(step => step.State == StepState.Done).Select(step => step.StepId)];
+        string? name = nodes.OfType<WriteRawImageStep>()
+            .OrderByDescending(step => done.Contains(step.Id))
             .Select(step => session.Run.Images.FirstOrDefault(image => image.ImageId == step.ImageId)?.Name)
             .FirstOrDefault(found => !string.IsNullOrWhiteSpace(found));
         string description = name is null ? "Linux" : name.Length > MaxBootEntryName ? name[..MaxBootEntryName] : name;

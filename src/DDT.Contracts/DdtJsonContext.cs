@@ -148,4 +148,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(AccountView))]
 [JsonSerializable(typeof(IReadOnlyList<AccountView>))]
 [JsonSerializable(typeof(SaveAccountRequest))]
+[JsonSerializable(typeof(AccountsRemovedEvent))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

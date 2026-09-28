@@ -142,6 +142,7 @@ api.MapGroup("/deployments").MapDeploymentEndpoints();
 api.MapGroup("/sequences").MapSequenceEndpoints();
 api.MapGroup("/packages").MapPackageEndpoints();
 api.MapGroup("/rules").MapRuleEndpoints();
+api.MapGroup("/accounts").MapAccountEndpoints();
 api.MapGroup("/about").MapAboutEndpoints();
 api.MapGroup("/server").MapServerEndpoints();
 api.MapGroup("/users").MapUserEndpoints();

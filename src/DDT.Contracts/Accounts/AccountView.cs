@@ -22,4 +22,8 @@ public sealed record AccountView(
     DateTimeOffset UpdatedUtc,
     string? UpdatedBy);
 
-public sealed record AccountUse(Guid SequenceId, string SequenceName);
+// Steps are the steps of the sequence that name the account, in the order of its tree.
+public sealed record AccountUse(Guid SequenceId, string SequenceName, IReadOnlyList<AccountStepUse>? Steps = null);
+
+// Field is where the step names the account, as a sequence problem names it: runAs, account or shares[0].account.
+public sealed record AccountStepUse(Guid StepId, string StepName, string Field);

@@ -225,6 +225,8 @@ You don't have to remember any of this, because the build fails when it's wrong:
 - **Web:** ESLint's strict type-checked rules, its size limits (`max-lines`,
   `max-lines-per-function`, `max-depth`, `max-params`), and Prettier for formatting. A test checks
   one component per file.
+- **PowerShell:** PSScriptAnalyzer, with the settings in `build/PSScriptAnalyzerSettings.psd1`,
+  including syntax that Windows PowerShell 5.1 can run.
 - **Tests:** the licence header in every other language, stale generated files, and missing
   translations.
 

@@ -40,9 +40,8 @@ $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPat
 $Package = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Package)
 $project = Join-Path $PSScriptRoot '..\src\DDT.MachineConsole\DDT.MachineConsole.csproj'
 
-# Visual Studio's VsDevCmd.bat runs vswhere.exe by bare name from the installer folder, which fails in a
-# shell that sets NoDefaultCurrentDirectoryInExePath. The error text then lands in the linker path the
-# NativeAOT targets read back, and the link step fails with exit code 123.
+# VsDevCmd.bat runs vswhere.exe by bare name from the installer folder, which a shell that sets
+# NoDefaultCurrentDirectoryInExePath refuses; the NativeAOT link step then fails with exit code 123.
 $installer = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer'
 if (Test-Path -LiteralPath (Join-Path $installer 'vswhere.exe')) {
     $env:PATH = "$installer;$env:PATH"

@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using DDT.Contracts;
 using DDT.Contracts.Accounts;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Machines;
@@ -171,18 +172,31 @@ public sealed partial class DryRunLab : IAsyncLifetime
             HttpStatusCode.OK,
             cancellationToken);
 
+    // answers are the answers to the sequence's inputs asked on the web.
     internal Task<MachineSummary> AssignAsync(
         Guid machineId,
         Guid sequenceId,
         string? computerName,
         CancellationToken cancellationToken,
-        bool allowSecureBootMismatch = false) =>
+        bool allowSecureBootMismatch = false,
+        IReadOnlyList<InputAnswer>? answers = null) =>
         Api.SendAsync(
             HttpMethod.Post,
             $"api/machines/{machineId:D}/deployments",
-            new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch),
+            new AssignSequenceRequest(sequenceId, computerName, allowSecureBootMismatch, answers),
             DdtJsonContext.Default.AssignSequenceRequest,
             DdtJsonContext.Default.MachineSummary,
+            HttpStatusCode.OK,
+            cancellationToken);
+
+    // As the machine's page answers the inputs its run waits for at its start.
+    internal Task<DeploymentView> AnswerAsync(Guid machineId, IReadOnlyList<InputAnswer> answers, CancellationToken cancellationToken) =>
+        Api.SendAsync(
+            HttpMethod.Post,
+            $"api/machines/{machineId:D}/deployments/current/answers",
+            new AnswerInputsRequest(answers),
+            DdtJsonContext.Default.AnswerInputsRequest,
+            DdtJsonContext.Default.DeploymentView,
             HttpStatusCode.OK,
             cancellationToken);
 

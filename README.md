@@ -157,7 +157,7 @@ Docker is running; they are skipped otherwise.
 dotnet test --project tests/DDT.E2E
 ```
 
-runs whole task sequences end to end on this PC, in about a minute and a half. It publishes the
+runs whole task sequences end to end on this PC, in about two minutes. It publishes the
 agent from the sources with `build\Publish-Agent.ps1`, and is skipped when vswhere finds no Visual
 C++ build tools, which the publish needs; any other failure to publish fails it. It starts the host
 on a free localhost port with SQLite and a store in a temporary directory, uploads made-up images

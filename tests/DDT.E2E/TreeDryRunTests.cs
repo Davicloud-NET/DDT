@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using System.Text.Json;
 using DDT.Contracts;
 using DDT.Contracts.Accounts;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
 using DDT.Core.Sequences;
@@ -121,7 +123,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
         Assert.Equal(SequenceDefinition.CurrentVersion, sequence.Definition.Version);
 
         await using AgentProcess agent = lab.StartAgent();
-        (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, cancellationToken);
+        (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
         string labName = $"LAB-{agent.SerialNumber[^5..]}";
 
         // The run waits at the pause in Windows with its message worked out, and nothing after it runs meanwhile.
@@ -222,14 +224,156 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             ("The run's log", string.Join(Environment.NewLine, log.Lines.Select(line => line.Message))));
     }
 
-    // Approved and assigned on the web, the machine watched first so no push about its run is missed. Returns the machine
-    // and its run.
-    private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(AgentProcess agent, SequenceView sequence, CancellationToken cancellationToken)
+    // A rule for the dry run's network gives a flat sequence's run a time zone, a site and a computer name made from the
+    // site, which the run keeps with where each came from, and the answer file the agent fetched holds them.
+    [Fact(Timeout = 600_000)]
+    public async Task ARuleForTheMachinesNetworkGivesItsRunValuesThatTheAnswerFileHolds()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        // A list of steps without anything of version 3, which older agents run as well.
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Values from a rule",
+            [
+                DryRunTests.Partition(),
+                new ApplyImageStep { Id = Guid.CreateVersion7(), Name = "Apply the image", ImageId = lab.Image.Id },
+                new WriteUnattendStep { Id = Guid.CreateVersion7(), Name = "Write the answer file" },
+            ],
+            cancellationToken);
+        Assert.True(sequence.Definition.Version < SequenceDefinition.CurrentVersion, $"The list is stored as version {sequence.Definition.Version}.");
+
+        RuleView rule = await lab.Api.SendAsync(
+            HttpMethod.Post,
+            "api/rules",
+            new SaveRuleRequest(
+                0,
+                $"The dry run's network {Guid.NewGuid():N}",
+                "Made by the end-to-end tests.",
+                true,
+                new TestCondition(MachineVariableNames.IPv4Address, ConditionOperator.InSubnet, "192.0.2.0/24"),
+                null,
+                [new NamedValue("TimeZone", "Pacific Standard Time"), new NamedValue("Site", "SEA"), new NamedValue(MachineVariableNames.ComputerName, "{{Site}}-{{SerialNumber|right:5}}")],
+                []),
+            DdtJsonContext.Default.SaveRuleRequest,
+            DdtJsonContext.Default.RuleView,
+            HttpStatusCode.Created,
+            cancellationToken);
+
+        try
+        {
+            Assert.Empty(rule.Problems);
+
+            await using AgentProcess agent = lab.StartAgent();
+            (_, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
+
+            Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+            DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+            Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+
+            // The rule's values win over the deployment defaults, which the run shows as overridden.
+            string computerName = $"SEA-{agent.SerialNumber[^5..]}";
+            Assert.Equal(
+                [
+                    ("TimeZone", "Pacific Standard Time", ValueSource.Rule, rule.Id, rule.Name, false),
+                    ("TimeZone", "W. Europe Standard Time", ValueSource.DeploymentDefault, null, null, true),
+                    ("Site", "SEA", ValueSource.Rule, rule.Id, rule.Name, false),
+                    (MachineVariableNames.ComputerName, computerName, ValueSource.Rule, rule.Id, rule.Name, false),
+                ],
+                run.Values!
+                    .Where(value => value.Name is "TimeZone" or "Site" or MachineVariableNames.ComputerName)
+                    .Select(value => (value.Name, value.Value, value.Source, value.SourceId, value.SourceName, value.Overridden)));
+            Assert.Equal(1, agent.Output.Count($"Wrote the answer file: computer name {computerName}, time zone Pacific Standard Time, "));
+
+            IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
+            Assert.StartsWith(
+                "The answer file of step Write the answer file",
+                Assert.Single(audit, entry => entry.Action == "deployment.secret-read").Detail,
+                StringComparison.Ordinal);
+
+            lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
+        }
+        finally
+        {
+            await lab.Api.DeleteAsync($"api/rules/{rule.Id:D}", CancellationToken.None, HttpStatusCode.OK);
+        }
+    }
+
+    // An input asked on the web, answered with the assignment, and a required one the machine asks: nobody can answer at
+    // the dry run's machine, so the run waits at its start until the machine's page answers it, then starts with both.
+    [Fact(Timeout = 600_000)]
+    public async Task ARunWaitsAtItsStartForAnInputTheMachineAsksUntilTheWebAnswersIt()
+    {
+        lab.SkipWhenUnavailable();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        InputDeclaration owner = new() { Name = "Owner", Label = "Owner", Required = true, AskAt = InputAsk.Web };
+        InputDeclaration room = new() { Name = "Room", Label = "Room", Required = true, AskAt = InputAsk.Machine };
+        SetVariableStep label = new() { Id = Guid.CreateVersion7(), Name = "Label the PC", Variable = "Label", Value = "{{Owner}}, room {{Room}}" };
+
+        // Before a partition, Windows PE cannot restart, so the script cannot ask for it.
+        RunScriptStep inRoom = DryRunTests.Script("Only in room B12", SequencePhase.WindowsPE, "echo %DDT_VAR_Room%") with
+        {
+            RebootExitCodes = [],
+            When = new TestCondition(room.Name, ConditionOperator.Equals, "B12"),
+        };
+        SequenceView sequence = await lab.CreateSequenceAsync(
+            "Inputs",
+            new SequenceDefinition(SequenceDefinition.CurrentVersion, [label, inRoom])
+            {
+                Variables = [new VariableDeclaration { Name = "Label", SetBySteps = true }],
+                Inputs = [owner, room],
+            },
+            cancellationToken);
+
+        await using AgentProcess agent = lab.StartAgent();
+        (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, [new InputAnswer(owner.Name, "Jane Roe")], cancellationToken);
+
+        DeploymentView waiting = await WaitForRunAsync(
+            agent,
+            runId,
+            run => run.Summary is { Waiting: true, Activity: RunActivity.WaitingForInput },
+            "The wait for the room",
+            cancellationToken);
+        Assert.Equal((DeploymentState.Assigned, null), (waiting.Summary.State, waiting.Values));
+        Assert.Equal([(owner.Name, true, "admin"), (room.Name, false, null)], waiting.Inputs!.Select(input => (input.Input.Name, input.Answered, input.AnsweredBy)));
+        Assert.All(waiting.Steps, step => Assert.Equal(StepState.Pending, step.State));
+
+        DeploymentView answered = await lab.AnswerAsync(machineId, [new InputAnswer(room.Name, "B12")], cancellationToken);
+        Assert.False(answered.Summary.Waiting);
+        Assert.Equal([(owner.Name, true, "admin"), (room.Name, true, "admin")], answered.Inputs!.Select(input => (input.Input.Name, input.Answered, input.AnsweredBy)));
+
+        Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+        Assert.Equal(1, agent.Output.Count("The run waits for answers to Room, at this machine or on the machine's page."));
+        Assert.Equal(1, agent.Output.Count("The inputs were answered on the web, and the run starts."));
+
+        // Both answers are the run's values, and its steps worked with them.
+        DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+        Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+        Assert.Equal([(label.Id, StepState.Done), (inRoom.Id, StepState.Done)], run.Steps.Select(step => (step.StepId, step.State)));
+        Assert.Equal(
+            [(owner.Name, "Jane Roe", ValueSource.Input, false), (room.Name, "B12", ValueSource.Input, false)],
+            run.Values!.Where(value => value.Name is "Owner" or "Room").Select(value => (value.Name, value.Value, value.Source, value.Overridden)));
+        Assert.Equal("Jane Roe, room B12", run.Variables!["Label"]);
+
+        IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
+        Assert.Contains(audit, entry => entry is { Action: "deployment.inputs-answered", ActorName: "admin" });
+
+        lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
+    }
+
+    // Approved and assigned on the web, with the answers to the inputs asked there, the machine watched first so no push
+    // about its run is missed. Returns the machine and its run.
+    private async Task<(Guid MachineId, Guid RunId)> AuthorizeAsync(
+        AgentProcess agent,
+        SequenceView sequence,
+        IReadOnlyList<InputAnswer>? answers,
+        CancellationToken cancellationToken)
     {
         MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
         await lab.Live.WatchAsync(machine.Id, cancellationToken);
         await lab.ApproveAsync(machine.Id, null, cancellationToken);
-        MachineSummary assigned = await lab.AssignAsync(machine.Id, sequence.Id, null, cancellationToken);
+        MachineSummary assigned = await lab.AssignAsync(machine.Id, sequence.Id, null, cancellationToken, answers: answers);
 
         return (machine.Id, assigned.Deployment!.Id);
     }

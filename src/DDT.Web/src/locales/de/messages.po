@@ -435,6 +435,11 @@ msgstr "{first} {rest}"
 msgid "{hardware}, {mac}"
 msgstr "{hardware}, {mac}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shareHostAddressWarning"
+msgid "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another machine on the network can relay. Name the server instead, best by its full DNS name."
+msgstr "{host} ist eine IP-Adresse, mit der Windows kein Kerberos verwenden kann. Das Konto meldet sich daher mit NTLM an, was ein anderes Gerät im Netzwerk weiterleiten kann. Geben Sie stattdessen den Namen des Servers an, am besten seinen vollständigen DNS-Namen."
+
 #: src/lib/format.ts
 msgid "{hours} h {minutes} min"
 msgstr "{hours} Std. {minutes} Min."
@@ -808,6 +813,11 @@ msgstr "{name} ist der letzte aktivierte Administrator. Machen Sie zuerst ein an
 msgctxt "sequence.valueUndefined"
 msgid "{name} is used, but neither the sequence nor a rule or a machine role gives it a value. A run fails where it needs it."
 msgstr "{name} wird verwendet, aber weder die Tasksequenz noch eine Regel oder eine Geräterolle gibt dafür einen Wert. Eine Ausführung schlägt dort fehl, wo sie ihn braucht."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.secretValueWarning"
+msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
+msgstr "{name} sieht nach einem Kennwort oder einem anderen Geheimnis aus, und alle, die sich bei DDT anmelden können, können die Werte von Tasksequenzen und Ausführungen lesen. Bewahren Sie es in einem Konto auf, gespeichert oder für die Ausführung abgefragt, das nur der Schritt erhält, der es verwendet."
 
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"

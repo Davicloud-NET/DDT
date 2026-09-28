@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
@@ -9,6 +10,7 @@ using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using DDT.Core.Templates;
+using DDT.Server.Accounts;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Packages;
@@ -20,6 +22,9 @@ namespace DDT.Server.Sequences;
 // branch of every IF, since any of them may run.
 public static class SequenceChecks
 {
+    // Parts of a name that say its value is a password or another secret, ignoring case.
+    private static readonly string[] s_secretNames = ["password", "passwd", "passwort", "kennwort", "pwd", "secret", "token"];
+
     public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -72,8 +77,15 @@ public static class SequenceChecks
                 case RunScriptStep { PackageId: { } packageId }:
                     CheckPackage(packageId, references, Add);
                     break;
+                case SetVariableStep set when SecretValue(set.Variable, set.Value):
+                    Warn("value", ServerMessages.SequenceSecretValueWarning.With("name", set.Variable));
+                    break;
             }
+
+            CheckShareHosts(step, Warn);
         }
+
+        CheckDeclaredSecrets(definition, warnings);
 
         // Some path reaches Windows, and no answer file on any path adds the administrator.
         if (InWindows(analysis.NodePhases) && !addsAdministrator)
@@ -208,6 +220,65 @@ public static class SequenceChecks
             }
         }
     }
+
+    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is no secret. Only a
+    // value written out counts: one made of other values, such as {{Token}}, holds none itself.
+    private static bool SecretValue(string? name, string? value) =>
+        name is not null
+        && s_secretNames.Any(part => name.Contains(part, StringComparison.OrdinalIgnoreCase))
+        && !string.IsNullOrWhiteSpace(value)
+        && ValueTemplate.Parse(value).Placeholders.Count == 0;
+
+    // The defaults of the sequence's variables and inputs. An Account input keeps its answer apart, and has no default.
+    private static void CheckDeclaredSecrets(SequenceDefinition definition, List<SequenceProblem> warnings)
+    {
+        void Check(string field, string? name, string? value)
+        {
+            if (SecretValue(name, value))
+            {
+                warnings.Add(SequenceProblem.From(null, field, ServerMessages.SequenceSecretValueWarning.With("name", name!)));
+            }
+        }
+
+        IReadOnlyList<VariableDeclaration?> variables = definition.Variables ?? [];
+
+        for (int index = 0; index < variables.Count; index++)
+        {
+            Check(string.Create(CultureInfo.InvariantCulture, $"variables[{index}].default"), variables[index]?.Name, variables[index]?.Default);
+        }
+
+        IReadOnlyList<InputDeclaration?> inputs = definition.Inputs ?? [];
+
+        for (int index = 0; index < inputs.Count; index++)
+        {
+            if (inputs[index] is { Kind: not InputKind.Account } input)
+            {
+                Check(string.Create(CultureInfo.InvariantCulture, $"inputs[{index}].default"), input.Name, input.Default);
+            }
+        }
+    }
+
+    // A server named by its address gets no Kerberos ticket, so the account's password goes to it by NTLM, which a
+    // machine in the middle can relay to another server. Only a host written out can be told; one made of values is
+    // known when the step runs.
+    private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
+    {
+        IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
+
+        for (int index = 0; index < shares.Count; index++)
+        {
+            if (AccountRules.WrittenHost(shares[index]?.Path) is { } host && ValueTemplate.Parse(host).Placeholders.Count == 0 && IsAddress(host))
+            {
+                warn(
+                    string.Create(CultureInfo.InvariantCulture, $"shares[{index}].path"),
+                    ServerMessages.SequenceShareHostAddressWarning.With("host", host));
+            }
+        }
+    }
+
+    // An IPv4 address, or an IPv6 address written as a name Windows takes in a share path.
+    private static bool IsAddress(string host) =>
+        Uri.CheckHostName(host) == UriHostNameType.IPv4 || host.EndsWith(".ipv6-literal.net", StringComparison.OrdinalIgnoreCase);
 
     private static IEnumerable<(string Field, string? Text)> SeedTexts(WriteCloudInitSeedStep seed) =>
         [("metaData", seed.MetaData), ("userData", seed.UserData), ("networkConfig", seed.NetworkConfig)];

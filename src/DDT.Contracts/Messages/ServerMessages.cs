@@ -750,6 +750,16 @@ public static class ServerMessages
         "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, " +
         "so it does nothing.");
 
+    public static readonly MessageTemplate SequenceSecretValueWarning = Define(
+        "sequence.secretValueWarning",
+        "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences " +
+        "and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets.");
+
+    public static readonly MessageTemplate SequenceShareHostAddressWarning = Define(
+        "sequence.shareHostAddressWarning",
+        "{host} is an IP address, with which Windows cannot use Kerberos, so the account signs in with NTLM, which another " +
+        "machine on the network can relay. Name the server instead, best by its full DNS name.");
+
     // Value templates, such as PC-{{SerialNumber|alnum|right:12}}. Placeholder is the whole placeholder, braces included.
 
     public static readonly MessageTemplate ValueTemplateUnknownName = Define(

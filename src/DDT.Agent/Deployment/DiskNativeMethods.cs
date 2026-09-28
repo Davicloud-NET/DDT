@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// Windows PE has no WMI, so disks are read with the IOCTLs of winioctl.h.
+// Windows PE has no WMI, so disks are read with the IOCTLs of winioctl.h. The imports keep Win32's signatures.
 internal static unsafe partial class DiskNativeMethods
 {
     public const uint GenericRead = 0x80000000;

@@ -6,9 +6,8 @@ using DDT.Core.Disks;
 
 namespace DDT.Agent.Deployment;
 
-// Writes a raw disk image onto a disk as its bytes come, a chunk at a time, and holds back the first mebibyte, where
-// the partition table is, until Finish writes it last for the disk it landed on. Until then Windows sees no table, and
-// a run that stops leaves a disk that starts nothing rather than half an image that seems whole.
+// Writes a raw disk image as it arrives but holds back the first mebibyte, the partition table, until Finish writes it
+// last: a run that stops leaves a disk that starts nothing rather than half an image that seems whole.
 public sealed class RawDiskWriter(IRawDisk disk, AgentLog log)
 {
     public const int HeadBytes = GptLayout.MaxHeadBytes;

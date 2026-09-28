@@ -64,16 +64,9 @@ public sealed class LinuxRunTests : IDisposable
         server ??= _image.Serve(new ScriptedAgentServer());
         ImmediateTimeProvider time = new();
         StringWriter console = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, rawDisks: _disks);
+        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, new() { RawDisks = _disks });
 
-        RunResult result = await runner.RunAsync(
-            s_machineId,
-            run,
-            null,
-            null,
-            new DeploymentTokens("session-0", "resume-0"),
-            Identity(secureBootEnabled),
-            server.Stop.Token);
+        RunResult result = await runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), Identity(secureBootEnabled)), server.Stop.Token);
 
         return (result, server, console.ToString());
     }

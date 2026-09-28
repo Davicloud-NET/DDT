@@ -9,11 +9,3 @@ public interface IConsoleLauncher
 {
     IConsoleProcess Start(string pipeName);
 }
-
-// A started console. Exited completes with its exit code once it has ended. Stop ends it, whether or not it still runs.
-public interface IConsoleProcess : IDisposable
-{
-    Task<int> Exited { get; }
-
-    void Stop();
-}

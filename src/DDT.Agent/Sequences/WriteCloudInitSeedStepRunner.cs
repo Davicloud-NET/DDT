@@ -11,11 +11,10 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Adds a partition at the end of the disk a raw disk image was written to in this run, with a FAT volume labelled
-// CIDATA that holds the seed files filled in with this machine's values, where cloud-init's NoCloud data source finds
-// them at the machine's first start. The partition goes at the end so that cloud-init can grow the image's last
-// partition into the space between. The volume is written first and the partition table last.
+// Adds a CIDATA partition with the seed files, filled in with this machine's values, for cloud-init's NoCloud data
+// source. It goes at the end of the raw image's disk, so cloud-init can grow the image's last partition up to it.
 public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession session, AgentLog log, TimeProvider timeProvider)
+    : IStepKindRunner<WriteCloudInitSeedStep>
 {
     public const string NoImageMessage =
         "The cloud-init seed goes onto the disk a raw disk image was written to in this run, and none was written.";
@@ -34,24 +33,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         (string metaData, string userData, string? networkConfig) = Render(step, context.Machine.Value(MachineVariableNames.ComputerName), context.Machine);
 
         using IRawDisk raw = disks.Open(disk);
-        byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
-        raw.Read(0, head);
-
-        GptLayout layout;
-
-        try
-        {
-            layout = GptLayout.Read(head).WithPartitionAtEnd(
-                GptPartitionTypes.BasicData,
-                Guid.NewGuid(),
-                CloudInitSeed.Label,
-                CloudInitSeed.SizeBytes / GptLayout.SectorSize);
-        }
-        catch (Exception exception) when (exception is InvalidGptException or InvalidOperationException or ArgumentException)
-        {
-            throw new DeploymentStepException($"The cloud-init seed cannot be added to disk {disk.Number}: {exception.Message}", exception);
-        }
-
+        GptLayout layout = WithSeedPartition(raw, disk);
         GptPartition seed = layout.Partitions.MaxBy(partition => partition.FirstLba)!;
         byte[] volume = CloudInitSeed.Build(
             new CloudInitSeedFiles(metaData, userData, networkConfig),
@@ -59,12 +41,7 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
             timeProvider.GetUtcNow().UtcDateTime,
             seed.FirstLba);
 
-        raw.Write(seed.FirstLba * GptLayout.SectorSize, volume);
-        raw.Write(layout.BackupEntriesLba * GptLayout.SectorSize, layout.EntryArray());
-        raw.Write(layout.BackupLba * GptLayout.SectorSize, layout.BackupHeader());
-        raw.Write(layout.EntriesLba * GptLayout.SectorSize, layout.EntryArray());
-        raw.Write(GptLayout.SectorSize, layout.PrimaryHeader());
-        raw.Flush();
+        Write(raw, layout, seed, volume);
 
         try
         {
@@ -130,6 +107,36 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
 
             throw new DeploymentStepException($"{exception.Message} {remedy}", exception);
         }
+    }
+
+    private static GptLayout WithSeedPartition(IRawDisk raw, LocalDisk disk)
+    {
+        byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
+        raw.Read(0, head);
+
+        try
+        {
+            return GptLayout.Read(head).WithPartitionAtEnd(
+                GptPartitionTypes.BasicData,
+                Guid.NewGuid(),
+                CloudInitSeed.Label,
+                CloudInitSeed.SizeBytes / GptLayout.SectorSize);
+        }
+        catch (Exception exception) when (exception is InvalidGptException or InvalidOperationException or ArgumentException)
+        {
+            throw new DeploymentStepException($"The cloud-init seed cannot be added to disk {disk.Number}: {exception.Message}", exception);
+        }
+    }
+
+    // The volume first and the partition table last, the backup before the primary.
+    private static void Write(IRawDisk raw, GptLayout layout, GptPartition seed, byte[] volume)
+    {
+        raw.Write(seed.FirstLba * GptLayout.SectorSize, volume);
+        raw.Write(layout.BackupEntriesLba * GptLayout.SectorSize, layout.EntryArray());
+        raw.Write(layout.BackupLba * GptLayout.SectorSize, layout.BackupHeader());
+        raw.Write(layout.EntriesLba * GptLayout.SectorSize, layout.EntryArray());
+        raw.Write(GptLayout.SectorSize, layout.PrimaryHeader());
+        raw.Flush();
     }
 
     // As cloud-init and netplan write MAC addresses: lower case, in pairs separated by colons.

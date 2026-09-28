@@ -7,13 +7,9 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.Tests;
 
-// Answers from a script. When the register, next or sign-in script runs out it stops the loop, so every test
-// ends deterministically without timing; so do the sequence list, pick, answer file, join account, step accounts and
-// input answers calls. Log requests succeed
-// unless a scripted action throws, and a run report without a script echoes the token it was sent with. A run file
-// without a script is answered from the files given to ServeFile.
-// A run's heartbeat calls from another thread, so everything is guarded by one lock, and scripted answers run outside
-// it.
+// Answers from a script; a call whose script runs out stops the loop, so every test ends without timing. Without a
+// script, a log request succeeds, a run report echoes its token and a run file comes from ServeFile. The heartbeat calls
+// from another thread, so one lock guards everything, and scripted answers run outside it.
 internal sealed class ScriptedAgentServer : IAgentServer
 {
     private readonly Lock _lock = new();
@@ -337,19 +333,13 @@ internal sealed class ScriptedAgentServer : IAgentServer
     public Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken) =>
         AnswerFile($"head-file {sha256} {token}", _fileHeads, sha256, response => response(sha256), content => (long?)content.Length);
 
-    public Task<AgentImageStream> OpenRunFileAsync(
-        Guid machineId,
-        string token,
-        Guid runId,
-        string sha256,
-        long offset,
-        CancellationToken cancellationToken) =>
+    public Task<AgentImageStream> OpenRunFileAsync(Guid machineId, string token, RunFileRange file, CancellationToken cancellationToken) =>
         AnswerFile(
-            $"open-file {sha256} {offset} {token}",
+            $"open-file {file.Sha256} {file.Offset} {token}",
             _fileOpens,
-            sha256,
-            response => response(sha256, offset),
-            content => new AgentImageStream(new MemoryStream(content[(int)offset..]), offset, content.Length));
+            file.Sha256,
+            response => response(file.Sha256, file.Offset),
+            content => new AgentImageStream(new MemoryStream(content[(int)file.Offset..]), file.Offset, content.Length));
 
     public Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         Answer($"run-unattend {stepId} {token}", _runUnattends, response => response(stepId));

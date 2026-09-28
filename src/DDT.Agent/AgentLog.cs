@@ -9,11 +9,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// Writes to the console immediately, because in Windows PE the console is all an operator at the
-// machine has, and queues the same lines for the server until they are delivered. Dated lines are for a file, which
-// someone reads days later beside Windows' own logs; the console, read as the lines appear, keeps only the time.
-// Both are in UTC. The text console gets every line even while the graphical one shows them, so it has them all should
-// the graphical one go away.
+// Writes each line to the console at once, as in Windows PE it is all an operator has, and queues it for the server.
+// The text console gets every line even under the graphical one, which may go away. Times are UTC; dated lines suit a file.
 public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool datedLines = false)
 {
     private const int MaxQueuedLines = 2000;

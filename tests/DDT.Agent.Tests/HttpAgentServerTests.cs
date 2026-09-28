@@ -312,7 +312,7 @@ public sealed class HttpAgentServerTests
             cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        AgentImageStream file = await server.OpenRunFileAsync(s_machineId, "session", s_runId, "ab12", 1000, cancellationToken);
+        AgentImageStream file = await server.OpenRunFileAsync(s_machineId, "session", new RunFileRange(s_runId, "ab12", 1000), cancellationToken);
 
         await using (file)
         {

@@ -241,10 +241,9 @@ public sealed class ConsoleStatus
         ];
     }
 
-    // A tree's run lists every node in pre-order, with where it sits, so the console's rail can follow the path. A node
-    // the engine skipped without entering it, on the branch an IF did not take or inside a node that was skipped or
-    // failed, has no tests of its own; the console takes it as off the path by its pass of 0. A node without a phase of
-    // its own shows the phase of the step before it, as a flat list does.
+    // Every node in pre-order with where it sits, so the console's rail can follow the path. A node the engine never
+    // entered, as on the branch an IF did not take, gets pass 0, which the console takes as off the path. A node
+    // without a phase of its own shows the phase of the step before it, as a flat list does.
     private static ConsoleStep[] Nodes(SequenceState state)
     {
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);

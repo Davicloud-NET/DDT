@@ -6,10 +6,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// What a person at the machine sees of the agent, and answers: the state as a whole, the log as it is written, and one
-// question at a time. The text console Windows PE opens is one; ddt-console.exe, fed over a named pipe, is the other,
-// and falls back to the text console when it goes away. Show and Write come from any thread, in order, and return at
-// once.
+// What a person at the machine sees of the agent and answers: the state, the log, and one question at a time. Show and
+// Write come from any thread, in order, and return at once.
 public interface IMachineConsole
 {
     // False when nobody can answer here, for example when input is redirected.

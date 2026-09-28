@@ -9,10 +9,8 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Runs a Windows tool and puts everything it prints into the machine log, because on a real PC that log is the
-// only record of why diskpart, bcdboot or reagentc refused. A step's script that runs as an account goes through
-// accountProcessStarter instead of .NET's Process, which cannot start another account as LocalSystem; without a starter
-// a run-as script fails, which the validator and the step runner refuse before it gets here.
+// Runs a Windows tool and logs all it prints: on a real PC the machine log is the only record of why diskpart, bcdboot
+// or reagentc refused. A script run as an account starts through accountProcessStarter, which Process cannot replace.
 public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccountProcessStarter? accountProcessStarter = null) : IToolRunner
 {
     // A process that a script starts in the background inherits its output and can keep it open long after the

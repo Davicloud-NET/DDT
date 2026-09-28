@@ -7,11 +7,10 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Restarts Windows PE with wpeutil: the agent's exit does not, because startnet.cmd leaves a command prompt open. Back
-// into Windows PE, it first sets BootNext to BootCurrent, the firmware entry this start came from, so the next start
-// comes from the network again whatever the boot order says. Some firmware creates that entry only for a one-time boot
-// menu, so when Boot{BootCurrent} is gone it warns and restarts plainly: before a run ends the disk has no boot loader,
-// and firmware then normally falls through to the network.
+// Restarts Windows PE with wpeutil, as the agent's exit leaves startnet.cmd's prompt open. Back into Windows PE it sets
+// BootNext to BootCurrent, so the network starts next whatever the boot order says. Where the firmware made that entry
+// for a one-time boot menu only, it warns and restarts plainly: the disk has no loader yet, so the firmware falls
+// through to the network.
 public sealed class WindowsPERebooter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IRebooter
 {
     private const string BootCurrent = "BootCurrent";

@@ -81,15 +81,14 @@ if (options.DryRun)
 }
 
 // A dry run changes nothing on the computer it runs on, and a build run from source would swap itself for the
-// published agent, so neither updates. An agent started by an update never updates again. The agent it switches to
-// starts a graphical console of its own, the server's when it offered another one.
+// published agent, so neither updates. An agent started by an update never updates again.
 if (options.DryRun || !AgentBuild.IsPublished)
 {
     log.Information("Not checking for a newer agent in a dry run or an agent that was not published.");
 }
 else if (!options.NoUpdate)
 {
-    string current = await AgentUpdate.Sha256Async(Environment.ProcessPath!, stop.Token).ConfigureAwait(false);
+    string current = await ReleaseFiles.Sha256Async(Environment.ProcessPath!, stop.Token).ConfigureAwait(false);
     ProcessAgentRelauncher relauncher = new(() =>
     {
         server.CloseConnections();
@@ -101,11 +100,8 @@ else if (!options.NoUpdate)
         relauncher,
         log,
         TimeProvider.System,
-        current,
-        AppContext.BaseDirectory,
-        args,
-        status,
-        options.ConsolePath is null ? consolePath : null);
+        new RunningAgent(current, AppContext.BaseDirectory, args, options.ConsolePath is null ? consolePath : null),
+        status);
 
     if (await update.RunAsync(stop.Token).ConfigureAwait(false) is { } exitCode)
     {
@@ -118,16 +114,17 @@ else if (!options.NoUpdate)
 if (options.DryRun)
 {
     DryRunMachine machine = new(
-        options,
+        new DryRunMachineOptions(
+            options,
+            Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}"),
+            Environment.ProcessPath!,
+            RunHeartbeat.DefaultInterval,
+            version),
         server,
         staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate),
         status,
-        Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{options.DryRunId}"),
-        Environment.ProcessPath!,
         log,
-        TimeProvider.System,
-        RunHeartbeat.DefaultInterval,
-        version);
+        TimeProvider.System);
 
     return await machine.RunAsync(stop.Token).ConfigureAwait(false);
 }
@@ -138,41 +135,39 @@ ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log))
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
-SequenceRunner runner = new(
-    server,
-    disks,
-    new PhysicalDisks(),
-    new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
-    new BcdbootWriter(tools, firmware, log),
-    new WindowsPERebooter(tools, firmware, log),
-    new WindowsPERestartMarker(AppContext.BaseDirectory, log, dryRun: false),
-    tools,
-    new NetJoinDomainJoiner(),
-    new WindowsHandOver(
+SequenceRunner runner = new SequenceRunnerBuilder
+{
+    Server = server,
+    Partitioner = disks,
+    RawDisks = new PhysicalDisks(),
+    Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
+    BcdWriter = new BcdbootWriter(tools, firmware, log),
+    Rebooter = new WindowsPERebooter(tools, firmware, log),
+    RestartMarker = new WindowsPERestartMarker(AppContext.BaseDirectory, log, dryRun: false),
+    Tools = tools,
+    Joiner = new NetJoinDomainJoiner(),
+    HandOver = new WindowsHandOver(
         new OfflineServiceRegistration(tools, log, dryRun: false),
         Environment.ProcessPath!,
         staged,
         log,
         dryRun: false,
         ConsoleForWindows),
-    log,
-    TimeProvider.System,
-    RunHeartbeat.DefaultInterval,
-    AppContext.BaseDirectory,
-    Environment.SystemDirectory,
-    dryRun: false,
-    status);
+    Log = log,
+    TimeProvider = TimeProvider.System,
+    Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, Environment.SystemDirectory, DryRun: false),
+    Status = status,
+}.Build();
 AgentLoop loop = new(
     server,
-    new HardwareMachineIdentityReader(),
+    new AgentMachine(new HardwareMachineIdentityReader(), disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version),
     status,
-    disks,
     runner,
-    new LocalRunLocator(LocalRunLocator.FixedDrives()),
     log,
-    TimeProvider.System,
-    version,
-    graphical is null ? null : new ConsoleLogo(server, status, AppContext.BaseDirectory, log));
+    TimeProvider.System)
+{
+    Logo = graphical is null ? null : new ConsoleLogo(server, status, AppContext.BaseDirectory, log),
+};
 
 return await loop.RunAsync(stop.Token).ConfigureAwait(false);
 

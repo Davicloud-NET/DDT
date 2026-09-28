@@ -8,10 +8,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
-// Why the agent could not connect to the server, in words for the administrator who reads the log, with the address it
-// tried, as a mistyped one is the likeliest cause: a socket error's own text is written for a programmer. Every server
-// call goes through HttpAgentServer, which throws these words as the failure's message, as it does its own for a
-// timeout and a refused certificate, so whoever logs a failed call logs its message as it is.
+// Why the agent could not connect to the server, in words for an administrator rather than a socket error's, with the
+// address it tried, as a mistyped one is the likeliest cause. HttpAgentServer throws them as the failure's message.
 public static class ConnectionFailure
 {
     // Null for a failure these words do not cover, whose own message stands.

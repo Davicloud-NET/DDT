@@ -6,15 +6,9 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// The question a console over a pipe has open, for the graphical console in Windows PE and the console of DDT's session
-// alike. The agent asks one question at a time, so the slot holds one: a question asked while another is open takes its
-// place, and the other is withdrawn. Each question gets an id never used before, and stays open until the console
-// answers it, the asker no longer needs it, or the slot closes for good. While no console is connected the question
-// waits, and each console that connects gets it.
-//
-// send takes what the connected console is to get, a question or a withdrawal. The slot calls it under its own lock,
-// so the order of the messages is the order of the changes; a console therefore never calls the slot while it holds a
-// lock that send takes. The slot never looks at an answer: answers may carry passwords, and nothing here logs.
+// The one question a console over a pipe has open: a new one takes its place, and it waits while no console is
+// connected. send gets the console's messages under the slot's lock, so they keep the order of the changes, and a
+// console must not call the slot while it holds a lock send takes. Answers may hold passwords, so nothing here logs.
 public sealed class QuestionSlot(Action<ConsoleMessage> send)
 {
     private readonly Lock _lock = new();
@@ -35,9 +29,8 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
         }
     }
 
-    // Completes with the console's answer; with no answer once cancellationToken is cancelled, which withdraws the
-    // question, or once the next question takes its place; and as Gone once the slot has closed, so the asker can ask
-    // somewhere else.
+    // The console's answer, or none once cancelled, which withdraws the question, or once the next one takes its place.
+    // Gone once the slot has closed, so the asker can ask elsewhere.
     public async Task<QuestionOutcome> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
@@ -174,13 +167,4 @@ public sealed class QuestionSlot(Action<ConsoleMessage> send)
 
         public TaskCompletionSource<QuestionOutcome> Outcome { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
-}
-
-// How a question ended: with the console's answer, without one, or Gone, when the console went away for good before it
-// answered.
-public readonly record struct QuestionOutcome(ConsoleAnswer? Answer, bool Gone)
-{
-    public static QuestionOutcome Unanswered => new(null, Gone: false);
-
-    public static QuestionOutcome NoConsole => new(null, Gone: true);
 }

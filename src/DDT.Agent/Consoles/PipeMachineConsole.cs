@@ -8,24 +8,12 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// ddt-console.exe, the graphical console, fed over a named pipe. Once it has said hello in the agent's version of the
-// protocol, it gets the whole state, the newest log lines from before it connected, and the open question, and then
-// every change as it comes. Should it not start, not connect in time, speak another version, send what is not a console
-// message, stop reading, close its pipe or end, the agent ends it, so the text console behind it is seen, and falls
-// back to the text console for the rest of its run: an open question is asked there again, and nothing waits for a
-// console that is gone. When the agent ends, the console is left running to show the last state.
+// ddt-console.exe, the graphical console, fed over a named pipe. A console that fails in any way is ended, so the text
+// console behind it is seen, which takes over for the rest of the run and asks an open question again.
 public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
 {
-    // How long the console has to start and connect, and then to say hello.
+    // How long the console has to start and connect.
     public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(30);
-    public static readonly TimeSpan HelloTimeout = TimeSpan.FromSeconds(10);
-
-    // A console that takes no message for this long has stopped reading.
-    public static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(30);
-
-    // The lines kept for a console that connects late, and for one that reads slowly.
-    private const int BacklogLines = 500;
-    private const int MaxUnsentLines = 5000;
 
     // How long a console whose pipe closed has to end, so its exit code can say what happened.
     private static readonly TimeSpan s_exitGrace = TimeSpan.FromSeconds(1);
@@ -40,15 +28,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     private readonly TimeSpan _connectTimeout;
     private readonly Lock _lock = new();
     private readonly CancellationTokenSource _stop = new();
-    private readonly Queue<ConsoleLogLine> _lines = new();
-    private readonly Queue<ConsoleMessage> _control = new();
+    private readonly ConsoleOutbox _outbox = new();
     private readonly QuestionSlot _questions;
-    private TaskCompletionSource _wake = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private ConsoleState? _state;
-    private bool _stateUnsent;
-    private bool _connected;
-    private bool _fellBack;
-    private bool _closing;
     private bool _endConsole;
     private bool _greeted;
     private Task _running = Task.CompletedTask;
@@ -70,37 +51,14 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         _log = log;
         _agentVersion = agentVersion;
         _connectTimeout = connectTimeout ?? DefaultConnectTimeout;
-        _questions = new QuestionSlot(Send);
+        _questions = new QuestionSlot(_outbox.Send);
     }
 
     // The console may still be starting: a question waits for it, or for the text console should it not come.
-    public bool CanAsk
-    {
-        get
-        {
-            lock (_lock)
-            {
-                if (!_fellBack)
-                {
-                    return true;
-                }
-            }
-
-            return _fallback.CanAsk;
-        }
-    }
+    public bool CanAsk => !_outbox.IsShut || _fallback.CanAsk;
 
     // True once the text console has taken over.
-    public bool FellBack
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _fellBack;
-            }
-        }
-    }
+    public bool FellBack => _outbox.IsShut;
 
     // True once the console has said hello in this agent's version of the protocol, so it can show a run of this agent
     // anywhere, the installed Windows included.
@@ -115,9 +73,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // The graphical console to start, or null for the text console alone. It is ddt-console.exe next to the agent, when
-    // there is one and someone may be at the machine: never in a dry run, or with input redirected, as by a script.
-    // --console names one to start whatever the case.
+    // ddt-console.exe beside the agent, unless a dry run or redirected input says nobody is at the machine. --console
+    // names one to start whatever the case.
     public static string? PathFor(AgentOptions options, bool inputRedirected, string agentDirectory)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -139,54 +96,23 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        lock (_lock)
+        if (!_outbox.TryShow(state))
         {
-            if (!_fellBack)
-            {
-                _state = state;
-
-                if (_connected)
-                {
-                    _stateUnsent = true;
-                    _wake.TrySetResult();
-                }
-
-                return;
-            }
+            _fallback.Show(state);
         }
-
-        _fallback.Show(state);
     }
 
     public void Write(ConsoleLogLine line)
     {
         ArgumentNullException.ThrowIfNull(line);
 
-        lock (_lock)
+        if (!_outbox.TryWrite(line))
         {
-            if (!_fellBack)
-            {
-                _lines.Enqueue(line);
-
-                while (_lines.Count > (_connected ? MaxUnsentLines : BacklogLines))
-                {
-                    _lines.Dequeue();
-                }
-
-                if (_connected)
-                {
-                    _wake.TrySetResult();
-                }
-
-                return;
-            }
+            _fallback.Write(line);
         }
-
-        _fallback.Write(line);
     }
 
-    // The question waits for the console while it starts. Should the console go away before it answers, the text console
-    // asks it again.
+    // Should the console go away before it answers, the text console asks again.
     public async Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
@@ -223,21 +149,13 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // The last state and lines go out first, unless the console never connected.
+    // The last state and lines go out first, unless the console never connected. The console is left running to show
+    // them.
     public async ValueTask DisposeAsync()
     {
-        bool connected;
-
-        lock (_lock)
+        if (!_outbox.TryBeginClosing(out bool connected))
         {
-            if (_closing)
-            {
-                return;
-            }
-
-            _closing = true;
-            connected = _connected;
-            _wake.TrySetResult();
+            return;
         }
 
         if (connected)
@@ -306,7 +224,9 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
                 return refused;
             }
 
-            Connected();
+            // After the state and the lines, as the console shows the question over them.
+            _outbox.Connect();
+            _questions.Connected();
 
             return await ServeConnectedAsync(channel, process, stop).ConfigureAwait(false);
         }
@@ -316,11 +236,11 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
         catch (ConsoleProtocolException exception)
         {
-            return $"sent something that is not a console message ({exception.Message})";
+            return ConsoleFailure.NotAMessage(exception);
         }
         catch (IOException exception)
         {
-            return $"closed its pipe ({exception.Message})";
+            return ConsoleFailure.ClosedPipe(exception);
         }
     }
 
@@ -329,8 +249,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     private async Task<string?> ServeConnectedAsync(ConsoleChannel channel, IConsoleProcess process, CancellationToken stop)
     {
         using CancellationTokenSource serving = CancellationTokenSource.CreateLinkedTokenSource(stop);
-        Task<string?> reading = ReadAsync(channel, serving.Token);
-        Task<string?> writing = WriteAsync(channel, serving.Token);
+        Task<string?> reading = ConsoleAnswers.ReadAsync(channel, _questions, serving.Token);
+        Task<string?> writing = ConsoleSender.SendQueuedAsync(channel, _outbox, serving.Token);
 
         try
         {
@@ -383,57 +303,27 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
         catch (OperationCanceledException) when (!stop.IsCancellationRequested)
         {
-            return $"did not connect within {Seconds(_connectTimeout)}";
+            return $"did not connect within {Durations.Describe(_connectTimeout)}";
         }
     }
 
     // Null once both sides said hello, otherwise why the console is refused.
     private async Task<string?> GreetAsync(ConsoleChannel channel, IConsoleProcess process, CancellationToken stop)
     {
-        HelloMessage hello;
+        (string? program, string? refusal, bool told) = await ConsoleHandshake.GreetAsync(channel, _agentVersion, stop).ConfigureAwait(false);
 
-        using (CancellationTokenSource greeting = CancellationTokenSource.CreateLinkedTokenSource(stop))
+        if (refusal is not null)
         {
-            greeting.CancelAfter(HelloTimeout);
-
-            try
-            {
-                if (await channel.ReceiveAsync(greeting.Token).ConfigureAwait(false) is not HelloMessage received)
-                {
-                    return "did not begin with a hello";
-                }
-
-                hello = received;
-            }
-            catch (OperationCanceledException) when (!stop.IsCancellationRequested)
-            {
-                return $"did not say hello within {Seconds(HelloTimeout)}";
-            }
-        }
-
-        if (hello.Version != HelloMessage.CurrentVersion)
-        {
-            // Told why, and given a moment to end by itself before it is ended.
-            RefusedMessage refusal = new(
-                HelloMessage.CurrentVersion,
-                $"This agent speaks version {HelloMessage.CurrentVersion} of the console protocol, not {hello.Version}.");
-
-            if (await SendAsync(channel, refusal, stop).ConfigureAwait(false) is null)
+            // A console told why gets a moment to end by itself before it is ended.
+            if (told)
             {
                 await Task.WhenAny(process.Exited, Task.Delay(s_exitGrace, stop)).ConfigureAwait(false);
             }
 
-            return $"speaks version {hello.Version} of the console protocol, and this agent version {HelloMessage.CurrentVersion}";
+            return refusal;
         }
 
-        HelloMessage accepted = new(HelloMessage.CurrentVersion, $"DDT agent {_agentVersion}");
-
-        if (await SendAsync(channel, accepted, stop).ConfigureAwait(false) is { } unsent)
-        {
-            return unsent;
-        }
-
-        _log.Information($"The graphical console, {hello.Program}, is connected.");
+        _log.Information($"The graphical console, {program}, is connected.");
 
         lock (_lock)
         {
@@ -443,165 +333,12 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         return null;
     }
 
-    // Answers until the pipe closes. Returns why it stopped.
-    private async Task<string?> ReadAsync(ConsoleChannel channel, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (true)
-            {
-                switch (await channel.ReceiveAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    case null:
-                        return "closed its pipe";
-                    case AnswerMessage answer:
-                        _questions.Answer(answer.Id, answer.Answer);
-                        break;
-                    default:
-                        return "sent a message only the agent sends";
-                }
-            }
-        }
-        catch (ConsoleProtocolException exception)
-        {
-            return $"sent something that is not a console message ({exception.Message})";
-        }
-        catch (IOException exception)
-        {
-            return $"closed its pipe ({exception.Message})";
-        }
-    }
-
-    // Sends the newest state, the lines and the questions as they come. Returns null once the agent closes the console
-    // and everything is sent, otherwise why it stopped.
-    private async Task<string?> WriteAsync(ConsoleChannel channel, CancellationToken cancellationToken)
-    {
-        while (true)
-        {
-            List<ConsoleMessage> messages = [];
-            Task wake;
-
-            lock (_lock)
-            {
-                if (_stateUnsent)
-                {
-                    messages.Add(new StateMessage(_state!));
-                    _stateUnsent = false;
-                }
-
-                while (_lines.Count > 0)
-                {
-                    int count = Math.Min(_lines.Count, AgentLimits.MaxLinesPerBatch);
-                    ConsoleLogLine[] batch = new ConsoleLogLine[count];
-
-                    for (int index = 0; index < count; index++)
-                    {
-                        batch[index] = _lines.Dequeue();
-                    }
-
-                    messages.Add(new LogMessage(batch));
-                }
-
-                while (_control.TryDequeue(out ConsoleMessage? message))
-                {
-                    messages.Add(message);
-                }
-
-                if (messages.Count == 0)
-                {
-                    if (_closing)
-                    {
-                        return null;
-                    }
-
-                    _wake = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                }
-
-                wake = _wake.Task;
-            }
-
-            if (messages.Count == 0)
-            {
-                await wake.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                continue;
-            }
-
-            foreach (ConsoleMessage message in messages)
-            {
-                if (await SendAsync(channel, message, cancellationToken).ConfigureAwait(false) is { } problem)
-                {
-                    return problem;
-                }
-            }
-        }
-    }
-
-    // Null once sent, otherwise why not.
-    private static async Task<string?> SendAsync(ConsoleChannel channel, ConsoleMessage message, CancellationToken cancellationToken)
-    {
-        using CancellationTokenSource sending = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        sending.CancelAfter(SendTimeout);
-
-        try
-        {
-            await channel.SendAsync(message, sending.Token).ConfigureAwait(false);
-
-            return null;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return $"took no message for {Seconds(SendTimeout)}";
-        }
-        catch (IOException exception)
-        {
-            return $"closed its pipe ({exception.Message})";
-        }
-    }
-
-    // What waits for the console goes out now: the state and the lines kept, and after them the open question.
-    private void Connected()
-    {
-        lock (_lock)
-        {
-            _connected = true;
-            _stateUnsent = _state is not null;
-            _wake.TrySetResult();
-        }
-
-        _questions.Connected();
-    }
-
-    // A question or a withdrawal from the slot, for the console once it is connected.
-    private void Send(ConsoleMessage message)
-    {
-        lock (_lock)
-        {
-            if (_connected && !_fellBack)
-            {
-                _control.Enqueue(message);
-                _wake.TrySetResult();
-            }
-        }
-    }
-
     // For the rest of the run. reason is null when the agent closed the console itself.
     private void FallBack(string? reason)
     {
-        ConsoleState? state;
-
-        lock (_lock)
+        if (!_outbox.TryShut(out ConsoleState? state))
         {
-            if (_fellBack)
-            {
-                return;
-            }
-
-            _fellBack = true;
-            _connected = false;
-            _control.Clear();
-            _lines.Clear();
-            state = _state;
+            return;
         }
 
         if (reason is not null)
@@ -622,6 +359,4 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         process.Exited.IsCompletedSuccessfully
             ? string.Create(CultureInfo.InvariantCulture, $"exit code 0x{process.Exited.Result:X8}")
             : "no exit code";
-
-    private static string Seconds(TimeSpan timeout) => string.Create(CultureInfo.InvariantCulture, $"{timeout.TotalSeconds:0.#} s");
 }

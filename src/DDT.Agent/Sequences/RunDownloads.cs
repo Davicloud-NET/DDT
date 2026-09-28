@@ -13,28 +13,20 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
 {
     // Into directory as <sha256><extension>, resuming a part file an earlier attempt left there. Returns the file.
     public async Task<string> DownloadAsync(
-        string name,
-        string sha256,
-        long sizeBytes,
+        ContentFile content,
         string directory,
         string extension,
         IProgress<int> percent,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(sha256);
+        ArgumentNullException.ThrowIfNull(content);
 
-        // The hash names files on the disk and a route on the server, so it has to be exactly that.
-        if (sha256.Length != 64 || !sha256.All(char.IsAsciiHexDigit))
-        {
-            throw new DeploymentStepException($"The server names {name} by \"{sha256}\", which is no SHA-256. Assign the sequence again.");
-        }
-
-        string hash = sha256.ToLowerInvariant();
+        string hash = Checked(content);
         string file = Path.Combine(directory, hash + extension);
         Directory.CreateDirectory(directory);
 
-        log.Information($"Downloading {name} ({ByteSize.Format(sizeBytes)}).");
-        await Downloader().DownloadAsync(name, hash, sizeBytes, Path.Combine(directory, hash + ".part"), file, percent, cancellationToken)
+        log.Information($"Downloading {content.Name} ({ByteSize.Format(content.SizeBytes)}).");
+        await Downloader().DownloadAsync(content with { Sha256 = hash }, Path.Combine(directory, hash + ".part"), file, percent, cancellationToken)
             .ConfigureAwait(false);
 
         return file;
@@ -42,33 +34,15 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
 
     // Into sink, which does something with the bytes as they come, such as write a raw disk image. Throws when they
     // do not match the SHA-256 the server announced.
-    public async Task DownloadToAsync(
-        string name,
-        string sha256,
-        long sizeBytes,
-        IDownloadSink sink,
-        IProgress<int> percent,
-        CancellationToken cancellationToken)
+    public async Task DownloadToAsync(ContentFile content, IDownloadSink sink, IProgress<int> percent, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(sha256);
+        ArgumentNullException.ThrowIfNull(content);
 
-        if (sha256.Length != 64 || !sha256.All(char.IsAsciiHexDigit))
+        if (!await Downloader().DownloadAsync(content with { Sha256 = Checked(content) }, sink, percent, cancellationToken).ConfigureAwait(false))
         {
-            throw new DeploymentStepException($"The server names {name} by \"{sha256}\", which is no SHA-256. Assign the sequence again.");
-        }
-
-        if (!await Downloader().DownloadAsync(name, sha256.ToLowerInvariant(), sizeBytes, sink, percent, cancellationToken).ConfigureAwait(false))
-        {
-            throw ContentDownloader.Mismatch(name);
+            throw ContentDownloader.Mismatch(content.Name);
         }
     }
-
-    private ContentDownloader Downloader() => new(
-        (token, content, offset, call) => server.OpenRunFileAsync(session.MachineId, token, session.Run.Id, content, offset, call),
-        session.Tokens,
-        log,
-        timeProvider,
-        tokenWait);
 
     // Downloads the package into cacheDirectory and unpacks it into target, which is replaced. The zip is deleted
     // either way.
@@ -77,7 +51,7 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
         ArgumentNullException.ThrowIfNull(package);
 
         string name = $"package {package.Name}";
-        string zip = await DownloadAsync(name, package.Sha256, package.SizeBytes, cacheDirectory, ".zip", percent, cancellationToken)
+        string zip = await DownloadAsync(new ContentFile(name, package.Sha256, package.SizeBytes), cacheDirectory, ".zip", percent, cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -96,4 +70,24 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
             Leftovers.Delete(zip, log);
         }
     }
+
+    // The hash names files on the disk and a route on the server, so it has to be exactly that. Returns it lower case.
+    private static string Checked(ContentFile content)
+    {
+        ArgumentNullException.ThrowIfNull(content.Sha256);
+
+        if (content.Sha256.Length != 64 || !content.Sha256.All(char.IsAsciiHexDigit))
+        {
+            throw new DeploymentStepException($"The server names {content.Name} by \"{content.Sha256}\", which is no SHA-256. Assign the sequence again.");
+        }
+
+        return content.Sha256.ToLowerInvariant();
+    }
+
+    private ContentDownloader Downloader() => new(
+        (token, content, offset, call) => server.OpenRunFileAsync(session.MachineId, token, new RunFileRange(session.Run.Id, content, offset), call),
+        session.Tokens,
+        log,
+        timeProvider,
+        tokenWait);
 }

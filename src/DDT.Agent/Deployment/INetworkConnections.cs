@@ -4,9 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// The connections of the logon session the calling thread acts for, as mpr.dll keeps them. Every call blocks, and a
-// failure comes back as the Windows error with its text, read on the same thread, as the network provider's own text
-// is kept per thread.
+// The connections of the logon session the calling thread acts for, as mpr.dll keeps them. Every call blocks, and an
+// error comes back with its text, read on the same thread, as the network provider keeps its text per thread.
 public interface INetworkConnections
 {
     // A temporary connection without a drive letter. Null when it worked.
@@ -18,5 +17,3 @@ public interface INetworkConnections
     // The remote names of every connection, such as \\files\drivers.
     IReadOnlyList<string> Connected();
 }
-
-public sealed record NetworkError(int Code, string Message);

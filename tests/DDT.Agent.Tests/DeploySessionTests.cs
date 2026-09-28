@@ -335,9 +335,7 @@ public sealed class DeploySessionTests : IDisposable
     private DeploySession Session(TimeProvider? time = null) => new(
         _root,
         _accounts,
-        _machine,
-        _users,
-        _tools,
+        new SessionRegistry(_machine, _users, _tools),
         Log(),
         time ?? new ImmediateTimeProvider(),
         (sid, pipe) => _started.Add((sid, pipe)));

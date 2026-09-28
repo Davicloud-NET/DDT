@@ -9,10 +9,8 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// What the technician has typed so far. A wrong password asks again only for the password, and a wrong code
-// only for the code, as the web sign in page does. Typed user names never reach the log, because a password
-// typed into the wrong field would otherwise be uploaded with it. What went wrong is logged, and the next question
-// carries it too, for a console that shows it with the field.
+// The sign-in typed at the machine. A wrong password or code asks again for that alone, as the web sign-in does. Typed
+// user names never reach the log, as a password typed into the wrong field would be uploaded with them.
 public sealed class SignInConversation(IMachineConsole console, AgentLog log)
 {
     private string? _userName;

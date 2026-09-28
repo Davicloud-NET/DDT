@@ -4,10 +4,8 @@
 
 namespace DDT.Agent.WindowsPhase;
 
-// What the service tells the service control manager, through report, and when: Running, accepting stop and shutdown,
-// while the body runs; Stop pending once either arrives, which cancels the body; Stopped with the body's exit code once
-// it returns. Controls arrive on the control manager's own thread and are answered at once, so the body's cancellation
-// callbacks run elsewhere.
+// What the service tells the service control manager through report: Running while the body runs, Stop pending once a
+// stop or shutdown cancels the body, and Stopped with the body's exit code once it returns.
 public sealed class ServiceLifetime(Action<ServiceStatus> report)
 {
     public const uint OwnProcess = 0x10;

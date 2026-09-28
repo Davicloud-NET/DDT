@@ -20,7 +20,7 @@ public sealed class DiskpartScriptTests
     [Fact]
     public void BuildsMicrosoftsUefiLayoutWithCrlfAndNoBlankLine()
     {
-        string script = DiskpartScript.Build(2, 'S', 'W', 'R');
+        string script = DiskpartScript.Build(2, new PartitionLetters('S', 'W', 'R'));
 
         Assert.Equal(
             "select disk 2\r\n" +
@@ -63,7 +63,7 @@ public sealed class DiskpartScriptTests
     [Fact]
     public void UsesThePartitionSizesItIsGiven()
     {
-        string script = DiskpartScript.Build(0, 'S', 'W', 'R', 260, 65536);
+        string script = DiskpartScript.Build(0, new PartitionLetters('S', 'W', 'R'), 260, 65536);
 
         Assert.Contains("create partition efi size=260\r\n", script, StringComparison.Ordinal);
         Assert.Contains("shrink minimum=65536\r\n", script, StringComparison.Ordinal);
@@ -71,18 +71,18 @@ public sealed class DiskpartScriptTests
 
     [Fact]
     public void UsesTheLettersItIsGiven() =>
-        Assert.Contains("assign letter=Z\r\n", DiskpartScript.Build(0, 'Z', 'Y', 'X'), StringComparison.Ordinal);
+        Assert.Contains("assign letter=Z\r\n", DiskpartScript.Build(0, new PartitionLetters('Z', 'Y', 'X')), StringComparison.Ordinal);
 
     [Fact]
     public void PrefersSWAndR() =>
-        Assert.Equal(('S', 'W', 'R'), DriveLetters.Choose(Letters('X', 'C', 'D')));
+        Assert.Equal(new PartitionLetters('S', 'W', 'R'), DriveLetters.Choose(Letters('X', 'C', 'D')));
 
     [Fact]
     public void ReplacesATakenLetterWithTheHighestFreeOne()
     {
-        Assert.Equal(('S', 'Z', 'R'), DriveLetters.Choose(Letters('X', 'C', 'W')));
-        Assert.Equal(('Z', 'W', 'Y'), DriveLetters.Choose(Letters('X', 'C', 'S', 'R')));
-        Assert.Equal(('X', 'W', 'R'), DriveLetters.Choose(Letters('C', 'S', 'Y', 'Z')));
+        Assert.Equal(new PartitionLetters('S', 'Z', 'R'), DriveLetters.Choose(Letters('X', 'C', 'W')));
+        Assert.Equal(new PartitionLetters('Z', 'W', 'Y'), DriveLetters.Choose(Letters('X', 'C', 'S', 'R')));
+        Assert.Equal(new PartitionLetters('X', 'W', 'R'), DriveLetters.Choose(Letters('C', 'S', 'Y', 'Z')));
     }
 
     [Fact]

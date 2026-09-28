@@ -91,8 +91,8 @@ public sealed class RunInputsTests : IDisposable
         AgentRun run = TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]);
         Assert.Null(run.Values);
 
-        RunResult result = await TestAgents.Runner(server, _tools, log, time, toolRunner: _toolRunner, status: TestAgents.Status(new ScriptedMachineConsole()))
-            .RunAsync(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read(), server.Stop.Token);
+        RunResult result = await TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = TestAgents.Status(new ScriptedMachineConsole()) })
+            .RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
 
         Assert.Equal(RunOutcome.Finished, result.Outcome);
         Assert.Equal((DeploymentState.Running, RunActivity.Preparing), (server.RunReports[0].State, server.RunReports[0].Activity));
@@ -165,8 +165,8 @@ public sealed class RunInputsTests : IDisposable
             ],
         };
         AgentRun run = TestRuns.Run(definition.Steps) with { Sequence = definition, PendingInputs = [s_office] };
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, toolRunner: _toolRunner, status: status);
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = status });
 
-        return runner.RunAsync(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read(), server.Stop.Token);
+        return runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
     }
 }

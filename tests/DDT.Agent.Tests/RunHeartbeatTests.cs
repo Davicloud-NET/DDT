@@ -28,9 +28,7 @@ public sealed class RunHeartbeatTests
         _heartbeat = new RunHeartbeat(
             _server,
             new AgentLog(time, TextWriter.Null),
-            _tokens,
-            s_machineId,
-            TestRuns.RunId,
+            Session(),
             _ =>
             {
                 _savedTokens.Add(_tokens.RunToken);
@@ -252,9 +250,7 @@ public sealed class RunHeartbeatTests
         RunHeartbeat heartbeat = new(
             _server,
             new AgentLog(time, TextWriter.Null),
-            _tokens,
-            s_machineId,
-            TestRuns.RunId,
+            Session(),
             _ => Task.CompletedTask,
             TimeSpan.FromSeconds(10),
             time);
@@ -278,9 +274,7 @@ public sealed class RunHeartbeatTests
         RunHeartbeat heartbeat = new(
             _server,
             new AgentLog(time, TextWriter.Null),
-            _tokens,
-            s_machineId,
-            TestRuns.RunId,
+            Session(),
             _ => Task.CompletedTask,
             TimeSpan.FromSeconds(10),
             time);
@@ -319,4 +313,6 @@ public sealed class RunHeartbeatTests
         {
             Steps = [.. s_definition.Steps.Zip(states, (step, state) => new StepRunState(step.Id, state, null))],
         };
+
+    private RunSession Session() => new(s_machineId, TestRuns.Run(TestRuns.InstallWindows), _tokens);
 }

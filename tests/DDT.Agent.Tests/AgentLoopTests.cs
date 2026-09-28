@@ -33,7 +33,7 @@ public sealed class AgentLoopTests : IDisposable
         AgentLog log = new(time, TextWriter.Null);
         ScriptedSignInPrompt nobody = new() { IsAvailable = false };
 
-        return (TestAgents.Loop(server, nobody, _tools, log, time, identity), time);
+        return (TestAgents.Loop(server, nobody, new(_tools, log, time) { Identity = identity }), time);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class AgentLoopTests : IDisposable
         AgentLog log = new(time, TextWriter.Null);
         ConsoleStatus status = TestAgents.Status(new ScriptedSignInPrompt() { IsAvailable = false }, log);
 
-        await TestAgents.Loop(server, status, _tools, log, time).RunAsync(server.Stop.Token);
+        await TestAgents.Loop(server, status, new(_tools, log, time)).RunAsync(server.Stop.Token);
 
         Assert.Equal("de", status.State.Language);
     }

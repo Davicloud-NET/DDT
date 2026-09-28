@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Buffers.Binary;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -16,23 +14,21 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
     // Disk numbers can have gaps, so a missing number does not end the search.
     private const int MaxDisks = 32;
 
-    private const int StoragePropertyQueryLength = 12;
-    private const int LengthInformationLength = 8;
-    private const int StorageDeviceNumberLength = 12;
-    private const int MaxLayoutLength = 1024 * 1024;
-
     private static readonly TimeSpan s_volumeTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan s_volumePollInterval = TimeSpan.FromMilliseconds(500);
 
+    private readonly DiskLayouts _layouts = new(log);
+
     public Task<IReadOnlyList<LocalDisk>> ListDisksAsync(CancellationToken cancellationToken)
     {
+        DiskProbe probe = new(log, _layouts);
         List<LocalDisk> disks = [];
 
         for (int number = 0; number < MaxDisks; number++)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (Probe(number) is { } disk)
+            if (probe.Probe(number) is { } disk)
             {
                 disks.Add(disk);
             }
@@ -49,25 +45,17 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
     {
         ArgumentNullException.ThrowIfNull(disk);
 
-        (char system, char windows, char recovery) = DriveLetters.Choose(DiskNativeMethods.GetLogicalDrives());
-        string script = DiskpartScript.Build(disk.Number, system, windows, recovery, systemPartitionMegabytes, recoveryPartitionMegabytes);
-        string path = Path.Combine(workDirectory, "partition.txt");
+        PartitionLetters letters = DriveLetters.Choose(DiskNativeMethods.GetLogicalDrives());
+        string script = DiskpartScript.Build(disk.Number, letters, systemPartitionMegabytes, recoveryPartitionMegabytes);
+        string path = await WriteScriptAsync("partition.txt", script, cancellationToken).ConfigureAwait(false);
 
-        Directory.CreateDirectory(workDirectory);
-        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
-
-        IReadOnlyList<Guid> erased = ReadSystemPartitionIds(disk.Number);
+        IReadOnlyList<Guid> erased = _layouts.ReadSystemPartitionIds(disk.Number);
 
         log.Information($"Partitioning disk {disk.Number} with this diskpart script:");
+        LogScript(script);
+        await RunScriptAsync(path, cancellationToken).ConfigureAwait(false);
 
-        foreach (string line in script.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
-        {
-            log.Information($"  {line}");
-        }
-
-        await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
-
-        TargetVolumes volumes = new($"{system}:\\", $"{windows}:\\", $"{recovery}:\\", erased);
+        TargetVolumes volumes = new($"{letters.System}:\\", $"{letters.Windows}:\\", $"{letters.Recovery}:\\", erased);
 
         foreach (string root in new[] { volumes.System, volumes.Windows, volumes.Recovery })
         {
@@ -86,16 +74,11 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
     {
         ArgumentNullException.ThrowIfNull(disk);
 
-        string script = DiskpartScript.Clean(disk.Number);
-        string path = Path.Combine(workDirectory, "clean.txt");
-
-        Directory.CreateDirectory(workDirectory);
-        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
-
-        IReadOnlyList<Guid> erased = ReadSystemPartitionIds(disk.Number);
+        string path = await WriteScriptAsync("clean.txt", DiskpartScript.Clean(disk.Number), cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<Guid> erased = _layouts.ReadSystemPartitionIds(disk.Number);
 
         log.Information($"Erasing the partition table of disk {disk.Number} with diskpart clean.");
-        await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
+        await RunScriptAsync(path, cancellationToken).ConfigureAwait(false);
 
         return erased;
     }
@@ -110,38 +93,18 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
                 $"{windowsRoot} holds a run's state but is not the Windows partition that run made, so the run cannot go on.");
         }
 
-        int number = ReadDiskNumber(windowsRoot);
-        byte[] layout;
-
-        using (SafeFileHandle disk = OpenDisk(number))
-        {
-            if (disk.IsInvalid)
-            {
-                throw new DeploymentStepException($"Disk {number}, which holds the run's Windows partition, cannot be opened (Windows error {Marshal.GetLastPInvokeError()}).");
-            }
-
-            layout = ReadLayout(disk, number)
-                ?? throw new DeploymentStepException($"The partitions of disk {number} cannot be read, so the run's system and recovery partitions cannot be found.");
-        }
-
+        int number = DiskLayouts.ReadDiskNumber(windowsRoot);
+        byte[] layout = ReadRunLayout(number);
         uint system = PartitionNumber(layout, ids.System, "system", number);
         uint recovery = PartitionNumber(layout, ids.Recovery, "recovery", number);
 
         (char systemLetter, _, char recoveryLetter) = DriveLetters.Choose(DiskNativeMethods.GetLogicalDrives());
         string script = DiskpartScript.AssignLetters(number, system, systemLetter, recovery, recoveryLetter);
-        string path = Path.Combine(workDirectory, "find.txt");
-
-        Directory.CreateDirectory(workDirectory);
-        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+        string path = await WriteScriptAsync("find.txt", script, cancellationToken).ConfigureAwait(false);
 
         log.Information($"The run's Windows partition is {windowsRoot} on disk {number}. Its system and recovery partitions get letters again:");
-
-        foreach (string line in script.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
-        {
-            log.Information($"  {line}");
-        }
-
-        await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken).ConfigureAwait(false);
+        LogScript(script);
+        await RunScriptAsync(path, cancellationToken).ConfigureAwait(false);
 
         TargetVolumes volumes = new($"{systemLetter}:\\", windowsRoot, $"{recoveryLetter}:\\", ids.ErasedSystemPartitionIds)
         {
@@ -157,6 +120,19 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
         EspReader.Read(volumes.System);
 
         return volumes;
+    }
+
+    private byte[] ReadRunLayout(int number)
+    {
+        using SafeFileHandle disk = DiskLayouts.OpenDisk(number);
+
+        if (disk.IsInvalid)
+        {
+            throw new DeploymentStepException($"Disk {number}, which holds the run's Windows partition, cannot be opened (Windows error {Marshal.GetLastPInvokeError()}).");
+        }
+
+        return _layouts.ReadLayout(disk, number)
+            ?? throw new DeploymentStepException($"The partitions of disk {number} cannot be read, so the run's system and recovery partitions cannot be found.");
     }
 
     private static uint PartitionNumber(byte[] layout, Guid id, string what, int disk)
@@ -175,28 +151,26 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
         return number ?? throw new DeploymentStepException($"The run's {what} partition is no longer on disk {disk}, so the run cannot go on.");
     }
 
-    // STORAGE_DEVICE_NUMBER: the device type, then the number of \\.\PhysicalDriveN at 4.
-    private static unsafe int ReadDiskNumber(string root)
+    private async Task<string> WriteScriptAsync(string fileName, string script, CancellationToken cancellationToken)
     {
-        using SafeFileHandle volume = PartitionReader.OpenVolume(root);
-        byte* number = stackalloc byte[StorageDeviceNumberLength];
+        string path = Path.Combine(workDirectory, fileName);
 
-        if (!DiskNativeMethods.DeviceIoControl(
-            volume,
-            DiskNativeMethods.IoctlStorageGetDeviceNumber,
-            null,
-            0,
-            number,
-            StorageDeviceNumberLength,
-            out uint returned,
-            0)
-            || returned < StorageDeviceNumberLength)
-        {
-            throw new DeploymentStepException($"The disk that holds {root} cannot be told (Windows error {Marshal.GetLastPInvokeError()}).");
-        }
+        Directory.CreateDirectory(workDirectory);
+        await File.WriteAllTextAsync(path, script, Encoding.ASCII, cancellationToken).ConfigureAwait(false);
 
-        return (int)BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(number + 4, 4));
+        return path;
     }
+
+    private void LogScript(string script)
+    {
+        foreach (string line in script.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            log.Information($"  {line}");
+        }
+    }
+
+    private Task RunScriptAsync(string path, CancellationToken cancellationToken) =>
+        tools.RunAsync(Path.Combine(Environment.SystemDirectory, "diskpart.exe"), ["/s", path], cancellationToken);
 
     // diskpart assigns letters before it exits, but the volume can still take a moment to mount.
     private async Task WaitForVolumeAsync(string root, CancellationToken cancellationToken)
@@ -229,210 +203,5 @@ public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimePro
         return DiskNativeMethods.GetVolumeInformation(root, null, 0, out _, out _, out _, name, 64)
             ? new string(name)
             : null;
-    }
-
-    // Only a cleanup depends on it: a firmware boot entry for an erased EFI system partition is reused instead of
-    // staying behind, dead.
-    private IReadOnlyList<Guid> ReadSystemPartitionIds(int number)
-    {
-        using SafeFileHandle handle = OpenDisk(number);
-
-        if (handle.IsInvalid)
-        {
-            log.Warning($"Disk {number} cannot be opened to read its partitions before it is erased (Windows error {Marshal.GetLastPInvokeError()}).");
-
-            return [];
-        }
-
-        if (ReadLayout(handle, number) is not { } layout)
-        {
-            return [];
-        }
-
-        try
-        {
-            return DriveLayoutReader.EfiSystemPartitionIds(layout);
-        }
-        catch (ArgumentException exception)
-        {
-            log.Warning($"The partitions of disk {number} cannot be read ({exception.Message}).");
-
-            return [];
-        }
-    }
-
-    private static SafeFileHandle OpenDisk(int number) => DiskNativeMethods.CreateFile(
-        string.Create(CultureInfo.InvariantCulture, $@"\\.\PhysicalDrive{number}"),
-        DiskNativeMethods.GenericRead,
-        DiskNativeMethods.FileShareRead | DiskNativeMethods.FileShareWrite,
-        0,
-        DiskNativeMethods.OpenExisting,
-        0,
-        0);
-
-    private LocalDisk? Probe(int number)
-    {
-        using SafeFileHandle handle = OpenDisk(number);
-
-        if (handle.IsInvalid)
-        {
-            int error = Marshal.GetLastPInvokeError();
-
-            if (error is not (DiskNativeMethods.ErrorFileNotFound or DiskNativeMethods.ErrorPathNotFound))
-            {
-                log.Warning(error == DiskNativeMethods.ErrorAccessDenied
-                    ? $"Disk {number} cannot be opened: access is denied. The agent has to run as an administrator."
-                    : $"Disk {number} cannot be opened (Windows error {error}). It is left out.");
-            }
-
-            return null;
-        }
-
-        if (ReadDescriptor(handle) is not { } device)
-        {
-            log.Warning($"Disk {number} does not describe itself (Windows error {Marshal.GetLastPInvokeError()}). It is left out.");
-
-            return null;
-        }
-
-        if (ReadLength(handle) is not { } size)
-        {
-            log.Warning($"The size of disk {number} cannot be read (Windows error {Marshal.GetLastPInvokeError()}). It is left out.");
-
-            return null;
-        }
-
-        int partitions = ReadPartitionCount(handle, number);
-        string? reason = DiskEligibility.ExclusionReason(device.RemovableMedia, device.BusType, size);
-        LocalDisk disk = new(number, device.Model, size, device.BusType, partitions);
-
-        log.Information(
-            $"{disk.Describe()}, removable {(device.RemovableMedia ? "yes" : "no")}: " +
-            (reason is null ? "DDT can install on it." : $"left out because {reason}."));
-
-        return reason is null ? disk : null;
-    }
-
-    private static unsafe StorageDeviceInfo? ReadDescriptor(SafeFileHandle handle)
-    {
-        byte* query = stackalloc byte[StoragePropertyQueryLength];
-        new Span<byte>(query, StoragePropertyQueryLength).Clear();
-
-        byte* header = stackalloc byte[StorageDescriptorReader.HeaderLength];
-
-        if (!DiskNativeMethods.DeviceIoControl(
-            handle,
-            DiskNativeMethods.IoctlStorageQueryProperty,
-            query,
-            StoragePropertyQueryLength,
-            header,
-            StorageDescriptorReader.HeaderLength,
-            out _,
-            0))
-        {
-            return null;
-        }
-
-        int size = Math.Max(StorageDescriptorReader.ReadSize(new ReadOnlySpan<byte>(header, StorageDescriptorReader.HeaderLength)), StorageDescriptorReader.MinimumLength);
-        byte[] descriptor = new byte[size];
-
-        fixed (byte* output = descriptor)
-        {
-            if (!DiskNativeMethods.DeviceIoControl(
-                handle,
-                DiskNativeMethods.IoctlStorageQueryProperty,
-                query,
-                StoragePropertyQueryLength,
-                output,
-                (uint)size,
-                out uint returned,
-                0)
-                || returned < StorageDescriptorReader.MinimumLength)
-            {
-                return null;
-            }
-
-            return StorageDescriptorReader.Read(descriptor.AsSpan(0, (int)returned));
-        }
-    }
-
-    private static unsafe long? ReadLength(SafeFileHandle handle)
-    {
-        byte* length = stackalloc byte[LengthInformationLength];
-
-        return DiskNativeMethods.DeviceIoControl(
-            handle,
-            DiskNativeMethods.IoctlDiskGetLengthInfo,
-            null,
-            0,
-            length,
-            LengthInformationLength,
-            out uint returned,
-            0)
-            && returned >= LengthInformationLength
-            ? BinaryPrimitives.ReadInt64LittleEndian(new ReadOnlySpan<byte>(length, LengthInformationLength))
-            : null;
-    }
-
-    // Only shown to the technician, so a layout that cannot be read counts as none rather than hiding the disk.
-    private int ReadPartitionCount(SafeFileHandle handle, int number)
-    {
-        if (ReadLayout(handle, number) is not { } layout)
-        {
-            return 0;
-        }
-
-        try
-        {
-            return DriveLayoutReader.CountUsedPartitions(layout);
-        }
-        catch (ArgumentException exception)
-        {
-            log.Warning($"The partitions of disk {number} cannot be read ({exception.Message}).");
-
-            return 0;
-        }
-    }
-
-    // Null, after a warning, when the layout cannot be read.
-    private unsafe byte[]? ReadLayout(SafeFileHandle handle, int number)
-    {
-        int size = DriveLayoutReader.HeaderLength + (16 * DriveLayoutReader.EntryLength);
-
-        while (size <= MaxLayoutLength)
-        {
-            byte[] layout = new byte[size];
-
-            fixed (byte* output = layout)
-            {
-                if (DiskNativeMethods.DeviceIoControl(
-                    handle,
-                    DiskNativeMethods.IoctlDiskGetDriveLayoutEx,
-                    null,
-                    0,
-                    output,
-                    (uint)size,
-                    out uint returned,
-                    0))
-                {
-                    return layout[..(int)returned];
-                }
-            }
-
-            int error = Marshal.GetLastPInvokeError();
-
-            if (error is not (DiskNativeMethods.ErrorInsufficientBuffer or DiskNativeMethods.ErrorMoreData))
-            {
-                log.Warning($"The partitions of disk {number} cannot be read (Windows error {error}).");
-
-                return null;
-            }
-
-            size *= 2;
-        }
-
-        log.Warning($"The partitions of disk {number} cannot be read: its layout is larger than {MaxLayoutLength} bytes.");
-
-        return null;
     }
 }

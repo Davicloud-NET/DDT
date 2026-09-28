@@ -10,10 +10,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run's files in run under its directory, <Windows volume>\DDT: state.json, the state the engine saves after every
-// change, in Format 1 for a flat run and Format 2 for a tree's, and token, the run token that resumes the run after a
-// restart. Each is replaced whole, through a temporary file written through to the disk, so a power loss leaves the old
-// file or the new one, never part of one. The token is a secret: it is never logged.
+// A run's files in <Windows volume>\DDT\run: state.json, in Format 1 for a list and Format 2 for a tree, and token, the
+// run token, a secret never logged. Each is replaced through a temporary file written through to the disk, so a power
+// loss leaves the old file or the new one, never part of one.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");

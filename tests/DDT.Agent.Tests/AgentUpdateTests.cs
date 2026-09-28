@@ -27,7 +27,7 @@ public sealed class AgentUpdateTests : IDisposable
     {
         ImmediateTimeProvider time = new();
 
-        return (new AgentUpdate(server, relauncher, new AgentLog(time, TextWriter.Null), time, CurrentSha256, _directory, arguments), time);
+        return (new AgentUpdate(server, relauncher, new AgentLog(time, TextWriter.Null), time, new RunningAgent(CurrentSha256, _directory, arguments)), time);
     }
 
     private string AgentPath => Path.Combine(_directory, "ddt-agent.exe");
@@ -71,11 +71,7 @@ public sealed class AgentUpdateTests : IDisposable
             relauncher,
             new AgentLog(time, TextWriter.Null),
             time,
-            CurrentSha256,
-            _directory,
-            arguments,
-            consolePath: consolePath,
-            agentPath: AgentPath);
+            new RunningAgent(CurrentSha256, _directory, arguments, consolePath, AgentPath));
     }
 
     [Fact]
@@ -107,9 +103,7 @@ public sealed class AgentUpdateTests : IDisposable
             new ScriptedRelauncher(() => 0),
             new AgentLog(time, TextWriter.Null),
             time,
-            CurrentSha256,
-            _directory,
-            [],
+            new RunningAgent(CurrentSha256, _directory, []),
             TestAgents.Status(console));
 
         Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
@@ -228,7 +222,7 @@ public sealed class AgentUpdateTests : IDisposable
         using HttpAgentServer server = new(new Uri($"https://127.0.0.1:{port}/"), null, connectTimeout: TimeSpan.FromMilliseconds(300));
         ManualTimeProvider time = new();
         using StringWriter console = new();
-        AgentUpdate update = new(server, new ScriptedRelauncher(() => 0), new AgentLog(time, console), time, CurrentSha256, _directory, []);
+        AgentUpdate update = new(server, new ScriptedRelauncher(() => 0), new AgentLog(time, console), time, new RunningAgent(CurrentSha256, _directory, []));
         using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         using CancellationTokenSource limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         limit.CancelAfter(TimeSpan.FromSeconds(10));

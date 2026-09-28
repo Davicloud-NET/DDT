@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Text.Json;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
@@ -10,57 +9,55 @@ using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
-using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// Registers the machine, waits until it may run a task sequence, runs it, and after a restart in the middle of a run
-// goes on with the run whose state it finds on the disk, as long as the server still runs it. A start that finds a
-// restart still due makes that restart first, without registering. The console at the machine asks the questions and
-// shows how far the machine is.
-public sealed class AgentLoop(
-    IAgentServer server,
-    IMachineIdentityReader identityReader,
-    ConsoleStatus status,
-    IDiskPartitioner disks,
-    SequenceRunner runner,
-    LocalRunLocator locator,
-    AgentLog log,
-    TimeProvider timeProvider,
-    string agentVersion,
-    ConsoleLogo? logo = null)
+// The agent in Windows PE: registers the machine, polls until it may run a task sequence, and runs it. After a restart
+// it goes on with the run it finds on the disk, as long as the server still runs it.
+public sealed class AgentLoop
 {
-    private MachineIdentity? _lastIdentity;
-    private string? _resumeToken;
+    private readonly IAgentServer _server;
+    private readonly AgentMachine _machine;
+    private readonly ConsoleStatus _status;
+    private readonly SequenceRunner _runner;
+    private readonly AgentLog _log;
+    private readonly TimeProvider _timeProvider;
+    private readonly AgentRegistrar _registrar;
+    private readonly LocalRunTracker _runs;
+    private readonly ConsolePrompts _prompts;
+    private readonly RunStarter _runStarter;
 
-    // The run an earlier start of the agent left on the disk, until it goes on or the server ended it.
-    private LocalRun? _localRun;
+    // The tokens every registration, poll, report and run renews; the next registration sends their resume token.
+    private DeploymentTokens? _tokens;
 
-    // The newest run token: from the disk, a registration or the run itself.
-    private string? _runToken;
-
-    // A run that ended in this process without the server hearing so, and the Failed report that tells it.
-    private (Guid RunId, AgentRunReport Report)? _abandonedRun;
-
-    // The disk last confirmed with ERASE in this process. Kept past the pick's answer: a pick the server stored but
-    // did not confirm still arrives as an Assigned run.
-    private LocalDisk? _confirmedDisk;
-
-    // The run last chosen at this console without a disk confirmed with ERASE, which therefore must not erase one.
-    private Guid? _pickedWithoutErase;
-
-    // The disks the picker offers, read once each time the machine may pick; null until then.
-    private IReadOnlyList<LocalDisk>? _pickableDisks;
-    private bool _toldNoSequences;
     private bool _toldNoDeployments;
+
+    public AgentLoop(IAgentServer server, AgentMachine machine, ConsoleStatus status, SequenceRunner runner, AgentLog log, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        _server = server;
+        _machine = machine;
+        _status = status;
+        _runner = runner;
+        _log = log;
+        _timeProvider = timeProvider;
+        _registrar = new AgentRegistrar(server, machine, status, log, timeProvider);
+        _runs = new LocalRunTracker(machine.Runs, log);
+        _prompts = new ConsolePrompts(server, status, machine.Disks, log, _registrar);
+        _runStarter = new RunStarter(server, runner, _runs, _prompts, _registrar, log);
+    }
+
+    // Shows the logo the registration names on the graphical console; null for the text console.
+    public ConsoleLogo? Logo { get; init; }
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         int exitCode = await RunCoreAsync(cancellationToken).ConfigureAwait(false);
 
-        if (exitCode == AgentExitCodes.Stopped && status.State.Stage != ConsoleStage.Stopped)
+        if (exitCode == AgentExitCodes.Stopped && _status.State.Stage != ConsoleStage.Stopped)
         {
-            status.Stopped("The agent was stopped.");
+            _status.Stopped("The agent was stopped.");
         }
 
         return exitCode;
@@ -68,16 +65,17 @@ public sealed class AgentLoop(
 
     private async Task<int> RunCoreAsync(CancellationToken cancellationToken)
     {
-        log.Information($"DDT agent {agentVersion}");
+        _log.Information($"DDT agent {_machine.AgentVersion}");
 
-        if (await runner.RestartIfDueAsync(cancellationToken).ConfigureAwait(false) is { } restarted)
+        // A start that finds a restart still due makes it first, without registering.
+        if (await _runner.RestartIfDueAsync(cancellationToken).ConfigureAwait(false) is { } restarted)
         {
             return restarted == RunOutcome.Restarting ? AgentExitCodes.Restarting : AgentExitCodes.Stopped;
         }
 
-        if (!status.Console.CanAsk)
+        if (!_status.Console.CanAsk)
         {
-            log.Information("Nobody can type at this console. Unless the server requires a sign in at the machine, approve it on the Machines page.");
+            _log.Information("Nobody can type at this console. Unless the server requires a sign in at the machine, approve it on the Machines page.");
         }
 
         bool first = true;
@@ -86,300 +84,106 @@ public sealed class AgentLoop(
         {
             // After a refused token, never register again in a tight loop: two agents fighting over one
             // machine would otherwise hammer the server.
-            if (!first && !await DelayAsync(AgentLimits.MinRetryDelay, cancellationToken).ConfigureAwait(false))
+            if (!first && !await CancellableDelay.WaitAsync(AgentLimits.MinRetryDelay, _timeProvider, cancellationToken).ConfigureAwait(false))
             {
                 return AgentExitCodes.Stopped;
             }
 
             first = false;
 
-            try
-            {
-                await FindLocalRunAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            if (await RegisterAsync(cancellationToken).ConfigureAwait(false) is not { } registration)
             {
                 return AgentExitCodes.Stopped;
             }
 
-            AgentRegistrationResult? registration = await RegisterAsync(cancellationToken).ConfigureAwait(false);
-
-            if (registration is null)
+            if (registration.Token is not { } token)
             {
-                return AgentExitCodes.Stopped;
-            }
-
-            KeepOrDiscardLocalRun(registration);
-
-            status.SetLanguage(registration.ConsoleLanguage);
-
-            if (logo is not null)
-            {
-                await logo.ShowAsync(registration.ConsoleLogoSha256, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (registration.Token is null)
-            {
-                log.Error($"An administrator rejected machine {registration.MachineId}. The agent stops here.");
-                status.Rejected(registration.MachineId);
+                _log.Error($"An administrator rejected machine {registration.MachineId}. The agent stops here.");
+                _status.Rejected(registration.MachineId);
 
                 return AgentExitCodes.Rejected;
             }
 
-            _resumeToken = registration.ResumeToken;
-            log.Information($"Registered as machine {registration.MachineId}, {Describe(registration.State)}");
-            status.Reached(registration.MachineId, registration.State, registration.SignedInBy);
+            // The server sends a resume token with every token; one missing and never renewed means the next
+            // registration sends none.
+            _tokens = new DeploymentTokens(token, registration.ResumeToken ?? string.Empty);
+            _log.Information($"Registered as machine {registration.MachineId}, {Describe(registration.State)}");
+            _status.Reached(registration.MachineId, registration.State, registration.SignedInBy);
 
-            int? exitCode = await PollAsync(registration, cancellationToken).ConfigureAwait(false);
-
-            if (exitCode is { } code)
+            if (await PollAsync(new PollState(registration, _tokens), cancellationToken).ConfigureAwait(false) is { } exitCode)
             {
-                return code;
+                return exitCode;
             }
         }
 
         return AgentExitCodes.Stopped;
     }
 
+    // Null once stopped. The console takes up the language and the logo the registration names.
+    private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _runs.FindAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
+        string? resumeToken = _tokens?.ResumeToken is { Length: > 0 } resume ? resume : null;
+        AgentRegistrationResult? registration = await _registrar.RegisterAsync(resumeToken, _runs.RunToken, cancellationToken).ConfigureAwait(false);
+
+        if (registration is null)
+        {
+            return null;
+        }
+
+        _runs.KeepOrDiscard(registration);
+        _status.SetLanguage(registration.ConsoleLanguage);
+
+        if (Logo is not null)
+        {
+            await Logo.ShowAsync(registration.ConsoleLogoSha256, cancellationToken).ConfigureAwait(false);
+        }
+
+        return registration;
+    }
+
     // Returns null to register again, or an exit code. Requests stay on this loop, in order: only reading the
     // keyboard runs alongside polling, and a run is awaited here, with its own heartbeat instead of polls.
-    private async Task<int?> PollAsync(AgentRegistrationResult registration, CancellationToken cancellationToken)
+    private async Task<int?> PollAsync(PollState poll, CancellationToken cancellationToken)
     {
-        Guid machineId = registration.MachineId;
-        string token = registration.Token!;
-        MachineState state = registration.State;
-        string? signedInBy = registration.SignedInBy;
-        TimeSpan interval = TimeSpan.FromSeconds(registration.PollAfterSeconds);
-        int failures = 0;
-
-        SignInConversation conversation = new(status.Console, log);
-        SequencePicker picker = new(status.Console, log);
-        CancellationTokenSource? stopTyping = null;
-        Task<ConsoleAnswer?>? typing = null;
-        bool typingForPicker = false;
-        _pickableDisks = null;
+        _prompts.StartSession();
 
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                try
+                PollStep polled = await PollStepAsync(poll, cancellationToken).ConfigureAwait(false);
+
+                if (polled.Ends)
                 {
-                    AgentNextResult next = await server.NextAsync(machineId, token, cancellationToken).ConfigureAwait(false);
-
-                    failures = 0;
-                    interval = TimeSpan.FromSeconds(next.PollAfterSeconds);
-                    token = next.Token;
-                    _resumeToken = next.ResumeToken;
-
-                    if (next.State != state)
-                    {
-                        state = next.State;
-                        log.Information($"Machine is now {Describe(state)}");
-                    }
-
-                    if (next.SignedInBy != signedInBy)
-                    {
-                        signedInBy = next.SignedInBy;
-
-                        if (state == MachineState.Pending && signedInBy is not null)
-                        {
-                            log.Information($"{signedInBy} signed in at this machine. An operator still has to approve it on the Machines page.");
-                        }
-                    }
-
-                    bool authorized = state is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
-                    AgentRun? run = authorized ? next.Run : null;
-
-                    if (authorized && next.Deployment is not null && next.Run is null && !_toldNoDeployments)
-                    {
-                        _toldNoDeployments = true;
-                        log.Warning("The server assigned an image deployment, which this agent no longer runs. Assign a task sequence instead.");
-                    }
-
-                    if (run is { State: DeploymentState.Assigned or DeploymentState.Running } && typing is not null)
-                    {
-                        await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
-                        typing = null;
-                    }
-
-                    LocalRun? resumable = run is { State: DeploymentState.Running } && _localRun is { } local && local.State.RunId == run.Id
-                        ? local
-                        : null;
-
-                    if (run is { State: DeploymentState.Assigned } && run.Id == _pickedWithoutErase && SequenceTree.Nodes(run.Sequence).Any(step => step.ErasesDisk))
-                    {
-                        // The picker said why when the server answered the choice.
-                        AgentRunReportResult reported = await server
-                            .ReportRunAsync(machineId, token, run.Id, FailedBeforeItRan(SequencePicker.ChangedAfterChoiceMessage), cancellationToken)
-                            .ConfigureAwait(false);
-
-                        token = reported.Token;
-                        _resumeToken = reported.ResumeToken;
-                        _pickedWithoutErase = null;
-                    }
-                    else if (run is { State: DeploymentState.Assigned } || resumable is not null)
-                    {
-                        _localRun = null;
-                        DeploymentTokens tokens = new(token, next.ResumeToken, _runToken);
-                        RunResult result = await runner
-                            .RunAsync(machineId, run!, resumable, resumable is null ? _confirmedDisk : null, tokens, _lastIdentity!, cancellationToken)
-                            .ConfigureAwait(false);
-
-                        _abandonedRun = result.UnsentReport is { } unsent ? (run!.Id, unsent) : null;
-
-                        // The run kept the session alive; the tokens this loop last saw may have expired.
-                        token = tokens.Token;
-                        _resumeToken = tokens.ResumeToken;
-                        _runToken = tokens.RunToken;
-
-                        switch (result.Outcome)
-                        {
-                            case RunOutcome.Finished:
-                                return AgentExitCodes.Deployed;
-                            case RunOutcome.Restarting:
-                                return AgentExitCodes.Restarting;
-                            case RunOutcome.Stopped:
-                                return AgentExitCodes.Stopped;
-                            case RunOutcome.TokenRejected:
-                                return null;
-                            default:
-                                _runToken = null;
-                                picker.Reset();
-                                _pickableDisks = null;
-
-                                continue;
-                        }
-                    }
-                    else if (run is { State: DeploymentState.Running })
-                    {
-                        // Nothing here can go on with it: its state is not on this machine's disks, a refused token
-                        // ended it, or its own failure report did not get through.
-                        AgentRunReport report = _abandonedRun is { } abandoned && abandoned.RunId == run.Id
-                            ? abandoned.Report
-                            : FailedBeforeItRan(SequenceRunner.LostContactMessage);
-
-                        log.Error(report.Error!);
-                        AgentRunReportResult reported = await server.ReportRunAsync(machineId, token, run.Id, report, cancellationToken)
-                            .ConfigureAwait(false);
-
-                        token = reported.Token;
-                        _resumeToken = reported.ResumeToken;
-                        _abandonedRun = null;
-                        _runToken = null;
-                    }
-
-                    bool signInWanted = state == MachineState.Pending && signedInBy is null && conversation.IsAvailable;
-                    bool pickWanted = next.CanPickSequence && run is null && picker.IsAvailable;
-
-                    if (!pickWanted)
-                    {
-                        picker.Reset();
-                        _pickableDisks = null;
-                    }
-                    else if (!picker.IsOffered)
-                    {
-                        await OfferSequencesAsync(picker, machineId, token, cancellationToken).ConfigureAwait(false);
-                    }
-
-                    if (typing is not null && (typingForPicker ? !picker.IsOffered : !signInWanted))
-                    {
-                        await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
-                        typing = null;
-                    }
-
-                    if (typing is null && (signInWanted || picker.IsOffered))
-                    {
-                        typingForPicker = !signInWanted;
-                        stopTyping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                        typing = typingForPicker ? picker.ReadAsync(stopTyping.Token) : conversation.ReadAsync(stopTyping.Token);
-                    }
-
-                    status.Reached(machineId, state, signedInBy, picker.IsOffered);
-
-                    // Only an authorized machine may write to the server's log. Until then lines wait here.
-                    if (authorized)
-                    {
-                        await FlushAsync(machineId, token, cancellationToken).ConfigureAwait(false);
-                    }
-                }
-                catch (AgentTokenRejectedException)
-                {
-                    log.Warning("The server no longer accepts this machine's token. Registering again.");
-
-                    return null;
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    return AgentExitCodes.Stopped;
-                }
-                catch (Exception exception) when (IsTransient(exception))
-                {
-                    failures++;
-                    interval = AgentLimits.RetryDelay(failures);
-                    log.Warning($"Cannot reach the server ({exception.Message}). Retrying in {interval.TotalSeconds:0} s.");
-                    status.Unreachable(exception);
+                    return polled.ExitCode;
                 }
 
-                if (typing is null)
+                if (polled.AtOnce)
                 {
-                    if (!await DelayAsync(interval, cancellationToken).ConfigureAwait(false))
-                    {
-                        return AgentExitCodes.Stopped;
-                    }
-
                     continue;
                 }
 
-                using (CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                (bool stopped, ConsoleAnswer? answer) = await WaitForPollOrAnswerAsync(poll.Interval, cancellationToken).ConfigureAwait(false);
+
+                if (stopped)
                 {
-                    Task elapsed = Task.Delay(interval, timeProvider, waiting.Token);
-
-                    if (await Task.WhenAny(typing, elapsed).ConfigureAwait(false) != typing)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            return AgentExitCodes.Stopped;
-                        }
-
-                        continue;
-                    }
-
-                    await waiting.CancelAsync().ConfigureAwait(false);
+                    return AgentExitCodes.Stopped;
                 }
-
-                ConsoleAnswer? answer = await typing.ConfigureAwait(false);
-                stopTyping!.Dispose();
-                stopTyping = null;
-                typing = null;
 
                 // Poll before asking for the next field, so an approval or an assignment on the web is noticed
                 // right away.
-                if (answer is null)
+                if (answer is not null && await SendAnswerAsync(poll, answer, cancellationToken).ConfigureAwait(false) is { Ends: true } sent)
                 {
-                    continue;
-                }
-
-                try
-                {
-                    if (typingForPicker)
-                    {
-                        await SendPickAsync(picker, machineId, token, answer, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await SendSignInAsync(conversation, machineId, token, answer, cancellationToken).ConfigureAwait(false);
-                    }
-                }
-                catch (AgentTokenRejectedException)
-                {
-                    log.Warning("The server no longer accepts this machine's token. Registering again.");
-
-                    return null;
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    return AgentExitCodes.Stopped;
+                    return sent.ExitCode;
                 }
             }
 
@@ -387,284 +191,167 @@ public sealed class AgentLoop(
         }
         finally
         {
-            if (typing is not null)
-            {
-                await StopTypingAsync(stopTyping!, typing).ConfigureAwait(false);
-            }
+            await _prompts.StopTypingAsync().ConfigureAwait(false);
         }
     }
 
-    // A refused token and a stop reach the caller.
-    private async Task SendSignInAsync(
-        SignInConversation conversation,
-        Guid machineId,
-        string token,
-        ConsoleAnswer answer,
-        CancellationToken cancellationToken)
-    {
-        if (conversation.Accept(answer) is not { } request)
-        {
-            return;
-        }
-
-        try
-        {
-            AgentSignInResult result = await server.SignInAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
-            conversation.Handle(result.Status);
-        }
-        catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
-        {
-            conversation.NotSent(exception);
-        }
-    }
-
-    // A refused token and a stop reach the caller.
-    private async Task SendPickAsync(
-        SequencePicker picker,
-        Guid machineId,
-        string token,
-        ConsoleAnswer answer,
-        CancellationToken cancellationToken)
-    {
-        if (picker.Accept(answer) is not { } request)
-        {
-            return;
-        }
-
-        _confirmedDisk = picker.ChosenDisk;
-
-        try
-        {
-            AgentRun run = await server.PickSequenceAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
-            _pickedWithoutErase = request.DiskNumber is null ? run.Id : null;
-            picker.Picked(run);
-        }
-        catch (Exception exception) when (ServerCallRules.IsRefusal(exception))
-        {
-            picker.Refused(ServerCallRules.Reason(exception, "the choice"), (exception as AgentRequestException)?.FieldErrors);
-        }
-        catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
-        {
-            picker.NotSent(exception);
-        }
-    }
-
-    // Asks for the sequences until there are some, and reads the disks once per stretch in which the machine may pick,
-    // when a sequence erases one. With no disk only sequences that erase none can be offered: a restart is the only
-    // way a disk appears.
-    private async Task OfferSequencesAsync(SequencePicker picker, Guid machineId, string token, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<AgentSequenceChoice> sequences;
-
-        try
-        {
-            sequences = await server.GetSequencesAsync(machineId, token, cancellationToken).ConfigureAwait(false);
-        }
-        catch (HttpRequestException exception) when (ServerCallRules.IsRefusal(exception))
-        {
-            // The machine may no longer pick; the next poll says so.
-            return;
-        }
-
-        if (sequences.Count == 0)
-        {
-            if (!_toldNoSequences)
-            {
-                _toldNoSequences = true;
-                log.Warning("The server has no task sequence this machine can run. Create one on the Sequences page.");
-            }
-
-            return;
-        }
-
-        _toldNoSequences = false;
-
-        if (_pickableDisks is null && sequences.Any(sequence => sequence.ErasesDisk))
-        {
-            _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
-            status.DisksRead(_pickableDisks);
-
-            if (_pickableDisks.Count == 0)
-            {
-                log.Error(SequenceRunner.NoDiskMessage);
-            }
-        }
-
-        picker.Offer(sequences, _pickableDisks ?? [], _lastIdentity?.SecureBootEnabled, _lastIdentity?.TrustedUefiCas);
-    }
-
-    // Waits for the prompt to let go of the console before anything else can ask for input.
-    private static async Task StopTypingAsync(CancellationTokenSource stopTyping, Task<ConsoleAnswer?> typing)
-    {
-        await stopTyping.CancelAsync().ConfigureAwait(false);
-        await typing.ConfigureAwait(false);
-        stopTyping.Dispose();
-    }
-
-    // A log that cannot be delivered must not stop the machine from polling, so a failure other than a
-    // refused token leaves the lines queued for the next attempt and says nothing: a warning per failed
-    // flush would itself fill the queue.
-    private async Task FlushAsync(Guid machineId, string token, CancellationToken cancellationToken)
+    private async Task<PollStep> PollStepAsync(PollState poll, CancellationToken cancellationToken)
     {
         try
         {
-            await log.FlushAsync(server, machineId, token, cancellationToken).ConfigureAwait(false);
+            if (await PollOnceAsync(poll, cancellationToken).ConfigureAwait(false) is not { } outcome)
+            {
+                return PollStep.Wait;
+            }
+
+            // A run that failed leaves the machine to pick again, which it asks the server about at once.
+            return outcome == RunOutcome.TokenRejected ? PollStep.End(null)
+                : RunStarter.ExitCodeAfter(outcome) is { } exitCode ? PollStep.End(exitCode)
+                : PollStep.Now;
         }
-        catch (Exception exception) when (IsTransient(exception) && !cancellationToken.IsCancellationRequested)
+        catch (AgentTokenRejectedException)
         {
+            _log.Warning("The server no longer accepts this machine's token. Registering again.");
+
+            return PollStep.End(null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return PollStep.End(AgentExitCodes.Stopped);
+        }
+        catch (Exception exception) when (LoopCallRules.IsTransient(exception))
+        {
+            poll.Failures++;
+            poll.Interval = AgentLimits.RetryDelay(poll.Failures);
+            _log.Warning($"Cannot reach the server ({exception.Message}). Retrying in {poll.Interval.TotalSeconds:0} s.");
+            _status.Unreachable(exception);
+
+            return PollStep.Wait;
         }
     }
 
-    // Looked for before every registration, so a run that a refused token interrupted is found again too.
-    private async Task FindLocalRunAsync(CancellationToken cancellationToken)
+    // The outcome of a run this poll ran, or null when it ran none.
+    private async Task<RunOutcome?> PollOnceAsync(PollState poll, CancellationToken cancellationToken)
     {
-        Guid? known = _localRun?.State.RunId;
-        _localRun = locator.Find() is { } root ? await LocalRun.LoadAsync(root, log, cancellationToken).ConfigureAwait(false) : null;
+        AgentNextResult next = await _server.NextAsync(poll.MachineId, poll.Tokens.Token, cancellationToken).ConfigureAwait(false);
+        AgentRun? run = ApplyNext(poll, next);
 
-        if (_localRun is { } local)
+        if (run is { State: DeploymentState.Assigned or DeploymentState.Running })
         {
-            _runToken = local.RunToken ?? _runToken;
-
-            if (local.State.RunId != known)
-            {
-                log.Information($"Found run {local.State.RunId} on {local.WindowsRoot}. It goes on if the server still runs it.");
-            }
-        }
-    }
-
-    // The server resumes a run only for the run token of its active run, and says so with the run's id.
-    private void KeepOrDiscardLocalRun(AgentRegistrationResult registration)
-    {
-        if (_localRun is { } local && registration.RunId != local.State.RunId)
-        {
-            local.Discard(log);
-            log.Information($"The server ended run {local.State.RunId}; its state on disk was removed.");
-            _localRun = null;
+            await _prompts.StopTypingAsync().ConfigureAwait(false);
         }
 
-        _runToken = registration.RunId is null ? null : registration.RunToken ?? _runToken;
-    }
-
-    private async Task<AgentRegistrationResult?> RegisterAsync(CancellationToken cancellationToken)
-    {
-        int failures = 0;
-        status.Registering();
-        IReadOnlyList<AgentDisk>? eligibleDisks = await ReadDisksAsync(cancellationToken).ConfigureAwait(false);
-
-        while (!cancellationToken.IsCancellationRequested)
+        if (await _runStarter.HandleAsync(poll.MachineId, poll.Tokens, run, cancellationToken).ConfigureAwait(false) is { } outcome)
         {
-            try
-            {
-                // Read again on every attempt: the adapter with the default route, which is the primary MAC,
-                // may only be known once DHCP has finished.
-                MachineIdentity identity = identityReader.Read();
-                ReportIdentity(identity);
+            return outcome;
+        }
 
-                return await server.RegisterAsync(
-                    new AgentRegistration(
-                        identity.SmbiosUuid,
-                        identity.PrimaryMac,
-                        identity.MacAddresses,
-                        identity.Manufacturer,
-                        identity.Model,
-                        identity.SerialNumber,
-                        agentVersion,
-                        _resumeToken,
-                        eligibleDisks,
-                        _runToken,
-                        SequenceDefinition.CurrentVersion,
-                        SecureBootEnabled: identity.SecureBootEnabled,
-                        TrustedUefiCas: identity.TrustedUefiCas,
-                        ChassisType: identity.ChassisType,
-                        Facts: identity.Facts),
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch (AgentTokenRejectedException exception)
-            {
-                failures++;
-                log.Warning("The server refused the registration. Trying again.");
-                status.Unreachable(exception);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                return null;
-            }
-            catch (Exception exception) when (IsTransient(exception))
-            {
-                failures++;
-                log.Warning($"Cannot register with the server ({exception.Message}).");
-                status.Unreachable(exception);
-            }
+        bool signInWanted = poll.State == MachineState.Pending && poll.SignedInBy is null && _prompts.CanSignIn;
+        bool pickWanted = next.CanPickSequence && run is null && _prompts.CanPick;
+        bool choosing = await _prompts.UpdateAsync(poll.MachineId, poll.Tokens.Token, signInWanted, pickWanted, cancellationToken).ConfigureAwait(false);
 
-            if (!await DelayAsync(AgentLimits.RetryDelay(failures), cancellationToken).ConfigureAwait(false))
-            {
-                return null;
-            }
+        _status.Reached(poll.MachineId, poll.State, poll.SignedInBy, choosing);
+
+        // Only an authorized machine may write to the server's log. Until then lines wait here.
+        if (IsAuthorized(poll.State))
+        {
+            await FlushAsync(poll, cancellationToken).ConfigureAwait(false);
         }
 
         return null;
     }
 
-    // The server refuses a web assignment to a machine with several disks, so it has to know them. A machine whose
-    // disks cannot be read registers without them rather than not at all.
-    private async Task<IReadOnlyList<AgentDisk>?> ReadDisksAsync(CancellationToken cancellationToken)
+    // Takes up the server's answer, and returns the run the machine may run, if any.
+    private AgentRun? ApplyNext(PollState poll, AgentNextResult next)
+    {
+        poll.Failures = 0;
+        poll.Interval = TimeSpan.FromSeconds(next.PollAfterSeconds);
+        poll.Tokens.Update(next.Token, next.ResumeToken);
+
+        if (next.State != poll.State)
+        {
+            poll.State = next.State;
+            _log.Information($"Machine is now {Describe(poll.State)}");
+        }
+
+        if (next.SignedInBy != poll.SignedInBy)
+        {
+            poll.SignedInBy = next.SignedInBy;
+
+            if (poll.State == MachineState.Pending && poll.SignedInBy is not null)
+            {
+                _log.Information($"{poll.SignedInBy} signed in at this machine. An operator still has to approve it on the Machines page.");
+            }
+        }
+
+        bool authorized = IsAuthorized(poll.State);
+
+        if (authorized && next.Deployment is not null && next.Run is null && !_toldNoDeployments)
+        {
+            _toldNoDeployments = true;
+            _log.Warning("The server assigned an image deployment, which this agent no longer runs. Assign a task sequence instead.");
+        }
+
+        return authorized ? next.Run : null;
+    }
+
+    // Stopped once cancelled; otherwise the answer typed before the next poll is due, if any.
+    private async Task<(bool Stopped, ConsoleAnswer? Answer)> WaitForPollOrAnswerAsync(TimeSpan interval, CancellationToken cancellationToken)
+    {
+        if (_prompts.Typing is not { } typing)
+        {
+            return (!await CancellableDelay.WaitAsync(interval, _timeProvider, cancellationToken).ConfigureAwait(false), null);
+        }
+
+        using (CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        {
+            Task elapsed = Task.Delay(interval, _timeProvider, waiting.Token);
+
+            if (await Task.WhenAny(typing, elapsed).ConfigureAwait(false) != typing)
+            {
+                return (cancellationToken.IsCancellationRequested, null);
+            }
+
+            await waiting.CancelAsync().ConfigureAwait(false);
+        }
+
+        return (false, await _prompts.TakeAnswerAsync().ConfigureAwait(false));
+    }
+
+    private async Task<PollStep> SendAnswerAsync(PollState poll, ConsoleAnswer answer, CancellationToken cancellationToken)
     {
         try
         {
-            IReadOnlyList<LocalDisk> eligible = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
-            status.DisksRead(eligible);
+            await _prompts.SendAsync(poll.MachineId, poll.Tokens.Token, answer, cancellationToken).ConfigureAwait(false);
 
-            return [.. eligible.Select(disk => disk.ToAgentDisk())];
+            return PollStep.Wait;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        catch (AgentTokenRejectedException)
         {
-            log.Warning($"The disks cannot be read ({exception.Message}). Registering without them.");
+            _log.Warning("The server no longer accepts this machine's token. Registering again.");
 
-            return null;
+            return PollStep.End(null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return PollStep.End(AgentExitCodes.Stopped);
         }
     }
 
-    // Kept, as the run's conditions test it.
-    private void ReportIdentity(MachineIdentity identity)
-    {
-        bool known = _lastIdentity is not null
-            && _lastIdentity.SmbiosUuid == identity.SmbiosUuid
-            && _lastIdentity.PrimaryMac == identity.PrimaryMac;
-
-        _lastIdentity = identity;
-        status.Identified(identity);
-
-        if (known)
-        {
-            return;
-        }
-
-        log.Information($"SMBIOS UUID {identity.SmbiosUuid}, primary MAC {identity.PrimaryMac}");
-        log.Information($"{identity.Manufacturer} {identity.Model}, serial {identity.SerialNumber}");
-    }
-
-    // A Failed report for a run this agent does not run, which names no step.
-    private static AgentRunReport FailedBeforeItRan(string error) =>
-        new(DeploymentState.Failed, SequencePhase.WindowsPE, [], null, 0, RunActivity.Preparing, error);
-
-    // JsonException covers an HTML page from a wrong URL and a newer server reporting a state this agent
-    // does not know; neither may end the agent.
-    private static bool IsTransient(Exception exception) =>
-        exception is HttpRequestException or TimeoutException or TaskCanceledException or JsonException;
-
-    private async Task<bool> DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    // A failure other than a refused token leaves the lines queued for the next attempt, silently: a warning per
+    // failed flush would itself fill the queue.
+    private async Task FlushAsync(PollState poll, CancellationToken cancellationToken)
     {
         try
         {
-            await Task.Delay(delay, timeProvider, cancellationToken).ConfigureAwait(false);
-
-            return true;
+            await _log.FlushAsync(_server, poll.MachineId, poll.Tokens.Token, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (Exception exception) when (LoopCallRules.IsTransient(exception) && !cancellationToken.IsCancellationRequested)
         {
-            return false;
         }
     }
+
+    private static bool IsAuthorized(MachineState state) => state is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
 
     private static string Describe(MachineState state) => state switch
     {
@@ -672,4 +359,31 @@ public sealed class AgentLoop(
         MachineState.Approved => "approved, waiting for a task sequence",
         _ => state.ToString(),
     };
+
+    // One registration's polling: the machine's tokens, its state and sign-in as the server last said, and when to
+    // poll next.
+    private sealed class PollState(AgentRegistrationResult registration, DeploymentTokens tokens)
+    {
+        public Guid MachineId { get; } = registration.MachineId;
+
+        public DeploymentTokens Tokens { get; } = tokens;
+
+        public MachineState State { get; set; } = registration.State;
+
+        public string? SignedInBy { get; set; } = registration.SignedInBy;
+
+        public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(registration.PollAfterSeconds);
+
+        public int Failures { get; set; }
+    }
+
+    // What polling does next: waits for the next poll, polls again at once, or ends with ExitCode, null to register again.
+    private readonly record struct PollStep(bool Ends, int? ExitCode, bool AtOnce)
+    {
+        public static PollStep Wait => new(false, null, false);
+
+        public static PollStep Now => new(false, null, true);
+
+        public static PollStep End(int? exitCode) => new(true, exitCode, false);
+    }
 }

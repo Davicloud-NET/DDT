@@ -2,29 +2,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Deployment;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs each step with the runner for its kind, inside the accounts it uses, and names the step in every log line
-// meanwhile. A step that throws fails with the exception's message; after a stop the exception goes on, which the engine
-// takes as the stop. A 401 goes to tokenRejected, which stops the run as a refused beat does, and then on to the engine
-// too. Without pause, a Pause step is a kind this runner cannot run.
+// Runs each step with the IStepKindRunner for its kind, inside the step's accounts, with the step's id on its log lines.
+// A step that throws fails with the message; a stop and a 401 go on to the engine, a 401 through tokenRejected first.
 public sealed class AgentStepRunner(
-    PartitionStepRunner partition,
-    ApplyImageStepRunner applyImage,
-    InjectDriversStepRunner injectDrivers,
-    WriteUnattendStepRunner writeUnattend,
-    JoinDomainStepRunner joinDomain,
-    RunScriptStepRunner runScript,
-    WriteRawImageStepRunner writeRawImage,
-    WriteCloudInitSeedStepRunner writeCloudInitSeed,
+    IReadOnlyList<IStepKindRunner> runners,
     StepAccounts accounts,
     Action<AgentTokenRejectedException> tokenRejected,
     AgentLog log,
-    TimeProvider timeProvider,
-    PauseStepRunner? pause = null) : IStepRunner
+    TimeProvider timeProvider) : IStepRunner
 {
     public const string JoinDomainInWindowsPE =
         "Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in Windows PE.";
@@ -46,21 +37,8 @@ public sealed class AgentStepRunner(
 
             try
             {
-                result = await accounts.RunAsync(step, context, async account => step switch
-                {
-                    PartitionStep partitionStep => await partition.RunAsync(partitionStep, context, cancellationToken).ConfigureAwait(false),
-                    ApplyImageStep applyImageStep => await applyImage.RunAsync(applyImageStep, context, cancellationToken).ConfigureAwait(false),
-                    InjectDriversStep injectDriversStep => await injectDrivers.RunAsync(injectDriversStep, context, cancellationToken).ConfigureAwait(false),
-                    WriteUnattendStep writeUnattendStep => await writeUnattend.RunAsync(writeUnattendStep, context, cancellationToken).ConfigureAwait(false),
-                    RunScriptStep runScriptStep => await runScript.RunAsync(runScriptStep, context, account, cancellationToken).ConfigureAwait(false),
-                    WriteRawImageStep writeRawImageStep => await writeRawImage.RunAsync(writeRawImageStep, context, cancellationToken).ConfigureAwait(false),
-                    WriteCloudInitSeedStep seedStep => await writeCloudInitSeed.RunAsync(seedStep, context, cancellationToken).ConfigureAwait(false),
-                    RebootStep => StepResult.RebootRequired(),
-                    PauseStep pauseStep when pause is not null => await pause.RunAsync(pauseStep, context, cancellationToken).ConfigureAwait(false),
-                    JoinDomainStep when context.Phase == SequencePhase.WindowsPE => StepResult.Failed(JoinDomainInWindowsPE),
-                    JoinDomainStep joinDomainStep => await joinDomain.RunAsync(joinDomainStep, context, cancellationToken).ConfigureAwait(false),
-                    _ => StepResult.Failed(UnknownKind),
-                }, cancellationToken).ConfigureAwait(false);
+                result = await accounts.RunAsync(step, context, account => RunKindAsync(step, context, account, cancellationToken), cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -80,26 +58,47 @@ public sealed class AgentStepRunner(
                 result = StepResult.Failed(LogText.OneLine(exception));
             }
 
-            string duration = LogText.Duration(timeProvider.GetElapsedTime(started));
-
-            switch (result.Outcome)
-            {
-                case StepOutcome.Failed:
-                    log.Error($"Step {step.Name} failed after {duration}: {result.Error}");
-                    break;
-                case StepOutcome.RebootRequired:
-                    log.Information($"Step {step.Name} finished after {duration}. The machine restarts before the next step.");
-                    break;
-                default:
-                    log.Information($"Step {step.Name} finished after {duration}.");
-                    break;
-            }
+            LogResult(step, result, LogText.Duration(timeProvider.GetElapsedTime(started)));
 
             return result;
         }
         finally
         {
             log.StepId = null;
+        }
+    }
+
+    // A Restart step needs no runner, and without one for its kind a step fails.
+    private async Task<StepResult> RunKindAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
+    {
+        if (step is RebootStep)
+        {
+            return StepResult.RebootRequired();
+        }
+
+        if (step is JoinDomainStep && context.Phase == SequencePhase.WindowsPE)
+        {
+            return StepResult.Failed(JoinDomainInWindowsPE);
+        }
+
+        return runners.FirstOrDefault(runner => runner.Runs(step)) is { } kind
+            ? await kind.RunAsync(step, context, account, cancellationToken).ConfigureAwait(false)
+            : StepResult.Failed(UnknownKind);
+    }
+
+    private void LogResult(SequenceStep step, StepResult result, string duration)
+    {
+        switch (result.Outcome)
+        {
+            case StepOutcome.Failed:
+                log.Error($"Step {step.Name} failed after {duration}: {result.Error}");
+                break;
+            case StepOutcome.RebootRequired:
+                log.Information($"Step {step.Name} finished after {duration}. The machine restarts before the next step.");
+                break;
+            default:
+                log.Information($"Step {step.Name} finished after {duration}.");
+                break;
         }
     }
 }

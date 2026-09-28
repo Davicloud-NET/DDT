@@ -6,9 +6,8 @@ using System.Net;
 
 namespace DDT.Agent;
 
-// The server answered with an error status other than 401. ProblemTitle is the title of its problem details,
-// which is a sentence meant for the operator. FieldErrors are a validation problem's errors, the first message for each
-// field, such as the answer to an input the server did not take.
+// The server answered an error status other than 401. ProblemTitle, from its problem details, is a sentence for the
+// operator; FieldErrors are a validation problem's first message per field.
 public sealed class AgentRequestException : HttpRequestException
 {
     public AgentRequestException()

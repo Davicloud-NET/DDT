@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
+// netapi32's NetJoinDomain, with Win32's signature, however many parameters it takes.
 internal static partial class DomainJoinNativeMethods
 {
     public const uint NetSetupJoinDomain = 0x1;

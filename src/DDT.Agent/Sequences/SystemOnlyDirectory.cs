@@ -6,10 +6,8 @@ using System.Security.AccessControl;
 
 namespace DDT.Agent.Sequences;
 
-// A directory only SYSTEM can open: a protected DACL, so nothing is inherited from the volume's root, whose default
-// lets Authenticated Users create folders, with one entry that everything created inside inherits. The agent runs as
-// SYSTEM in Windows PE, and S-1-5-18 is the same account in the installed Windows, so the run's token stays closed to
-// everyone else there.
+// A directory only SYSTEM can open, for the run's token and session password: a protected DACL, as the volume root's
+// default lets Authenticated Users create folders. S-1-5-18 is SYSTEM in Windows PE and in the installed Windows alike.
 public static class SystemOnlyDirectory
 {
     public const string Sddl = "D:P(A;OICI;FA;;;SY)";

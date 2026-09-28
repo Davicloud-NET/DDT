@@ -9,9 +9,7 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // Says in the log's words why a node of a tree went the way it did, from the tests the engine kept in its Evaluation:
-// the run's values and the variables steps set are gone by the time the log reads them, so nothing is tested again. A
-// test is found by the path the engine gave it. Only the tests that decided a condition are named: those that failed an
-// all, the one that held an any, and the like.
+// the values they read are gone by then, so nothing is tested again. Only the tests that decided a condition are named.
 internal static class ConditionStory
 {
     private static readonly Dictionary<string, string> s_labels = new(StringComparer.Ordinal)

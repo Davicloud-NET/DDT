@@ -147,10 +147,8 @@ public sealed class StepStateLogTests
         Assert.Equal([(Guid?)null, s_tool.Id, running], server.SentLines.Select(line => line.StepId));
     }
 
-    // The engine walks a tree and the log follows the states it saves: the branch an IF took and why, each time through
-    // a repeat, a repeat that stops at its limit, a group that failed and lets the run go on, and a step whose own
-    // condition did not hold. The step on the branch not taken and the one after the failure inside the group pass in
-    // silence, and so does everything that ran.
+    // The branch an IF took, a repeat's rounds and its limit, a failed group the run goes on after, and a skipped step
+    // are told; the branch not taken, the rest of the failed group and everything that ran pass in silence.
     [Fact]
     public async Task TellsWhatATreesRunDecided()
     {

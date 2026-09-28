@@ -8,10 +8,9 @@ using System.Text.Unicode;
 
 namespace DDT.Agent.Deployment;
 
-// What a tool prints, line by line. A script's own output arrives as UTF-8 after chcp 65001, but older console programs,
-// such as tree, write in the ANSI code page when their output goes to a pipe, whatever the console's is, and one script
-// may run both. So each line is read as UTF-8 when it is valid UTF-8, and in the ANSI code page when it is not; plain
-// ASCII reads the same either way. A carriage return alone ends a line too, as progress bars use it.
+// A tool's output, line by line. A script writes UTF-8 after chcp 65001, but older programs such as tree write the ANSI
+// code page into a pipe, and a script may run both: a line that is valid UTF-8 is read so, any other as ANSI. A carriage
+// return alone ends a line too, as progress bars use it.
 public static partial class ToolOutput
 {
     private const uint AnsiCodePage = 0;
@@ -82,6 +81,7 @@ public static partial class ToolOutput
         }
     }
 
+    // Win32's signature, however many parameters it takes.
     [LibraryImport("kernel32.dll", SetLastError = true)]
     private static unsafe partial int MultiByteToWideChar(uint codePage, uint flags, byte* input, int inputLength, char* output, int outputLength);
 }

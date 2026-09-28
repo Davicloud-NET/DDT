@@ -8,9 +8,8 @@ using System.Text;
 
 namespace DDT.Agent;
 
-// Parses the buffer GetSystemFirmwareTable returns for the 'RSMB' provider: an 8 byte
-// RawSMBIOSData header followed by the SMBIOS structure table. Reading it directly avoids needing
-// the WinPE-WMI optional component in the boot image.
+// Parses GetSystemFirmwareTable's 'RSMB' buffer: an 8-byte RawSMBIOSData header, then the SMBIOS structure table.
+// Reading it directly spares the boot image the WinPE-WMI optional component.
 public static class SmbiosParser
 {
     private const int RawHeaderLength = 8;
@@ -24,8 +23,8 @@ public static class SmbiosParser
     private const int UuidLength = 16;
     private const int ChassisTypeOffset = 0x05;
 
-    // Where DMTF DSP0134 puts the string numbers and the processor's status in their structures. A structure from an
-    // older SMBIOS version is shorter, and lacks the fields added after it.
+    // Where DMTF DSP0134 puts the string numbers and the processor's status. A structure from an older SMBIOS version
+    // is shorter, and lacks the fields added after it.
     private const int BiosVersionOffset = 0x05;
     private const int BiosDateOffset = 0x08;
     private const int SystemVersionOffset = 0x06;
@@ -42,9 +41,8 @@ public static class SmbiosParser
     // Bit 6 of a processor's status says that its socket holds one. Servers list their empty sockets too.
     private const byte SocketPopulated = 0x40;
 
-    // One pass reads the first structure of each type the agent reports on, which firmware lists in any order. A
-    // structure that is not well formed ends the pass, because nothing after it can be found safely, but what was read
-    // before it is kept.
+    // Reads the first structure of each type, which firmware lists in any order. A malformed structure ends the pass,
+    // as nothing after it can be found safely, but keeps what was read before it.
     public static SmbiosSystemInformation? TryReadSystemInformation(ReadOnlySpan<byte> raw)
     {
         if (raw.Length < RawHeaderLength)
@@ -52,99 +50,49 @@ public static class SmbiosParser
             return null;
         }
 
-        byte major = raw[1];
-        byte minor = raw[2];
         int tableLength = (int)Math.Min(BinaryPrimitives.ReadUInt32LittleEndian(raw[4..]), (uint)(raw.Length - RawHeaderLength));
         ReadOnlySpan<byte> table = raw.Slice(RawHeaderLength, tableLength);
-
-        SmbiosSystemInformation? system = null;
-        byte? chassisType = null;
-        string? biosVersion = null;
-        string? biosDate = null;
-        string? baseboardProduct = null;
-        string? assetTag = null;
-        string? processorVersion = null;
-        bool bios = false;
-        bool baseboard = false;
-        bool enclosure = false;
-        bool processor = false;
+        Findings found = new(major: raw[1], minor: raw[2]);
         int offset = 0;
 
-        while (offset + 4 <= table.Length)
+        while (TryReadStructure(table, ref offset, out Structure structure))
         {
-            byte type = table[offset];
-            byte length = table[offset + 1];
-
-            if (length < 4 || offset + length > table.Length)
-            {
-                break;
-            }
-
-            ReadOnlySpan<byte> formatted = table.Slice(offset, length);
-            int stringsStart = offset + length;
-            int end = FindStructureEnd(table, stringsStart);
-
-            if (end < 0 || type == EndOfTableType)
-            {
-                break;
-            }
-
-            ReadOnlySpan<byte> strings = table[stringsStart..end];
-
-            switch (type)
-            {
-                case BiosInformationType when !bios:
-                    bios = true;
-                    biosVersion = StringAt(formatted, strings, BiosVersionOffset);
-                    biosDate = ReleaseDate(StringAt(formatted, strings, BiosDateOffset));
-                    break;
-
-                case SystemInformationType when system is null && length >= UuidOffset + UuidLength:
-                    system = new SmbiosSystemInformation(
-                        ReadUuid(formatted.Slice(UuidOffset, UuidLength), major, minor),
-                        ReadString(strings, formatted[0x04]),
-                        ReadString(strings, formatted[0x05]),
-                        ReadString(strings, formatted[0x07]),
-                        null)
-                    {
-                        Version = StringAt(formatted, strings, SystemVersionOffset),
-                        Sku = StringAt(formatted, strings, SystemSkuOffset),
-                        Family = StringAt(formatted, strings, SystemFamilyOffset),
-                    };
-                    break;
-
-                case BaseboardInformationType when !baseboard:
-                    baseboard = true;
-                    baseboardProduct = StringAt(formatted, strings, BaseboardProductOffset);
-                    break;
-
-                case SystemEnclosureType when !enclosure && length > ChassisTypeOffset:
-                    enclosure = true;
-                    chassisType = (byte)(formatted[ChassisTypeOffset] & ChassisTypeMask);
-                    assetTag = StringAt(formatted, strings, AssetTagOffset);
-                    break;
-
-                case ProcessorInformationType when !processor && length > ProcessorStatusOffset
-                    && (formatted[ProcessorStatusOffset] & SocketPopulated) != 0:
-                    processor = true;
-                    processorVersion = StringAt(formatted, strings, ProcessorVersionOffset);
-                    break;
-            }
-
-            offset = end;
+            found.Read(structure);
         }
 
-        return system is null
-            ? null
-            : system with
-            {
-                ChassisType = chassisType,
-                BiosVersion = biosVersion,
-                BiosDate = biosDate,
-                BaseboardProduct = baseboardProduct,
-                AssetTag = assetTag,
-                ProcessorVersion = processorVersion,
-            };
+        return found.ToSystemInformation();
+    }
+
+    // The structure at offset, and offset moved past it; false at the end of the table or at a malformed structure.
+    private static bool TryReadStructure(ReadOnlySpan<byte> table, ref int offset, out Structure structure)
+    {
+        structure = default;
+
+        if (offset + 4 > table.Length)
+        {
+            return false;
+        }
+
+        byte type = table[offset];
+        byte length = table[offset + 1];
+
+        if (length < 4 || offset + length > table.Length)
+        {
+            return false;
+        }
+
+        int stringsStart = offset + length;
+        int end = FindStructureEnd(table, stringsStart);
+
+        if (end < 0 || type == EndOfTableType)
+        {
+            return false;
+        }
+
+        structure = new Structure(type, table.Slice(offset, length), table[stringsStart..end]);
+        offset = end;
+
+        return true;
     }
 
     // The BIOS release date is mm/dd/yyyy, or mm/dd/yy for 19yy in tables from before SMBIOS 2.3. Anything else is not a
@@ -224,5 +172,92 @@ public static class SmbiosParser
         }
 
         return null;
+    }
+
+    // One structure: its formatted area, which starts with the type and the length, and its strings.
+    private readonly ref struct Structure(byte type, ReadOnlySpan<byte> formatted, ReadOnlySpan<byte> strings)
+    {
+        public byte Type { get; } = type;
+
+        public ReadOnlySpan<byte> Formatted { get; } = formatted;
+
+        public ReadOnlySpan<byte> Strings { get; } = strings;
+
+        // The string whose number the structure holds at offset.
+        public string? StringAt(int offset) => SmbiosParser.StringAt(Formatted, Strings, offset);
+    }
+
+    // What the pass found so far: the first structure of each type the agent reports on.
+    private sealed class Findings(byte major, byte minor)
+    {
+        private SmbiosSystemInformation? _system;
+        private byte? _chassisType;
+        private string? _biosVersion;
+        private string? _biosDate;
+        private string? _baseboardProduct;
+        private string? _assetTag;
+        private string? _processorVersion;
+        private bool _bios;
+        private bool _baseboard;
+        private bool _enclosure;
+        private bool _processor;
+
+        public void Read(Structure structure)
+        {
+            ReadOnlySpan<byte> formatted = structure.Formatted;
+
+            switch (structure.Type)
+            {
+                case BiosInformationType when !_bios:
+                    _bios = true;
+                    _biosVersion = structure.StringAt(BiosVersionOffset);
+                    _biosDate = ReleaseDate(structure.StringAt(BiosDateOffset));
+                    break;
+
+                case SystemInformationType when _system is null && formatted.Length >= UuidOffset + UuidLength:
+                    _system = new SmbiosSystemInformation(
+                        ReadUuid(formatted.Slice(UuidOffset, UuidLength), major, minor),
+                        ReadString(structure.Strings, formatted[0x04]),
+                        ReadString(structure.Strings, formatted[0x05]),
+                        ReadString(structure.Strings, formatted[0x07]),
+                        null)
+                    {
+                        Version = structure.StringAt(SystemVersionOffset),
+                        Sku = structure.StringAt(SystemSkuOffset),
+                        Family = structure.StringAt(SystemFamilyOffset),
+                    };
+                    break;
+
+                case BaseboardInformationType when !_baseboard:
+                    _baseboard = true;
+                    _baseboardProduct = structure.StringAt(BaseboardProductOffset);
+                    break;
+
+                case SystemEnclosureType when !_enclosure && formatted.Length > ChassisTypeOffset:
+                    _enclosure = true;
+                    _chassisType = (byte)(formatted[ChassisTypeOffset] & ChassisTypeMask);
+                    _assetTag = structure.StringAt(AssetTagOffset);
+                    break;
+
+                case ProcessorInformationType when !_processor && formatted.Length > ProcessorStatusOffset
+                    && (formatted[ProcessorStatusOffset] & SocketPopulated) != 0:
+                    _processor = true;
+                    _processorVersion = structure.StringAt(ProcessorVersionOffset);
+                    break;
+            }
+        }
+
+        // Null without a System Information structure.
+        public SmbiosSystemInformation? ToSystemInformation() => _system is null
+            ? null
+            : _system with
+            {
+                ChassisType = _chassisType,
+                BiosVersion = _biosVersion,
+                BiosDate = _biosDate,
+                BaseboardProduct = _baseboardProduct,
+                AssetTag = _assetTag,
+                ProcessorVersion = _processorVersion,
+            };
     }
 }

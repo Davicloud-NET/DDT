@@ -8,11 +8,10 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Erases the disk chosen for the run and partitions it with the step's sizes. The outputs are the new partitions' ids,
-// which find them again after a restart. From here on the run has its directory on the Windows volume, and the store
-// writes the run's state and token there. A dry run leaves that directory open: closed to all but SYSTEM, it would
-// lock the person running it out of their own folder.
+// Erases the run's disk and partitions it; the new partitions' ids find them again after a restart. From here on the
+// store writes the run's state and token into the run's directory on the Windows volume.
 public sealed class PartitionStepRunner(IDiskPartitioner partitioner, RunSession session, FileRunStateStore store, AgentLog log, bool dryRun)
+    : IStepKindRunner<PartitionStep>
 {
     public async Task<StepResult> RunAsync(PartitionStep step, StepContext context, CancellationToken cancellationToken)
     {
@@ -29,6 +28,7 @@ public sealed class PartitionStepRunner(IDiskPartitioner partitioner, RunSession
         session.Volumes = volumes;
         string directory = session.RunDirectory!;
 
+        // Closed to all but SYSTEM, it would lock the person running a dry run out of their own folder.
         if (dryRun)
         {
             Directory.CreateDirectory(directory);

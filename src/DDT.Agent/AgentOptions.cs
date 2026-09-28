@@ -32,8 +32,7 @@ public sealed record AgentOptions(
     // The fake machine of a dry run says that Secure Boot is on.
     public bool DryRunSecureBoot { get; init; }
 
-    // The graphical console to start instead of the ddt-console.exe next to the agent, even in a dry run or with input
-    // redirected, as a test or a try on a development computer needs.
+    // Starts this console instead of the ddt-console.exe beside the agent, even in a dry run or with input redirected.
     public string? ConsolePath { get; init; }
 
     // Arguments override agent.json, which by default sits next to the executable.
@@ -42,35 +41,33 @@ public sealed record AgentOptions(
         ArgumentNullException.ThrowIfNull(args);
 
         options = null;
-        string? configPath = null;
-        string? server = null;
-        string? rootPem = null;
-        string? keyboardLayout = null;
-        string? consolePath = null;
-        bool dryRun = false;
-        bool dryRunSecureBoot = false;
-        bool noUpdate = false;
-        int dryRunId = 1;
+        Arguments parsed = new();
 
+        if (!TryParseArguments(args, parsed, out error)
+            || !TryApplyConfigFile(parsed, out error)
+            || !TryReadServerUrl(parsed.Server, out Uri? serverUrl, out error)
+            || !TryLoadRoot(parsed.RootPem, out X509Certificate2? root, out error))
+        {
+            return false;
+        }
+
+        options = new AgentOptions(serverUrl, root, parsed.DryRun, parsed.DryRunId, parsed.NoUpdate, parsed.KeyboardLayout)
+        {
+            DryRunSecureBoot = parsed.DryRunSecureBoot,
+            ConsolePath = parsed.ConsolePath,
+        };
+
+        return true;
+    }
+
+    private static bool TryParseArguments(IReadOnlyList<string> args, Arguments parsed, out string error)
+    {
         for (int index = 0; index < args.Count; index++)
         {
             string argument = args[index];
 
-            if (argument == "--dry-run")
+            if (parsed.TrySetFlag(argument))
             {
-                dryRun = true;
-                continue;
-            }
-
-            if (argument == "--dry-run-secure-boot")
-            {
-                dryRunSecureBoot = true;
-                continue;
-            }
-
-            if (argument == NoUpdateArgument)
-            {
-                noUpdate = true;
                 continue;
             }
 
@@ -81,97 +78,124 @@ public sealed record AgentOptions(
                 return false;
             }
 
-            string value = args[++index];
-
-            switch (argument)
+            if (!TrySetValue(parsed, argument, args[++index], out error))
             {
-                case "--config":
-                    configPath = value;
-                    break;
-                case "--server":
-                    server = value;
-                    break;
-                case ConsoleArgument:
-                    consolePath = value;
-                    break;
-                case "--root-certificate":
-                    if (!TryReadText(value, out rootPem, out error))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case "--dry-run-id" when int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int id):
-                    dryRunId = id;
-                    break;
-                default:
-                    error = $"Unknown or invalid argument {argument}. {Usage}";
-
-                    return false;
+                return false;
             }
         }
 
-        // Only the default agent.json may be missing; a file named on the command line must exist.
+        error = string.Empty;
+
+        return true;
+    }
+
+    private static bool TrySetValue(Arguments parsed, string argument, string value, out string error)
+    {
+        error = string.Empty;
+
+        switch (argument)
+        {
+            case "--config":
+                parsed.ConfigPath = value;
+
+                return true;
+            case "--server":
+                parsed.Server = value;
+
+                return true;
+            case ConsoleArgument:
+                parsed.ConsolePath = value;
+
+                return true;
+            case "--root-certificate":
+                bool read = TryReadText(value, out string? pem, out error);
+                parsed.RootPem = pem;
+
+                return read;
+            case "--dry-run-id" when int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int id):
+                parsed.DryRunId = id;
+
+                return true;
+            default:
+                error = $"Unknown or invalid argument {argument}. {Usage}";
+
+                return false;
+        }
+    }
+
+    // Only the default agent.json may be missing; a file named on the command line must exist.
+    private static bool TryApplyConfigFile(Arguments parsed, out string error)
+    {
         string defaultConfigPath = Path.Combine(AppContext.BaseDirectory, "agent.json");
+        error = string.Empty;
 
-        if (configPath is not null || File.Exists(defaultConfigPath))
+        if (parsed.ConfigPath is null && !File.Exists(defaultConfigPath))
         {
-            configPath ??= defaultConfigPath;
-
-            if (!TryReadText(configPath, out string? json, out error))
-            {
-                return false;
-            }
-
-            try
-            {
-                AgentConfiguration? file = JsonSerializer.Deserialize(
-                    json,
-                    AgentConfigurationJsonContext.Default.AgentConfiguration);
-
-                server ??= file?.ServerUrl;
-                rootPem ??= file?.RootCertificate;
-                keyboardLayout = file?.KeyboardLayout;
-            }
-            catch (JsonException exception)
-            {
-                error = $"{configPath} is not valid: {exception.Message}";
-
-                return false;
-            }
+            return true;
         }
 
-        if (!Uri.TryCreate(server, UriKind.Absolute, out Uri? serverUrl) || serverUrl.Scheme != Uri.UriSchemeHttps)
+        string configPath = parsed.ConfigPath ?? defaultConfigPath;
+
+        if (!TryReadText(configPath, out string? json, out error))
         {
+            return false;
+        }
+
+        try
+        {
+            AgentConfiguration? file = JsonSerializer.Deserialize(json, AgentConfigurationJsonContext.Default.AgentConfiguration);
+
+            parsed.Server ??= file?.ServerUrl;
+            parsed.RootPem ??= file?.RootCertificate;
+            parsed.KeyboardLayout = file?.KeyboardLayout;
+
+            return true;
+        }
+        catch (JsonException exception)
+        {
+            error = $"{configPath} is not valid: {exception.Message}";
+
+            return false;
+        }
+    }
+
+    private static bool TryReadServerUrl(string? server, [NotNullWhen(true)] out Uri? serverUrl, out string error)
+    {
+        if (!Uri.TryCreate(server, UriKind.Absolute, out serverUrl) || serverUrl.Scheme != Uri.UriSchemeHttps)
+        {
+            serverUrl = null;
             error = $"An https server URL is required. {Usage}";
 
             return false;
         }
 
-        X509Certificate2? root = null;
-
-        if (!string.IsNullOrWhiteSpace(rootPem))
-        {
-            try
-            {
-                root = X509Certificate2.CreateFromPem(rootPem);
-            }
-            catch (CryptographicException exception)
-            {
-                error = $"The root certificate is not a PEM certificate: {exception.Message}";
-
-                return false;
-            }
-        }
-
-        options = new AgentOptions(serverUrl, root, dryRun, dryRunId, noUpdate, keyboardLayout)
-        {
-            DryRunSecureBoot = dryRunSecureBoot,
-            ConsolePath = consolePath,
-        };
         error = string.Empty;
 
         return true;
+    }
+
+    private static bool TryLoadRoot(string? pem, out X509Certificate2? root, out string error)
+    {
+        root = null;
+        error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(pem))
+        {
+            return true;
+        }
+
+        try
+        {
+            root = X509Certificate2.CreateFromPem(pem);
+
+            return true;
+        }
+        catch (CryptographicException exception)
+        {
+            error = $"The root certificate is not a PEM certificate: {exception.Message}";
+
+            return false;
+        }
     }
 
     private static bool TryReadText(string path, [NotNullWhen(true)] out string? text, out string error)
@@ -189,6 +213,50 @@ public sealed record AgentOptions(
             error = $"Cannot read {path}: {exception.Message}";
 
             return false;
+        }
+    }
+
+    // What the command line and agent.json say, before it is checked.
+    private sealed class Arguments
+    {
+        public string? ConfigPath { get; set; }
+
+        public string? Server { get; set; }
+
+        public string? RootPem { get; set; }
+
+        public string? KeyboardLayout { get; set; }
+
+        public string? ConsolePath { get; set; }
+
+        public bool DryRun { get; private set; }
+
+        public bool DryRunSecureBoot { get; private set; }
+
+        public bool NoUpdate { get; private set; }
+
+        public int DryRunId { get; set; } = 1;
+
+        // False for an argument that takes a value.
+        public bool TrySetFlag(string argument)
+        {
+            switch (argument)
+            {
+                case "--dry-run":
+                    DryRun = true;
+
+                    return true;
+                case "--dry-run-secure-boot":
+                    DryRunSecureBoot = true;
+
+                    return true;
+                case NoUpdateArgument:
+                    NoUpdate = true;
+
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

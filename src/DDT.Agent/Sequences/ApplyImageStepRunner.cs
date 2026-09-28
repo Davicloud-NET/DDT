@@ -9,10 +9,12 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Downloads the image onto the Windows volume, applies it there and deletes the download, which must not stay on the
-// disk Windows starts from. The download is the first 40 percent of the step, the apply the rest.
+// Applies the image from a download on the Windows volume, which goes afterwards: it must not stay on the disk Windows
+// starts from.
 public sealed class ApplyImageStepRunner(IImageApplier applier, RunDownloads downloads, RunSession session, AgentLog log)
+    : IStepKindRunner<ApplyImageStep>
 {
+    // The download's share of the step's percent; the apply has the rest.
     public const int DownloadPercent = 40;
 
     public async Task<StepResult> RunAsync(ApplyImageStep step, StepContext context, CancellationToken cancellationToken)
@@ -29,7 +31,7 @@ public sealed class ApplyImageStepRunner(IImageApplier applier, RunDownloads dow
         {
             ScaledProgress downloading = new(context.Progress, 0, DownloadPercent);
             string wim = await downloads
-                .DownloadAsync(image.Name, image.Sha256, image.SizeBytes, cache, ".wim", downloading, cancellationToken)
+                .DownloadAsync(new ContentFile(image.Name, image.Sha256, image.SizeBytes), cache, ".wim", downloading, cancellationToken)
                 .ConfigureAwait(false);
 
             log.Information($"Applying image {image.WimIndex} of {image.Name} to {volumes.Windows}.");

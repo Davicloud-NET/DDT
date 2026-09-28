@@ -8,15 +8,14 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Writes the server's answer file into the applied Windows. It holds passwords, so the server renders it only while it
-// knows the step runs, which reportRunning tells it first, and it is never logged: only what it sets, without secrets.
-// Setup deletes it once Windows is installed, through the line UnattendFile puts first in SetupComplete.cmd.
+// Writes the server's answer file, which holds passwords, into the applied Windows: rendered only once reportRunning told
+// the server the step runs, and logged only as a summary. Setup deletes it through a line in SetupComplete.cmd.
 public sealed class WriteUnattendStepRunner(
     IAgentServer server,
     RunSession session,
     Func<CancellationToken, Task> reportRunning,
     AgentLog log,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider) : IStepKindRunner<WriteUnattendStep>
 {
     public async Task<StepResult> RunAsync(WriteUnattendStep step, StepContext context, CancellationToken cancellationToken)
     {

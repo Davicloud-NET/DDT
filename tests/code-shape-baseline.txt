@@ -1,130 +1,19 @@
-src/DDT.Agent/AgentLog.cs: comment block over 4 lines
-src/DDT.Agent/AgentLoop.cs: AgentLoop.PollAsync: over 60 lines
-src/DDT.Agent/AgentLoop.cs: AgentLoop.RunCoreAsync: over 60 lines
-src/DDT.Agent/AgentLoop.cs: AgentLoop: over 400 lines
-src/DDT.Agent/AgentLoop.cs: AgentLoop: over 6 constructor dependencies
-src/DDT.Agent/AgentOptions.cs: AgentOptions.TryParse: over 60 lines
-src/DDT.Agent/AgentUpdate.cs: AgentUpdate: over 6 constructor dependencies
-src/DDT.Agent/AgentUpdate.cs: comment block over 4 lines
-src/DDT.Agent/ConsoleSignInPrompt.cs: ConsoleSignInPrompt.ReadLineAsync: over 60 lines
-src/DDT.Agent/Consoles/IConsoleLauncher.cs: more than one type
-src/DDT.Agent/Consoles/PipeMachineConsole.cs: PipeMachineConsole.WriteAsync: over 60 lines
-src/DDT.Agent/Consoles/PipeMachineConsole.cs: PipeMachineConsole: over 400 lines
-src/DDT.Agent/Consoles/PipeMachineConsole.cs: comment block over 4 lines
-src/DDT.Agent/Consoles/QuestionSlot.cs: comment block over 4 lines
-src/DDT.Agent/Consoles/QuestionSlot.cs: more than one type
-src/DDT.Agent/Consoles/SessionMachineConsole.cs: SessionMachineConsole.WriteAsync: over 60 lines
-src/DDT.Agent/Consoles/SessionMachineConsole.cs: SessionMachineConsole: over 400 lines
-src/DDT.Agent/Consoles/SessionMachineConsole.cs: comment block over 4 lines
-src/DDT.Agent/Consoles/TextMachineConsole.cs: TextMachineConsole: over 400 lines
-src/DDT.Agent/Consoles/TextMachineConsole.cs: comment block over 4 lines
 src/DDT.Agent/Deployment/AccountNativeMethods.cs: AccountNativeMethods.CreateDesktop: over 5 parameters
 src/DDT.Agent/Deployment/AccountNativeMethods.cs: AccountNativeMethods.CreateProcessAsUser: over 5 parameters
 src/DDT.Agent/Deployment/AccountNativeMethods.cs: AccountNativeMethods.LogonUser: over 5 parameters
 src/DDT.Agent/Deployment/AccountNativeMethods.cs: AccountNativeMethods.UpdateProcThreadAttribute: over 5 parameters
-src/DDT.Agent/Deployment/AccountNativeMethods.cs: more than one type
-src/DDT.Agent/Deployment/AccountProcessStarter.cs: AccountProcessStarter: over 400 lines
-src/DDT.Agent/Deployment/AccountProcessStarter.cs: AccountToolProcess.Start: over 60 lines
-src/DDT.Agent/Deployment/AccountProcessStarter.cs: AccountToolProcess: over 400 lines
-src/DDT.Agent/Deployment/AccountProcessStarter.cs: comment block over 4 lines
-src/DDT.Agent/Deployment/ContentDownloader.cs: ContentDownloader.DownloadAsync: over 5 parameters
-src/DDT.Agent/Deployment/ContentDownloader.cs: ContentDownloader.DownloadAsync: over 60 lines
-src/DDT.Agent/Deployment/ContentDownloader.cs: ContentDownloader.ReceiveAsync: over 5 parameters
-src/DDT.Agent/Deployment/ContentDownloader.cs: ContentDownloader.ReceiveAsync: over 60 lines
 src/DDT.Agent/Deployment/DiskNativeMethods.cs: DiskNativeMethods.CreateFile: over 5 parameters
 src/DDT.Agent/Deployment/DiskNativeMethods.cs: DiskNativeMethods.DeviceIoControl: over 5 parameters
 src/DDT.Agent/Deployment/DiskNativeMethods.cs: DiskNativeMethods.GetVolumeInformation: over 5 parameters
-src/DDT.Agent/Deployment/DiskpartPartitioner.cs: DiskpartPartitioner: over 400 lines
-src/DDT.Agent/Deployment/DiskpartScript.cs: DiskpartScript.Build: over 5 parameters
 src/DDT.Agent/Deployment/DomainJoinNativeMethods.cs: DomainJoinNativeMethods.NetJoinDomain: over 5 parameters
-src/DDT.Agent/Deployment/FirmwareBootEntry.cs: FirmwareBootEntry.MakeFirst: over 5 parameters
-src/DDT.Agent/Deployment/FirmwareBootEntry.cs: FirmwareBootEntry.MakeFirst: over 60 lines
-src/DDT.Agent/Deployment/FirmwareBootEntry.cs: comment block over 4 lines
 src/DDT.Agent/Deployment/FirmwareNativeMethods.cs: FirmwareNativeMethods.AdjustTokenPrivileges: over 5 parameters
-src/DDT.Agent/Deployment/INetworkConnections.cs: more than one type
-src/DDT.Agent/Deployment/IToolProcess.cs: more than one type
-src/DDT.Agent/Deployment/ShareConnector.cs: comment block over 4 lines
 src/DDT.Agent/Deployment/ToolOutput.cs: ToolOutput.MultiByteToWideChar: over 5 parameters
-src/DDT.Agent/Deployment/UnattendFile.cs: comment block over 4 lines
-src/DDT.Agent/Deployment/WindowsAccountLogons.cs: comment block over 4 lines
-src/DDT.Agent/Deployment/WindowsAccountLogons.cs: more than one type
-src/DDT.Agent/Deployment/WindowsPERebooter.cs: comment block over 4 lines
-src/DDT.Agent/Deployment/WindowsPERestartMarker.cs: comment block over 4 lines
-src/DDT.Agent/DryRunMachine.cs: DryRunMachine.Runner: over 5 parameters
-src/DDT.Agent/DryRunMachine.cs: DryRunMachine: over 6 constructor dependencies
-src/DDT.Agent/DryRunMachine.cs: comment block over 4 lines
-src/DDT.Agent/HttpAgentServer.cs: HttpAgentServer.OpenRunFileAsync: over 5 parameters
-src/DDT.Agent/HttpAgentServer.cs: HttpAgentServer.SendAsync: over 60 lines
-src/DDT.Agent/HttpAgentServer.cs: HttpAgentServer: over 400 lines
-src/DDT.Agent/Sequences/AgentStepRunner.cs: AgentStepRunner.RunAsync: over 60 lines
-src/DDT.Agent/Sequences/AgentStepRunner.cs: AgentStepRunner: over 6 constructor dependencies
-src/DDT.Agent/Sequences/InjectDriversStepRunner.cs: InjectDriversStepRunner.RunAsync: over 60 lines
-src/DDT.Agent/Sequences/PackageExtractor.cs: PackageExtractor.ExtractAsync: over 60 lines
-src/DDT.Agent/Sequences/PauseStepRunner.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/RunDownloads.cs: RunDownloads.DownloadAsync: over 5 parameters
-src/DDT.Agent/Sequences/RunDownloads.cs: RunDownloads.DownloadToAsync: over 5 parameters
-src/DDT.Agent/Sequences/RunHeartbeat.cs: RunHeartbeat.BeatAsync: over 60 lines
-src/DDT.Agent/Sequences/RunHeartbeat.cs: RunHeartbeat: over 400 lines
-src/DDT.Agent/Sequences/RunHeartbeat.cs: RunHeartbeat: over 6 constructor dependencies
-src/DDT.Agent/Sequences/RunHeartbeat.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/RunScriptStepRunner.cs: RunScriptStepRunner.ReadOutputsAsync: over 60 lines
-src/DDT.Agent/Sequences/RunScriptStepRunner.cs: RunScriptStepRunner.RunAsync: over 60 lines
-src/DDT.Agent/Sequences/RunScriptStepRunner.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/SequencePicker.cs: SequencePicker.Accept: over 60 lines
-src/DDT.Agent/Sequences/SequencePicker.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.FailAsync: over 5 parameters
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.FinishAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.GoOnInWindowsAsync: over 5 parameters
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.PreflightAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunAsync: over 5 parameters
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunCoreAsync: over 5 parameters
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunCoreAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunStepsAsync: over 5 parameters
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.RunStepsAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner.WaitForInputsAsync: over 60 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner: over 400 lines
-src/DDT.Agent/Sequences/SequenceRunner.cs: SequenceRunner: over 6 constructor dependencies
-src/DDT.Agent/Sequences/SequenceRunner.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/StepStateLog.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/WindowsHandOver.cs: comment block over 4 lines
-src/DDT.Agent/Sequences/WriteCloudInitSeedStepRunner.cs: WriteCloudInitSeedStepRunner.RunAsync: over 60 lines
-src/DDT.Agent/ServerConnection.cs: comment block over 4 lines
-src/DDT.Agent/SmbiosParser.cs: SmbiosParser.TryReadSystemInformation: over 60 lines
-src/DDT.Agent/WindowsPhase/AgentRemoval.cs: comment block over 4 lines
-src/DDT.Agent/WindowsPhase/DeploySession.cs: DeploySession: over 400 lines
-src/DDT.Agent/WindowsPhase/DeploySession.cs: DeploySession: over 6 constructor dependencies
-src/DDT.Agent/WindowsPhase/DeploySession.cs: comment block over 4 lines
-src/DDT.Agent/WindowsPhase/DeploySessionFile.cs: more than one type
-src/DDT.Agent/WindowsPhase/RegistrySetupProbe.cs: comment block over 4 lines
-src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: WindowsPhaseLoop.GoOnAsync: over 60 lines
-src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: WindowsPhaseLoop: over 400 lines
-src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: WindowsPhaseLoop: over 6 constructor dependencies
-src/DDT.Agent/WindowsPhase/WindowsPhaseLoop.cs: comment block over 4 lines
-src/DDT.Agent/WindowsPhase/WindowsPhaseService.cs: WindowsPhaseService.RunAsync: over 5 parameters
 src/DDT.Contracts/Messages/MessageTemplate.cs: MessageTemplate.With: over 5 parameters
 src/DDT.Core/Wim/WimNativeMethods.cs: WimNativeMethods.ExportImage: over 5 parameters
 src/DDT.MachineConsole/Machine/CommandPrompt.cs: CommandPrompt.CreateProcess: over 5 parameters
 src/DDT.Pxe/PxeLog.cs: PxeLog.Replied: over 5 parameters
 src/DDT.Pxe/PxeLog.cs: PxeLog.TftpCompleted: over 5 parameters
 src/DDT.Server/Deployments/DeploymentLog.cs: DeploymentLog.Failed: over 5 parameters
-tests/DDT.Agent.Tests/DryRunMachineTests.cs: DryRunMachineTests.RunsTheWholeRunThroughBothPhasesAndLeavesNothing: over 60 lines
-tests/DDT.Agent.Tests/DryRunResumeTests.cs: DryRunResumeTests.ATreesRunGoesOnAfterRestartsInsideARepeatAndAPauseTheWebContinues: over 60 lines
-tests/DDT.Agent.Tests/FakeAccountTools.cs: more than one type
-tests/DDT.Agent.Tests/FakeDeploymentTools.cs: comment block over 4 lines
-tests/DDT.Agent.Tests/FakeGraphicalConsole.cs: more than one type
-tests/DDT.Agent.Tests/ScriptedAgentServer.cs: ScriptedAgentServer.OpenRunFileAsync: over 5 parameters
-tests/DDT.Agent.Tests/ScriptedAgentServer.cs: comment block over 4 lines
-tests/DDT.Agent.Tests/SequenceRunnerTests.cs: SequenceRunnerTests.APreflightFailureReportsFailedWithTheDiskUntouched: over 60 lines
-tests/DDT.Agent.Tests/SequenceRunnerTests.cs: SequenceRunnerTests.RunAsync: over 5 parameters
-tests/DDT.Agent.Tests/SequenceRunnerTests.cs: SequenceRunnerTests: over 700 lines
-tests/DDT.Agent.Tests/StepRunnerFixture.cs: StepRunnerFixture: over 6 constructor dependencies
-tests/DDT.Agent.Tests/TestAgents.cs: TestAgents.Loop: over 5 parameters
-tests/DDT.Agent.Tests/TestAgents.cs: TestAgents.Runner: over 5 parameters
-tests/DDT.Agent.Tests/TestAgents.cs: TestAgents.WindowsLoop: over 5 parameters
-tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests.GoesOnWithTheRunAndRemovesItselfAfterTheDoneReportThenRestartsWindows: over 60 lines
-tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests.RunAsync: over 5 parameters
-tests/DDT.Agent.Tests/WindowsPhaseLoopTests.cs: WindowsPhaseLoopTests: over 700 lines
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendAsync: over 5 parameters
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendReauthenticatedAsync: over 5 parameters
 tests/DDT.E2E/AdminApi.cs: AdminApi.SendRefusedAsync: over 5 parameters

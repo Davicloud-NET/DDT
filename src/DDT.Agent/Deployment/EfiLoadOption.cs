@@ -79,9 +79,8 @@ public static class EfiLoadOption
         return option;
     }
 
-    // True when the option's device paths name the GPT partition partitionId and the file path on it, whatever the
-    // case of the path, or any file when path is null. Never throws: the option comes from the firmware and may hold
-    // anything.
+    // Whether the option starts path, in any case, or any file when path is null, on the GPT partition partitionId.
+    // Never throws: the option comes from the firmware and may hold anything.
     public static bool PointsAt(ReadOnlySpan<byte> option, Guid partitionId, string? path)
     {
         if (option.Length < HeaderLength)

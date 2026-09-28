@@ -41,7 +41,7 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);
 
-        string script = DiskpartScript.Build(disk.Number, 'S', 'W', 'R', systemPartitionMegabytes, recoveryPartitionMegabytes);
+        string script = DiskpartScript.Build(disk.Number, new PartitionLetters('S', 'W', 'R'), systemPartitionMegabytes, recoveryPartitionMegabytes);
         await File.WriteAllTextAsync(Path.Combine(root, "partition.txt"), script, Encoding.ASCII, cancellationToken)
             .ConfigureAwait(false);
 

@@ -4,9 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// Microsoft's sequence after applying: the applied image's own bcdboot and reagentc, which match its version.
-// bcdboot always gets /s: without it, it may write to the EFI system partition of another disk, which the technician
-// never confirmed erasing.
+// Microsoft's sequence after applying, with the image's own bcdboot and reagentc, which match its version. bcdboot always
+// gets /s: without it, it may write to another disk's EFI system partition, which nobody confirmed erasing.
 public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IBcdWriter
 {
     private static readonly string s_bcdedit = Path.Combine(Environment.SystemDirectory, "bcdedit.exe");
@@ -57,13 +56,11 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
 
         try
         {
-            FirmwareBootEntry.MakeFirst(
-                changes,
+            new FirmwareBootEntry(changes, log).MakeFirst(
                 EspReader.Read(volumes.System),
                 FirmwareBootEntry.WindowsLoaderPath,
                 FirmwareBootEntry.WindowsDescription,
-                volumes.ErasedSystemPartitionIds,
-                log);
+                volumes.ErasedSystemPartitionIds);
         }
         catch (Exception exception)
         {
@@ -87,7 +84,7 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
 
         try
         {
-            FirmwareBootEntry.MakeFirst(changes, esp, loaderPath, description, erasedSystemPartitionIds, log);
+            new FirmwareBootEntry(changes, log).MakeFirst(esp, loaderPath, description, erasedSystemPartitionIds);
         }
         catch (Exception exception)
         {

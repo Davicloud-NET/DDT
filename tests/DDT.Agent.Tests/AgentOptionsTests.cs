@@ -55,4 +55,70 @@ public sealed class AgentOptionsTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public void TurnsDownAnArgumentWithoutItsValue()
+    {
+        Assert.False(AgentOptions.TryParse(["--dry-run", "--server"], out AgentOptions? options, out string error));
+
+        Assert.Null(options);
+        Assert.StartsWith("--server needs a value.", error, StringComparison.Ordinal);
+        Assert.EndsWith(AgentOptions.Usage, error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TurnsDownAnArgumentItDoesNotKnow()
+    {
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--colour", "blue"], out _, out string unknown));
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run-id", "first"], out _, out string invalid));
+
+        Assert.StartsWith("Unknown or invalid argument --colour.", unknown, StringComparison.Ordinal);
+        Assert.StartsWith("Unknown or invalid argument --dry-run-id.", invalid, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TurnsDownAnAgentJsonThatIsNotJson()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"agent-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, """{ "serverUrl": "https://ddt.example:7152" """);
+
+        try
+        {
+            Assert.False(AgentOptions.TryParse(["--config", path], out AgentOptions? options, out string error));
+
+            Assert.Null(options);
+            Assert.StartsWith($"{path} is not valid: ", error, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void RequiresAnHttpsServerUrl()
+    {
+        Assert.False(AgentOptions.TryParse(["--server", "http://ddt.example:7152"], out AgentOptions? options, out string error));
+
+        Assert.Null(options);
+        Assert.StartsWith("An https server URL is required.", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TurnsDownARootCertificateThatIsNotPem()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"root-{Guid.NewGuid():N}.pem");
+        File.WriteAllText(path, "not a certificate");
+
+        try
+        {
+            Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--root-certificate", path], out _, out string error));
+
+            Assert.StartsWith("The root certificate is not a PEM certificate: ", error, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

@@ -8,9 +8,8 @@ using DDT.Contracts.Images;
 
 namespace DDT.Agent.Sequences;
 
-// What the steps of one run share: the run as the server sent it, the machine's tokens, the disk chosen for the run
-// before it started, and that disk's volumes once Partition made them or the agent found them again after a restart. In
-// the installed Windows there are no volumes to find: the run goes on in the Windows that runs.
+// What the steps of one run share: the run, the machine's tokens, the disk chosen before it started, and its volumes once
+// Partition made them or a restart found them again. In the installed Windows the run goes on in the running one.
 public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens tokens)
 {
     public Guid MachineId { get; } = machineId;

@@ -8,11 +8,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
-// setup, the domain join, the due restart, the agent's removal and what Windows deletes when it next starts, and records
-// each call in one journal so a test can check their order. FailAt names the call that throws Failure: list, prepare,
-// partition, apply, bcd, firmware, reboot, find, join, remove, or one passed to Note. The volumes are directories in a
-// temporary folder, created by the partitioning, that Dispose removes.
+// Stands in for the disk, wimlib, bcdboot, the boot order and the restart, and in Windows for setup, the join, the
+// restart marker and the agent's removal, with every call in one journal so a test can check their order. The volumes
+// are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
     : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
@@ -32,6 +30,8 @@ internal sealed class FakeDeploymentTools
 
     public List<LocalDisk> Disks { get; }
 
+    // The call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find, join, remove, or one
+    // passed to Note.
     public string? FailAt { get; set; }
 
     public Exception Failure { get; set; } = new DeploymentStepException("The scripted step failed.");

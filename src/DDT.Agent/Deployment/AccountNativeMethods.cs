@@ -9,6 +9,7 @@ namespace DDT.Agent.Deployment;
 
 // Signing an account in, its token, profile and environment, and starting a process as it in a window station and
 // desktop of its own, inside a job object. The installed Windows has all of them; only its agent runs as an account.
+// The imports keep Win32's signatures, however many parameters they take.
 internal static unsafe partial class AccountNativeMethods
 {
     public const int LogonInteractive = 2;
@@ -275,21 +276,4 @@ internal static unsafe partial class AccountNativeMethods
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool CloseHandle(nint handle);
-}
-
-// A token, process, thread or job, which CloseHandle closes.
-public sealed class SafeKernelHandle : SafeHandleZeroOrMinusOneIsInvalid
-{
-    public SafeKernelHandle()
-        : base(ownsHandle: true)
-    {
-    }
-
-    public SafeKernelHandle(nint handle)
-        : base(ownsHandle: true)
-    {
-        SetHandle(handle);
-    }
-
-    protected override bool ReleaseHandle() => AccountNativeMethods.CloseHandle(handle);
 }

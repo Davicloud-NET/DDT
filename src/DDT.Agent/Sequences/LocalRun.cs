@@ -20,9 +20,8 @@ public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState 
         return state is null ? null : new LocalRun(windowsRoot, files, state, await files.LoadTokenAsync(cancellationToken).ConfigureAwait(false));
     }
 
-    // The answer file holds passwords. It may be there once its step started, even if the step never finished: a step
-    // the engine found interrupted is Failed by then. The state has an entry per node of the tree, so the step may sit
-    // inside a group or an IF.
+    // The answer file holds passwords, and may be there once its step started, even one the engine since failed as
+    // interrupted. The state has an entry per node of the tree, so the step may sit inside a group or an IF.
     public static void DeleteAnswerFile(SequenceState state, string windowsRoot, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(state);

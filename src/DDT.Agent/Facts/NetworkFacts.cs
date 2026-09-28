@@ -23,9 +23,8 @@ public sealed record NetworkFacts(string? IPv4Address, int? PrefixLength, string
             properties.DhcpServerAddresses);
     }
 
-    // The first address that is not link-local, which Windows gives itself while no DHCP server answers, unless there is
-    // no other. Unset addresses and the broadcast address, which Windows can report for a gateway or a DHCP server that
-    // is not there, count as none.
+    // The first address that is not link-local, which Windows gives itself without a DHCP answer, unless there is no
+    // other. Unset and broadcast addresses, which Windows can report for a missing gateway or DHCP server, count as none.
     public static NetworkFacts From(
         IEnumerable<(IPAddress Address, int PrefixLength)> unicast,
         IEnumerable<IPAddress> gateways,

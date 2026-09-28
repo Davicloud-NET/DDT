@@ -6,10 +6,8 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for mpr.dll: it keeps the connections in a list and records every call. Existing names a connection made
-// before this step, such as one Windows kept from another account, which makes a first Add to the same server answer
-// 1219 until it is cancelled, as Windows does. AddError makes an Add to a name fail with any error. Passwords are
-// recorded nowhere.
+// Stands in for mpr.dll, keeping the connections in a list and recording every call but passwords. A connection from
+// before the step, as the constructor names it, makes a first Add to the same server answer 1219 until cancelled.
 internal sealed class FakeNetworkConnections : INetworkConnections
 {
     private readonly List<string> _existing;

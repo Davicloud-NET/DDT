@@ -19,15 +19,3 @@ public interface IToolProcess : IDisposable
     // Ends the tool and every process it started. A failure is logged, not thrown.
     void Kill();
 }
-
-public interface IAccountProcessStarter
-{
-    // Starts fileName as the account, which is signed in already, with its environment and environment added. A tool
-    // that cannot start throws DeploymentStepException.
-    IToolProcess Start(
-        IAccountSession account,
-        string fileName,
-        IReadOnlyList<string> arguments,
-        string? workingDirectory,
-        IReadOnlyDictionary<string, string>? environment);
-}

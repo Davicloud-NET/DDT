@@ -17,9 +17,8 @@ using static DDT.Agent.Tests.ScriptedMachineConsole;
 
 namespace DDT.Agent.Tests;
 
-// The agent's flows as a console that is not the text one sees them: questions with the facts to answer them and the
-// error of the answer before, answers that name a choice rather than a number, questions withdrawn when the web
-// answered them first, and the state as it changes.
+// The agent's flows as a console other than the text one sees them: questions with their facts and the last error,
+// answers that name a choice, questions withdrawn when the web answered first, and the state as it changes.
 public sealed class ConsoleSeamTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
@@ -72,7 +71,7 @@ public sealed class ConsoleSeamTests : IDisposable
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null) { MachineConsole = console };
 
-        return TestAgents.Loop(server, TestAgents.Status(console), _tools, log, time, identity);
+        return TestAgents.Loop(server, TestAgents.Status(console), new(_tools, log, time) { Identity = identity });
     }
 
     [Fact]

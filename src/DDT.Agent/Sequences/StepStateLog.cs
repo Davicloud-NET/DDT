@@ -9,18 +9,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// The engine keeps no log, and AgentStepRunner only sees the steps that run, so this names the steps the engine settles
-// without running them, from the states the run saves: a step it skips because a condition does not hold, and a step
-// it fails because it was running when the machine restarted or the agent stopped. Each saved state is compared with
-// the one before it, from the state the run starts or goes on with, so a step is named once however often the run goes
-// on after a restart. An interrupted step's line carries the step's id, as a running step's lines do, so the web shows
-// it with the step's log. A skipped step never ran and has no log of its own on the web, so its line is the run's. The
-// conditions read as the web shows them, with what the machine reported when the engine checked them.
-//
-// A tree's run (Format 2) also says which branch an IF took and why, each time a repeat goes through its steps, a repeat
-// that stops at its limit, and a group, IF or repeat that failed and lets the run go on after it. Its reasons come from
-// the tests the engine kept, since the values they read are the run's. A node on a branch an IF did not take, or inside
-// a node that was skipped or failed, is passed over in silence: the line about the node that decided it says it all.
+// Logs what the engine settles without AgentStepRunner, from the states the run saves: skipped steps, steps a restart or
+// a stop interrupted, and in a tree the branch an IF took, a repeat's rounds and a failed container the run goes on
+// after. Each state is compared with the one before, so a step is named once however often the run goes on.
 public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVariables machine)
 {
     private const string GoesOn = "\"Go on when this step fails\" is on for";
@@ -82,7 +73,6 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
         }
     }
 
-    // A node inside a repeat is visited again with a higher pass, so a change of pass counts as much as one of state.
     private void SavedTree(SequenceState state)
     {
         IReadOnlyList<SequenceStep> nodes = NodesOf(state.Definition);
@@ -90,57 +80,61 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
 
         for (int order = 0; order < count; order++)
         {
-            SequenceStep node = nodes[order];
-            StepRunState now = state.Steps[order];
-            StepRunState before = _last.Steps[order];
-            bool newVisit = now.Pass != before.Pass;
+            Changed(nodes[order], state.Steps[order], _last.Steps[order]);
+        }
+    }
 
-            if (now.State == before.State && !newVisit && now.Iteration == before.Iteration && now.Branch == before.Branch)
-            {
-                continue;
-            }
+    // A node inside a repeat is visited again with a higher pass, so a change of pass counts as much as one of state.
+    private void Changed(SequenceStep node, StepRunState now, StepRunState before)
+    {
+        bool newVisit = now.Pass != before.Pass;
 
-            if (now.State == StepState.Skipped && now.Evaluation is { Count: > 0 } skipped && (before.State != StepState.Skipped || newVisit))
-            {
-                string because = ConditionStory.Sentence(
-                    ConditionStory.Unmet(node, skipped),
-                    "this condition did not hold",
-                    "these conditions did not hold",
-                    "its conditions did not hold.");
-                Write(null, $"{Noun(node)} {node.Name} was skipped, because {because}", AgentLogLevel.Information);
+        if (now.State == before.State && !newVisit && now.Iteration == before.Iteration && now.Branch == before.Branch)
+        {
+            return;
+        }
 
-                continue;
-            }
+        // Only a node its own conditions skipped: the line about an IF or a skipped container covers what is inside.
+        if (now.State == StepState.Skipped && now.Evaluation is { Count: > 0 } skipped && (before.State != StepState.Skipped || newVisit))
+        {
+            string because = ConditionStory.Sentence(
+                ConditionStory.Unmet(node, skipped),
+                "this condition did not hold",
+                "these conditions did not hold",
+                "its conditions did not hold.");
+            Write(null, $"{Noun(node)} {node.Name} was skipped, because {because}", AgentLogLevel.Information);
 
-            if (now is { State: StepState.Failed, Error: SequenceEngine.InterruptedError } && !node.IsContainer)
-            {
-                Interrupted(node);
+            return;
+        }
 
-                continue;
-            }
+        if (now is { State: StepState.Failed, Error: SequenceEngine.InterruptedError } && !node.IsContainer)
+        {
+            Interrupted(node);
 
-            if (node.IsContainer && now.State == StepState.Failed && before.State != StepState.Failed && node.ContinueOnError)
-            {
-                Write(
-                    node.Id,
-                    $"{Noun(node)} {node.Name} failed: {now.Error} The run goes on after it, because {GoesOn} it.",
-                    AgentLogLevel.Error);
+            return;
+        }
 
-                continue;
-            }
+        if (node.IsContainer && now.State == StepState.Failed && before.State != StepState.Failed && node.ContinueOnError)
+        {
+            Write(
+                node.Id,
+                $"{Noun(node)} {node.Name} failed: {now.Error} The run goes on after it, because {GoesOn} it.",
+                AgentLogLevel.Error);
 
-            switch (node)
-            {
-                case IfStep choice when now.Branch is { } branch && (before.Branch != branch || newVisit):
-                    Took(choice, branch, now.Evaluation ?? []);
-                    break;
-                case RepeatStep repeat when now.State == StepState.Running && now.Iteration > 0 && (now.Iteration != before.Iteration || newVisit):
-                    Iterates(repeat, now);
-                    break;
-                case RepeatStep repeat when now.State == StepState.Done && before.State != StepState.Done:
-                    AtLimit(repeat, now);
-                    break;
-            }
+            return;
+        }
+
+        switch (node)
+        {
+            case IfStep choice when now.Branch is { } branch && (before.Branch != branch || newVisit):
+                Took(choice, branch, now.Evaluation ?? []);
+                break;
+            case RepeatStep repeat when now.State == StepState.Running && now.Iteration > 0 && (now.Iteration != before.Iteration || newVisit):
+                Iterates(repeat, now);
+                break;
+            case RepeatStep repeat when now.State == StepState.Done && before.State != StepState.Done:
+                AtLimit(repeat, now);
+                break;
         }
     }
 
@@ -198,6 +192,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
             AgentLogLevel.Warning);
     }
 
+    // stepId puts the line into that step's log on the web; a skipped step never ran, so its line is the run's.
     private void Write(Guid? stepId, string message, AgentLogLevel level)
     {
         Guid? running = log.StepId;
@@ -264,6 +259,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
         };
     }
 
+    // As the web shows a condition, with what the machine reported when the engine checked it.
     private static string Describe(StepCondition condition, MachineVariables machine)
     {
         string variable = s_variables.GetValueOrDefault(condition.Variable, condition.Variable);

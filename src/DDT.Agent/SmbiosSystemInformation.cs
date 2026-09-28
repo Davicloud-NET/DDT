@@ -4,9 +4,8 @@
 
 namespace DDT.Agent;
 
-// ChassisType is the System Enclosure's chassis type as DMTF DSP0134 numbers it, without the lock bit, and null when the
-// table has no System Enclosure structure. The other members are strings of the first structure of their type, null
-// where the table has no such structure, the structure is too old to have the field, or the firmware left it empty.
+// What the SMBIOS table says of the machine, from the first structure of each type. A member is null where there is no
+// such structure, it is too old to have the field, or the firmware left it empty. ChassisType is without the lock bit.
 public sealed record SmbiosSystemInformation(Guid Uuid, string? Manufacturer, string? ProductName, string? SerialNumber, byte? ChassisType)
 {
     // The System Information structure's (type 1) version, where Lenovo puts the name a person knows the model by, and its

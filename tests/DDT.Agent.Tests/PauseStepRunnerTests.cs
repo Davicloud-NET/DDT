@@ -9,7 +9,6 @@ using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -37,9 +36,7 @@ public sealed class PauseStepRunnerTests
         _heartbeat = new RunHeartbeat(
             _server,
             _log,
-            new DeploymentTokens("session", "resume"),
-            StepRunnerFixture.MachineId,
-            TestRuns.RunId,
+            new RunSession(StepRunnerFixture.MachineId, TestRuns.Run([s_pause]), new DeploymentTokens("session", "resume")),
             _ => Task.CompletedTask,
             Timeout.InfiniteTimeSpan,
             _time);

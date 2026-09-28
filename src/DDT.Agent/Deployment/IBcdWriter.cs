@@ -9,9 +9,8 @@ public interface IBcdWriter
     // Makes the applied Windows bootable and registers its recovery environment.
     Task WriteAsync(TargetVolumes volumes, CancellationToken cancellationToken);
 
-    // Makes the firmware start Windows Boot Manager on the new system partition first. The last change to the
-    // machine, after the answer file: until then a restart still starts it from the network. A failure is only a
-    // warning, because Windows is installed either way.
+    // Puts Windows Boot Manager on the new system partition first, as the last change, after the answer file: until
+    // then a restart still starts the network. A failure only warns, as Windows is installed either way.
     Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken);
 
     // Makes the firmware start loaderPath on the EFI system partition esp first, under description, as the fallback file

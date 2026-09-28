@@ -7,12 +7,9 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder: Windows Boot Manager
-// after a Windows image, the fallback file after a raw disk image. An entry is recognised by the partition and file it
-// starts, never by its description: one left by an earlier installation carries the same description but points at a
-// partition that no longer exists. diskpart gives every new partition a new GUID, so an entry for an EFI system
-// partition the deployment erased, whatever it started, is reused rather than left behind, dead.
-public static class FirmwareBootEntry
+// Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder. An entry is recognised by
+// the partition and file it starts, never by its description, which an earlier installation's dead entry shares.
+public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
 {
     public const string WindowsDescription = "Windows Boot Manager";
     public const string WindowsLoaderPath = @"\EFI\Microsoft\Boot\bootmgfw.efi";
@@ -22,45 +19,17 @@ public static class FirmwareBootEntry
 
     private const string BootOrder = "BootOrder";
 
-    public static void MakeFirst(
-        IUefiVariables variables,
-        EspPartition esp,
-        string loaderPath,
-        string description,
-        IReadOnlyCollection<Guid> erasedPartitionIds,
-        AgentLog log)
+    // diskpart gives every new partition a new GUID, so an entry for an EFI system partition the deployment erased is
+    // reused rather than left behind, dead.
+    public void MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
     {
-        ArgumentNullException.ThrowIfNull(variables);
         ArgumentNullException.ThrowIfNull(esp);
         ArgumentException.ThrowIfNullOrEmpty(loaderPath);
         ArgumentException.ThrowIfNullOrEmpty(description);
         ArgumentNullException.ThrowIfNull(erasedPartitionIds);
-        ArgumentNullException.ThrowIfNull(log);
 
         List<ushort> order = ReadOrder(variables.Read(BootOrder));
-        ushort? existing = null;
-        ushort? erased = null;
-
-        foreach (ushort number in order)
-        {
-            if (variables.Read(OptionName(number)) is not { } option)
-            {
-                continue;
-            }
-
-            if (EfiLoadOption.PointsAt(option, esp.PartitionId, loaderPath))
-            {
-                existing = number;
-
-                break;
-            }
-
-            if (erased is null && erasedPartitionIds.Any(id => EfiLoadOption.PointsAt(option, id, path: null)))
-            {
-                erased = number;
-            }
-        }
-
+        (ushort? existing, ushort? erased) = FindEntries(order, esp, loaderPath, erasedPartitionIds);
         ushort entry;
 
         if (existing is { } found)
@@ -74,7 +43,7 @@ public static class FirmwareBootEntry
         }
         else
         {
-            entry = Create(variables, esp, loaderPath, description);
+            entry = Create(esp, loaderPath, description);
         }
 
         List<ushort> first = [entry, .. order.Where(number => number != entry).Distinct()];
@@ -85,15 +54,48 @@ public static class FirmwareBootEntry
             variables.Write(BootOrder, WriteOrder(first));
         }
 
-        string name = OptionName(entry);
+        Report(OptionName(entry), description, existing is not null, erased is not null, moved);
+    }
 
-        if (existing is not null)
+    // The entry in the boot order that already starts the loader, or else the first one for an erased partition.
+    private (ushort? Existing, ushort? Erased) FindEntries(
+        List<ushort> order,
+        EspPartition esp,
+        string loaderPath,
+        IReadOnlyCollection<Guid> erasedPartitionIds)
+    {
+        ushort? erased = null;
+
+        foreach (ushort number in order)
+        {
+            if (variables.Read(OptionName(number)) is not { } option)
+            {
+                continue;
+            }
+
+            if (EfiLoadOption.PointsAt(option, esp.PartitionId, loaderPath))
+            {
+                return (number, erased);
+            }
+
+            if (erased is null && erasedPartitionIds.Any(id => EfiLoadOption.PointsAt(option, id, path: null)))
+            {
+                erased = number;
+            }
+        }
+
+        return (null, erased);
+    }
+
+    private void Report(string name, string description, bool existed, bool reusedErased, bool moved)
+    {
+        if (existed)
         {
             log.Information(moved
                 ? $"Firmware boot entry {name} already starts {description} on the new EFI system partition. It is now first in the boot order."
                 : $"Firmware boot entry {name} already starts {description} on the new EFI system partition and is first in the boot order.");
         }
-        else if (erased is not null)
+        else if (reusedErased)
         {
             log.Information(
                 $"Firmware boot entry {name} pointed at the EFI system partition this deployment erased. It now starts {description} on " +
@@ -105,7 +107,7 @@ public static class FirmwareBootEntry
         }
     }
 
-    private static ushort Create(IUefiVariables variables, EspPartition esp, string loaderPath, string description)
+    private ushort Create(EspPartition esp, string loaderPath, string description)
     {
         for (int number = 0; number <= ushort.MaxValue; number++)
         {

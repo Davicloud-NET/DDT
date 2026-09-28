@@ -10,13 +10,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Prepares the installed Windows to go on with the run: this agent, as agentPath names it, goes into the run's
-// directory as <Windows volume>\DDT\agent\ddt-agent.exe, with configuration as its agent.json, which holds only the
-// server's URL and root certificate; the service that starts the agent there is registered; and the run's state is
-// saved as in the Windows phase, with the run token. The agent's own file, not the boot image's: the running one may
-// be a newer one it updated itself to. The graphical console goes into <Windows volume>\DDT\console, where DDT's
-// session in Windows starts it as its shell, when consoleDirectory names where it is: asked at the hand-over, as only
-// then is it known whether the console that ran speaks this agent's version of the protocol.
+// Prepares the installed Windows to go on with the run: stages this agent with its agent.json and, for DDT's session,
+// the console, registers the service that starts the agent, and saves the run's state in the Windows phase.
 public sealed class WindowsHandOver(
     OfflineServiceRegistration service,
     string agentPath,
@@ -50,6 +45,7 @@ public sealed class WindowsHandOver(
             log.Information($"Dry run: {directory} is left open. In Windows PE it inherits the run directory's DACL ({SystemOnlyDirectory.Sddl}).");
         }
 
+        // The running agent, not the boot image's: it may be a newer one it updated itself to.
         File.Copy(agentPath, Path.Combine(directory, AgentFileName), overwrite: true);
         await File.WriteAllBytesAsync(
             Path.Combine(directory, ConfigurationFileName),
@@ -69,6 +65,7 @@ public sealed class WindowsHandOver(
         await store.SaveAsync(state with { Phase = SequencePhase.Windows }, CancellationToken.None).ConfigureAwait(false);
     }
 
+    // consoleDirectory is asked only now, once it is known whether the console that ran speaks this agent's protocol.
     // Without all of its files there is no console, and the run in Windows shows only on the server. True once staged.
     private bool StageConsole(string runDirectory)
     {

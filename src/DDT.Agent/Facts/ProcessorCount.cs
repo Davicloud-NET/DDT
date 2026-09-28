@@ -7,9 +7,8 @@ using System.Numerics;
 
 namespace DDT.Agent.Facts;
 
-// The machine's cores and logical processors, counted in what GetLogicalProcessorInformationEx writes for
-// RelationProcessorCore: a SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX per core, each with the affinity masks of its logical
-// processors. The masks see every processor group, where Environment.ProcessorCount sees only the agent's own affinity.
+// The machine's cores and logical processors, from GetLogicalProcessorInformationEx's entry per core and its affinity
+// masks, which see every processor group, where Environment.ProcessorCount sees only the agent's own affinity.
 public sealed record ProcessorCount(int Cores, int LogicalProcessors)
 {
     // Relationship and Size, then PROCESSOR_RELATIONSHIP at 8: Flags, EfficiencyClass and 20 reserved bytes, GroupCount at

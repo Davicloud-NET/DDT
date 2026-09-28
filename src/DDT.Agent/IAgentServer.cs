@@ -46,13 +46,7 @@ public interface IAgentServer
 
     // One of the run's images or packages, from offset to the end. A server that ignores the range answers from 0,
     // which the result's Offset shows.
-    Task<AgentImageStream> OpenRunFileAsync(
-        Guid machineId,
-        string token,
-        Guid runId,
-        string sha256,
-        long offset,
-        CancellationToken cancellationToken);
+    Task<AgentImageStream> OpenRunFileAsync(Guid machineId, string token, RunFileRange file, CancellationToken cancellationToken);
 
     // The answer file of a WriteUnattend step, which the server renders only while the step is running. It holds
     // passwords.

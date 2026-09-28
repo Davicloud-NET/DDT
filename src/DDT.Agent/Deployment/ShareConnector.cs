@@ -6,11 +6,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Connects a step's shares as \\host\share, whatever folder in it the path names: Windows connects shares, not folders,
-// and a script reaches the folder through the share. Each connection is temporary and has no drive letter, so nothing
-// of it outlives the step or shows up for anyone else. Windows allows one account per server in a logon session, so a
-// connection to the same server with another account that the step did not make gives way, once; one the step made
-// itself does not, as the step needs it.
+// Connects a step's shares as \\host\share, as Windows connects shares, not folders; temporary and without a drive letter,
+// nothing outlives the step. Windows allows one account per server in a logon session, so another account's connection
+// to the server gives way, once, unless the step made it.
 public sealed class ShareConnector(INetworkConnections network, AgentLog log) : IShareConnector
 {
     // ERROR_SESSION_CREDENTIAL_CONFLICT.

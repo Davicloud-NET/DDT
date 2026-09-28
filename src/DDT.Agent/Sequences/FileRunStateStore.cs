@@ -8,12 +8,11 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// The engine's store in the agent. It keeps the state in memory until Partition gives the run its directory on the
-// disk, and from then on writes every state there, and the run token whenever it changed, so the disk always holds
-// what resumes the run. Each state is passed to saved once it is written, so the server is never told of a state the
-// disk does not have. The heartbeat writes a newer run token from its own thread, so the writes take turns.
+// The engine's store: in memory until Partition gives the run its directory, then every state and each new run token go
+// to the disk before saved sees the state, so the server never hears of a state the disk does not have.
 public sealed class FileRunStateStore(DeploymentTokens tokens, Action<SequenceState>? saved = null) : ISequenceStateStore
 {
+    // The heartbeat writes a new run token from its own thread.
     private readonly SemaphoreSlim _writing = new(1, 1);
     private RunFiles? _files;
     private SequenceState? _state;

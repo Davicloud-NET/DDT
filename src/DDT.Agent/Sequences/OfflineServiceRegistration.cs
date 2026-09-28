@@ -7,14 +7,14 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// Registers the service that goes on with the run in the installed Windows, straight into that Windows' SYSTEM hive
-// while Windows PE runs, so it starts whatever the image does with SetupComplete.cmd or its OEM keys. The image path
-// names %SystemDrive%, which is the Windows volume once Windows runs. The hive is unloaded whatever happens: loaded, it
-// stays locked. A dry run logs the reg.exe lines instead of running them, so no hive says which control set is current.
+// Registers the DdtSequence service straight into the installed Windows' SYSTEM hive from Windows PE, so it starts
+// whatever the image does with SetupComplete.cmd or its OEM keys. The hive is unloaded whatever happens: loaded, it stays
+// locked.
 public sealed class OfflineServiceRegistration(IToolRunner tools, AgentLog log, bool dryRun)
 {
     public const string ServiceName = "DdtSequence";
     public const string HiveKey = @"HKLM\DDT_OFFLINE";
+    // %SystemDrive% is the Windows volume once Windows runs.
     public const string ImagePath = "\"%SystemDrive%\\DDT\\agent\\ddt-agent.exe\" --service";
     public const string DisplayName = "DDT task sequence";
     public const string Description = "Runs the rest of a DDT task sequence in this Windows and removes itself when the run ends.";
@@ -87,6 +87,7 @@ public sealed class OfflineServiceRegistration(IToolRunner tools, AgentLog log, 
             }
         }
 
+        // A dry run only logs the reg.exe lines, so no hive answers the query.
         if (dryRun)
         {
             log.Information("Dry run: no hive says which control set is current, so ControlSet001 stands in for it.");

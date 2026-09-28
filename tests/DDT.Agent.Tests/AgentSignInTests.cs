@@ -28,7 +28,7 @@ public sealed class AgentSignInTests : IDisposable
     {
         ImmediateTimeProvider time = new();
 
-        return TestAgents.Loop(server, prompt, _tools, new AgentLog(time, TextWriter.Null), time);
+        return TestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, TextWriter.Null), time));
     }
 
     [Fact]

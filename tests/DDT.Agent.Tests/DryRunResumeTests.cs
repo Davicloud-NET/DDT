@@ -193,10 +193,8 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.Contains(after, line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("a4.cmd", StringComparison.Ordinal));
     }
 
-    // A tree's run across three starts of Windows PE: the first sets a variable, takes the IF's branch for the dry run's
-    // model and restarts inside the repeat; the runner goes on from the disk after each restart, a second time through the
-    // repeat and a restart, then past the repeat's limit, which lets the run go on, and a pause the web continues, to the
-    // end, which removes the dry run's root.
+    // Three starts of Windows PE: the first sets a variable, takes the IF's branch and restarts inside the repeat; the
+    // runner goes on from the disk through the repeat's limit and a pause the web continues, and removes the root at the end.
     [Fact]
     public async Task ATreesRunGoesOnAfterRestartsInsideARepeatAndAPauseTheWebContinues()
     {
@@ -221,25 +219,11 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.Contains(await MessagesAsync(firstLog), line => line.StartsWith("Dry run: not run", StringComparison.Ordinal) && line.EndsWith("b4.cmd", StringComparison.Ordinal));
 
         // Two more starts, which only the disk connects: the runner goes on with what it finds there each time.
-        RunResult second = await Runner(new AgentLog(_time, TextWriter.Null)).RunAsync(
-            s_machineId,
-            s_treeRun,
-            await LocalRun.LoadAsync(Path.Combine(_root, "W"), new AgentLog(_time, TextWriter.Null), cancellationToken),
-            null,
-            new DeploymentTokens("session-2", "resume-2", "run-token-1"),
-            s_identity,
-            cancellationToken);
+        RunResult second = await Runner(new AgentLog(_time, TextWriter.Null)).RunAsync(new RunRequest(s_machineId, s_treeRun, await LocalRun.LoadAsync(Path.Combine(_root, "W"), new AgentLog(_time, TextWriter.Null), cancellationToken), null, new DeploymentTokens("session-2", "resume-2", "run-token-1"), s_identity), cancellationToken);
 
         Assert.Equal(RunOutcome.Restarting, second.Outcome);
 
-        RunResult third = await Runner(new AgentLog(_time, TextWriter.Null)).RunAsync(
-            s_machineId,
-            s_treeRun,
-            await LocalRun.LoadAsync(Path.Combine(_root, "W"), new AgentLog(_time, TextWriter.Null), cancellationToken),
-            null,
-            new DeploymentTokens("session-3", "resume-3", "run-token-1"),
-            s_identity,
-            cancellationToken);
+        RunResult third = await Runner(new AgentLog(_time, TextWriter.Null)).RunAsync(new RunRequest(s_machineId, s_treeRun, await LocalRun.LoadAsync(Path.Combine(_root, "W"), new AgentLog(_time, TextWriter.Null), cancellationToken), null, new DeploymentTokens("session-3", "resume-3", "run-token-1"), s_identity), cancellationToken);
 
         Assert.Equal(RunOutcome.Finished, third.Outcome);
         Assert.False(Directory.Exists(_root));
@@ -305,37 +289,33 @@ public sealed class DryRunResumeTests : IDisposable
     private AgentLoop Agent(AgentLog log) =>
         new(
             _server,
-            new DryRunMachineIdentityReader(1),
+            new AgentMachine(new DryRunMachineIdentityReader(1), new DryRunDiskPartitioner(_root, log), new LocalRunLocator([Path.Combine(_root, "W")]), TestAgents.Version),
             TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
-            new DryRunDiskPartitioner(_root, log),
             Runner(log),
-            new LocalRunLocator([Path.Combine(_root, "W")]),
             log,
-            _time,
-            TestAgents.Version);
+            _time);
 
     // The runner of Windows PE as a dry run puts it together.
     private SequenceRunner Runner(AgentLog log)
     {
         DryRunToolRunner tools = new(log);
 
-        return new SequenceRunner(
-            _server,
-            new DryRunDiskPartitioner(_root, log),
-            new FileRawDisks(_root, log),
-            new DryRunImageApplier(log),
-            new DryRunBcdWriter(log),
-            new DryRunRebooter(log),
-            new WindowsPERestartMarker(_root, log, dryRun: true),
-            tools,
-            new DryRunDomainJoiner(log),
-            new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
-            log,
-            _time,
-            Timeout.InfiniteTimeSpan,
-            _root,
-            Environment.SystemDirectory,
-            dryRun: true);
+        return new SequenceRunnerBuilder
+        {
+            Server = _server,
+            Partitioner = new DryRunDiskPartitioner(_root, log),
+            RawDisks = new FileRawDisks(_root, log),
+            Applier = new DryRunImageApplier(log),
+            BcdWriter = new DryRunBcdWriter(log),
+            Rebooter = new DryRunRebooter(log),
+            RestartMarker = new WindowsPERestartMarker(_root, log, dryRun: true),
+            Tools = tools,
+            Joiner = new DryRunDomainJoiner(log),
+            HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
+            Log = log,
+            TimeProvider = _time,
+            Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, Environment.SystemDirectory, DryRun: true),
+        }.Build();
     }
 
     private static RunScriptStep Script(string id, string name) => new()
@@ -351,14 +331,16 @@ public sealed class DryRunResumeTests : IDisposable
         DryRunToolRunner tools = new(log);
         RunDownloads downloads = new(_server, session, log, _time, TimeSpan.FromSeconds(10));
         AgentStepRunner steps = new(
-            new PartitionStepRunner(disk, session, store, log, dryRun: true),
-            new ApplyImageStepRunner(new DryRunImageApplier(log), downloads, session, log),
-            new InjectDriversStepRunner(tools, downloads, session, log),
-            new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
-            new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
-            new RunScriptStepRunner(tools, downloads, session, log, _root),
-            new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
-            new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
+            [
+                new PartitionStepRunner(disk, session, store, log, dryRun: true),
+                new ApplyImageStepRunner(new DryRunImageApplier(log), downloads, session, log),
+                new InjectDriversStepRunner(tools, downloads, session, log),
+                new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
+                new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
+                new RunScriptStepRunner(tools, downloads, session, log, _root),
+                new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
+                new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
+            ],
             new StepAccounts(_server, session, _ => Task.CompletedTask, AccountTools.DryRun(log), log, _time),
             _ => { },
             log,

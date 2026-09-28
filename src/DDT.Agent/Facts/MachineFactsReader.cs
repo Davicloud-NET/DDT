@@ -7,9 +7,8 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent.Facts;
 
-// Reads what conditions and rules test besides the machine's identity, in Windows PE and in the installed Windows alike.
-// Each fact is read on its own: one that cannot be read stays null and the others are still reported, because no fact is
-// worth a machine that cannot register.
+// Reads what conditions and rules test besides the machine's identity. A fact that cannot be read stays null and the
+// others are still reported, as no fact is worth a machine that cannot register.
 public sealed class MachineFactsReader(IFirmwareTables firmware, ISystemHardware hardware, IUefiVariables uefi)
 {
     private const ulong KilobytesPerMegabyte = 1024;

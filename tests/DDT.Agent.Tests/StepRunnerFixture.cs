@@ -6,7 +6,6 @@ using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
-using DDT.Contracts.Images;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -23,17 +22,15 @@ internal sealed class StepRunnerFixture : IDisposable
     public static readonly Guid MachineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
     public static readonly Guid RunId = Guid.Parse("0193a4b2-0000-7000-8000-0000000000f1");
 
-    // secureBootEnabled and trustedUefiCas are what the firmware says; allowSecureBootMismatch what the run was allowed.
     // variables are the sequence's.
     public StepRunnerFixture(
         IReadOnlyList<SequenceStep> steps,
         IReadOnlyList<AgentRunImage>? images = null,
         IReadOnlyList<AgentRunPackage>? packages = null,
-        bool? secureBootEnabled = null,
-        bool allowSecureBootMismatch = false,
-        UefiCa? trustedUefiCas = null,
+        FixtureSecureBoot? secureBoot = null,
         IReadOnlyList<VariableDeclaration>? variables = null)
     {
+        secureBoot ??= new FixtureSecureBoot();
         AgentRun run = new(
             RunId,
             DeploymentState.Running,
@@ -43,14 +40,14 @@ internal sealed class StepRunnerFixture : IDisposable
             packages ?? [],
             null,
             "PC-042",
-            allowSecureBootMismatch);
+            secureBoot.MismatchAllowed);
 
         Log = new AgentLog(Time, TextWriter.Null);
         Session = new RunSession(MachineId, run, new DeploymentTokens("session", "resume", RunToken))
         {
             Disk = FakeDeploymentTools.Disk(0),
-            SecureBootEnabled = secureBootEnabled,
-            TrustedUefiCas = trustedUefiCas,
+            SecureBootEnabled = secureBoot.Enabled,
+            TrustedUefiCas = secureBoot.TrustedUefiCas,
         };
         Store = new FileRunStateStore(Session.Tokens);
         Downloads = new RunDownloads(Server, Session, Log, Time, TimeSpan.FromSeconds(10));
@@ -105,7 +102,7 @@ internal sealed class StepRunnerFixture : IDisposable
     public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
 
     public AgentStepRunner Steps =>
-        new(Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed, StepAccounts, TokenRejections.Add, Log, Time);
+        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed], StepAccounts, TokenRejections.Add, Log, Time);
 
     // variables are what steps output so far, values the run's values, which the machine carries.
     public StepContext Context(

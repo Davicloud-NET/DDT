@@ -2675,6 +2675,10 @@ msgstr "Nach vorn"
 msgid "Edition"
 msgstr "Edition"
 
+#: src/ui/FlowNode.tsx
+msgid "Else"
+msgstr "Sonst"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.duplicateEmail"
 msgid "Email ''{email}'' is already taken."
@@ -2914,6 +2918,7 @@ msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 #: src/runs/runView.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
+#: src/ui/FlowNode.tsx
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -2997,6 +3002,10 @@ msgstr "Findet den Benutzer, der sich anmeldet. Er muss {USER_TOKEN} enthalten, 
 #: src/deployments/deployments.ts
 msgid "Finishing"
 msgstr "Wird abgeschlossen"
+
+#: src/ui/FlowViewport.tsx
+msgid "Fit"
+msgstr "Einpassen"
 
 #: src/packages/PackagesPage.tsx
 msgid "For"
@@ -3128,6 +3137,10 @@ msgstr "Gruppe"
 msgid "Group name"
 msgstr "Gruppenname"
 
+#: src/ui/FlowNode.tsx
+msgid "Group: {name}"
+msgstr "Gruppe: {name}"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidc.groupsClaimRequired"
 msgid "GroupRoleMap needs the claim that carries the groups, such as groups."
@@ -3189,6 +3202,10 @@ msgstr "Ich habe sie gespeichert"
 #: src/sequences/steps.ts
 msgid "If"
 msgstr "Wenn"
+
+#: src/ui/FlowNode.tsx
+msgid "If: {name}"
+msgstr "Wenn: {name}"
 
 #: src/images/ImagesPage.tsx
 #: src/sequences/steps/WindowsFields.tsx
@@ -4840,6 +4857,7 @@ msgid "Pause"
 msgstr "Pause"
 
 #: src/log/LogPanel.tsx
+#: src/ui/FlowNode.tsx
 msgid "Paused"
 msgstr "Angehalten"
 
@@ -5118,6 +5136,10 @@ msgstr "Erneuerung"
 msgid "Repeat"
 msgstr "Wiederholen"
 
+#: src/ui/FlowNode.tsx
+msgid "Repeat: {name}"
+msgstr "Wiederholen: {name}"
+
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr "Ersetzen"
@@ -5342,6 +5364,7 @@ msgstr "Ausführung fortgesetzt"
 #: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
+#: src/ui/FlowNode.tsx
 msgid "Running"
 msgstr "Läuft"
 
@@ -6011,6 +6034,10 @@ msgid "Step {number}, {name}, not started"
 msgstr "Schritt {number}, {name}, nicht gestartet"
 
 #: src/machines/machineView.ts
+msgid "Step {number}, {name}, paused"
+msgstr "Schritt {number}, {name}, angehalten"
+
+#: src/machines/machineView.ts
 msgid "Step {number}, {name}, running, {percent} percent"
 msgstr "Schritt {number}, {name}, läuft, {percent} Prozent"
 
@@ -6029,6 +6056,10 @@ msgstr "Schritt {number}, fehlgeschlagen"
 #: src/machines/machineView.ts
 msgid "Step {number}, not started"
 msgstr "Schritt {number}, nicht gestartet"
+
+#: src/machines/machineView.ts
+msgid "Step {number}, paused"
+msgstr "Schritt {number}, angehalten"
 
 #: src/machines/machineView.ts
 msgid "Step {number}, running, {percent} percent"
@@ -6053,6 +6084,7 @@ msgid "Steps in Windows PE come first, and an earlier step already runs in Windo
 msgstr "Schritte in Windows PE kommen zuerst, und ein früherer Schritt läuft bereits in Windows."
 
 #: src/sequences/SequenceEditor.tsx
+#: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr "Schritte von {name}"
 
@@ -7342,6 +7374,10 @@ msgstr "Die ZIP-Datei enthält {count} Einträge. Ein Paket darf höchstens {max
 msgid "Their changes to {list} are lost."
 msgstr "Die dortigen Änderungen gehen verloren: {list}."
 
+#: src/ui/FlowNode.tsx
+msgid "Then"
+msgstr "Dann"
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.exists"
 msgid "There is a rule for {rule} already. It chooses {sequence}; change that rule instead."
@@ -8318,3 +8354,11 @@ msgstr "Ihre Version ersetzt die, die ein anderer Administrator gespeichert hat.
 #: src/settings/ApprovalPage.tsx
 msgid "Zero touch networks"
 msgstr "Zero-Touch-Netzwerke"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom in"
+msgstr "Vergrößern"
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom out"
+msgstr "Verkleinern"

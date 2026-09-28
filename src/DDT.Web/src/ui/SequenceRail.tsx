@@ -8,8 +8,9 @@ import { ListBox, ListBoxItem, type KeyboardEvent } from "react-aria-components"
 import { cx } from "./cx";
 
 // The sequence rail: one module per step of a task sequence. It is the same part at every size: a thin strip in a
-// table row, a labelled row on a run's page, and large on the console in Windows PE.
-export type RailStepState = "done" | "running" | "failed" | "skipped" | "waiting";
+// table row, a labelled row on a run's page, large on the console in Windows PE, and along the top of a node in a
+// flow. A paused step waits for someone, in the signal colour for that.
+export type RailStepState = "done" | "running" | "failed" | "skipped" | "waiting" | "paused";
 
 export interface RailStep {
   state: RailStepState;
@@ -29,24 +30,30 @@ export interface RailPhase {
 }
 
 // One fill serves the running and the done step, so a step that moves on or finishes fills on in slow, and turns
-// from the running blue to done, instead of jumping. The stripes run only while the step does.
-function Module({ step, height }: { step: RailStep; height: string }) {
+// from the running blue to done, instead of jumping. The stripes run only while the step does. className sets the
+// module's height, and its corners where it sits on something else's edge.
+export function RailModule({ step, className }: { step: RailStep; className: string }) {
   const percent = Math.min(100, Math.max(0, step.percent ?? 0));
-  const fill = step.state === "done" ? 100 : step.state === "running" ? percent : 0;
+  const fill =
+    step.state === "done" || step.state === "paused" ? 100 : step.state === "running" ? percent : 0;
 
   return (
     <span
       aria-hidden="true"
       className={cx(
         "relative block overflow-hidden rounded-tag bg-well shadow-[inset_0_0_0_1px_var(--color-rail-edge)]",
-        height,
         step.state === "running" && "shadow-[0_0_0_1px_var(--color-run)]",
+        className,
       )}
     >
       <span
         className={cx(
           "absolute inset-y-0 left-0 motion-fill",
-          step.state === "done" ? "bg-rail-done" : "bg-run",
+          step.state === "done"
+            ? "bg-rail-done"
+            : step.state === "paused"
+              ? "bg-attention"
+              : "bg-run",
           step.state === "running" && "rail-live",
         )}
         style={{ width: `${String(fill)}%` }}
@@ -82,7 +89,7 @@ export function SequenceRailStrip({
       style={columns(steps.length)}
     >
       {steps.map((step, index) => (
-        <Module key={index} step={step} height="h-2" />
+        <RailModule key={index} step={step} className="h-2" />
       ))}
     </span>
   );
@@ -138,7 +145,7 @@ export function SequenceRail({
           return (
             <li key={index} className="flex min-w-0 flex-col gap-2">
               <span className="sr-only">{describe(step, index)}</span>
-              <Module step={step} height={large ? "h-5.5" : "h-4"} />
+              <RailModule step={step} className={large ? "h-5.5" : "h-4"} />
               <span aria-hidden="true" className="flex items-baseline gap-2">
                 <span
                   className={cx(
@@ -282,7 +289,7 @@ export function SequenceRailPicker({
                   "focus-visible:outline-2 focus-visible:outline-focus",
                 )}
               >
-                <Module step={step} height="h-4" />
+                <RailModule step={step} className="h-4" />
                 <span className="flex min-w-0 items-baseline gap-2">
                   <span
                     className={cx(

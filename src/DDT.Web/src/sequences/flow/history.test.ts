@@ -4,11 +4,12 @@
 
 import { describe, expect, it } from "vitest";
 
+import { isTextField } from "@/lib/textField";
+
 import {
   emptyHistory,
   HISTORY_DEPTH,
   historyCommand,
-  isTextField,
   recorded,
   redone,
   undone,

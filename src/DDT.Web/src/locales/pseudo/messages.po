@@ -2675,6 +2675,10 @@ msgstr ""
 msgid "Edition"
 msgstr ""
 
+#: src/ui/FlowNode.tsx
+msgid "Else"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.duplicateEmail"
 msgid "Email ''{email}'' is already taken."
@@ -2914,6 +2918,7 @@ msgstr ""
 #: src/runs/runView.ts
 #: src/settings/DirectorySettings.tsx
 #: src/settings/SettingsParts.tsx
+#: src/ui/FlowNode.tsx
 msgid "Failed"
 msgstr ""
 
@@ -2996,6 +3001,10 @@ msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Finishing"
+msgstr ""
+
+#: src/ui/FlowViewport.tsx
+msgid "Fit"
 msgstr ""
 
 #: src/packages/PackagesPage.tsx
@@ -3128,6 +3137,10 @@ msgstr ""
 msgid "Group name"
 msgstr ""
 
+#: src/ui/FlowNode.tsx
+msgid "Group: {name}"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidc.groupsClaimRequired"
 msgid "GroupRoleMap needs the claim that carries the groups, such as groups."
@@ -3188,6 +3201,10 @@ msgstr ""
 
 #: src/sequences/steps.ts
 msgid "If"
+msgstr ""
+
+#: src/ui/FlowNode.tsx
+msgid "If: {name}"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
@@ -4840,6 +4857,7 @@ msgid "Pause"
 msgstr ""
 
 #: src/log/LogPanel.tsx
+#: src/ui/FlowNode.tsx
 msgid "Paused"
 msgstr ""
 
@@ -5118,6 +5136,10 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
+#: src/ui/FlowNode.tsx
+msgid "Repeat: {name}"
+msgstr ""
+
 #: src/settings/SettingsParts.tsx
 msgid "Replace"
 msgstr ""
@@ -5342,6 +5364,7 @@ msgstr ""
 #: src/runs/runHistory.ts
 #: src/runs/RunPanel.tsx
 #: src/runs/runView.ts
+#: src/ui/FlowNode.tsx
 msgid "Running"
 msgstr ""
 
@@ -6011,6 +6034,10 @@ msgid "Step {number}, {name}, not started"
 msgstr ""
 
 #: src/machines/machineView.ts
+msgid "Step {number}, {name}, paused"
+msgstr ""
+
+#: src/machines/machineView.ts
 msgid "Step {number}, {name}, running, {percent} percent"
 msgstr ""
 
@@ -6028,6 +6055,10 @@ msgstr ""
 
 #: src/machines/machineView.ts
 msgid "Step {number}, not started"
+msgstr ""
+
+#: src/machines/machineView.ts
+msgid "Step {number}, paused"
 msgstr ""
 
 #: src/machines/machineView.ts
@@ -6053,6 +6084,7 @@ msgid "Steps in Windows PE come first, and an earlier step already runs in Windo
 msgstr ""
 
 #: src/sequences/SequenceEditor.tsx
+#: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr ""
 
@@ -7342,6 +7374,10 @@ msgstr ""
 msgid "Their changes to {list} are lost."
 msgstr ""
 
+#: src/ui/FlowNode.tsx
+msgid "Then"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "rule.exists"
 msgid "There is a rule for {rule} already. It chooses {sequence}; change that rule instead."
@@ -8317,4 +8353,12 @@ msgstr ""
 
 #: src/settings/ApprovalPage.tsx
 msgid "Zero touch networks"
+msgstr ""
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom in"
+msgstr ""
+
+#: src/ui/FlowViewport.tsx
+msgid "Zoom out"
 msgstr ""

@@ -10,6 +10,7 @@ import { currentUserQuery } from "@/auth/auth";
 import { deploymentOptionsQuery } from "@/deployments/deployments";
 import { imagesQuery, type ImageSummary } from "@/images/images";
 import { ApiError } from "@/lib/api";
+import { isTextField } from "@/lib/textField";
 import { useAutosave } from "@/lib/useAutosave";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
@@ -18,7 +19,6 @@ import { packagesQuery, type PackageSummary } from "@/packages/packages";
 import {
   emptyHistory,
   historyCommand,
-  isTextField,
   recorded,
   redone,
   undone,

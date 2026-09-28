@@ -83,7 +83,8 @@ export function redone<T>(history: History<T>, present: T): Stepped<T> | null {
 
 export type HistoryCommand = "undo" | "redo";
 
-// Ctrl+Z (⌘Z on a Mac) undoes; Ctrl+Y and Ctrl+Shift+Z (⌘⇧Z) redo.
+// Ctrl+Z (⌘Z on a Mac) undoes; Ctrl+Y and Ctrl+Shift+Z (⌘⇧Z) redo. A page leaves them to a text field it is
+// pressed in (isTextField), whose own undo takes back its typing.
 export function historyCommand(event: {
   key: string;
   ctrlKey: boolean;
@@ -102,34 +103,4 @@ export function historyCommand(event: {
   }
 
   return key === "y" && !event.shiftKey ? "redo" : null;
-}
-
-const notTyped = new Set([
-  "button",
-  "checkbox",
-  "color",
-  "file",
-  "hidden",
-  "image",
-  "radio",
-  "range",
-  "reset",
-  "submit",
-]);
-
-// Whether the keys go into a text field, whose own undo takes back its typing.
-export function isTextField(target: EventTarget | null): boolean {
-  if (typeof Element === "undefined" || !(target instanceof Element)) {
-    return false;
-  }
-
-  if (target instanceof HTMLTextAreaElement) {
-    return true;
-  }
-
-  if (target instanceof HTMLInputElement) {
-    return !notTyped.has(target.type);
-  }
-
-  return target.closest('[contenteditable]:not([contenteditable="false"])') !== null;
 }

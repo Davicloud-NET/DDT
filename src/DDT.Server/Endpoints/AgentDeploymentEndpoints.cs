@@ -64,6 +64,10 @@ public static class AgentDeploymentEndpoints
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
+        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/accounts", ReadStepAccountsAsync)
+            .RequireAuthorization(DdtPolicies.Machine)
+            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
+
         // An agent from before task sequences never gets an image deployment from this server, so it has no reason to
         // call these. Answered here rather than by the web UI's fallback page, which would answer a GET with 200.
         group.MapMethods("/{id:guid}/images/{**rest}", [HttpMethods.Get, HttpMethods.Head], Gone)
@@ -388,6 +392,36 @@ public static class AgentDeploymentEndpoints
         context.Response.Headers.CacheControl = "no-store";
 
         return TypedResults.Ok(credentials!);
+    }
+
+    private static async Task<Results<Ok<AgentStepAccounts>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadStepAccountsAsync(
+        Guid id,
+        Guid runId,
+        Guid stepId,
+        ClaimsPrincipal user,
+        HttpContext context,
+        DdtDbContext database,
+        RunSecrets secrets,
+        CancellationToken cancellationToken)
+    {
+        if (await SecretMachineAsync(id, user, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        {
+            return Principals.IsMachine(user, id) ? TypedResults.Unauthorized() : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+        }
+
+        (AgentStepAccounts? accounts, string? refusal) = await secrets
+            .StepAccountsAsync(machine, runId, stepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (refusal is not null)
+        {
+            return TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        context.Response.Headers.CacheControl = "no-store";
+
+        return TypedResults.Ok(accounts!);
     }
 
     // The machine the token names, in the token's generation, or null.

@@ -25,6 +25,7 @@ public static class DeploymentServiceCollectionExtensions
         services.AddSingleton<AccountProtector>();
         services.AddSingleton<RunCredentialProtector>();
         services.AddScoped<AccountViews>();
+        services.AddScoped<RunCredentials>();
         services.TryAddSingleton<IDomainDirectory, LdapDomainDirectory>();
         services.AddScoped<DomainJoinCheck>();
         services.AddSingleton<AbandonedRunSweeper>();

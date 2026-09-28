@@ -48,7 +48,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings)
             validation.Problems,
             validation.Warnings,
             sequence.UpdatedUtc,
-            sequence.UpdatedByName);
+            sequence.UpdatedByName,
+            SequenceChecks.NodePhases(definition));
     }
 
     public static SequenceSummary Summary(TaskSequence sequence, SequenceReferences references)
@@ -63,12 +64,12 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings)
             sequence.Name,
             sequence.Description,
             sequence.Revision,
-            definition.Steps.Count,
+            SequenceTree.Leaves(definition).Count,
             validation.Problems.Count,
             validation.Warnings.Count,
-            definition.Steps.Any(step => step.ErasesDisk),
+            SequenceTree.Nodes(definition).Any(step => step.ErasesDisk),
             SequenceChecks.ComputerNameUse(definition) is not null,
-            SequenceChecks.Phases(definition).Contains(SequencePhase.Windows),
+            SequenceChecks.ContinuesInWindows(definition),
             sequence.UpdatedUtc,
             sequence.UpdatedByName,
             SequenceChecks.RawImage(definition, references)?.Name,

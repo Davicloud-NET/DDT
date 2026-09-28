@@ -10,6 +10,7 @@ import type {
   MachineLogAppended,
   MachineWatchHandlers,
   RunStepChanged,
+  RunVariablesChanged,
 } from "./liveConnection";
 
 function subscribeNothing(): () => void {
@@ -33,6 +34,9 @@ export function useMachineWatch(machineId: string, handlers: MachineWatchHandler
   const onRunStepChanged = useEffectEvent((event: RunStepChanged) => {
     handlers.onRunStepChanged?.(event);
   });
+  const onRunVariablesChanged = useEffectEvent((event: RunVariablesChanged) => {
+    handlers.onRunVariablesChanged?.(event);
+  });
   const onReconnect = useEffectEvent(() => {
     handlers.onReconnect?.();
   });
@@ -48,6 +52,9 @@ export function useMachineWatch(machineId: string, handlers: MachineWatchHandler
       },
       onRunStepChanged: (event) => {
         onRunStepChanged(event);
+      },
+      onRunVariablesChanged: (event) => {
+        onRunVariablesChanged(event);
       },
       onReconnect: () => {
         onReconnect();

@@ -8,7 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
-import { activityLabel, assignedBy, isActive, isSilentActivity } from "@/deployments/deployments";
+import {
+  activityLabel,
+  assignedBy,
+  isActive,
+  isSilentActivity,
+  isWaiting,
+} from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -37,11 +43,10 @@ import {
   hardwareLine,
   inFilter,
   machineFilters,
+  machineTag,
   matchesSearch,
   railFromSummary,
   railLabel,
-  stateLabel,
-  stateTone,
   type MachineFilter,
 } from "./machineView";
 
@@ -62,8 +67,9 @@ export function MachinesPage() {
     queryKey: machinesQuery.queryKey,
     items: (list) => list,
     id: (machine) => machine.id,
-    signature: (machine) => machine.state,
-    tone: (machine) => stateTone[machine.state],
+    // A run that comes to wait for someone flashes in the colour for that.
+    signature: (machine) => `${machine.state} ${String(isWaiting(machine.deployment))}`,
+    tone: (machine) => machineTag(machine).tone,
   });
 
   const roles = user?.roles ?? [];
@@ -177,9 +183,7 @@ export function MachinesPage() {
                         {hardwareLine(machine)}
                       </span>
                     </span>
-                    <StateTag tone={stateTone[machine.state]}>
-                      {i18n._(stateLabel[machine.state])}
-                    </StateTag>
+                    <MachineStateTag machine={machine} />
                   </span>
                   <RunCell machine={machine} now={now} />
                   {canDecide ? (
@@ -252,9 +256,7 @@ export function MachinesPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <StateTag tone={stateTone[machine.state]}>
-                        {i18n._(stateLabel[machine.state])}
-                      </StateTag>
+                      <MachineStateTag machine={machine} />
                     </TableCell>
                     <TableCell>
                       <RunCell machine={machine} now={now} />
@@ -298,6 +300,14 @@ export function MachinesPage() {
   );
 }
 
+// The machine's state, or that its run waits for someone.
+function MachineStateTag({ machine }: { machine: MachineSummary }) {
+  const { i18n } = useLingui();
+  const tag = machineTag(machine);
+
+  return <StateTag tone={tag.tone}>{i18n._(tag.label)}</StateTag>;
+}
+
 // What a row says about the machine's run, or why it has none.
 function RunCell({ machine, now }: { machine: MachineSummary; now: number }) {
   const run = machine.deployment;
@@ -326,7 +336,7 @@ function RunCell({ machine, now }: { machine: MachineSummary; now: number }) {
       <RunLines
         title={run.title}
         detail={runDetail(machine, now)}
-        detailTone={detailTone(run.state)}
+        detailTone={isWaiting(run) ? "attention" : detailTone(run.state)}
       />
       {rail.length > 0 ? <SequenceRailStrip steps={rail} label={railLabel(run)} /> : null}
     </span>
@@ -340,7 +350,7 @@ function RunLines({
 }: {
   title: string;
   detail: string | null;
-  detailTone: "muted" | "ink" | "run" | "fail";
+  detailTone: "muted" | "ink" | "run" | "fail" | "attention";
 }) {
   // Title and detail share a line where the column is wide; beside the details panel the detail goes under it.
   return (
@@ -356,6 +366,7 @@ function RunLines({
               detailTone === "ink" && "text-ink",
               detailTone === "run" && "font-semibold text-run-text",
               detailTone === "fail" && "font-semibold text-fail-text",
+              detailTone === "attention" && "font-semibold text-attention-text",
             )}
           >
             {detail}

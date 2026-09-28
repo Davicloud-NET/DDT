@@ -11,6 +11,7 @@ import { Button as AriaButton } from "react-aria-components";
 import type { DeploymentStepView } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { number } from "@/lib/format";
+import { leafNumbers } from "@/runs/runPath";
 import { Button } from "@/ui/Button";
 import { FilterChips, FilterSelector, SearchField } from "@/ui/Controls";
 import { Panel } from "@/ui/Layout";
@@ -41,6 +42,7 @@ export interface LogPanelProps {
   onStepFilterChange: (stepId: string | null) => void;
 }
 
+// A step by its number as the flow and the rail give it; a container, which has none, by its name.
 function stepLabel(steps: readonly DeploymentStepView[], stepId: string | null): string | null {
   const step = steps.find((candidate) => candidate.stepId === stepId);
 
@@ -48,10 +50,10 @@ function stepLabel(steps: readonly DeploymentStepView[], stepId: string | null):
     return null;
   }
 
-  const position = step.index + 1;
+  const position = leafNumbers(steps).get(step.stepId) ?? null;
   const name = step.name;
 
-  return t`step ${position}, ${name}`;
+  return position === null ? name : t`step ${position}, ${name}`;
 }
 
 function levelLabel(level: AgentLogLevel): string {

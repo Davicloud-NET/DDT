@@ -20,6 +20,9 @@ export interface RailStep {
   meta?: ReactNode;
   // A finding on a step of a sequence being edited: a problem keeps the sequence from running, a warning does not.
   mark?: "problem" | "warning";
+  // The step's number in its sequence, where it is not its place on the rail: a run's rail leaves out the steps of the
+  // branches it did not take.
+  number?: number;
 }
 
 export interface RailPhase {
@@ -156,13 +159,17 @@ export function SequenceRail({
                         : "text-ink",
                   )}
                 >
-                  {String(index + 1).padStart(2, "0")}
+                  {String(step.number ?? index + 1).padStart(2, "0")}
                 </span>
                 {step.meta ? (
                   <span
                     className={cx(
                       "type-small",
-                      running ? "font-semibold text-run-text" : "text-muted",
+                      running
+                        ? "font-semibold text-run-text"
+                        : step.state === "paused"
+                          ? "font-semibold text-attention-text"
+                          : "text-muted",
                     )}
                   >
                     {step.meta}
@@ -174,7 +181,7 @@ export function SequenceRail({
                   aria-hidden="true"
                   className={cx(
                     "type-step",
-                    running
+                    running || step.state === "paused"
                       ? "font-bold text-ink"
                       : step.state === "waiting"
                         ? "text-ink-2"

@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { flowEdits, type FlowEdit, type NodePatch } from "./flow/flowEdits";
 import type { SequenceDraft } from "./sequenceDraft";
 import type { SequenceStep, StepCondition, StepKind } from "./sequences";
 import { newCondition, newStep } from "./steps";
 
-// The fields of one kind of step, apart from what identifies it.
-type FieldsOf<S> = S extends SequenceStep ? Partial<Omit<S, "id" | "kind">> : never;
+// The fields of one kind of step, apart from what identifies it and the nodes inside it.
+export type StepPatch = NodePatch;
 
-export type StepPatch = FieldsOf<SequenceStep>;
-
-// Every change the editor makes, as data, so a later editor can keep them for undo. New step ids are made by
-// the functions below rather than by the reducer, which stays pure.
+// Every change the editors make, as data, so they can be kept for undo: the step editor's, which work on the steps at
+// the top, and the flow builder's, which work on the whole tree. New step ids are made by the functions below rather
+// than by the reducer, which stays pure.
 export type SequenceEdit =
   | { type: "rename"; name: string }
   | { type: "describe"; description: string }
@@ -25,7 +25,8 @@ export type SequenceEdit =
   | { type: "updateStep"; id: string; patch: StepPatch; chosen?: boolean }
   | { type: "addCondition"; stepId: string }
   | { type: "updateCondition"; stepId: string; index: number; patch: Partial<StepCondition> }
-  | { type: "removeCondition"; stepId: string; index: number };
+  | { type: "removeCondition"; stepId: string; index: number }
+  | FlowEdit;
 
 // The edits that add a step name its id, so the page can show the new step.
 export function addStep(kind: StepKind): Extract<SequenceEdit, { type: "addStep" }> {
@@ -39,10 +40,9 @@ export function insertStepAfter(
   return { type: "insertStepAfter", afterId, kind, id: crypto.randomUUID() };
 }
 
-type FieldOf<T> = T extends unknown ? keyof T : never;
-
-// The fields set by a checkbox or a select rather than by typing.
-const chosen: (FieldOf<StepPatch> | keyof StepCondition)[] = [
+// The fields set by a checkbox or a list rather than by typing: of a node, of a condition's test, of a variable and
+// of an input.
+const chosenNodeFields: ReadonlySet<string> = new Set([
   "continueOnError",
   "rebootAfter",
   "requireMatch",
@@ -52,25 +52,72 @@ const chosen: (FieldOf<StepPatch> | keyof StepCondition)[] = [
   "interpreter",
   "packageId",
   "variable",
-  "operator",
-];
-const chosenFields: ReadonlySet<string> = new Set(chosen);
+  "goOnAtLimit",
+  "runAs",
+  "account",
+  "when",
+  "test",
+  "until",
+]);
+const chosenConditionFields: ReadonlySet<string> = new Set(["variable", "operator"]);
+const chosenVariableFields: ReadonlySet<string> = new Set(["setBySteps"]);
+const chosenInputFields: ReadonlySet<string> = new Set(["kind", "required", "askAt"]);
 
-// Typing waits for a pause before it is saved; a change of the structure or a choice is saved at once.
-export function isTyping(edit: SequenceEdit): boolean {
+// The typed fields of a patch, joined, or null when it has none or a switch made it.
+function typedFields(
+  patch: object,
+  chosen: ReadonlySet<string>,
+  byChoice?: boolean,
+): string | null {
+  const typed = Object.keys(patch)
+    .filter((field) => !chosen.has(field))
+    .sort();
+
+  return byChoice === true || typed.length === 0 ? null : typed.join(",");
+}
+
+function key(...parts: (string | null)[]): string | null {
+  return parts.includes(null) ? null : parts.join(":");
+}
+
+// What an edit types into, such as a node's script, or null for a change of the structure or a choice. Typing waits
+// for a pause before it is saved, and undo takes back what was typed into one field in a row as one change.
+export function typingKey(edit: SequenceEdit): string | null {
   switch (edit.type) {
     case "rename":
+      return "name";
     case "describe":
-      return true;
+      return "description";
     case "updateStep":
-      return (
-        edit.chosen !== true && Object.keys(edit.patch).some((field) => !chosenFields.has(field))
-      );
+    case "updateNode":
+      return key("node", edit.id, typedFields(edit.patch, chosenNodeFields, edit.chosen));
     case "updateCondition":
-      return Object.keys(edit.patch).some((field) => !chosenFields.has(field));
+      return key(
+        "conditions",
+        edit.stepId,
+        String(edit.index),
+        typedFields(edit.patch, chosenConditionFields),
+      );
+    case "editCondition":
+      return edit.change.op === "update"
+        ? key(
+            edit.field,
+            edit.id,
+            edit.path.join("."),
+            typedFields(edit.change.patch, chosenConditionFields),
+          )
+        : null;
+    case "updateVariable":
+      return key("variable", edit.name, typedFields(edit.patch, chosenVariableFields, edit.chosen));
+    case "updateInput":
+      return key("input", edit.name, typedFields(edit.patch, chosenInputFields, edit.chosen));
     default:
-      return false;
+      return null;
   }
+}
+
+export function isTyping(edit: SequenceEdit): boolean {
+  return typingKey(edit) !== null;
 }
 
 // A patch names the fields of one kind. A field the step does not have is left out, so a step keeps the shape
@@ -157,5 +204,7 @@ export function sequenceEdits(draft: SequenceDraft, edit: SequenceEdit): Sequenc
         ...step,
         conditions: step.conditions.filter((_, index) => index !== edit.index),
       }));
+    default:
+      return flowEdits(draft, edit);
   }
 }

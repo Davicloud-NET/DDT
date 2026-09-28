@@ -194,7 +194,7 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
             credential.Property(c => c.Domain).HasMaxLength(AccountLimits.MaxDomainLength);
             credential.Property(c => c.ProvidedByName).HasMaxLength(256);
 
-            // A run's credentials go with it.
+            // A run's credentials go with it, though RunCredentialCleanup deletes them long before, when the run ends.
             credential.HasOne<Deployment>().WithMany().HasForeignKey(c => c.DeploymentId).OnDelete(DeleteBehavior.Cascade);
             credential.HasOne<DdtUser>().WithMany().HasForeignKey(c => c.ProvidedByUserId).OnDelete(DeleteBehavior.SetNull);
         });

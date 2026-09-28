@@ -28,6 +28,8 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<DomainJoinCheck>();
         services.AddSingleton<AbandonedRunSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<AbandonedRunSweeper>());
+        services.AddSingleton<RunCredentialSweeper>();
+        services.AddHostedService(provider => provider.GetRequiredService<RunCredentialSweeper>());
 
         return services;
     }

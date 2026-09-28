@@ -472,6 +472,42 @@ describe("SequenceEditorPage", () => {
     expect(node("Step 2, If: Is it a Latitude?")).toHaveFocus();
   });
 
+  it("moves a node within its list with Alt and an arrow key, says where it went, and duplicates it with Ctrl+D", async () => {
+    const { saves } = serve(administrator, treeView(), { step: "a1" });
+
+    await opened();
+    const apply = node(/^Step 1 of Then of/);
+
+    act(() => {
+      apply.focus();
+    });
+    fireEvent.keyDown(apply, { key: "ArrowDown", altKey: true });
+
+    expect(
+      node(/^Step 2 of Then of 'If: Is it a Latitude\?', Apply Windows 11 for Latitudes/),
+    ).toHaveFocus();
+    expect(
+      screen.getByText("Apply Windows 11 for Latitudes moved to position 2 of 2."),
+    ).toBeInTheDocument();
+
+    // At the end of its list it stays.
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "d", ctrlKey: true });
+
+    await waitFor(() => {
+      const branch = saves.at(-1)?.definition.steps[1] as IfStep | undefined;
+
+      expect(branch?.then.map((step) => step.name)).toEqual([
+        "Add the Latitude drivers",
+        "Apply Windows 11 for Latitudes",
+        "Apply Windows 11 for Latitudes",
+      ]);
+    }, saveWait);
+    await waitFor(() => {
+      expect(node(/^Step 3 of Then of/)).toHaveFocus();
+    });
+  });
+
   it("wraps a node in an IF from its menu", async () => {
     const { saves } = serve(administrator, view(), { step: "i" });
 

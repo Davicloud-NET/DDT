@@ -76,14 +76,29 @@ export function VariablesPanel({
   onGoToNode: (id: string) => void;
 }) {
   const locked = useContext(EditorLock);
-  const [opened, setOpened] = useState<readonly string[]>([]);
+  const [opened, setOpened] = useState<readonly string[]>(
+    open === null ? [] : [`${open.list}:${String(open.index)}`],
+  );
+  // A row a finding points at opens, and can be closed again like any other.
+  const [pointed, setPointed] = useState(open);
+
+  if (open !== pointed) {
+    setPointed(open);
+
+    if (open !== null) {
+      const key = `${open.list}:${String(open.index)}`;
+
+      setOpened((keys) => (keys.includes(key) ? keys : [...keys, key]));
+    }
+  }
+
   const toggle = (key: string) => {
     setOpened((keys) =>
       keys.includes(key) ? keys.filter((other) => other !== key) : [...keys, key],
     );
   };
   const isOpen = (list: OpenRow["list"], index: number) =>
-    opened.includes(`${list}:${String(index)}`) || (open?.list === list && open.index === index);
+    opened.includes(`${list}:${String(index)}`);
   const empty = draft.variables.length === 0 && draft.inputs.length === 0;
 
   return (

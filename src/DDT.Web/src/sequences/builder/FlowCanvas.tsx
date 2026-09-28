@@ -630,7 +630,7 @@ function CanvasNode({
       tabIndex={tabbable ? 0 : -1}
       aria-label={label}
       aria-current={selected ? "true" : undefined}
-      aria-haspopup="menu"
+      aria-keyshortcuts="Enter Delete Shift+F10"
       data-flow-node
       data-node-id={node.id}
       className={cx(
